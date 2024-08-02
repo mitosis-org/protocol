@@ -1,0 +1,32 @@
+[profile.default]
+src = "src"
+out = "out"
+script = "script"
+libs = ["lib", "node_modules"]
+solc = "0.8.26"                # to have cancun support
+evm_version = 'cancun'         # by default
+optimizer = true
+optimizer_runs = 99999
+
+[rpc_endpoints]
+# MAINNET
+mainnet-arbitrum = "${ARBITRUM_MAINNET_RPC}"
+mainnet-blast = "${BLAST_MAINNET_RPC}"
+mainnet-ethereum = "${ETHEREUM_MAINNET_RPC}"
+mainnet-linea = "${LINEA_MAINNET_RPC}"
+mainnet-manta-pacific = "${MANTA_PACIFIC_MAINNET_RPC}"
+mainnet-mode = "${MODE_MAINNET_RPC}"
+mainnet-optimism = "${OPTIMISM_MAINNET_RPC}"
+mainnet-scroll = "${SCROLL_MAINNET_RPC}"
+
+# SEPOLIA
+sepolia-arbitrum = "${ARBITRUM_SEPOLIA_RPC}"
+sepolia-blast = "${BLAST_SEPOLIA_RPC}"
+sepolia-ethereum = "${ETHEREUM_SEPOLIA_RPC}"
+sepolia-linea = "${LINEA_SEPOLIA_RPC}"
+sepolia-manta-pacific = "${MANTA_PACIFIC_SEPOLIA_RPC}"
+sepolia-mode = "${MODE_SEPOLIA_RPC}"
+sepolia-optimism = "${OPTIMISM_SEPOLIA_RPC}"
+sepolia-scroll = "${SCROLL_SEPOLIA_RPC}"
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
