@@ -1,0 +1,48 @@
+# Compiler files
+cache/
+out/*
+!out/script/
+dist/
+types/
+
+# Ignores development broadcast logs
+broadcast/
+
+# Docs
+docs/
+bin/
+
+# Dotenv file
+.env
+config.json
+config.*.json
+!config.example.json
+
+/node_modules
+/coverage
+
+report.md
+lcov.info
+
+node_modules
+.env
+
+# Hardhat files
+/cache
+/artifacts
+
+# TypeChain files
+/typechain
+/typechain-types
+
+# solidity-coverage files
+/coverage
+/coverage.json
+
+# Script files
+/out/script/*
+!/out/script/.gitkeep
+
+.yarn/install-state.gz
+
+script/foundry/Test.s.sol
