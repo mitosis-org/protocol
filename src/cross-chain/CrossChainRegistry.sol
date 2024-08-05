@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { RegistryBase } from '@src/cross-chain/RegistryBase.sol';
-import { Storage } from '@src/lib/Storage.sol';
-import { Error } from '@src/lib/Error.sol';
-import { MsgType } from '@src/cross-chain/messages/Message.sol';
+import { RegistryBase } from './RegistryBase.sol';
+import { Storage } from '../lib/Storage.sol';
+import { Error } from '../lib/Error.sol';
+import { MsgType } from './messages/Message.sol';
 
 contract CrossChainRegistry is RegistryBase {
   constructor(address storageAddress) {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { Storage } from '@src/lib/Storage.sol';
+import { Storage } from '../lib/Storage.sol';
 
 abstract contract RegistryBase {
   Storage _storage;

@@ -5,9 +5,9 @@ import { Vm } from 'forge-std/Vm.sol';
 import { Test } from 'forge-std/Test.sol';
 import { console } from 'forge-std/console.sol';
 
-import { Storage } from '@src/lib/Storage.sol';
-import { CrossChainRegistry } from '@src/cross-chain/CrossChainRegistry.sol';
-import { MsgType } from '@src/cross-chain/messages/Message.sol';
+import { Storage } from '../../src/lib/Storage.sol';
+import { CrossChainRegistry } from '../../src/cross-chain/CrossChainRegistry.sol';
+import { MsgType } from '../../src/cross-chain/messages/Message.sol';
 
 contract TestCrossChainRegistry is Test {
   CrossChainRegistry internal ccRegistry;
