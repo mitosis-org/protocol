@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import { RegistryBase } from './RegistryBase.sol';
 import { Storage } from '../lib/Storage.sol';
+import { Error } from '../lib/Error.sol';
 import { MsgType } from './messages/Message.sol';
 
 contract CrossChainRegistry is RegistryBase {
@@ -14,7 +15,7 @@ contract CrossChainRegistry is RegistryBase {
 
   modifier onlyRegisteredChain(uint256 chain) {
     if (!_checkChainAlreadyRegistered(chain)) {
-      revert('not registered chain');
+      revert Error.NotRegistered();
     }
     _;
   }
@@ -59,7 +60,7 @@ contract CrossChainRegistry is RegistryBase {
 
   function setChain(uint256 chain, string calldata name, uint32 hplDomain) public {
     if (_checkChainAlreadyRegistered(chain)) {
-      revert('already registered chain');
+      revert Error.AlreadyRegistered();
     }
     _chains.push(chain);
     _setString(_getChainNameKey(chain), name);
