@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { Vm } from 'forge-std/Vm.sol';
-import { Script } from 'forge-std/Script.sol';
-import { console } from 'forge-std/console.sol';
+import { Vm } from '@forge-std-1.9.1/Vm.sol';
+import { Script } from '@forge-std-1.9.1/Script.sol';
+import { console } from '@forge-std-1.9.1/console.sol';
 
-import { LibString } from 'solady/utils/LibString.sol';
+import { LibString } from '@solady-0.0.230/utils/LibString.sol';
 
 /// @notice A example script to fetch multichain balances for the caller.
 /// @dev The caller can be set via using the flag like `account` or `private-key` or `mnemonic` etc...

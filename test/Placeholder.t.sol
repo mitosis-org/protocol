@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { Vm } from 'forge-std/Vm.sol';
-import { Test } from 'forge-std/Test.sol';
-import { console } from 'forge-std/console.sol';
+import { Vm } from '@forge-std-1.9.1/Vm.sol';
+import { Test } from '@forge-std-1.9.1/Test.sol';
+import { console } from '@forge-std-1.9.1/console.sol';
 
 import { Placeholder } from '../src/Placeholder.sol';
 

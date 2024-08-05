@@ -1,5 +1,5 @@
-@solady-0.0.230=dependencies/solady-0.0.230
-@forge-std-1.9.1=dependencies/forge-std-1.9.1
-@openzeppelin-foundry-upgrades-0.3.1=dependencies/openzeppelin-foundry-upgrades-0.3.1
-@openzeppelin-contracts-upgradeable-5.0.2=dependencies/@openzeppelin-contracts-upgradeable-5.0.2
-@openzeppelin-contracts-5.0.2=dependencies/@openzeppelin-contracts-5.0.2
+@solady-0.0.230=dependencies/solady-0.0.230/src
+@forge-std-1.9.1=dependencies/forge-std-1.9.1/src
+@openzeppelin-foundry-upgrades-0.3.1=dependencies/openzeppelin-foundry-upgrades-0.3.1/src
+@openzeppelin-contracts-upgradeable-5.0.2=dependencies/@openzeppelin-contracts-upgradeable-5.0.2/src
+@openzeppelin-contracts-5.0.2=dependencies/@openzeppelin-contracts-5.0.2/src
