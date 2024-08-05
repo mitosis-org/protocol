@@ -39,10 +39,10 @@ contract MorphoStrategy is StdStrategy {
   }
 
   function _verifyMarketParams(bytes memory context) private view returns (MarketParams memory marketParams) {
-    IERC20 vaultAsset_ = _vaultAsset();
+    IERC20 asset_ = _asset();
     Id id = abi.decode(context, (Id));
     marketParams = _morpho.idToMarketParams(id);
-    if (marketParams.loanToken != address(vaultAsset_)) revert Error.InvalidAddress('loanToken');
+    if (marketParams.loanToken != address(asset_)) revert Error.InvalidAddress('loanToken');
     return marketParams;
   }
 

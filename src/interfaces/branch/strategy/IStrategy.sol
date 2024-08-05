@@ -6,12 +6,9 @@ import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 
 import { Error } from '@src/lib/Error.sol';
-import { IMitosisVault } from '@src/interfaces/branch/IMitosisVault.sol';
 
 interface IStrategyDependency {
-  function vault() external view returns (IMitosisVault);
-
-  function vaultAsset() external view returns (IERC20);
+  function asset() external view returns (IERC20);
 }
 
 interface IStrategy is IStrategyDependency {

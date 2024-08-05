@@ -47,11 +47,11 @@ contract StrategyExecutor is
   //=========== NOTE: IMMUTABLE VARIABLES ===========//
 
   IMitosisVault internal immutable _vault;
-  IERC20 internal immutable _vaultAsset;
+  IERC20 internal immutable _asset;
 
-  constructor(IMitosisVault vault_, IERC20 asset) initializer {
+  constructor(IMitosisVault vault_, IERC20 asset_) initializer {
     _vault = vault_;
-    _vaultAsset = asset;
+    _asset = asset_;
   }
 
   fallback() external payable {
@@ -74,12 +74,12 @@ contract StrategyExecutor is
 
   // View functions
 
-  function vault() public view override(IStrategyExecutor, IStrategyDependency) returns (IMitosisVault vault_) {
+  function vault() public view returns (IMitosisVault vault_) {
     return _vault;
   }
 
-  function vaultAsset() public view override(IStrategyExecutor, IStrategyDependency) returns (IERC20 vaultAsset_) {
-    return _vaultAsset;
+  function asset() public view override(IStrategyExecutor, IStrategyDependency) returns (IERC20 asset_) {
+    return _asset;
   }
 
   function strategist() external view returns (address strategist_) {
@@ -122,10 +122,12 @@ contract StrategyExecutor is
    *
    * @dev only strategist can call this function
    */
-  function execute(IStrategyExecutor.Call[] calldata calls) external whenNotPaused {
+  function execute(IStrategyExecutor.Call[] calldata calls, uint256 useEOL) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertStrategist($);
+
+    if (useEOL > 0) _vault.useEOL(address(_asset), useEOL);
 
     for (uint256 i = 0; i < calls.length; i++) {
       uint256 strategyId = calls[i].strategyId;
@@ -137,8 +139,8 @@ contract StrategyExecutor is
       }
     }
 
-    uint256 balance_ = _vaultAsset.balanceOf(address(this));
-    if (balance_ > 0) _vaultAsset.safeTransfer(address(_vault), balance_);
+    uint256 balance_ = _asset.balanceOf(address(this));
+    if (balance_ > 0) _vault.returnEOL(address(_asset), balance_);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//

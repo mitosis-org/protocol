@@ -15,7 +15,7 @@ interface IStrategyExecutor {
 
   // immutable
   function vault() external view returns (IMitosisVault vault_);
-  function vaultAsset() external view returns (IERC20 vaultAsset_);
+  function asset() external view returns (IERC20 asset_);
 
   // storage v1
   function strategist() external view returns (address strategist_);
@@ -32,5 +32,5 @@ interface IStrategyExecutor {
     bytes[] callData;
   }
 
-  function execute(Call[] calldata calls) external;
+  function execute(Call[] calldata calls, uint256 useEOL) external;
 }

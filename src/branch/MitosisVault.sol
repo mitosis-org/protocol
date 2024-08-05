@@ -6,16 +6,14 @@ import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 import { IMitosisVaultEntrypoint } from '@src/interfaces/branch/IMitosisVaultEntrypoint.sol';
 
 enum Action {
-  Deposit
+  Deposit,
+  UseEOL
 }
 
 contract MitosisVaultStorageV1 {
   // TODO(thai): change location
   /// @custom:storage-location erc7201:mitosis.storage.BasicVault.v1
   struct StorageV1 {
-    IERC20 asset;
-    uint8 underlyingDecimals;
-    mapping(Action => bool) isHalted;
     mapping(address => mapping(Action => bool)) isAllowed;
   }
 
@@ -34,7 +32,8 @@ contract MitosisVault is OwnableUpgradeable {
   struct AssetInfo {
     bool initialized;
     mapping(Action => bool) isHalted;
-    uint256 eolAllocated;
+    address strategyExecutor;
+    uint256 remainingEOL;
   }
 
   mapping(address asset => AssetInfo) public assets;
@@ -82,6 +81,22 @@ contract MitosisVault is OwnableUpgradeable {
 
   function redeem(address asset, address to, uint256 amount) external onlyEntrypoint assetInitialized(asset) {
     IERC20(asset).transfer(to, amount);
+  }
+
+  function useEOL(address asset, uint256 amount) external assetInitialized(asset) withNoHalt(asset, Action.UseEOL) {
+    AssetInfo storage assetInfo = assets[asset];
+    if (msg.sender != assetInfo.strategyExecutor) revert('only strategy vault can use EOL');
+
+    assetInfo.remainingEOL -= amount;
+    IERC20(asset).transferFrom(address(this), assetInfo.strategyExecutor, amount);
+  }
+
+  function returnEOL(address asset, uint256 amount) external assetInitialized(asset) {
+    AssetInfo storage assetInfo = assets[asset];
+    if (msg.sender != assetInfo.strategyExecutor) revert('only strategy vault can return EOL');
+
+    IERC20(asset).transferFrom(assetInfo.strategyExecutor, address(this), amount);
+    assetInfo.remainingEOL += amount;
   }
 
   //////////////////////////

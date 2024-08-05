@@ -6,8 +6,8 @@ import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 
 import { Error } from '@src/lib/Error.sol';
-import { IMitosisVault } from '@src/interfaces/branch/IMitosisVault.sol';
 import { IStrategy, IStrategyDependency } from '@src/interfaces/branch/strategy/IStrategy.sol';
+import { IStrategyExecutor } from '@src/interfaces/branch/strategy/IStrategyExecutor.sol';
 
 import { StdStrategyStorageV1 } from '@src/branch/strategy/storage/StdStrategyStorageV1.sol';
 
@@ -18,8 +18,6 @@ abstract contract StdStrategy is IStrategy, Context, StdStrategyStorageV1 {
   event WithdrawRequested(bytes ret);
 
   error StdStrategy__OnlyDelegateCall();
-  error StdStrategy__DepositFailed();
-  error StdStrategy__WithdrawFailed();
 
   address internal immutable _self; // cannot be queried when this contract is used as a proxy
 
@@ -35,12 +33,8 @@ abstract contract StdStrategy is IStrategy, Context, StdStrategyStorageV1 {
 
   //================= NOTE: VIEW FUNCTIONS =================//
 
-  function vault() external view override onlyDelegateCall returns (IMitosisVault) {
-    return _vault();
-  }
-
-  function vaultAsset() external view override onlyDelegateCall returns (IERC20) {
-    return _vaultAsset();
+  function asset() external view override onlyDelegateCall returns (IERC20) {
+    return _asset();
   }
 
   function strategyName() public pure virtual override(IStrategy, StdStrategyStorageV1) returns (string memory);
@@ -94,18 +88,7 @@ abstract contract StdStrategy is IStrategy, Context, StdStrategyStorageV1 {
   }
 
   function deposit(uint256 amount, bytes memory context) external onlyDelegateCall returns (uint256 deposited) {
-    IMitosisVault vault_ = _vault();
-    IERC20 vaultAsset_ = _vaultAsset();
-
-    uint256 beforeBalance = vaultAsset_.balanceOf(address(this));
-
-    vaultAsset_.safeTransferFrom(address(vault_), address(this), amount);
-
     _deposit(amount, context);
-
-    uint256 afterBalance = vaultAsset_.balanceOf(address(this));
-
-    if (beforeBalance != afterBalance) revert StdStrategy__DepositFailed();
 
     emit Deposit(_self, amount, context);
 
@@ -121,18 +104,7 @@ abstract contract StdStrategy is IStrategy, Context, StdStrategyStorageV1 {
   }
 
   function withdraw(uint256 amount, bytes memory context) external onlyDelegateCall returns (uint256 withdrawn) {
-    IMitosisVault vault_ = _vault();
-    IERC20 vaultAsset_ = _vaultAsset();
-
-    uint256 beforeBalance = vaultAsset_.balanceOf(address(this));
-
     _withdraw(amount, context);
-
-    vaultAsset_.safeTransfer(address(vault_), amount);
-
-    uint256 afterBalance = vaultAsset_.balanceOf(address(this));
-
-    if (beforeBalance != afterBalance) revert StdStrategy__WithdrawFailed();
 
     emit Withdraw(_self, amount, context);
 
@@ -141,12 +113,8 @@ abstract contract StdStrategy is IStrategy, Context, StdStrategyStorageV1 {
 
   //================= NOTE: INTERNAL VIEW FUNCTIONS =================//
 
-  function _vault() internal view virtual returns (IMitosisVault) {
-    return IStrategyDependency(this).vault();
-  }
-
-  function _vaultAsset() internal view virtual returns (IERC20) {
-    return IStrategyDependency(this).vaultAsset();
+  function _asset() internal view virtual returns (IERC20) {
+    return IStrategyDependency(this).asset();
   }
 
   /**

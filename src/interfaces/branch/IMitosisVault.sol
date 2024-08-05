@@ -4,4 +4,8 @@ pragma abicoder v2;
 
 interface IMitosisVault {
   function owner() external view returns (address);
+
+  function useEOL(address asset, uint256 amount) external;
+
+  function returnEOL(address asset, uint256 amount) external;
 }
