@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import { AccessControl } from '@oz-v5/access/AccessControl.sol';
 import { RegistryBase } from './RegistryBase.sol';
-import { Storage } from '../lib/Storage.sol';
+import { KVContainer } from '../lib/KVContainer.sol';
 import { Error } from '../lib/Error.sol';
 import { MsgType } from './messages/Message.sol';
 
@@ -16,9 +16,9 @@ contract CrossChainRegistry is RegistryBase, AccessControl {
 
   bytes32 public constant WRITER_ROLE = keccak256('WRITER_ROLE');
 
-  constructor(address storageAddress) {
+  constructor(address containerAddress) {
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-    _storage = Storage(storageAddress);
+    _kvContainer = KVContainer(containerAddress);
   }
 
   modifier onlyAdmin() {

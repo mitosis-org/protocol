@@ -5,7 +5,7 @@ import { Vm } from '@std/Vm.sol';
 import { Test } from '@std/Test.sol';
 import { console } from '@std/console.sol';
 
-import { Storage } from '../../src/lib/Storage.sol';
+import { KVContainer } from '../../src/lib/KVContainer.sol';
 import { CrossChainRegistry } from '../../src/cross-chain/CrossChainRegistry.sol';
 import { MsgType } from '../../src/cross-chain/messages/Message.sol';
 
@@ -13,8 +13,9 @@ contract TestCrossChainRegistry is Test {
   CrossChainRegistry internal ccRegistry;
 
   function setUp() public {
-    Storage strg = new Storage();
-    ccRegistry = new CrossChainRegistry(address(strg));
+    KVContainer container = new KVContainer();
+    container.initialize(msg.sender);
+    ccRegistry = new CrossChainRegistry(address(container));
     ccRegistry.grantWriter(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
   }
 
