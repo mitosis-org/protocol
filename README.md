@@ -26,7 +26,13 @@ Mitosis is an Ecosystem-Owned Liquidity (EOL) layer1 blockchain that empowers ne
    yarn install
    ```
 
-3. Build the project:
+3. Install dependencies via soldeer:
+
+   ```bash
+   forge soldeer install
+   ```
+
+4. Build the project:
 
    ```bash
    forge build
