@@ -28,6 +28,7 @@ sepolia-manta-pacific = "${MANTA_PACIFIC_SEPOLIA_RPC}"
 sepolia-mode = "${MODE_SEPOLIA_RPC}"
 sepolia-optimism = "${OPTIMISM_SEPOLIA_RPC}"
 sepolia-scroll = "${SCROLL_SEPOLIA_RPC}"
+
 [etherscan]
 # MAINNET
 mainnet-arbitrum = { key = "${ARBITRUM_MAINNET_ETHERSCAN_KEY}" }
@@ -48,5 +49,11 @@ sepolia-manta-pacific = { key = "${MANTA_PACIFIC_SEPOLIA_ETHERSCAN_KEY}" }
 sepolia-mode = { key = "${MODE_SEPOLIA_ETHERSCAN_KEY}" }
 sepolia-optimism = { key = "${OPTIMISM_SEPOLIA_ETHERSCAN_KEY}" }
 sepolia-scroll = { key = "${SCROLL_SEPOLIA_ETHERSCAN_KEY}" }
+
+[fmt]
+line_length = 120
+tab_width = 2
+bracket_spacing = true
+quote_style = "single"
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {LibString} from 'solady/utils/LibString.sol';
+import { LibString } from 'solady/utils/LibString.sol';
 
 contract Placeholder {
   using LibString for string;

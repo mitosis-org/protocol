@@ -3,18 +3,9 @@
   "importOrderSeparation": true,
   "importOrderSortSpecifiers": true,
   "jsonRecursiveSort": true,
-  "overrides": [
-    {
-      "files": ["src/**/*.sol", "test/**/*.sol", "script/**/*.sol"],
-      "options": {
-        "printWidth": 120
-      }
-    }
-  ],
   "plugins": [
     "@trivago/prettier-plugin-sort-imports",
-    "prettier-plugin-sort-json",
-    "prettier-plugin-solidity"
+    "prettier-plugin-sort-json"
   ],
   "printWidth": 80,
   "semi": true,
