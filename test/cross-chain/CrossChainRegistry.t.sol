@@ -58,18 +58,18 @@ contract TestCrossChainRegistry is Test {
 
   function test_setHyperlaneRoute() public {
     uint256 chainID = 1;
+    uint32 hplDomain = 1;
     address msgDepositDestination = address(1);
 
     vm.expectRevert(); // 'not registered chain'
-    ccRegistry.setHyperlaneRoute(chainID, MsgType.MsgDeposit, msgDepositDestination);
+    ccRegistry.setHyperlaneRoute(hplDomain, MsgType.MsgDeposit, msgDepositDestination);
 
     string memory name = 'Ethereum';
-    uint32 hplDomain = 1;
     ccRegistry.setChain(chainID, name, hplDomain);
 
-    ccRegistry.setHyperlaneRoute(chainID, MsgType.MsgDeposit, msgDepositDestination);
+    ccRegistry.setHyperlaneRoute(hplDomain, MsgType.MsgDeposit, msgDepositDestination);
     require(
-      ccRegistry.getHyperlaneRoute(chainID, MsgType.MsgDeposit) == msgDepositDestination, 'invalid getHyperlaneRoute'
+      ccRegistry.getHyperlaneRoute(hplDomain, MsgType.MsgDeposit) == msgDepositDestination, 'invalid getHyperlaneRoute'
     );
   }
 }
