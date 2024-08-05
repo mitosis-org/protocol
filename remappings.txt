@@ -1,3 +1,5 @@
+@src/=src/
+
 @solady=dependencies/solady-0.0.230/src
 @std=dependencies/forge-std-1.9.1/src
 @ozfu-v5=dependencies/openzeppelin-foundry-upgrades-0.3.1/src
