@@ -14,22 +14,11 @@ jobs:
       fail-fast: true
 
     name: Mitosis Protocol
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      - name: Set up Node.js
-        uses: actions/setup-node@master
-        with:
-          node-version: 20.x
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Install Yarn dependencies
-        run: yarn install
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -40,9 +29,9 @@ jobs:
         run: |
           forge --version
 
-      - name: Run Prettier
+      - name: Run Forge fmt
         run: |
-          yarn prettier . --check
+          forge fmt --check
         id: fmt
 
       - name: Run Forge build

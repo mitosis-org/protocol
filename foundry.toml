@@ -29,4 +29,31 @@ sepolia-mode = "${MODE_SEPOLIA_RPC}"
 sepolia-optimism = "${OPTIMISM_SEPOLIA_RPC}"
 sepolia-scroll = "${SCROLL_SEPOLIA_RPC}"
 
+[etherscan]
+# MAINNET
+mainnet-arbitrum = { key = "${ARBITRUM_MAINNET_ETHERSCAN_KEY}" }                               # arbiscan
+mainnet-blast = { key = "${BLAST_MAINNET_ETHERSCAN_KEY}" }                                     # blastscan
+mainnet-ethereum = { key = "${ETHEREUM_MAINNET_ETHERSCAN_KEY}" }                               # etherscan
+mainnet-linea = { key = "${LINEA_MAINNET_ETHERSCAN_KEY}" }                                     # lineascan
+mainnet-manta-pacific = { key = "EMPTY", url = "https://pacific-explorer.manta.network/api?" } # blockscout
+mainnet-mode = { key = "EMPTY", url = "https://explorer.mode.network/api?" }                   # blockscout
+mainnet-optimism = { key = "${OPTIMISM_MAINNET_ETHERSCAN_KEY}" }                               # optimistic.etherscan
+mainnet-scroll = { key = "${SCROLL_MAINNET_ETHERSCAN_KEY}" }                                   # scrollscan
+
+# SEPOLIA
+sepolia-arbitrum = { key = "${ARBITRUM_SEPOLIA_ETHERSCAN_KEY}" }
+sepolia-blast = { key = "${BLAST_SEPOLIA_ETHERSCAN_KEY}" }
+sepolia-ethereum = { key = "${ETHEREUM_SEPOLIA_ETHERSCAN_KEY}" }
+sepolia-linea = { key = "${LINEA_SEPOLIA_ETHERSCAN_KEY}" }
+sepolia-manta-pacific = { key = "EMPTY", url = "https://pacific-explorer.sepolia-testnet.manta.network/api?" }
+sepolia-mode = { key = "EMPTY", url = "https://sepolia.explorer.mode.network/api?" }
+sepolia-optimism = { key = "${OPTIMISM_SEPOLIA_ETHERSCAN_KEY}" }
+sepolia-scroll = { key = "${SCROLL_SEPOLIA_ETHERSCAN_KEY}" }
+
+[fmt]
+line_length = 120
+tab_width = 2
+bracket_spacing = true
+quote_style = "single"
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
