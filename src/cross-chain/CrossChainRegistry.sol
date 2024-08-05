@@ -1,17 +1,35 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import { AccessControl } from '@oz-v5/access/AccessControl.sol';
 import { RegistryBase } from './RegistryBase.sol';
 import { Storage } from '../lib/Storage.sol';
 import { Error } from '../lib/Error.sol';
 import { MsgType } from './messages/Message.sol';
 
-contract CrossChainRegistry is RegistryBase {
+contract CrossChainRegistry is RegistryBase, AccessControl {
+  event ChainSet(uint256 indexed chain, uint32 indexed hplDomain, string name);
+  event VaultSet(uint256 indexed chain, address indexed vault, address indexed underlyingAsset);
+  event HyperlaneRouteSet(uint256 indexed chain, bytes1 indexed msgType, address indexed executor);
+
+  uint256[] _chains;
+
+  bytes32 public constant WRITER_ROLE = keccak256('WRITER_ROLE');
+
   constructor(address storageAddress) {
+    _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     _storage = Storage(storageAddress);
   }
 
-  uint256[] _chains;
+  modifier onlyAdmin() {
+    _checkRole(DEFAULT_ADMIN_ROLE);
+    _;
+  }
+
+  modifier onlyWriter() {
+    _checkRole(WRITER_ROLE);
+    _;
+  }
 
   modifier onlyRegisteredChain(uint256 chain) {
     if (!_checkChainAlreadyRegistered(chain)) {
@@ -46,10 +64,6 @@ contract CrossChainRegistry is RegistryBase {
     return _getAddress(_getVaultUnderlyingAssetKey(chain, vault));
   }
 
-  function getStrategyExecutor(address eolVault, uint256 executorId, uint256 chain) public view returns (address) {
-    return _getAddress(_getStrategyExecutorKey(eolVault, executorId, chain));
-  }
-
   function getChainByHyperlaneDomain(uint32 hplDomain) public view returns (uint256) {
     return _getUint(_getChainByHyperlaneDomainKey(hplDomain));
   }
@@ -58,7 +72,17 @@ contract CrossChainRegistry is RegistryBase {
   //
   // TODO: update methods
 
-  function setChain(uint256 chain, string calldata name, uint32 hplDomain) public {
+  function changeAdmin(address newAdmin) public onlyAdmin {
+    // AccessControl emit event `RoleAdminChanged`
+    _setRoleAdmin(DEFAULT_ADMIN_ROLE, bytes32(uint256(uint160(newAdmin))));
+  }
+
+  function grantWriter(address target) public onlyAdmin {
+    // AccessControl emit event `RoleGranted`
+    grantRole(WRITER_ROLE, target);
+  }
+
+  function setChain(uint256 chain, string calldata name, uint32 hplDomain) public onlyWriter {
     if (_checkChainAlreadyRegistered(chain)) {
       revert Error.AlreadyRegistered();
     }
@@ -68,19 +92,16 @@ contract CrossChainRegistry is RegistryBase {
     _setUint(_getChainByHyperlaneDomainKey(hplDomain), chain);
   }
 
-  function setVault(uint256 chain, address vault, address underlyingAsset) public onlyRegisteredChain(chain) {
+  function setVault(uint256 chain, address vault, address underlyingAsset) public onlyWriter onlyRegisteredChain(chain) {
     _setAddress(_getVaultKey(chain, underlyingAsset), vault);
     _setAddress(_getVaultUnderlyingAssetKey(chain, vault), underlyingAsset);
   }
 
-  function setStrategyExecutor(address eolVault, uint256 executorId, uint256 chain, address executor)
+  function setHyperlaneRoute(uint256 chain, MsgType msgType, address target)
     external
+    onlyWriter
     onlyRegisteredChain(chain)
   {
-    _setAddress(_getStrategyExecutorKey(eolVault, executorId, chain), executor);
-  }
-
-  function setHyperlaneRoute(uint256 chain, MsgType msgType, address target) external onlyRegisteredChain(chain) {
     _setAddress(_getHyperlaneRouteKey(chain, msgType), target);
   }
 

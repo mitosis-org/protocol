@@ -15,6 +15,7 @@ contract TestCrossChainRegistry is Test {
   function setUp() public {
     Storage strg = new Storage();
     ccRegistry = new CrossChainRegistry(address(strg));
+    ccRegistry.grantWriter(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
   }
 
   function test_setChain() public {
@@ -53,27 +54,6 @@ contract TestCrossChainRegistry is Test {
     ccRegistry.setVault(chainID, vault, underlyingAsset);
     require(ccRegistry.getVault(chainID, underlyingAsset) == vault, 'invalid getVault');
     require(ccRegistry.getVaultUnderlyingAsset(chainID, vault) == underlyingAsset, 'invalid getVault');
-  }
-
-  function test_setStrategyExecutor() public {
-    uint256 chainID = 1;
-    address eolVault = address(1);
-    uint256 strategyExecutorID = 1;
-
-    address ethereumStrategyExecutor = address(2);
-
-    vm.expectRevert(); // 'not registered chain'
-    ccRegistry.setStrategyExecutor(eolVault, strategyExecutorID, chainID, ethereumStrategyExecutor);
-
-    string memory name = 'Ethereum';
-    uint32 hplDomain = 1;
-    ccRegistry.setChain(chainID, name, hplDomain);
-
-    ccRegistry.setStrategyExecutor(eolVault, strategyExecutorID, chainID, ethereumStrategyExecutor);
-    require(
-      ccRegistry.getStrategyExecutor(eolVault, strategyExecutorID, chainID) == ethereumStrategyExecutor,
-      'invalid getStrategyExecutor'
-    );
   }
 
   function test_setHyperlaneRoute() public {
