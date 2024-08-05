@@ -110,7 +110,7 @@ contract CrossChainRegistry is RegistryBase {
   }
 
   function _getChainByHyperlaneDomainKey(uint32 hplDomain) internal pure returns (bytes32) {
-    return keccak256(abi.encodePacked('hyperlane_domain', hplDomain));
+    return keccak256(abi.encodePacked('hyperlane_domain', hplDomain, ".chain_id"));
   }
 
   function _checkChainAlreadyRegistered(uint256 chain) internal view returns (bool) {
