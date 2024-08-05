@@ -54,7 +54,7 @@ Here's full list of environment variables:
 
   | Network                                           | Chain ID                                                     | RPC                         | Etherscan Key                    |
   | ------------------------------------------------- | ------------------------------------------------------------ | --------------------------- | -------------------------------- |
-  | MITOSIS                                           | -                                                            | `MITOSIS_MAINNET_RPC`       | `MITOSIS_MAINNET_ETHERSCAN_KEY`  |
+  | [`Mitosis`](https://mitosis.org/)                 | TBD                                                          | `MITOSIS_MAINNET_RPC`       | `MITOSIS_MAINNET_ETHERSCAN_KEY`  |
   | [`Arbitrum`](https://arbitrum.io/)                | [42161](https://chainlist.org/?testnets=true&search=42161)   | `ARBITRUM_MAINNET_RPC`      | `ARBITRUM_MAINNET_ETHERSCAN_KEY` |
   | [`Blast`](https://blast.io/)                      | [81457](https://chainlist.org/?testnets=true&search=81457)   | `BLAST_MAINNET_RPC`         | `BLAST_MAINNET_ETHERSCAN_KEY`    |
   | [`Ethereum`](https://ethereum.org/)               | [1](https://chainlist.org/?testnets=true&search=1)           | `ETHEREUM_MAINNET_RPC`      | `ETHEREUM_MAINNET_ETHERSCAN_KEY` |
@@ -68,7 +68,7 @@ Here's full list of environment variables:
 
   | Network                                           | Chain ID                                                         | RPC                         | Etherscan Key                    |
   | ------------------------------------------------- | ---------------------------------------------------------------- | --------------------------- | -------------------------------- |
-  | MITOSIS                                           | -                                                                | `MITOSIS_DEVNET_RPC`        | `MITOSIS_DEVNET_ETHERSCAN_KEY`   |
+  | [`Mitosis`](https://mitosis.org/)                 | TBD                                                              | `MITOSIS_DEVNET_RPC`        | `MITOSIS_DEVNET_ETHERSCAN_KEY`   |
   | [`Arbitrum`](https://arbitrum.io/)                | [421614](https://chainlist.org/?testnets=true&search=421614)     | `ARBITRUM_SEPOLIA_RPC`      | `ARBITRUM_SEPOLIA_ETHERSCAN_KEY` |
   | [`Blast`](https://blast.io/)                      | [23888](https://chainlist.org/?testnets=true&search=23888)       | `BLAST_SEPOLIA_RPC`         | `BLAST_SEPOLIA_ETHERSCAN_KEY`    |
   | [`Ethereum`](https://ethereum.org/)               | [11155111](https://chainlist.org/?testnets=true&search=11155111) | `ETHEREUM_SEPOLIA_RPC`      | `ETHEREUM_SEPOLIA_ETHERSCAN_KEY` |
