@@ -2,9 +2,9 @@
 src = "src"
 out = "out"
 script = "script"
-libs = ["lib", "node_modules"]
-solc = "0.8.26"                # to have cancun support
-evm_version = 'cancun'         # by default
+libs = ["lib", "dependencies", "node_modules"]
+solc = "0.8.26"                                # to have cancun support
+evm_version = 'cancun'                         # by default
 optimizer = true
 optimizer_runs = 99999
 
@@ -57,3 +57,10 @@ bracket_spacing = true
 quote_style = "single"
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+[dependencies]
+solady = "0.0.230"
+forge-std = "1.9.1"
+openzeppelin-foundry-upgrades = "0.3.1"
+"@openzeppelin-contracts-upgradeable" = "5.0.2"
+"@openzeppelin-contracts" = "5.0.2"

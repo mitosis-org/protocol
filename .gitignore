@@ -46,3 +46,5 @@ node_modules
 .yarn/install-state.gz
 
 script/foundry/Test.s.sol
+
+dependencies
