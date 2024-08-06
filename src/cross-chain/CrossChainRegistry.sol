@@ -55,7 +55,7 @@ contract CrossChainRegistry is
   function initialize(
     address owner,
     address kvContainer
-  ) public initializer {
+  ) external initializer {
     _getStorageV1().kvContainer = KVContainer(kvContainer);
     __Ownable2Step_init();
     _transferOwnership(owner);
@@ -64,36 +64,36 @@ contract CrossChainRegistry is
 
   // View functions
 
-  function getChains() public view returns (uint256[] memory) {
+  function getChains() external view returns (uint256[] memory) {
     return _getStorageV1().chains;
   }
 
-  function getChainName(uint256 chain) public view returns (string memory) {
+  function getChainName(uint256 chain) external view returns (string memory) {
     bytes32 key = _getChainNameKey(chain);
     return _getStorageV1().kvContainer.getString(key);
   }
 
-  function getHyperlaneDomain(uint256 chain) public view returns (uint32) {
+  function getHyperlaneDomain(uint256 chain) external view returns (uint32) {
     bytes32 key = _getHyperlaneDomainKey(chain);
     return uint32(_getStorageV1().kvContainer.getUint(key));
   }
 
-  function getVault(uint256 chain, address asset) public view returns (address) {
+  function getVault(uint256 chain, address asset) external view returns (address) {
     bytes32 key = _getVaultKey(chain, asset);
     return _getStorageV1().kvContainer.getAddress(key);
   }
 
-  function getVaultUnderlyingAsset(uint256 chain, address vault) public view returns (address) {
+  function getVaultUnderlyingAsset(uint256 chain, address vault) external view returns (address) {
     bytes32 key = _getVaultUnderlyingAssetKey(chain, vault);
     return _getStorageV1().kvContainer.getAddress(key);
   }
 
-  function getChainByHyperlaneDomain(uint32 hplDomain) public view returns (uint256) {
+  function getChainByHyperlaneDomain(uint32 hplDomain) external view returns (uint256) {
     bytes32 key = _getChainByHyperlaneDomainKey(hplDomain);
     return _getStorageV1().kvContainer.getUint(key);
   }
 
-  function getHyperlaneRoute(uint32 hplDomain, MsgType msgType) public view returns (address) {
+  function getHyperlaneRoute(uint32 hplDomain, MsgType msgType) external view returns (address) {
     bytes32 key = _getHyperlaneRouteKey(hplDomain, msgType);
     return _getStorageV1().kvContainer.getAddress(key);
   }
@@ -102,7 +102,7 @@ contract CrossChainRegistry is
   //
   // TODO: update methods
 
-  function setChain(uint256 chain, string calldata name, uint32 hplDomain) public onlyRegisterer {
+  function setChain(uint256 chain, string calldata name, uint32 hplDomain) external onlyRegisterer {
     if (_checkChainAlreadyRegistered(chain)) {
       revert Error.AlreadyRegistered();
     }
@@ -116,7 +116,7 @@ contract CrossChainRegistry is
     emit ChainSet(chain, hplDomain, name);
   }
 
-  function setVault(uint256 chain, address vault, address underlyingAsset) public onlyRegisterer onlyRegisteredChain(chain) {
+  function setVault(uint256 chain, address vault, address underlyingAsset) external onlyRegisterer onlyRegisteredChain(chain) {
     KVContainer container = _getStorageV1().kvContainer;
     container.setAddress(_getVaultKey(chain, underlyingAsset), vault);
     container.setAddress(_getVaultUnderlyingAssetKey(chain, vault), underlyingAsset);
