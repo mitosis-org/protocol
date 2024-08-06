@@ -5,4 +5,3 @@
 @oz-v5=dependencies/@openzeppelin-contracts-5.0.2
 
 @openzeppelin/contracts=dependencies/@openzeppelin-contracts-5.0.2
-@openzeppelin-contracts-5.0.2/contracts=dependencies/@openzeppelin-contracts-upgradeable-5.0.2
