@@ -23,7 +23,7 @@ interface ICrossChainRegistry {
    * that this will not be the case in the future, this variable should
    * be removed.
    */
-  function getHyperlaneRoute(uint256 chain, MsgType msgType) external view returns (address);
+  function getHyperlaneRoute(uint32 hplDomain, MsgType msgType) external view returns (address);
 
   /// @dev Returns the Other chain's MitosisVault address by ChainID, Asset on Mitosis address.
   function getVault(uint256 chain, address asset) external view returns (address);
@@ -31,11 +31,17 @@ interface ICrossChainRegistry {
   /// @dev Returns the Asset on Mitosis address by ChainId, Other chain's MitosisVault address.
   function getVaultUnderlyingAsset(uint256 chain, address vault) external view returns (address);
 
-  /// @dev Returns the Other chain's StrategyExecutor address by EOLVault address, StrategyExecutorID, ChainID.
-  function getStrategyExecutor(address eolVault, uint256 executorId, uint256 chain) external view returns (address);
-
   /// @dev Returns the ChainID by Hyperlane domain.
   function getChainByHyperlaneDomain(uint32 hplDomain) external view returns (uint256);
+
+  /// @dev Changes OpenZeppelin AccessControl admin address.
+  function changeAdmin(address newAdmin) external;
+
+  /// @dev Grants OpenZeppelin AccessControl WRITER role.
+  function grantWriter(address target) external;
+
+  /// @dev Revokes OpenZeppelin AccessControl WRITER role.
+  function revokeWriter(address target) external;
 
   /// @dev Sets the chain information including ChainID, name, and Hyperlane domain.
   function setChain(uint256 chain, string calldata name, uint32 hplDomain) external;
@@ -43,9 +49,6 @@ interface ICrossChainRegistry {
   /// @dev Sets the vault address and its underlying asset for a specific ChainID.
   function setVault(uint256 chain, address vault, address underlyingAsset) external;
 
-  /// @dev Sets the StrategyExecutor address for a given EOLVault, StrategyExecutorID, and ChainID.
-  function setStrategyExecutor(address eolVault, uint256 executorId, uint256 chain, address executor) external;
-
   /// @dev Sets the Hyperlane route for a specific ChainID and message type to a target address.
-  function setHyperlaneRoute(uint256 chain, MsgType msgType, address target) external;
+  function setHyperlaneRoute(uint32 hplDomain, MsgType msgType, address target) external;
 }
