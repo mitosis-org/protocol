@@ -5,7 +5,6 @@ import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeabl
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { ICrossChainRegistry } from '../interfaces/cross-chain/ICrossChainRegistry.sol';
-import { Error } from '../lib/Error.sol';
 import { MsgType } from './messages/Message.sol';
 
 contract CrossChainRegistryStorageV1 {
@@ -87,11 +86,14 @@ contract CrossChainRegistry is
   AccessControlUpgradeable,
   CrossChainRegistryStorageV1
 {
+  bytes32 public constant REGISTERER_ROLE = keccak256('REGISTERER_ROLE');
+
   event ChainSet(uint256 indexed chain, uint32 indexed hplDomain, string name);
   event VaultSet(uint256 indexed chain, address indexed vault, address indexed underlyingAsset);
   event HyperlaneRouteSet(uint32 indexed hplDomain, bytes1 indexed msgType, address indexed dest);
 
-  bytes32 public constant REGISTERER_ROLE = keccak256('REGISTERER_ROLE');
+  error CrossChainRegistry__NotRegistered();
+  error CrossChainRegistry__AlreadyRegistered();
 
   modifier onlyRegisterer() {
     _checkRole(REGISTERER_ROLE);
@@ -100,7 +102,7 @@ contract CrossChainRegistry is
 
   modifier onlyRegisteredChain(uint256 chain) {
     if (!_checkChainAlreadyRegistered(chain)) {
-      revert Error.NotRegistered();
+      revert CrossChainRegistry__NotRegistered();
     }
     _;
   }
@@ -150,7 +152,7 @@ contract CrossChainRegistry is
 
   function setChain(uint256 chain, string calldata name, uint32 hplDomain) external onlyRegisterer {
     if (_checkChainAlreadyRegistered(chain)) {
-      revert Error.AlreadyRegistered();
+      revert CrossChainRegistry__AlreadyRegistered();
     }
     StorageV1 storage $ = _getStorageV1();
     $.chains.push(chain);
