@@ -39,7 +39,6 @@ contract CrossChainRegistry is
   event HyperlaneRouteSet(uint32 indexed hplDomain, bytes1 indexed msgType, address indexed dest);
 
   constructor(address kvContainer) {
-    _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     _getStorageV1().kvContainer = KVContainer(kvContainer);
   }
 
@@ -58,6 +57,7 @@ contract CrossChainRegistry is
   function initialize(address owner) public initializer {
     __Ownable2Step_init();
     _transferOwnership(owner);
+    _grantRole(DEFAULT_ADMIN_ROLE, owner);
   }
 
   modifier onlyAdmin() {
