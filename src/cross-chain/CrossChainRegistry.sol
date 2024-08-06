@@ -42,16 +42,6 @@ contract CrossChainRegistry is
     _getStorageV1().kvContainer = KVContainer(kvContainer);
   }
 
-  //=========== merge OwnableUpgradeable & Ownable2StepUpgradeable
-
-  function transferOwnership(address owner) public override {
-    Ownable2StepUpgradeable.transferOwnership(owner);
-  }
-
-  function _transferOwnership(address owner) internal override {
-    Ownable2StepUpgradeable._transferOwnership(owner);
-  }
-
   //===========
 
   function initialize(address owner) public initializer {
