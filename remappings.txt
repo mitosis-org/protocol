@@ -3,3 +3,6 @@
 @ozfu-v5=dependencies/openzeppelin-foundry-upgrades-0.3.1/src
 @ozu-v5=dependencies/@openzeppelin-contracts-upgradeable-5.0.2
 @oz-v5=dependencies/@openzeppelin-contracts-5.0.2
+
+@openzeppelin/contracts=dependencies/@openzeppelin-contracts-5.0.2
+@openzeppelin-contracts-5.0.2/contracts=dependencies/@openzeppelin-contracts-upgradeable-5.0.2
