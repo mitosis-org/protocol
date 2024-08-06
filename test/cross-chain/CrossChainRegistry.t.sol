@@ -16,7 +16,35 @@ contract TestCrossChainRegistry is Test {
     KVContainer container = new KVContainer();
     container.initialize(msg.sender);
     ccRegistry = new CrossChainRegistry(address(container));
+    ccRegistry.initialize(msg.sender);
     ccRegistry.grantWriter(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
+  }
+
+  function test_auth() public {
+    ccRegistry.revokeRole(ccRegistry.WRITER_ROLE(), 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
+
+    uint256 chainID = 1;
+    string memory name = 'Ethereum';
+    uint32 hplDomain = 1;
+
+    vm.expectRevert(); // 'AccessControlUnauthorizedAccount'
+    ccRegistry.setChain(chainID, name, hplDomain);
+
+    ccRegistry.grantWriter(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
+    ccRegistry.setChain(chainID, name, hplDomain);
+
+    vm.startPrank(address(1));
+    vm.expectRevert(); // AccessControlUnauthorizedAccount
+    ccRegistry.changeAdmin(address(1));
+    vm.stopPrank();
+
+    ccRegistry.changeAdmin(address(1));
+
+    vm.startPrank(address(1));
+    ccRegistry.changeAdmin(address(2));
+    vm.stopPrank();
+
+    require(ccRegistry.hasRole(ccRegistry.DEFAULT_ADMIN_ROLE(), address(2)), 'invalid changeAdmin');
   }
 
   function test_setChain() public {

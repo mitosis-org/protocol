@@ -38,7 +38,7 @@ contract CrossChainRegistry is
   event VaultSet(uint256 indexed chain, address indexed vault, address indexed underlyingAsset);
   event HyperlaneRouteSet(uint32 indexed hplDomain, bytes1 indexed msgType, address indexed dest);
 
-  constructor(address kvContainer) initializer {
+  constructor(address kvContainer) {
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     _getStorageV1().kvContainer = KVContainer(kvContainer);
   }
@@ -118,8 +118,8 @@ contract CrossChainRegistry is
   // TODO: update methods
 
   function changeAdmin(address newAdmin) public onlyAdmin {
-    // AccessControl emit event `RoleAdminChanged`
-    _setRoleAdmin(DEFAULT_ADMIN_ROLE, bytes32(uint256(uint160(newAdmin))));
+    // AccessControl emit event `RoleGranted`
+    grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
   }
 
   function grantWriter(address target) public onlyAdmin {
