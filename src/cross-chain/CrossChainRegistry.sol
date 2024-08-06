@@ -17,8 +17,8 @@ contract CrossChainRegistryStorageV1 {
 
   bytes32 public constant WRITER_ROLE = keccak256('WRITER_ROLE');
 
-  // keccak256(abi.encode(uint256(keccak256("mitosis-protocol.storage.CrossChainRegistryStorageV1.v1")) - 1)) & ~bytes32(uint256(0xff))
-  bytes32 public constant StorageV1Location = 0x5df85134e0cd615622b98ff98ced84d19d412f4c64e5a4bd5c374ebc77026200;
+  // keccak256(abi.encode(uint256(keccak256("mitosis.storage.CrossChainRegistryStorage.v1")) - 1)) & ~bytes32(uint256(0xff))
+  bytes32 public constant StorageV1Location = 0x6acd94fd2c3942266402dfa199ad817aa94ac6cd3de826b0b51cbc305ff61c00;
 
   function _getStorageV1() internal pure returns (StorageV1 storage $) {
     // slither-disable-next-line assembly
