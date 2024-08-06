@@ -38,13 +38,13 @@ contract CrossChainRegistry is
   event VaultSet(uint256 indexed chain, address indexed vault, address indexed underlyingAsset);
   event HyperlaneRouteSet(uint32 indexed hplDomain, bytes1 indexed msgType, address indexed dest);
 
-  constructor(address kvContainer) {
-    _getStorageV1().kvContainer = KVContainer(kvContainer);
-  }
-
   //===========
 
-  function initialize(address owner) public initializer {
+  function initialize(
+    address owner,
+    address kvContainer
+  ) public initializer {
+    _getStorageV1().kvContainer = KVContainer(kvContainer);
     __Ownable2Step_init();
     _transferOwnership(owner);
     _grantRole(DEFAULT_ADMIN_ROLE, owner);

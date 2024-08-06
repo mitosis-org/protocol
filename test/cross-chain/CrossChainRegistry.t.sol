@@ -15,8 +15,8 @@ contract TestCrossChainRegistry is Test {
   function setUp() public {
     KVContainer container = new KVContainer();
     container.initialize(msg.sender);
-    ccRegistry = new CrossChainRegistry(address(container));
-    ccRegistry.initialize(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
+    ccRegistry = new CrossChainRegistry();
+    ccRegistry.initialize(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496, address(container));
     ccRegistry.grantWriter(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
   }
 
