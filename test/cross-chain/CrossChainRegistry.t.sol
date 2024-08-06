@@ -71,21 +71,4 @@ contract TestCrossChainRegistry is Test {
     require(ccRegistry.getVault(chainID, underlyingAsset) == vault, 'invalid getVault');
     require(ccRegistry.getVaultUnderlyingAsset(chainID, vault) == underlyingAsset, 'invalid getVault');
   }
-
-  function test_setHyperlaneRoute() public {
-    uint256 chainID = 1;
-    uint32 hplDomain = 1;
-    address msgDepositDestination = address(1);
-
-    vm.expectRevert(); // 'not registered chain'
-    ccRegistry.setHyperlaneRoute(hplDomain, MsgType.MsgDeposit, msgDepositDestination);
-
-    string memory name = 'Ethereum';
-    ccRegistry.setChain(chainID, name, hplDomain);
-
-    ccRegistry.setHyperlaneRoute(hplDomain, MsgType.MsgDeposit, msgDepositDestination);
-    require(
-      ccRegistry.getHyperlaneRoute(hplDomain, MsgType.MsgDeposit) == msgDepositDestination, 'invalid getHyperlaneRoute'
-    );
-  }
 }

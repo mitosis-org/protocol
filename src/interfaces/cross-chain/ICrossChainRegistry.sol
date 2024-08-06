@@ -13,18 +13,6 @@ interface ICrossChainRegistry {
   /// @dev Returns the Hyperlane domain by ChainID.
   function getHyperlaneDomain(uint256 chain) external view returns (uint32);
 
-  /**
-   * @dev Returns the Hyperlane destination address by ChainID, MsgType.
-   *
-   * This K/V storage allows routing to multiple contracts depending on
-   * the message type. (Variable added because Hyperlane.Router can only
-   * enroll one address in one domain by default). This variable was used
-   * in the initial PoC and is currently deprecated; if it becomes clear
-   * that this will not be the case in the future, this variable should
-   * be removed.
-   */
-  function getHyperlaneRoute(uint32 hplDomain, MsgType msgType) external view returns (address);
-
   /// @dev Returns the Other chain's MitosisVault address by ChainID, Asset on Mitosis address.
   function getVault(uint256 chain, address asset) external view returns (address);
 
@@ -39,7 +27,4 @@ interface ICrossChainRegistry {
 
   /// @dev Sets the vault address and its underlying asset for a specific ChainID.
   function setVault(uint256 chain, address vault, address underlyingAsset) external;
-
-  /// @dev Sets the Hyperlane route for a specific ChainID and message type to a target address.
-  function setHyperlaneRoute(uint32 hplDomain, MsgType msgType, address target) external;
 }

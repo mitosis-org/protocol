@@ -93,11 +93,6 @@ contract CrossChainRegistry is
     return _getStorageV1().kvContainer.getUint(key);
   }
 
-  function getHyperlaneRoute(uint32 hplDomain, MsgType msgType) external view returns (address) {
-    bytes32 key = _getHyperlaneRouteKey(hplDomain, msgType);
-    return _getStorageV1().kvContainer.getAddress(key);
-  }
-
   // Mutative functions
   //
   // TODO: update methods
@@ -121,14 +116,6 @@ contract CrossChainRegistry is
     container.setAddress(_getVaultKey(chain, underlyingAsset), vault);
     container.setAddress(_getVaultUnderlyingAssetKey(chain, vault), underlyingAsset);
     emit VaultSet(chain, vault, underlyingAsset);
-  }
-
-  function setHyperlaneRoute(uint32 hplDomain, MsgType msgType, address dest) external onlyRegisterer {
-    uint256 chain = getChainByHyperlaneDomain(hplDomain);
-    if (chain == 0) revert Error.NotRegistered();
-    KVContainer container = _getStorageV1().kvContainer;
-    container.setAddress(_getHyperlaneRouteKey(hplDomain, msgType), dest);
-    emit HyperlaneRouteSet(hplDomain, bytes1(uint8(msgType)), dest);
   }
 
   // Internal functions
@@ -156,10 +143,6 @@ contract CrossChainRegistry is
 
   function _getChainByHyperlaneDomainKey(uint32 hplDomain) internal pure returns (bytes32) {
     return keccak256(abi.encodePacked('hyperlane_domain', hplDomain, '.chain_id'));
-  }
-
-  function _getHyperlaneRouteKey(uint32 hplDomain, MsgType msgType) internal pure returns (bytes32) {
-    return keccak256(abi.encodePacked('hyperlane_domain', hplDomain, '.routes', msgType));
   }
 
   function _checkChainAlreadyRegistered(uint256 chain) internal view returns (bool) {
