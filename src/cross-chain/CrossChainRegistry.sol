@@ -15,8 +15,6 @@ contract CrossChainRegistryStorageV1 {
     uint256[] chains;
   }
 
-  bytes32 public constant WRITER_ROLE = keccak256('WRITER_ROLE');
-
   // keccak256(abi.encode(uint256(keccak256("mitosis.storage.CrossChainRegistryStorage.v1")) - 1)) & ~bytes32(uint256(0xff))
   bytes32 public constant StorageV1Location = 0x6acd94fd2c3942266402dfa199ad817aa94ac6cd3de826b0b51cbc305ff61c00;
 
@@ -38,6 +36,20 @@ contract CrossChainRegistry is
   event VaultSet(uint256 indexed chain, address indexed vault, address indexed underlyingAsset);
   event HyperlaneRouteSet(uint32 indexed hplDomain, bytes1 indexed msgType, address indexed dest);
 
+  bytes32 public constant REGISTERER_ROLE = keccak256('REGISTERER_ROLE');
+
+  modifier onlyRegisterer() {
+    _checkRole(REGISTERER_ROLE);
+    _;
+  }
+
+  modifier onlyRegisteredChain(uint256 chain) {
+    if (!_checkChainAlreadyRegistered(chain)) {
+      revert Error.NotRegistered();
+    }
+    _;
+  }
+
   //===========
 
   function initialize(
@@ -48,23 +60,6 @@ contract CrossChainRegistry is
     __Ownable2Step_init();
     _transferOwnership(owner);
     _grantRole(DEFAULT_ADMIN_ROLE, owner);
-  }
-
-  modifier onlyAdmin() {
-    _checkRole(DEFAULT_ADMIN_ROLE);
-    _;
-  }
-
-  modifier onlyWriter() {
-    _checkRole(WRITER_ROLE);
-    _;
-  }
-
-  modifier onlyRegisteredChain(uint256 chain) {
-    if (!_checkChainAlreadyRegistered(chain)) {
-      revert Error.NotRegistered();
-    }
-    _;
   }
 
   // View functions
@@ -107,22 +102,7 @@ contract CrossChainRegistry is
   //
   // TODO: update methods
 
-  function changeAdmin(address newAdmin) public onlyAdmin {
-    // AccessControl emit event `RoleGranted`
-    grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
-  }
-
-  function grantWriter(address target) public onlyAdmin {
-    // AccessControl emit event `RoleGranted`
-    grantRole(WRITER_ROLE, target);
-  }
-
-  function revokeWriter(address target) public onlyAdmin {
-    // AccessControl emit event `RoleRevoked`
-    revokeRole(WRITER_ROLE, target);
-  }
-
-  function setChain(uint256 chain, string calldata name, uint32 hplDomain) public onlyWriter {
+  function setChain(uint256 chain, string calldata name, uint32 hplDomain) public onlyRegisterer {
     if (_checkChainAlreadyRegistered(chain)) {
       revert Error.AlreadyRegistered();
     }
@@ -136,14 +116,14 @@ contract CrossChainRegistry is
     emit ChainSet(chain, hplDomain, name);
   }
 
-  function setVault(uint256 chain, address vault, address underlyingAsset) public onlyWriter onlyRegisteredChain(chain) {
+  function setVault(uint256 chain, address vault, address underlyingAsset) public onlyRegisterer onlyRegisteredChain(chain) {
     KVContainer container = _getStorageV1().kvContainer;
     container.setAddress(_getVaultKey(chain, underlyingAsset), vault);
     container.setAddress(_getVaultUnderlyingAssetKey(chain, vault), underlyingAsset);
     emit VaultSet(chain, vault, underlyingAsset);
   }
 
-  function setHyperlaneRoute(uint32 hplDomain, MsgType msgType, address dest) external onlyWriter {
+  function setHyperlaneRoute(uint32 hplDomain, MsgType msgType, address dest) external onlyRegisterer {
     uint256 chain = getChainByHyperlaneDomain(hplDomain);
     if (chain == 0) revert Error.NotRegistered();
     KVContainer container = _getStorageV1().kvContainer;

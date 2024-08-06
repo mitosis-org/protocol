@@ -34,15 +34,6 @@ interface ICrossChainRegistry {
   /// @dev Returns the ChainID by Hyperlane domain.
   function getChainByHyperlaneDomain(uint32 hplDomain) external view returns (uint256);
 
-  /// @dev Changes OpenZeppelin AccessControl admin address.
-  function changeAdmin(address newAdmin) external;
-
-  /// @dev Grants OpenZeppelin AccessControl WRITER role.
-  function grantWriter(address target) external;
-
-  /// @dev Revokes OpenZeppelin AccessControl WRITER role.
-  function revokeWriter(address target) external;
-
   /// @dev Sets the chain information including ChainID, name, and Hyperlane domain.
   function setChain(uint256 chain, string calldata name, uint32 hplDomain) external;
 

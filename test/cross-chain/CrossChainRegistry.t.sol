@@ -17,11 +17,11 @@ contract TestCrossChainRegistry is Test {
     container.initialize(msg.sender);
     ccRegistry = new CrossChainRegistry();
     ccRegistry.initialize(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496, address(container));
-    ccRegistry.grantWriter(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
+    ccRegistry.grantRole(ccRegistry.REGISTERER_ROLE(), 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
   }
 
   function test_auth() public {
-    ccRegistry.revokeRole(ccRegistry.WRITER_ROLE(), 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
+    ccRegistry.revokeRole(ccRegistry.REGISTERER_ROLE(), 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
 
     uint256 chainID = 1;
     string memory name = 'Ethereum';
@@ -30,21 +30,8 @@ contract TestCrossChainRegistry is Test {
     vm.expectRevert(); // 'AccessControlUnauthorizedAccount'
     ccRegistry.setChain(chainID, name, hplDomain);
 
-    ccRegistry.grantWriter(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
+    ccRegistry.grantRole(ccRegistry.REGISTERER_ROLE(), 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
     ccRegistry.setChain(chainID, name, hplDomain);
-
-    vm.startPrank(address(1));
-    vm.expectRevert(); // AccessControlUnauthorizedAccount
-    ccRegistry.changeAdmin(address(1));
-    vm.stopPrank();
-
-    ccRegistry.changeAdmin(address(1));
-
-    vm.startPrank(address(1));
-    ccRegistry.changeAdmin(address(2));
-    vm.stopPrank();
-
-    require(ccRegistry.hasRole(ccRegistry.DEFAULT_ADMIN_ROLE(), address(2)), 'invalid changeAdmin');
   }
 
   function test_setChain() public {
