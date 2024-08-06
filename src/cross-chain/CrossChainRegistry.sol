@@ -5,13 +5,11 @@ import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeabl
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { ICrossChainRegistry } from '../interfaces/cross-chain/ICrossChainRegistry.sol';
-import { KVContainer } from '../lib/KVContainer.sol';
 import { Error } from '../lib/Error.sol';
 import { MsgType } from './messages/Message.sol';
 
 contract CrossChainRegistryStorageV1 {
   struct StorageV1 {
-    KVContainer kvContainer;
     uint256[] chains;
   }
 
@@ -22,6 +20,63 @@ contract CrossChainRegistryStorageV1 {
     // slither-disable-next-line assembly
     assembly {
       $.slot := StorageV1Location
+    }
+  }
+
+  // TODO(ray)
+  function _getString(bytes32 key) internal view returns (string memory result) {
+    assembly {
+      let length := sload(key)
+      result := mload(0x40)
+      mstore(result, length)
+      let content := sload(add(key, 1))
+      mstore(add(result, 0x20), content)
+      mstore(0x40, add(result, add(0x20, length)))
+    }
+  }
+
+  function _getUint32(bytes32 key) internal view returns (uint32 result) {
+    assembly {
+      result := sload(key)
+    }
+  }
+
+  function _getAddress(bytes32 key) internal view returns (address result) {
+    assembly {
+      result := sload(key)
+    }
+  }
+
+  function _getUint256(bytes32 key) internal view returns (uint256 result) {
+    assembly {
+      result := sload(key)
+    }
+  }
+
+  // TODO(ray)
+  function _setString(bytes32 key, string memory value) internal {
+    assembly {
+      let length := mload(value)
+      sstore(key, length)
+      sstore(add(key, 1), value)
+    }
+  }
+
+  function _setUint32(bytes32 key, uint32 value) internal {
+    assembly {
+      sstore(key, value)
+    }
+  }
+
+  function _setAddress(bytes32 key, address value) internal {
+    assembly {
+      sstore(key, value)
+    }
+  }
+
+  function _setUint256(bytes32 key, uint256 value) internal {
+    assembly {
+      sstore(key, value)
     }
   }
 }
@@ -52,11 +107,7 @@ contract CrossChainRegistry is
 
   //===========
 
-  function initialize(
-    address owner,
-    address kvContainer
-  ) external initializer {
-    _getStorageV1().kvContainer = KVContainer(kvContainer);
+  function initialize(address owner) external initializer {
     __Ownable2Step_init();
     _transferOwnership(owner);
     _grantRole(DEFAULT_ADMIN_ROLE, owner);
@@ -70,27 +121,27 @@ contract CrossChainRegistry is
 
   function getChainName(uint256 chain) external view returns (string memory) {
     bytes32 key = _getChainNameKey(chain);
-    return _getStorageV1().kvContainer.getString(key);
+    return _getString(key);
   }
 
   function getHyperlaneDomain(uint256 chain) external view returns (uint32) {
     bytes32 key = _getHyperlaneDomainKey(chain);
-    return uint32(_getStorageV1().kvContainer.getUint(key));
+    return _getUint32(key);
   }
 
   function getVault(uint256 chain, address asset) external view returns (address) {
     bytes32 key = _getVaultKey(chain, asset);
-    return _getStorageV1().kvContainer.getAddress(key);
+    return _getAddress(key);
   }
 
   function getVaultUnderlyingAsset(uint256 chain, address vault) external view returns (address) {
     bytes32 key = _getVaultUnderlyingAssetKey(chain, vault);
-    return _getStorageV1().kvContainer.getAddress(key);
+    return _getAddress(key);
   }
 
   function getChainByHyperlaneDomain(uint32 hplDomain) external view returns (uint256) {
     bytes32 key = _getChainByHyperlaneDomainKey(hplDomain);
-    return _getStorageV1().kvContainer.getUint(key);
+    return _getUint256(key);
   }
 
   // Mutative functions
@@ -103,18 +154,19 @@ contract CrossChainRegistry is
     }
     StorageV1 storage $ = _getStorageV1();
     $.chains.push(chain);
-
-    KVContainer container = $.kvContainer;
-    container.setString(_getChainNameKey(chain), name);
-    container.setUint(_getHyperlaneDomainKey(chain), hplDomain);
-    container.setUint(_getChainByHyperlaneDomainKey(hplDomain), chain);
+    _setString(_getChainNameKey(chain), name);
+    _setUint32(_getHyperlaneDomainKey(chain), hplDomain);
+    _setUint256(_getChainByHyperlaneDomainKey(hplDomain), chain);
     emit ChainSet(chain, hplDomain, name);
   }
 
-  function setVault(uint256 chain, address vault, address underlyingAsset) external onlyRegisterer onlyRegisteredChain(chain) {
-    KVContainer container = _getStorageV1().kvContainer;
-    container.setAddress(_getVaultKey(chain, underlyingAsset), vault);
-    container.setAddress(_getVaultUnderlyingAssetKey(chain, vault), underlyingAsset);
+  function setVault(uint256 chain, address vault, address underlyingAsset)
+    external
+    onlyRegisterer
+    onlyRegisteredChain(chain)
+  {
+    _setAddress(_getVaultKey(chain, underlyingAsset), vault);
+    _setAddress(_getVaultUnderlyingAssetKey(chain, vault), underlyingAsset);
     emit VaultSet(chain, vault, underlyingAsset);
   }
 
