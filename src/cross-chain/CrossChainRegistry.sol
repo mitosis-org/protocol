@@ -90,7 +90,7 @@ contract CrossChainRegistry is
 
   event ChainSet(uint256 indexed chain, uint32 indexed hplDomain, string name);
   event VaultSet(uint256 indexed chain, address indexed vault, address indexed underlyingAsset);
-  event HyperlaneRouteSet(uint32 indexed hplDomain, bytes1 indexed msgType, address indexed dest);
+  event HyperlaneRouteSet(uint32 indexed hplDomain, bytes1 indexed msgType, address indexed dst);
 
   error CrossChainRegistry__NotRegistered();
   error CrossChainRegistry__AlreadyRegistered();
