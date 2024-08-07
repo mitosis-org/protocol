@@ -44,10 +44,10 @@ contract TestCrossChainRegistry is Test {
     uint256[] memory chains = ccRegistry.getChains();
     require(chains.length == 1, 'invalid getChains');
     require(chains[0] == chainID, 'invalid getChains');
-    // require( // TODO(ray)
-    //   keccak256(abi.encodePacked(ccRegistry.getChainName(1))) == keccak256(abi.encodePacked(name)),
-    //   'invalid getChainNmae'
-    // );
+    require(
+      keccak256(abi.encodePacked(ccRegistry.getChainName(1))) == keccak256(abi.encodePacked(name)),
+      'invalid getChainNmae'
+    );
     require(ccRegistry.getHyperlaneDomain(chainID) == hplDomain, 'invalid getHyperlaneDomain');
     require(ccRegistry.getChainByHyperlaneDomain(hplDomain) == chainID, 'invalid getChainByHyperlaneDomain');
   }

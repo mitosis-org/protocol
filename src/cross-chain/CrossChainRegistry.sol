@@ -22,15 +22,13 @@ contract CrossChainRegistryStorageV1 {
     }
   }
 
-  // TODO(ray)
-  function _getString(bytes32 key) internal view returns (string memory result) {
+  function _getString(bytes32 key) public view returns (string memory result) {
+    bytes32 lengthKey = keccak256(abi.encodePacked(key, '.length'));
     assembly {
-      let length := sload(key)
       result := mload(0x40)
-      mstore(result, length)
-      let content := sload(add(key, 1))
-      mstore(add(result, 0x20), content)
-      mstore(0x40, add(result, add(0x20, length)))
+      mstore(result, sload(lengthKey))
+      mstore(add(result, 0x20), sload(key))
+      mstore(0x40, add(result, 0x40))
     }
   }
 
@@ -52,12 +50,11 @@ contract CrossChainRegistryStorageV1 {
     }
   }
 
-  // TODO(ray)
-  function _setString(bytes32 key, string memory value) internal {
+  function _setString(bytes32 key, string memory value) public {
+    bytes32 lengthKey = keccak256(abi.encodePacked(key, '.length'));
     assembly {
-      let length := mload(value)
-      sstore(key, length)
-      sstore(add(key, 1), value)
+      sstore(lengthKey, mload(value))
+      sstore(key, mload(add(value, 0x20)))
     }
   }
 
