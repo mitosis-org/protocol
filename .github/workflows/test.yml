@@ -14,7 +14,8 @@ jobs:
       fail-fast: true
 
     name: Mitosis Protocol
-    runs-on: self-hosted
+    runs-on: arc-runner-set
+    container: node:20
     steps:
       - uses: actions/checkout@v4
         with:
