@@ -9,6 +9,7 @@ on:
       - main
 
 env:
+  CI: true
   FOUNDRY_PROFILE: ci
 
 jobs:
