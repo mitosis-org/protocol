@@ -5,8 +5,8 @@ import { Vm } from '@std/Vm.sol';
 import { Test } from '@std/Test.sol';
 import { console } from '@std/console.sol';
 
-import { CrossChainRegistry } from '../../src/cross-chain/CrossChainRegistry.sol';
-import { MsgType } from '../../src/cross-chain/messages/Message.sol';
+import { CrossChainRegistry } from '../../src/hub/cross-chain/CrossChainRegistry.sol';
+import { MsgType } from '../../src/hub/cross-chain/messages/Message.sol';
 
 contract TestCrossChainRegistry is Test {
   CrossChainRegistry internal ccRegistry;

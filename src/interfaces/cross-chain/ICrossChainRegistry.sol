@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { MsgType } from '../../cross-chain/messages/Message.sol';
+import { MsgType } from '../../hub/cross-chain/messages/Message.sol';
 
 interface ICrossChainRegistry {
   /// @dev Returns all of the registered ChainIDs.

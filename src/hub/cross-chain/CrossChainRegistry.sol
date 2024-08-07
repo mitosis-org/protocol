@@ -4,78 +4,10 @@ pragma solidity ^0.8.26;
 import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { ICrossChainRegistry } from '../interfaces/cross-chain/ICrossChainRegistry.sol';
+
+import { CrossChainRegistryStorageV1 } from './CrossChainRegistryStorageV1.sol';
+import { ICrossChainRegistry } from '../../interfaces/cross-chain/ICrossChainRegistry.sol';
 import { MsgType } from './messages/Message.sol';
-
-contract CrossChainRegistryStorageV1 {
-  struct StorageV1 {
-    uint256[] chains;
-  }
-
-  // keccak256(abi.encode(uint256(keccak256("mitosis.storage.CrossChainRegistryStorage.v1")) - 1)) & ~bytes32(uint256(0xff))
-  bytes32 public constant StorageV1Location = 0x6acd94fd2c3942266402dfa199ad817aa94ac6cd3de826b0b51cbc305ff61c00;
-
-  function _getStorageV1() internal pure returns (StorageV1 storage $) {
-    // slither-disable-next-line assembly
-    assembly {
-      $.slot := StorageV1Location
-    }
-  }
-
-  function _getString(bytes32 key) public view returns (string memory result) {
-    bytes32 lengthKey = keccak256(abi.encodePacked(key, '.length'));
-    assembly {
-      result := mload(0x40)
-      mstore(result, sload(lengthKey))
-      mstore(add(result, 0x20), sload(key))
-      mstore(0x40, add(result, 0x40))
-    }
-  }
-
-  function _getUint32(bytes32 key) internal view returns (uint32 result) {
-    assembly {
-      result := sload(key)
-    }
-  }
-
-  function _getAddress(bytes32 key) internal view returns (address result) {
-    assembly {
-      result := sload(key)
-    }
-  }
-
-  function _getUint256(bytes32 key) internal view returns (uint256 result) {
-    assembly {
-      result := sload(key)
-    }
-  }
-
-  function _setString(bytes32 key, string memory value) public {
-    bytes32 lengthKey = keccak256(abi.encodePacked(key, '.length'));
-    assembly {
-      sstore(lengthKey, mload(value))
-      sstore(key, mload(add(value, 0x20)))
-    }
-  }
-
-  function _setUint32(bytes32 key, uint32 value) internal {
-    assembly {
-      sstore(key, value)
-    }
-  }
-
-  function _setAddress(bytes32 key, address value) internal {
-    assembly {
-      sstore(key, value)
-    }
-  }
-
-  function _setUint256(bytes32 key, uint256 value) internal {
-    assembly {
-      sstore(key, value)
-    }
-  }
-}
 
 contract CrossChainRegistry is
   ICrossChainRegistry,
