@@ -21,8 +21,8 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@hyperlane-xyz/core": "^4.1.0",
+    "@hyperlane-xyz/core": "5.0.0",
     "viem": "^2.18.7"
   },
-  "packageManager": "yarn@4.3.1"
+  "packageManager": "yarn@4.4.0"
 }
