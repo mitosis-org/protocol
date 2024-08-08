@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { SlotMappingStorage } from '../../lib/SlotMappingStorage.sol';
-
-contract CrossChainRegistryStorageV1 is SlotMappingStorage {
+contract CrossChainRegistryStorageV1 {
   struct ChainInfo {
     string name;
     uint32 hplDomain;
