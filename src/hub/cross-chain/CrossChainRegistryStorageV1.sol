@@ -4,8 +4,23 @@ pragma solidity ^0.8.26;
 import { SlotMappingStorage } from '../../lib/SlotMappingStorage.sol';
 
 contract CrossChainRegistryStorageV1 is SlotMappingStorage {
+  struct ChainInfo {
+    string name;
+    uint32 hplDomain;
+    address[] vaultAddresses;
+    mapping(address underlyingAsset => address vault) vaults;
+    mapping(address vault => address underlyingAsset) underlyingAssets;
+  }
+
+  struct HyperlaneInfo {
+    uint256 chainId;
+  }
+
   struct StorageV1 {
-    uint256[] chains;
+    uint256[] chainIds;
+    uint32[] hplDomains;
+    mapping(uint256 chainId => ChainInfo) chains;
+    mapping(uint32 hplDomain => HyperlaneInfo) hyperlanes;
   }
 
   // keccak256(abi.encode(uint256(keccak256("mitosis.storage.CrossChainRegistryStorage.v1")) - 1)) & ~bytes32(uint256(0xff))

@@ -17,8 +17,8 @@ contract CrossChainRegistry is
 {
   bytes32 public constant REGISTERER_ROLE = keccak256('REGISTERER_ROLE');
 
-  event ChainSet(uint256 indexed chain, uint32 indexed hplDomain, string name);
-  event VaultSet(uint256 indexed chain, address indexed vault, address indexed underlyingAsset);
+  event ChainSet(uint256 indexed chainId, uint32 indexed hplDomain, string name);
+  event VaultSet(uint256 indexed chainId, address indexed vault, address indexed underlyingAsset);
   event HyperlaneRouteSet(uint32 indexed hplDomain, bytes1 indexed msgType, address indexed dst);
 
   error CrossChainRegistry__NotRegistered();
@@ -29,8 +29,9 @@ contract CrossChainRegistry is
     _;
   }
 
-  modifier onlyRegisteredChain(uint256 chain) {
-    if (!_checkChainAlreadyRegistered(chain)) {
+  modifier onlyRegisteredChain(uint256 chainId) {
+    uint256[] memory chainIds = _getStorageV1().chainIds;
+    if (!_isDuplicatePush(chainIds, chainId)) {
       revert CrossChainRegistry__NotRegistered();
     }
     _;
@@ -46,94 +47,90 @@ contract CrossChainRegistry is
 
   // View functions
 
-  function getChains() external view returns (uint256[] memory) {
-    return _getStorageV1().chains;
+  function getChainIds() external view returns (uint256[] memory) {
+    return _getStorageV1().chainIds;
   }
 
-  function getChainName(uint256 chain) external view returns (string memory) {
-    bytes32 key = _getChainNameKey(chain);
-    return _getString(key);
+  function getChainName(uint256 chainId) external view returns (string memory) {
+    return _getStorageV1().chains[chainId].name;
   }
 
-  function getHyperlaneDomain(uint256 chain) external view returns (uint32) {
-    bytes32 key = _getHyperlaneDomainKey(chain);
-    return _getUint32(key);
+  function getHyperlaneDomain(uint256 chainId) external view returns (uint32) {
+    return _getStorageV1().chains[chainId].hplDomain;
   }
 
-  function getVault(uint256 chain, address asset) external view returns (address) {
-    bytes32 key = _getVaultKey(chain, asset);
-    return _getAddress(key);
+  function getVault(uint256 chainId, address asset) external view returns (address) {
+    return _getStorageV1().chains[chainId].vaults[asset];
   }
 
-  function getVaultUnderlyingAsset(uint256 chain, address vault) external view returns (address) {
-    bytes32 key = _getVaultUnderlyingAssetKey(chain, vault);
-    return _getAddress(key);
+  function getVaultUnderlyingAsset(uint256 chainId, address vault) external view returns (address) {
+    return _getStorageV1().chains[chainId].underlyingAssets[vault];
   }
 
-  function getChainByHyperlaneDomain(uint32 hplDomain) external view returns (uint256) {
-    bytes32 key = _getChainByHyperlaneDomainKey(hplDomain);
-    return _getUint256(key);
+  function getChainIdByHyperlaneDomain(uint32 hplDomain) external view returns (uint256) {
+    return _getStorageV1().hyperlanes[hplDomain].chainId;
   }
 
   // Mutative functions
   //
   // TODO: update methods
 
-  function setChain(uint256 chain, string calldata name, uint32 hplDomain) external onlyRegisterer {
-    if (_checkChainAlreadyRegistered(chain)) {
+  function setChain(uint256 chainId, string calldata name, uint32 hplDomain) external onlyRegisterer {
+    StorageV1 storage $ = _getStorageV1();
+
+    bool alreadySet = _isDuplicatePush($.chainIds, chainId) || _isDuplicatePush($.hplDomains, hplDomain);
+    if (alreadySet) {
       revert CrossChainRegistry__AlreadyRegistered();
     }
-    StorageV1 storage $ = _getStorageV1();
-    $.chains.push(chain);
-    _setString(_getChainNameKey(chain), name);
-    _setUint32(_getHyperlaneDomainKey(chain), hplDomain);
-    _setUint256(_getChainByHyperlaneDomainKey(hplDomain), chain);
-    emit ChainSet(chain, hplDomain, name);
+
+    $.chainIds.push(chainId);
+    $.hplDomains.push(hplDomain);
+    $.chains[chainId].name = name;
+    $.chains[chainId].hplDomain = hplDomain;
+    $.hyperlanes[hplDomain].chainId = chainId;
+
+    emit ChainSet(chainId, hplDomain, name);
   }
 
-  function setVault(uint256 chain, address vault, address underlyingAsset)
+  function setVault(uint256 chainId, address vault, address underlyingAsset)
     external
     onlyRegisterer
-    onlyRegisteredChain(chain)
+    onlyRegisteredChain(chainId)
   {
-    _setAddress(_getVaultKey(chain, underlyingAsset), vault);
-    _setAddress(_getVaultUnderlyingAssetKey(chain, vault), underlyingAsset);
-    emit VaultSet(chain, vault, underlyingAsset);
+    ChainInfo storage chainInfo = _getStorageV1().chains[chainId];
+    if (_isDuplicatePush(chainInfo.vaultAddresses, vault)) {
+      revert CrossChainRegistry__AlreadyRegistered();
+    }
+
+    chainInfo.vaultAddresses.push(vault);
+    chainInfo.vaults[underlyingAsset] = vault;
+    chainInfo.underlyingAssets[vault] = underlyingAsset;
+
+    emit VaultSet(chainId, vault, underlyingAsset);
   }
 
   // Internal functions
-  //
-  // Keys
-  function _getChainNameKey(uint256 chain) internal pure returns (bytes32) {
-    return keccak256(abi.encodePacked('chain', chain, '.name'));
+
+  function _isDuplicatePush(address[] memory arr, address item) internal pure returns (bool) {
+    uint256 length = arr.length;
+    for (uint256 i = 0; i < length; i++) {
+      if (arr[i] == item) return true;
+    }
+    return false;
   }
 
-  function _getHyperlaneDomainKey(uint256 chain) internal pure returns (bytes32) {
-    return keccak256(abi.encodePacked('chain', chain, '.domains', '.hyperlane'));
+  function _isDuplicatePush(uint256[] memory arr, uint256 item) internal pure returns (bool) {
+    uint256 length = arr.length;
+    for (uint256 i = 0; i < length; i++) {
+      if (arr[i] == item) return true;
+    }
+    return false;
   }
 
-  function _getVaultKey(uint256 chain, address asset) internal pure returns (bytes32) {
-    return keccak256(abi.encodePacked('chain', chain, '.vaults', asset));
-  }
-
-  function _getVaultUnderlyingAssetKey(uint256 chain, address vault) internal pure returns (bytes32) {
-    return keccak256(abi.encodePacked('chain', chain, vault, '.underlying'));
-  }
-
-  function _getStrategyExecutorKey(address eolVault, uint256 executorId, uint256 chain) internal pure returns (bytes32) {
-    return keccak256(abi.encodePacked('eol_vault', eolVault, '.strategy_executors', executorId, chain));
-  }
-
-  function _getChainByHyperlaneDomainKey(uint32 hplDomain) internal pure returns (bytes32) {
-    return keccak256(abi.encodePacked('hyperlane_domain', hplDomain, '.chain_id'));
-  }
-
-  function _checkChainAlreadyRegistered(uint256 chain) internal view returns (bool) {
-    uint256[] memory chains = _getStorageV1().chains;
-    for (uint256 i = 0; i < chains.length; i++) {
-      if (chain == chains[i]) {
-        return true;
-      }
+  function _isDuplicatePush(uint32[] memory arr, uint32 item) internal pure returns (bool) {
+    uint256 length = arr.length;
+    for (uint256 i = 0; i < length; i++) {
+      if (arr[i] == item) return true;
     }
     return false;
   }
