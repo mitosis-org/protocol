@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+
 contract CrossChainRegistryStorageV1 {
   struct ChainInfo {
     string name;
@@ -20,13 +22,14 @@ contract CrossChainRegistryStorageV1 {
     mapping(uint32 hplDomain => HyperlaneInfo) hyperlanes;
   }
 
-  // keccak256(abi.encode(uint256(keccak256("mitosis.storage.CrossChainRegistryStorage.v1")) - 1)) & ~bytes32(uint256(0xff))
-  bytes32 public constant StorageV1Location = 0x6acd94fd2c3942266402dfa199ad817aa94ac6cd3de826b0b51cbc305ff61c00;
+  string constant _NAMESPACE = 'mitosis.storage.CrossChainRegistryStorage.v1';
+  bytes32 public immutable StorageV1Location = ERC7201Utils.storageSlot(_NAMESPACE);
 
-  function _getStorageV1() internal pure returns (StorageV1 storage $) {
+  function _getStorageV1() internal view returns (StorageV1 storage $) {
+    bytes32 storageLocation = StorageV1Location;
     // slither-disable-next-line assembly
     assembly {
-      $.slot := StorageV1Location
+      $.slot := storageLocation
     }
   }
 }
