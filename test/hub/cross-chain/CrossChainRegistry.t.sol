@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { Vm } from '@std/Vm.sol';
-import { Test } from '@std/Test.sol';
-import { console } from '@std/console.sol';
-import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
-import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
+import { Vm } from '@forge-std-1.9.1/src/Vm.sol';
+import { Test } from '@forge-std-1.9.1/src/Test.sol';
+import { console } from '@forge-std-1.9.1/src/console.sol';
+import { ProxyAdmin } from '@openzeppelin-contracts-5.0.2/proxy/transparent/ProxyAdmin.sol';
+import { TransparentUpgradeableProxy } from
+  '@openzeppelin-contracts-5.0.2/proxy/transparent/TransparentUpgradeableProxy.sol';
 
 import { CrossChainRegistry } from '../../../src/hub/cross-chain/CrossChainRegistry.sol';
 import { MsgType } from '../../../src/hub/cross-chain/messages/Message.sol';
