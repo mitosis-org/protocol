@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 
 contract CrossChainRegistryStorageV1 {
+  using ERC7201Utils for string;
   struct ChainInfo {
     string name;
     uint32 hplDomain;
