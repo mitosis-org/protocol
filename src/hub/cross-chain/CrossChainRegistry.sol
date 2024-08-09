@@ -8,6 +8,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { CrossChainRegistryStorageV1 } from './CrossChainRegistryStorageV1.sol';
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 import { MsgType } from './messages/Message.sol';
+import { Arrays } from '../../lib/Arrays.sol';
 
 contract CrossChainRegistry is
   ICrossChainRegistry,
@@ -31,7 +32,7 @@ contract CrossChainRegistry is
 
   modifier onlyRegisteredChain(uint256 chainId) {
     uint256[] memory chainIds = _getStorageV1().chainIds;
-    if (!_isDuplicatePush(chainIds, chainId)) {
+    if (!Arrays.exists(chainIds, chainId)) {
       revert CrossChainRegistry__NotRegistered();
     }
     _;
@@ -78,7 +79,7 @@ contract CrossChainRegistry is
   function setChain(uint256 chainId, string calldata name, uint32 hplDomain) external onlyRegisterer {
     StorageV1 storage $ = _getStorageV1();
 
-    bool alreadySet = _isDuplicatePush($.chainIds, chainId) || _isDuplicatePush($.hplDomains, hplDomain);
+    bool alreadySet = Arrays.exists($.chainIds, chainId) || Arrays.exists($.hplDomains, hplDomain);
     if (alreadySet) {
       revert CrossChainRegistry__AlreadyRegistered();
     }
@@ -98,7 +99,7 @@ contract CrossChainRegistry is
     onlyRegisteredChain(chainId)
   {
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId];
-    if (_isDuplicatePush(chainInfo.vaultAddresses, vault)) {
+    if (Arrays.exists(chainInfo.vaultAddresses, vault)) {
       revert CrossChainRegistry__AlreadyRegistered();
     }
 
@@ -107,31 +108,5 @@ contract CrossChainRegistry is
     chainInfo.underlyingAssets[vault] = underlyingAsset;
 
     emit VaultSet(chainId, vault, underlyingAsset);
-  }
-
-  // Internal functions
-
-  function _isDuplicatePush(address[] memory arr, address item) internal pure returns (bool) {
-    uint256 length = arr.length;
-    for (uint256 i = 0; i < length; i++) {
-      if (arr[i] == item) return true;
-    }
-    return false;
-  }
-
-  function _isDuplicatePush(uint256[] memory arr, uint256 item) internal pure returns (bool) {
-    uint256 length = arr.length;
-    for (uint256 i = 0; i < length; i++) {
-      if (arr[i] == item) return true;
-    }
-    return false;
-  }
-
-  function _isDuplicatePush(uint32[] memory arr, uint32 item) internal pure returns (bool) {
-    uint256 length = arr.length;
-    for (uint256 i = 0; i < length; i++) {
-      if (arr[i] == item) return true;
-    }
-    return false;
   }
 }
