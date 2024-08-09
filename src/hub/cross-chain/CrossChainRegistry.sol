@@ -19,7 +19,8 @@ contract CrossChainRegistry is
   bytes32 public constant REGISTERER_ROLE = keccak256('REGISTERER_ROLE');
 
   event ChainSet(uint256 indexed chainId, uint32 indexed hplDomain, string name);
-  event VaultSet(uint256 indexed chainId, address indexed vault, address indexed underlyingAsset);
+  event VaultSet(uint256 indexed chainId, address indexed vault);
+  event UnderlyingAssetSet(uint256 indexed chainId, address indexed vault, address indexed underlyingAsset);
 
   error CrossChainRegistry__NotRegistered();
   error CrossChainRegistry__AlreadyRegistered();
@@ -64,16 +65,16 @@ contract CrossChainRegistry is
     return _getStorageV1().chains[chainId].hplDomain;
   }
 
-  function getVault(uint256 chainId, address asset) external view returns (address) {
-    return _getStorageV1().chains[chainId].vaults[asset];
-  }
-
-  function getVaultUnderlyingAsset(uint256 chainId, address vault) external view returns (address) {
-    return _getStorageV1().chains[chainId].underlyingAssets[vault];
+  function getVault(uint256 chainId) external view returns (address) {
+    return _getStorageV1().chains[chainId].vault;
   }
 
   function getChainIdByHyperlaneDomain(uint32 hplDomain) external view returns (uint256) {
     return _getStorageV1().hyperlanes[hplDomain].chainId;
+  }
+
+  function isSupportUnderlyingAsset(uint256 chainId, address underlyingAsset) external view returns (bool) {
+    return _getStorageV1().chains[chainId].underlyingAssets[underlyingAsset];
   }
 
   // Mutative functions
@@ -97,20 +98,29 @@ contract CrossChainRegistry is
     emit ChainSet(chainId, hplDomain, name);
   }
 
-  function setVault(uint256 chainId, address vault, address underlyingAsset)
-    external
-    onlyRegisterer
-    onlyRegisteredChain(chainId)
-  {
+  function setVault(uint256 chainId, address vault) external onlyRegisterer onlyRegisteredChain(chainId) {
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId];
-    if (Arrays.exists(chainInfo.vaultAddresses, vault)) {
+    if (chainInfo.vault != address(0)) {
       revert CrossChainRegistry__AlreadyRegistered();
     }
+    chainInfo.vault = vault;
+    emit VaultSet(chainId, vault);
+  }
 
-    chainInfo.vaultAddresses.push(vault);
-    chainInfo.vaults[underlyingAsset] = vault;
-    chainInfo.underlyingAssets[vault] = underlyingAsset;
+  function setUnderlyingAsset(address underlyingAsset) external {
+    StorageV1 storage $ = _getStorageV1();
+    for (uint256 i = 0; i < $.chainIds.length; i++) {
+      uint256 chainId = $.chainIds[i];
+      setUnderlyingAsset(chainId, underlyingAsset);
+    }
+  }
 
-    emit VaultSet(chainId, vault, underlyingAsset);
+  function setUnderlyingAsset(uint256 chainId, address underlyingAsset) public {
+    ChainInfo storage chainInfo = _getStorageV1().chains[chainId];
+    if (chainInfo.vault == address(0)) {
+      revert CrossChainRegistry__NotRegistered();
+    }
+    chainInfo.underlyingAssets[underlyingAsset] = true;
+    emit UnderlyingAssetSet(chainId, chainInfo.vault, underlyingAsset);
   }
 }
