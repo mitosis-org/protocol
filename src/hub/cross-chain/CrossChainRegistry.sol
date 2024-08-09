@@ -8,7 +8,6 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { CrossChainRegistryStorageV1 } from './CrossChainRegistryStorageV1.sol';
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 import { MsgType } from './messages/Message.sol';
-import { Arrays } from '../../lib/Arrays.sol';
 
 contract CrossChainRegistry is
   ICrossChainRegistry,
@@ -27,14 +26,6 @@ contract CrossChainRegistry is
 
   modifier onlyRegisterer() {
     _checkRole(REGISTERER_ROLE);
-    _;
-  }
-
-  modifier onlyRegisteredChain(uint256 chainId) {
-    uint256[] memory chainIds = _getStorageV1().chainIds;
-    if (!Arrays.exists(chainIds, chainId)) {
-      revert CrossChainRegistry__NotRegistered();
-    }
     _;
   }
 
@@ -84,8 +75,7 @@ contract CrossChainRegistry is
   function setChain(uint256 chainId, string calldata name, uint32 hplDomain) external onlyRegisterer {
     StorageV1 storage $ = _getStorageV1();
 
-    bool alreadySet = Arrays.exists($.chainIds, chainId) || Arrays.exists($.hplDomains, hplDomain);
-    if (alreadySet) {
+    if (_isRegisteredChain($.chains[chainId]) || _isRegisteredHyperlane($.hyperlanes[hplDomain])) {
       revert CrossChainRegistry__AlreadyRegistered();
     }
 
@@ -98,11 +88,16 @@ contract CrossChainRegistry is
     emit ChainSet(chainId, hplDomain, name);
   }
 
-  function setVault(uint256 chainId, address vault) external onlyRegisterer onlyRegisteredChain(chainId) {
+  function setVault(uint256 chainId, address vault) external onlyRegisterer {
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId];
-    if (chainInfo.vault != address(0)) {
+    if (!_isRegisteredChain(chainInfo)) {
+      revert CrossChainRegistry__NotRegistered();
+    }
+
+    if (_isRegisteredVault(chainInfo)) {
       revert CrossChainRegistry__AlreadyRegistered();
     }
+
     chainInfo.vault = vault;
     emit VaultSet(chainId, vault);
   }
@@ -122,5 +117,19 @@ contract CrossChainRegistry is
     }
     chainInfo.underlyingAssets[underlyingAsset] = true;
     emit UnderlyingAssetSet(chainId, chainInfo.vault, underlyingAsset);
+  }
+
+  // Internal functions
+
+  function _isRegisteredChain(ChainInfo storage chainInfo) internal view returns (bool) {
+    return bytes(chainInfo.name).length > 0;
+  }
+
+  function _isRegisteredVault(ChainInfo storage chainInfo) internal view returns (bool) {
+    return chainInfo.vault != address(0);
+  }
+
+  function _isRegisteredHyperlane(HyperlaneInfo storage hplInfo) internal view returns (bool) {
+    return hplInfo.chainId > 0;
   }
 }
