@@ -4,6 +4,8 @@ pragma solidity ^0.8.26;
 import { Vm } from '@std/Vm.sol';
 import { Test } from '@std/Test.sol';
 import { console } from '@std/console.sol';
+import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
+import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
 import { CrossChainRegistry } from '../../src/hub/cross-chain/CrossChainRegistry.sol';
 import { MsgType } from '../../src/hub/cross-chain/messages/Message.sol';
@@ -11,9 +13,23 @@ import { MsgType } from '../../src/hub/cross-chain/messages/Message.sol';
 contract TestCrossChainRegistry is Test {
   CrossChainRegistry internal ccRegistry;
 
+  ProxyAdmin internal _proxyAdmin;
+
   function setUp() public {
-    ccRegistry = new CrossChainRegistry();
-    ccRegistry.initialize(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
+    _proxyAdmin = new ProxyAdmin(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
+
+    CrossChainRegistry ccRegistryImpl = new CrossChainRegistry();
+    ccRegistry = CrossChainRegistry(
+      payable(
+        address(
+          new TransparentUpgradeableProxy(
+            address(ccRegistryImpl),
+            address(_proxyAdmin),
+            abi.encodeWithSelector(ccRegistry.initialize.selector, 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496)
+          )
+        )
+      )
+    );
     ccRegistry.grantRole(ccRegistry.REGISTERER_ROLE(), 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
   }
 

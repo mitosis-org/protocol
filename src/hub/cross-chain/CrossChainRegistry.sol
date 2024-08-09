@@ -39,8 +39,13 @@ contract CrossChainRegistry is
 
   //===========
 
+  constructor() {
+    _disableInitializers();
+  }
+
   function initialize(address owner) external initializer {
     __Ownable2Step_init();
+    __AccessControl_init();
     _transferOwnership(owner);
     _grantRole(DEFAULT_ADMIN_ROLE, owner);
   }
