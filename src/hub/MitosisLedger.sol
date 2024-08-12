@@ -11,13 +11,13 @@ contract MitosisLedeger is IMitosisLedger {
     mapping(address asset => uint256 amount) deposits;
   }
 
-  struct EolEntry {
-    EolState state;
+  struct EOLEntry {
+    EOLState state;
 
     // TODO(ray): asset - miAsset raio snapshot
   }
 
-  struct EolState {
+  struct EOLState {
     /// @dev pending is a temporary value reflecting the opt-out request
     /// This value is used to calculate the EOL allocation for each chain.
     /// (i.e. This means that from the point of the opt-out request, yield
@@ -45,7 +45,7 @@ contract MitosisLedeger is IMitosisLedger {
   }
 
   mapping(uint256 chain => ChainEntry) _chainEntries;
-  mapping(address miAsset => EolEntry) _eolEntries;
+  mapping(address miAsset => EOLEntry) _eolEntries;
 
   // View functions
 
@@ -57,8 +57,8 @@ contract MitosisLedeger is IMitosisLedger {
 
   // EOL
 
-  function getEolAllocateAmount(address miAsset) external view returns (uint256) {
-    EolState storage state = _eolEntries[miAsset].state;
+  function getEOLAllocateAmount(address miAsset) external view returns (uint256) {
+    EOLState storage state = _eolEntries[miAsset].state;
     return state.finalized - state.pending;
   }
 
@@ -78,17 +78,17 @@ contract MitosisLedeger is IMitosisLedger {
 
   // Note: Could be change parameters (add requestId parameter) in opt-out task.
   function recordOptOutRequest(address miAsset, uint256 amount) external /* auth */ {
-    EolState storage state = _eolEntries[miAsset].state;
+    EOLState storage state = _eolEntries[miAsset].state;
     state.pending += amount;
   }
 
   function recordDeallocateEOL(address miAsset, uint256 amount) external /* auth */ {
-    EolState storage state = _eolEntries[miAsset].state;
+    EOLState storage state = _eolEntries[miAsset].state;
     state.released += amount;
   }
 
   function recordOptOutResolve(address miAsset, uint256 amount) external /* auth */ {
-    EolState storage state = _eolEntries[miAsset].state;
+    EOLState storage state = _eolEntries[miAsset].state;
     state.released -= amount;
     state.resolved += amount;
 
@@ -97,7 +97,7 @@ contract MitosisLedeger is IMitosisLedger {
   }
 
   function recordOptOutClaim(address miAsset, uint256 amount) external /* auth */ {
-    EolState storage state = _eolEntries[miAsset].state;
+    EOLState storage state = _eolEntries[miAsset].state;
     state.pending -= amount;
     state.resolved -= amount;
     state.finalized -= amount;
