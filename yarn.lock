@@ -723,22 +723,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hyperlane-xyz/core@npm:5.0.0":
+"@hyperlane-xyz/core@https://github.com/mitosis-org/hyperlane-core":
   version: 5.0.0
-  resolution: "@hyperlane-xyz/core@npm:5.0.0"
+  resolution: "@hyperlane-xyz/core@https://github.com/mitosis-org/hyperlane-core.git#commit=056ce747ac1b07f9a290c4819f53e5349406620b"
   dependencies:
     "@arbitrum/nitro-contracts": "npm:^1.2.1"
     "@eth-optimism/contracts": "npm:^0.6.0"
     "@hyperlane-xyz/utils": "npm:5.0.0"
     "@layerzerolabs/lz-evm-oapp-v2": "npm:2.0.2"
-    "@openzeppelin/contracts": "npm:^4.9.3"
-    "@openzeppelin/contracts-upgradeable": "npm:^v4.9.3"
+    "@oz-hpl/contracts": "npm:@openzeppelin/contracts@^4.9.3"
+    "@oz-hpl/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@^4.9.3"
     fx-portal: "npm:^1.0.3"
   peerDependencies:
     "@ethersproject/abi": "*"
     "@ethersproject/providers": "*"
     "@types/sinon-chai": "*"
-  checksum: 10c0/01e078839e7440033003151582aa111da708383fe005a85532d9d213198f667a8bd005c83003cd22005b9a3149c5e406b4ad7aaad1aff36a083db9be035ee1ec
+  checksum: 10c0/636cbdeda2139c57ed61f6e089796000e6bc3ca3d489a09df1a1c79b74c8708b2cccacd13b031d66a38a25883c111b9361b031f6f6ded56f1076cfe7645722b5
   languageName: node
   linkType: hard
 
@@ -884,7 +884,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@mitosis/protocol@workspace:."
   dependencies:
-    "@hyperlane-xyz/core": "npm:5.0.0"
+    "@hyperlane-xyz/core": "https://github.com/mitosis-org/hyperlane-core"
     "@trivago/prettier-plugin-sort-imports": "npm:^4.3.0"
     "@types/node": "npm:^22.0.3"
     "@typescript-eslint/eslint-plugin": "npm:^8.0.0"
@@ -999,13 +999,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openzeppelin/contracts-upgradeable@npm:^v4.9.3":
-  version: 4.9.6
-  resolution: "@openzeppelin/contracts-upgradeable@npm:4.9.6"
-  checksum: 10c0/c2bbd28130f630601fdae0eda6aea170f9a730b1f31b069c9029b7131d3e0c05041821c75555039488a340cb2c0eb848a1ce0921553bc2c5cdd5be2b56dd427d
-  languageName: node
-  linkType: hard
-
 "@openzeppelin/contracts@npm:4.5.0":
   version: 4.5.0
   resolution: "@openzeppelin/contracts@npm:4.5.0"
@@ -1020,10 +1013,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openzeppelin/contracts@npm:^4.2.0, @openzeppelin/contracts@npm:^4.9.3":
+"@openzeppelin/contracts@npm:^4.2.0, @oz-hpl/contracts@npm:@openzeppelin/contracts@^4.9.3":
   version: 4.9.6
   resolution: "@openzeppelin/contracts@npm:4.9.6"
   checksum: 10c0/f834b000778f634a260ed5507827cc67c0922557a1f57e1d76cf7ace061fea171aaf16640ba2e54fd7ed2cc629a9d706bc671a9692d2bb9a9469ea6154de6e8c
+  languageName: node
+  linkType: hard
+
+"@oz-hpl/contracts-upgradeable@npm:@openzeppelin/contracts-upgradeable@^4.9.3":
+  version: 4.9.6
+  resolution: "@openzeppelin/contracts-upgradeable@npm:4.9.6"
+  checksum: 10c0/c2bbd28130f630601fdae0eda6aea170f9a730b1f31b069c9029b7131d3e0c05041821c75555039488a340cb2c0eb848a1ce0921553bc2c5cdd5be2b56dd427d
   languageName: node
   linkType: hard
 
