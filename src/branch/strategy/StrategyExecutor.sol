@@ -49,12 +49,14 @@ contract StrategyExecutor is
 
   IMitosisVault internal immutable _vault;
   IERC20 internal immutable _asset;
+  uint256 internal immutable _eolId;
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  constructor(IMitosisVault vault_, IERC20 asset_) initializer {
+  constructor(IMitosisVault vault_, IERC20 asset_, uint256 eolId_) initializer {
     _vault = vault_;
     _asset = asset_;
+    _eolId = eolId_;
   }
 
   fallback() external payable {
@@ -83,6 +85,10 @@ contract StrategyExecutor is
 
   function asset() public view override(IStrategyExecutor, IStrategyDependency) returns (IERC20 asset_) {
     return _asset;
+  }
+
+  function eolId() public view returns (uint256 eolId_) {
+    return _eolId;
   }
 
   function strategist() external view returns (address strategist_) {
@@ -132,7 +138,7 @@ contract StrategyExecutor is
 
     _assertStrategist($);
 
-    _vault.deallocateEOL(address(_asset), amount);
+    _vault.deallocateEOL(_eolId, amount);
   }
 
   function fetchEOL(uint256 amount) external whenNotPaused {
@@ -140,7 +146,7 @@ contract StrategyExecutor is
 
     _assertStrategist($);
 
-    _vault.fetchEOL(address(_asset), amount);
+    _vault.fetchEOL(_eolId, amount);
   }
 
   function returnEOL(uint256 amount) external whenNotPaused {
@@ -149,7 +155,7 @@ contract StrategyExecutor is
     _assertStrategist($);
 
     _asset.approve(address(_vault), amount);
-    _vault.returnEOL(address(_asset), amount);
+    _vault.returnEOL(_eolId, amount);
   }
 
   function settle() external whenNotPaused {
@@ -163,9 +169,9 @@ contract StrategyExecutor is
     $.lastSettledBalance = totalBalance_;
 
     if (totalBalance_ >= prevSettledBalance) {
-      _vault.settleYield(address(_asset), totalBalance_ - prevSettledBalance);
+      _vault.settleYield(_eolId, totalBalance_ - prevSettledBalance);
     } else {
-      _vault.settleLoss(address(_asset), prevSettledBalance - totalBalance_);
+      _vault.settleLoss(_eolId, prevSettledBalance - totalBalance_);
     }
   }
 
@@ -176,7 +182,7 @@ contract StrategyExecutor is
     if (address(_asset) == reward) revert Error.InvalidAddress('reward');
 
     IERC20(reward).approve(address(_vault), amount);
-    _vault.settleExtraRewards(address(_asset), reward, amount);
+    _vault.settleExtraRewards(_eolId, reward, amount);
   }
 
   /**

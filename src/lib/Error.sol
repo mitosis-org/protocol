@@ -8,6 +8,7 @@ library Error {
   error NotFound(string typ);
   error NotImplemented();
 
+  error InvalidId(string typ);
   error InvalidAddress(string typ);
   error ZeroAmount();
 }

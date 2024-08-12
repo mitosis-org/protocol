@@ -1,22 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import { Action } from '@src/interfaces/branch/IMitosisVault.sol';
+import { AssetAction, EOLAction } from '@src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '@src/interfaces/branch/IMitosisVaultEntrypoint.sol';
 
 abstract contract MitosisVaultStorageV1 {
   struct AssetInfo {
     bool initialized;
+    mapping(AssetAction => bool) isHalted;
+  }
+
+  struct EOLInfo {
+    bool initialized;
+    address asset;
     address strategyExecutor;
     uint256 availableEOL;
-    mapping(Action => bool) isHalted;
+    mapping(EOLAction => bool) isHalted;
   }
 
   /// @custom:storage-location erc7201:mitosis.storage.BasicVault.v1
   struct StorageV1 {
     IMitosisVaultEntrypoint entrypoint;
     mapping(address asset => AssetInfo) assets;
-    mapping(address => mapping(Action => bool)) isAllowed;
+    mapping(uint256 eolId => EOLInfo) eols;
   }
 
   // keccak256(abi.encode(uint256(keccak256("mitosis.storage.BasicVault.v1")) - 1)) & ~bytes32(uint256(0xff))
