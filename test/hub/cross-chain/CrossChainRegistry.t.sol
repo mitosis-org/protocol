@@ -8,7 +8,6 @@ import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
 import { CrossChainRegistry } from '../../../src/hub/cross-chain/CrossChainRegistry.sol';
-import { MsgType } from '../../../src/hub/cross-chain/messages/Message.sol';
 
 contract TestCrossChainRegistry is Test {
   CrossChainRegistry internal ccRegistry;

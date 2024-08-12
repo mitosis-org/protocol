@@ -3,8 +3,11 @@ pragma solidity 0.8.26;
 
 import { AssetAction, EOLAction } from '@src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '@src/interfaces/branch/IMitosisVaultEntrypoint.sol';
+import { ERC7201Utils } from '@src/lib/ERC7201Utils.sol';
 
 abstract contract MitosisVaultStorageV1 {
+  using ERC7201Utils for string;
+
   struct AssetInfo {
     bool initialized;
     mapping(AssetAction => bool) isHalted;
@@ -18,20 +21,20 @@ abstract contract MitosisVaultStorageV1 {
     mapping(EOLAction => bool) isHalted;
   }
 
-  /// @custom:storage-location erc7201:mitosis.storage.BasicVault.v1
   struct StorageV1 {
     IMitosisVaultEntrypoint entrypoint;
     mapping(address asset => AssetInfo) assets;
     mapping(uint256 eolId => EOLInfo) eols;
   }
 
-  // keccak256(abi.encode(uint256(keccak256("mitosis.storage.BasicVault.v1")) - 1)) & ~bytes32(uint256(0xff))
-  bytes32 public constant StorageV1Location = 0xdfd1d7385a5871446aad353015e13a89d148fc3945543ae58683c6905a730600;
+  string constant _NAMESPACE = 'mitosis.storage.MitosisVaultStorage.v1';
+  bytes32 public immutable StorageV1Location = _NAMESPACE.storageSlot();
 
-  function _getStorageV1() internal pure returns (StorageV1 storage $) {
+  function _getStorageV1() internal view returns (StorageV1 storage $) {
+    bytes32 slot = StorageV1Location;
     // slither-disable-next-line assembly
     assembly {
-      $.slot := StorageV1Location
+      $.slot := slot
     }
   }
 }

@@ -7,7 +7,6 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 
 import { CrossChainRegistryStorageV1 } from './CrossChainRegistryStorageV1.sol';
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
-import { MsgType } from './messages/Message.sol';
 
 contract CrossChainRegistry is
   ICrossChainRegistry,

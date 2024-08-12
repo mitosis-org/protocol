@@ -13,7 +13,7 @@ import { IMitosisVaultEntrypoint } from '@src/interfaces/branch/IMitosisVaultEnt
 import { IStrategyExecutor } from '@src/interfaces/branch/strategy/IStrategyExecutor.sol';
 import { StdError } from '@src/lib/StdError.sol';
 
-// TODO(thai): add some view functions for MitosisVault
+// TODO(thai): add some view functions in MitosisVault
 
 contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgradeable, MitosisVaultStorageV1 {
   using SafeERC20 for IERC20;
@@ -58,7 +58,9 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  constructor() initializer { }
+  constructor() {
+    _disableInitializers();
+  }
 
   fallback() external payable {
     revert StdError.Unauthorized();
@@ -74,9 +76,9 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     _transferOwnership(owner_);
   }
 
-  //=========== NOTE: MUTATION FUNCTIONS ===========//
+  //=========== NOTE: ASSET FUNCTIONS ===========//
 
-  function initializeAsset(address asset, bool enableDeposit) external {
+  function initializeAsset(address asset) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -85,9 +87,8 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     $.assets[asset].initialized = true;
     emit AssetInitialized(asset);
 
-    if (!enableDeposit) {
-      _halt($, asset, AssetAction.Deposit);
-    }
+    // NOTE: we halt deposit by default.
+    _halt($, asset, AssetAction.Deposit);
   }
 
   function deposit(address asset, address to, uint256 amount) external {
@@ -112,6 +113,8 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
     emit Redeemed(asset, to, amount);
   }
+
+  //=========== NOTE: EOL FUNCTIONS ===========//
 
   function initializeEOL(uint256 eolId, address asset) external {
     StorageV1 storage $ = _getStorageV1();

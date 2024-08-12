@@ -13,7 +13,7 @@ enum EOLAction {
 interface IMitosisVault {
   //=========== NOTE: Asset ===========//
 
-  function initializeAsset(address asset, bool enableDeposit) external;
+  function initializeAsset(address asset) external;
 
   function deposit(address asset, address to, uint256 amount) external;
   function redeem(address asset, address to, uint256 amount) external;
