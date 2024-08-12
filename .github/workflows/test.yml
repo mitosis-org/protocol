@@ -36,6 +36,14 @@ jobs:
         with:
           submodules: recursive
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: corepack enable
+
+      - name: Yarn Install
+        run: yarn install
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
