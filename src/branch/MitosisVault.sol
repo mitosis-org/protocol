@@ -11,7 +11,7 @@ import { MitosisVaultStorageV1 } from '@src/branch/storage/MitosisVaultStorageV1
 import { AssetAction, EOLAction, IMitosisVault } from '@src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '@src/interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IStrategyExecutor } from '@src/interfaces/branch/strategy/IStrategyExecutor.sol';
-import { Error } from '@src/lib/Error.sol';
+import { StdError } from '@src/lib/StdError.sol';
 
 // TODO(thai): add some view functions for MitosisVault
 
@@ -59,11 +59,11 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   constructor() initializer { }
 
   fallback() external payable {
-    revert Error.Unauthorized();
+    revert StdError.Unauthorized();
   }
 
   receive() external payable {
-    revert Error.Unauthorized();
+    revert StdError.Unauthorized();
   }
 
   function initialize(address owner_) public initializer {
@@ -208,7 +208,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     _assertEOLInitialized($, eolId);
     _assertOnlyStrategyExecutor($, eolId);
     _assertAssetInitialized($, reward);
-    if ($.eols[eolId].asset == reward) revert Error.InvalidAddress('reward');
+    if ($.eols[eolId].asset == reward) revert StdError.InvalidAddress('reward');
 
     IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
     $.entrypoint.settleExtraRewards(eolId, reward, amount);
@@ -230,16 +230,16 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     _assertEOLInitialized($, eolId);
 
     // Ensure the strategyExecutor is not set yet
-    if (eolInfo.strategyExecutor != address(0)) revert Error.InvalidAddress('strategyExecutor');
+    if (eolInfo.strategyExecutor != address(0)) revert StdError.InvalidAddress('strategyExecutor');
 
     if (eolId != IStrategyExecutor(strategyExecutor).eolId()) {
-      revert Error.InvalidId('strategyExecutor.eolId');
+      revert StdError.InvalidId('strategyExecutor.eolId');
     }
     if (address(this) != address(IStrategyExecutor(strategyExecutor).vault())) {
-      revert Error.InvalidAddress('strategyExecutor.vault');
+      revert StdError.InvalidAddress('strategyExecutor.vault');
     }
     if (eolInfo.asset != address(IStrategyExecutor(strategyExecutor).asset())) {
-      revert Error.InvalidAddress('strategyExecutor.asset');
+      revert StdError.InvalidAddress('strategyExecutor.asset');
     }
 
     eolInfo.strategyExecutor = strategyExecutor;
@@ -273,11 +273,11 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
   function _assertOnlyEntrypoint(StorageV1 storage $) internal view {
-    if (_msgSender() != address($.entrypoint)) revert Error.InvalidAddress('entrypoint');
+    if (_msgSender() != address($.entrypoint)) revert StdError.InvalidAddress('entrypoint');
   }
 
   function _assertOnlyStrategyExecutor(StorageV1 storage $, uint256 eolId) internal view {
-    if (_msgSender() != $.eols[eolId].strategyExecutor) revert Error.InvalidAddress('strategyExecutor');
+    if (_msgSender() != $.eols[eolId].strategyExecutor) revert StdError.InvalidAddress('strategyExecutor');
   }
 
   function _assertAssetInitialized(StorageV1 storage $, address asset) internal view {
@@ -297,11 +297,11 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function _assertNotHalted(StorageV1 storage $, address asset, AssetAction action) internal view {
-    if (_isHalted($, asset, action)) revert Error.Halted();
+    if (_isHalted($, asset, action)) revert StdError.Halted();
   }
 
   function _assertNotHalted(StorageV1 storage $, uint256 eolId, EOLAction action) internal view {
-    if (_isHalted($, eolId, action)) revert Error.Halted();
+    if (_isHalted($, eolId, action)) revert StdError.Halted();
   }
 
   function _isHalted(StorageV1 storage $, address asset, AssetAction action) internal view returns (bool) {

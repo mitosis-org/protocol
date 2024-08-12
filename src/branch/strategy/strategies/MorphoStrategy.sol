@@ -7,7 +7,7 @@ import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { IMorpho, Id, MarketParams } from '@src/external/morpho/Morpho.sol';
 import { SharesMathLib, MorphoBalancesLib } from '@src/external/morpho/MorphoLib.sol';
 
-import { Error } from '@src/lib/Error.sol';
+import { StdError } from '@src/lib/StdError.sol';
 
 import { StdStrategy } from '@src/branch/strategy/strategies/StdStrategy.sol';
 
@@ -42,7 +42,7 @@ contract MorphoStrategy is StdStrategy {
     IERC20 asset_ = _asset();
     Id id = abi.decode(context, (Id));
     marketParams = _morpho.idToMarketParams(id);
-    if (marketParams.loanToken != address(asset_)) revert Error.InvalidAddress('loanToken');
+    if (marketParams.loanToken != address(asset_)) revert StdError.InvalidAddress('loanToken');
     return marketParams;
   }
 

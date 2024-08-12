@@ -5,7 +5,7 @@ import { Context } from '@oz-v5/utils/Context.sol';
 import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 
-import { Error } from '@src/lib/Error.sol';
+import { StdError } from '@src/lib/StdError.sol';
 import { IStrategy, IStrategyDependency } from '@src/interfaces/branch/strategy/IStrategy.sol';
 import { IStrategyExecutor } from '@src/interfaces/branch/strategy/IStrategyExecutor.sol';
 
@@ -170,11 +170,11 @@ abstract contract StdStrategy is IStrategy, Context, StdStrategyStorageV1 {
   //================= NOTE: INTERNAL EXEC FUNCTIONS =================//
 
   function _requestDeposit(uint256, bytes memory) internal virtual returns (bytes memory) {
-    revert Error.NotImplemented();
+    revert StdError.NotImplemented();
   }
 
   function _requestWithdraw(uint256, bytes memory) internal virtual returns (bytes memory) {
-    revert Error.NotImplemented();
+    revert StdError.NotImplemented();
   }
 
   /**

@@ -10,9 +10,12 @@ interface IStrategyExecutor {
     uint256 priority;
     address implementation;
     bool enabled;
-    // TODO(thai): we need to make `struct Position` and move this field to there.
+    // TODO(thai): `context` is necessary to track `totalBalance`.
+    //   But, it seems not good design to keep it in this struct.
+    //   It'd be better to make `struct Position` and move this field to there.
     bytes context;
   }
+
   // TODO: add more fields
 
   // immutable

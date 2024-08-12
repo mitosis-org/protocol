@@ -13,7 +13,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { IMitosisVault } from '@src/interfaces/branch/IMitosisVault.sol';
 import { IStrategyExecutor } from '@src/interfaces/branch/strategy/IStrategyExecutor.sol';
 
-import { Error } from '@src/lib/Error.sol';
+import { StdError } from '@src/lib/StdError.sol';
 
 import { IStrategy, IStrategyDependency } from '@src/interfaces/branch/strategy/IStrategy.sol';
 import { StdStrategy } from '@src/branch/strategy/strategies/StdStrategy.sol';
@@ -60,11 +60,11 @@ contract StrategyExecutor is
   }
 
   fallback() external payable {
-    revert Error.Unauthorized();
+    revert StdError.Unauthorized();
   }
 
   receive() external payable {
-    revert Error.Unauthorized();
+    revert StdError.Unauthorized();
   }
 
   function initialize(address owner_, address emergencyManager_) public initializer {
@@ -179,7 +179,7 @@ contract StrategyExecutor is
     StorageV1 storage $ = _getStorageV1();
 
     _assertStrategist($);
-    if (address(_asset) == reward) revert Error.InvalidAddress('reward');
+    if (address(_asset) == reward) revert StdError.InvalidAddress('reward');
 
     IERC20(reward).approve(address(_vault), amount);
     _vault.settleExtraRewards(_eolId, reward, amount);
@@ -192,6 +192,12 @@ contract StrategyExecutor is
    * @dev only strategist can call this function
    */
   function execute(IStrategyExecutor.Call[] calldata calls) external whenNotPaused {
+    // TODO(thai): check that total balance is almost the same before and after the execution.
+
+    // TODO(thai): for now, strategist can move funds to defi positions not tracked by `totalBalance`.
+    //   It may incur a loss because `totalBalance` becomes less.
+    //   We should add mechanism to prevent this.
+
     StorageV1 storage $ = _getStorageV1();
 
     _assertStrategist($);
@@ -216,7 +222,7 @@ contract StrategyExecutor is
     onlyOwner
     returns (uint256)
   {
-    if (implementation.code.length == 0) revert Error.InvalidAddress('implementation');
+    if (implementation.code.length == 0) revert StdError.InvalidAddress('implementation');
 
     StorageV1 storage $ = _getStorageV1();
     {
@@ -277,13 +283,13 @@ contract StrategyExecutor is
   // MANAGES ROLES
 
   function setEmergencyManager(address emergencyManager_) external onlyOwner {
-    if (emergencyManager_ == address(0)) revert Error.InvalidAddress('emergencyManager');
+    if (emergencyManager_ == address(0)) revert StdError.InvalidAddress('emergencyManager');
     _getStorageV1().emergencyManager = emergencyManager_;
     emit EmergencyManagerSet(emergencyManager_);
   }
 
   function setStrategist(address strategist_) external onlyOwner {
-    if (strategist_ == address(0)) revert Error.InvalidAddress('strategist');
+    if (strategist_ == address(0)) revert StdError.InvalidAddress('strategist');
     _getStorageV1().strategist = strategist_;
     emit StrategistSet(strategist_);
   }
@@ -297,7 +303,7 @@ contract StrategyExecutor is
 
   function pause() external {
     StorageV1 storage $ = _getStorageV1();
-    if (_msgSender() != owner() && _msgSender() != $.emergencyManager) revert Error.Unauthorized();
+    if (_msgSender() != owner() && _msgSender() != $.emergencyManager) revert StdError.Unauthorized();
     _pause();
   }
 
@@ -310,7 +316,7 @@ contract StrategyExecutor is
   function _assertStrategist(StorageV1 storage $) internal view {
     address strategist_ = $.strategist;
     if (strategist_ == address(0)) revert StrategistNotSet();
-    if (_msgSender() != strategist_) revert Error.Unauthorized();
+    if (_msgSender() != strategist_) revert StdError.Unauthorized();
   }
 
   function _getStrategy(StorageV1 storage $, uint256 strategyId) internal view returns (Strategy storage strategy) {
