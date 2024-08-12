@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { Vm } from '@std/Vm.sol';
 import { Script } from '@std/Script.sol';
+import { Vm } from '@std/Vm.sol';
 import { console } from '@std/console.sol';
 
 import { LibString } from '@solady/utils/LibString.sol';

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { Vm } from '@std/Vm.sol';
-import { Test } from '@std/Test.sol';
-import { console } from '@std/console.sol';
 import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
+import { Test } from '@std/Test.sol';
+import { Vm } from '@std/Vm.sol';
+import { console } from '@std/console.sol';
 
 import { CrossChainRegistry } from '../../../src/hub/cross-chain/CrossChainRegistry.sol';
 import { MsgType } from '../../../src/hub/cross-chain/messages/Message.sol';
