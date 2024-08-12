@@ -333,7 +333,10 @@ contract StrategyExecutor is
 
   function _totalBalance(StorageV1 storage $, uint256 strategyId) internal view returns (uint256) {
     Strategy memory strategy = _getStrategy($, strategyId);
-    return IStrategy(strategy.implementation).totalBalance(strategy.context);
+
+    // TODO(thai): is it okay to use `strategy.context` for `pendingWithdrawBalance()`?
+    return IStrategy(strategy.implementation).totalBalance(strategy.context)
+      + IStrategy(strategy.implementation).pendingWithdrawBalance(strategy.context);
   }
 
   function _totalBalance(StorageV1 storage $) internal view returns (uint256) {
