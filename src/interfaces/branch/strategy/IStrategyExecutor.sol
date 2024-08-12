@@ -10,6 +10,8 @@ interface IStrategyExecutor {
     uint256 priority;
     address implementation;
     bool enabled;
+    // TODO(thai): we need to make `struct Position` and move this field to there.
+    bytes context;
   }
   // TODO: add more fields
 
@@ -26,11 +28,19 @@ interface IStrategyExecutor {
   function isStrategyEnabled(uint256 strategyId) external view returns (bool enabled);
   function isStrategyEnabled(address implementation) external view returns (bool enabled);
 
+  function totalBalance() external view returns (uint256 totalBalance_);
+  function lastSettledBalance() external view returns (uint256 lastSettledBalance_);
+
+  function fetchEOL(uint256 amount) external;
+  function returnEOL(uint256 amount) external;
+  function settle() external;
+  function settleExtraRewards(address reward, uint256 amount) external;
+
   // executions (strategy)
   struct Call {
     uint256 strategyId;
     bytes[] callData;
   }
 
-  function execute(Call[] calldata calls, uint256 useEOL) external;
+  function execute(Call[] calldata calls) external;
 }

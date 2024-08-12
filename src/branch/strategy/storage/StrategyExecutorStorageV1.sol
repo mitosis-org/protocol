@@ -20,6 +20,7 @@ abstract contract StrategyExecutorStorageV1 {
     address strategist;
     address emergencyManager;
     StrategyRegistry strategies;
+    uint256 lastSettledBalance;
   }
 
   // keccak256(abi.encode(uint256(keccak256("mitosis.storage.StrategyExecutor.v1")) - 1)) & ~bytes32(uint256(0xff))

@@ -15,7 +15,8 @@ import { IStrategyExecutor } from '@src/interfaces/branch/strategy/IStrategyExec
 
 import { Error } from '@src/lib/Error.sol';
 
-import { StdStrategy, IStrategyDependency } from '@src/branch/strategy/strategies/StdStrategy.sol';
+import { IStrategy, IStrategyDependency } from '@src/interfaces/branch/strategy/IStrategy.sol';
+import { StdStrategy } from '@src/branch/strategy/strategies/StdStrategy.sol';
 import { StrategyExecutorStorageV1 } from '@src/branch/strategy/storage/StrategyExecutorStorageV1.sol';
 
 contract StrategyExecutor is
@@ -49,6 +50,8 @@ contract StrategyExecutor is
   IMitosisVault internal immutable _vault;
   IERC20 internal immutable _asset;
 
+  //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
+
   constructor(IMitosisVault vault_, IERC20 asset_) initializer {
     _vault = vault_;
     _asset = asset_;
@@ -72,7 +75,7 @@ contract StrategyExecutor is
     $.emergencyManager = emergencyManager_;
   }
 
-  // View functions
+  //=========== NOTE: VIEW FUNCTIONS ===========//
 
   function vault() public view returns (IMitosisVault vault_) {
     return _vault;
@@ -114,7 +117,67 @@ contract StrategyExecutor is
     return _isStrategyEnabled($, $.strategies.idxByImpl[implementation]);
   }
 
+  function totalBalance() external view returns (uint256 totalBalance_) {
+    return _totalBalance(_getStorageV1());
+  }
+
+  function lastSettledBalance() external view returns (uint256 lastSettledBalance_) {
+    return _getStorageV1().lastSettledBalance;
+  }
+
   //=========== NOTE: STRATEGIST FUNCTIONS ===========//
+
+  function deallocateEOL(uint256 amount) external whenNotPaused {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertStrategist($);
+
+    _vault.deallocateEOL(address(_asset), amount);
+  }
+
+  function fetchEOL(uint256 amount) external whenNotPaused {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertStrategist($);
+
+    _vault.fetchEOL(address(_asset), amount);
+  }
+
+  function returnEOL(uint256 amount) external whenNotPaused {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertStrategist($);
+
+    _asset.approve(address(_vault), amount);
+    _vault.returnEOL(address(_asset), amount);
+  }
+
+  function settle() external whenNotPaused {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertStrategist($);
+
+    uint256 totalBalance_ = _totalBalance($);
+    uint256 prevSettledBalance = $.lastSettledBalance;
+
+    $.lastSettledBalance = totalBalance_;
+
+    if (totalBalance_ >= prevSettledBalance) {
+      _vault.settleYield(address(_asset), totalBalance_ - prevSettledBalance);
+    } else {
+      _vault.settleLoss(address(_asset), prevSettledBalance - totalBalance_);
+    }
+  }
+
+  function settleExtraRewards(address reward, uint256 amount) external whenNotPaused {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertStrategist($);
+    if (address(_asset) == reward) revert Error.InvalidAddress('reward');
+
+    IERC20(reward).approve(address(_vault), amount);
+    _vault.settleExtraRewards(address(_asset), reward, amount);
+  }
 
   /**
    * @notice do not execute a calls that indicates a transfer of funds
@@ -122,12 +185,10 @@ contract StrategyExecutor is
    *
    * @dev only strategist can call this function
    */
-  function execute(IStrategyExecutor.Call[] calldata calls, uint256 useEOL) external whenNotPaused {
+  function execute(IStrategyExecutor.Call[] calldata calls) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertStrategist($);
-
-    if (useEOL > 0) _vault.useEOL(address(_asset), useEOL);
 
     for (uint256 i = 0; i < calls.length; i++) {
       uint256 strategyId = calls[i].strategyId;
@@ -138,16 +199,17 @@ contract StrategyExecutor is
         strategy.implementation.functionDelegateCall(calls[i].callData[j]);
       }
     }
-
-    uint256 balance_ = _asset.balanceOf(address(this));
-    if (balance_ > 0) _vault.returnEOL(address(_asset), balance_);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
   // MANAGES STRATEGIES
 
-  function addStrategy(uint256 priority, address implementation) external onlyOwner returns (uint256) {
+  function addStrategy(uint256 priority, address implementation, bytes calldata context)
+    external
+    onlyOwner
+    returns (uint256)
+  {
     if (implementation.code.length == 0) revert Error.InvalidAddress('implementation');
 
     StorageV1 storage $ = _getStorageV1();
@@ -161,8 +223,9 @@ contract StrategyExecutor is
     $.strategies.reg[nextId] = Strategy({
       priority: priority,
       implementation: implementation,
-      enabled: false // disabled by default
-     });
+      enabled: false, // disabled by default
+      context: context
+    });
     $.strategies.idxByImpl[implementation] = nextId;
     $.strategies.len++;
 
@@ -254,5 +317,20 @@ contract StrategyExecutor is
 
   function _isStrategyEnabled(StorageV1 storage $, uint256 strategyId) internal view returns (bool enabled) {
     return $.strategies.len > strategyId && _getStrategy($, strategyId).enabled;
+  }
+
+  function _totalBalance(StorageV1 storage $, uint256 strategyId) internal view returns (uint256) {
+    Strategy memory strategy = _getStrategy($, strategyId);
+    return IStrategy(strategy.implementation).totalBalance(strategy.context);
+  }
+
+  function _totalBalance(StorageV1 storage $) internal view returns (uint256) {
+    uint256 total = _asset.balanceOf(address(this));
+
+    for (uint256 i = 0; i < $.strategies.len; i++) {
+      total += _totalBalance($, i);
+    }
+
+    return total;
   }
 }
