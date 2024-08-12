@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
+
 import { IMitosisLedger } from '../interfaces/hub/IMitosisLedger.sol';
 
 /// Note: This contract only stores state related to balances.
@@ -88,7 +90,9 @@ contract MitosisLedeger is IMitosisLedger {
     EolState storage state = _eolEntries[miAsset].state;
     state.released -= amount;
     state.resolved += amount;
-    // TODO(ray): take a snapshot about `asset - miAsset` ratio
+
+    // TODO(ray): need to store below value.
+    uint256 asset = IERC4626(miAsset).convertToAssets(amount);
   }
 
   function recordOptOutClaim(address miAsset, uint256 amount) external /* auth */ {
