@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Mitosis Protocol
+    name: test
     runs-on: arc-runner-set
     container: node:20
 
