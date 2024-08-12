@@ -54,6 +54,8 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   error MitosisVault__EOLNotInitialized(uint256 eolId);
   error MitosisVault__EOLAlreadyInitialized(uint256 eolId);
 
+  error MitosisVault__StrategyExecutorNotDrained(uint256 eolId, address strategyExecutor);
+
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
   constructor() initializer { }
@@ -229,8 +231,13 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
     _assertEOLInitialized($, eolId);
 
-    // Ensure the strategyExecutor is not set yet
-    if (eolInfo.strategyExecutor != address(0)) revert StdError.InvalidAddress('strategyExecutor');
+    if (eolInfo.strategyExecutor != address(0)) {
+      // NOTE: no way to check if every extra rewards are settled.
+      bool drained = IStrategyExecutor(eolInfo.strategyExecutor).totalBalance() == 0
+        && IStrategyExecutor(eolInfo.strategyExecutor).lastSettledBalance() == 0;
+
+      if (!drained) revert MitosisVault__StrategyExecutorNotDrained(eolId, eolInfo.strategyExecutor);
+    }
 
     if (eolId != IStrategyExecutor(strategyExecutor).eolId()) {
       revert StdError.InvalidId('strategyExecutor.eolId');
