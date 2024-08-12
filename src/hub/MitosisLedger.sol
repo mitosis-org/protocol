@@ -25,8 +25,8 @@ contract MitosisLedeger is IMitosisLedger {
     uint256 pending;
 
     /// @dev released is the state temporarily storing the value released
-    /// from the MitosisVault of the branch when it is uploaded. This value
-    /// is used when resolving the opt-out request.
+    /// from the MitosisVault of the branch when it is uploaded (MsgDeallocateEOL).
+    /// This value is used when resolving the opt-out request.
     /// Note: It is a state that allows the logic for settling in Mitosis L1
     /// and the logic for resolving the opt-out request to be executed
     /// separately.
@@ -76,12 +76,13 @@ contract MitosisLedeger is IMitosisLedger {
     _eolEntries[miAsset].state.finalized += amount;
   }
 
+  // Note: Could be change parameters (add requestId parameter) in opt-out task.
   function recordOptOutRequest(address miAsset, uint256 amount) external /* auth */ {
     EolState storage state = _eolEntries[miAsset].state;
     state.pending += amount;
   }
 
-  function recordOptOutRelease(address miAsset, uint256 amount) external /* auth */ {
+  function recordDeallocateEOL(address miAsset, uint256 amount) external /* auth */ {
     EolState storage state = _eolEntries[miAsset].state;
     state.released += amount;
   }
@@ -91,7 +92,7 @@ contract MitosisLedeger is IMitosisLedger {
     state.released -= amount;
     state.resolved += amount;
 
-    // TODO(ray): need to store below value.
+    // TODO(ray): Need to store below value in opt-out task.
     uint256 asset = IERC4626(miAsset).convertToAssets(amount);
   }
 
