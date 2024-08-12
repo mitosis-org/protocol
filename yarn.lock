@@ -725,7 +725,7 @@ __metadata:
 
 "@hyperlane-xyz/core@https://github.com/mitosis-org/hyperlane-core#main":
   version: 5.0.0
-  resolution: "@hyperlane-xyz/core@https://github.com/mitosis-org/hyperlane-core.git#commit=12383fa0943b6ba484eb7ad3fb74b81ae00c8a97"
+  resolution: "@hyperlane-xyz/core@https://github.com/mitosis-org/hyperlane-core.git#commit=687a9a462821b3b97cd4b6037a3b3fca00a4efe1"
   dependencies:
     "@arbitrum/nitro-contracts": "npm:^1.2.1"
     "@eth-optimism/contracts": "npm:^0.6.0"
@@ -734,7 +734,7 @@ __metadata:
     "@oz-hpl/contracts": "npm:@openzeppelin/contracts@^4.9.3"
     "@oz-hpl/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@^4.9.3"
     fx-portal: "npm:^1.0.3"
-  checksum: 10c0/53c151b9f8bd62655f2b60d5352a3c479d70d1e84cdb345256894251a6f6c1f7a4d065bc83602f0af20fb020131d598cd35bd846f844233dd45d6ca1a081af69
+  checksum: 10c0/c1cfd957ff72b2a189e34f2606a2de0da5955853cd8d5f1dd8374ffef0ace58334cf2f575768129b800bfa9bd2ed84938ac0685a7759dca8c100f3672a7747f0
   languageName: node
   linkType: hard
 
