@@ -723,21 +723,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hyperlane-xyz/core@https://github.com/mitosis-org/hyperlane-core#main":
-  version: 5.0.0
-  resolution: "@hyperlane-xyz/core@https://github.com/mitosis-org/hyperlane-core.git#commit=687a9a462821b3b97cd4b6037a3b3fca00a4efe1"
-  dependencies:
-    "@arbitrum/nitro-contracts": "npm:^1.2.1"
-    "@eth-optimism/contracts": "npm:^0.6.0"
-    "@hyperlane-xyz/utils": "npm:5.0.0"
-    "@layerzerolabs/lz-evm-oapp-v2": "npm:2.0.2"
-    "@oz-hpl/contracts": "npm:@openzeppelin/contracts@^4.9.3"
-    "@oz-hpl/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@^4.9.3"
-    fx-portal: "npm:^1.0.3"
-  checksum: 10c0/c1cfd957ff72b2a189e34f2606a2de0da5955853cd8d5f1dd8374ffef0ace58334cf2f575768129b800bfa9bd2ed84938ac0685a7759dca8c100f3672a7747f0
-  languageName: node
-  linkType: hard
-
 "@hyperlane-xyz/utils@npm:5.0.0":
   version: 5.0.0
   resolution: "@hyperlane-xyz/utils@npm:5.0.0"
@@ -880,7 +865,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@mitosis/protocol@workspace:."
   dependencies:
-    "@hyperlane-xyz/core": "https://github.com/mitosis-org/hyperlane-core#main"
     "@trivago/prettier-plugin-sort-imports": "npm:^4.3.0"
     "@types/node": "npm:^22.0.3"
     "@typescript-eslint/eslint-plugin": "npm:^8.0.0"
@@ -888,6 +872,7 @@ __metadata:
     eslint: "npm:^9.8.0"
     eslint-config-prettier: "npm:^9.1.0"
     eslint-plugin-prettier: "npm:^5.2.1"
+    hpl-v5: "https://github.com/mitosis-org/hyperlane-core#v5"
     prettier: "npm:^3.3.3"
     prettier-plugin-sort-json: "npm:^4.0.0"
     solc: "npm:^0.8.26"
@@ -2550,6 +2535,21 @@ __metadata:
     minimalistic-assert: "npm:^1.0.0"
     minimalistic-crypto-utils: "npm:^1.0.1"
   checksum: 10c0/f3d9ba31b40257a573f162176ac5930109816036c59a09f901eb2ffd7e5e705c6832bedfff507957125f2086a0ab8f853c0df225642a88bf1fcaea945f20600d
+  languageName: node
+  linkType: hard
+
+"hpl-v5@https://github.com/mitosis-org/hyperlane-core#v5":
+  version: 5.0.0
+  resolution: "hpl-v5@https://github.com/mitosis-org/hyperlane-core.git#commit=3cb69d20818c08e8fa81c9d154a242b89d7deac2"
+  dependencies:
+    "@arbitrum/nitro-contracts": "npm:^1.2.1"
+    "@eth-optimism/contracts": "npm:^0.6.0"
+    "@hyperlane-xyz/utils": "npm:5.0.0"
+    "@layerzerolabs/lz-evm-oapp-v2": "npm:2.0.2"
+    "@oz-hpl/contracts": "npm:@openzeppelin/contracts@^4.9.3"
+    "@oz-hpl/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@^4.9.3"
+    fx-portal: "npm:^1.0.3"
+  checksum: 10c0/c204f615c64d74ec37ad947430bc835e6b50279f1e57dd07cc17242387985324c69bb7147bc0cb0302bfb65f11bcdb45bbffb3cf88f1385f6a090d8cb1df30e1
   languageName: node
   linkType: hard
 
