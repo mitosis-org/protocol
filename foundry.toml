@@ -55,6 +55,7 @@ line_length = 120
 tab_width = 2
 bracket_spacing = true
 quote_style = "single"
+ignore = ['./src/external/**/*']
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 
