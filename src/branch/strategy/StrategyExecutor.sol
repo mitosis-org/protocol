@@ -10,14 +10,14 @@ import { Address } from '@oz-v5/utils/Address.sol';
 import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
-import { IMitosisVault } from '@src/interfaces/branch/IMitosisVault.sol';
-import { IStrategyExecutor } from '@src/interfaces/branch/strategy/IStrategyExecutor.sol';
+import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
+import { IStrategyExecutor } from '../../interfaces/branch/strategy/IStrategyExecutor.sol';
 
-import { StdError } from '@src/lib/StdError.sol';
+import { StdError } from '../../lib/StdError.sol';
 
-import { IStrategy, IStrategyDependency } from '@src/interfaces/branch/strategy/IStrategy.sol';
-import { StdStrategy } from '@src/branch/strategy/strategies/StdStrategy.sol';
-import { StrategyExecutorStorageV1 } from '@src/branch/strategy/storage/StrategyExecutorStorageV1.sol';
+import { IStrategy, IStrategyDependency } from '../../interfaces/branch/strategy/IStrategy.sol';
+import { StdStrategy } from '../../branch/strategy/strategies/StdStrategy.sol';
+import { StrategyExecutorStorageV1 } from '../../branch/strategy/storage/StrategyExecutorStorageV1.sol';
 
 contract StrategyExecutor is
   IStrategyDependency,

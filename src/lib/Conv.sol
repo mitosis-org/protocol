@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 pragma abicoder v2;
 
 import { Strings } from '@oz-v5/utils/Strings.sol';
-import { StdError } from '@src/lib/StdError.sol';
+import { StdError } from './StdError.sol';
 
 library Conv {
   function toBytes32(address addr) internal pure returns (bytes32) {

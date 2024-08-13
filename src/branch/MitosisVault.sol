@@ -7,11 +7,11 @@ import { Address } from '@oz-v5/utils/Address.sol';
 import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
-import { MitosisVaultStorageV1 } from '@src/branch/storage/MitosisVaultStorageV1.sol';
-import { AssetAction, EOLAction, IMitosisVault } from '@src/interfaces/branch/IMitosisVault.sol';
-import { IMitosisVaultEntrypoint } from '@src/interfaces/branch/IMitosisVaultEntrypoint.sol';
-import { IStrategyExecutor } from '@src/interfaces/branch/strategy/IStrategyExecutor.sol';
-import { StdError } from '@src/lib/StdError.sol';
+import { MitosisVaultStorageV1 } from '../branch/storage/MitosisVaultStorageV1.sol';
+import { AssetAction, EOLAction, IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
+import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
+import { IStrategyExecutor } from '../interfaces/branch/strategy/IStrategyExecutor.sol';
+import { StdError } from '../lib/StdError.sol';
 
 // TODO(thai): add some view functions in MitosisVault
 

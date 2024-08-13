@@ -4,12 +4,12 @@ pragma solidity 0.8.26;
 import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 
-import { IMorpho, Id, MarketParams } from '@src/external/morpho/Morpho.sol';
-import { SharesMathLib, MorphoBalancesLib } from '@src/external/morpho/MorphoLib.sol';
+import { IMorpho, Id, MarketParams } from '../../../external/morpho/Morpho.sol';
+import { SharesMathLib, MorphoBalancesLib } from '../../../external/morpho/MorphoLib.sol';
 
-import { StdError } from '@src/lib/StdError.sol';
+import { StdError } from '../../../lib/StdError.sol';
 
-import { StdStrategy } from '@src/branch/strategy/strategies/StdStrategy.sol';
+import { StdStrategy } from './StdStrategy.sol';
 
 contract MorphoStrategy is StdStrategy {
   using SafeERC20 for IERC20;

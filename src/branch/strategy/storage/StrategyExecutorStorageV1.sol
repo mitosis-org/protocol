@@ -3,8 +3,8 @@ pragma solidity 0.8.26;
 pragma abicoder v2;
 
 import { IERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
-import { IStrategyExecutor } from '@src/interfaces/branch/strategy/IStrategyExecutor.sol';
-import { ERC7201Utils } from '@src/lib/ERC7201Utils.sol';
+import { IStrategyExecutor } from '../../../interfaces/branch/strategy/IStrategyExecutor.sol';
+import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 
 abstract contract StrategyExecutorStorageV1 {
   using ERC7201Utils for string;

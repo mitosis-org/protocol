@@ -13,7 +13,5 @@
 @openzeppelin-contracts-5.0.2=dependencies/@openzeppelin-contracts-5.0.2
 @oz-v4=dependencies/@openzeppelin-contracts-4.9.6
 @ozu-v4=dependencies/@openzeppelin-contracts-upgradeable-4.9.6
-@src=src/
-@test=test/
 @openzeppelin-contracts-4.9.6=dependencies/@openzeppelin-contracts-4.9.6
 @openzeppelin-contracts-upgradeable-4.9.6=dependencies/@openzeppelin-contracts-upgradeable-4.9.6

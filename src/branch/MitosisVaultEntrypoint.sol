@@ -7,11 +7,11 @@ import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
-import { IMitosisVaultEntrypoint } from '@src/interfaces/branch/IMitosisVaultEntrypoint.sol';
-import { IMitosisVault } from '@src/interfaces/branch/IMitosisVault.sol';
-import { StdError } from '@src/lib/StdError.sol';
-import { Conv } from '@src/lib/Conv.sol';
-import '@src/message/Message.sol';
+import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
+import { IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
+import { StdError } from '../lib/StdError.sol';
+import { Conv } from '../lib/Conv.sol';
+import '../message/Message.sol';
 
 // TODO(thai): consider to make our own contract (`HyperlaneConnector`) instead of using `Router`.
 
