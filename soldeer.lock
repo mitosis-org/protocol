@@ -18,25 +18,25 @@ source = "https://soldeer-revisions.s3.amazonaws.com/openzeppelin-foundry-upgrad
 checksum = "16a43c67b7c62e4a638b669b35f7b19c98a37278811fe910750b62b6e6fdffa7"
 
 [[dependencies]]
-name = "@openzeppelin-contracts-upgradeable"
-version = "5.0.2"
-source = "https://soldeer-revisions.s3.amazonaws.com/@openzeppelin-contracts-upgradeable/5_0_2_14-03-2024_06:12:07_contracts-upgradeable.zip"
-checksum = "fb3f8db8541fc01636f91b0e7d9dd6f450f1bf7e2b4a17e96caf6e779ace8f5b"
-
-[[dependencies]]
 name = "@openzeppelin-contracts"
 version = "5.0.2"
 source = "https://soldeer-revisions.s3.amazonaws.com/@openzeppelin-contracts/5_0_2_14-03-2024_06:11:59_contracts.zip"
 checksum = "8bc4f0acc7c187771b878d46f7de4bfad1acad2eb5d096d9d05d34035853f5c3"
 
 [[dependencies]]
-name = "@openzeppelin-contracts"
-version = "4.9.6"
-source = "https://soldeer-revisions.s3.amazonaws.com/@openzeppelin-contracts/4_9_6_14-03-2024_06:11:55_contracts.zip"
-checksum = "57f2cae4b45b91b0847e58c36ea70aee0fb3212cc09b47279627f0764f87e5ee"
+name = "@openzeppelin-contracts-upgradeable"
+version = "5.0.2"
+source = "https://soldeer-revisions.s3.amazonaws.com/@openzeppelin-contracts-upgradeable/5_0_2_14-03-2024_06:12:07_contracts-upgradeable.zip"
+checksum = "fb3f8db8541fc01636f91b0e7d9dd6f450f1bf7e2b4a17e96caf6e779ace8f5b"
 
 [[dependencies]]
-name = "@openzeppelin-contracts-upgradeable"
+name = "@openzeppelin-contracts-v4"
 version = "4.9.6"
-source = "https://soldeer-revisions.s3.amazonaws.com/@openzeppelin-contracts-upgradeable/4_9_6_14-03-2024_06:12:03_contracts-upgradeable.zip"
-checksum = "dddc8efa3da3dcd0dbda63efdc34d6006ece3ae5a8f46b0cf914870df45b9c71"
+source = "git@github.com:OpenZeppelin/openzeppelin-contracts.git"
+checksum = "v4.9.6"
+
+[[dependencies]]
+name = "@openzeppelin-contracts-upgradeable-v4"
+version = "4.9.6"
+source = "git@github.com:OpenZeppelin/openzeppelin-contracts-upgradeable.git"
+checksum = "v4.9.6"
