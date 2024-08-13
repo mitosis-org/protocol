@@ -8,7 +8,7 @@ import { IMitosisLedger } from '../interfaces/hub/IMitosisLedger.sol';
 import { MitosisLedgerStorageV1 } from './MitosisLedgerStorageV1.sol';
 
 /// Note: This contract only stores state related to balances.
-contract MitosisLedeger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedgerStorageV1 {
+contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedgerStorageV1 {
   constructor() {
     _disableInitializers();
   }
@@ -31,6 +31,10 @@ contract MitosisLedeger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedge
   function getEOLAllocateAmount(address miAsset) external view returns (uint256) {
     EOLState storage state = _getStorageV1().eolEntries[miAsset].state;
     return state.finalized - state.pending;
+  }
+
+  function getEOLState(address miAsset) external view returns (EOLState memory) {
+    return _getStorageV1().eolEntries[miAsset].state;
   }
 
   // Mutative functions
@@ -64,7 +68,7 @@ contract MitosisLedeger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedge
     state.resolved += amount;
 
     // TODO(ray): Need to store below value in opt-out task.
-    uint256 asset = IERC4626(miAsset).convertToAssets(amount);
+    // uint256 asset = IERC4626(miAsset).convertToAssets(amount);
   }
 
   function recordOptOutClaim(address miAsset, uint256 amount) external /* auth */ {
