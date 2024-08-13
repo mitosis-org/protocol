@@ -22,57 +22,57 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
 
   // CHAIN
 
-  function getAssetAmount(uint256 chain, address asset) external view returns (uint256) {
-    return _getStorageV1().chainEntries[chain].deposits[asset];
+  function getAssetAmount(uint256 chainId, address asset) external view returns (uint256) {
+    return _getStorageV1().chainEntries[chainId].deposits[asset];
   }
 
   // EOL
 
-  function getEOLAllocateAmount(address miAsset) external view returns (uint256) {
-    EOLState storage state = _getStorageV1().eolEntries[miAsset].state;
+  function getEOLAllocateAmount(uint256 eolId) external view returns (uint256) {
+    EOLState storage state = _getStorageV1().eolEntries[eolId].state;
     return state.finalized - state.pending;
   }
 
-  function getEOLState(address miAsset) external view returns (EOLState memory) {
-    return _getStorageV1().eolEntries[miAsset].state;
+  function getEOLState(uint256 eolId) external view returns (EOLState memory) {
+    return _getStorageV1().eolEntries[eolId].state;
   }
 
   // Mutative functions
 
-  function recordDeposit(uint256 chain, address asset, uint256 amount) external /* auth */ {
-    _getStorageV1().chainEntries[chain].deposits[asset] += amount;
+  function recordDeposit(uint256 chainId, address asset, uint256 amount) external /* auth */ {
+    _getStorageV1().chainEntries[chainId].deposits[asset] += amount;
   }
 
-  function recordWithdraw(uint256 chain, address asset, uint256 amount) external /* auth */ {
-    _getStorageV1().chainEntries[chain].deposits[asset] -= amount;
+  function recordWithdraw(uint256 chainId, address asset, uint256 amount) external /* auth */ {
+    _getStorageV1().chainEntries[chainId].deposits[asset] -= amount;
   }
 
-  function recordOptIn(address miAsset, uint256 amount) external /* auth */ {
-    _getStorageV1().eolEntries[miAsset].state.finalized += amount;
+  function recordOptIn(uint256 eolId, uint256 amount) external /* auth */ {
+    _getStorageV1().eolEntries[eolId].state.finalized += amount;
   }
 
-  // Note: Could be change parameters (add requestId parameter) in opt-out task.
-  function recordOptOutRequest(address miAsset, uint256 amount) external /* auth */ {
-    EOLState storage state = _getStorageV1().eolEntries[miAsset].state;
+  function recordOptOutRequest(uint256 eolId, uint256 amount) external /* auth */ {
+    EOLState storage state = _getStorageV1().eolEntries[eolId].state;
     state.pending += amount;
+    // TODO(ray): Need to store below value in opt-out task.
+    // uint256 asset = IERC4626(eolId).convertToAssets(amount);
   }
 
-  function recordDeallocateEOL(address miAsset, uint256 amount) external /* auth */ {
-    EOLState storage state = _getStorageV1().eolEntries[miAsset].state;
+  function recordDeallocateEOL(uint256 eolId, uint256 amount) external /* auth */ {
+    EOLState storage state = _getStorageV1().eolEntries[eolId].state;
     state.released += amount;
   }
 
-  function recordOptOutResolve(address miAsset, uint256 amount) external /* auth */ {
-    EOLState storage state = _getStorageV1().eolEntries[miAsset].state;
+  function recordOptOutResolve(uint256 eolId, uint256 amount) external /* auth */ {
+    EOLState storage state = _getStorageV1().eolEntries[eolId].state;
     state.released -= amount;
     state.resolved += amount;
-
     // TODO(ray): Need to store below value in opt-out task.
-    // uint256 asset = IERC4626(miAsset).convertToAssets(amount);
+    // uint256 asset = IERC4626(eolId).convertToAssets(amount);
   }
 
-  function recordOptOutClaim(address miAsset, uint256 amount) external /* auth */ {
-    EOLState storage state = _getStorageV1().eolEntries[miAsset].state;
+  function recordOptOutClaim(uint256 eolId, uint256 amount) external /* auth */ {
+    EOLState storage state = _getStorageV1().eolEntries[eolId].state;
     state.pending -= amount;
     state.resolved -= amount;
     state.finalized -= amount;

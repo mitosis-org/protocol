@@ -41,8 +41,8 @@ contract MitosisLedgerStorageV1 {
   }
 
   struct StorageV1 {
-    mapping(uint256 chain => ChainEntry) chainEntries;
-    mapping(address miAsset => EOLEntry) eolEntries;
+    mapping(uint256 chainId => ChainEntry) chainEntries;
+    mapping(uint256 eolId => EOLEntry) eolEntries;
   }
 
   string constant _NAMESPACE = 'mitosis.storage.MitosisLedgerStorage.v1';
