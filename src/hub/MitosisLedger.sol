@@ -6,6 +6,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 
 import { IMitosisLedger } from '../interfaces/hub/IMitosisLedger.sol';
 import { MitosisLedgerStorageV1 } from './MitosisLedgerStorageV1.sol';
+import { StdError } from '../lib/StdError.sol';
 
 /// Note: This contract only stores state related to balances.
 contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedgerStorageV1 {
@@ -44,7 +45,11 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
   }
 
   function recordWithdraw(uint256 chainId, address asset, uint256 amount) external /* auth */ {
-    _getStorageV1().chainEntries[chainId].deposits[asset] -= amount;
+    ChainEntry storage chain = _getStorageV1().chainEntries[chainId];
+    if (chain.deposits[asset] < amount) {
+      revert StdError.ArithmeticError();
+    }
+    chain.deposits[asset] -= amount;
   }
 
   function recordOptIn(uint256 eolId, uint256 amount) external /* auth */ {
