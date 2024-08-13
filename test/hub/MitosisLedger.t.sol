@@ -8,32 +8,35 @@ import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
 import { MitosisLedger } from '../../src/hub/MitosisLedger.sol';
+import { StdError } from '../../src/lib/StdError.sol';
+import { Toolkit } from '../util/Toolkit.sol';
 
-contract TestCrossChainRegistry is Test {
+contract TestCrossChainRegistry is Test, Toolkit {
   MitosisLedger internal mitosisLedger;
 
   ProxyAdmin internal _proxyAdmin;
+  address immutable owner = _addr('owner');
 
   function setUp() public {
-    _proxyAdmin = new ProxyAdmin(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
+    vm.startPrank(owner);
+    _proxyAdmin = new ProxyAdmin(owner);
 
     MitosisLedger mitosisLedgerImpl = new MitosisLedger();
     mitosisLedger = MitosisLedger(
       payable(
         address(
           new TransparentUpgradeableProxy(
-            address(mitosisLedgerImpl),
-            address(_proxyAdmin),
-            abi.encodeWithSelector(mitosisLedger.initialize.selector, 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496)
+            address(mitosisLedgerImpl), address(_proxyAdmin), abi.encodeCall(mitosisLedger.initialize, (owner))
           )
         )
       )
     );
+    vm.stopPrank();
   }
 
   function test_recordDeposit() public {
     uint256 chainId = 1;
-    uint256 amount = 100;
+    uint256 amount = 100 ether;
 
     address asset1 = address(1);
     mitosisLedger.recordDeposit(chainId, asset1, amount);
@@ -53,9 +56,9 @@ contract TestCrossChainRegistry is Test {
   function test_recordWithdraw() public {
     uint256 chainId = 1;
     address asset1 = address(1);
-    uint256 amount = 100;
+    uint256 amount = 100 ether;
 
-    vm.expectRevert(); // underflow
+    vm.expectRevert(abi.encodeWithSelector(StdError.ArithmeticError.selector));
     mitosisLedger.recordWithdraw(chainId, asset1, amount);
 
     mitosisLedger.recordDeposit(chainId, asset1, 10 * amount);
@@ -66,18 +69,18 @@ contract TestCrossChainRegistry is Test {
 
   function test_recordOptIn() public {
     uint256 eolId = 1;
-    uint256 amount = 100;
+    uint256 amount = 100 ether;
     mitosisLedger.recordOptIn(eolId, amount);
     assertEq(mitosisLedger.getEOLAllocateAmount(eolId), amount);
   }
 
   function test_recordOptOut() public {
     uint256 eolId = 1;
-    uint256 amount = 100;
+    uint256 amount = 100 ether;
 
     mitosisLedger.recordOptIn(eolId, amount);
 
-    uint256 optOutAmount = 10;
+    uint256 optOutAmount = 10 ether;
 
     MitosisLedger.EOLState memory state;
 
