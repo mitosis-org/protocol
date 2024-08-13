@@ -41,18 +41,18 @@ contract MitosisLedgerStorageV1 {
   }
 
   struct StorageV1 {
-    mapping(uint256 chainId => ChainEntry) chainEntries;
-    mapping(uint256 eolId => EOLEntry) eolEntries;
+    mapping(uint256 chainId => ChainEntry entry) chainEntries;
+    mapping(uint256 eolId => EOLEntry entry) eolEntries;
   }
 
   string constant _NAMESPACE = 'mitosis.storage.MitosisLedgerStorage.v1';
   bytes32 public immutable StorageV1Location = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
-    bytes32 storageLocation = StorageV1Location;
+    bytes32 slot = StorageV1Location;
     // slither-disable-next-line assembly
     assembly {
-      $.slot := storageLocation
+      $.slot := slot
     }
   }
 }
