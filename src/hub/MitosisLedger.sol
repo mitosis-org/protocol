@@ -24,7 +24,7 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
   // CHAIN
 
   function getAssetAmount(uint256 chainId, address asset) external view returns (uint256) {
-    return _getStorageV1().chainEntries[chainId].deposits[asset];
+    return _getStorageV1().chainEntries[chainId].depositAmounts[asset];
   }
 
   // EOL
@@ -41,15 +41,15 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
   // Mutative functions
 
   function recordDeposit(uint256 chainId, address asset, uint256 amount) external /* auth */ {
-    _getStorageV1().chainEntries[chainId].deposits[asset] += amount;
+    _getStorageV1().chainEntries[chainId].depositAmounts[asset] += amount;
   }
 
   function recordWithdraw(uint256 chainId, address asset, uint256 amount) external /* auth */ {
     ChainEntry storage chain = _getStorageV1().chainEntries[chainId];
-    if (chain.deposits[asset] < amount) {
+    if (chain.depositAmounts[asset] < amount) {
       revert StdError.ArithmeticError();
     }
-    chain.deposits[asset] -= amount;
+    chain.depositAmounts[asset] -= amount;
   }
 
   function recordOptIn(uint256 eolId, uint256 amount) external /* auth */ {
