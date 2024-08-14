@@ -7,7 +7,7 @@ contract MitosisLedgerStorageV1 {
   using ERC7201Utils for string;
 
   struct ChainEntry {
-    mapping(address asset => uint256 amount) depositAmounts;
+    mapping(address asset => uint256 amount) amounts;
   }
 
   struct EOLEntry {
