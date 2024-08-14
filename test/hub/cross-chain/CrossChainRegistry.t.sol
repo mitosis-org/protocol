@@ -74,15 +74,11 @@ contract TestCrossChainRegistry is Test {
 
     vm.expectRevert(); // 'not registered chain'
     ccRegistry.setVault(chainID, vault);
-    vm.expectRevert(); // 'not registered chain'
-    ccRegistry.setUnderlyingAsset(chainID, underlyingAsset);
 
     string memory name = 'Ethereum';
     uint32 hplDomain = 1;
     ccRegistry.setChain(chainID, name, hplDomain);
     ccRegistry.setVault(chainID, vault);
-    ccRegistry.setUnderlyingAsset(chainID, underlyingAsset);
     require(ccRegistry.getVault(chainID) == vault, 'invalid getVault');
-    require(ccRegistry.isSupportUnderlyingAsset(chainID, underlyingAsset), 'isSupportUnderlyingAsset');
   }
 }

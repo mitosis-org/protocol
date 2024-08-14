@@ -8,6 +8,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { CrossChainRegistryStorageV1 } from './CrossChainRegistryStorageV1.sol';
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 
+/// Note: This contract stores data that needs to be shared across chains.
 contract CrossChainRegistry is
   ICrossChainRegistry,
   Ownable2StepUpgradeable,
@@ -18,7 +19,6 @@ contract CrossChainRegistry is
 
   event ChainSet(uint256 indexed chainId, uint32 indexed hplDomain, string name);
   event VaultSet(uint256 indexed chainId, address indexed vault);
-  event UnderlyingAssetSet(uint256 indexed chainId, address indexed vault, address indexed underlyingAsset);
 
   error CrossChainRegistry__NotRegistered();
   error CrossChainRegistry__AlreadyRegistered();
@@ -63,10 +63,6 @@ contract CrossChainRegistry is
     return _getStorageV1().hyperlanes[hplDomain].chainId;
   }
 
-  function isSupportUnderlyingAsset(uint256 chainId, address underlyingAsset) external view returns (bool) {
-    return _getStorageV1().chains[chainId].underlyingAssets[underlyingAsset];
-  }
-
   // Mutative functions
   //
   // TODO: update methods
@@ -99,23 +95,6 @@ contract CrossChainRegistry is
 
     chainInfo.vault = vault;
     emit VaultSet(chainId, vault);
-  }
-
-  function setUnderlyingAsset(address underlyingAsset) external {
-    StorageV1 storage $ = _getStorageV1();
-    for (uint256 i = 0; i < $.chainIds.length; i++) {
-      uint256 chainId = $.chainIds[i];
-      setUnderlyingAsset(chainId, underlyingAsset);
-    }
-  }
-
-  function setUnderlyingAsset(uint256 chainId, address underlyingAsset) public {
-    ChainInfo storage chainInfo = _getStorageV1().chains[chainId];
-    if (chainInfo.vault == address(0)) {
-      revert CrossChainRegistry__NotRegistered();
-    }
-    chainInfo.underlyingAssets[underlyingAsset] = true;
-    emit UnderlyingAssetSet(chainId, chainInfo.vault, underlyingAsset);
   }
 
   // Internal functions

@@ -10,7 +10,6 @@ contract CrossChainRegistryStorageV1 {
     string name;
     uint32 hplDomain;
     address vault;
-    mapping(address underlyingAsset => bool) underlyingAssets;
   }
 
   struct HyperlaneInfo {
