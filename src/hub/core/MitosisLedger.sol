@@ -4,8 +4,8 @@ pragma solidity ^0.8.26;
 import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
-import { IMitosisLedger } from '../interfaces/hub/IMitosisLedger.sol';
-import { MitosisLedgerStorageV1 } from './MitosisLedgerStorageV1.sol';
+import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
+import { MitosisLedgerStorageV1 } from './storage/MitosisLedgerStorageV1.sol';
 
 /// Note: This contract only stores state related to balances.
 contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedgerStorageV1 {
