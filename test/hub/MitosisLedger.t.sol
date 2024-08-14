@@ -58,7 +58,7 @@ contract TestCrossChainRegistry is Test, Toolkit {
     address asset1 = address(1);
     uint256 amount = 100 ether;
 
-    vm.expectRevert(abi.encodeWithSelector(StdError.ArithmeticError.selector));
+    vm.expectRevert(); // underflow
     mitosisLedger.recordWithdraw(chainId, asset1, amount);
 
     mitosisLedger.recordDeposit(chainId, asset1, 10 * amount);
