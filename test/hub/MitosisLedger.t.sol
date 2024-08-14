@@ -82,31 +82,31 @@ contract TestCrossChainRegistry is Test, Toolkit {
 
     uint256 optOutAmount = 10 ether;
 
-    MitosisLedger.EOLState memory state;
+    MitosisLedger.EOLAmountState memory state;
 
     mitosisLedger.recordOptOutRequest(eolId, optOutAmount);
-    state = mitosisLedger.eolState(eolId);
+    state = mitosisLedger.eolAmountState(eolId);
     assertEq(mitosisLedger.getEOLAllocateAmount(eolId), amount - optOutAmount);
-    assertEq(state.pending, optOutAmount);
+    assertEq(state.optOutPending, optOutAmount);
 
-    mitosisLedger.recordReserveEOL(eolId, optOutAmount);
-    state = mitosisLedger.eolState(eolId);
+    mitosisLedger.recordDeallocateEOL(eolId, optOutAmount);
+    state = mitosisLedger.eolAmountState(eolId);
     assertEq(mitosisLedger.getEOLAllocateAmount(eolId), amount - optOutAmount);
-    assertEq(state.pending, optOutAmount);
-    assertEq(state.reserved, optOutAmount);
+    assertEq(state.optOutPending, optOutAmount);
+    assertEq(state.idle, optOutAmount);
 
     mitosisLedger.recordOptOutResolve(eolId, optOutAmount);
-    state = mitosisLedger.eolState(eolId);
+    state = mitosisLedger.eolAmountState(eolId);
     assertEq(mitosisLedger.getEOLAllocateAmount(eolId), amount - optOutAmount);
-    assertEq(state.reserved, 0);
-    assertEq(state.resolved, optOutAmount);
+    assertEq(state.idle, 0);
+    assertEq(state.optOutResolved, optOutAmount);
 
     mitosisLedger.recordOptOutClaim(eolId, optOutAmount);
-    state = mitosisLedger.eolState(eolId);
+    state = mitosisLedger.eolAmountState(eolId);
     assertEq(mitosisLedger.getEOLAllocateAmount(eolId), amount - optOutAmount);
-    assertEq(state.pending, 0);
-    assertEq(state.reserved, 0);
-    assertEq(state.resolved, 0);
-    assertEq(state.finalized, amount - optOutAmount);
+    assertEq(state.optOutPending, 0);
+    assertEq(state.idle, 0);
+    assertEq(state.optOutResolved, 0);
+    assertEq(state.total, amount - optOutAmount);
   }
 }
