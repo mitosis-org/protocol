@@ -85,24 +85,24 @@ contract TestCrossChainRegistry is Test, Toolkit {
     MitosisLedger.EOLState memory state;
 
     mitosisLedger.recordOptOutRequest(eolId, optOutAmount);
-    state = mitosisLedger.getEOLState(eolId);
+    state = mitosisLedger.eolState(eolId);
     assertEq(mitosisLedger.getEOLAllocateAmount(eolId), amount - optOutAmount);
     assertEq(state.pending, optOutAmount);
 
     mitosisLedger.recordDeallocateEOL(eolId, optOutAmount);
-    state = mitosisLedger.getEOLState(eolId);
+    state = mitosisLedger.eolState(eolId);
     assertEq(mitosisLedger.getEOLAllocateAmount(eolId), amount - optOutAmount);
     assertEq(state.pending, optOutAmount);
     assertEq(state.released, optOutAmount);
 
     mitosisLedger.recordOptOutResolve(eolId, optOutAmount);
-    state = mitosisLedger.getEOLState(eolId);
+    state = mitosisLedger.eolState(eolId);
     assertEq(mitosisLedger.getEOLAllocateAmount(eolId), amount - optOutAmount);
     assertEq(state.released, 0);
     assertEq(state.resolved, optOutAmount);
 
     mitosisLedger.recordOptOutClaim(eolId, optOutAmount);
-    state = mitosisLedger.getEOLState(eolId);
+    state = mitosisLedger.eolState(eolId);
     assertEq(mitosisLedger.getEOLAllocateAmount(eolId), amount - optOutAmount);
     assertEq(state.pending, 0);
     assertEq(state.released, 0);
