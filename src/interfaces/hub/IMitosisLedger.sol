@@ -10,7 +10,8 @@ interface IMitosisLedger {
 
   function recordOptIn(uint256 eolId, uint256 amount) external;
   function recordOptOutRequest(uint256 eolId, uint256 amount) external;
-  function recordDeallocateEOL(uint256 eolId, uint256 amount) external;
+  function recordAllocateEOL(uint256 eolId, uint256 amount) external;
+  function recordReserveEOL(uint256 eolId, uint256 amount) external;
   function recordOptOutResolve(uint256 eolId, uint256 amount) external;
   function recordOptOutClaim(uint256 eolId, uint256 amount) external;
 }

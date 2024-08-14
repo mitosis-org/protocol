@@ -22,13 +22,12 @@ contract MitosisLedgerStorageV1 {
     /// (i.e. This means that from the point of the opt-out request, yield
     /// will not be provided for the corresponding miAsset)
     uint256 pending;
-    /// @dev released is the state temporarily storing the value released
-    /// from the MitosisVault of the branch when it is uploaded (MsgDeallocateEOL).
-    /// This value is used when resolving the opt-out request.
-    /// Note: It is a state that allows the logic for settling in Mitosis L1
+    /// @dev reserved is a state that temporarily stores the reduced EOL
+    /// value assigned to the MitosisVault.
+    /// Note: It is a state for allows the logic for settling in Mitosis L1
     /// and the logic for resolving the opt-out request to be executed
     /// separately.
-    uint256 released;
+    uint256 reserved;
     /// @dev resvoled is the actual amount used for the opt-out request
     /// resolvation.
     //

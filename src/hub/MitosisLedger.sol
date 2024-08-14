@@ -63,14 +63,19 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
     // uint256 asset = IERC4626(eolId).convertToAssets(amount);
   }
 
-  function recordDeallocateEOL(uint256 eolId, uint256 amount) external /* auth */ {
+  function recordAllocateEOL(uint256 eolId, uint256 amount) external /* auth */ {
     EOLState storage state = _getStorageV1().eolEntries[eolId].state;
-    state.released += amount;
+    state.reserved -= amount;
+  }
+
+  function recordReserveEOL(uint256 eolId, uint256 amount) external /* auth */ {
+    EOLState storage state = _getStorageV1().eolEntries[eolId].state;
+    state.reserved += amount;
   }
 
   function recordOptOutResolve(uint256 eolId, uint256 amount) external /* auth */ {
     EOLState storage state = _getStorageV1().eolEntries[eolId].state;
-    state.released -= amount;
+    state.reserved -= amount;
     state.resolved += amount;
     // TODO(ray): Need to store below value in opt-out task.
     // uint256 asset = IERC4626(eolId).convertToAssets(amount);
