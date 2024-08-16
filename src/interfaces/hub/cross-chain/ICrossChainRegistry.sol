@@ -14,8 +14,14 @@ interface ICrossChainRegistry {
   /// @dev Returns the Other chain's MitosisVault address by ChainID.
   function getVault(uint256 chainId) external view returns (address);
 
+  function getEntryPoint(uint256 chainId) external view returns (address);
+
+  function entryPointEnrolled(uint256 chainId) external view returns (bool);
+
   /// @dev Returns the ChainID by Hyperlane domain.
   function getChainIdByHyperlaneDomain(uint32 hplDomain) external view returns (uint256);
+
+  function isRegisteredChain(uint256 chainId) external view returns (bool);
 
   /// @dev Sets the chain information including ChainID, name, and Hyperlane domain.
   function setChain(uint256 chainId, string calldata name, uint32 hplDomain) external;

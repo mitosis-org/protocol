@@ -11,6 +11,8 @@ contract CrossChainRegistryStorageV1 {
     uint32 hplDomain;
     address vault;
     address entryPoint;
+    // status
+    bool entryPointEnrolled;
   }
 
   struct HyperlaneInfo {

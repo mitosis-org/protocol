@@ -63,8 +63,16 @@ contract CrossChainRegistry is
     return _getStorageV1().chains[chainId].vault;
   }
 
+  function entryPointEnrolled(uint256 chainId) external view returns (bool) {
+    return _getStorageV1().chains[chainId].entryPointEnrolled;
+  }
+
   function getChainIdByHyperlaneDomain(uint32 hplDomain) external view returns (uint256) {
     return _getStorageV1().hyperlanes[hplDomain].chainId;
+  }
+
+  function isRegisteredChain(uint256 chainId) external view returns (bool) {
+    return _isRegisteredChain(_getStorageV1().chains[chainId]);
   }
 
   // Mutative functions
