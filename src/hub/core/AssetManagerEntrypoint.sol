@@ -26,6 +26,16 @@ contract AssetManagerEntrypoint is IMessageRecipient, Router, PausableUpgradeabl
     _;
   }
 
+  modifier onlyRegisteredChain(uint256 chainId) {
+    if (!_ccRegistry.isRegisteredChain(chainId)) revert('good');
+    _;
+  }
+
+  modifier onlyEnrolledChain(uint256 chainId) {
+    if (!_ccRegistry.entryPointEnrolled(chainId)) revert('good');
+    _;
+  }
+
   constructor(address mailbox, address assetManager_, address ccRegistry_) Router(mailbox) initializer {
     _assetManager = AssetManager(assetManager_);
     _ccRegistry = ICrossChainRegistry(ccRegistry_);
@@ -36,9 +46,24 @@ contract AssetManagerEntrypoint is IMessageRecipient, Router, PausableUpgradeabl
     __Pausable_init();
     __Ownable2Step_init();
     _transferOwnership(owner_);
+  }
 
-    // temp: we should enroll values in ccRegistry
-    _enrollRemoteRouter(_mitosisDomain, _mitosisAddr);
+  function enrollEntryPoint() external onlyOwner {
+    uint256[] memory chainIds = _ccRegistry.getChainIds();
+    for (uint256 i = 0; i < chainIds.length; i++) {
+      uint256 chainId = chainIds[i];
+      if (!_ccRegistry.entryPointEnrolled(chainId)) {
+        enrollEntryPoint(chainId);
+      }
+    }
+  }
+
+  function enrollEntryPoint(uint256 chainId) external onlyOwner {
+    if (!_ccRegistry.entryPointEnrolled(chainId)) {
+      uint32 hplDomain = _ccRegistry.getHyperlaneDomain(chainId);
+      address entryPoint = _ccRegistry.getEntryPoint(chainId);
+      _enrollRemoteRouter(hplDomain, entryPoint);
+    }
   }
 
   function assetManager() external view returns (AssetManager assetManger_) {
@@ -49,45 +74,45 @@ contract AssetManagerEntrypoint is IMessageRecipient, Router, PausableUpgradeabl
     return _ccRegistry.getHyperlaneDomain(chainId);
   }
 
-  function branchEntrypointAddr(uint256 chainId) external view returns (bytes32) {
+  function branchVault(uint256 chainId) external view returns (address) {
     return _ccRegistry.getVault(chainId);
+  }
+
+  function branchEntrypointAddr(uint256 chainId) external view returns (bytes32) {
+    return _ccRegistry.getEntryPoint(chainId);
   }
 
   //=========== NOTE: ASSETMANAGER FUNCTIONS ===========//
 
-  function initializeAsset(uint256 chainId, address branchAsset) external onlyAssetManager {
-    uint32 hplDomain = _ccRegistry.getChainIdByHyperlaneDomain(chainId);
-    if (hplDomain == 0) revert StdError.NotFound('Hyperlane domain'); // temp: todo
-
+  function initializeAsset(uint256 chainId, address branchAsset) external onlyAssetManager onlyRegisteredChain(chainId) {
     bytes memory enc = MsgInitializeAsset({ asset: branchAsset.toBytes32() });
-
     _dispatchToBranch(hplDomain, enc);
   }
 
-  function initializeEOL(uint256 chainId, uint256 eolId, address branchAsset) external onlyAssetManager {
-    uint32 hplDomain = _ccRegistry.getChainIdByHyperlaneDomain(chainId);
-    if (hplDomain == 0) revert StdError.NotFound('Hyperlane domain'); // temp: todo
-
+  function initializeEOL(uint256 chainId, uint256 eolId, address branchAsset)
+    external
+    onlyAssetManager
+    onlyRegisteredChain(chainId)
+  {
     bytes memory enc = MsgInitializeEOL({ eolId: eolId, asset: branchAsset.toBytes32() });
-
     _dispatchToBranch(hplDomain, enc);
   }
 
-  function redeem(uint256 chainId, address branchAsset, address to, uint256 amount) external onlyAssetManager {
-    uint32 hplDomain = _ccRegistry.getChainIdByHyperlaneDomain(chainId);
-    if (hplDomain == 0) revert StdError.NotFound('Hyperlane domain'); // temp: todo
-
+  function redeem(uint256 chainId, address branchAsset, address to, uint256 amount)
+    external
+    onlyAssetManager
+    onlyRegisteredChain(chainId)
+  {
     bytes memory enc = MsgRedeem({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount });
-
     _dispatchToBranch(hplDomain, enc);
   }
 
-  function allocateEOL(uint256 chainId, uint256 eolId, uint256 amount) external onlyAssetManager {
-    uint32 hplDomain = _ccRegistry.getChainIdByHyperlaneDomain(chainId);
-    if (hplDomain == 0) revert StdError.NotFound('Hyperlane domain'); // temp: todo
-
+  function allocateEOL(uint256 chainId, uint256 eolId, uint256 amount)
+    external
+    onlyAssetManager
+    onlyRegisteredChain(chainId)
+  {
     bytes memory enc = MsgAllocateEOL({ eolId: eolId, amount: amount });
-
     _dispatchToBranch(hplDomain, enc);
   }
 
