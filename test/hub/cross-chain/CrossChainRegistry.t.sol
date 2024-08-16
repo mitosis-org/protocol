@@ -50,11 +50,12 @@ contract TestCrossChainRegistry is Test {
     uint256 chainID = 1;
     string memory name = 'Ethereum';
     uint32 hplDomain = 1;
+    address entryPoint = address(10);
 
-    ccRegistry.setChain(chainID, name, hplDomain);
+    ccRegistry.setChain(chainID, name, hplDomain, entryPoint);
 
     vm.expectRevert(); // 'already registered chain'
-    ccRegistry.setChain(chainID, name, hplDomain);
+    ccRegistry.setChain(chainID, name, hplDomain, entryPoint);
 
     uint256[] memory chainIds = ccRegistry.getChainIds();
     require(chainIds.length == 1, 'invalid getChainIds');
@@ -64,6 +65,7 @@ contract TestCrossChainRegistry is Test {
       'invalid getChainNmae'
     );
     require(ccRegistry.getHyperlaneDomain(chainID) == hplDomain, 'invalid getHyperlaneDomain');
+    require(ccRegistry.getEntryPoint(chainId) == entryPoint, 'invalid getEntryPoint');
     require(ccRegistry.getChainIdByHyperlaneDomain(hplDomain) == chainID, 'invalid getChainIdByHyperlaneDomain');
   }
 

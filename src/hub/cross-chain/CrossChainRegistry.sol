@@ -55,6 +55,10 @@ contract CrossChainRegistry is
     return _getStorageV1().chains[chainId].hplDomain;
   }
 
+  function getEntryPoint(uint256 chainId) external view returns (address) {
+    return _getStorageV1().chains[chainId].entryPoint;
+  }
+
   function getVault(uint256 chainId) external view returns (address) {
     return _getStorageV1().chains[chainId].vault;
   }
@@ -67,7 +71,10 @@ contract CrossChainRegistry is
   //
   // TODO: update methods
 
-  function setChain(uint256 chainId, string calldata name, uint32 hplDomain) external onlyRegisterer {
+  function setChain(uint256 chainId, string calldata name, uint32 hplDomain, address entryPoint)
+    external
+    onlyRegisterer
+  {
     StorageV1 storage $ = _getStorageV1();
 
     if (_isRegisteredChain($.chains[chainId]) || _isRegisteredHyperlane($.hyperlanes[hplDomain])) {
@@ -78,6 +85,7 @@ contract CrossChainRegistry is
     $.hplDomains.push(hplDomain);
     $.chains[chainId].name = name;
     $.chains[chainId].hplDomain = hplDomain;
+    $.chains[chainId].entryPoint = entryPoint;
     $.hyperlanes[hplDomain].chainId = chainId;
 
     emit ChainSet(chainId, hplDomain, name);

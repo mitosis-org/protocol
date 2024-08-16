@@ -10,6 +10,7 @@ contract CrossChainRegistryStorageV1 {
     string name;
     uint32 hplDomain;
     address vault;
+    address entryPoint;
   }
 
   struct HyperlaneInfo {
