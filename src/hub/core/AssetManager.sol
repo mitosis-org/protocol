@@ -22,11 +22,8 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
 
   function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
-
     address hubAsset = $.hubAssets[branchAsset][chainId];
-    // temp: There is no hubAsset check logic. because it's validae on Branch side.
-    IHubAsset(hubAsset).mint(to, amount);
-    $.mitosisLedger.recordDeposit(chainId, hubAsset, amount);
+    _mint(hubAsset, chainId, to, amount);
   }
 
   function deallocateEOL(uint256 eolId, uint256 amount) external {
@@ -35,21 +32,18 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
 
   function settleYield(uint256 chainId, uint256 eolId, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
-
     // temp: hmm how about store the chainId to EOLVault? it seems good
     IEOLVault eolVault = $.eolVaults[eolId];
     address hubAsset = eolVault.asset();
 
-    IHubAsset(hubAsset).mint(address(this), amount);
-    $.mitosisLedger.recordDeposit(chainId, hubAsset, amount);
-
+    _mint(hubAsset, chainId, address(this), amount);
     // temp: What kind of value to be store to MitosisLedger?
     IHubAsset(hubAsset).transfer(address(eolVault), amount);
   }
 
   function settleLoss(uint256 chainId, uint256 eolId, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
-
+    
     IEOLVault eolVault = $.eolVaults[eolId];
     address hubAsset = eolVault.asset();
 
@@ -69,5 +63,10 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
     //     1-1. If it doesn't exist, should we deploy the HubAsset? The reward
     //          asset hasn't been checked for initialization, so~
     //    2. send to RewardTreasury
+  }
+
+  function _mint(address asset, uint256 chainId, address to, uint256 amount) internal {
+    IHubAsset(hubAsset).mint(to, amount);
+    $.mitosisLedger.recordDeposit(chainId, hubAsset, amount);
   }
 }
