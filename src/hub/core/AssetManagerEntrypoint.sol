@@ -86,7 +86,7 @@ contract AssetManagerEntrypoint is IMessageRecipient, Router, PausableUpgradeabl
 
   function initializeAsset(uint256 chainId, address branchAsset) external onlyAssetManager onlyRegisteredChain(chainId) {
     bytes memory enc = MsgInitializeAsset({ asset: branchAsset.toBytes32() });
-    _dispatchToBranch(hplDomain, enc);
+    _dispatchToBranch(chainId, enc);
   }
 
   function initializeEOL(uint256 chainId, uint256 eolId, address branchAsset)
@@ -95,7 +95,7 @@ contract AssetManagerEntrypoint is IMessageRecipient, Router, PausableUpgradeabl
     onlyRegisteredChain(chainId)
   {
     bytes memory enc = MsgInitializeEOL({ eolId: eolId, asset: branchAsset.toBytes32() });
-    _dispatchToBranch(hplDomain, enc);
+    _dispatchToBranch(chainId, enc);
   }
 
   function redeem(uint256 chainId, address branchAsset, address to, uint256 amount)
@@ -104,7 +104,7 @@ contract AssetManagerEntrypoint is IMessageRecipient, Router, PausableUpgradeabl
     onlyRegisteredChain(chainId)
   {
     bytes memory enc = MsgRedeem({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount });
-    _dispatchToBranch(hplDomain, enc);
+    _dispatchToBranch(chainId, enc);
   }
 
   function allocateEOL(uint256 chainId, uint256 eolId, uint256 amount)
@@ -113,11 +113,12 @@ contract AssetManagerEntrypoint is IMessageRecipient, Router, PausableUpgradeabl
     onlyRegisteredChain(chainId)
   {
     bytes memory enc = MsgAllocateEOL({ eolId: eolId, amount: amount });
-    _dispatchToBranch(hplDomain, enc);
+    _dispatchToBranch(chainId, enc);
   }
 
-  function _dispatchToBranch(uint32 hplDomain, bytes memory enc) internal {
+  function _dispatchToBranch(uint256 chainId, bytes memory enc) internal {
     // TODO(thai): consider hyperlane fee
+    uint256 hplDomain = _ccRegistry.getHyperlaneDomain(chainId);
     _dispatch(hplDomain, enc);
   }
 
