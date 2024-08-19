@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-import { IERC6372 } from '@openzeppelin/contracts/interfaces/IERC6372.sol';
-import { SafeCast } from '@openzeppelin/contracts/utils/math/SafeCast.sol';
-import { Time } from '@openzeppelin/contracts/utils/types/Time.sol';
+import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
+import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { TwabCheckpoints } from '../lib/TwabCheckpoints.sol';
 
