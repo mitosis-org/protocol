@@ -17,6 +17,7 @@ interface IMitosisVault {
 
   function deposit(address asset, address to, uint256 amount) external;
   function redeem(address asset, address to, uint256 amount) external;
+  function refund(address asset, address to, uint256 amount) external;
 
   //=========== NOTE: EOL ===========//
 

@@ -25,6 +25,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
   event Deposited(address indexed asset, address indexed to, uint256 amount);
   event Redeemed(address indexed asset, address indexed to, uint256 amount);
+  event Refunded(address indexed asset, address indexed to, uint256 amount);
 
   event EOLInitialized(uint256 eolId, address asset);
 
@@ -112,6 +113,16 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     IERC20(asset).safeTransfer(to, amount);
 
     emit Redeemed(asset, to, amount);
+  }
+
+  function refund(address asset, address to, uint256 amount) external {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertOnlyEntrypoint($);
+
+    IERC20(asset).safeTransfer(to, amount);
+
+    emit Refunded(asset, to, amount);
   }
 
   //=========== NOTE: EOL FUNCTIONS ===========//

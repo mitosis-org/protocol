@@ -112,6 +112,11 @@ contract MitosisVaultEntrypoint is
       _vault.redeem(decoded.asset.toAddress(), decoded.to.toAddress(), decoded.amount);
     }
 
+    if (msgType == MsgType.MsgRefund) {
+      MsgRefund memory decoded = msg_.decodeRefund();
+      _vault.refund(decoded.asset.toAddress(), decoded.to.toAddress(), decoded.amount);
+    }
+
     if (msgType == MsgType.MsgInitializeEOL) {
       MsgInitializeEOL memory decoded = msg_.decodeInitializeEOL();
       _vault.initializeEOL(decoded.eolId, decoded.asset.toAddress());

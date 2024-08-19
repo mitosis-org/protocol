@@ -19,6 +19,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
   event Deposited(uint256 indexed fromChainId, address indexed asset, address indexed to, uint256 amount);
   event Redeemed(uint256 indexed toChainId, address indexed asset, address indexed to, uint256 amount);
+  event Refunded(uint256 indexed toChainId, address indexed asset, address indexed to, uint256 amount);
 
   event YieldSettled(uint256 indexed fromChainId, uint256 indexed eolId, uint256 amount);
   event LossSettled(uint256 indexed fromChainId, uint256 indexed eolId, uint256 amount);
@@ -51,16 +52,21 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
   //=========== NOTE: ASSET FUNCTIONS ===========//
 
-  function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external {
+  function deposit(uint256 chainId, address branchAsset, address to, address refundTo, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertBranchAssetPairExist($, branchAsset);
     _assertOnlyEntrypoint($);
 
     address hubAsset = $.hubAssets[branchAsset][chainId];
-    _mint(hubAsset, chainId, to, amount);
+    if (hubAsset != address(0)) {
+      try this._mint(chainId, hubAsset, to, amount) {
+        emit Deposited(chainId, asset, to, amount);
+        return;
+      } catch { }
+    }
 
-    emit Deposited(chainId, huAsset, to, amount);
+    $.entrypoint.refund(chainId, branchAsset, refundTo, amount);
+    emit Refunded(chainId, asset, refundTo, amount);
   }
 
   function redeem(uint256 chainId, address branchAsset, address to, uint256 amount) external {
@@ -69,7 +75,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertBranchAssetPairExist($, branchAsset);
 
     address hubAsset = $.hubAssets[branchAsset];
-    _burn(hubAsset, chainId, to, amount);
+    _burn(chainId, hubAsset, to, amount);
     $.entrypoint.redeem(chainId, branchAsset, to, amount);
 
     emit Redeemed(chainId, hubAsset, to, amount);
@@ -196,12 +202,12 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _mint(address asset, uint256 chainId, address to, uint256 amount) internal {
+  function _mint(uint256 chainId, address asset, address to, uint256 amount) internal {
     IHubAsset(asset).mint(to, amount);
     $.mitosisLedger.recordDeposit(chainId, asset, amount);
   }
 
-  function _burn(address asset, uint256 chainId, address to, uint256 amount) internal {
+  function _burn(uint256 chainId, address asset, address to, uint256 amount) internal {
     IHubAsset(asset).transferFrom(msg.sender, address(this));
     IHubAsset(asset).burn(amount);
     $.mitosisLedger.recordWithdraw(chainId, asset, amount);
