@@ -7,6 +7,7 @@ import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
+import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 import { AssetManager } from './AssetManager.sol';
 import { StdError } from '../../lib/StdError.sol';
@@ -25,7 +26,7 @@ contract AssetManagerEntrypoint is
   using Message for *;
   using Conv for *;
 
-  AssetManager internal immutable _assetManager;
+  IAssetManager internal immutable _assetManager;
   ICrossChainRegistry internal immutable _ccRegistry;
 
   modifier onlyAssetManager() {
@@ -44,7 +45,7 @@ contract AssetManagerEntrypoint is
   }
 
   constructor(address mailbox, address assetManager_, address ccRegistry_) Router(mailbox) initializer {
-    _assetManager = AssetManager(assetManager_);
+    _assetManager = IAssetManager(assetManager_);
     _ccRegistry = ICrossChainRegistry(ccRegistry_);
   }
 
@@ -55,7 +56,7 @@ contract AssetManagerEntrypoint is
     _transferOwnership(owner_);
   }
 
-  function assetManager() external view returns (AssetManager assetManger_) {
+  function assetManager() external view returns (IAssetManager assetManger_) {
     return _assetManager;
   }
 
