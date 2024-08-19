@@ -53,7 +53,7 @@ import './ERC20TwabSnapshots.sol';
  * To learn more, check out our xref:ROOT:erc4626.adoc[ERC-4626 guide].
  * ====
  */
-abstract contract ERC4626TwabSnapshots is Initializable, ERC20TwabSnapshots, IERC4626 {
+contract ERC4626TwabSnapshots is Initializable, ERC20TwabSnapshots, IERC4626 {
   using Math for uint256;
 
   /// @custom:storage-location erc7201:openzeppelin.storage.ERC4626
@@ -90,6 +90,15 @@ abstract contract ERC4626TwabSnapshots is Initializable, ERC20TwabSnapshots, IER
    * @dev Attempted to redeem more shares than the max amount for `receiver`.
    */
   error ERC4626ExceededMaxRedeem(address owner, uint256 shares, uint256 max);
+
+  constructor() {
+    _disableInitializers();
+  }
+
+  function initialize(IERC20 asset_, string calldata name, string calldata symbol) external initializer {
+    __ERC20_init(name, symbol);
+    __ERC4626_init(asset_);
+  }
 
   /**
    * @dev Set the underlying asset contract. This must be an ERC20-compatible contract (ERC-20 or ERC-777).
