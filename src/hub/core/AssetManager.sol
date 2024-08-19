@@ -170,7 +170,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     address branchAsset = $.branchAssets[chainId][hubAsset];
     _assertBranchAssetPairExist($, branchAsset);
 
-    _getStorageV1().entrypoint.initializeEOL(chainId, eolId, branchAsset);
+    $.entrypoint.initializeEOL(chainId, eolId, branchAsset);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
