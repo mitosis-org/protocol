@@ -7,7 +7,7 @@ import { Time } from '@openzeppelin/contracts/utils/types/Time.sol';
 
 import { TwabCheckpoints } from '../lib/TwabCheckpoints.sol';
 
-abstract contract Snapshots is IERC6372 {
+abstract contract TwabSnapshots is IERC6372 {
   using TwabCheckpoints for TwabCheckpoints.Trace;
 
   mapping(address account => TwabCheckpoints.Trace) _accountCheckpoints;

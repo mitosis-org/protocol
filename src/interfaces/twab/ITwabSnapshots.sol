@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
-interface ISnapshots {
+interface ITwabSnapshots {
   function getLatestSnapshot(address account) external view returns (uint208 balnace, uint256 twab, uint48 position);
 
   function getPastSnapshot(address account, uint256 timestamp)

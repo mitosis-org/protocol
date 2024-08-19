@@ -13,8 +13,8 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 import { Initializable } from '@ozu-v5/proxy/utils/Initializable.sol';
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 
-import '../interfaces/twab/IERC20Snapshots.sol';
-import './ERC20Snapshots.sol';
+import '../interfaces/twab/IERC20TwabSnapshots.sol';
+import './ERC20TwabSnapshots.sol';
 
 /**
  * @dev Implementation of the ERC-4626 "Tokenized Vault Standard" as defined in
@@ -53,7 +53,7 @@ import './ERC20Snapshots.sol';
  * To learn more, check out our xref:ROOT:erc4626.adoc[ERC-4626 guide].
  * ====
  */
-abstract contract ERC4626Upgradeable is Initializable, ERC20Snapshots, IERC4626 {
+abstract contract ERC4626TwabSnapshots is Initializable, ERC20TwabSnapshots, IERC4626 {
   using Math for uint256;
 
   /// @custom:storage-location erc7201:openzeppelin.storage.ERC4626

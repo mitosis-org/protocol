@@ -5,13 +5,13 @@ import { Vm } from '@std/Vm.sol';
 import { Test } from '@std/Test.sol';
 import { console } from '@std/console.sol';
 
-import { ERC20Snapshots } from '../../src/twab/ERC20Snapshots.sol';
+import { ERC20TwabSnapshots } from '../../src/twab/ERC20TwabSnapshots.sol';
 
 contract TokenTest is Test {
-  ERC20Snapshots public token;
+  ERC20TwabSnapshots public token;
 
   function setUp() public {
-    token = new ERC20Snapshots();
+    token = new ERC20TwabSnapshots();
     token.initialize('Token', 'TKN');
   }
 

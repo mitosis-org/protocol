@@ -3,6 +3,6 @@ pragma solidity ^0.8.26;
 
 import '@oz-v5/interfaces/IERC4626.sol';
 
-import './ISnapshots.sol';
+import './ITwabSnapshots.sol';
 
-interface IERC4626WithSnapshots is IERC4626, ISnapshots { }
+interface IERC4626TwabSnapshots is IERC4626, ITwabSnapshots { }

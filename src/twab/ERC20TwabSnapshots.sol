@@ -3,9 +3,9 @@ pragma solidity ^0.8.26;
 
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 
-import { Snapshots } from './Snapshots.sol';
+import { TwabSnapshots } from './TwabSnapshots.sol';
 
-contract ERC20Snapshots is ERC20Upgradeable, Snapshots {
+contract ERC20TwabSnapshots is ERC20Upgradeable, TwabSnapshots {
   error ERC20ExceededSafeSupply(uint256 increasedSupply, uint256 cap);
 
   function initialize(string memory name, string memory symbol) external initializer {
