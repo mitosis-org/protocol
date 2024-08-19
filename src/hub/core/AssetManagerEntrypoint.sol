@@ -27,12 +27,12 @@ contract AssetManagerEntrypoint is IMessageRecipient, Router, PausableUpgradeabl
   }
 
   modifier onlyRegisteredChain(uint256 chainId) {
-    if (!_ccRegistry.isRegisteredChain(chainId)) revert('good');
+    if (!_ccRegistry.isRegisteredChain(chainId)) revert ICrossChainRegistry__NotRegistered();
     _;
   }
 
   modifier onlyEnrolledChain(uint256 chainId) {
-    if (!_ccRegistry.entryPointEnrolled(chainId)) revert('good');
+    if (!_ccRegistry.entryPointEnrolled(chainId)) revert ICrossChainRegistry__NotEnrolled();
     _;
   }
 
@@ -108,10 +108,10 @@ contract AssetManagerEntrypoint is IMessageRecipient, Router, PausableUpgradeabl
 
   function _handle(uint32 origin, bytes32 sender, bytes calldata msg_) internal override {
     uint256 chainId = _ccRegistry.getChainIdByHyperlaneDomain(origin);
-    if (chainId == 0) revert StdError.Unauthorized();
+    if (chainId == 0) revert ICrossChainRegistry.ICrossChainRegistry__NotRegistered();
 
     address vault = _ccRegistry.getVault(chainId);
-    if (sender.toAddress() != vault) revert StdError.Unauthorized();
+    if (sender.toAddress() != vault) revert ICrossChainRegistry.ICrossChainRegistry__NotRegistered();
 
     MsgType msgType = msg_.msgType();
 

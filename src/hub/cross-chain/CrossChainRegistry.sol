@@ -24,9 +24,6 @@ contract CrossChainRegistry is
   event ChainSet(uint256 indexed chainId, uint32 indexed hplDomain, string name);
   event VaultSet(uint256 indexed chainId, address indexed vault);
 
-  error CrossChainRegistry__NotRegistered();
-  error CrossChainRegistry__AlreadyRegistered();
-
   modifier onlyRegisterer() {
     _checkRole(REGISTERER_ROLE);
     _;
@@ -90,7 +87,7 @@ contract CrossChainRegistry is
     StorageV1 storage $ = _getStorageV1();
 
     if (_isRegisteredChain($.chains[chainId]) || _isRegisteredHyperlane($.hyperlanes[hplDomain])) {
-      revert CrossChainRegistry__AlreadyRegistered();
+      revert ICrossChainRegistry.ICrossChainRegistry__AlreadyRegistered();
     }
 
     $.chainIds.push(chainId);
@@ -106,11 +103,11 @@ contract CrossChainRegistry is
   function setVault(uint256 chainId, address vault) external onlyRegisterer {
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId];
     if (!_isRegisteredChain(chainInfo)) {
-      revert CrossChainRegistry__NotRegistered();
+      revert ICrossChainRegistry.ICrossChainRegistry__NotRegistered();
     }
 
     if (_isRegisteredVault(chainInfo)) {
-      revert CrossChainRegistry__AlreadyRegistered();
+      revert ICrossChainRegistry.ICrossChainRegistry__AlreadyRegistered();
     }
 
     chainInfo.vault = vault;

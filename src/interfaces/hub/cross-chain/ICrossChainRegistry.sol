@@ -2,6 +2,11 @@
 pragma solidity ^0.8.26;
 
 interface ICrossChainRegistry {
+  error ICrossChainRegistry__NotRegistered();
+  error ICrossChainRegistry__AlreadyRegistered();
+  error ICrossChainRegistry__NotEnrolled();
+  error ICrossChainRegistry__AlreadyEnrolled();
+
   /// @dev Returns all of the registered ChainIDs.
   function getChainIds() external view returns (uint256[] memory);
 
