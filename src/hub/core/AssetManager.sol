@@ -116,10 +116,29 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertOnlyEntrypoint($);
 
     IEOLVault eolVault = IEOLVault($.mitosisLedger.eolVault(eolId));
-    address hubAsset = eolVault.asset();
 
-    _mint(hubAsset, chainId, address(this), amount);
-    IHubAsset(hubAsset).transfer(address(eolVault), amount);
+    // Increase the numerator.
+
+    // 괜히 복잡해지는 것 같기도 하고;
+    uint256 mintRequired = amount;
+    uint256 expectedShares = IEOLVault.convertToShares(amount); // $.setlledLoss is shares unit.
+    uint256 actualAssets;
+
+    if ($.settledLoss >= expectedShares) {
+      actualAssets = IEOLVault.redeem(expectedShares, address(eolVault), address(this));
+      require(actualAssets != amount, 'unexpected case');
+      $.settledLoss -= expectedShares;
+      mintRequired = 0;
+    } else if ($.settledLoss > 0) {
+      actualAssets = IEOLVault.redeem($.settledLoss, address(eolVault), address(this));
+      $.settledLoss = 0;
+      mintRequired -= gotAssets;
+    }
+
+    if (mintRequired > 0) {
+      address hubAsset = eolVault.asset();
+      IHubAsset(hubAsset).mint(address(eolVault), mintRequired);
+    }
 
     emit YieldSettled(chainId, eolId, amount);
   }
@@ -133,10 +152,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     IEOLVault eolVault = IEOLVault($.mitosisLedger.eolVault(eolId));
     address hubAsset = eolVault.asset();
 
-    // temp: Trying to decrease the value of miAsset by increasing the denominator.
-    IHubAsset(hubAsset).mint(address(this), amount);
-    loss += amount; // ?
-      // TODO(ray)
+    uint256 shares = IEOLVault.convertToShares(amount);
+    IEOLVault.mint(shares, address(this));
+    $.settledLoss += shares;
 
     emit LossSettled(chainId, eolId, amount);
   }

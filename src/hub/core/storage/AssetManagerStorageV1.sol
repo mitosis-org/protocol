@@ -15,6 +15,7 @@ contract AssetManagerStorageV1 {
     IMitosisLedger mitosisLedger;
     IRewardTreasury rewardTreasury;
     // Asset states
+    uint256 settledLoss; // shares unit
     mapping(address hubAsset => mapping(uint256 chainId => address branchAsset)) branchAssets;
     mapping(address branchAsset => address hubAsset) hubAssets;
   }
