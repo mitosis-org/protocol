@@ -48,24 +48,6 @@ contract AssetManagerEntrypoint is IMessageRecipient, Router, PausableUpgradeabl
     _transferOwnership(owner_);
   }
 
-  function enrollEntryPoint() external onlyOwner {
-    uint256[] memory chainIds = _ccRegistry.getChainIds();
-    for (uint256 i = 0; i < chainIds.length; i++) {
-      uint256 chainId = chainIds[i];
-      if (!_ccRegistry.entryPointEnrolled(chainId)) {
-        enrollEntryPoint(chainId);
-      }
-    }
-  }
-
-  function enrollEntryPoint(uint256 chainId) external onlyOwner {
-    if (!_ccRegistry.entryPointEnrolled(chainId)) {
-      uint32 hplDomain = _ccRegistry.getHyperlaneDomain(chainId);
-      address entryPoint = _ccRegistry.getEntryPoint(chainId);
-      _enrollRemoteRouter(hplDomain, entryPoint);
-    }
-  }
-
   function assetManager() external view returns (AssetManager assetManger_) {
     return _assetManager;
   }

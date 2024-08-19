@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import { IRouter } from '@hpl-v5/interfaces/IRouter.sol';
 import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
 import { CrossChainRegistryStorageV1 } from './CrossChainRegistryStorageV1.sol';
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
+import { Conv } from '../../lib/Conv.sol';
 
 /// Note: This contract stores data that needs to be shared across chains.
 contract CrossChainRegistry is
@@ -15,6 +17,8 @@ contract CrossChainRegistry is
   AccessControlUpgradeable,
   CrossChainRegistryStorageV1
 {
+  using Conv for *;
+
   bytes32 public constant REGISTERER_ROLE = keccak256('REGISTERER_ROLE');
 
   event ChainSet(uint256 indexed chainId, uint32 indexed hplDomain, string name);
@@ -64,7 +68,7 @@ contract CrossChainRegistry is
   }
 
   function entryPointEnrolled(uint256 chainId) external view returns (bool) {
-    return _getStorageV1().chains[chainId].entryPointEnrolled;
+    return _isEntryPointEnrolled(_getStorageV1().chains[chainId]);
   }
 
   function getChainIdByHyperlaneDomain(uint32 hplDomain) external view returns (uint256) {
@@ -113,6 +117,22 @@ contract CrossChainRegistry is
     emit VaultSet(chainId, vault);
   }
 
+  function enrollEntryPoint(address hplRouter) external onlyRegisterer {
+    uint256[] memory chainIds = _getStorageV1().chainIds;
+    uint32[] memory hplDomains = new uint32[](chainIds.length);
+    bytes32[] memory entryPoints = new bytes32[](chainIds.length);
+    for (uint256 i = 0; i < chainIds.length; i++) {
+      enrollEntryPoint(hplRouter, chainIds[i]);
+    }
+  }
+
+  function enrollEntryPoint(address hplRouter, uint256 chainId) public onlyRegisterer {
+    ChainInfo storage chainInfo = _getStorageV1().chains[chainId];
+    if (_isEnrollableChain(chainInfo)) {
+      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.entryPoint);
+    }
+  }
+
   // Internal functions
 
   function _isRegisteredChain(ChainInfo storage chainInfo) internal view returns (bool) {
@@ -121,6 +141,14 @@ contract CrossChainRegistry is
 
   function _isRegisteredVault(ChainInfo storage chainInfo) internal view returns (bool) {
     return chainInfo.vault != address(0);
+  }
+
+  function _isEntryPointEnrolled(ChainInfo storage chainInfo) internal view returns (bool) {
+    return chainInfo.entryPointEnrolled;
+  }
+
+  function _isEnrollableChain(ChainInfo storage chainInfo) internal view returns (bool) {
+    return _isRegisteredChain(chainInfo) && !_isEntryPointEnrolled(chainInfo);
   }
 
   function _isRegisteredHyperlane(HyperlaneInfo storage hplInfo) internal view returns (bool) {

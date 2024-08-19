@@ -28,4 +28,8 @@ interface ICrossChainRegistry {
 
   /// @dev Sets the vault address for a specific ChainID.
   function setVault(uint256 chainId, address vault) external;
+
+  function enrollEntryPoint(address hplRouter) external;
+
+  function enrollEntryPoint(address hplRouter, uint256 chainId) external;
 }
