@@ -43,7 +43,7 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
 
   function settleLoss(uint256 chainId, uint256 eolId, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
-    
+
     IEOLVault eolVault = $.eolVaults[eolId];
     address hubAsset = eolVault.asset();
 
