@@ -11,6 +11,8 @@ contract MitosisLedgerStorageV1 {
   }
 
   struct EOLState {
+    address eolVault;
+    address strategist;
     EOLAmountState eolAmountState;
   }
 
@@ -36,6 +38,7 @@ contract MitosisLedgerStorageV1 {
   }
 
   struct StorageV1 {
+    uint256 nextEolId;
     mapping(uint256 chainId => ChainState state) chainStates;
     mapping(uint256 eolId => EOLState state) eolStates;
   }

@@ -17,9 +17,6 @@ contract AssetManagerStorageV1 {
     // Asset states
     mapping(address hubAsset => mapping(uint256 chainId => address branchAsset)) branchAssets;
     mapping(address branchAsset => address hubAsset) hubAssets;
-    // EOL states
-    mapping(uint256 eolId => address strategist) strategists;
-    mapping(uint256 eolId => IEOLVault eolVault) eolVaults;
   }
 
   string constant _NAMESPACE = 'mitosis.storage.AssetManagerStorage.v1';

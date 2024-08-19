@@ -16,9 +16,7 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
   event Deposited(uint256 indexed fromChainId, address indexed asset, address indexed to, uint256 amount);
   event Redeemed(uint256 indexed toChainId, address indexed asset, address indexed to, uint256 amount);
 
-  event StrategistSet(uint256 eolId, address strategist);
   event AssetPairSset(address hubAsset, uint256 branchChainId, address branchAsset);
-  event EOLVaultSet(uint256 eolId, address eolVault);
   event RewardTreasurySet(address rewardTreasury);
 
   event EntrypointSet(address entrypoint);
@@ -97,7 +95,7 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
     _assetEolIdExist($, eolId);
     _assertOnlyEntrypoint($);
 
-    IEOLVault eolVault = $.eolVaults[eolId];
+    IEOLVault eolVault = IEOLVault($.mitosisLedger.eolVault(eolId));
     address hubAsset = eolVault.asset();
 
     _mint(hubAsset, chainId, address(this), amount);
@@ -110,7 +108,7 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
     _assetEolIdExist($, eolId);
     _assertOnlyEntrypoint($);
 
-    IEOLVault eolVault = $.eolVaults[eolId];
+    IEOLVault eolVault = IEOLVault($.mitosisLedger.eolVault(eolId));
     address hubAsset = eolVault.asset();
 
     // temp: Trying to decrease the value of miAsset by increasing the denominator.
@@ -156,29 +154,9 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
     emit EntrypointSet(entrypoint);
   }
 
-  function setEOLVault(IEOLVault eolVault) external onlyOwner {
-    uint256 eolId = 0; // TODO(ray)
-
-    // Already allocated EOL ID
-
-    _getStorageV1().eolVaults[eolId] = eolVault;
-    emit EOLVaultSet(eolId, address(eolVault));
-  }
-
   function setRewardTreasury(IRewardTreasury rewardTreasury) external onlyOwner {
     _getStorageV1().rewardTreasury = rewardTreasury;
     emit RewardTreasurySet(address(rewardTreasury));
-  }
-
-  function setEOLVault(uint256 eolId, IEOLVault eolVault) external onlyOwner {
-    _getStorageV1().eolVaults[eolId] = eolVault;
-    emit EOLVaultSet(eolId, address(eolVault));
-  }
-
-  function setStrategist(uint256 eolId, address strategist) external onlyOwner {
-    StorageV1 storage $ = _getStorageV1();
-    $.strategists[eolId] = strategist;
-    emit StrategistSet(eolId, strategist);
   }
 
   function initializeEOL(uint256 chainId, uint256 eolId) external onlyOwner {
@@ -186,7 +164,8 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
 
     _assetEolIdExist($, eolId);
 
-    address hubAsset = $.eolVaults[eolId].asset();
+    IEOLVault eolVault = IEOLVault($.mitosisLedger.eolVault(eolId));
+    address hubAsset = eolVault.asset();
     address branchAsset = $.branchAssets[chainId][hubAsset];
     _assertBranchAssetPairExist($, branchAsset);
 
@@ -211,7 +190,7 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
   }
 
   function _assetEolIdExist(StorageV1 storage $, uint256 eolId) internal view {
-    if ($.eolVaults[eolId] != address(0)) revert StdError.InvalidId('eolId');
+    if ($.mitosisLedger.eolVault(eolId) != address(0)) revert StdError.InvalidId('eolId');
   }
 
   function _assertBranchAssetPairExist(StorageV1 storage $, address branchAsset) internal view {
@@ -219,6 +198,6 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
   }
 
   function _assetOnlyStrategist(StorageV1 storage $, uint256 eolId) internal view {
-    if (_msgSender() != $.strategists[eolId]) revert StdError.InvalidAddress('strategist');
+    if (_msgSender() != $.mitosisLedger.eolStrategist(eolId)) StdError.InvalidAddress('strategist');
   }
 }

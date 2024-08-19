@@ -7,8 +7,11 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
 import { MitosisLedgerStorageV1 } from './storage/MitosisLedgerStorageV1.sol';
 
-/// Note: This contract only stores state related to balances.
+/// Note: This contract stores state related to balances, EOL states.
 contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedgerStorageV1 {
+  event EolIdSet(uint256 eolId, address eolVault);
+  event EolStrategistSet(uint256 eolId, address strategist);
+
   constructor() {
     _disableInitializers();
   }
@@ -22,14 +25,31 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
 
   // CHAIN
 
+  function currentEolId() external view returns (uint256) {
+    uint256 nextEolId = _getStorageV1().nextEolId;
+    if (nextEolId == 0) revert('not yet');
+    return nextEolId - 1;
+  }
+
   function getAssetAmount(uint256 chainId, address asset) external view returns (uint256) {
     return _getStorageV1().chainStates[chainId].amounts[asset];
   }
 
-  // EOL
+  function eolVault(uint256 eolId) external view returns (address) {
+    return _getStorageV1().eolStates[eolId].eolVault;
+  }
 
-  function eolAmountState(uint256 eolId) external view returns (EOLAmountState memory) {
-    return _getStorageV1().eolStates[eolId].eolAmountState;
+  function eolStrategist(uint256 eolId) external view returns (address) {
+    return _getStorageV1().eolStates[eolId].strategist;
+  }
+
+  function eolAmountState(uint256 eolId)
+    external
+    view
+    returns (uint256 total, uint256 idle, uint256 optOutPending, uint256 optOutResolved)
+  {
+    EOLAmountState memory state = _getStorageV1().eolStates[eolId].eolAmountState;
+    return (state.total, state.idle, state.optOutPending, state.optOutResolved);
   }
 
   function getEOLAllocateAmount(uint256 eolId) external view returns (uint256) {
@@ -38,6 +58,22 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
   }
 
   // Mutative functions
+
+  function assignEolId(address eolVault_, address strategist) external returns (uint256 eolId) /* auth */ {
+    StorageV1 storage $ = _getStorageV1();
+
+    eolId = $.nextEolId;
+    $.eolStates[eolId].eolVault = eolVault_;
+    $.eolStates[eolId].strategist = strategist;
+    $.nextEolId++;
+
+    emit EolIdSet(eolId, eolVault_);
+  }
+
+  function changeEolStrategist(uint256 eolId, address strategist) external /* auth */ {
+    _getStorageV1().eolStates[eolId].strategist = strategist;
+    emit EolStrategistSet(eolId, strategist);
+  }
 
   function recordDeposit(uint256 chainId, address asset, uint256 amount) external /* auth */ {
     _getStorageV1().chainStates[chainId].amounts[asset] += amount;
