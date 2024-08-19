@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import { AssetManagerEntrypoint } from '../AssetManagerEntrypoint.sol';
 import { IMitosisLedger } from '../../../interfaces/hub/core/IMitosisLedger.sol';
+import { IRewardTreasury } from '../../../interfaces/hub/core/IRewardTreasury.sol';
 import { IEOLVault } from '../../../interfaces/hub/core/IEOLVault.sol';
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 
@@ -12,6 +13,7 @@ contract AssetManagerStorageV1 {
   struct StorageV1 {
     AssetManagerEntrypoint entrypoint;
     IMitosisLedger mitosisLedger;
+    IRewardTreasury rewardTreasury;
     // Asset states
     mapping(address hubAsset => mapping(uint256 chainId => address branchAsset)) branchAssets;
     mapping(address branchAsset => address hubAsset) hubAssets;

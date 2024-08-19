@@ -5,6 +5,7 @@ import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
 import { AssetManagerStorageV1 } from './storage/AssetManagerStorageV1.sol';
+import { IRewardTreasury } from '../../interfaces/hub/core/IRewardTreasury.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IEOLVault } from '../../interfaces/hub/core/IEOLVault.sol';
 import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
@@ -18,6 +19,7 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
   event StrategistSet(uint256 eolId, address strategist);
   event AssetPairSset(address hubAsset, uint256 branchChainId, address branchAsset);
   event EOLVaultSet(uint256 eolId, address eolVault);
+  event RewardTreasurySet(address rewardTreasury);
 
   event EntrypointSet(address entrypoint);
 
@@ -31,10 +33,11 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
     _disableInitializers();
   }
 
-  function initialize(address owner_) public initializer {
+  function initialize(address owner_, address mitosisLedger_) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
     _transferOwnership(owner_);
+    _getStorageV1().mitosisLedger = IMitosisLedger(mitosisLedger_);
   }
 
   //=========== NOTE: ASSET FUNCTIONS ===========//
@@ -122,11 +125,12 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
     _assetEolIdExist($, eolId);
     _assertOnlyEntrypoint($);
 
-    // temp:
-    //    1. mint
-    //     1-1. If it doesn't exist, should we deploy the HubAsset? The reward
-    //          asset hasn't been checked for initialization, so~
-    //    2. send to RewardTreasury
+    address hubAsset = $.hubAssets[reward];
+    if (hubAsset == address(0)) {
+      // TODO(ray): deployment or ...
+    } else {
+      $.rewardTreasury.deposit(hubAsset, amount, block.timestamp);
+    }
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
@@ -159,6 +163,11 @@ contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetMana
 
     _getStorageV1().eolVaults[eolId] = eolVault;
     emit EOLVaultSet(eolId, address(eolVault));
+  }
+
+  function setRewardTreasury(IRewardTreasury rewardTreasury) external onlyOwner {
+    _getStorageV1().rewardTreasury = rewardTreasury;
+    emit RewardTreasurySet(address(rewardTreasury));
   }
 
   function setEOLVault(uint256 eolId, IEOLVault eolVault) external onlyOwner {
