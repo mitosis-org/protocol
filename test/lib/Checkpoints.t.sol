@@ -5,12 +5,12 @@ import { Vm } from '@std/Vm.sol';
 import { Test } from '@std/Test.sol';
 import { console } from '@std/console.sol';
 
-import '../../../src/lib/twab/Checkpoints.sol';
+import '../../../src/lib/TwabCheckpoints.sol';
 
-contract CheckpointsTest is Test {
-  using Checkpoints for Checkpoints.Trace;
+contract TwabCheckpointsTest is Test {
+  using TwabCheckpoints for TwabCheckpoints.Trace;
 
-  Checkpoints.Trace private trace;
+  TwabCheckpoints.Trace private trace;
 
   function testPushAndLookup() public {
     (uint208 balance, uint256 accumulatedTwab, uint48 position) = trace.latest();

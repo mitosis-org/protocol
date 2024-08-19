@@ -6,16 +6,16 @@
 
 pragma solidity ^0.8.26;
 
-import { Math } from '@openzeppelin/contracts/utils/math/Math.sol';
+import { Math } from '@oz-v5/utils/math/Math.sol';
 
 /**
  * @dev This library defines the `Trace` struct, for checkpointing values as they change at different points in
  * time, and later looking up past values by block.timestamp.
  *
- * To create a history of checkpoints define a variable type `Checkpoints.Trace` in your contract, and store a new
+ * To create a history of checkpoints define a variable type `TwabCheckpoints.Trace` in your contract, and store a new
  * checkpoint for the current transaction block using the {push} function.
  */
-library Checkpoints {
+library TwabCheckpoints {
   /**
    * @dev A value was attempted to be inserted on a past checkpoint.
    */

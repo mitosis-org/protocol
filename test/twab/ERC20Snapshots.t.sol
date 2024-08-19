@@ -5,7 +5,7 @@ import { Vm } from '@std/Vm.sol';
 import { Test } from '@std/Test.sol';
 import { console } from '@std/console.sol';
 
-import { ERC20Snapshots } from '../src/ERC20Snapshots.sol';
+import { ERC20Snapshots } from '../../src/twab/ERC20Snapshots.sol';
 
 contract TokenTest is Test {
   ERC20Snapshots public token;

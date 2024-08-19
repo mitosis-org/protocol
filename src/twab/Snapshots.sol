@@ -5,14 +5,14 @@ import { IERC6372 } from '@openzeppelin/contracts/interfaces/IERC6372.sol';
 import { SafeCast } from '@openzeppelin/contracts/utils/math/SafeCast.sol';
 import { Time } from '@openzeppelin/contracts/utils/types/Time.sol';
 
-import { Checkpoints } from './Checkpoints.sol';
+import { TwabCheckpoints } from '../lib/TwabCheckpoints.sol';
 
 abstract contract Snapshots is IERC6372 {
-  using Checkpoints for Checkpoints.Trace;
+  using TwabCheckpoints for TwabCheckpoints.Trace;
 
-  mapping(address account => Checkpoints.Trace) _accountCheckpoints;
+  mapping(address account => TwabCheckpoints.Trace) _accountCheckpoints;
 
-  Checkpoints.Trace private _totalCheckpoints;
+  TwabCheckpoints.Trace private _totalCheckpoints;
 
   error ERC6372InconsistentClock();
 
@@ -85,10 +85,11 @@ abstract contract Snapshots is IERC6372 {
     return _totalCheckpoints.upperLookupRecent(SafeCast.toUint48(timestamp));
   }
 
-  function _push(Checkpoints.Trace storage store, function(uint208, uint208) view returns (uint208) op, uint208 delta)
-    private
-    returns (uint208, uint208, uint256, uint256)
-  {
+  function _push(
+    TwabCheckpoints.Trace storage store,
+    function(uint208, uint208) view returns (uint208) op,
+    uint208 delta
+  ) private returns (uint208, uint208, uint256, uint256) {
     (uint208 lastBalance, uint256 lastTwab, uint48 lastPosition) = store.latest();
 
     uint208 balance = op(lastBalance, delta);
