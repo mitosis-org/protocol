@@ -59,7 +59,7 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
 
   // Mutative functions
 
-  function assignEolId(address eolVault_, address strategist) external returns (uint256 eolId) /* auth */ {
+  function assignEolId(address eolVault_, address strategist) external returns (uint256 eolId /* auth */ ) {
     StorageV1 storage $ = _getStorageV1();
 
     eolId = $.nextEolId;

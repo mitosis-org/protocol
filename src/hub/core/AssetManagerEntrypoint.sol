@@ -6,6 +6,7 @@ import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
+import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 import { AssetManager } from './AssetManager.sol';
 import { StdError } from '../../lib/StdError.sol';
@@ -14,7 +15,13 @@ import '../../message/Message.sol';
 
 // TODO(thai): consider to make our own contract (`HyperlaneConnector`) instead of using `Router`.
 
-contract AssetManagerEntrypoint is IMessageRecipient, Router, PausableUpgradeable, Ownable2StepUpgradeable {
+contract AssetManagerEntrypoint is
+  IAssetManagerEntrypoint,
+  IMessageRecipient,
+  Router,
+  PausableUpgradeable,
+  Ownable2StepUpgradeable
+{
   using Message for *;
   using Conv for *;
 

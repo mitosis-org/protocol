@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import { AssetManagerEntrypoint } from '../AssetManagerEntrypoint.sol';
+import { IAssetManagerEntrypoint } from '../../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IMitosisLedger } from '../../../interfaces/hub/core/IMitosisLedger.sol';
 import { IRewardTreasury } from '../../../interfaces/hub/core/IRewardTreasury.sol';
 import { IEOLVault } from '../../../interfaces/hub/core/IEOLVault.sol';
@@ -11,7 +11,7 @@ contract AssetManagerStorageV1 {
   using ERC7201Utils for string;
 
   struct StorageV1 {
-    AssetManagerEntrypoint entrypoint;
+    IAssetManagerEntrypoint entrypoint;
     IMitosisLedger mitosisLedger;
     IRewardTreasury rewardTreasury;
     // Asset states

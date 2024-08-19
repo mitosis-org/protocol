@@ -8,9 +8,10 @@ import { AssetManagerStorageV1 } from './storage/AssetManagerStorageV1.sol';
 import { IRewardTreasury } from '../../interfaces/hub/core/IRewardTreasury.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IEOLVault } from '../../interfaces/hub/core/IEOLVault.sol';
+import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
 
-contract AssetManager is PausableUpgradeable, Ownable2StepUpgradeable, AssetManagerStorageV1 {
+contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgradeable, AssetManagerStorageV1 {
   //=========== NOTE: EVENT DEFINITIONS ===========//
 
   event Deposited(uint256 indexed fromChainId, address indexed asset, address indexed to, uint256 amount);
