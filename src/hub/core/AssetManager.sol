@@ -14,8 +14,18 @@ import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
 contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgradeable, AssetManagerStorageV1 {
   //=========== NOTE: EVENT DEFINITIONS ===========//
 
+  event AssetInitialized(uint256 indexed toChainId, address asset);
+  event EOLInitialized(uint256 indexed toChainId, uint256 eolId, address asset);
+
   event Deposited(uint256 indexed fromChainId, address indexed asset, address indexed to, uint256 amount);
   event Redeemed(uint256 indexed toChainId, address indexed asset, address indexed to, uint256 amount);
+
+  event YieldSettled(uint256 indexed fromChainId, uint256 indexed eolId, uint256 amount);
+  event LossSettled(uint256 indexed fromChainId, uint256 indexed eolId, uint256 amount);
+  event ExtraRewardsSettled(uint256 indexed fromChainId, uint256 indexed eolId, address indexed reward, uint256 amount);
+
+  event EOLAllocated(uint256 indexed toChainId, uint256 indexed eolId, uint256 amount);
+  event EOLDeallocated(uint256 indexed fromChainId, uint256 indexed eolId, uint256 amount);
 
   event AssetPairSset(address hubAsset, uint256 branchChainId, address branchAsset);
   event RewardTreasurySet(address rewardTreasury);
@@ -79,15 +89,18 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     }
     $.mitosisLedger.recordAllocateEOL(eolId, amount);
     $.entrypoint.allocateEOL(chainId, eolId, amount);
+
+    emit EOLAllocated(chainId, eolId, amount);
   }
 
-  function deallocateEOL(uint256 eolId, uint256 amount) external {
+  function deallocateEOL(uint256 chainId, uint256 eolId, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assetEolIdExist($, eolId);
     _assertOnlyEntrypoint($);
 
     $.mitosisLedger.recordDeallocateEOL(eolId, amount);
+    emit EOLDeallocated(chainId, eolId, amount);
   }
 
   function settleYield(uint256 chainId, uint256 eolId, uint256 amount) external {
@@ -101,6 +114,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
     _mint(hubAsset, chainId, address(this), amount);
     IHubAsset(hubAsset).transfer(address(eolVault), amount);
+
+    emit YieldSettled(chainId, eolId, amount);
   }
 
   function settleLoss(uint256 chainId, uint256 eolId, uint256 amount) external {
@@ -116,6 +131,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     IHubAsset(hubAsset).mint(address(this), amount);
     loss += amount; // ?
       // TODO(ray)
+
+    emit LossSettled(chainId, eolId, amount);
   }
 
   function settleExtraRewards(uint256 chainId, uint256 eolId, address reward, uint256 amount) external {
@@ -130,6 +147,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     } else {
       $.rewardTreasury.deposit(hubAsset, amount, block.timestamp);
     }
+
+    emit ExtraRewardsSettled(chainId, eolId, reward, amount);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
@@ -141,6 +160,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertBranchAssetPairExist($, branchAsset);
 
     $.entrypoint.initializeAsset(chainId, branchAsset);
+    emit AssetInitialized(chainId, branchAsset);
   }
 
   function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external onlyOwner {
@@ -171,6 +191,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertBranchAssetPairExist($, branchAsset);
 
     $.entrypoint.initializeEOL(chainId, eolId, branchAsset);
+    emit EOLInitialized(chainId, eolId, branchAsset);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//

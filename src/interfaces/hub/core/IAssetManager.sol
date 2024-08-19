@@ -8,7 +8,7 @@ interface IAssetManager {
 
   function allocateEOL(uint256 chainId, uint256 eolId, uint256 amount) external;
 
-  function deallocateEOL(uint256 eolId, uint256 amount) external;
+  function deallocateEOL(uint256 chainId, uint256 eolId, uint256 amount) external;
 
   function settleYield(uint256 chainId, uint256 eolId, uint256 amount) external;
 
