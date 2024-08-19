@@ -2,7 +2,7 @@
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/structs/Checkpoints.sol)
 // This file was procedurally generated from scripts/generate/templates/Checkpoints.js.
 //
-// ** Modified **
+// Modified for the Mitosis development.
 
 pragma solidity ^0.8.26;
 
