@@ -65,6 +65,7 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
     eolId = $.nextEolId;
     $.eolStates[eolId].eolVault = eolVault_;
     $.eolStates[eolId].strategist = strategist;
+    $.eolIds[eolVault_] = eolId;
     $.nextEolId++;
 
     emit EolIdSet(eolId, eolVault_);
