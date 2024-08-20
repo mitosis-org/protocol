@@ -95,15 +95,16 @@ abstract contract TwabSnapshots is IERC6372 {
     uint208 balance = op(lastBalance, delta);
 
     uint256 twab = lastTwab;
+    uint48 timestamp = clock();
     // TWAB is a cumulative value, so it is not affected by the current balance.
-    if (lastPosition < block.timestamp) {
-      twab = _calcAccumulatedTwab(lastTwab, lastBalance, block.timestamp - lastPosition);
+    if (timestamp > lastPosition) {
+      twab = _calcAccumulatedTwab(lastTwab, lastBalance, timestamp - lastPosition);
     }
 
-    return store.push(clock(), balance, twab);
+    return store.push(timestamp, balance, twab);
   }
 
-  function _calcAccumulatedTwab(uint256 lastTwab, uint208 lastBalance, uint256 duration) private pure returns (uint256) {
+  function _calcAccumulatedTwab(uint256 lastTwab, uint208 lastBalance, uint48 duration) private pure returns (uint256) {
     return lastTwab + (lastBalance * duration);
   }
 
