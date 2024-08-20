@@ -68,7 +68,7 @@ abstract contract TwabSnapshots is IERC6372 {
     return _accountCheckpoints[account].upperLookupRecent(SafeCast.toUint48(timestamp));
   }
 
-  function getLastestTotalSnapshot() public view virtual returns (uint208 balance, uint256 twab, uint48 position) {
+  function getLatestTotalSnapshot() public view virtual returns (uint208 balance, uint256 twab, uint48 position) {
     return _totalCheckpoints.latest();
   }
 

@@ -9,7 +9,7 @@ interface ITwabSnapshots {
     view
     returns (uint208 balance, uint256 twab, uint48 position);
 
-  function getLastestTotalSnapshot() external view returns (uint208 balance, uint256 twab, uint48 position);
+  function getLatestTotalSnapshot() external view returns (uint208 balance, uint256 twab, uint48 position);
 
   function getPastTotalSnapshot(uint256 timestamp)
     external
