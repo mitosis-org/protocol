@@ -61,6 +61,13 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
 
   // Mutative functions
 
+  // EOL management states
+
+  function allocateEolId(address eolVault_, address strategist) external returns (uint256 eolId /* auth */ ) {
+    eolId = allocateEolId(eolVault_);
+    setEolStrategist(eolId, strategist);
+  }
+
   function allocateEolId(address eolVault_) public returns (uint256 eolId /* auth */ ) {
     StorageV1 storage $ = _getStorageV1();
 
@@ -72,16 +79,12 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
     emit EolIdSet(eolId, eolVault_);
   }
 
-  function allocateEolId(address eolVault_, address strategist) external returns (uint256 eolId /* auth */ ) {
-    eolId = allocateEolId(eolVault_);
-    StorageV1 storage $ = _getStorageV1();
-    $.eolStates[eolId].strategist = strategist;
-  }
-
-  function setEolStrategist(uint256 eolId, address strategist) external /* auth */ {
+  function setEolStrategist(uint256 eolId, address strategist) public /* auth */ {
     _getStorageV1().eolStates[eolId].strategist = strategist;
     emit EolStrategistSet(eolId, strategist);
   }
+
+  // Asset, EOL balance states
 
   function recordDeposit(uint256 chainId, address asset, uint256 amount) external /* auth */ {
     _getStorageV1().chainStates[chainId].amounts[asset] += amount;
