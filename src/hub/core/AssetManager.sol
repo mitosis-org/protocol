@@ -9,7 +9,9 @@ import { IRewardTreasury } from '../../interfaces/hub/core/IRewardTreasury.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IEOLVault } from '../../interfaces/hub/core/IEOLVault.sol';
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
+import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
+import { StdError } from '../../lib/StdError.sol';
 
 contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgradeable, AssetManagerStorageV1 {
   //=========== NOTE: EVENT DEFINITIONS ===========//
@@ -57,25 +59,25 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
     _assertOnlyEntrypoint($);
 
-    address hubAsset = $.hubAssets[branchAsset][chainId];
-    if (hubAsset != address(0)) {
-      try this._mint(chainId, hubAsset, to, amount) {
-        emit Deposited(chainId, asset, to, amount);
-        return;
-      } catch { }
+    address hubAsset = $.hubAssets[branchAsset];
+    if (hubAsset == address(0)) {
+      $.entrypoint.refund(chainId, branchAsset, refundTo, amount);
+      emit Refunded(chainId, branchAsset, refundTo, amount);
+      return;
     }
 
-    $.entrypoint.refund(chainId, branchAsset, refundTo, amount);
-    emit Refunded(chainId, asset, refundTo, amount);
+    _mint($, chainId, hubAsset, to, amount);
+
+    emit Deposited(chainId, hubAsset, to, amount);
   }
 
-  function redeem(uint256 chainId, address branchAsset, address to, uint256 amount) external {
+  function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    address branchAsset = $.branchAssets[hubAsset][chainId];
     _assertBranchAssetPairExist($, branchAsset);
 
-    address hubAsset = $.hubAssets[branchAsset];
-    _burn(chainId, hubAsset, to, amount);
+    _burn($, chainId, hubAsset, amount);
     $.entrypoint.redeem(chainId, branchAsset, to, amount);
 
     emit Redeemed(chainId, hubAsset, to, amount);
@@ -93,8 +95,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     if (idle < amount) {
       revert AssetManager__EOLInsufficient(eolId);
     }
-    $.mitosisLedger.recordAllocateEOL(eolId, amount);
+
     $.entrypoint.allocateEOL(chainId, eolId, amount);
+    $.mitosisLedger.recordAllocateEOL(eolId, amount);
 
     emit EOLAllocated(chainId, eolId, amount);
   }
@@ -106,6 +109,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertOnlyEntrypoint($);
 
     $.mitosisLedger.recordDeallocateEOL(eolId, amount);
+
     emit EOLDeallocated(chainId, eolId, amount);
   }
 
@@ -115,30 +119,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assetEolIdExist($, eolId);
     _assertOnlyEntrypoint($);
 
-    IEOLVault eolVault = IEOLVault($.mitosisLedger.eolVault(eolId));
-
-    // Increase the numerator.
-
-    // 괜히 복잡해지는 것 같기도 하고;
-    uint256 mintRequired = amount;
-    uint256 expectedShares = IEOLVault.convertToShares(amount); // $.setlledLoss is shares unit.
-    uint256 actualAssets;
-
-    if ($.settledLoss >= expectedShares) {
-      actualAssets = IEOLVault.redeem(expectedShares, address(eolVault), address(this));
-      require(actualAssets != amount, 'unexpected case');
-      $.settledLoss -= expectedShares;
-      mintRequired = 0;
-    } else if ($.settledLoss > 0) {
-      actualAssets = IEOLVault.redeem($.settledLoss, address(eolVault), address(this));
-      $.settledLoss = 0;
-      mintRequired -= gotAssets;
-    }
-
-    if (mintRequired > 0) {
-      address hubAsset = eolVault.asset();
-      IHubAsset(hubAsset).mint(address(eolVault), mintRequired);
-    }
+    _increaseEOLShareValue($, eolId, amount);
 
     emit YieldSettled(chainId, eolId, amount);
   }
@@ -149,12 +130,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assetEolIdExist($, eolId);
     _assertOnlyEntrypoint($);
 
-    IEOLVault eolVault = IEOLVault($.mitosisLedger.eolVault(eolId));
-    address hubAsset = eolVault.asset();
-
-    uint256 shares = IEOLVault.convertToShares(amount);
-    IEOLVault.mint(shares, address(this));
-    $.settledLoss += shares;
+    _decreaseEOLShareValue($, eolId, amount);
 
     emit LossSettled(chainId, eolId, amount);
   }
@@ -194,9 +170,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     emit AssetPairSset(hubAsset, branchChainId, branchAsset);
   }
 
-  function setEntrypoint(AssetManagerEntrypoint entrypoint) external onlyOwner {
+  function setEntrypoint(IAssetManagerEntrypoint entrypoint) external onlyOwner {
     _getStorageV1().entrypoint = entrypoint;
-    emit EntrypointSet(entrypoint);
+    emit EntrypointSet(address(entrypoint));
   }
 
   function setRewardTreasury(IRewardTreasury rewardTreasury) external onlyOwner {
@@ -211,7 +187,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
     IEOLVault eolVault = IEOLVault($.mitosisLedger.eolVault(eolId));
     address hubAsset = eolVault.asset();
-    address branchAsset = $.branchAssets[chainId][hubAsset];
+    address branchAsset = $.branchAssets[hubAsset][chainId];
     _assertBranchAssetPairExist($, branchAsset);
 
     $.entrypoint.initializeEOL(chainId, eolId, branchAsset);
@@ -220,14 +196,23 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _mint(uint256 chainId, address asset, address to, uint256 amount) internal {
+  function _increaseEOLShareValue(StorageV1 storage $, uint256 eolId, uint256 assets) internal {
+    IEOLVault eolVault = IEOLVault($.mitosisLedger.eolVault(eolId));
+    IHubAsset(eolVault.asset()).mint(address(eolVault), assets);
+  }
+
+  function _decreaseEOLShareValue(StorageV1 storage $, uint256 eolId, uint256 assets) internal {
+    IEOLVault eolVault = IEOLVault($.mitosisLedger.eolVault(eolId));
+    IHubAsset(eolVault.asset()).burnFrom(address(eolVault), assets);
+  }
+
+  function _mint(StorageV1 storage $, uint256 chainId, address asset, address to, uint256 amount) internal {
     IHubAsset(asset).mint(to, amount);
     $.mitosisLedger.recordDeposit(chainId, asset, amount);
   }
 
-  function _burn(uint256 chainId, address asset, address to, uint256 amount) internal {
-    IHubAsset(asset).transferFrom(msg.sender, address(this));
-    IHubAsset(asset).burn(amount);
+  function _burn(StorageV1 storage $, uint256 chainId, address asset, uint256 amount) internal {
+    IHubAsset(asset).burnFrom(msg.sender, amount);
     $.mitosisLedger.recordWithdraw(chainId, asset, amount);
   }
 
@@ -244,6 +229,6 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function _assetOnlyStrategist(StorageV1 storage $, uint256 eolId) internal view {
-    if (_msgSender() != $.mitosisLedger.eolStrategist(eolId)) StdError.InvalidAddress('strategist');
+    if (_msgSender() != $.mitosisLedger.eolStrategist(eolId)) revert StdError.InvalidAddress('strategist');
   }
 }

@@ -71,7 +71,7 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
     emit EolIdSet(eolId, eolVault_);
   }
 
-  function changeEolStrategist(uint256 eolId, address strategist) external /* auth */ {
+  function setEolStrategist(uint256 eolId, address strategist) external /* auth */ {
     _getStorageV1().eolStates[eolId].strategist = strategist;
     emit EolStrategistSet(eolId, strategist);
   }

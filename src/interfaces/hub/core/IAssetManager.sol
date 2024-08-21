@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 interface IAssetManager {
-  function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external;
+  function deposit(uint256 chainId, address branchAsset, address refundTo, address to, uint256 amount) external;
 
   function redeem(uint256 chainId, address branchAsset, address to, uint256 amount) external;
 
