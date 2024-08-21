@@ -38,6 +38,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
   error AssetManager__EOLInsufficient(uint256 eolId);
+  error AssetManager__BranchAssetPairNotExist(address asset);
+  error AssetManager__RewardTreasuryNotSet();
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -139,14 +141,16 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     _assetEolIdExist($, eolId);
+    _assetRewardTreasurySet($);
     _assertOnlyEntrypoint($);
 
     address hubAsset = $.hubAssets[reward];
     if (hubAsset == address(0)) {
-      // TODO(ray): deployment or ...
-    } else {
-      $.rewardTreasury.deposit(hubAsset, amount, block.timestamp);
+      // TODO(ray): need deployment?
+      revert AssetManager__BranchAssetPairNotExist(reward);
     }
+
+    $.rewardTreasury.deposit(hubAsset, amount, block.timestamp);
 
     emit ExtraRewardsSettled(chainId, eolId, reward, amount);
   }
@@ -230,5 +234,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
   function _assetOnlyStrategist(StorageV1 storage $, uint256 eolId) internal view {
     if (_msgSender() != $.mitosisLedger.eolStrategist(eolId)) revert StdError.InvalidAddress('strategist');
+  }
+
+  function _assetRewardTreasurySet(StorageV1 storage $) internal view {
+    if (address($.rewardTreasury) == address(0)) revert AssetManager__RewardTreasuryNotSet();
   }
 }
