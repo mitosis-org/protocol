@@ -116,8 +116,7 @@ contract CrossChainRegistry is
 
   function enrollEntrypoint(address hplRouter) external onlyRegisterer {
     uint256[] memory chainIds = _getStorageV1().chainIds;
-    uint32[] memory hplDomains = new uint32[](chainIds.length);
-    bytes32[] memory entrypoints = new bytes32[](chainIds.length);
+    // TODO(ray): IRouter.enrollRemoteRouters
     for (uint256 i = 0; i < chainIds.length; i++) {
       enrollEntrypoint(hplRouter, chainIds[i]);
     }
@@ -126,6 +125,7 @@ contract CrossChainRegistry is
   function enrollEntrypoint(address hplRouter, uint256 chainId) public onlyRegisterer {
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId];
     if (_isEnrollableChain(chainInfo)) {
+      chainInfo.entrypointEnrolled = true;
       IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.entrypoint);
     }
   }
