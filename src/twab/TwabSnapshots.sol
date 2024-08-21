@@ -100,7 +100,7 @@ abstract contract TwabSnapshots is IERC6372, TwabSnapshotsStorageV1 {
       twab = _calcAccumulatedTwab(lastTwab, lastBalance, timestamp - lastPosition);
     }
 
-    return store.push(timestamp, balance, twab);
+    return TwabCheckpoints.push(store, timestamp, balance, twab);
   }
 
   function _calcAccumulatedTwab(uint256 lastTwab, uint208 lastBalance, uint48 duration) private pure returns (uint256) {
