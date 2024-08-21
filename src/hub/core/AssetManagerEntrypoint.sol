@@ -34,12 +34,8 @@ contract AssetManagerEntrypoint is
     _;
   }
 
-  modifier onlyRegisteredChain(uint256 chainId) {
+  modifier onlyDispachable(uint256 chainId) {
     if (!_ccRegistry.isRegisteredChain(chainId)) revert ICrossChainRegistry__NotRegistered();
-    _;
-  }
-
-  modifier onlyEnrolledChain(uint256 chainId) {
     if (!_ccRegistry.entrypointEnrolled(chainId)) revert ICrossChainRegistry__NotEnrolled();
     _;
   }
@@ -74,7 +70,7 @@ contract AssetManagerEntrypoint is
 
   //=========== NOTE: ASSETMANAGER FUNCTIONS ===========//
 
-  function initializeAsset(uint256 chainId, address branchAsset) external onlyAssetManager onlyRegisteredChain(chainId) {
+  function initializeAsset(uint256 chainId, address branchAsset) external onlyAssetManager onlyDispachable(chainId) {
     bytes memory enc = MsgInitializeAsset({ asset: branchAsset.toBytes32() });
     _dispatchToBranch(chainId, enc);
   }
@@ -82,7 +78,7 @@ contract AssetManagerEntrypoint is
   function initializeEOL(uint256 chainId, uint256 eolId, address branchAsset)
     external
     onlyAssetManager
-    onlyRegisteredChain(chainId)
+    onlyDispachable(chainId)
   {
     bytes memory enc = MsgInitializeEOL({ eolId: eolId, asset: branchAsset.toBytes32() });
     _dispatchToBranch(chainId, enc);
@@ -91,7 +87,7 @@ contract AssetManagerEntrypoint is
   function redeem(uint256 chainId, address branchAsset, address to, uint256 amount)
     external
     onlyAssetManager
-    onlyRegisteredChain(chainId)
+    onlyDispachable(chainId)
   {
     bytes memory enc = MsgRedeem({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount });
     _dispatchToBranch(chainId, enc);
@@ -100,7 +96,7 @@ contract AssetManagerEntrypoint is
   function refund(uint256 chainId, address branchAsset, address to, uint256 amount)
     external
     onlyAssetManager
-    onlyRegisteredChain(chainId)
+    onlyDispachable(chainId)
   {
     bytes memory enc = MsgRefund({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount });
     _dispatchToBranch(chainId, enc);
@@ -109,7 +105,7 @@ contract AssetManagerEntrypoint is
   function allocateEOL(uint256 chainId, uint256 eolId, uint256 amount)
     external
     onlyAssetManager
-    onlyRegisteredChain(chainId)
+    onlyDispachable(chainId)
   {
     bytes memory enc = MsgAllocateEOL({ eolId: eolId, amount: amount });
     _dispatchToBranch(chainId, enc);
