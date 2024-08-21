@@ -6,13 +6,10 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { TwabCheckpoints } from '../lib/TwabCheckpoints.sol';
+import { TwabSnapshotsStorageV1 } from './TwabSnapshotsStorageV1.sol';
 
-abstract contract TwabSnapshots is IERC6372 {
+abstract contract TwabSnapshots is IERC6372, TwabSnapshotsStorageV1 {
   using TwabCheckpoints for TwabCheckpoints.Trace;
-
-  mapping(address account => TwabCheckpoints.Trace) _accountCheckpoints;
-
-  TwabCheckpoints.Trace private _totalCheckpoints;
 
   error ERC6372InconsistentClock();
 
@@ -31,17 +28,19 @@ abstract contract TwabSnapshots is IERC6372 {
   }
 
   function _snapshot(address from, address to, uint256 amount) internal virtual {
+    StorageV1 storage $ = _getStorageV1();
+
     if (from != to && amount > 0) {
       if (from == address(0)) {
-        _push(_totalCheckpoints, _add, SafeCast.toUint208(amount));
+        _push($.totalCheckpoints, _add, SafeCast.toUint208(amount));
       } else {
-        _push(_accountCheckpoints[from], _subtract, SafeCast.toUint208(amount));
+        _push($.accountCheckpoints[from], _subtract, SafeCast.toUint208(amount));
       }
 
       if (to == address(0)) {
-        _push(_totalCheckpoints, _subtract, SafeCast.toUint208(amount));
+        _push($.totalCheckpoints, _subtract, SafeCast.toUint208(amount));
       } else {
-        _push(_accountCheckpoints[to], _add, SafeCast.toUint208(amount));
+        _push($.accountCheckpoints[to], _add, SafeCast.toUint208(amount));
       }
     }
   }
@@ -52,7 +51,7 @@ abstract contract TwabSnapshots is IERC6372 {
     virtual
     returns (uint208 balnace, uint256 twab, uint48 position)
   {
-    return _accountCheckpoints[account].latest();
+    return _getStorageV1().accountCheckpoints[account].latest();
   }
 
   function getPastSnapshot(address account, uint256 timestamp)
@@ -65,11 +64,11 @@ abstract contract TwabSnapshots is IERC6372 {
     if (timestamp >= currentTimestamp) {
       revert ERC5805FutureLookup(timestamp, currentTimestamp);
     }
-    return _accountCheckpoints[account].upperLookupRecent(SafeCast.toUint48(timestamp));
+    return _getStorageV1().accountCheckpoints[account].upperLookupRecent(SafeCast.toUint48(timestamp));
   }
 
   function getLatestTotalSnapshot() public view virtual returns (uint208 balance, uint256 twab, uint48 position) {
-    return _totalCheckpoints.latest();
+    return _getStorageV1().totalCheckpoints.latest();
   }
 
   function getPastTotalSnapshot(uint256 timestamp)
@@ -82,7 +81,7 @@ abstract contract TwabSnapshots is IERC6372 {
     if (timestamp >= currentTimestamp) {
       revert ERC5805FutureLookup(timestamp, currentTimestamp);
     }
-    return _totalCheckpoints.upperLookupRecent(SafeCast.toUint48(timestamp));
+    return _getStorageV1().totalCheckpoints.upperLookupRecent(SafeCast.toUint48(timestamp));
   }
 
   function _push(
