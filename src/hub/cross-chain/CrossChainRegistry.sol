@@ -56,16 +56,16 @@ contract CrossChainRegistry is
     return _getStorageV1().chains[chainId].hplDomain;
   }
 
-  function getEntryPoint(uint256 chainId) external view returns (address) {
-    return _getStorageV1().chains[chainId].entryPoint;
+  function getEntrypoint(uint256 chainId) external view returns (address) {
+    return _getStorageV1().chains[chainId].entrypoint;
   }
 
   function getVault(uint256 chainId) external view returns (address) {
     return _getStorageV1().chains[chainId].vault;
   }
 
-  function entryPointEnrolled(uint256 chainId) external view returns (bool) {
-    return _isEntryPointEnrolled(_getStorageV1().chains[chainId]);
+  function entrypointEnrolled(uint256 chainId) external view returns (bool) {
+    return _isEntrypointEnrolled(_getStorageV1().chains[chainId]);
   }
 
   function getChainIdByHyperlaneDomain(uint32 hplDomain) external view returns (uint256) {
@@ -80,7 +80,7 @@ contract CrossChainRegistry is
   //
   // TODO: update methods
 
-  function setChain(uint256 chainId, string calldata name, uint32 hplDomain, address entryPoint)
+  function setChain(uint256 chainId, string calldata name, uint32 hplDomain, address entrypoint)
     external
     onlyRegisterer
   {
@@ -94,7 +94,7 @@ contract CrossChainRegistry is
     $.hplDomains.push(hplDomain);
     $.chains[chainId].name = name;
     $.chains[chainId].hplDomain = hplDomain;
-    $.chains[chainId].entryPoint = entryPoint;
+    $.chains[chainId].entrypoint = entrypoint;
     $.hyperlanes[hplDomain].chainId = chainId;
 
     emit ChainSet(chainId, hplDomain, name);
@@ -114,19 +114,19 @@ contract CrossChainRegistry is
     emit VaultSet(chainId, vault);
   }
 
-  function enrollEntryPoint(address hplRouter) external onlyRegisterer {
+  function enrollEntrypoint(address hplRouter) external onlyRegisterer {
     uint256[] memory chainIds = _getStorageV1().chainIds;
     uint32[] memory hplDomains = new uint32[](chainIds.length);
-    bytes32[] memory entryPoints = new bytes32[](chainIds.length);
+    bytes32[] memory entrypoints = new bytes32[](chainIds.length);
     for (uint256 i = 0; i < chainIds.length; i++) {
-      enrollEntryPoint(hplRouter, chainIds[i]);
+      enrollEntrypoint(hplRouter, chainIds[i]);
     }
   }
 
-  function enrollEntryPoint(address hplRouter, uint256 chainId) public onlyRegisterer {
+  function enrollEntrypoint(address hplRouter, uint256 chainId) public onlyRegisterer {
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId];
     if (_isEnrollableChain(chainInfo)) {
-      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.entryPoint);
+      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.entrypoint);
     }
   }
 
@@ -140,12 +140,12 @@ contract CrossChainRegistry is
     return chainInfo.vault != address(0);
   }
 
-  function _isEntryPointEnrolled(ChainInfo storage chainInfo) internal view returns (bool) {
-    return chainInfo.entryPointEnrolled;
+  function _isEntrypointEnrolled(ChainInfo storage chainInfo) internal view returns (bool) {
+    return chainInfo.entrypointEnrolled;
   }
 
   function _isEnrollableChain(ChainInfo storage chainInfo) internal view returns (bool) {
-    return _isRegisteredChain(chainInfo) && !_isEntryPointEnrolled(chainInfo);
+    return _isRegisteredChain(chainInfo) && !_isEntrypointEnrolled(chainInfo);
   }
 
   function _isRegisteredHyperlane(HyperlaneInfo storage hplInfo) internal view returns (bool) {

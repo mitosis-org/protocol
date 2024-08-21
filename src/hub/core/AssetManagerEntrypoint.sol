@@ -40,7 +40,7 @@ contract AssetManagerEntrypoint is
   }
 
   modifier onlyEnrolledChain(uint256 chainId) {
-    if (!_ccRegistry.entryPointEnrolled(chainId)) revert ICrossChainRegistry__NotEnrolled();
+    if (!_ccRegistry.entrypointEnrolled(chainId)) revert ICrossChainRegistry__NotEnrolled();
     _;
   }
 
@@ -69,7 +69,7 @@ contract AssetManagerEntrypoint is
   }
 
   function branchEntrypointAddr(uint256 chainId) external view returns (bytes32) {
-    return _ccRegistry.getEntryPoint(chainId);
+    return _ccRegistry.getEntrypoint(chainId);
   }
 
   //=========== NOTE: ASSETMANAGER FUNCTIONS ===========//

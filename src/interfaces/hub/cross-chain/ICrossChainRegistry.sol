@@ -19,9 +19,9 @@ interface ICrossChainRegistry {
   /// @dev Returns the Other chain's MitosisVault address by ChainID.
   function getVault(uint256 chainId) external view returns (address);
 
-  function getEntryPoint(uint256 chainId) external view returns (address);
+  function getEntrypoint(uint256 chainId) external view returns (address);
 
-  function entryPointEnrolled(uint256 chainId) external view returns (bool);
+  function entrypointEnrolled(uint256 chainId) external view returns (bool);
 
   /// @dev Returns the ChainID by Hyperlane domain.
   function getChainIdByHyperlaneDomain(uint32 hplDomain) external view returns (uint256);
@@ -34,7 +34,7 @@ interface ICrossChainRegistry {
   /// @dev Sets the vault address for a specific ChainID.
   function setVault(uint256 chainId, address vault) external;
 
-  function enrollEntryPoint(address hplRouter) external;
+  function enrollEntrypoint(address hplRouter) external;
 
-  function enrollEntryPoint(address hplRouter, uint256 chainId) external;
+  function enrollEntrypoint(address hplRouter, uint256 chainId) external;
 }
