@@ -12,7 +12,8 @@ interface IMitosisLedger {
     returns (uint256 total, uint256 idle, uint256 optOutPending, uint256 optOutResolved);
   function getEOLAllocateAmount(uint256 eolId) external view returns (uint256);
   // EOL
-  function assignEolId(address eolVault_, address strategist) external returns (uint256 eolId);
+  function allocateEolId(address eolVault_) external returns (uint256 eolId);
+  function allocateEolId(address eolVault_, address strategist) external returns (uint256 eolId);
   function setEolStrategist(uint256 eolId, address strategist) external;
   // Asset Record
   function recordDeposit(uint256 chainId, address asset, uint256 amount) external;
