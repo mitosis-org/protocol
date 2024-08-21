@@ -15,16 +15,55 @@ abstract contract TwabSnapshots is IERC6372, TwabSnapshotsStorageV1 {
 
   error ERC5805FutureLookup(uint256 timepoint, uint48 clock);
 
-  function clock() public view virtual returns (uint48) {
-    return Time.timestamp();
-  }
-
-  function CLOCK_MODE() public view virtual returns (string memory) {
+  function CLOCK_MODE() external view virtual returns (string memory) {
     // Check that the clock was not modified
     if (clock() != Time.timestamp()) {
       revert ERC6372InconsistentClock();
     }
     return 'mode=timestamp';
+  }
+
+  function clock() public view virtual returns (uint48) {
+    return Time.timestamp();
+  }
+
+  function getLatestSnapshot(address account)
+    external
+    view
+    virtual
+    returns (uint208 balnace, uint256 twab, uint48 position)
+  {
+    return _getStorageV1().accountCheckpoints[account].latest();
+  }
+
+  function getPastSnapshot(address account, uint256 timestamp)
+    external
+    view
+    virtual
+    returns (uint208 balance, uint256 twab, uint48 position)
+  {
+    uint48 currentTimestamp = clock();
+    if (timestamp >= currentTimestamp) {
+      revert ERC5805FutureLookup(timestamp, currentTimestamp);
+    }
+    return _getStorageV1().accountCheckpoints[account].upperLookupRecent(SafeCast.toUint48(timestamp));
+  }
+
+  function getLatestTotalSnapshot() external view virtual returns (uint208 balance, uint256 twab, uint48 position) {
+    return _getStorageV1().totalCheckpoints.latest();
+  }
+
+  function getPastTotalSnapshot(uint256 timestamp)
+    external
+    view
+    virtual
+    returns (uint208 balance, uint256 twab, uint48 position)
+  {
+    uint48 currentTimestamp = clock();
+    if (timestamp >= currentTimestamp) {
+      revert ERC5805FutureLookup(timestamp, currentTimestamp);
+    }
+    return _getStorageV1().totalCheckpoints.upperLookupRecent(SafeCast.toUint48(timestamp));
   }
 
   function _snapshot(address from, address to, uint256 amount) internal virtual {
@@ -43,45 +82,6 @@ abstract contract TwabSnapshots is IERC6372, TwabSnapshotsStorageV1 {
         _push($.accountCheckpoints[to], _add, SafeCast.toUint208(amount));
       }
     }
-  }
-
-  function getLatestSnapshot(address account)
-    public
-    view
-    virtual
-    returns (uint208 balnace, uint256 twab, uint48 position)
-  {
-    return _getStorageV1().accountCheckpoints[account].latest();
-  }
-
-  function getPastSnapshot(address account, uint256 timestamp)
-    public
-    view
-    virtual
-    returns (uint208 balance, uint256 twab, uint48 position)
-  {
-    uint48 currentTimestamp = clock();
-    if (timestamp >= currentTimestamp) {
-      revert ERC5805FutureLookup(timestamp, currentTimestamp);
-    }
-    return _getStorageV1().accountCheckpoints[account].upperLookupRecent(SafeCast.toUint48(timestamp));
-  }
-
-  function getLatestTotalSnapshot() public view virtual returns (uint208 balance, uint256 twab, uint48 position) {
-    return _getStorageV1().totalCheckpoints.latest();
-  }
-
-  function getPastTotalSnapshot(uint256 timestamp)
-    public
-    view
-    virtual
-    returns (uint208 balance, uint256 twab, uint48 position)
-  {
-    uint48 currentTimestamp = clock();
-    if (timestamp >= currentTimestamp) {
-      revert ERC5805FutureLookup(timestamp, currentTimestamp);
-    }
-    return _getStorageV1().totalCheckpoints.upperLookupRecent(SafeCast.toUint48(timestamp));
   }
 
   function _push(
