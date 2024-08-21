@@ -11,3 +11,7 @@
 @openzeppelin-foundry-upgrades-0.3.1=dependencies/openzeppelin-foundry-upgrades-0.3.1
 @openzeppelin-contracts-upgradeable-5.0.2=dependencies/@openzeppelin-contracts-upgradeable-5.0.2
 @openzeppelin-contracts-5.0.2=dependencies/@openzeppelin-contracts-5.0.2
+@oz-v4=dependencies/@openzeppelin-contracts-v4-4.9.6/contracts
+@ozu-v4=dependencies/@openzeppelin-contracts-upgradeable-v4-4.9.6/contracts
+@openzeppelin-contracts-v4-4.9.6=dependencies/@openzeppelin-contracts-v4-4.9.6/contracts
+@openzeppelin-contracts-upgradeable-v4-4.9.6=dependencies/@openzeppelin-contracts-upgradeable-v4-4.9.6/contracts

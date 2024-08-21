@@ -55,6 +55,7 @@ line_length = 120
 tab_width = 2
 bracket_spacing = true
 quote_style = "single"
+ignore = ['./src/external/**/*']
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 
@@ -62,5 +63,7 @@ quote_style = "single"
 solady = "0.0.230"
 forge-std = "1.9.1"
 openzeppelin-foundry-upgrades = "0.3.1"
-"@openzeppelin-contracts-upgradeable" = "5.0.2"
 "@openzeppelin-contracts" = "5.0.2"
+"@openzeppelin-contracts-upgradeable" = "5.0.2"
+"@openzeppelin-contracts-v4" = { version = "4.9.6", git = "git@github.com:OpenZeppelin/openzeppelin-contracts.git", rev = "v4.9.6" }
+"@openzeppelin-contracts-upgradeable-v4" = { version = "4.9.6", git = "git@github.com:OpenZeppelin/openzeppelin-contracts-upgradeable.git", rev = "v4.9.6" }

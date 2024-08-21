@@ -10,7 +10,6 @@ contract CrossChainRegistryStorageV1 {
     string name;
     uint32 hplDomain;
     address vault;
-    mapping(address underlyingAsset => bool) underlyingAssets;
   }
 
   struct HyperlaneInfo {
@@ -28,10 +27,10 @@ contract CrossChainRegistryStorageV1 {
   bytes32 public immutable StorageV1Location = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
-    bytes32 storageLocation = StorageV1Location;
+    bytes32 slot = StorageV1Location;
     // slither-disable-next-line assembly
     assembly {
-      $.slot := storageLocation
+      $.slot := slot
     }
   }
 }

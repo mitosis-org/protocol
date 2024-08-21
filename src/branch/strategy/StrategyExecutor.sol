@@ -1,0 +1,351 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.26;
+pragma abicoder v2;
+
+import { SafeERC20, IERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
+import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
+import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
+import { Address } from '@oz-v5/utils/Address.sol';
+
+import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+
+import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
+import { IStrategyExecutor } from '../../interfaces/branch/strategy/IStrategyExecutor.sol';
+
+import { StdError } from '../../lib/StdError.sol';
+
+import { IStrategy, IStrategyDependency } from '../../interfaces/branch/strategy/IStrategy.sol';
+import { StdStrategy } from '../../branch/strategy/strategies/StdStrategy.sol';
+import { StrategyExecutorStorageV1 } from '../../branch/strategy/storage/StrategyExecutorStorageV1.sol';
+
+contract StrategyExecutor is
+  IStrategyDependency,
+  IStrategyExecutor,
+  PausableUpgradeable,
+  Ownable2StepUpgradeable,
+  StrategyExecutorStorageV1
+{
+  using SafeERC20 for IERC20;
+  using Address for address;
+
+  //=========== NOTE: EVENT DEFINITIONS ===========//
+
+  event StrategyAdded(uint256 indexed strategyId, address indexed implementation, uint256 priority);
+  event StrategyEnabled(uint256 indexed strategyId);
+  event StrategyDisabled(uint256 indexed strategyId);
+
+  event EmergencyManagerSet(address indexed emergencyManager);
+  event StrategistSet(address indexed strategist);
+
+  //=========== NOTE: ERROR DEFINITIONS ===========//
+
+  error StrategistNotSet();
+  error StrategyAlreadySet(address implementation, uint256 strategyId);
+  error StrategyAlreadyEnabled(uint256 strategyId);
+  error StrategyNotEnabled(uint256 strategyId);
+
+  //=========== NOTE: IMMUTABLE VARIABLES ===========//
+
+  IMitosisVault internal immutable _vault;
+  IERC20 internal immutable _asset;
+  uint256 internal immutable _eolId;
+
+  //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
+
+  constructor(IMitosisVault vault_, IERC20 asset_, uint256 eolId_) initializer {
+    _vault = vault_;
+    _asset = asset_;
+    _eolId = eolId_;
+  }
+
+  fallback() external payable {
+    revert StdError.Unauthorized();
+  }
+
+  receive() external payable {
+    revert StdError.Unauthorized();
+  }
+
+  function initialize(address owner_, address emergencyManager_) public initializer {
+    __Pausable_init();
+    __Ownable2Step_init();
+    _transferOwnership(owner_);
+
+    StorageV1 storage $ = _getStorageV1();
+
+    $.emergencyManager = emergencyManager_;
+  }
+
+  //=========== NOTE: VIEW FUNCTIONS ===========//
+
+  function vault() public view returns (IMitosisVault vault_) {
+    return _vault;
+  }
+
+  function asset() public view override(IStrategyExecutor, IStrategyDependency) returns (IERC20 asset_) {
+    return _asset;
+  }
+
+  function eolId() public view returns (uint256 eolId_) {
+    return _eolId;
+  }
+
+  function strategist() external view returns (address strategist_) {
+    return _getStorageV1().strategist;
+  }
+
+  function emergencyManager() external view returns (address emergencyManager_) {
+    return _getStorageV1().emergencyManager;
+  }
+
+  function getStrategy(uint256 strategyId) external view override returns (Strategy memory strategy) {
+    return _getStrategy(_getStorageV1(), strategyId);
+  }
+
+  function getStrategy(address implementation) external view override returns (Strategy memory strategy) {
+    return _getStrategy(_getStorageV1(), implementation);
+  }
+
+  /**
+   * @dev you must need to careful when using this function. If the enabled list is too long, it may cause out of gas
+   */
+  function getEnabledStrategyIds() external view override returns (uint256[] memory enabledStrategyIds) {
+    return _getStorageV1().strategies.enabled;
+  }
+
+  function isStrategyEnabled(uint256 strategyId) external view returns (bool enabled) {
+    return _isStrategyEnabled(_getStorageV1(), strategyId);
+  }
+
+  function isStrategyEnabled(address implementation) external view returns (bool enabled) {
+    StorageV1 storage $ = _getStorageV1();
+    return _isStrategyEnabled($, $.strategies.idxByImpl[implementation]);
+  }
+
+  function totalBalance() external view returns (uint256 totalBalance_) {
+    return _totalBalance(_getStorageV1());
+  }
+
+  function lastSettledBalance() external view returns (uint256 lastSettledBalance_) {
+    return _getStorageV1().lastSettledBalance;
+  }
+
+  //=========== NOTE: STRATEGIST FUNCTIONS ===========//
+
+  function deallocateEOL(uint256 amount) external whenNotPaused {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertStrategist($);
+
+    _vault.deallocateEOL(_eolId, amount);
+  }
+
+  function fetchEOL(uint256 amount) external whenNotPaused {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertStrategist($);
+
+    _vault.fetchEOL(_eolId, amount);
+  }
+
+  function returnEOL(uint256 amount) external whenNotPaused {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertStrategist($);
+
+    _asset.approve(address(_vault), amount);
+    _vault.returnEOL(_eolId, amount);
+  }
+
+  function settle() external whenNotPaused {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertStrategist($);
+
+    uint256 totalBalance_ = _totalBalance($);
+    uint256 prevSettledBalance = $.lastSettledBalance;
+
+    $.lastSettledBalance = totalBalance_;
+
+    if (totalBalance_ >= prevSettledBalance) {
+      _vault.settleYield(_eolId, totalBalance_ - prevSettledBalance);
+    } else {
+      _vault.settleLoss(_eolId, prevSettledBalance - totalBalance_);
+    }
+  }
+
+  function settleExtraRewards(address reward, uint256 amount) external whenNotPaused {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertStrategist($);
+    if (address(_asset) == reward) revert StdError.InvalidAddress('reward');
+
+    IERC20(reward).approve(address(_vault), amount);
+    _vault.settleExtraRewards(_eolId, reward, amount);
+  }
+
+  /**
+   * @notice do not execute a calls that indicates a transfer of funds
+   * - It would violate the liquidity tracking mechanism of strategy executor
+   *
+   * @dev only strategist can call this function
+   */
+  function execute(IStrategyExecutor.Call[] calldata calls) external whenNotPaused {
+    // TODO(thai): check that total balance is almost the same before and after the execution.
+
+    // TODO(thai): for now, strategist can move funds to defi positions not tracked by `totalBalance`.
+    //   It may incur a loss because `totalBalance` becomes less.
+    //   We should add mechanism to prevent this.
+
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertStrategist($);
+
+    for (uint256 i = 0; i < calls.length; i++) {
+      uint256 strategyId = calls[i].strategyId;
+      Strategy memory strategy = _getStrategy($, strategyId);
+      if (!strategy.enabled) revert StrategyNotEnabled(strategyId);
+
+      for (uint256 j = 0; j < calls[i].callData.length; j++) {
+        strategy.implementation.functionDelegateCall(calls[i].callData[j]);
+      }
+    }
+  }
+
+  //=========== NOTE: OWNABLE FUNCTIONS ===========//
+
+  // MANAGES STRATEGIES
+
+  function addStrategy(uint256 priority, address implementation, bytes calldata context)
+    external
+    onlyOwner
+    returns (uint256)
+  {
+    if (implementation.code.length == 0) revert StdError.InvalidAddress('implementation');
+
+    StorageV1 storage $ = _getStorageV1();
+    {
+      uint256 id = $.strategies.idxByImpl[implementation];
+      if ($.strategies.reg[id].implementation == implementation) revert StrategyAlreadySet(implementation, id);
+    }
+
+    uint256 nextId = $.strategies.len;
+
+    $.strategies.reg[nextId] = Strategy({
+      priority: priority,
+      implementation: implementation,
+      enabled: false, // disabled by default
+      context: context
+    });
+    $.strategies.idxByImpl[implementation] = nextId;
+    $.strategies.len++;
+
+    emit StrategyAdded(nextId, implementation, priority);
+
+    return nextId;
+  }
+
+  function enableStrategy(uint256 strategyId) external onlyOwner {
+    StorageV1 storage $ = _getStorageV1();
+
+    // toggle
+    Strategy storage strategy = _getStrategy($, strategyId);
+    if (strategy.enabled) revert StrategyAlreadyEnabled(strategyId);
+    strategy.enabled = true;
+
+    // add to enabled list
+    $.strategies.enabled.push(strategyId);
+
+    emit StrategyEnabled(strategyId);
+  }
+
+  function disableStrategy(uint256 strategyId) external onlyOwner {
+    StorageV1 storage $ = _getStorageV1();
+
+    // toggle
+    Strategy storage strategy = _getStrategy($, strategyId);
+    if (!strategy.enabled) revert StrategyNotEnabled(strategyId);
+    strategy.enabled = false;
+
+    // remove from enabled list
+    uint256[] storage enabled = $.strategies.enabled;
+    for (uint256 i = 0; i < enabled.length; i++) {
+      if (enabled[i] == strategyId) {
+        if (enabled.length > 1) enabled[i] = enabled[enabled.length - 1];
+        enabled.pop();
+      }
+    }
+
+    emit StrategyDisabled(strategyId);
+  }
+
+  // MANAGES ROLES
+
+  function setEmergencyManager(address emergencyManager_) external onlyOwner {
+    if (emergencyManager_ == address(0)) revert StdError.InvalidAddress('emergencyManager');
+    _getStorageV1().emergencyManager = emergencyManager_;
+    emit EmergencyManagerSet(emergencyManager_);
+  }
+
+  function setStrategist(address strategist_) external onlyOwner {
+    if (strategist_ == address(0)) revert StdError.InvalidAddress('strategist');
+    _getStorageV1().strategist = strategist_;
+    emit StrategistSet(strategist_);
+  }
+
+  function unsetStrategist() external onlyOwner {
+    _getStorageV1().strategist = address(0);
+    emit StrategistSet(address(0));
+  }
+
+  // MANAGES PAUSABILITY
+
+  function pause() external {
+    StorageV1 storage $ = _getStorageV1();
+    if (_msgSender() != owner() && _msgSender() != $.emergencyManager) revert StdError.Unauthorized();
+    _pause();
+  }
+
+  function unpause() external onlyOwner {
+    _unpause();
+  }
+
+  //=========== NOTE: INTERNAL FUNCTIONS ===========//
+
+  function _assertStrategist(StorageV1 storage $) internal view {
+    address strategist_ = $.strategist;
+    if (strategist_ == address(0)) revert StrategistNotSet();
+    if (_msgSender() != strategist_) revert StdError.Unauthorized();
+  }
+
+  function _getStrategy(StorageV1 storage $, uint256 strategyId) internal view returns (Strategy storage strategy) {
+    return $.strategies.reg[strategyId];
+  }
+
+  function _getStrategy(StorageV1 storage $, address implementation) internal view returns (Strategy storage strategy) {
+    return $.strategies.reg[$.strategies.idxByImpl[implementation]];
+  }
+
+  function _isStrategyEnabled(StorageV1 storage $, uint256 strategyId) internal view returns (bool enabled) {
+    return $.strategies.len > strategyId && _getStrategy($, strategyId).enabled;
+  }
+
+  function _totalBalance(StorageV1 storage $, uint256 strategyId) internal view returns (uint256) {
+    Strategy memory strategy = _getStrategy($, strategyId);
+
+    // TODO(thai): is it okay to use `strategy.context` for `pendingWithdrawBalance()`?
+    return IStrategy(strategy.implementation).totalBalance(strategy.context)
+      + IStrategy(strategy.implementation).pendingWithdrawBalance(strategy.context);
+  }
+
+  function _totalBalance(StorageV1 storage $) internal view returns (uint256) {
+    uint256 total = _asset.balanceOf(address(this));
+
+    for (uint256 i = 0; i < $.strategies.len; i++) {
+      total += _totalBalance($, i);
+    }
+
+    return total;
+  }
+}
