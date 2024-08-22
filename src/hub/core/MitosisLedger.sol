@@ -63,12 +63,12 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
 
   // EOL management states
 
-  function allocateEolId(address eolVault_, address strategist) external returns (uint256 eolId /* auth */ ) {
-    eolId = allocateEolId(eolVault_);
+  function assignEolId(address eolVault_, address strategist) external returns (uint256 eolId /* auth */ ) {
+    eolId = assignEolId(eolVault_);
     setEolStrategist(eolId, strategist);
   }
 
-  function allocateEolId(address eolVault_) public returns (uint256 eolId /* auth */ ) {
+  function assignEolId(address eolVault_) public returns (uint256 eolId /* auth */ ) {
     StorageV1 storage $ = _getStorageV1();
 
     eolId = $.nextEolId;
