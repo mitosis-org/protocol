@@ -122,6 +122,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assetEolIdExist($, eolId);
     _assertOnlyEntrypoint($);
 
+    // TODO(ray): we should give a specific portion of yield to hubAsset holders too.
     _increaseEOLShareValue($, eolId, amount);
 
     emit YieldSettled(chainId, eolId, amount);
