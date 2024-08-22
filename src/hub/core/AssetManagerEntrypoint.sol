@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
+import { Router } from '@hpl-v5/client/Router.sol';
 import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
@@ -35,8 +36,8 @@ contract AssetManagerEntrypoint is
   }
 
   modifier onlyDispachable(uint256 chainId) {
-    if (!_ccRegistry.isRegisteredChain(chainId)) revert ICrossChainRegistry__NotRegistered();
-    if (!_ccRegistry.entrypointEnrolled(chainId)) revert ICrossChainRegistry__NotEnrolled();
+    if (!_ccRegistry.isRegisteredChain(chainId)) revert ICrossChainRegistry.ICrossChainRegistry__NotRegistered();
+    if (!_ccRegistry.entrypointEnrolled(chainId)) revert ICrossChainRegistry.ICrossChainRegistry__NotEnrolled();
     _;
   }
 
@@ -64,14 +65,14 @@ contract AssetManagerEntrypoint is
     return _ccRegistry.getVault(chainId);
   }
 
-  function branchEntrypointAddr(uint256 chainId) external view returns (bytes32) {
+  function branchEntrypointAddr(uint256 chainId) external view returns (address) {
     return _ccRegistry.getEntrypoint(chainId);
   }
 
   //=========== NOTE: ASSETMANAGER FUNCTIONS ===========//
 
   function initializeAsset(uint256 chainId, address branchAsset) external onlyAssetManager onlyDispachable(chainId) {
-    bytes memory enc = MsgInitializeAsset({ asset: branchAsset.toBytes32() });
+    bytes memory enc = MsgInitializeAsset({ asset: branchAsset.toBytes32() }).encode();
     _dispatchToBranch(chainId, enc);
   }
 
@@ -80,7 +81,7 @@ contract AssetManagerEntrypoint is
     onlyAssetManager
     onlyDispachable(chainId)
   {
-    bytes memory enc = MsgInitializeEOL({ eolId: eolId, asset: branchAsset.toBytes32() });
+    bytes memory enc = MsgInitializeEOL({ eolId: eolId, asset: branchAsset.toBytes32() }).encode();
     _dispatchToBranch(chainId, enc);
   }
 
@@ -89,7 +90,7 @@ contract AssetManagerEntrypoint is
     onlyAssetManager
     onlyDispachable(chainId)
   {
-    bytes memory enc = MsgRedeem({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount });
+    bytes memory enc = MsgRedeem({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
     _dispatchToBranch(chainId, enc);
   }
 
@@ -98,7 +99,7 @@ contract AssetManagerEntrypoint is
     onlyAssetManager
     onlyDispachable(chainId)
   {
-    bytes memory enc = MsgRefund({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount });
+    bytes memory enc = MsgRefund({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
     _dispatchToBranch(chainId, enc);
   }
 
@@ -107,13 +108,13 @@ contract AssetManagerEntrypoint is
     onlyAssetManager
     onlyDispachable(chainId)
   {
-    bytes memory enc = MsgAllocateEOL({ eolId: eolId, amount: amount });
+    bytes memory enc = MsgAllocateEOL({ eolId: eolId, amount: amount }).encode();
     _dispatchToBranch(chainId, enc);
   }
 
   function _dispatchToBranch(uint256 chainId, bytes memory enc) internal {
     // TODO(thai): consider hyperlane fee
-    uint256 hplDomain = _ccRegistry.getHyperlaneDomain(chainId);
+    uint32 hplDomain = _ccRegistry.getHyperlaneDomain(chainId);
     _dispatch(hplDomain, enc);
   }
 
@@ -131,7 +132,7 @@ contract AssetManagerEntrypoint is
     if (msgType == MsgType.MsgDeposit) {
       MsgDeposit memory decoded = msg_.decodeDeposit();
       _assetManager.deposit(
-        chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.refundTo.toAddress(), amount
+        chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.refundTo.toAddress(), decoded.amount
       );
     }
 
@@ -152,7 +153,7 @@ contract AssetManagerEntrypoint is
 
     if (msgType == MsgType.MsgSettleExtraRewards) {
       MsgSettleExtraRewards memory decoded = msg_.decodeSettleExtraRewards();
-      _assetManager.settleLoss(chainId, decoded.eolId, decoded.reward.toAddress(), deocded.amount);
+      _assetManager.settleExtraRewards(chainId, decoded.eolId, decoded.reward.toAddress(), decoded.amount);
     }
   }
 

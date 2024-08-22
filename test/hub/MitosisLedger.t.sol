@@ -7,7 +7,7 @@ import { console } from '@std/console.sol';
 import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
-import { MitosisLedger } from '../../src/hub/MitosisLedger.sol';
+import { MitosisLedger } from '../../src/hub/core/MitosisLedger.sol';
 import { StdError } from '../../src/lib/StdError.sol';
 import { Toolkit } from '../util/Toolkit.sol';
 
@@ -82,31 +82,34 @@ contract TestCrossChainRegistry is Test, Toolkit {
 
     uint256 optOutAmount = 10 ether;
 
-    MitosisLedger.EOLAmountState memory state;
+    uint256 total;
+    uint256 idle;
+    uint256 optOutPending;
+    uint256 optOutResolved;
 
     mitosisLedger.recordOptOutRequest(eolId, optOutAmount);
-    state = mitosisLedger.eolAmountState(eolId);
+    (total, idle, optOutPending, optOutResolved) = mitosisLedger.eolAmountState(eolId);
     assertEq(mitosisLedger.getEOLAllocateAmount(eolId), amount - optOutAmount);
-    assertEq(state.optOutPending, optOutAmount);
+    assertEq(optOutPending, optOutAmount);
 
     mitosisLedger.recordDeallocateEOL(eolId, optOutAmount);
-    state = mitosisLedger.eolAmountState(eolId);
+    (total, idle, optOutPending, optOutResolved) = mitosisLedger.eolAmountState(eolId);
     assertEq(mitosisLedger.getEOLAllocateAmount(eolId), amount - optOutAmount);
-    assertEq(state.optOutPending, optOutAmount);
-    assertEq(state.idle, optOutAmount);
+    assertEq(optOutPending, optOutAmount);
+    assertEq(idle, optOutAmount);
 
     mitosisLedger.recordOptOutResolve(eolId, optOutAmount);
-    state = mitosisLedger.eolAmountState(eolId);
+    (total, idle, optOutPending, optOutResolved) = mitosisLedger.eolAmountState(eolId);
     assertEq(mitosisLedger.getEOLAllocateAmount(eolId), amount - optOutAmount);
-    assertEq(state.idle, 0);
-    assertEq(state.optOutResolved, optOutAmount);
+    assertEq(idle, 0);
+    assertEq(optOutResolved, optOutAmount);
 
     mitosisLedger.recordOptOutClaim(eolId, optOutAmount);
-    state = mitosisLedger.eolAmountState(eolId);
+    (total, idle, optOutPending, optOutResolved) = mitosisLedger.eolAmountState(eolId);
     assertEq(mitosisLedger.getEOLAllocateAmount(eolId), amount - optOutAmount);
-    assertEq(state.optOutPending, 0);
-    assertEq(state.idle, 0);
-    assertEq(state.optOutResolved, 0);
-    assertEq(state.total, amount - optOutAmount);
+    assertEq(optOutPending, 0);
+    assertEq(idle, 0);
+    assertEq(optOutResolved, 0);
+    assertEq(total, amount - optOutAmount);
   }
 }

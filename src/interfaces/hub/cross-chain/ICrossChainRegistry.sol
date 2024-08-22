@@ -29,7 +29,7 @@ interface ICrossChainRegistry {
   function isRegisteredChain(uint256 chainId) external view returns (bool);
 
   /// @dev Sets the chain information including ChainID, name, and Hyperlane domain.
-  function setChain(uint256 chainId, string calldata name, uint32 hplDomain) external;
+  function setChain(uint256 chainId, string calldata name, uint32 hplDomain, address entrypoint) external;
 
   /// @dev Sets the vault address for a specific ChainID.
   function setVault(uint256 chainId, address vault) external;

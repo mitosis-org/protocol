@@ -150,7 +150,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
       revert AssetManager__BranchAssetPairNotExist(reward);
     }
 
-    $.rewardTreasury.deposit(hubAsset, amount, block.timestamp);
+    $.rewardTreasury.deposit(hubAsset, amount, uint48(block.timestamp));
 
     emit ExtraRewardsSettled(chainId, eolId, reward, amount);
   }

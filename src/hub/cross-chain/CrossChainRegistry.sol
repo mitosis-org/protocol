@@ -126,7 +126,7 @@ contract CrossChainRegistry is
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId];
     if (_isEnrollableChain(chainInfo)) {
       chainInfo.entrypointEnrolled = true;
-      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.entrypoint);
+      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.entrypoint.toBytes32());
     }
   }
 

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 interface IMitosisVaultEntrypoint {
-  function deposit(address asset, address to, uint256 amount) external;
+  function deposit(address asset, address to, address refundTo, uint256 amount) external;
 
   function deallocateEOL(uint256 eolId, uint256 amount) external;
 
