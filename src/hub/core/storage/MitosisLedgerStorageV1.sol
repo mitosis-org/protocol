@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import { IMitosisLedger } from '../../../interfaces/hub/core/IMitosisLedger.sol';
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 
 contract MitosisLedgerStorageV1 {
@@ -13,28 +14,7 @@ contract MitosisLedgerStorageV1 {
   struct EOLState {
     address eolVault;
     address strategist;
-    EOLAmountState eolAmountState;
-  }
-
-  struct EOLAmountState {
-    /// @dev total is the total amount of assets that have been finalized
-    /// opt-in to Mitosis L1.
-    /// Note: This value must match the totalSupply of the miAsset.
-    uint256 total;
-    /// @dev idle stores the amount of EOL temporarily returned for a
-    /// specific purpose in the branch.
-    /// Note: This value does not affect the calculation of the EOL
-    /// allocation for a specific chain.
-    uint256 idle;
-    /// @dev optOutPending is a temporary value reflecting the opt-out
-    /// request. This value is used to calculate the EOL allocation for
-    /// each chain.
-    /// (i.e. This means that from the point of the opt-out request, yield
-    /// will not be provided for the corresponding miAsset)
-    uint256 optOutPending;
-    /// @dev optOutResolved is the actual amount used for the opt-out request
-    /// resolvation.
-    uint256 optOutResolved;
+    IMitosisLedger.EOLAmountState eolAmountState;
   }
 
   struct StorageV1 {

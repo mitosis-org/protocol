@@ -94,8 +94,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assetEolIdExist($, eolId);
     _assetOnlyStrategist($, eolId);
 
-    (, uint256 idle,,) = $.mitosisLedger.eolAmountState(eolId);
-    if (idle < amount) {
+    IMitosisLedger.EOLAmountState memory state = $.mitosisLedger.eolAmountState(eolId);
+    if (state.idle < amount) {
       revert AssetManager__EOLInsufficient(eolId);
     }
 

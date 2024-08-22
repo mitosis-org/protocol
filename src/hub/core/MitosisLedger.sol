@@ -45,13 +45,8 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
     return _getStorageV1().eolStates[eolId].strategist;
   }
 
-  function eolAmountState(uint256 eolId)
-    external
-    view
-    returns (uint256 total, uint256 idle, uint256 optOutPending, uint256 optOutResolved)
-  {
-    EOLAmountState memory state = _getStorageV1().eolStates[eolId].eolAmountState;
-    return (state.total, state.idle, state.optOutPending, state.optOutResolved);
+  function eolAmountState(uint256 eolId) external view returns (IMitosisLedger.EOLAmountState memory) {
+    return _getStorageV1().eolStates[eolId].eolAmountState;
   }
 
   function getEOLAllocateAmount(uint256 eolId) external view returns (uint256) {
