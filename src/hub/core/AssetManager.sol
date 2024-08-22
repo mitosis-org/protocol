@@ -220,11 +220,11 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function _assetEolIdExist(StorageV1 storage $, uint256 eolId) internal view {
-    if ($.mitosisLedger.eolVault(eolId) != address(0)) revert StdError.InvalidId('eolId');
+    if ($.mitosisLedger.eolVault(eolId) == address(0)) revert StdError.InvalidId('eolId');
   }
 
   function _assertBranchAssetPairExist(StorageV1 storage $, address branchAsset) internal view {
-    if ($.hubAssets[branchAsset] != address(0)) revert AssetManager__BranchAssetPairNotExist(branchAsset);
+    if ($.hubAssets[branchAsset] == address(0)) revert AssetManager__BranchAssetPairNotExist(branchAsset);
   }
 
   function _assetOnlyStrategist(StorageV1 storage $, uint256 eolId) internal view {
