@@ -30,7 +30,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   event EOLAllocated(uint256 indexed toChainId, uint256 indexed eolId, uint256 amount);
   event EOLDeallocated(uint256 indexed fromChainId, uint256 indexed eolId, uint256 amount);
 
-  event AssetPairSset(address hubAsset, uint256 branchChainId, address branchAsset);
+  event AssetPairSet(address hubAsset, uint256 branchChainId, address branchAsset);
   event RewardTreasurySet(address rewardTreasury);
 
   event EntrypointSet(address entrypoint);
@@ -174,7 +174,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
     $.branchAssets[hubAsset][branchChainId] = branchAsset;
     $.hubAssets[branchAsset] = hubAsset;
-    emit AssetPairSset(hubAsset, branchChainId, branchAsset);
+    emit AssetPairSet(hubAsset, branchChainId, branchAsset);
   }
 
   function setEntrypoint(IAssetManagerEntrypoint entrypoint) external onlyOwner {
