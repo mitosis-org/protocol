@@ -8,23 +8,23 @@ interface ICrossChainRegistry {
   error ICrossChainRegistry__AlreadyEnrolled();
 
   /// @dev Returns all of the registered ChainIDs.
-  function getChainIds() external view returns (uint256[] memory);
+  function chainIds() external view returns (uint256[] memory);
 
   /// @dev Returns the chain name of the ChainID.
-  function getChainName(uint256 chainId) external view returns (string memory);
+  function chainName(uint256 chainId) external view returns (string memory);
 
   /// @dev Returns the Hyperlane domain by ChainID.
-  function getHyperlaneDomain(uint256 chainId) external view returns (uint32);
+  function hyperlaneDomain(uint256 chainId) external view returns (uint32);
 
   /// @dev Returns the Other chain's MitosisVault address by ChainID.
-  function getVault(uint256 chainId) external view returns (address);
+  function vault(uint256 chainId) external view returns (address);
 
-  function getEntrypoint(uint256 chainId) external view returns (address);
+  function entrypoint(uint256 chainId) external view returns (address);
 
   function entrypointEnrolled(uint256 chainId) external view returns (bool);
 
   /// @dev Returns the ChainID by Hyperlane domain.
-  function getChainIdByHyperlaneDomain(uint32 hplDomain) external view returns (uint256);
+  function chainId(uint32 hplDomain) external view returns (uint256);
 
   function isRegisteredChain(uint256 chainId) external view returns (bool);
 

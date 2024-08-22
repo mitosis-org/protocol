@@ -44,23 +44,23 @@ contract CrossChainRegistry is
 
   // View functions
 
-  function getChainIds() external view returns (uint256[] memory) {
+  function chainIds() external view returns (uint256[] memory) {
     return _getStorageV1().chainIds;
   }
 
-  function getChainName(uint256 chainId) external view returns (string memory) {
+  function chainName(uint256 chainId) external view returns (string memory) {
     return _getStorageV1().chains[chainId].name;
   }
 
-  function getHyperlaneDomain(uint256 chainId) external view returns (uint32) {
+  function hyperlaneDomain(uint256 chainId) external view returns (uint32) {
     return _getStorageV1().chains[chainId].hplDomain;
   }
 
-  function getEntrypoint(uint256 chainId) external view returns (address) {
+  function entrypoint(uint256 chainId) external view returns (address) {
     return _getStorageV1().chains[chainId].entrypoint;
   }
 
-  function getVault(uint256 chainId) external view returns (address) {
+  function vault(uint256 chainId) external view returns (address) {
     return _getStorageV1().chains[chainId].vault;
   }
 
@@ -68,7 +68,7 @@ contract CrossChainRegistry is
     return _isEntrypointEnrolled(_getStorageV1().chains[chainId]);
   }
 
-  function getChainIdByHyperlaneDomain(uint32 hplDomain) external view returns (uint256) {
+  function chainId(uint32 hplDomain) external view returns (uint256) {
     return _getStorageV1().hyperlanes[hplDomain].chainId;
   }
 

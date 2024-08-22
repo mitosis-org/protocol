@@ -58,16 +58,16 @@ contract TestCrossChainRegistry is Toolkit {
     vm.expectRevert(); // 'already registered chain'
     ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
 
-    uint256[] memory chainIds = ccRegistry.getChainIds();
-    require(chainIds.length == 1, 'invalid getChainIds');
-    require(chainIds[0] == chainID, 'invalid getChainIds');
+    uint256[] memory chainIds = ccRegistry.chainIds();
+    require(chainIds.length == 1, 'invalid chainIds');
+    require(chainIds[0] == chainID, 'invalid chainIds');
     require(
-      keccak256(abi.encodePacked(ccRegistry.getChainName(1))) == keccak256(abi.encodePacked(name)),
-      'invalid getChainNmae'
+      keccak256(abi.encodePacked(ccRegistry.chainName(1))) == keccak256(abi.encodePacked(name)),
+      'invalid chainNmae'
     );
-    require(ccRegistry.getHyperlaneDomain(chainID) == hplDomain, 'invalid getHyperlaneDomain');
-    require(ccRegistry.getEntrypoint(chainID) == entrypoint, 'invalid getEntrypoint');
-    require(ccRegistry.getChainIdByHyperlaneDomain(hplDomain) == chainID, 'invalid getChainIdByHyperlaneDomain');
+    require(ccRegistry.hyperlaneDomain(chainID) == hplDomain, 'invalid hyperlaneDomain');
+    require(ccRegistry.entrypoint(chainID) == entrypoint, 'invalid entrypoint');
+    require(ccRegistry.chainId(hplDomain) == chainID, 'invalid chainId');
   }
 
   function test_setVault() public {
@@ -83,6 +83,6 @@ contract TestCrossChainRegistry is Toolkit {
     uint32 hplDomain = 1;
     ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
     ccRegistry.setVault(chainID, vault);
-    require(ccRegistry.getVault(chainID) == vault, 'invalid getVault');
+    require(ccRegistry.vault(chainID) == vault, 'invalid vault');
   }
 }

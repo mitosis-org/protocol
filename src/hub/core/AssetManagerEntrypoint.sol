@@ -58,15 +58,15 @@ contract AssetManagerEntrypoint is
   }
 
   function branchDomain(uint256 chainId) external view returns (uint32) {
-    return _ccRegistry.getHyperlaneDomain(chainId);
+    return _ccRegistry.hyperlaneDomain(chainId);
   }
 
   function branchVault(uint256 chainId) external view returns (address) {
-    return _ccRegistry.getVault(chainId);
+    return _ccRegistry.vault(chainId);
   }
 
   function branchEntrypointAddr(uint256 chainId) external view returns (address) {
-    return _ccRegistry.getEntrypoint(chainId);
+    return _ccRegistry.entrypoint(chainId);
   }
 
   //=========== NOTE: ASSETMANAGER FUNCTIONS ===========//
@@ -114,17 +114,17 @@ contract AssetManagerEntrypoint is
 
   function _dispatchToBranch(uint256 chainId, bytes memory enc) internal {
     // TODO(thai): consider hyperlane fee
-    uint32 hplDomain = _ccRegistry.getHyperlaneDomain(chainId);
+    uint32 hplDomain = _ccRegistry.hyperlaneDomain(chainId);
     _dispatch(hplDomain, enc);
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//
 
   function _handle(uint32 origin, bytes32 sender, bytes calldata msg_) internal override {
-    uint256 chainId = _ccRegistry.getChainIdByHyperlaneDomain(origin);
+    uint256 chainId = _ccRegistry.chainId(origin);
     if (chainId == 0) revert ICrossChainRegistry.ICrossChainRegistry__NotRegistered();
 
-    address vault = _ccRegistry.getVault(chainId);
+    address vault = _ccRegistry.vault(chainId);
     if (sender.toAddress() != vault) revert ICrossChainRegistry.ICrossChainRegistry__NotRegistered();
 
     MsgType msgType = msg_.msgType();
