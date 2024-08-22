@@ -51,7 +51,7 @@ contract TestCrossChainRegistry is Toolkit {
     uint256 chainID = 1;
     string memory name = 'Ethereum';
     uint32 hplDomain = 1;
-    address entrypoint = address(10);
+    address entrypoint = _addr('entrypoint');
 
     ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
 
@@ -62,8 +62,7 @@ contract TestCrossChainRegistry is Toolkit {
     require(chainIds.length == 1, 'invalid chainIds');
     require(chainIds[0] == chainID, 'invalid chainIds');
     require(
-      keccak256(abi.encodePacked(ccRegistry.chainName(1))) == keccak256(abi.encodePacked(name)),
-      'invalid chainNmae'
+      keccak256(abi.encodePacked(ccRegistry.chainName(1))) == keccak256(abi.encodePacked(name)), 'invalid chainNmae'
     );
     require(ccRegistry.hyperlaneDomain(chainID) == hplDomain, 'invalid hyperlaneDomain');
     require(ccRegistry.entrypoint(chainID) == entrypoint, 'invalid entrypoint');
@@ -72,9 +71,8 @@ contract TestCrossChainRegistry is Toolkit {
 
   function test_setVault() public {
     uint256 chainID = 1;
-    address vault = address(1);
-    address underlyingAsset = address(2);
-    address entrypoint = address(3);
+    address vault = _addr('vault');
+    address entrypoint = _addr('entrypoint');
 
     vm.expectRevert(); // 'not registered chain'
     ccRegistry.setVault(chainID, vault);

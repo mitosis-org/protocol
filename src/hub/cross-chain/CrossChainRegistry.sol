@@ -21,7 +21,7 @@ contract CrossChainRegistry is
 
   bytes32 public constant REGISTERER_ROLE = keccak256('REGISTERER_ROLE');
 
-  event ChainSet(uint256 indexed chainId, uint32 indexed hplDomain, string name);
+  event ChainSet(uint256 indexed chainId, uint32 indexed hplDomain, address indexed entrypoint, string name);
   event VaultSet(uint256 indexed chainId, address indexed vault);
 
   modifier onlyRegisterer() {
@@ -48,60 +48,60 @@ contract CrossChainRegistry is
     return _getStorageV1().chainIds;
   }
 
-  function chainName(uint256 chainId) external view returns (string memory) {
-    return _getStorageV1().chains[chainId].name;
+  function chainName(uint256 chainId_) external view returns (string memory) {
+    return _getStorageV1().chains[chainId_].name;
   }
 
-  function hyperlaneDomain(uint256 chainId) external view returns (uint32) {
-    return _getStorageV1().chains[chainId].hplDomain;
+  function hyperlaneDomain(uint256 chainId_) external view returns (uint32) {
+    return _getStorageV1().chains[chainId_].hplDomain;
   }
 
-  function entrypoint(uint256 chainId) external view returns (address) {
-    return _getStorageV1().chains[chainId].entrypoint;
+  function entrypoint(uint256 chainId_) external view returns (address) {
+    return _getStorageV1().chains[chainId_].entrypoint;
   }
 
-  function vault(uint256 chainId) external view returns (address) {
-    return _getStorageV1().chains[chainId].vault;
+  function vault(uint256 chainId_) external view returns (address) {
+    return _getStorageV1().chains[chainId_].vault;
   }
 
-  function entrypointEnrolled(uint256 chainId) external view returns (bool) {
-    return _isEntrypointEnrolled(_getStorageV1().chains[chainId]);
+  function entrypointEnrolled(uint256 chainId_) external view returns (bool) {
+    return _isEntrypointEnrolled(_getStorageV1().chains[chainId_]);
   }
 
   function chainId(uint32 hplDomain) external view returns (uint256) {
     return _getStorageV1().hyperlanes[hplDomain].chainId;
   }
 
-  function isRegisteredChain(uint256 chainId) external view returns (bool) {
-    return _isRegisteredChain(_getStorageV1().chains[chainId]);
+  function isRegisteredChain(uint256 chainId_) external view returns (bool) {
+    return _isRegisteredChain(_getStorageV1().chains[chainId_]);
   }
 
   // Mutative functions
   //
   // TODO: update methods
 
-  function setChain(uint256 chainId, string calldata name, uint32 hplDomain, address entrypoint)
+  function setChain(uint256 chainId_, string calldata name, uint32 hplDomain, address entrypoint_)
     external
     onlyRegisterer
   {
     StorageV1 storage $ = _getStorageV1();
 
-    if (_isRegisteredChain($.chains[chainId]) || _isRegisteredHyperlane($.hyperlanes[hplDomain])) {
+    if (_isRegisteredChain($.chains[chainId_]) || _isRegisteredHyperlane($.hyperlanes[hplDomain])) {
       revert ICrossChainRegistry.ICrossChainRegistry__AlreadyRegistered();
     }
 
-    $.chainIds.push(chainId);
+    $.chainIds.push(chainId_);
     $.hplDomains.push(hplDomain);
-    $.chains[chainId].name = name;
-    $.chains[chainId].hplDomain = hplDomain;
-    $.chains[chainId].entrypoint = entrypoint;
-    $.hyperlanes[hplDomain].chainId = chainId;
+    $.chains[chainId_].name = name;
+    $.chains[chainId_].hplDomain = hplDomain;
+    $.chains[chainId_].entrypoint = entrypoint_;
+    $.hyperlanes[hplDomain].chainId = chainId_;
 
-    emit ChainSet(chainId, hplDomain, name);
+    emit ChainSet(chainId_, hplDomain, entrypoint_, name);
   }
 
-  function setVault(uint256 chainId, address vault) external onlyRegisterer {
-    ChainInfo storage chainInfo = _getStorageV1().chains[chainId];
+  function setVault(uint256 chainId_, address vault_) external onlyRegisterer {
+    ChainInfo storage chainInfo = _getStorageV1().chains[chainId_];
     if (!_isRegisteredChain(chainInfo)) {
       revert ICrossChainRegistry.ICrossChainRegistry__NotRegistered();
     }
@@ -110,20 +110,20 @@ contract CrossChainRegistry is
       revert ICrossChainRegistry.ICrossChainRegistry__AlreadyRegistered();
     }
 
-    chainInfo.vault = vault;
-    emit VaultSet(chainId, vault);
+    chainInfo.vault = vault_;
+    emit VaultSet(chainId_, vault_);
   }
 
   function enrollEntrypoint(address hplRouter) external onlyRegisterer {
-    uint256[] memory chainIds = _getStorageV1().chainIds;
+    uint256[] memory allChainIds = _getStorageV1().chainIds;
     // TODO(ray): IRouter.enrollRemoteRouters
-    for (uint256 i = 0; i < chainIds.length; i++) {
-      enrollEntrypoint(hplRouter, chainIds[i]);
+    for (uint256 i = 0; i < allChainIds.length; i++) {
+      enrollEntrypoint(hplRouter, allChainIds[i]);
     }
   }
 
-  function enrollEntrypoint(address hplRouter, uint256 chainId) public onlyRegisterer {
-    ChainInfo storage chainInfo = _getStorageV1().chains[chainId];
+  function enrollEntrypoint(address hplRouter, uint256 chainId_) public onlyRegisterer {
+    ChainInfo storage chainInfo = _getStorageV1().chains[chainId_];
     if (_isEnrollableChain(chainInfo)) {
       chainInfo.entrypointEnrolled = true;
       IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.entrypoint.toBytes32());
