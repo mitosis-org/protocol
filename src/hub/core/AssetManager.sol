@@ -137,9 +137,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     _assetEolIdExist($, eolId);
+    _assertBranchAssetPairExist($, reward);
     _assetRewardTreasurySet($);
     _assertOnlyEntrypoint($);
-    _assertBranchAssetPairExist($, reward);
 
     address hubAsset = $.hubAssets[reward];
     _mint($, chainId, reward, address(this), amount);
