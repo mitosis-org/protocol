@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { AssetManagerStorageV1 } from './storage/AssetManagerStorageV1.sol';
 import { IRewardTreasury } from '../../interfaces/hub/core/IRewardTreasury.sol';
@@ -153,7 +154,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _mint($, chainId, reward, address(this), amount);
     IHubAsset(reward).approve(address($.rewardTreasury), amount);
 
-    $.rewardTreasury.deposit(hubAsset, amount, uint48(block.timestamp));
+    $.rewardTreasury.deposit(hubAsset, amount, Time.timestamp());
 
     emit ExtraRewardsSettled(chainId, eolId, reward, amount);
   }
