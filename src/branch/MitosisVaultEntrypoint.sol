@@ -63,13 +63,8 @@ contract MitosisVaultEntrypoint is
 
   //=========== NOTE: VAULT FUNCTIONS ===========//
 
-  function deposit(address asset, address to, address refundTo, uint256 amount) external onlyVault {
-    bytes memory enc = MsgDeposit({
-      asset: asset.toBytes32(),
-      to: to.toBytes32(),
-      refundTo: refundTo.toBytes32(),
-      amount: amount
-    }).encode();
+  function deposit(address asset, address to, uint256 amount) external onlyVault {
+    bytes memory enc = MsgDeposit({ asset: asset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 
@@ -115,11 +110,6 @@ contract MitosisVaultEntrypoint is
     if (msgType == MsgType.MsgRedeem) {
       MsgRedeem memory decoded = msg_.decodeRedeem();
       _vault.redeem(decoded.asset.toAddress(), decoded.to.toAddress(), decoded.amount);
-    }
-
-    if (msgType == MsgType.MsgRefund) {
-      MsgRefund memory decoded = msg_.decodeRefund();
-      _vault.refund(decoded.asset.toAddress(), decoded.to.toAddress(), decoded.amount);
     }
 
     if (msgType == MsgType.MsgInitializeEOL) {

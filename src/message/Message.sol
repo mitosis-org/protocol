@@ -6,7 +6,6 @@ enum MsgType {
   MsgInitializeAsset,
   MsgDeposit,
   MsgRedeem,
-  MsgRefund,
   //=========== NOTE: EOL ===========//
   MsgInitializeEOL,
   MsgAllocateEOL,
@@ -25,19 +24,11 @@ struct MsgInitializeAsset {
 struct MsgDeposit {
   bytes32 asset;
   bytes32 to;
-  bytes32 refundTo;
   uint256 amount;
 }
 
 // hub -> branch
 struct MsgRedeem {
-  bytes32 asset;
-  bytes32 to;
-  uint256 amount;
-}
-
-// hub -> branch
-struct MsgRefund {
   bytes32 asset;
   bytes32 to;
   uint256 amount;
@@ -85,9 +76,8 @@ library Message {
   error Message__InvalidMsgLength(uint256 actual, uint256 expected);
 
   uint256 public constant LEN_MSG_INITIALIZE_ASSET = 33;
-  uint256 public constant LEN_MSG_DEPOSIT = 97;
+  uint256 public constant LEN_MSG_DEPOSIT = 65;
   uint256 public constant LEN_MSG_REDEEM = 65;
-  uint256 public constant LEN_MSG_REFUND = 65;
   uint256 public constant LEN_MSG_INITIALIZE_EOL = 65;
   uint256 public constant LEN_MSG_ALLOCATE_EOL = 65;
   uint256 public constant LEN_MSG_DEALLOCATE_EOL = 65;
@@ -120,7 +110,7 @@ library Message {
   }
 
   function encode(MsgDeposit memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgDeposit), msg_.asset, msg_.to, msg_.refundTo, msg_.amount);
+    return abi.encodePacked(uint8(MsgType.MsgDeposit), msg_.asset, msg_.to, msg_.amount);
   }
 
   function decodeDeposit(bytes calldata msg_) internal pure returns (MsgDeposit memory decoded) {
@@ -128,8 +118,7 @@ library Message {
 
     decoded.asset = bytes32(msg_[1:33]);
     decoded.to = bytes32(msg_[33:65]);
-    decoded.refundTo = bytes32(msg_[65:97]);
-    decoded.amount = uint256(bytes32(msg_[97:]));
+    decoded.amount = uint256(bytes32(msg_[65:]));
   }
 
   function encode(MsgRedeem memory msg_) internal pure returns (bytes memory) {
@@ -138,18 +127,6 @@ library Message {
 
   function decodeRedeem(bytes calldata msg_) internal pure returns (MsgRedeem memory decoded) {
     assertMsg(msg_, MsgType.MsgRedeem, LEN_MSG_REDEEM);
-
-    decoded.asset = bytes32(msg_[1:33]);
-    decoded.to = bytes32(msg_[33:65]);
-    decoded.amount = uint256(bytes32(msg_[65:]));
-  }
-
-  function encode(MsgRefund memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgRedeem), msg_.asset, msg_.to, msg_.amount);
-  }
-
-  function decodeRefund(bytes calldata msg_) internal pure returns (MsgRefund memory decoded) {
-    assertMsg(msg_, MsgType.MsgRefund, LEN_MSG_REFUND);
 
     decoded.asset = bytes32(msg_[1:33]);
     decoded.to = bytes32(msg_[33:65]);

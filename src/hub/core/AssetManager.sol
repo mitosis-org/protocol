@@ -22,7 +22,6 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
   event Deposited(uint256 indexed fromChainId, address indexed asset, address indexed to, uint256 amount);
   event Redeemed(uint256 indexed toChainId, address indexed asset, address indexed to, uint256 amount);
-  event Refunded(uint256 indexed toChainId, address indexed asset, address indexed to, uint256 amount);
 
   event YieldSettled(uint256 indexed fromChainId, uint256 indexed eolId, uint256 amount);
   event LossSettled(uint256 indexed fromChainId, uint256 indexed eolId, uint256 amount);
@@ -57,18 +56,13 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
   //=========== NOTE: ASSET FUNCTIONS ===========//
 
-  function deposit(uint256 chainId, address branchAsset, address to, address refundTo, uint256 amount) external {
+  function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertBranchAssetPairExist($, branchAsset);
     _assertOnlyEntrypoint($);
 
     address hubAsset = $.hubAssets[branchAsset];
-    if (hubAsset == address(0)) {
-      $.entrypoint.refund(chainId, branchAsset, refundTo, amount);
-      emit Refunded(chainId, branchAsset, refundTo, amount);
-      return;
-    }
-
     _mint($, chainId, hubAsset, to, amount);
 
     emit Deposited(chainId, hubAsset, to, amount);
@@ -145,16 +139,12 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assetEolIdExist($, eolId);
     _assetRewardTreasurySet($);
     _assertOnlyEntrypoint($);
+    _assertBranchAssetPairExist($, reward);
 
     address hubAsset = $.hubAssets[reward];
-    if (hubAsset == address(0)) {
-      // TODO(ray): need deployment?
-      revert AssetManager__BranchAssetPairNotExist(reward);
-    }
-
     _mint($, chainId, reward, address(this), amount);
-    IHubAsset(reward).approve(address($.rewardTreasury), amount);
 
+    IHubAsset(reward).approve(address($.rewardTreasury), amount);
     $.rewardTreasury.deposit(hubAsset, amount, Time.timestamp());
 
     emit ExtraRewardsSettled(chainId, eolId, reward, amount);
@@ -234,7 +224,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function _assertBranchAssetPairExist(StorageV1 storage $, address branchAsset) internal view {
-    if ($.hubAssets[branchAsset] != address(0)) revert StdError.InvalidAddress('branchAsset');
+    if ($.hubAssets[branchAsset] != address(0)) revert AssetManager__BranchAssetPairNotExist(branchAsset);
   }
 
   function _assetOnlyStrategist(StorageV1 storage $, uint256 eolId) internal view {

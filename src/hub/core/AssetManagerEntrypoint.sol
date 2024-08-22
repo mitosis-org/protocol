@@ -94,15 +94,6 @@ contract AssetManagerEntrypoint is
     _dispatchToBranch(chainId, enc);
   }
 
-  function refund(uint256 chainId, address branchAsset, address to, uint256 amount)
-    external
-    onlyAssetManager
-    onlyDispachable(chainId)
-  {
-    bytes memory enc = MsgRefund({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
-    _dispatchToBranch(chainId, enc);
-  }
-
   function allocateEOL(uint256 chainId, uint256 eolId, uint256 amount)
     external
     onlyAssetManager
@@ -131,9 +122,7 @@ contract AssetManagerEntrypoint is
 
     if (msgType == MsgType.MsgDeposit) {
       MsgDeposit memory decoded = msg_.decodeDeposit();
-      _assetManager.deposit(
-        chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.refundTo.toAddress(), decoded.amount
-      );
+      _assetManager.deposit(chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.amount);
     }
 
     if (msgType == MsgType.MsgDeallocateEOL) {

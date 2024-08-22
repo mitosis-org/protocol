@@ -8,7 +8,5 @@ interface IAssetManagerEntrypoint {
 
   function redeem(uint256 chainId, address branchAsset, address to, uint256 amount) external;
 
-  function refund(uint256 chainId, address branchAsset, address to, uint256 amount) external;
-
   function allocateEOL(uint256 chainId, uint256 eolId, uint256 amount) external;
 }
