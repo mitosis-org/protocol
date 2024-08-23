@@ -16,7 +16,7 @@ contract AssetManagerStorageV1 {
     IRewardTreasury rewardTreasury;
     // Asset states
     mapping(address hubAsset => mapping(uint256 chainId => address branchAsset)) branchAssets;
-    mapping(address branchAsset => address hubAsset) hubAssets;
+    mapping(uint256 chainId => mapping(address branchAsset => address hubAsset)) hubAssets;
   }
 
   string constant _NAMESPACE = 'mitosis.storage.AssetManagerStorage.v1';

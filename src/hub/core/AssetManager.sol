@@ -59,10 +59,10 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertBranchAssetPairExist($, branchAsset);
+    _assertBranchAssetPairExist($, chainId, branchAsset);
     _assertOnlyEntrypoint($);
 
-    address hubAsset = $.hubAssets[branchAsset];
+    address hubAsset = $.hubAssets[chainId][branchAsset];
     _mint($, chainId, hubAsset, to, amount);
 
     emit Deposited(chainId, hubAsset, to, amount);
@@ -72,7 +72,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     address branchAsset = $.branchAssets[hubAsset][chainId];
-    _assertBranchAssetPairExist($, branchAsset);
+    _assertBranchAssetPairExist($, chainId, branchAsset);
 
     _burn($, chainId, hubAsset, amount);
     $.entrypoint.redeem(chainId, branchAsset, to, amount);
@@ -137,11 +137,11 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     _assetEolIdExist($, eolId);
-    _assertBranchAssetPairExist($, reward);
+    _assertBranchAssetPairExist($, chainId, reward);
     _assetRewardTreasurySet($);
     _assertOnlyEntrypoint($);
 
-    address hubAsset = $.hubAssets[reward];
+    address hubAsset = $.hubAssets[chainId][reward];
     _mint($, chainId, reward, address(this), amount);
 
     IHubAsset(reward).approve(address($.rewardTreasury), amount);
@@ -156,7 +156,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     address branchAsset = $.branchAssets[hubAsset][chainId];
-    _assertBranchAssetPairExist($, branchAsset);
+    _assertBranchAssetPairExist($, chainId, branchAsset);
 
     $.entrypoint.initializeAsset(chainId, branchAsset);
     emit AssetInitialized(chainId, branchAsset);
@@ -165,7 +165,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
     $.branchAssets[hubAsset][branchChainId] = branchAsset;
-    $.hubAssets[branchAsset] = hubAsset;
+    $.hubAssets[branchChainId][branchAsset] = hubAsset;
     emit AssetPairSet(hubAsset, branchChainId, branchAsset);
   }
 
@@ -187,7 +187,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     IEOLVault eolVault = IEOLVault($.mitosisLedger.eolVault(eolId));
     address hubAsset = eolVault.asset();
     address branchAsset = $.branchAssets[hubAsset][chainId];
-    _assertBranchAssetPairExist($, branchAsset);
+    _assertBranchAssetPairExist($, chainId, branchAsset);
 
     $.entrypoint.initializeEOL(chainId, eolId, branchAsset);
     emit EOLInitialized(chainId, eolId, branchAsset);
@@ -223,8 +223,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     if ($.mitosisLedger.eolVault(eolId) == address(0)) revert StdError.InvalidId('eolId');
   }
 
-  function _assertBranchAssetPairExist(StorageV1 storage $, address branchAsset) internal view {
-    if ($.hubAssets[branchAsset] == address(0)) revert AssetManager__BranchAssetPairNotExist(branchAsset);
+  function _assertBranchAssetPairExist(StorageV1 storage $, uint256 chainId, address branchAsset) internal view {
+    if ($.hubAssets[chainId][branchAsset] == address(0)) revert AssetManager__BranchAssetPairNotExist(branchAsset);
   }
 
   function _assetOnlyStrategist(StorageV1 storage $, uint256 eolId) internal view {
