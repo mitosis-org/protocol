@@ -8,16 +8,6 @@ import { TwabSnapshots } from './TwabSnapshots.sol';
 abstract contract ERC20TwabSnapshots is ERC20Upgradeable, TwabSnapshots {
   error ERC20ExceededSafeSupply(uint256 increasedSupply, uint256 cap);
 
-  // TODO(ray): auth
-  function mint(address target, uint256 amount) external {
-    _mint(target, amount);
-  }
-
-  // TODO(ray): auth
-  function burn(uint256 amount) external {
-    _burn(msg.sender, amount);
-  }
-
   function _maxSupply() internal view virtual returns (uint256) {
     return type(uint208).max;
   }

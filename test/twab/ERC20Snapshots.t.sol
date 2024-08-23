@@ -11,6 +11,10 @@ contract TempERC20TwabSnapshots is ERC20TwabSnapshots {
   function initialize(string memory name, string memory symbol) external initializer {
     __ERC20_init(name, symbol);
   }
+
+  function mint(address account, uint256 value) external {
+    _mint(account, value);
+  }
 }
 
 contract TokenTest is Test {
