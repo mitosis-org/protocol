@@ -17,18 +17,18 @@ import { StdError } from '../../lib/StdError.sol';
 contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgradeable, AssetManagerStorageV1 {
   //=========== NOTE: EVENT DEFINITIONS ===========//
 
-  event AssetInitialized(uint256 indexed toChainId, address asset);
-  event EOLInitialized(uint256 indexed toChainId, uint256 eolId, address asset);
+  event AssetInitialized(uint256 indexed chainId, address asset);
+  event EOLInitialized(uint256 indexed chainId, uint256 eolId, address asset);
 
-  event Deposited(uint256 indexed fromChainId, address indexed asset, address indexed to, uint256 amount);
-  event Redeemed(uint256 indexed toChainId, address indexed asset, address indexed to, uint256 amount);
+  event Deposited(uint256 indexed chainId, address indexed asset, address indexed to, uint256 amount);
+  event Redeemed(uint256 indexed chainId, address indexed asset, address indexed to, uint256 amount);
 
-  event YieldSettled(uint256 indexed fromChainId, uint256 indexed eolId, uint256 amount);
-  event LossSettled(uint256 indexed fromChainId, uint256 indexed eolId, uint256 amount);
-  event ExtraRewardsSettled(uint256 indexed fromChainId, uint256 indexed eolId, address indexed reward, uint256 amount);
+  event YieldSettled(uint256 indexed chainId, uint256 indexed eolId, uint256 amount);
+  event LossSettled(uint256 indexed chainId, uint256 indexed eolId, uint256 amount);
+  event ExtraRewardsSettled(uint256 indexed chainId, uint256 indexed eolId, address indexed reward, uint256 amount);
 
-  event EOLAllocated(uint256 indexed toChainId, uint256 indexed eolId, uint256 amount);
-  event EOLDeallocated(uint256 indexed fromChainId, uint256 indexed eolId, uint256 amount);
+  event EOLAllocated(uint256 indexed chainId, uint256 indexed eolId, uint256 amount);
+  event EOLDeallocated(uint256 indexed chainId, uint256 indexed eolId, uint256 amount);
 
   event AssetPairSet(address hubAsset, uint256 branchChainId, address branchAsset);
   event RewardTreasurySet(address rewardTreasury);
