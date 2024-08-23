@@ -7,11 +7,17 @@ import { console } from '@std/console.sol';
 
 import { ERC20TwabSnapshots } from '../../src/twab/ERC20TwabSnapshots.sol';
 
+contract TempERC20TwabSnapshots is ERC20TwabSnapshots {
+  function initialize(string memory name, string memory symbol) external initializer {
+    __ERC20_init(name, symbol);
+  }
+}
+
 contract TokenTest is Test {
-  ERC20TwabSnapshots public token;
+  TempERC20TwabSnapshots public token;
 
   function setUp() public {
-    token = new ERC20TwabSnapshots();
+    token = new TempERC20TwabSnapshots();
     token.initialize('Token', 'TKN');
   }
 

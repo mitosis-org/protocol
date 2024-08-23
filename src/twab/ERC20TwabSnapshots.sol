@@ -5,12 +5,8 @@ import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 
 import { TwabSnapshots } from './TwabSnapshots.sol';
 
-contract ERC20TwabSnapshots is ERC20Upgradeable, TwabSnapshots {
+abstract contract ERC20TwabSnapshots is ERC20Upgradeable, TwabSnapshots {
   error ERC20ExceededSafeSupply(uint256 increasedSupply, uint256 cap);
-
-  function initialize(string memory name, string memory symbol) external initializer {
-    __ERC20_init(name, symbol);
-  }
 
   // TODO(ray): auth
   function mint(address target, uint256 amount) external {
