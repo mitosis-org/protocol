@@ -14,7 +14,7 @@ import { TwabSnapshotsUtils } from '../../lib/TwabSnapshotsUtils.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 
 /**
- * @dev Extension of {Governor} for voting weight extraction from an {ERC20Votes} token and a quorum expressed as a
+ * @dev Extension of {Governor} for voting weight extraction from an {ITwabSnapshots} token and a quorum expressed as a
  * fraction of the total supply.
  */
 abstract contract GovernorTwabVotesQuorumFractionUpgradeable is Initializable, GovernorTwabVotesUpgradeable {
