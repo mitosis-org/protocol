@@ -11,6 +11,8 @@ import { GovernorTwabVotesUpgradeable } from '../../twab/governance/GovernorTwab
 import { GovernorTwabVotesQuorumFractionUpgradeable } from
   '../../twab/governance/GovernorTwabVotesQuorumFractionUpgradeable.sol';
 
+// TODO(thai): Consider the way all EOL governances for different tokens are managed by only one governor contract.
+
 contract EOLGovernor is
   Ownable2StepUpgradeable,
   GovernorUpgradeable,
