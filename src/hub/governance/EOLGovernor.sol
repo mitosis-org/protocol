@@ -5,6 +5,7 @@ import { GovernorCountingSimpleUpgradeable } from '@ozu-v5/governance/extensions
 import { GovernorSettingsUpgradeable } from '@ozu-v5/governance/extensions/GovernorSettingsUpgradeable.sol';
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
 
 import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
 import { GovernorTwabVotesUpgradeable } from '../../twab/governance/GovernorTwabVotesUpgradeable.sol';
@@ -15,12 +16,20 @@ import { GovernorTwabVotesQuorumFractionUpgradeable } from
 
 contract EOLGovernor is
   Ownable2StepUpgradeable,
+  AccessControlUpgradeable,
   GovernorUpgradeable,
   GovernorTwabVotesUpgradeable,
   GovernorTwabVotesQuorumFractionUpgradeable,
   GovernorCountingSimpleUpgradeable,
   GovernorSettingsUpgradeable
 {
+  bytes32 public constant PROPOSER_ROLE = keccak256('PROPOSER_ROLE');
+
+  modifier onlyProposer() {
+    _checkRole(PROPOSER_ROLE);
+    _;
+  }
+
   constructor() {
     _disableInitializers();
   }
@@ -38,6 +47,9 @@ contract EOLGovernor is
     __Ownable2Step_init();
     _transferOwnership(owner_);
 
+    __AccessControl_init();
+    _grantRole(DEFAULT_ADMIN_ROLE, owner_);
+
     __Governor_init(name_);
     __GovernorTwabVotes_init(token_, twabPeriod_);
     __GovernorTwabVotesQuorumFraction_init(quorumFraction_);
@@ -45,17 +57,25 @@ contract EOLGovernor is
     __GovernorSettings_init(votingDelay_, votingPeriod_, proposalThreshold_);
   }
 
-  function proposalThreshold() public view override(GovernorUpgradeable, GovernorSettingsUpgradeable) returns (uint256) {
-    return super.proposalThreshold();
-  }
-
-  // TODO(thai): Change RBAC for not owner but proposer to be able to propose a new proposal.
   function propose(
     address[] memory targets,
     uint256[] memory values,
     bytes[] memory calldatas,
     string memory description
-  ) public override onlyOwner returns (uint256) {
+  ) public override onlyProposer returns (uint256) {
     return super.propose(targets, values, calldatas, description);
+  }
+
+  function proposalThreshold() public view override(GovernorUpgradeable, GovernorSettingsUpgradeable) returns (uint256) {
+    return GovernorSettingsUpgradeable.proposalThreshold();
+  }
+
+  function supportsInterface(bytes4 interfaceId)
+    public
+    view
+    override(AccessControlUpgradeable, GovernorUpgradeable)
+    returns (bool)
+  {
+    return AccessControlUpgradeable.supportsInterface(interfaceId);
   }
 }
