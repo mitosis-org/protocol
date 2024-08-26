@@ -55,7 +55,7 @@ abstract contract TwabSnapshots is ITwabSnapshots, IERC6372, TwabSnapshotsStorag
   }
 
   function getPastTotalSnapshot(uint256 timestamp)
-    external
+    public
     view
     virtual
     returns (uint208 balance, uint256 twab, uint48 position)
