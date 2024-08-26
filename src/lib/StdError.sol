@@ -9,5 +9,6 @@ library StdError {
 
   error InvalidId(string typ);
   error InvalidAddress(string typ);
+  error InvalidParameter(string typ);
   error ZeroAmount();
 }
