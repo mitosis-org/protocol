@@ -7,16 +7,16 @@ import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 contract TwabSnapshotsStorageV1 {
   using ERC7201Utils for string;
 
-  struct StorageV1 {
+  struct TwabSnapshotStorageV1 {
     mapping(address account => TwabCheckpoints.Trace) accountCheckpoints;
     TwabCheckpoints.Trace totalCheckpoints;
   }
 
-  string constant _NAMESPACE = 'mitosis.storage.TwabSnapshotsStorage.v1';
-  bytes32 public immutable StorageV1Location = _NAMESPACE.storageSlot();
+  string private constant _NAMESPACE = 'mitosis.storage.TwabSnapshotsStorage.v1';
+  bytes32 private immutable _storageV1Location = _NAMESPACE.storageSlot();
 
-  function _getStorageV1() internal view returns (StorageV1 storage $) {
-    bytes32 slot = StorageV1Location;
+  function _getTwabSnapshotStorageV1() internal view returns (TwabSnapshotStorageV1 storage $) {
+    bytes32 slot = _storageV1Location;
     // slither-disable-next-line assembly
     assembly {
       $.slot := slot
