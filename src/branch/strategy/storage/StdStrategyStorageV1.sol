@@ -10,7 +10,7 @@ abstract contract StdStrategyStorageV1 {
     bytes32 placeholder; // NOTE: remove this line when adding storage variables
   }
 
-  bytes32 public immutable StorageV1Location;
+  bytes32 immutable StorageV1Location;
 
   function strategyName() public pure virtual returns (string memory);
 

@@ -20,7 +20,7 @@ contract AssetManagerStorageV1 {
   }
 
   string constant _NAMESPACE = 'mitosis.storage.AssetManagerStorage.v1';
-  bytes32 public immutable StorageV1Location = _NAMESPACE.storageSlot();
+  bytes32 immutable StorageV1Location = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
     bytes32 slot = StorageV1Location;
