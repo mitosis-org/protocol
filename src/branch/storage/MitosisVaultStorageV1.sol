@@ -27,11 +27,11 @@ abstract contract MitosisVaultStorageV1 {
     mapping(uint256 eolId => EOLInfo) eols;
   }
 
-  string constant _NAMESPACE = 'mitosis.storage.MitosisVaultStorage.v1';
-  bytes32 immutable StorageV1Location = _NAMESPACE.storageSlot();
+  string private constant _NAMESPACE = 'mitosis.storage.MitosisVaultStorage.v1';
+  bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
-    bytes32 slot = StorageV1Location;
+    bytes32 slot = _slot;
     // slither-disable-next-line assembly
     assembly {
       $.slot := slot
