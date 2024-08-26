@@ -12,8 +12,6 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
   event EolIdSet(uint256 eolId, address eolVault);
   event EolStrategistSet(uint256 eolId, address strategist);
 
-  error MitosisLedger__EolIdNotInitialized();
-
   constructor() {
     _disableInitializers();
   }
