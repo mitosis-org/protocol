@@ -23,7 +23,7 @@ interface IMitosisLedger {
     uint256 optOutResolved;
   }
 
-  function latestEolId() external view returns (uint256);
+  function lastEolId() external view returns (uint256);
 
   function getAssetAmount(uint256 chainId, address asset) external view returns (uint256);
 

@@ -27,7 +27,7 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
 
   // CHAIN
 
-  function latestEolId() external view returns (uint256) {
+  function lastEolId() external view returns (uint256) {
     uint256 nextEolId = _getStorageV1().nextEolId;
     if (nextEolId == 0) revert MitosisLedger__EolIdNotInitialized();
     return nextEolId - 1;
