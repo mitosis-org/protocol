@@ -5,10 +5,11 @@ import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
+import { ITwabSnapshots } from '../interfaces/twab/ITwabSnapshots.sol';
 import { TwabCheckpoints } from '../lib/TwabCheckpoints.sol';
 import { TwabSnapshotsStorageV1 } from './TwabSnapshotsStorageV1.sol';
 
-abstract contract TwabSnapshots is IERC6372, TwabSnapshotsStorageV1 {
+abstract contract TwabSnapshots is ITwabSnapshots, IERC6372, TwabSnapshotsStorageV1 {
   using TwabCheckpoints for TwabCheckpoints.Trace;
 
   error ERC6372InconsistentClock();
