@@ -18,7 +18,7 @@ contract MitosisLedgerStorageV1 {
   }
 
   struct StorageV1 {
-    uint256 nextEolId;
+    uint256 lastEolId;
     mapping(uint256 chainId => ChainState state) chainStates;
     mapping(uint256 eolId => EOLState state) eolStates;
     // Index
