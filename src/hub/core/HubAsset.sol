@@ -1,28 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { HubAssetStorageV1 } from './storage/HubAssetStorageV1.sol';
 import { ERC20TwabSnapshots } from '../../twab/ERC20TwabSnapshots.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-contract HubAsset is ERC20TwabSnapshots, HubAssetStorageV1 {
+contract HubAsset is ERC20TwabSnapshots {
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(address assetManager_, string memory name_, string memory symbol_) external initializer {
+  function initialize(string memory name_, string memory symbol_) external initializer {
     __ERC20_init(name_, symbol_);
-    _getStorageV1().assetManager = assetManager_;
   }
 
-  modifier onlyMintable() {
-  // TODO(ray): When introduce RoleManagerContract, fill it.
-  //
-  // Mintable address: AssetManager
+  modifier onlyHubAssetMintable() {
+    // TODO(ray): When introduce RoleManagerContract, fill it. Or storing AssetManager to HubAssetStorageV1.
+    //
+    // HubAssetMintable address: AssetManager
     _;
   }
 
-  function mint(address account, uint256 value) external onlyMintable {
+  function mint(address account, uint256 value) external onlyHubAssetMintable {
     _mint(account, value);
   }
 
