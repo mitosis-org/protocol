@@ -8,8 +8,11 @@ contract CrossChainRegistryStorageV1 {
 
   struct ChainInfo {
     string name;
+    // Branch info
     uint32 hplDomain;
     address vault;
+    address entrypoint;
+    bool entrypointEnrolled;
   }
 
   struct HyperlaneInfo {

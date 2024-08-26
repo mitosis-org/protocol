@@ -7,7 +7,8 @@ import { console } from '@std/console.sol';
 import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
-import { MitosisLedger } from '../../src/hub/MitosisLedger.sol';
+import { MitosisLedger } from '../../src/hub/core/MitosisLedger.sol';
+import { IMitosisLedger } from '../../src/interfaces/hub/core/IMitosisLedger.sol';
 import { StdError } from '../../src/lib/StdError.sol';
 import { Toolkit } from '../util/Toolkit.sol';
 
@@ -82,7 +83,7 @@ contract TestCrossChainRegistry is Test, Toolkit {
 
     uint256 optOutAmount = 10 ether;
 
-    MitosisLedger.EOLAmountState memory state;
+    IMitosisLedger.EOLAmountState memory state;
 
     mitosisLedger.recordOptOutRequest(eolId, optOutAmount);
     state = mitosisLedger.eolAmountState(eolId);
