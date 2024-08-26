@@ -73,11 +73,11 @@ abstract contract TwabSnapshots is IERC6372, TwabSnapshotsStorageV1 {
       if (from == address(0)) {
         _push($.totalCheckpoints, _add, SafeCast.toUint208(amount));
       } else {
-        _push($.accountCheckpoints[from], _subtract, SafeCast.toUint208(amount));
+        _push($.accountCheckpoints[from], _sub, SafeCast.toUint208(amount));
       }
 
       if (to == address(0)) {
-        _push($.totalCheckpoints, _subtract, SafeCast.toUint208(amount));
+        _push($.totalCheckpoints, _sub, SafeCast.toUint208(amount));
       } else {
         _push($.accountCheckpoints[to], _add, SafeCast.toUint208(amount));
       }
@@ -111,7 +111,7 @@ abstract contract TwabSnapshots is IERC6372, TwabSnapshotsStorageV1 {
     return a + b;
   }
 
-  function _subtract(uint208 a, uint208 b) private pure returns (uint208) {
+  function _sub(uint208 a, uint208 b) private pure returns (uint208) {
     return a - b;
   }
 }
