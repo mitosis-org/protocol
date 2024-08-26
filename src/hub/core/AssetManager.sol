@@ -163,6 +163,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external onlyOwner {
+    // TODO(ray): handle already initialized asset through initializeAsset.
+    //
+    // https://github.com/mitosis-org/protocol/pull/23#discussion_r1728680943
     StorageV1 storage $ = _getStorageV1();
     $.branchAssets[hubAsset][branchChainId] = branchAsset;
     $.hubAssets[branchChainId][branchAsset] = hubAsset;
