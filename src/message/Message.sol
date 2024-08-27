@@ -76,8 +76,8 @@ library Message {
   error Message__InvalidMsgLength(uint256 actual, uint256 expected);
 
   uint256 public constant LEN_MSG_INITIALIZE_ASSET = 33;
-  uint256 public constant LEN_MSG_DEPOSIT = 65;
-  uint256 public constant LEN_MSG_REDEEM = 65;
+  uint256 public constant LEN_MSG_DEPOSIT = 97;
+  uint256 public constant LEN_MSG_REDEEM = 97;
   uint256 public constant LEN_MSG_INITIALIZE_EOL = 65;
   uint256 public constant LEN_MSG_ALLOCATE_EOL = 65;
   uint256 public constant LEN_MSG_DEALLOCATE_EOL = 65;
