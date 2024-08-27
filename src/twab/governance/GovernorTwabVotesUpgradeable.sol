@@ -68,11 +68,7 @@ abstract contract GovernorTwabVotesUpgradeable is Initializable, GovernorUpgrade
    * does not implement EIP-6372.
    */
   function clock() public view virtual override returns (uint48) {
-    try token().clock() returns (uint48 timepoint) {
-      return timepoint;
-    } catch {
-      return Time.blockNumber();
-    }
+    return token().clock();
   }
 
   /**
@@ -80,11 +76,7 @@ abstract contract GovernorTwabVotesUpgradeable is Initializable, GovernorUpgrade
    */
   // solhint-disable-next-line func-name-mixedcase
   function CLOCK_MODE() public view virtual override returns (string memory) {
-    try token().CLOCK_MODE() returns (string memory clockmode) {
-      return clockmode;
-    } catch {
-      return 'mode=blocknumber&from=default';
-    }
+    return token().CLOCK_MODE();
   }
 
   /**
