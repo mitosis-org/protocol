@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import { Time } from '@oz-v5/utils/types/Time.sol';
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
@@ -26,8 +27,12 @@ contract RewardTreasury is IRewardTreasury, Ownable2StepUpgradeable, RewardTreas
     _getStorageV1().mitosisLedger = mitosisLedger_;
   }
 
+  function deposit(uint256 eolId, address asset, uint256 amount) external {
+    deposit(eolId, asset, amount, Time.timestamp());
+  }
+
   // TODO(ray): Auth (AssetManager)
-  function deposit(uint256 eolId, address asset, uint256 amount, uint48 timestamp) external {
+  function deposit(uint256 eolId, address asset, uint256 amount, uint48 timestamp) public {
     _getStorageV1().rewards[eolId][timestamp].push(RewardInfo(asset, amount, false));
     emit Deposited(eolId, asset, timestamp, amount);
   }
