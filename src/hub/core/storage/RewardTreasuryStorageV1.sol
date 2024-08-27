@@ -15,7 +15,7 @@ contract RewardTreasuryStorageV1 {
 
   struct StorageV1 {
     IMitosisLedger mitosisLedger;
-    mapping(uint256 eolId => mapping(uint48 timestamp => RewardInfo[])) rewards;
+    mapping(uint256 eolId => mapping(uint48 timestamp => RewardInfo[] reweardInfos)) rewards;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.RewardTreasuryStorage.v1';

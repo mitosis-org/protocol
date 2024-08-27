@@ -8,7 +8,7 @@ interface IRewardDistributor {
     uint48 endedAt;
   }
 
-  // BatchStorage is assigned per eolId, per asset.
+  // BatchStorage is assigned per (eolId, asset).
   struct BatchStorage {
     uint256 currentBatchId;
     mapping(uint256 batchId => Batch batch) batches;
