@@ -28,8 +28,11 @@ contract RewardTreasury is IRewardTreasury, Ownable2StepUpgradeable, RewardTreas
   }
 
   function deposit(uint256 eolId, address asset, uint256 amount) external {
+    IERC20(asset).transferFrom(_msgSender(), address(this), amount);
+
     uint48 timestamp = Time.timestamp();
     _getStorageV1().rewards[eolId][timestamp].push(RewardInfo(asset, amount, false));
+
     emit Deposited(eolId, asset, timestamp, amount);
   }
 
@@ -41,14 +44,26 @@ contract RewardTreasury is IRewardTreasury, Ownable2StepUpgradeable, RewardTreas
     RewardInfo[] storage rewardInfos = $.rewards[eolId][timestamp];
     for (uint256 i = 0; i < rewardInfos.length; i++) {
       RewardInfo storage rewardInfo = rewardInfos[i];
-      uint256 amount = rewardInfo.amount;
-      if (rewardInfo.asset == asset && !rewardInfo.dispatched && amount > 0) {
-        rewardInfo.dispatched = true;
-        IERC20(asset).approve(address(distributor), amount);
-        distributor.dispatch(eolId, asset, amount, timestamp);
-        emit Dispatched(eolId, asset, timestamp, address(distributor), amount);
+      if (rewardInfo.asset == asset && !rewardInfo.dispatched && rewardInfo.amount > 0) {
+        _dispatchTo(rewardInfo, distributor, eolId, asset, timestamp);
       }
     }
+  }
+
+  function _dispatchTo(
+    RewardInfo storage rewardInfo,
+    IRewardDistributor distributor,
+    uint256 eolId,
+    address asset,
+    uint48 timestamp
+  ) internal {
+    rewardInfo.dispatched = true;
+    uint256 amount = rewardInfo.amount;
+
+    IERC20(asset).approve(address(distributor), amount);
+    distributor.receiveReward(eolId, asset, amount, timestamp);
+
+    emit Dispatched(eolId, asset, timestamp, address(distributor), amount);
   }
 
   function _assertOnlyEolStrategist(StorageV1 storage $, uint256 eolId) internal view {

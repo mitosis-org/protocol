@@ -34,7 +34,7 @@ contract OnlyOwnerRewardDistributor is IRewardDistributor {
     return nextBatchId;
   }
 
-  function dispatch(uint256 eolId, address asset, uint256 amount, uint48) external {
+  function receiveReward(uint256 eolId, address asset, uint256 amount, uint48) external {
     if (msg.sender != _rewardTreasury) revert StdError.Unauthorized();
 
     BatchStorage storage batchStorage = _batchStorages[eolId][asset];

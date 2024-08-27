@@ -16,7 +16,7 @@ interface IRewardDistributor {
 
   function nextBatch(uint256 eolId, address asset) external returns (uint256);
 
-  function dispatch(uint256 eolId, address asset, uint256 amount, uint48 rewardedAt) external;
+  function receiveReward(uint256 eolId, address asset, uint256 amount, uint48 rewardedAt) external;
 
   function claim(uint256 eolId, address asset, uint256 batchId) external;
   function claim(uint256 eolId, address asset, uint256 batchId, uint256 amountsClaimed) external;
