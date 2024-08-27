@@ -28,11 +28,7 @@ contract RewardTreasury is IRewardTreasury, Ownable2StepUpgradeable, RewardTreas
   }
 
   function deposit(uint256 eolId, address asset, uint256 amount) external {
-    deposit(eolId, asset, amount, Time.timestamp());
-  }
-
-  // TODO(ray): Auth (AssetManager)
-  function deposit(uint256 eolId, address asset, uint256 amount, uint48 timestamp) public {
+    uint48 timestamp = Time.timestamp();
     _getStorageV1().rewards[eolId][timestamp].push(RewardInfo(asset, amount, false));
     emit Deposited(eolId, asset, timestamp, amount);
   }
