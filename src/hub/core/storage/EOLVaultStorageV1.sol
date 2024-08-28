@@ -10,7 +10,6 @@ contract EOLVaultStorageV1 {
   struct StorageV1 {
     IMitosisLedger mitosisLedger;
     uint256 eolId;
-    address assetManager;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.EOLVaultStorave.v1';
