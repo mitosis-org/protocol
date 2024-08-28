@@ -14,8 +14,6 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
   event EolStrategistSet(uint256 indexed eolId, address indexed strategist);
   event EolOptOutQueueSet(address indexed optOutQueue);
 
-  error MitosisLedger__EolIdNotInitialized();
-
   constructor() {
     _disableInitializers();
   }
@@ -30,9 +28,7 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
   // CHAIN
 
   function lastEolId() external view returns (uint256) {
-    uint256 nextEolId = _getStorageV1().nextEolId;
-    if (nextEolId == 0) revert MitosisLedger__EolIdNotInitialized();
-    return nextEolId - 1;
+    return _getStorageV1().lastEolId;
   }
 
   function optOutQueue() external view returns (address) {
@@ -72,10 +68,9 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
   function assignEolId(address eolVault_) public returns (uint256 eolId /* auth */ ) {
     StorageV1 storage $ = _getStorageV1();
 
-    eolId = $.nextEolId;
+    eolId = ++$.lastEolId;
     $.eolStates[eolId].eolVault = eolVault_;
     $.eolIdsByVault[eolVault_] = eolId;
-    $.nextEolId++;
     IEOLVault(eolVault_).assignEolId(eolId);
 
     emit EolIdSet(eolId, eolVault_);

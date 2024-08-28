@@ -10,17 +10,17 @@ abstract contract StdStrategyStorageV1 {
     bytes32 placeholder; // NOTE: remove this line when adding storage variables
   }
 
-  bytes32 public immutable StorageV1Location;
+  bytes32 private immutable _slot;
 
   function strategyName() public pure virtual returns (string memory);
 
   constructor() {
     string memory namespace = string.concat('mitosis.storage.strategy.', strategyName(), '.std.v1');
-    StorageV1Location = namespace.storageSlot();
+    _slot = namespace.storageSlot();
   }
 
   function _getStdStorageV1() internal view returns (StdStorageV1 storage $) {
-    bytes32 slot = StorageV1Location;
+    bytes32 slot = _slot;
 
     // slither-disable-next-line assembly
     assembly {
