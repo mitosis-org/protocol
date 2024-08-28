@@ -96,6 +96,8 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
     _assertAssetInitialized($, asset);
     _assertNotHalted($, asset, AssetAction.Deposit);
+    if (to == address(0)) revert StdError.ZeroAddress('to');
+    if (amount == 0) revert StdError.ZeroAmount();
 
     IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
     $.entrypoint.deposit(asset, to, amount);
