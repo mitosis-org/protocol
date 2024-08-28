@@ -274,6 +274,7 @@ contract StrategyExecutor is
       if (enabled[i] == strategyId) {
         if (enabled.length > 1) enabled[i] = enabled[enabled.length - 1];
         enabled.pop();
+        break;
       }
     }
 
