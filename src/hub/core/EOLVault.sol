@@ -5,18 +5,18 @@ import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
+import { IEOLVault } from '../../interfaces/hub/core/IEOLVault.sol';
 import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
 import { IERC20TwabSnapshots } from '../../interfaces/twab/IERC20TwabSnapshots.sol';
 import { ERC4626TwabSnapshots } from '../../twab/ERC4626TwabSnapshots.sol';
 import { EOLVaultStorageV1 } from './storage/EOLVaultStorageV1.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-contract EOLVault is ERC4626TwabSnapshots, EOLVaultStorageV1 {
+contract EOLVault is IEOLVault, ERC4626TwabSnapshots, EOLVaultStorageV1 {
   using Math for uint256;
 
-  error EOLVault__AlreadyEolIdAssinged();
-  error EOLVault__EolIdNotAssinged();
-
+  error EOLVault__EolIdNotSet();
+  
   constructor() {
     _disableInitializers();
   }
@@ -65,22 +65,7 @@ contract EOLVault is ERC4626TwabSnapshots, EOLVaultStorageV1 {
     asset_.approve(assetManager_, type(uint256).max);
   }
 
-  // View functions
-
-  function eolId() external view returns (uint256) {
-    return _getStorageV1().eolId;
-  }
-
   // Mutative functions
-
-  function assignEolId(uint256 eolId_) external {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertOnlyMitosisLedger($);
-    _assertEolIdNotSet($);
-
-    $.eolId = eolId_;
-  }
 
   function deposit(uint256 assets, address receiver) public override returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
@@ -165,10 +150,6 @@ contract EOLVault is ERC4626TwabSnapshots, EOLVaultStorageV1 {
   }
 
   function _assertEolIdSet(StorageV1 storage $) internal view {
-    if ($.eolId == 0) revert EOLVault__EolIdNotAssinged();
-  }
-
-  function _assertEolIdNotSet(StorageV1 storage $) internal view {
-    if ($.eolId != 0) revert EOLVault__AlreadyEolIdAssinged();
+    if ($.mitosisLedger.eolIdByVault(address(this)) == 0) revert EOLVault__EolIdNotSet();
   }
 }
