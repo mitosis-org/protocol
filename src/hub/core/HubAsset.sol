@@ -20,16 +20,18 @@ contract HubAsset is ERC20TwabSnapshots {
     _;
   }
 
+  modifier onlyHubAssetBurnable() {
+    // TODO(ray): When introduce RoleManagerContract, fill it. Or storing AssetManager to HubAssetStorageV1.
+    //
+    // HubAssetBurnable address: AssetManager
+    _;
+  }
+
   function mint(address account, uint256 value) external onlyHubAssetMintable {
     _mint(account, value);
   }
 
-  function burn(uint256 value) external {
-    _burn(_msgSender(), value);
-  }
-
-  function burnFrom(address account, uint256 value) external {
-    _spendAllowance(account, _msgSender(), value);
+  function burn(address account, uint256 value) external onlyHubAssetBurnable {
     _burn(account, value);
   }
 }

@@ -16,7 +16,7 @@ contract EOLVault is IEOLVault, ERC4626TwabSnapshots, EOLVaultStorageV1 {
   using Math for uint256;
 
   error EOLVault__EolIdNotSet();
-  
+
   constructor() {
     _disableInitializers();
   }
@@ -57,12 +57,6 @@ contract EOLVault is IEOLVault, ERC4626TwabSnapshots, EOLVaultStorageV1 {
     __ERC20_init(name, symbol);
 
     _getStorageV1().mitosisLedger = mitosisLedger_;
-
-    // For AssetManager.settleLoss.
-    //
-    // note: There is no case where the maximum possible settleLoss is
-    // greater than the actual amount of tokens available in the EOLVault.
-    asset_.approve(assetManager_, type(uint256).max);
   }
 
   // Mutative functions

@@ -74,7 +74,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     address branchAsset = $.branchAssets[hubAsset][chainId];
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    _burn($, chainId, hubAsset, amount);
+    _burn($, chainId, hubAsset, _msgSender(), amount);
     $.entrypoint.redeem(chainId, branchAsset, to, amount);
 
     emit Redeemed(chainId, hubAsset, to, amount);
@@ -205,16 +205,16 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
   function _decreaseEOLShareValue(StorageV1 storage $, uint256 eolId, uint256 assets) internal {
     IEOLVault eolVault = IEOLVault($.mitosisLedger.eolVault(eolId));
-    IHubAsset(eolVault.asset()).burnFrom(address(eolVault), assets);
+    IHubAsset(eolVault.asset()).burn(address(eolVault), assets);
   }
 
-  function _mint(StorageV1 storage $, uint256 chainId, address asset, address to, uint256 amount) internal {
-    IHubAsset(asset).mint(to, amount);
+  function _mint(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
+    IHubAsset(asset).mint(account, amount);
     $.mitosisLedger.recordDeposit(chainId, asset, amount);
   }
 
-  function _burn(StorageV1 storage $, uint256 chainId, address asset, uint256 amount) internal {
-    IHubAsset(asset).burnFrom(msg.sender, amount);
+  function _burn(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
+    IHubAsset(asset).burn(account, amount);
     $.mitosisLedger.recordWithdraw(chainId, asset, amount);
   }
 
