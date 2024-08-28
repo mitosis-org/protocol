@@ -56,8 +56,7 @@ contract EOLVault is ERC4626TwabSnapshots, EOLVaultStorageV1 {
     __ERC4626_init(asset_);
     __ERC20_init(name, symbol);
 
-    StorageV1 storage $ = _getStorageV1();
-    $.mitosisLedger = mitosisLedger_;
+    _getStorageV1().mitosisLedger = mitosisLedger_;
 
     // note: There is no case where the maximum possible settleLoss is
     // greater than the actual amount of tokens available in the EOLVault.
