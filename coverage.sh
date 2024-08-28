@@ -1,7 +1,7 @@
 set -e # exit on error
 
 # generates lcov.info
-forge coverage --report lcov --ir-minimum
+forge coverage --report lcov -vvv
 
 # Filter out node_modules, test, and mock files
 lcov \
