@@ -79,7 +79,6 @@ contract EOLVault is ERC4626TwabSnapshots, EOLVaultStorageV1 {
     _assertOnlyMitosisLedger($);
     _assertEolIdNotSet($);
 
-    if ($.eolId != 0) revert EOLVault__AlreadyEolIdAssinged();
     $.eolId = eolId_;
   }
 

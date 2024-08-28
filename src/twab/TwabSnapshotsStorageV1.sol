@@ -13,10 +13,10 @@ contract TwabSnapshotsStorageV1 {
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.TwabSnapshotsStorage.v1';
-  bytes32 private immutable _storageV1Location = _NAMESPACE.storageSlot();
+  bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getTwabSnapshotStorageV1() internal view returns (TwabSnapshotStorageV1 storage $) {
-    bytes32 slot = _storageV1Location;
+    bytes32 slot = _slot;
     // slither-disable-next-line assembly
     assembly {
       $.slot := slot
