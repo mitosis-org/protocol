@@ -40,6 +40,7 @@ library LibRedeemQueue {
     uint256 size;
     uint256 totalReserved;
     uint256 totalClaimed;
+    uint256 redeemPeriod;
     ReserveLog[] reserveHistory;
     mapping(uint256 index => Request item) data;
     mapping(address recipient => Index index) indexes;
@@ -131,7 +132,8 @@ library LibRedeemQueue {
 
     uint256 count = 0;
     for (uint256 i = offset; i < newOffset; i++) {
-      if (isClaimed(q.data[idx.data[i]])) continue;
+      Request memory req = q.data[idx.data[i]];
+      if (isClaimed(req)) continue;
       count += 1;
     }
 
@@ -221,6 +223,8 @@ library LibRedeemQueue {
   }
 
   function claim(Queue storage q, address recipient, uint256 maxClaimSize) internal {
+    _updateQueueOffset(q, q.totalReserved);
+
     Index storage idx = q.indexes[recipient];
 
     uint256 queueOffset = q.offset;
@@ -262,6 +266,10 @@ library LibRedeemQueue {
     emit Reserved(amount_, historyIndex);
   }
 
+  function update(Queue storage q) internal returns (uint256 offset, bool updated) {
+    return _updateQueueOffset(q, q.totalReserved);
+  }
+
   function _mid(uint256 low, uint256 high) private pure returns (uint256) {
     return (low & high) + (low ^ high) / 2; // avoid overflow
   }
@@ -298,9 +306,11 @@ library LibRedeemQueue {
     uint256 high = q.size;
     if (low == high) return (low, false);
 
+    uint256 redeemPeriod = q.redeemPeriod;
     while (low < high) {
       uint256 mid = _mid(low, high);
-      if (q.data[mid].accumulated <= accumulated) low = mid + 1;
+      Request memory req = q.data[mid];
+      if (req.accumulated <= accumulated && req.createdAt + redeemPeriod <= block.timestamp) low = mid + 1;
       else high = mid;
     }
 

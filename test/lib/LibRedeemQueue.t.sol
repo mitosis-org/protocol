@@ -44,6 +44,7 @@ contract TestLibRedeemQueue is Test {
 
     for (uint256 i = 0; i < dataset.length; i++) {
       queue.enqueue(dataset[i].recipient, dataset[i].amount);
+      vm.warp(block.timestamp + 10 seconds);
     }
 
     return dataset;
@@ -212,6 +213,29 @@ contract TestLibRedeemQueue is Test {
       assertEq(newOffset, i + 1);
       assertTrue(found);
       assertLe(queue.get(i).accumulated, next.accumulated - 1 ether);
+    }
+  }
+
+  function test_searchQueueOffset_redeemPeriod() public {
+    DataSet[] memory dataset = _loadTestdata();
+
+    uint256 newOffset;
+    bool updated;
+
+    queue.setRedeemPeriod(10 seconds);
+
+    vm.warp(1); // move to genesis
+    queue.reserve(dataset.totalRequested()); // reserve all
+
+    (newOffset, updated) = queue.update();
+    assertEq(newOffset, 0);
+    assertFalse(updated);
+
+    for (uint256 i = 0; i < dataset.length; i++) {
+      vm.warp(block.timestamp + 10 seconds);
+      (newOffset, updated) = queue.update();
+      assertEq(newOffset, i + 1);
+      assertTrue(updated);
     }
   }
 
@@ -384,7 +408,7 @@ contract TestLibRedeemQueue is Test {
 
     LibRedeemQueue.Request memory item = queue.get(0);
     assertEq(item.claimedAt, uint48(block.timestamp));
-    assertEq(item.createdAt + 20 seconds, item.claimedAt);
+    assertEq(item.createdAt + ((queue.size() + 2) * 10 seconds), item.claimedAt);
   }
 
   function test_claim_queueMulti() public {
@@ -422,7 +446,7 @@ contract TestLibRedeemQueue is Test {
     for (uint256 i = 0; i < itemIndexes.length; i++) {
       LibRedeemQueue.Request memory item = queue.get(itemIndexes[i]);
       assertEq(item.claimedAt, uint48(block.timestamp));
-      assertEq(item.createdAt + 10 seconds, item.claimedAt);
+      assertEq(item.createdAt + ((queue.size() - itemIndexes[i] + 1) * 10 seconds), item.claimedAt);
     }
   }
 

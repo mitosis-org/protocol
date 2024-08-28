@@ -8,6 +8,8 @@ contract RedeemQueueWrapper {
 
   LibRedeemQueue.Queue private queue;
 
+  // =========================== NOTE: QUERY FUNCTIONS =========================== //
+
   function get(uint256 itemIndex) external view returns (LibRedeemQueue.Request memory) {
     return queue.get(itemIndex);
   }
@@ -60,30 +62,6 @@ contract RedeemQueueWrapper {
     return queue.reserveHistory;
   }
 
-  function enqueue(address recipient, uint256 requestAmount) external returns (uint256) {
-    return queue.enqueue(recipient, requestAmount);
-  }
-
-  function claim(uint256 itemIndex) external {
-    queue.claim(itemIndex);
-  }
-
-  function claim(uint256[] memory itemIndexes) external {
-    queue.claim(itemIndexes);
-  }
-
-  function claim(address recipient) external {
-    queue.claim(recipient);
-  }
-
-  function claim(address recipient, uint256 maxClaimSize) external {
-    queue.claim(recipient, maxClaimSize);
-  }
-
-  function reserve(uint256 amount_) external {
-    queue.reserve(amount_);
-  }
-
   function claimable(address recipient, uint256 accumulated) external view returns (uint256[] memory) {
     return queue.claimable(recipient, accumulated);
   }
@@ -130,5 +108,41 @@ contract RedeemQueueWrapper {
 
   function getTotalClaimed() external view returns (uint256) {
     return queue.totalClaimed;
+  }
+
+  // =========================== NOTE: QUEUE FUNCTIONS =========================== //
+
+  function enqueue(address recipient, uint256 requestAmount) external returns (uint256) {
+    return queue.enqueue(recipient, requestAmount);
+  }
+
+  function claim(uint256 itemIndex) external {
+    queue.claim(itemIndex);
+  }
+
+  function claim(uint256[] memory itemIndexes) external {
+    queue.claim(itemIndexes);
+  }
+
+  function claim(address recipient) external {
+    queue.claim(recipient);
+  }
+
+  function claim(address recipient, uint256 maxClaimSize) external {
+    queue.claim(recipient, maxClaimSize);
+  }
+
+  function reserve(uint256 amount_) external {
+    queue.reserve(amount_);
+  }
+
+  function update() external returns (uint256 offset_, bool updated) {
+    return queue.update();
+  }
+
+  // =========================== NOTE: CONFIG FUNCTIONS =========================== //
+
+  function setRedeemPeriod(uint256 redeemPeriod_) external {
+    queue.redeemPeriod = redeemPeriod_;
   }
 }
