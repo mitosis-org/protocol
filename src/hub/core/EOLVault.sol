@@ -58,6 +58,8 @@ contract EOLVault is ERC4626TwabSnapshots, EOLVaultStorageV1 {
 
     _getStorageV1().mitosisLedger = mitosisLedger_;
 
+    // For AssetManager.settleLoss.
+    //
     // note: There is no case where the maximum possible settleLoss is
     // greater than the actual amount of tokens available in the EOLVault.
     asset_.approve(assetManager_, type(uint256).max);
