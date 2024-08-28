@@ -8,9 +8,11 @@ contract CrossChainRegistryStorageV1 {
 
   struct ChainInfo {
     string name;
+    // Branch info
     uint32 hplDomain;
     address vault;
-    mapping(address underlyingAsset => bool) underlyingAssets;
+    address entrypoint;
+    bool entrypointEnrolled;
   }
 
   struct HyperlaneInfo {
@@ -24,14 +26,14 @@ contract CrossChainRegistryStorageV1 {
     mapping(uint32 hplDomain => HyperlaneInfo) hyperlanes;
   }
 
-  string constant _NAMESPACE = 'mitosis.storage.CrossChainRegistryStorage.v1';
-  bytes32 public immutable StorageV1Location = _NAMESPACE.storageSlot();
+  string private constant _NAMESPACE = 'mitosis.storage.CrossChainRegistryStorage.v1';
+  bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
-    bytes32 storageLocation = StorageV1Location;
+    bytes32 slot = _slot;
     // slither-disable-next-line assembly
     assembly {
-      $.slot := storageLocation
+      $.slot := slot
     }
   }
 }

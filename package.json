@@ -21,7 +21,7 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@hyperlane-xyz/core": "https://github.com/mitosis-org/hyperlane-core#main",
+    "hpl-v5": "https://github.com/mitosis-org/hyperlane-core#568df242092a8e12ef525b176bf50fab1f19316f",
     "viem": "^2.18.7"
   },
   "packageManager": "yarn@4.4.0"
