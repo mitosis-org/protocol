@@ -56,6 +56,10 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
     return state.total - state.optOutPending;
   }
 
+  function eolIdByVault(address eolVault_) external view returns (uint256) {
+    return _getStorageV1().eolIdsByVault[eolVault_];
+  }
+
   // Mutative functions
 
   // EOL management states
@@ -71,7 +75,6 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
     eolId = ++$.lastEolId;
     $.eolStates[eolId].eolVault = eolVault_;
     $.eolIdsByVault[eolVault_] = eolId;
-    IEOLVault(eolVault_).assignEolId(eolId);
 
     emit EolIdSet(eolId, eolVault_);
   }

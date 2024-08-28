@@ -32,6 +32,7 @@ interface IMitosisLedger {
   function eolStrategist(uint256 eolId) external view returns (address);
   function eolAmountState(uint256 eolId) external view returns (EOLAmountState memory);
   function getEOLAllocateAmount(uint256 eolId) external view returns (uint256);
+  function eolIdByVault(address eolVault_) external view returns (uint256);
   // EOL management
   function assignEolId(address eolVault_) external returns (uint256 eolId);
   function assignEolId(address eolVault_, address strategist) external returns (uint256 eolId);
