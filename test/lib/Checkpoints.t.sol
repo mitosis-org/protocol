@@ -5,7 +5,7 @@ import { Vm } from '@std/Vm.sol';
 import { Test } from '@std/Test.sol';
 import { console } from '@std/console.sol';
 
-import '../../../src/lib/TwabCheckpoints.sol';
+import '../../src/lib/TwabCheckpoints.sol';
 
 contract TwabCheckpointsTest is Test {
   using TwabCheckpoints for TwabCheckpoints.Trace;
