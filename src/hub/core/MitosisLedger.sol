@@ -10,8 +10,8 @@ import { MitosisLedgerStorageV1 } from './storage/MitosisLedgerStorageV1.sol';
 
 /// Note: This contract stores state related to balances, EOL states.
 contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedgerStorageV1 {
-  event EolIdSet(uint256 eolId, address eolVault);
-  event EolStrategistSet(uint256 eolId, address strategist);
+  event EolIdSet(uint256 indexed eolId, address indexed eolVault);
+  event EolStrategistSet(uint256 indexed eolId, address indexed strategist);
   event EolOptOutQueueSet(address indexed optOutQueue);
 
   error MitosisLedger__EolIdNotInitialized();
