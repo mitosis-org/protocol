@@ -34,7 +34,7 @@ contract EOLGovernor is
     _disableInitializers();
   }
 
-  function __EOLGovernor_init(
+  function initialize(
     address owner_,
     string memory name_,
     ITwabSnapshots token_,
@@ -76,6 +76,6 @@ contract EOLGovernor is
     override(AccessControlUpgradeable, GovernorUpgradeable)
     returns (bool)
   {
-    return AccessControlUpgradeable.supportsInterface(interfaceId);
+    return AccessControlUpgradeable.supportsInterface(interfaceId) || GovernorUpgradeable.supportsInterface(interfaceId);
   }
 }
