@@ -19,7 +19,6 @@ contract MitosisLedgerStorageV1 {
 
   struct StorageV1 {
     uint256 lastEolId;
-    address optOutQueue;
     mapping(uint256 chainId => ChainState state) chainStates;
     mapping(address eolVault => EOLState state) eolStates;
     // Index
