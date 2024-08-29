@@ -11,7 +11,7 @@ contract EOLRewardConfiguratorStorageV1 {
   struct StorageV1 {
     mapping(address eolVault => mapping(address asset => DistributeType distributeType)) distributeTypes;
     mapping(DistributeType distributeType => IEOLRewardDistributor distributor) defaultDistributor;
-    mapping(IEOLRewardDistributor distributor => bool registered) isDistributorRegistered;
+    mapping(IEOLRewardDistributor distributor => bool registered) distributorRegistry;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.EOLRewardConfiguratorStorage.v1';

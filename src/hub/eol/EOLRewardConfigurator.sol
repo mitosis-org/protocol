@@ -9,6 +9,14 @@ import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { IEOLRewardDistributor } from '../../interfaces/hub/eol/IEOLRewardDistributor.sol';
 
 contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeable, EOLRewardConfiguratorStorageV1 {
+  event RewardDistributeTypeSet(address indexed eolVault, address indexed asset, DistributeType indexed distributeType);
+  event DefaultDistributorSet(DistributeType indexed distributeType, IEOLRewardDistributor indexed rewardDistributor);
+  event RewardDistributorRegistered(IEOLRewardDistributor indexed distributor);
+  event RewardDistributorUnregistered(IEOLRewardDistributor indexed distributor);
+
+  error EOLRewardConfigurator__DefaultDistributorNotSet(DistributeType);
+  error EOLRewardConfigurator__NotDefaultDistributorEnsure();
+
   constructor() {
     _disableInitializers();
   }
@@ -29,22 +37,63 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   }
 
   function isDistributorRegistered(IEOLRewardDistributor distributor) external view returns (bool) {
-    return _getStorageV1().isDistributorRegistered[distributor];
+    return _getStorageV1().distributorRegistry[distributor];
   }
 
   // Mutative functions
 
   function setRewardDistributeType(address eolVault, address asset, DistributeType distributeType) external onlyOwner {
-    _getStorageV1().distributeTypes[eolVault][asset] = distributeType;
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertDefaultDistributorSet($, distributeType);
+
+    $.distributeTypes[eolVault][asset] = distributeType;
+    emit RewardDistributeTypeSet(eolVault, asset, distributeType);
   }
 
   function setDefaultDistributor(DistributeType distributeType, IEOLRewardDistributor distributor) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    if (!$.isDistributorRegistered[distributor]) revert IEOLRewardConfigurator__RewardDistributorNotRegistered();
+
+    _assertDistributorRegisered($, distributor);
+
     $.defaultDistributor[distributeType] = distributor;
+    emit DefaultDistributorSet(distributeType, distributor);
   }
 
   function registerDistributor(IEOLRewardDistributor distributor) external onlyOwner {
-    _getStorageV1().isDistributorRegistered[distributor] = true;
+    StorageV1 storage $ = _getStorageV1();
+    _getStorageV1().distributorRegistry[distributor] = true;
+    emit RewardDistributorRegistered(distributor);
+  }
+
+  function unregisterDistributor(IEOLRewardDistributor distributor) external onlyOwner {
+    DistributeType distributeType = distributor.distributeType();
+
+    StorageV1 storage $ = _getStorageV1();
+
+    // note: We strictly manage the DefaultDistributor. DistributeTypes without a set
+    // DefaultDistributor cannot be configured as the distribution method for assets.
+    // And once initialized, the DefaultDistributor cannot be set to a zero address.
+    _assertNotDefaultDistributor($, distributor);
+
+    $.distributorRegistry[distributor] = false;
+    emit RewardDistributorUnregistered(distributor);
+  }
+
+  function _assertDefaultDistributorSet(StorageV1 storage $, DistributeType distributeType) internal view {
+    if (address($.defaultDistributor[distributeType]) == address(0)) {
+      revert EOLRewardConfigurator__DefaultDistributorNotSet(distributeType);
+    }
+  }
+
+  function _assertDistributorRegisered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
+    if (!$.distributorRegistry[distributor]) revert IEOLRewardConfigurator__RewardDistributorNotRegistered();
+  }
+
+  function _assertNotDefaultDistributor(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
+    DistributeType distributeType = distributor.distributeType();
+    if (address($.defaultDistributor[distributeType]) == address(distributor)) {
+      revert EOLRewardConfigurator__NotDefaultDistributorEnsure();
+    }
   }
 }
