@@ -2,8 +2,10 @@
 pragma solidity ^0.8.26;
 
 import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
+
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
+import { IEOLVault } from '../../interfaces/hub/core/IEOLVault.sol';
 import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
 import { MitosisLedgerStorageV1 } from './storage/MitosisLedgerStorageV1.sol';
 
@@ -23,6 +25,10 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
   // View functions
 
   // CHAIN
+
+  function optOutQueue() external view returns (address) {
+    return _getStorageV1().optOutQueue;
+  }
 
   function getAssetAmount(uint256 chainId, address asset) external view returns (uint256) {
     return _getStorageV1().chainStates[chainId].amounts[asset];
@@ -48,6 +54,10 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
   function setEolStrategist(address eolVault, address strategist) public /* auth */ {
     _getStorageV1().eolStates[eolVault].strategist = strategist;
     emit EolStrategistSet(eolVault, strategist);
+  }
+
+  function setOptOutQueue(address optOutQueue_) external /* auth */ {
+    _getStorageV1().optOutQueue = optOutQueue_;
   }
 
   // Asset, EOL balance states

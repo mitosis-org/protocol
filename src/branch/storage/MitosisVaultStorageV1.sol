@@ -2,8 +2,8 @@
 pragma solidity 0.8.26;
 
 import { AssetAction, EOLAction } from '../../interfaces/branch/IMitosisVault.sol';
-import { IMitosisVaultEntrypoint } from '../../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { IMitosisVaultEntrypoint } from '../../interfaces/branch/IMitosisVaultEntrypoint.sol';
 
 abstract contract MitosisVaultStorageV1 {
   using ERC7201Utils for string;

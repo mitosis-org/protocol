@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
-pragma abicoder v2;
 
 import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
+
 import { IMitosisVault } from '../IMitosisVault.sol';
 
 interface IStrategyExecutor {

@@ -3,15 +3,16 @@ pragma solidity ^0.8.26;
 
 import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { AssetManagerStorageV1 } from './storage/AssetManagerStorageV1.sol';
-import { IRewardTreasury } from '../../interfaces/hub/core/IRewardTreasury.sol';
-import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
-import { IEOLVault } from '../../interfaces/hub/core/IEOLVault.sol';
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
+import { IEOLVault } from '../../interfaces/hub/core/IEOLVault.sol';
+import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
+import { IRewardTreasury } from '../../interfaces/hub/core/IRewardTreasury.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgradeable, AssetManagerStorageV1 {
@@ -77,7 +78,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     address branchAsset = $.branchAssets[hubAsset][chainId];
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    _burn($, chainId, hubAsset, amount);
+    _burn($, chainId, hubAsset, _msgSender(), amount);
     $.entrypoint.redeem(chainId, branchAsset, to, amount);
 
     emit Redeemed(chainId, hubAsset, to, amount);
@@ -194,16 +195,16 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function _decreaseEOLShareValue(address eolVault, uint256 assets) internal {
-    IHubAsset(IEOLVault(eolVault).asset()).burnFrom(eolVault, assets);
+    IHubAsset(IEOLVault(eolVault).asset()).burn(eolVault, assets);
   }
 
-  function _mint(StorageV1 storage $, uint256 chainId, address asset, address to, uint256 amount) internal {
-    IHubAsset(asset).mint(to, amount);
+  function _mint(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
+    IHubAsset(asset).mint(account, amount);
     $.mitosisLedger.recordDeposit(chainId, asset, amount);
   }
 
-  function _burn(StorageV1 storage $, uint256 chainId, address asset, uint256 amount) internal {
-    IHubAsset(asset).burnFrom(msg.sender, amount);
+  function _burn(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
+    IHubAsset(asset).burn(account, amount);
     $.mitosisLedger.recordWithdraw(chainId, asset, amount);
   }
 

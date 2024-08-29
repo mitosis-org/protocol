@@ -1,28 +1,17 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity 0.8.26;
 
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 import { IMitosisLedger } from '../../../interfaces/hub/core/IMitosisLedger.sol';
 
-contract MitosisLedgerStorageV1 {
+contract EOLVaultStorageV1 {
   using ERC7201Utils for string;
 
-  struct ChainState {
-    mapping(address asset => uint256 amount) amounts;
-  }
-
-  struct EOLState {
-    address strategist;
-    IMitosisLedger.EOLAmountState eolAmountState;
-  }
-
   struct StorageV1 {
-    address optOutQueue;
-    mapping(uint256 chainId => ChainState state) chainStates;
-    mapping(address eolVault => EOLState state) eolStates;
+    IMitosisLedger mitosisLedger;
   }
 
-  string private constant _NAMESPACE = 'mitosis.storage.MitosisLedgerStorage.v1';
+  string private constant _NAMESPACE = 'mitosis.storage.EOLVaultStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {

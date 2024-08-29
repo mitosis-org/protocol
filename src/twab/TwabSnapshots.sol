@@ -33,7 +33,7 @@ abstract contract TwabSnapshots is ITwabSnapshots, TwabSnapshotsStorageV1 {
     virtual
     returns (uint208 balnace, uint256 twab, uint48 position)
   {
-    return _getStorageV1().accountCheckpoints[account].latest();
+    return _getTwabSnapshotStorageV1().accountCheckpoints[account].latest();
   }
 
   function getPastSnapshot(address account, uint256 timestamp)
@@ -46,15 +46,15 @@ abstract contract TwabSnapshots is ITwabSnapshots, TwabSnapshotsStorageV1 {
     if (timestamp >= currentTimestamp) {
       revert ERC5805FutureLookup(timestamp, currentTimestamp);
     }
-    return _getStorageV1().accountCheckpoints[account].upperLookupRecent(SafeCast.toUint48(timestamp));
+    return _getTwabSnapshotStorageV1().accountCheckpoints[account].upperLookupRecent(SafeCast.toUint48(timestamp));
   }
 
   function getLatestTotalSnapshot() external view virtual returns (uint208 balance, uint256 twab, uint48 position) {
-    return _getStorageV1().totalCheckpoints.latest();
+    return _getTwabSnapshotStorageV1().totalCheckpoints.latest();
   }
 
   function getPastTotalSnapshot(uint256 timestamp)
-    external
+    public
     view
     virtual
     returns (uint208 balance, uint256 twab, uint48 position)
@@ -63,11 +63,11 @@ abstract contract TwabSnapshots is ITwabSnapshots, TwabSnapshotsStorageV1 {
     if (timestamp >= currentTimestamp) {
       revert ERC5805FutureLookup(timestamp, currentTimestamp);
     }
-    return _getStorageV1().totalCheckpoints.upperLookupRecent(SafeCast.toUint48(timestamp));
+    return _getTwabSnapshotStorageV1().totalCheckpoints.upperLookupRecent(SafeCast.toUint48(timestamp));
   }
 
   function _snapshot(address from, address to, uint256 amount) internal virtual {
-    StorageV1 storage $ = _getStorageV1();
+    TwabSnapshotStorageV1 storage $ = _getTwabSnapshotStorageV1();
 
     if (from != to && amount > 0) {
       if (from == address(0)) {
