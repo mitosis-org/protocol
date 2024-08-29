@@ -15,7 +15,7 @@ contract EOLRewardManagerStorageV1 {
 
   struct StorageV1 {
     IEOLRewardConfigurator rewardConfigurator;
-    mapping(address eolVault => mapping(uint48 timestamp => RewardInfo[] rewardInfos)) fallbackRewards;
+    mapping(address eolVault => mapping(uint48 timestamp => RewardInfo[] rewardInfos)) rewardTreasury;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.EOLRewardManagerStorage.v1';
