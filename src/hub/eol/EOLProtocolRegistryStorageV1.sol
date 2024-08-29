@@ -3,16 +3,8 @@ pragma solidity ^0.8.26;
 
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
+import { ProtocolInfo } from '../../interfaces/eol/IEOLProtocolRegistry.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-
-struct ProtocolInfo {
-  uint256 protocolId;
-  address eolAsset;
-  uint256 chainId;
-  string name;
-  string metadata;
-  uint48 registeredAt;
-}
 
 contract EOLProtocolRegistryStorageV1 {
   using ERC7201Utils for string;
