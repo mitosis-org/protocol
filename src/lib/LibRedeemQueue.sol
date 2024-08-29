@@ -200,29 +200,37 @@ library LibRedeemQueue {
     return itemIndex;
   }
 
-  function claim(Queue storage q, uint256 itemIndex) internal {
+  function claim(Queue storage q, uint256 itemIndex) internal returns (uint256 claimed) {
+    return _claim(q, itemIndex, true);
+  }
+
+  function claim(Queue storage q, uint256[] memory itemIndexes) internal returns (uint256 totalClaimed) {
+    for (uint256 i = 0; i < itemIndexes.length; i++) {
+      totalClaimed += _claim(q, itemIndexes[i], false);
+    }
+    if (totalClaimed > 0) q.totalClaimed += totalClaimed;
+    return totalClaimed;
+  }
+
+  function _claim(Queue storage q, uint256 itemIndex, bool applyToState) internal returns (uint256 claimed) {
     if (itemIndex >= q.size) revert LibRedeemQueue__IndexOutOfRange(itemIndex, 0, q.size - 1);
     if (itemIndex >= q.offset) revert LibRedeemQueue__NotReadyToClaim(itemIndex);
     Request memory req = q.data[itemIndex];
     if (!isClaimed(req)) {
       q.data[itemIndex].claimedAt = uint48(block.timestamp);
       // simplified version of calculating request amount
-      q.totalClaimed += itemIndex == 0 ? req.accumulated : req.accumulated - q.data[itemIndex - 1].accumulated;
+      claimed = itemIndex == 0 ? req.accumulated : req.accumulated - q.data[itemIndex - 1].accumulated;
+      if (applyToState) q.totalClaimed += claimed;
     }
     emit Claimed(req.recipient, itemIndex);
+    return claimed;
   }
 
-  function claim(Queue storage q, uint256[] memory itemIndexes) internal {
-    for (uint256 i = 0; i < itemIndexes.length; i++) {
-      claim(q, itemIndexes[i]);
-    }
+  function claim(Queue storage q, address recipient) internal returns (uint256 totalClaimed) {
+    return claim(q, recipient, DEFAULT_CLAIM_SIZE);
   }
 
-  function claim(Queue storage q, address recipient) internal {
-    claim(q, recipient, DEFAULT_CLAIM_SIZE);
-  }
-
-  function claim(Queue storage q, address recipient, uint256 maxClaimSize) internal {
+  function claim(Queue storage q, address recipient, uint256 maxClaimSize) internal returns (uint256 totalClaimed) {
     _updateQueueOffset(q, q.totalReserved);
 
     Index storage idx = q.indexes[recipient];
@@ -239,12 +247,17 @@ library LibRedeemQueue {
       if (itemIndex >= queueOffset) break;
       q.data[itemIndex].claimedAt = uint48(block.timestamp);
       // simplified version of calculating request amount
-      q.totalClaimed += itemIndex == 0 ? req.accumulated : req.accumulated - q.data[itemIndex - 1].accumulated;
+      totalClaimed += itemIndex == 0 ? req.accumulated : req.accumulated - q.data[itemIndex - 1].accumulated;
 
       emit Claimed(recipient, itemIndex);
     }
 
-    idx.offset = i;
+    // update index offset and total claimed if there's any claimed request
+    if (totalClaimed > 0) {
+      idx.offset = i;
+      q.totalClaimed += totalClaimed;
+    }
+    return totalClaimed;
   }
 
   function reserve(Queue storage q, uint256 amount_) internal {
