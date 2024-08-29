@@ -105,7 +105,7 @@ contract EOLVault is EOLVaultStorageV1, ERC4626TwabSnapshots {
 
   function _optIn(StorageV1 storage $, address caller, address receiver, uint256 assets, uint256 shares) internal {
     _deposit(caller, receiver, assets, shares);
-    $.mitosisLedger.recordOptIn(caller, shares);
+    $.mitosisLedger.recordOptIn(address(this), shares);
   }
 
   function _assertOnlyMitosisLedger(StorageV1 storage $) internal view {
