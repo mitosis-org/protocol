@@ -72,6 +72,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    if (to == address(0)) revert StdError.ZeroAddress('to');
+    if (amount == 0) revert StdError.ZeroAmount();
+
     address branchAsset = $.branchAssets[hubAsset][chainId];
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
