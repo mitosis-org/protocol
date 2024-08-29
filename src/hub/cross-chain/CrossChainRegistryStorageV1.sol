@@ -24,6 +24,10 @@ contract CrossChainRegistryStorageV1 {
     uint32[] hplDomains;
     mapping(uint256 chainId => ChainInfo) chains;
     mapping(uint32 hplDomain => HyperlaneInfo) hyperlanes;
+    // EOL ID
+    uint256 lastEolId;
+    mapping(uint256 eolId => address eolVault) eolVaults;
+    mapping(address eolVault => uint256 eolId) eolIds; // Index
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.CrossChainRegistryStorage.v1';

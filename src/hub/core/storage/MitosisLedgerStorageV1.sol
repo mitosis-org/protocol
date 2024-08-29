@@ -12,17 +12,13 @@ contract MitosisLedgerStorageV1 {
   }
 
   struct EOLState {
-    address eolVault;
     address strategist;
     IMitosisLedger.EOLAmountState eolAmountState;
   }
 
   struct StorageV1 {
-    uint256 lastEolId;
     mapping(uint256 chainId => ChainState state) chainStates;
-    mapping(uint256 eolId => EOLState state) eolStates;
-    // Index
-    mapping(address eolVault => uint256 eolId) eolIdsByVault;
+    mapping(address eolVault => EOLState state) eolStates;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.MitosisLedgerStorage.v1';
