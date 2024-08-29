@@ -31,8 +31,8 @@ contract EOLVault is IEOLVault, ERC4626TwabSnapshots, EOLVaultStorageV1 {
       asset_,
       mitosisLedger_,
       assetManager_,
-      string(abi.encodePacked('Mitosis ', name)),
-      string(abi.encodePacked('mi', symbol))
+      string.concat('Mitosis ', name),
+      string.concat('mi', symbol)
     );
   }
 
