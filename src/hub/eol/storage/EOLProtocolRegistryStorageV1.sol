@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
+
+import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 
 struct ProtocolInfo {
   uint256 protocolId;

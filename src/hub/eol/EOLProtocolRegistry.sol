@@ -7,7 +7,7 @@ import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeabl
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
-import { EOLProtocolRegistryStorageV1, ProtocolInfo } from './EOLProtocolRegistryStorageV1.sol';
+import { EOLProtocolRegistryStorageV1, ProtocolInfo } from './storage/EOLProtocolRegistryStorageV1.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 contract EOLProtocolRegistry is Ownable2StepUpgradeable, AccessControlUpgradeable, EOLProtocolRegistryStorageV1 {
