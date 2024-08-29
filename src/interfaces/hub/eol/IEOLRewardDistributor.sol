@@ -10,6 +10,6 @@ interface IEOLRewardDistributor {
 
   function claimable(address account, address eolVault, address asset) external view returns (bool);
 
-  // metadata encoded each distributor's required data. (timestamp, range...)
+  // See the `src/hub/eol/DistributorHandleRewardMetadataLib`.
   function handleReward(address eolVault, address asset, uint256 amount, bytes memory metadata) external;
 }

@@ -13,11 +13,11 @@ import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { IEOLRewardDistributor } from '../../interfaces/hub/eol/IEOLRewardDistributor.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
-import { DistributorHandleRewardMetadataLib, TWABHandleRewardhMetadata } from './DistributorHandleRewardMetadataLib.sol';
+import { DistributorHandleRewardMetadataLib, HandleRewardTWABMetadata } from './DistributorHandleRewardMetadataLib.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerStorageV1 {
-  using DistributorHandleRewardMetadataLib for TWABHandleRewardhMetadata;
+  using DistributorHandleRewardMetadataLib for HandleRewardTWABMetadata;
 
   error EOLSettlementManager__InvalidDispatchRequest(address reward, uint256 index);
 
@@ -105,7 +105,7 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
   function _routeEOLClaimableReward(address eolVault, address reward, uint256 amount) internal {
     bytes memory metadata;
     if (_getStorageV1().rewardConfigurator.getDistributeType(eolVault, reward) == DistributeType.TWAB) {
-      metadata = TWABHandleRewardhMetadata(eolVault, Time.timestamp()).encode();
+      metadata = HandleRewardTWABMetadata(eolVault, Time.timestamp()).encode();
     }
 
     _routeClaimableReward(eolVault, reward, amount, metadata);
@@ -115,7 +115,7 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
     bytes memory metadata;
     if (_getStorageV1().rewardConfigurator.getDistributeType(eolVault, reward) == DistributeType.TWAB) {
       address underlyingAsset = IEOLVault(eolVault).asset();
-      metadata = TWABHandleRewardhMetadata(underlyingAsset, Time.timestamp()).encode();
+      metadata = HandleRewardTWABMetadata(underlyingAsset, Time.timestamp()).encode();
     }
 
     _routeClaimableReward(eolVault, reward, amount, metadata);
