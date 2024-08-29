@@ -16,6 +16,10 @@ interface IEOLRewardConfigurator {
 
   function getDefaultDistributor(DistributeType distributeType) external view returns (IEOLRewardDistributor);
 
+  function getRewardRatioPrecision() external pure returns (uint256);
+
+  function getEOLAssetHolderRewardRatio() external view returns (uint256);
+
   function isDistributorRegistered(IEOLRewardDistributor distributor) external view returns (bool);
 
   function setRewardDistributeType(address eolVault, address asset, DistributeType distributeType) external;

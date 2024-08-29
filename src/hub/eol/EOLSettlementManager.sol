@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import { Time } from '@oz-v5/utils/types/Time.sol';
+import { Math } from '@oz-v5/utils/math/Math.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
@@ -43,11 +44,9 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
   function settleYield(address eolVault, uint256 amount) external onlyAssetManager {
     address reward = IEOLVault(eolVault).asset();
 
-    // TODO
-    uint256 hubAssetHolderReward;
-    uint256 miAssetHolderRewrad;
+    (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward) = _calcReward(_getStorageV1(), amount);
 
-    _increaseEOLShareValue(eolVault, miAssetHolderRewrad);
+    _increaseEOLShareValue(eolVault, eolAssetHolderReward);
     _routeHubAssetHolderClaimableReward(eolVault, reward, hubAssetHolderReward);
   }
 
@@ -56,11 +55,8 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
   }
 
   function settleExtraReward(address eolVault, address reward, uint256 amount) external onlyAssetManager {
-    // TODO
-    uint256 hubAssetHolderReward;
-    uint256 miAssetHolderRewrad;
-
-    _routeEOLClaimableReward(eolVault, reward, miAssetHolderRewrad);
+    (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward) = _calcReward(_getStorageV1(), amount);
+    _routeEOLClaimableReward(eolVault, reward, eolAssetHolderReward);
     _routeHubAssetHolderClaimableReward(eolVault, reward, hubAssetHolderReward);
   }
 
@@ -100,6 +96,17 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
     }
 
     _processDispatch(distributor, eolVault, asset, timestamp, index, metadata);
+  }
+
+  function _calcReward(StorageV1 storage $, uint256 totalAmount)
+    internal
+    view
+    returns (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward)
+  {
+    uint256 eolAssetHolderRatio = $.rewardConfigurator.getEOLAssetHolderRewardRatio();
+    uint256 precision = $.rewardConfigurator.getRewardRatioPrecision();
+    eolAssetHolderReward = Math.mulDiv(totalAmount, eolAssetHolderRatio, precision);
+    hubAssetHolderReward = totalAmount - eolAssetHolderReward;
   }
 
   function _routeEOLClaimableReward(address eolVault, address reward, uint256 amount) internal {

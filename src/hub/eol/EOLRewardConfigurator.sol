@@ -9,6 +9,8 @@ import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { IEOLRewardDistributor } from '../../interfaces/hub/eol/IEOLRewardDistributor.sol';
 
 contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeable, EOLRewardConfiguratorStorageV1 {
+  uint256 public constant REWARD_RATIO_PRECISION = 10e4;
+
   event RewardDistributeTypeSet(address indexed eolVault, address indexed asset, DistributeType indexed distributeType);
   event DefaultDistributorSet(DistributeType indexed distributeType, IEOLRewardDistributor indexed rewardDistributor);
   event RewardDistributorRegistered(IEOLRewardDistributor indexed distributor);
@@ -34,6 +36,14 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
 
   function getDefaultDistributor(DistributeType distributeType) external view returns (IEOLRewardDistributor) {
     return _getStorageV1().defaultDistributor[distributeType];
+  }
+
+  function getRewardRatioPrecision() external pure returns (uint256) {
+    return REWARD_RATIO_PRECISION;
+  }
+
+  function getEOLAssetHolderRewardRatio() external pure returns (uint256) {
+    return 10000; // 100%
   }
 
   function isDistributorRegistered(IEOLRewardDistributor distributor) external view returns (bool) {

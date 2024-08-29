@@ -9,6 +9,8 @@ contract EOLRewardConfiguratorStorageV1 {
   using ERC7201Utils for string;
 
   struct StorageV1 {
+    // TODO(ray): Reward ratio
+    //
     mapping(address eolVault => mapping(address asset => DistributeType distributeType)) distributeTypes;
     // note: We strictly manage the DefaultDistributor. DistributeTypes without a set
     // DefaultDistributor cannot be configured as the distribution method for assets.
