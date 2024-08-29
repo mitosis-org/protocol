@@ -14,16 +14,16 @@ contract HubAsset is ERC20TwabSnapshots {
   }
 
   modifier onlyHubAssetMintable() {
-    // TODO(ray): When introduce RoleManagerContract, fill it. Or storing AssetManager to HubAssetStorageV1.
+    // TODO(ray): When introduce RoleManagerContract, fill it. Or storing EOLSettlementManager to HubAssetStorageV1.
     //
-    // HubAssetMintable address: AssetManager
+    // HubAssetMintable address: AssetManager, EOLSettlementManager
     _;
   }
 
   modifier onlyHubAssetBurnable() {
-    // TODO(ray): When introduce RoleManagerContract, fill it. Or storing AssetManager to HubAssetStorageV1.
+    // TODO(ray): When introduce RoleManagerContract, fill it. Or storing EOLSettlementManager to HubAssetStorageV1.
     //
-    // HubAssetBurnable address: AssetManager
+    // HubAssetBurnable address: AssetManager, EOLSettlementManager
     _;
   }
 

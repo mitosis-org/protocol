@@ -61,7 +61,6 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   }
 
   function registerDistributor(IEOLRewardDistributor distributor) external onlyOwner {
-    StorageV1 storage $ = _getStorageV1();
     _getStorageV1().distributorRegistry[distributor] = true;
     emit RewardDistributorRegistered(distributor);
   }

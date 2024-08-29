@@ -7,29 +7,83 @@ import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
 
 import { DistributeType, IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { EOLRewardManagerStorageV1 } from './storage/EOLRewardManagerStorageV1.sol';
+import { EOLSettlementManagerStorageV1 } from './storage/EOLSettlementManagerStorageV1.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { IEOLRewardDistributor } from '../../interfaces/hub/eol/IEOLRewardDistributor.sol';
+import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
+import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
+import { RewardDispatchMetadataLib, TWABDispatchMetadata } from './RewardDispatchMetadataLib.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-contract EOLRewardManager is Ownable2StepUpgradeable, EOLRewardManagerStorageV1 {
-  error EOLRewardManager__InvalidDispatchRequest(address reward, uint256 index);
+contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerStorageV1 {
+  using RewardDispatchMetadataLib for TWABDispatchMetadata;
+
+  error EOLSettlementManager__InvalidDispatchRequest(address reward, uint256 index);
 
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(address owner) external initializer {
+  function initialize(address owner, address assetManager) external initializer {
     __Ownable2Step_init();
     _transferOwnership(owner);
+    _getStorageV1().assetManager = assetManager;
   }
 
-  modifier onlyRewardManagerAdmin() {
+  modifier onlySettlementManagerAdmin() {
     _;
   }
 
-  function routeReward(address eolVault, address reward, uint256 amount) external {
-    IERC20(reward).transferFrom(msg.sender, address(this), amount);
+  modifier onlyAssetManager() {
+    if (_msgSender() != _getStorageV1().assetManager) revert StdError.Unauthorized();
+    _;
+  }
+
+  function settleYield(address eolVault, uint256 amount) external onlyAssetManager {
+    address reward = IEOLVault(eolVault).asset();
+
+    // TODO
+    uint256 hubAssetHolderReward;
+    uint256 miAssetHolderRewrad;
+
+    _increaseEOLShareValue(eolVault, miAssetHolderRewrad);
+    _routeHubAssetHolderClaimableReward(eolVault, reward, hubAssetHolderReward);
+  }
+
+  function settleLoss(address eolVault, uint256 amount) external onlyAssetManager {
+    _decreaseEOLShareValue(eolVault, amount);
+  }
+
+  function settleExtraReward(address eolVault, address reward, uint256 amount) external onlyAssetManager {
+    // TODO
+    uint256 hubAssetHolderReward;
+    uint256 miAssetHolderRewrad;
+
+    _routeEOLClaimableReward(eolVault, reward, miAssetHolderRewrad);
+    _routeHubAssetHolderClaimableReward(eolVault, reward, hubAssetHolderReward);
+  }
+
+  function _routeEOLClaimableReward(address eolVault, address reward, uint256 amount) internal {
+    bytes memory metadata;
+    if (_getStorageV1().rewardConfigurator.getDistributeType(eolVault, reward) == DistributeType.TWAB) {
+      metadata = TWABDispatchMetadata(eolVault, uint48(block.timestamp)).encode();
+    }
+
+    _routeClaimableReward(eolVault, reward, amount, metadata);
+  }
+
+  function _routeHubAssetHolderClaimableReward(address eolVault, address reward, uint256 amount) internal {
+    bytes memory metadata;
+    if (_getStorageV1().rewardConfigurator.getDistributeType(eolVault, reward) == DistributeType.TWAB) {
+      address underlyingAsset = IEOLVault(eolVault).asset();
+      metadata = TWABDispatchMetadata(underlyingAsset, uint48(block.timestamp)).encode();
+    }
+
+    _routeClaimableReward(eolVault, reward, amount, metadata);
+  }
+
+  function _routeClaimableReward(address eolVault, address reward, uint256 amount, bytes memory metadata) internal {
+    IHubAsset(reward).mint(address(this), amount);
 
     StorageV1 storage $ = _getStorageV1();
     DistributeType distributeType = $.rewardConfigurator.getDistributeType(eolVault, reward);
@@ -40,7 +94,6 @@ contract EOLRewardManager is Ownable2StepUpgradeable, EOLRewardManagerStorageV1 
     }
 
     IEOLRewardDistributor distributor = _distributor($, distributeType);
-    bytes memory metadata = _metadata(distributeType);
 
     IERC20(reward).approve(address(distributor), amount);
     distributor.handleReward(eolVault, reward, amount, metadata);
@@ -53,7 +106,7 @@ contract EOLRewardManager is Ownable2StepUpgradeable, EOLRewardManagerStorageV1 
     uint48 timestamp,
     uint256[] calldata indexes,
     bytes[] calldata metadata
-  ) external onlyRewardManagerAdmin {
+  ) external onlySettlementManagerAdmin {
     if (indexes.length != metadata.length) revert StdError.InvalidParameter('metadata');
 
     StorageV1 storage $ = _getStorageV1();
@@ -74,7 +127,7 @@ contract EOLRewardManager is Ownable2StepUpgradeable, EOLRewardManagerStorageV1 
     uint48 timestamp,
     uint256 index,
     bytes memory metadata
-  ) external onlyRewardManagerAdmin {
+  ) external onlySettlementManagerAdmin {
     StorageV1 storage $ = _getStorageV1();
 
     if (!$.rewardConfigurator.isDistributorRegistered(distributor)) {
@@ -95,10 +148,18 @@ contract EOLRewardManager is Ownable2StepUpgradeable, EOLRewardManagerStorageV1 
     RewardInfo storage rewardInfo = _getStorageV1().rewardTreasury[eolVault][timestamp][index];
 
     if (!_isDispatchableRequest(rewardInfo, asset)) {
-      revert EOLRewardManager__InvalidDispatchRequest(asset, index);
+      revert EOLSettlementManager__InvalidDispatchRequest(asset, index);
     }
 
     _dispatchTo(rewardInfo, distributor, eolVault, asset, metadata);
+  }
+
+  function _increaseEOLShareValue(address eolVault, uint256 assets) internal {
+    IHubAsset(IEOLVault(eolVault).asset()).mint(eolVault, assets);
+  }
+
+  function _decreaseEOLShareValue(address eolVault, uint256 assets) internal {
+    IHubAsset(IEOLVault(eolVault).asset()).burn(eolVault, assets);
   }
 
   function _dispatchTo(
@@ -131,12 +192,6 @@ contract EOLRewardManager is Ownable2StepUpgradeable, EOLRewardManagerStorageV1 
 
     if (distributeType == DistributeType.MerkleProof) {
       distributor = $.rewardConfigurator.getDefaultDistributor(DistributeType.MerkleProof);
-    }
-  }
-
-  function _metadata(DistributeType distributeType) internal view returns (bytes memory metadata) {
-    if (distributeType == DistributeType.TWAB) {
-      metadata = abi.encodePacked(uint48(block.timestamp));
     }
   }
 
