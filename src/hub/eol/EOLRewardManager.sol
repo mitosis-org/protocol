@@ -4,10 +4,10 @@ pragma solidity 0.8.26;
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
 
-import { EOLRewardManagerStorageV1 } from './storage/EOLRewardManagerStorageV1.sol';
-import { IEOLRewardDistributor } from '../../interfaces/hub/eol/IEOLRewardDistributor.sol';
 import { DistributeType, IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
+import { EOLRewardManagerStorageV1 } from './storage/EOLRewardManagerStorageV1.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { IEOLRewardDistributor } from '../../interfaces/hub/eol/IEOLRewardDistributor.sol';
 
 contract EOLRewardManager is EOLRewardManagerStorageV1 {
   function routeReward(address eolVault, address reward, uint256 amount) external {

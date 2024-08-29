@@ -2,8 +2,8 @@
 pragma solidity ^0.8.26;
 
 import { DistributeType } from '../../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { IEOLRewardDistributor } from '../../../interfaces/hub/eol/IEOLRewardDistributor.sol';
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
+import { IEOLRewardDistributor } from '../../../interfaces/hub/eol/IEOLRewardDistributor.sol';
 
 contract EOLRewardConfiguratorStorageV1 {
   using ERC7201Utils for string;

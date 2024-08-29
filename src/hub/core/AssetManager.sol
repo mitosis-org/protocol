@@ -9,10 +9,10 @@ import { Time } from '@oz-v5/utils/types/Time.sol';
 import { AssetManagerStorageV1 } from './storage/AssetManagerStorageV1.sol';
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
+import { IEOLRewardManager } from '../../interfaces/hub/eol/IEOLRewardManager.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
-import { IEOLRewardManager } from '../../interfaces/hub/eol/IEOLRewardManager.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgradeable, AssetManagerStorageV1 {

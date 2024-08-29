@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.0.0) (governance/extensions/GovernorVotes.sol)
+import { Time } from '@oz-v5/utils/types/Time.sol';
+import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+
+import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
+import { Initializable } from '@ozu-v5/proxy/utils/Initializable.sol';
+
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
+import { StdError } from '../../lib/StdError.sol';
+import { TwabSnapshotsUtils } from '../../lib/TwabSnapshotsUtils.sol';
 
 // Modified to work with {ITwabSnapshots}.
 
 pragma solidity ^0.8.26;
-
-import { Time } from '@oz-v5/utils/types/Time.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
-import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
-import { Initializable } from '@ozu-v5/proxy/utils/Initializable.sol';
-
-import { StdError } from '../../lib/StdError.sol';
-import { TwabSnapshotsUtils } from '../../lib/TwabSnapshotsUtils.sol';
-import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
-import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 
 /**
  * @dev Extension of {Governor} for voting weight extraction from an {ITwabSnapshots} token.
