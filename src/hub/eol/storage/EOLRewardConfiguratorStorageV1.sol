@@ -10,6 +10,9 @@ contract EOLRewardConfiguratorStorageV1 {
 
   struct StorageV1 {
     mapping(address eolVault => mapping(address asset => DistributeType distributeType)) distributeTypes;
+    // note: We strictly manage the DefaultDistributor. DistributeTypes without a set
+    // DefaultDistributor cannot be configured as the distribution method for assets.
+    // And once initialized, the DefaultDistributor cannot be set to a zero address.
     mapping(DistributeType distributeType => IEOLRewardDistributor distributor) defaultDistributor;
     mapping(IEOLRewardDistributor distributor => bool registered) distributorRegistry;
   }

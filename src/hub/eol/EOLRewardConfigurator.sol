@@ -15,7 +15,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   event RewardDistributorUnregistered(IEOLRewardDistributor indexed distributor);
 
   error EOLRewardConfigurator__DefaultDistributorNotSet(DistributeType);
-  error EOLRewardConfigurator__NotDefaultDistributorEnsure();
+  error EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed();
 
   constructor() {
     _disableInitializers();
@@ -67,13 +67,8 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   }
 
   function unregisterDistributor(IEOLRewardDistributor distributor) external onlyOwner {
-    DistributeType distributeType = distributor.distributeType();
-
     StorageV1 storage $ = _getStorageV1();
 
-    // note: We strictly manage the DefaultDistributor. DistributeTypes without a set
-    // DefaultDistributor cannot be configured as the distribution method for assets.
-    // And once initialized, the DefaultDistributor cannot be set to a zero address.
     _assertNotDefaultDistributor($, distributor);
 
     $.distributorRegistry[distributor] = false;
@@ -93,7 +88,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   function _assertNotDefaultDistributor(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
     DistributeType distributeType = distributor.distributeType();
     if (address($.defaultDistributor[distributeType]) == address(distributor)) {
-      revert EOLRewardConfigurator__NotDefaultDistributorEnsure();
+      revert EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed();
     }
   }
 }
