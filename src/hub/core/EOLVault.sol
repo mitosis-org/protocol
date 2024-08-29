@@ -126,6 +126,7 @@ contract EOLVault is IEOLVault, ERC4626TwabSnapshots, EOLVaultStorageV1 {
   }
 
   function _assertOnlyOptOutQueue(StorageV1 storage $) internal view {
-    // TODO(ray): fill it after finishing the OptOutQueue implementation.
+    // note: this is temporary implementation. we have to store the OptOutQueue address at more suitable place.
+    if (_msgSender() != $.mitosisLedger.optOutQueue()) revert StdError.Unauthorized();
   }
 }

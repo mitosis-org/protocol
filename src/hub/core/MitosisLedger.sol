@@ -12,6 +12,7 @@ import { MitosisLedgerStorageV1 } from './storage/MitosisLedgerStorageV1.sol';
 contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedgerStorageV1 {
   event EolIdSet(uint256 indexed eolId, address indexed eolVault);
   event EolStrategistSet(address indexed eolVault, address indexed strategist);
+  event EolOptOutQueueSet(address indexed optOutQueue);
 
   constructor() {
     _disableInitializers();
@@ -28,6 +29,10 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
 
   function lastEolId() external view returns (uint256) {
     return _getStorageV1().lastEolId;
+  }
+
+  function optOutQueue() external view returns (address) {
+    return _getStorageV1().optOutQueue;
   }
 
   function getAssetAmount(uint256 chainId, address asset) external view returns (uint256) {
@@ -73,6 +78,11 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
   function setEolStrategist(address eolVault_, address strategist) public /* auth */ {
     _getStorageV1().eolStates[eolVault_].strategist = strategist;
     emit EolStrategistSet(eolVault_, strategist);
+  }
+
+  function setOptOutQueue(address optOutQueue_) external /* auth */ {
+    _getStorageV1().optOutQueue = optOutQueue_;
+    emit EolOptOutQueueSet(optOutQueue_);
   }
 
   // Asset, EOL balance states
