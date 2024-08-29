@@ -23,29 +23,22 @@ interface IMitosisLedger {
     uint256 optOutResolved;
   }
 
-  function lastEolId() external view returns (uint256);
   function optOutQueue() external view returns (address);
-
   function getAssetAmount(uint256 chainId, address asset) external view returns (uint256);
 
-  function eolVault(uint256 eolId) external view returns (address);
-  function eolStrategist(uint256 eolId) external view returns (address);
-  function eolAmountState(uint256 eolId) external view returns (EOLAmountState memory);
-  function getEOLAllocateAmount(uint256 eolId) external view returns (uint256);
-  function eolIdByVault(address eolVault_) external view returns (uint256);
+  function eolStrategist(address eolVault) external view returns (address);
+  function eolAmountState(address eolVault) external view returns (EOLAmountState memory);
+  function getEOLAllocateAmount(address eolVault) external view returns (uint256);
   // EOL management
-  function assignEolId(address eolVault_) external returns (uint256 eolId);
-  function assignEolId(address eolVault_, address strategist) external returns (uint256 eolId);
-  function setEolStrategist(uint256 eolId, address strategist) external;
-  function setOptOutQueue(address optOutQueue_) external;
+  function setEolStrategist(address eolVault, address strategist) external;
   // Asset Record
   function recordDeposit(uint256 chainId, address asset, uint256 amount) external;
   function recordWithdraw(uint256 chainId, address asset, uint256 amount) external;
   // EOL Record
-  function recordOptIn(uint256 eolId, uint256 amount) external;
-  function recordOptOutRequest(uint256 eolId, uint256 amount) external;
-  function recordAllocateEOL(uint256 eolId, uint256 amount) external;
-  function recordDeallocateEOL(uint256 eolId, uint256 amount) external;
-  function recordOptOutResolve(uint256 eolId, uint256 amount) external;
-  function recordOptOutClaim(uint256 eolId, uint256 amount) external;
+  function recordOptIn(address eolVault, uint256 amount) external;
+  function recordOptOutRequest(address eolVault, uint256 amount) external;
+  function recordAllocateEOL(address eolVault, uint256 amount) external;
+  function recordDeallocateEOL(address eolVault, uint256 amount) external;
+  function recordOptOutResolve(address eolVault, uint256 amount) external;
+  function recordOptOutClaim(address eolVault, uint256 amount) external;
 }

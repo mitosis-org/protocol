@@ -24,6 +24,7 @@ contract CrossChainRegistry is
 
   event ChainSet(uint256 indexed chainId, uint32 indexed hplDomain, address indexed entrypoint, string name);
   event VaultSet(uint256 indexed chainId, address indexed vault);
+  event EolIdSet(uint256 indexed eolId, address indexed eolVault);
 
   modifier onlyRegisterer() {
     _checkRole(REGISTERER_ROLE);
@@ -77,6 +78,14 @@ contract CrossChainRegistry is
     return _isRegisteredChain(_getStorageV1().chains[chainId_]);
   }
 
+  function eolVault(uint256 eolId_) external view returns (address) {
+    return _getStorageV1().eolVaults[eolId_];
+  }
+
+  function eolId(address eolVault_) external view returns (uint256) {
+    return _getStorageV1().eolIds[eolVault_];
+  }
+
   // Mutative functions
   //
   // TODO: update methods
@@ -113,6 +122,16 @@ contract CrossChainRegistry is
 
     chainInfo.vault = vault_;
     emit VaultSet(chainId_, vault_);
+  }
+
+  function assignEolId(address eolVault_) external onlyRegisterer returns (uint256 eolId_) {
+    StorageV1 storage $ = _getStorageV1();
+
+    eolId_ = ++$.lastEolId;
+    $.eolVaults[eolId_] = eolVault_;
+    $.eolIds[eolVault_] = eolId_;
+
+    emit EolIdSet(eolId_, eolVault_);
   }
 
   function enrollEntrypoint(address hplRouter) external onlyRegisterer {
