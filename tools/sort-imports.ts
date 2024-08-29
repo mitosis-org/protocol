@@ -132,13 +132,12 @@ async function processContract({
       return;
     }
 
+    const lines = contract.replaceAll(IMPORT_ALL_REGEX, '').split('\n');
+    const pragmaIndex = lines.findIndex((l) => l.startsWith('pragma'));
+
     await writeFile(
       filePath,
-      contract
-        .replaceAll(IMPORT_ALL_REGEX, '')
-        .split('\n')
-        .toSpliced(2, 0, output)
-        .join('\n'),
+      lines.toSpliced(pragmaIndex + 1, 0, output).join('\n'),
     );
 
     console.log(filePath, `${timeDiff(t)}ms`, '🛠️');
