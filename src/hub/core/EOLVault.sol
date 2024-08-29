@@ -21,41 +21,20 @@ contract EOLVault is IEOLVault, ERC4626TwabSnapshots, EOLVaultStorageV1 {
     _disableInitializers();
   }
 
-  function initialize(IERC20TwabSnapshots asset_, IMitosisLedger mitosisLedger_, address assetManager_)
-    external
-    initializer
-  {
-    string memory name = asset_.name();
-    string memory symbol = asset_.symbol();
-    _initialize(
-      asset_,
-      mitosisLedger_,
-      assetManager_,
-      string.concat('Mitosis ', name),
-      string.concat('mi', symbol)
-    );
-  }
-
-  function initializeWithTokenMetadata(
+  function initialize(
     IERC20TwabSnapshots asset_,
     IMitosisLedger mitosisLedger_,
     address assetManager_,
     string memory name,
     string memory symbol
   ) external initializer {
-    _initialize(asset_, mitosisLedger_, assetManager_, name, symbol);
-  }
+    if (bytes(name).length == 0 || bytes(symbol).length == 0) {
+      name = string.concat('Mitosis', asset_.name());
+      symbol = string.concat('mi', asset_.symbol());
+    }
 
-  function _initialize(
-    IERC20TwabSnapshots asset_,
-    IMitosisLedger mitosisLedger_,
-    address assetManager_,
-    string memory name,
-    string memory symbol
-  ) internal {
     __ERC4626_init(asset_);
     __ERC20_init(name, symbol);
-
     _getStorageV1().mitosisLedger = mitosisLedger_;
   }
 
