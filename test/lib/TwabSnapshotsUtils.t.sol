@@ -6,9 +6,8 @@ import { console } from '@std/console.sol';
 
 import { ERC20TwabSnapshots } from '../../src/twab/ERC20TwabSnapshots.sol';
 import { ITwabSnapshots } from '../../src/interfaces/twab/ITwabSnapshots.sol';
-import { TwabSnapshotsUtils } from '../../src/lib/TwabSnapshotsUtils.sol';
-
 import { Toolkit } from '../util/Toolkit.sol';
+import { TwabSnapshotsUtils } from '../../src/lib/TwabSnapshotsUtils.sol';
 
 contract TempERC20TwabSnapshots is ERC20TwabSnapshots {
   function initialize(string memory name, string memory symbol) external initializer {

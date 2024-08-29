@@ -6,9 +6,7 @@ import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 
 import { IMorpho, Id, MarketParams } from '../../../external/morpho/Morpho.sol';
 import { SharesMathLib, MorphoBalancesLib } from '../../../external/morpho/MorphoLib.sol';
-
 import { StdError } from '../../../lib/StdError.sol';
-
 import { StdStrategy } from './StdStrategy.sol';
 
 contract MorphoStrategy is StdStrategy {
