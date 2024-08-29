@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { Test } from '@std/Test.sol';
 import { console } from '@std/console.sol';
+import { Test } from '@std/Test.sol';
+
 import { LibString } from '@solady/utils/LibString.sol';
 
 import { LibRedeemQueue } from '../../src/lib/LibRedeemQueue.sol';
-import { RedeemQueueWrapper } from '../util/queue/RedeemQueueWrapper.sol';
 import { DataSet, RequestSet, LibDataSet } from '../util/queue/RedeemQueueDataSet.sol';
+import { RedeemQueueWrapper } from '../util/queue/RedeemQueueWrapper.sol';
 
 contract TestLibRedeemQueue is Test {
   using LibDataSet for *;

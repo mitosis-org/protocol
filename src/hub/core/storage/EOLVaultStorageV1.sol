@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 import { IMitosisLedger } from '../../../interfaces/hub/core/IMitosisLedger.sol';
+import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 
 contract EOLVaultStorageV1 {
   using ERC7201Utils for string;

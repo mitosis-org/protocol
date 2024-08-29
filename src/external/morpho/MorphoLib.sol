@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.5.0;
-import {Id, MarketParams, Market, IIrm, IMorpho} from './Morpho.sol';
-import {MorphoStorageLib} from './MorphoStorageLib.sol';
 
-
+import { Id, MarketParams, Market, IIrm, IMorpho } from './Morpho.sol';
+import { MorphoStorageLib } from './MorphoStorageLib.sol';
 
 uint256 constant WAD = 1e18;
 
@@ -93,7 +92,7 @@ library SharesMathLib {
 library MarketParamsLib {
   /// @notice Returns the id of the market `marketParams`.
   function id(MarketParams memory marketParams) internal pure returns (Id marketParamsId) {
-    assembly ('memory-safe') {
+    assembly ("memory-safe") {
       marketParamsId := keccak256(marketParams, mul(5, 32))
     }
   }
@@ -180,10 +179,11 @@ library MorphoBalancesLib {
     return uint128(x);
   }
 
-  function expectedMarketBalances(
-    IMorpho morpho,
-    MarketParams memory marketParams
-  ) internal view returns (uint256, uint256, uint256, uint256) {
+  function expectedMarketBalances(IMorpho morpho, MarketParams memory marketParams)
+    internal
+    view
+    returns (uint256, uint256, uint256, uint256)
+  {
     Id id = marketParams.id();
 
     Market memory market = morpho.market(id);
@@ -209,14 +209,14 @@ library MorphoBalancesLib {
   }
 
   /// @dev Warning: Wrong for `feeRecipient` because their supply shares increase is not taken into account.
-  function expectedSupplyBalance(
-    IMorpho morpho,
-    MarketParams memory marketParams,
-    address user
-  ) internal view returns (uint256) {
+  function expectedSupplyBalance(IMorpho morpho, MarketParams memory marketParams, address user)
+    internal
+    view
+    returns (uint256)
+  {
     Id id = marketParams.id();
     uint256 supplyShares = morpho.supplyShares(id, user);
-    (uint256 totalSupplyAssets, uint256 totalSupplyShares, , ) = expectedMarketBalances(morpho, marketParams);
+    (uint256 totalSupplyAssets, uint256 totalSupplyShares,,) = expectedMarketBalances(morpho, marketParams);
 
     return supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
   }
