@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
+import { Time } from '@oz-v5/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
@@ -104,7 +105,7 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
   function _routeEOLClaimableReward(address eolVault, address reward, uint256 amount) internal {
     bytes memory metadata;
     if (_getStorageV1().rewardConfigurator.getDistributeType(eolVault, reward) == DistributeType.TWAB) {
-      metadata = TWABHandleRewardhMetadata(eolVault, uint48(block.timestamp)).encode();
+      metadata = TWABHandleRewardhMetadata(eolVault, Time.timestamp()).encode();
     }
 
     _routeClaimableReward(eolVault, reward, amount, metadata);
@@ -114,7 +115,7 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
     bytes memory metadata;
     if (_getStorageV1().rewardConfigurator.getDistributeType(eolVault, reward) == DistributeType.TWAB) {
       address underlyingAsset = IEOLVault(eolVault).asset();
-      metadata = TWABHandleRewardhMetadata(underlyingAsset, uint48(block.timestamp)).encode();
+      metadata = TWABHandleRewardhMetadata(underlyingAsset, Time.timestamp()).encode();
     }
 
     _routeClaimableReward(eolVault, reward, amount, metadata);
@@ -135,7 +136,7 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
     DistributeType distributeType = $.rewardConfigurator.getDistributeType(eolVault, reward);
 
     if (distributeType == DistributeType.Unspecified) {
-      _storeToRewardManager(eolVault, reward, amount, uint48(block.timestamp));
+      _storeToRewardManager(eolVault, reward, amount, Time.timestamp());
       return;
     }
 
