@@ -10,8 +10,8 @@ import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
 import { Initializable } from '@ozu-v5/proxy/utils/Initializable.sol';
 
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import { GovernorTwabVotesUpgradeable } from './GovernorTwabVotesUpgradeable.sol';
 import { TwabSnapshotsUtils } from '../../lib/TwabSnapshotsUtils.sol';
+import { GovernorTwabVotesUpgradeable } from './GovernorTwabVotesUpgradeable.sol';
 
 /**
  * @dev Extension of {Governor} for voting weight extraction from an {ITwabSnapshots} token and a quorum expressed as a

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { Vm } from '@std/Vm.sol';
 import { console } from '@std/console.sol';
+import { Vm } from '@std/Vm.sol';
 
 import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';

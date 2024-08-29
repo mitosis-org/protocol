@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { Test } from '@std/Test.sol';
 import { console } from '@std/console.sol';
+import { Test } from '@std/Test.sol';
 
-import { ERC20TwabSnapshots } from '../../src/twab/ERC20TwabSnapshots.sol';
 import { ITwabSnapshots } from '../../src/interfaces/twab/ITwabSnapshots.sol';
-import { Toolkit } from '../util/Toolkit.sol';
 import { TwabSnapshotsUtils } from '../../src/lib/TwabSnapshotsUtils.sol';
+import { ERC20TwabSnapshots } from '../../src/twab/ERC20TwabSnapshots.sol';
+import { Toolkit } from '../util/Toolkit.sol';
 
 contract TempERC20TwabSnapshots is ERC20TwabSnapshots {
   function initialize(string memory name, string memory symbol) external initializer {

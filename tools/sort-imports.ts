@@ -32,6 +32,14 @@ function trimLineBreak(s: string): string {
   return s.replaceAll(LINE_BREAK_REGEX, '');
 }
 
+function toSorted(v: ImportObject[]): string[] {
+  const sorted = v
+    .sort(({ path: a }, { path: b }) => a.localeCompare(b))
+    .map(({ full }) => full);
+  console.log(sorted);
+  return sorted;
+}
+
 function sortImports(
   rawImports: string[],
   remappings: string[],
@@ -55,25 +63,25 @@ function sortImports(
     )
     .filter((g) => g.length > 0);
 
-  const grouped = new Map<string, string[]>();
-  const ungrouped: string[] = [];
+  const grouped = new Map<string, ImportObject[]>();
+  const ungrouped: ImportObject[] = [];
 
   src.forEach((i) => {
     i.full = trimLineBreak(i.full);
 
     const remapping = remappings.find((r) => i.path.startsWith(r));
     if (!remapping) {
-      ungrouped.push(i.full);
+      ungrouped.push(i);
       return;
     }
 
     if (!grouped.has(remapping)) grouped.set(remapping, []);
-    grouped.get(remapping)!.push(i.full);
+    grouped.get(remapping)!.push(i);
   });
 
   const dstGroups = [
-    ...Array.from(grouped.values()),
-    ungrouped.sort(), //
+    ...Array.from(grouped.values()).map(toSorted),
+    toSorted(ungrouped),
   ].filter((g) => g.length > 0);
 
   const update = JSON.stringify(dstGroups) !== JSON.stringify(srcGroups);

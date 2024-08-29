@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { GovernorCountingSimpleUpgradeable } from '@ozu-v5/governance/extensions/GovernorCountingSimpleUpgradeable.sol';
 import { GovernorSettingsUpgradeable } from '@ozu-v5/governance/extensions/GovernorSettingsUpgradeable.sol';
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
 
+import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
 import { GovernorTwabVotesQuorumFractionUpgradeable } from
   '../../twab/governance/GovernorTwabVotesQuorumFractionUpgradeable.sol';
 import { GovernorTwabVotesUpgradeable } from '../../twab/governance/GovernorTwabVotesUpgradeable.sol';
-import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
 
 // TODO(thai): Consider the way all EOL governances for different tokens are managed by only one governor contract.
 
