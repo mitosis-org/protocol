@@ -1,4 +1,4 @@
 {
-    "solidity.defaultCompiler": "localNodeModule",
-    "solidity.formatter": "forge"
+  "solidity.defaultCompiler": "localNodeModule",
+  "solidity.formatter": "forge"
 }
