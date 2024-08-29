@@ -2,10 +2,8 @@
 // OpenZeppelin Contracts (last updated v5.0.0) (governance/extensions/GovernorVotes.sol)
 
 // Modified to work with {ITwabSnapshots}.
-
 pragma solidity ^0.8.26;
 
-import { Time } from '@oz-v5/utils/types/Time.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';

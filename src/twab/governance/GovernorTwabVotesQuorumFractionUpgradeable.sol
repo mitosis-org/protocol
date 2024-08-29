@@ -2,7 +2,6 @@
 // OpenZeppelin Contracts (last updated v5.0.0) (governance/extensions/GovernorVotesQuorumFraction.sol)
 
 // Modified to work with {ITwabSnapshots}.
-
 pragma solidity ^0.8.26;
 
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
