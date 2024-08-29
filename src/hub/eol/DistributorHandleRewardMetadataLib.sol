@@ -13,7 +13,11 @@ library DistributorHandleRewardMetadataLib {
     return abi.encodePacked(metadata.erc20TwabSnapshots, metadata.timestamp);
   }
 
-  function decodeTWABHandleRewardhMetadata(bytes memory enc) internal pure returns (TWABHandleRewardhMetadata memory metadata) {
+  function decodeTWABHandleRewardhMetadata(bytes memory enc)
+    internal
+    pure
+    returns (TWABHandleRewardhMetadata memory metadata)
+  {
     if (enc.length != 28) revert DistributorHandleRewardMetadataLib__InvalidMsgLength(enc.length, 28);
 
     (address erc20TwabSnapshots, uint48 timestamp) = abi.decode(enc, (address, uint48));
