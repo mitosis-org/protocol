@@ -133,8 +133,6 @@ contract OptOutQueue is Ownable2StepUpgradeable, OptOutQueueStorageV1 {
       if (itemIndex >= cfg.queueOffset) break;
       queue.data[itemIndex].claimedAt = uint48(block.timestamp);
 
-      (uint256 reservedAt,) = queue.reservedAt(itemIndex); // isReserved can be ignored
-
       uint256 assetsOnRequest = itemIndex == 0
         ? req.accumulated //
         : req.accumulated - queue.data[itemIndex - 1].accumulated;
@@ -146,6 +144,7 @@ contract OptOutQueue is Ownable2StepUpgradeable, OptOutQueueStorageV1 {
         Math.Rounding.Floor
       );
 
+      (uint256 reservedAt,) = queue.reservedAt(itemIndex); // isReserved can be ignored
       uint256 assetsOnResolve = _convertToAssets(
         sharesOnRequest,
         cfg.decimalsOffset,
