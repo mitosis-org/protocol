@@ -3,11 +3,12 @@ pragma solidity ^0.8.26;
 
 import { Vm } from '@std/Vm.sol';
 import { console } from '@std/console.sol';
+
 import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
-import { Toolkit } from '../../util/Toolkit.sol';
 import { CrossChainRegistry } from '../../../src/hub/cross-chain/CrossChainRegistry.sol';
+import { Toolkit } from '../../util/Toolkit.sol';
 
 contract TestCrossChainRegistry is Toolkit {
   CrossChainRegistry internal ccRegistry;

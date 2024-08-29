@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { TwabCheckpoints } from '../lib/TwabCheckpoints.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
+import { TwabCheckpoints } from '../lib/TwabCheckpoints.sol';
 
 contract TwabSnapshotsStorageV1 {
   using ERC7201Utils for string;
