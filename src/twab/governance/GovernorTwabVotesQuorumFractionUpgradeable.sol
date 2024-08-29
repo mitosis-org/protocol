@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.0.0) (governance/extensions/GovernorVotesQuorumFraction.sol)
+
+// Modified to work with {ITwabSnapshots}.
+
+pragma solidity ^0.8.26;
+
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
 
@@ -8,10 +13,6 @@ import { Initializable } from '@ozu-v5/proxy/utils/Initializable.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { GovernorTwabVotesUpgradeable } from './GovernorTwabVotesUpgradeable.sol';
 import { TwabSnapshotsUtils } from '../../lib/TwabSnapshotsUtils.sol';
-
-// Modified to work with {ITwabSnapshots}.
-
-pragma solidity ^0.8.26;
 
 /**
  * @dev Extension of {Governor} for voting weight extraction from an {ITwabSnapshots} token and a quorum expressed as a
