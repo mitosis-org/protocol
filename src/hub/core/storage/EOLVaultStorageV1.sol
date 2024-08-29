@@ -11,7 +11,7 @@ contract EOLVaultStorageV1 {
     IMitosisLedger mitosisLedger;
   }
 
-  string private constant _NAMESPACE = 'mitosis.storage.EOLVaultStorave.v1';
+  string private constant _NAMESPACE = 'mitosis.storage.EOLVaultStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
