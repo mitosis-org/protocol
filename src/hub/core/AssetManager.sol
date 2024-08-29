@@ -32,15 +32,15 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   event EOLDeallocated(uint256 indexed chainId, address indexed eolVault, uint256 amount);
 
   event AssetPairSet(address hubAsset, uint256 branchChainId, address branchAsset);
-  event RewardManagerSet(address rewardManager);
+  event EOLRewardManagerSet(address rewardManager);
 
   event EntrypointSet(address entrypoint);
 
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
   error AssetManager__EOLInsufficient(address eolVault);
+  error AssetManager__EOLRewardManagerNotSet();
   error AssetManager__BranchAssetPairNotExist(address asset);
-  error AssetManager__RewardManagerNotSet();
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -133,7 +133,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     _assertBranchAssetPairExist($, chainId, reward);
-    _assertRewardManagerSet($);
+    _assertEOLRewardManagerSet($);
     _assertOnlyEntrypoint($);
 
     address hubAsset = $.hubAssets[chainId][reward];
@@ -172,9 +172,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     emit EntrypointSet(address(entrypoint));
   }
 
-  function setRewardManager(IEOLRewardManager rewardManager) external onlyOwner {
+  function setEOLRewardManager(IEOLRewardManager rewardManager) external onlyOwner {
     _getStorageV1().rewardManager = rewardManager;
-    emit RewardManagerSet(address(rewardManager));
+    emit EOLRewardManagerSet(address(rewardManager));
   }
 
   function initializeEOL(uint256 chainId, address eolVault) external onlyOwner {
@@ -220,7 +220,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     if (_msgSender() != $.mitosisLedger.eolStrategist(eolVault)) revert StdError.InvalidAddress('strategist');
   }
 
-  function _assertRewardManagerSet(StorageV1 storage $) internal view {
-    if (address($.rewardManager) == address(0)) revert AssetManager__RewardManagerNotSet();
+  function _assertEOLRewardManagerSet(StorageV1 storage $) internal view {
+    if (address($.rewardManager) == address(0)) revert AssetManager__EOLRewardManagerNotSet();
   }
 }
