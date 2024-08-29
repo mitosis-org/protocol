@@ -42,25 +42,33 @@ contract EOLVault is IEOLVault, EOLVaultStorageV1, ERC4626TwabSnapshots {
   // Mutative functions
 
   function deposit(uint256 assets, address receiver) public override returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertEolIdSet($);
+
     uint256 maxAssets = maxDeposit(receiver);
     if (assets > maxAssets) {
       revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
     }
 
     uint256 shares = previewDeposit(assets);
-    _optIn(_getStorageV1(), _msgSender(), receiver, assets, shares);
+    _optIn($, _msgSender(), receiver, assets, shares);
 
     return shares;
   }
 
   function mint(uint256 shares, address receiver) public override returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertEolIdSet($);
+
     uint256 maxShares = maxMint(receiver);
     if (shares > maxShares) {
       revert ERC4626ExceededMaxMint(receiver, shares, maxShares);
     }
 
     uint256 assets = previewMint(shares);
-    _optIn(_getStorageV1(), _msgSender(), receiver, assets, shares);
+    _optIn($, _msgSender(), receiver, assets, shares);
 
     return assets;
   }
@@ -69,7 +77,10 @@ contract EOLVault is IEOLVault, EOLVaultStorageV1, ERC4626TwabSnapshots {
   // called by OptOutQueue.
 
   function withdraw(uint256 assets, address receiver, address owner) public override returns (uint256) {
-    _assertOnlyOptOutQueue(_getStorageV1());
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertEolIdSet($);
+    _assertOnlyOptOutQueue($);
 
     uint256 maxAssets = maxWithdraw(owner);
     if (assets > maxAssets) {
@@ -83,7 +94,10 @@ contract EOLVault is IEOLVault, EOLVaultStorageV1, ERC4626TwabSnapshots {
   }
 
   function redeem(uint256 shares, address receiver, address owner) public override returns (uint256) {
-    _assertOnlyOptOutQueue(_getStorageV1());
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertEolIdSet($);
+    _assertOnlyOptOutQueue($);
 
     uint256 maxShares = maxRedeem(owner);
     if (shares > maxShares) {
@@ -98,7 +112,7 @@ contract EOLVault is IEOLVault, EOLVaultStorageV1, ERC4626TwabSnapshots {
 
   function _optIn(StorageV1 storage $, address caller, address receiver, uint256 assets, uint256 shares) internal {
     _deposit(caller, receiver, assets, shares);
-    $.mitosisLedger.recordOptIn(address(this), shares);
+    $.mitosisLedger.recordOptIn($.eolId, shares);
   }
 
   function _assertOnlyMitosisLedger(StorageV1 storage $) internal view {
@@ -106,7 +120,6 @@ contract EOLVault is IEOLVault, EOLVaultStorageV1, ERC4626TwabSnapshots {
   }
 
   function _assertOnlyOptOutQueue(StorageV1 storage $) internal view {
-    // note: this is temporary implementation. we have to store the OptOutQueue address at more suitable place.
     if (_msgSender() != $.mitosisLedger.optOutQueue()) revert StdError.Unauthorized();
   }
 }

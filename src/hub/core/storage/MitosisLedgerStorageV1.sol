@@ -21,9 +21,9 @@ contract MitosisLedgerStorageV1 {
     uint256 lastEolId;
     address optOutQueue;
     mapping(uint256 chainId => ChainState state) chainStates;
-    mapping(address eolVault => EOLState state) eolStates;
+    mapping(uint256 eolId => EOLState state) eolStates;
     // Index
-    mapping(uint256 eolId => address eolVault) eolVaultsById;
+    mapping(address eolVault => uint256 eolId) eolIdsByVault;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.MitosisLedgerStorage.v1';

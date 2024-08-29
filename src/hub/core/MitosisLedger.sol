@@ -12,7 +12,7 @@ import { MitosisLedgerStorageV1 } from './storage/MitosisLedgerStorageV1.sol';
 /// Note: This contract stores state related to balances, EOL states.
 contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedgerStorageV1 {
   event EolIdSet(uint256 indexed eolId, address indexed eolVault);
-  event EolStrategistSet(address indexed eolVault, address indexed strategist);
+  event EolStrategistSet(uint256 indexed eolId, address indexed strategist);
   event EolOptOutQueueSet(address indexed optOutQueue);
 
   constructor() {
@@ -40,21 +40,25 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
     return _getStorageV1().chainStates[chainId].amounts[asset];
   }
 
-  function eolStrategist(address eolVault_) external view returns (address) {
-    return _getStorageV1().eolStates[eolVault_].strategist;
+  function eolVault(uint256 eolId) external view returns (address) {
+    return _getStorageV1().eolStates[eolId].eolVault;
   }
 
-  function eolAmountState(address eolVault_) external view returns (IMitosisLedger.EOLAmountState memory) {
-    return _getStorageV1().eolStates[eolVault_].eolAmountState;
+  function eolStrategist(uint256 eolId) external view returns (address) {
+    return _getStorageV1().eolStates[eolId].strategist;
   }
 
-  function getEOLAllocateAmount(address eolVault_) external view returns (uint256) {
-    EOLAmountState storage state = _getStorageV1().eolStates[eolVault_].eolAmountState;
+  function eolAmountState(uint256 eolId) external view returns (IMitosisLedger.EOLAmountState memory) {
+    return _getStorageV1().eolStates[eolId].eolAmountState;
+  }
+
+  function getEOLAllocateAmount(uint256 eolId) external view returns (uint256) {
+    EOLAmountState storage state = _getStorageV1().eolStates[eolId].eolAmountState;
     return state.total - state.optOutPending;
   }
 
-  function eolVaultById(uint256 eolId) external view returns (address) {
-    return _getStorageV1().eolVaultsById[eolId];
+  function eolIdByVault(address eolVault_) external view returns (uint256) {
+    return _getStorageV1().eolIdsByVault[eolVault_];
   }
 
   // Mutative functions
@@ -63,22 +67,22 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
 
   function assignEolId(address eolVault_, address strategist) external returns (uint256 eolId /* auth */ ) {
     eolId = assignEolId(eolVault_);
-    setEolStrategist(eolVault_, strategist);
+    setEolStrategist(eolId, strategist);
   }
 
   function assignEolId(address eolVault_) public returns (uint256 eolId /* auth */ ) {
     StorageV1 storage $ = _getStorageV1();
 
     eolId = ++$.lastEolId;
-    $.eolStates[eolVault_].eolVault = eolVault_;
-    $.eolVaultsById[eolId] = eolVault_;
+    $.eolStates[eolId].eolVault = eolVault_;
+    $.eolIdsByVault[eolVault_] = eolId;
 
     emit EolIdSet(eolId, eolVault_);
   }
 
-  function setEolStrategist(address eolVault_, address strategist) public /* auth */ {
-    _getStorageV1().eolStates[eolVault_].strategist = strategist;
-    emit EolStrategistSet(eolVault_, strategist);
+  function setEolStrategist(uint256 eolId, address strategist) public /* auth */ {
+    _getStorageV1().eolStates[eolId].strategist = strategist;
+    emit EolStrategistSet(eolId, strategist);
   }
 
   function setOptOutQueue(address optOutQueue_) external /* auth */ {
@@ -96,33 +100,33 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
     _getStorageV1().chainStates[chainId].amounts[asset] -= amount;
   }
 
-  function recordOptIn(address eolVault_, uint256 amount) external /* auth */ {
-    _getStorageV1().eolStates[eolVault_].eolAmountState.total += amount;
+  function recordOptIn(uint256 eolId, uint256 amount) external /* auth */ {
+    _getStorageV1().eolStates[eolId].eolAmountState.total += amount;
   }
 
-  function recordOptOutRequest(address eolVault_, uint256 amount) external /* auth */ {
-    EOLAmountState storage state = _getStorageV1().eolStates[eolVault_].eolAmountState;
+  function recordOptOutRequest(uint256 eolId, uint256 amount) external /* auth */ {
+    EOLAmountState storage state = _getStorageV1().eolStates[eolId].eolAmountState;
     state.optOutPending += amount;
   }
 
-  function recordAllocateEOL(address eolVault_, uint256 amount) external /* auth */ {
-    EOLAmountState storage state = _getStorageV1().eolStates[eolVault_].eolAmountState;
+  function recordAllocateEOL(uint256 eolId, uint256 amount) external /* auth */ {
+    EOLAmountState storage state = _getStorageV1().eolStates[eolId].eolAmountState;
     state.idle -= amount;
   }
 
-  function recordDeallocateEOL(address eolVault_, uint256 amount) external /* auth */ {
-    EOLAmountState storage state = _getStorageV1().eolStates[eolVault_].eolAmountState;
+  function recordDeallocateEOL(uint256 eolId, uint256 amount) external /* auth */ {
+    EOLAmountState storage state = _getStorageV1().eolStates[eolId].eolAmountState;
     state.idle += amount;
   }
 
-  function recordOptOutResolve(address eolVault_, uint256 amount) external /* auth */ {
-    EOLAmountState storage state = _getStorageV1().eolStates[eolVault_].eolAmountState;
+  function recordOptOutResolve(uint256 eolId, uint256 amount) external /* auth */ {
+    EOLAmountState storage state = _getStorageV1().eolStates[eolId].eolAmountState;
     state.idle -= amount;
     state.optOutResolved += amount;
   }
 
-  function recordOptOutClaim(address eolVault_, uint256 amount) external /* auth */ {
-    EOLAmountState storage state = _getStorageV1().eolStates[eolVault_].eolAmountState;
+  function recordOptOutClaim(uint256 eolId, uint256 amount) external /* auth */ {
+    EOLAmountState storage state = _getStorageV1().eolStates[eolId].eolAmountState;
     state.optOutPending -= amount;
     state.optOutResolved -= amount;
     state.total -= amount;
