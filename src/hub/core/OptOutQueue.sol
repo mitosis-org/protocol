@@ -287,34 +287,23 @@ contract OptOutQueue is IOptOutQueue, Ownable2StepUpgradeable, OptOutQueueStorag
     for (; i < index.size; i++) {
       if (i - cfg.idxOffset >= LibRedeemQueue.DEFAULT_CLAIM_SIZE) break;
 
-      uint256 itemIndex = index.data[i];
+      uint256 reqId = index.data[i];
 
-      LibRedeemQueue.Request memory req = queue.data[itemIndex];
+      LibRedeemQueue.Request memory req = queue.data[reqId];
       if (req.isClaimed()) continue;
-      if (itemIndex >= cfg.queueOffset) break;
-      queue.data[itemIndex].claimedAt = uint48(block.timestamp);
+      if (reqId >= cfg.queueOffset) break;
+      queue.data[reqId].claimedAt = uint48(block.timestamp);
 
-      uint256 assetsOnRequest = itemIndex == 0
-        ? req.accumulated //
-        : req.accumulated - queue.data[itemIndex - 1].accumulated;
+      uint256 assetsOnRequest = reqId == 0 ? req.accumulated : req.accumulated - queue.data[reqId - 1].accumulated;
 
       uint256 assetsOnResolve;
-      uint256 sharesOnRequest = $.states[address(cfg.eolVault)].sharesByRequestId[itemIndex];
+      uint256 sharesOnRequest = $.states[address(cfg.eolVault)].sharesByRequestId[reqId];
       {
-        (uint256 resolvedAt_,) = queue.resolvedAt(itemIndex, block.timestamp); // isResolved can be ignored
+        (uint256 resolvedAt_,) = queue.resolvedAt(reqId, block.timestamp); // isResolved can be ignored
         (uint256 totalAssets, uint256 totalSupply) = _loadPastSnapshot(cfg.hubAsset, address(cfg.eolVault), resolvedAt_);
 
-        assetsOnResolve = _convertToAssets(
-          sharesOnRequest,
-          cfg.decimalsOffset,
-          // TODO: discuss
-          // some simple idea - opt out queue redeeming assets immediately after request.
-          // so if there's any loss reported, it'll affect the exchange rate more harder.
-          // therefore, we need to calculate the exchange rate including the requested assets & shares.
-          totalAssets + assetsOnRequest,
-          totalSupply + sharesOnRequest,
-          Math.Rounding.Floor
-        );
+        assetsOnResolve =
+          _convertToAssets(sharesOnRequest, cfg.decimalsOffset, totalAssets, totalSupply, Math.Rounding.Floor);
       }
 
       // apply loss if there's any reported loss while redeeming
@@ -327,7 +316,7 @@ contract OptOutQueue is IOptOutQueue, Ownable2StepUpgradeable, OptOutQueueStorag
 
       totalClaimedShares += sharesOnRequest;
 
-      emit LibRedeemQueue.Claimed(cfg.receiver, itemIndex);
+      emit LibRedeemQueue.Claimed(cfg.receiver, reqId);
     }
 
     // update index offset if there's any claimed request
