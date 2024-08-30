@@ -42,6 +42,10 @@ contract Pausable {
     return _isPaused(sig);
   }
 
+  function isPausedGlobally() external view returns (bool) {
+    return _isPausedGlobally();
+  }
+
   function _pause() internal virtual {
     _getPausableStorage().global_ = true;
   }
@@ -62,6 +66,10 @@ contract Pausable {
     PausableStorage storage $ = _getPausableStorage();
 
     return $.global_ || $.paused[sig];
+  }
+
+  function _isPausedGlobally() internal view virtual returns (bool) {
+    return _getPausableStorage().global_;
   }
 
   function _assertNotPaused() internal view virtual {
