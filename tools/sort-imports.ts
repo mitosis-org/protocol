@@ -169,16 +169,7 @@ async function executeCommand(options: {
   const cache = await loadCache('sort-imports');
   const files = await glob(options.input);
 
-  // TODO(thai): should figure out why an error happens when processing these file
-  const excludedFiles = [
-    'src/lib/Arrays.sol',
-    'src/hub/governance/EOLAllocationGovernorStorageV1.sol',
-    'src/hub/governance/EOLAllocationGovernor.sol',
-  ];
-
-  const targetFiles = files.filter(
-    (file) => path.extname(file) === '.sol' && !excludedFiles.includes(file),
-  );
+  const targetFiles = files.filter((file) => path.extname(file) === '.sol');
   if (targetFiles.length === 0) {
     throw new Error('No target files found in the matched files.');
   }

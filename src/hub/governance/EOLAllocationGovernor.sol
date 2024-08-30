@@ -2,16 +2,17 @@
 pragma solidity ^0.8.26;
 
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
+
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
 import { IEOLProtocolRegistry } from '../../interfaces/eol/IEOLProtocolRegistry.sol';
 import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
-import { TwabSnapshotsUtils } from '../../lib/TwabSnapshotsUtils.sol';
 import { Arrays } from '../../lib/Arrays.sol';
+import { StdError } from '../../lib/StdError.sol';
+import { TwabSnapshotsUtils } from '../../lib/TwabSnapshotsUtils.sol';
 import {
   EOLAllocationGovernorStorageV1, Epoch, EpochVoteInfo, TotalVoteInfo
 } from './EOLAllocationGovernorStorageV1.sol';
-import { StdError } from '../../lib/StdError.sol';
 
 // TODO(thai): add more view and ownable functions
 

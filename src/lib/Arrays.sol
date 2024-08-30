@@ -6,8 +6,8 @@
 
 pragma solidity ^0.8.20;
 
-import { StorageSlot } from '@oz-v5/utils/StorageSlot.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
+import { StorageSlot } from '@oz-v5/utils/StorageSlot.sol';
 
 import { Comparators } from './Comparators.sol';
 import { SlotDerivation } from './SlotDerivation.sol';
