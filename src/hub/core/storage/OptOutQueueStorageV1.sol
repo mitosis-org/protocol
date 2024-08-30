@@ -8,11 +8,6 @@ import { LibRedeemQueue } from '../../../lib/LibRedeemQueue.sol';
 contract OptOutQueueStorageV1 {
   using ERC7201Utils for string;
 
-  struct EOLVaultSnapshot {
-    uint256 totalAssets;
-    uint256 totalSupply;
-  }
-
   struct EOLVaultState {
     // queue
     bool isEnabled;
@@ -21,6 +16,7 @@ contract OptOutQueueStorageV1 {
     // vault
     uint8 decimalsOffset;
     uint8 underlyingDecimals;
+    mapping(uint256 requestId => uint256 assets) sharesByRequestId;
   }
 
   struct StorageV1 {
