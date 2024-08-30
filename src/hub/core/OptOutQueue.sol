@@ -21,12 +21,14 @@ contract OptOutQueue is Ownable2StepUpgradeable, OptOutQueueStorageV1 {
 
   struct GetRequestResponse {
     uint256 id;
+    uint256 shares;
     LibRedeemQueue.Request request;
   }
 
   struct GetRequestByIndexResponse {
     uint256 id;
     uint256 indexId;
+    uint256 shares;
     LibRedeemQueue.Request request;
   }
 
@@ -68,29 +70,21 @@ contract OptOutQueue is Ownable2StepUpgradeable, OptOutQueueStorageV1 {
     return _queue(_getStorageV1(), eolVault).redeemPeriod;
   }
 
-  function getRequest(address eolVault, uint256 reqId) external view returns (GetRequestResponse memory resp) {
-    return _getRequest(_queue(_getStorageV1(), eolVault), reqId);
-  }
-
   function getRequest(address eolVault, uint256[] calldata reqIds)
     external
     view
     returns (GetRequestResponse[] memory resp)
   {
-    LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), eolVault);
+    StorageV1 storage $ = _getStorageV1();
+    LibRedeemQueue.Queue storage queue = _queue($, eolVault);
+
     resp = new GetRequestResponse[](reqIds.length);
     for (uint256 i = 0; i < reqIds.length; i++) {
-      resp[i] = _getRequest(queue, reqIds[i]);
+      resp[i].id = reqIds[i];
+      resp[i].shares = $.states[eolVault].sharesByRequestId[reqIds[i]];
+      resp[i].request = queue.get(reqIds[i]);
     }
     return resp;
-  }
-
-  function getRequestByReceiver(address eolVault, address receiver, uint256 idxItemId)
-    external
-    view
-    returns (GetRequestByIndexResponse memory resp)
-  {
-    return _getRequestByIndex(_queue(_getStorageV1(), eolVault), receiver, idxItemId);
   }
 
   function getRequestByReceiver(address eolVault, address receiver, uint256[] calldata idxItemIds)
@@ -98,10 +92,15 @@ contract OptOutQueue is Ownable2StepUpgradeable, OptOutQueueStorageV1 {
     view
     returns (GetRequestByIndexResponse[] memory resp)
   {
-    LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), eolVault);
+    StorageV1 storage $ = _getStorageV1();
+    LibRedeemQueue.Queue storage queue = _queue($, eolVault);
+
     resp = new GetRequestByIndexResponse[](idxItemIds.length);
     for (uint256 i = 0; i < idxItemIds.length; i++) {
-      resp[i] = _getRequestByIndex(queue, receiver, idxItemIds[i]);
+      resp[i].id = idxItemIds[i];
+      resp[i].shares = $.states[eolVault].sharesByRequestId[idxItemIds[i]];
+      resp[i].indexId = queue.index(receiver).get(idxItemIds[i]);
+      resp[i].request = queue.get(resp[i].indexId);
     }
     return resp;
   }
@@ -158,6 +157,14 @@ contract OptOutQueue is Ownable2StepUpgradeable, OptOutQueueStorageV1 {
 
   function reserveHistoryLength(address eolVault) external view returns (uint256) {
     return _queue(_getStorageV1(), eolVault).reserveHistory.length;
+  }
+
+  function isEnabled(address eolVault) external view returns (bool) {
+    return _getStorageV1().states[eolVault].isEnabled;
+  }
+
+  function getBreadcrumb(address eolVault) external view returns (uint256) {
+    return _getStorageV1().states[eolVault].breadcrumb;
   }
 
   // =========================== NOTE: QUEUE FUNCTIONS =========================== //
@@ -262,27 +269,6 @@ contract OptOutQueue is Ownable2StepUpgradeable, OptOutQueueStorageV1 {
 
   function _queue(StorageV1 storage $, address eolVault) internal view returns (LibRedeemQueue.Queue storage) {
     return $.states[eolVault].queue;
-  }
-
-  function _getRequest(LibRedeemQueue.Queue storage queue, uint256 itemIndex)
-    internal
-    view
-    returns (GetRequestResponse memory resp)
-  {
-    resp.id = itemIndex;
-    resp.request = queue.get(itemIndex);
-    return resp;
-  }
-
-  function _getRequestByIndex(LibRedeemQueue.Queue storage queue, address recipient, uint256 idxItemId)
-    internal
-    view
-    returns (GetRequestByIndexResponse memory resp)
-  {
-    resp.id = idxItemId;
-    resp.indexId = queue.index(recipient).get(idxItemId);
-    resp.request = queue.get(resp.indexId);
-    return resp;
   }
 
   function _loadPastSnapshot(IHubAsset hubAsset, address eolVault, uint256 timestamp)
