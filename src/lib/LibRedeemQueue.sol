@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import { Math } from '@oz-v5/utils/math/Math.sol';
+
 /**
  * @dev LIFECYCLE:
  * 1. enqueue
@@ -98,13 +100,23 @@ library LibRedeemQueue {
   }
 
   function reservedAt(Queue storage q, uint256 itemIndex) internal view returns (uint256 reservedAt_, bool isReserved_) {
+    return _reservedAt(q, get(q, itemIndex));
+  }
+
+  function resolvedAt(Queue storage q, uint256 itemIndex, uint256 now_)
+    internal
+    view
+    returns (uint256 resolvedAt_, bool isResolved_)
+  {
     Request memory req = get(q, itemIndex);
-    if (!isReserved(q, req)) return (0, false);
 
-    (ReserveLog memory log, bool found) = _searchReserveLogByAccumulated(q.reserveHistory, req.accumulated);
-    if (!found) return (0, false);
+    (uint256 reservedAt_, bool isReserved_) = _reservedAt(q, req);
+    if (!isReserved_) return (0, false);
 
-    return (log.reservedAt, true);
+    uint256 redeemPeriodCheckpoint = req.createdAt + q.redeemPeriod;
+    if (now_ < redeemPeriodCheckpoint) return (0, false);
+
+    return (Math.min(reservedAt_, redeemPeriodCheckpoint), true);
   }
 
   function pending(Queue storage q) internal view returns (uint256) {
@@ -285,6 +297,19 @@ library LibRedeemQueue {
 
   function _mid(uint256 low, uint256 high) private pure returns (uint256) {
     return (low & high) + (low ^ high) / 2; // avoid overflow
+  }
+
+  function _reservedAt(Queue storage q, Request memory req)
+    internal
+    view
+    returns (uint256 reservedAt_, bool isReserved_)
+  {
+    if (!isReserved(q, req)) return (0, false);
+
+    (ReserveLog memory log, bool found) = _searchReserveLogByAccumulated(q.reserveHistory, req.accumulated);
+    if (!found) return (0, false);
+
+    return (log.reservedAt, true);
   }
 
   function _updateQueueOffset(Queue storage q, uint256 accumulated) private returns (uint256 offset, bool updated) {
