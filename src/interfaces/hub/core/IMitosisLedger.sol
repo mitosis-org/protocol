@@ -5,7 +5,8 @@ interface IMitosisLedger {
   struct EOLAmountState {
     /// @dev total is the total amount of assets that have been finalized
     /// opt-in to Mitosis L1.
-    /// Note: This value must match the totalSupply of the miAsset.
+    /// Note: This value must match the sum of miAsset totalSupply and
+    /// convertToShare(optOutPending - optOutResolved).
     uint256 total;
     /// @dev idle stores the amount of EOL temporarily returned for a
     /// specific purpose in the branch.
