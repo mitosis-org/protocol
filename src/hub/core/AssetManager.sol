@@ -24,8 +24,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   event Deposited(uint256 indexed chainId, address indexed asset, address indexed to, uint256 amount);
   event Redeemed(uint256 indexed chainId, address indexed asset, address indexed to, uint256 amount);
 
-  event RewardSettled(uint256 indexed chainId, address indexed eolVault, address indexed reward, uint256 amount);
-  event LossSettled(uint256 indexed chainId, address indexed eolVault, uint256 amount);
+  event RewardSettled(uint256 indexed chainId, address indexed eolVault, address indexed asset, uint256 amount);
+  event LossSettled(uint256 indexed chainId, address indexed eolVault, address indexed asset, uint256 amount);
 
   event EOLShareValueDecreased(address indexed eolVault, uint256 indexed amount);
 
@@ -119,10 +119,12 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertOnlyEntrypoint($);
     _assertEOLRewardManagerSet($);
 
-    address reward = IEOLVault(eolVault).asset();
-    _settleReward(chainId, eolVault, reward, amount);
+    address asset = IEOLVault(eolVault).asset();
 
-    _addAllowance(address($.rewardManager), reward, amount);
+    _mint($, chainId, asset, address(this), amount);
+    emit RewardSettled(chainId, eolVault, asset, amount);
+
+    _addAllowance(address($.rewardManager), asset, amount);
     $.rewardManager.routeYield(eolVault, amount);
   }
 
@@ -134,9 +136,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
     // Decrease EOLVault's shares value.
     address asset = IEOLVault(eolVault).asset();
-    IHubAsset(asset).burn(eolVault, amount);
+    _burn($, chainId, asset, eolVault, amount);
 
-    emit LossSettled(chainId, eolVault, amount);
+    emit LossSettled(chainId, eolVault, asset, amount);
   }
 
   function settleExtraRewards(uint256 chainId, address eolVault, address reward, uint256 amount) external {
@@ -147,7 +149,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertOnlyEntrypoint($);
 
     address hubAsset = $.hubAssets[chainId][reward];
-    _settleReward(chainId, eolVault, hubAsset, amount);
+
+    _mint(_getStorageV1(), chainId, hubAsset, address(this), amount);
+    emit RewardSettled(chainId, eolVault, hubAsset, amount);
 
     _addAllowance(address($.rewardManager), hubAsset, amount);
     $.rewardManager.routeExtraReward(eolVault, hubAsset, amount);
@@ -208,19 +212,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     $.mitosisLedger.recordWithdraw(chainId, asset, amount);
   }
 
-  function _settleReward(uint256 chainId, address eolVault, address reward, uint256 amount) internal {
-    IHubAsset(reward).mint(address(this), amount);
-    emit RewardSettled(chainId, eolVault, reward, amount);
-  }
-
   function _addAllowance(address to, address asset, uint256 amount) internal {
     uint256 prevAllowance = IHubAsset(asset).allowance(address(this), address(to));
     IHubAsset(asset).approve(address(to), prevAllowance + amount);
-  }
-
-  function _decreaseEOLShareValue(address eolVault, uint256 assets) internal {
-    IHubAsset(IEOLVault(eolVault).asset()).burn(eolVault, assets);
-    emit EOLShareValueDecreased(eolVault, assets);
   }
 
   function _assertOnlyEntrypoint(StorageV1 storage $) internal view {
