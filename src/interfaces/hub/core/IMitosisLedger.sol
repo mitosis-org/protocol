@@ -15,11 +15,15 @@ interface IMitosisLedger {
     /// @dev optOutPending is a temporary value reflecting the opt-out
     /// request. This value is used to calculate the EOL allocation for
     /// each chain.
+    /// @notice This value reflects the amount of underlying assets that
+    /// are pending to be opt-out.
     /// (i.e. This means that from the point of the opt-out request, yield
     /// will not be provided for the corresponding miAsset)
     uint256 optOutPending;
     /// @dev optOutResolved is the actual amount used for the opt-out request
     /// resolvation.
+    /// @notice This value reflects the amount of underlying assets that
+    /// have been used for the opt-out request.
     uint256 optOutResolved;
   }
 
