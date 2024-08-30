@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import { Time } from '@oz-v5/utils/types/Time.sol';
-import { Math } from '@oz-v5/utils/math/Math.sol';
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
+import { Math } from '@oz-v5/utils/math/Math.sol';
+import { Time } from '@oz-v5/utils/types/Time.sol';
 
-import { DistributionType, IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { EOLRewardManagerStorageV1 } from './storage/EOLRewardManagerStorageV1.sol';
-import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import { IEOLRewardManager } from '../../interfaces/hub/eol/IEOLRewardManager.sol';
-import { IEOLRewardDistributor } from '../../interfaces/hub/eol/IEOLRewardDistributor.sol';
-import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
-import { DistributorHandleRewardMetadataLib, HandleRewardTWABMetadata } from './DistributorHandleRewardMetadataLib.sol';
+import { DistributionType, IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
+import { IEOLRewardDistributor } from '../../interfaces/hub/eol/IEOLRewardDistributor.sol';
+import { IEOLRewardManager } from '../../interfaces/hub/eol/IEOLRewardManager.sol';
+import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { DistributorHandleRewardMetadataLib, HandleRewardTWABMetadata } from './DistributorHandleRewardMetadataLib.sol';
+import { EOLRewardManagerStorageV1 } from './storage/EOLRewardManagerStorageV1.sol';
 
 contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewardManagerStorageV1 {
   using DistributorHandleRewardMetadataLib for HandleRewardTWABMetadata;

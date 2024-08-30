@@ -9,8 +9,8 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
 import { Initializable } from '@ozu-v5/proxy/utils/Initializable.sol';
 
-import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { TwabSnapshotsUtils } from '../../lib/TwabSnapshotsUtils.sol';
 
