@@ -11,10 +11,11 @@ import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
 import { IOptOutQueue } from '../../interfaces/hub/core/IOptOutQueue.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
+import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { OptOutQueueStorageV1 } from './storage/OptOutQueueStorageV1.sol';
 
-contract OptOutQueue is IOptOutQueue, Ownable2StepUpgradeable, OptOutQueueStorageV1 {
+contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQueueStorageV1 {
   using SafeERC20 for IEOLVault;
   using SafeERC20 for IHubAsset;
   using Math for uint256;
@@ -42,6 +43,7 @@ contract OptOutQueue is IOptOutQueue, Ownable2StepUpgradeable, OptOutQueueStorag
   }
 
   function initialize(address owner_, address ledger) public initializer {
+    __Pausable_init();
     __Ownable2Step_init();
     _transferOwnership(owner_);
 
@@ -160,6 +162,7 @@ contract OptOutQueue is IOptOutQueue, Ownable2StepUpgradeable, OptOutQueueStorag
   function request(uint256 shares, address receiver, address eolVault) external returns (uint256 reqId) {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertQueueEnabled($, eolVault);
 
     uint256 assets = IEOLVault(eolVault).previewRedeem(shares) - 1; // FIXME: tricky way to avoid rounding error
@@ -178,6 +181,7 @@ contract OptOutQueue is IOptOutQueue, Ownable2StepUpgradeable, OptOutQueueStorag
   function claim(address receiver, address eolVault) external returns (uint256 totalClaimed_) {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertQueueEnabled($, eolVault);
 
     _sync($, eolVault);
@@ -215,12 +219,29 @@ contract OptOutQueue is IOptOutQueue, Ownable2StepUpgradeable, OptOutQueueStorag
   function sync(address eolVault) external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertQueueEnabled($, eolVault);
 
     _sync($, eolVault);
   }
 
   // =========================== NOTE: CONFIG FUNCTIONS =========================== //
+
+  function pause() external onlyOwner {
+    _pause();
+  }
+
+  function pause(bytes4 sig) external onlyOwner {
+    _pause(sig);
+  }
+
+  function unpause() external onlyOwner {
+    _unpause();
+  }
+
+  function unpause(bytes4 sig) external onlyOwner {
+    _unpause(sig);
+  }
 
   function enable(address eolVault) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
