@@ -94,22 +94,6 @@ contract RedeemQueueWrapper {
     return queue.searchReserveLogByTimestamp(timestamp);
   }
 
-  function getQueueSize() external view returns (uint256) {
-    return queue.size;
-  }
-
-  function getQueueOffset() external view returns (uint256) {
-    return queue.offset;
-  }
-
-  function getTotalReserved() external view returns (uint256) {
-    return queue.totalReserved;
-  }
-
-  function getTotalClaimed() external view returns (uint256) {
-    return queue.totalClaimed;
-  }
-
   // =========================== NOTE: QUEUE FUNCTIONS =========================== //
 
   function enqueue(address recipient, uint256 requestAmount) external returns (uint256) {
