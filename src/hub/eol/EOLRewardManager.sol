@@ -9,22 +9,22 @@ import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
 
 import { DistributeType, IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { EOLSettlementManagerStorageV1 } from './storage/EOLSettlementManagerStorageV1.sol';
+import { EOLRewardManagerStorageV1 } from './storage/EOLRewardManagerStorageV1.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { IEOLRewardManager } from '../../interfaces/hub/eol/IEOLRewardManager.sol';
 import { IEOLRewardDistributor } from '../../interfaces/hub/eol/IEOLRewardDistributor.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { DistributorHandleRewardMetadataLib, HandleRewardTWABMetadata } from './DistributorHandleRewardMetadataLib.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerStorageV1 {
+contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewardManagerStorageV1 {
   using DistributorHandleRewardMetadataLib for HandleRewardTWABMetadata;
 
   event DispatchedTo(
     address indexed rewardDistributor, address indexed eolVault, address indexed reward, uint256 amount
   );
   event EOLShareValueIncreased(address indexed eolVault, uint256 indexed amount);
-  event EOLShareValueDecreased(address indexed eolVault, uint256 indexed amount);
   event RouteClaimableReward(
     address indexed rewardDistributor,
     address indexed eolVault,
@@ -34,7 +34,7 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
   );
   event UnspecifiedReward(address indexed eolVault, address indexed reward, uint48 timestamp, uint256 amount);
 
-  error EOLSettlementManager__InvalidDispatchRequest(address reward, uint256 index);
+  error EOLRewardManager__InvalidDispatchRequest(address reward, uint256 index);
 
   constructor() {
     _disableInitializers();
@@ -46,7 +46,7 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
     _getStorageV1().assetManager = assetManager;
   }
 
-  modifier onlySettlementManagerAdmin() {
+  modifier onlyRewardManagerAdmin() {
     _;
   }
 
@@ -55,8 +55,9 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
     _;
   }
 
-  function settleYield(address eolVault, uint256 amount) external onlyAssetManager {
+  function routeYield(address eolVault, uint256 amount) external onlyAssetManager {
     address reward = IEOLVault(eolVault).asset();
+    IHubAsset(reward).transferFrom(_msgSender(), address(this), amount);
 
     (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward) = _calcReward(_getStorageV1(), amount);
 
@@ -64,11 +65,9 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
     _routeHubAssetHolderClaimableReward(eolVault, reward, hubAssetHolderReward);
   }
 
-  function settleLoss(address eolVault, uint256 amount) external onlyAssetManager {
-    _decreaseEOLShareValue(eolVault, amount);
-  }
+  function routeExtraReward(address eolVault, address reward, uint256 amount) external onlyAssetManager {
+    IHubAsset(reward).transferFrom(_msgSender(), address(this), amount);
 
-  function settleExtraReward(address eolVault, address reward, uint256 amount) external onlyAssetManager {
     (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward) = _calcReward(_getStorageV1(), amount);
     _routeEOLClaimableReward(eolVault, reward, eolAssetHolderReward);
     _routeHubAssetHolderClaimableReward(eolVault, reward, hubAssetHolderReward);
@@ -81,7 +80,7 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
     uint48 timestamp,
     uint256[] calldata indexes,
     bytes[] calldata metadata
-  ) external onlySettlementManagerAdmin {
+  ) external onlyRewardManagerAdmin {
     if (indexes.length != metadata.length) revert StdError.InvalidParameter('metadata');
 
     StorageV1 storage $ = _getStorageV1();
@@ -102,7 +101,7 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
     uint48 timestamp,
     uint256 index,
     bytes memory metadata
-  ) external onlySettlementManagerAdmin {
+  ) external onlyRewardManagerAdmin {
     StorageV1 storage $ = _getStorageV1();
 
     if (!$.rewardConfigurator.isDistributorRegistered(distributor)) {
@@ -143,18 +142,12 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
   }
 
   function _increaseEOLShareValue(address eolVault, uint256 assets) internal {
-    IHubAsset(IEOLVault(eolVault).asset()).mint(eolVault, assets);
+    address reward = IEOLVault(eolVault).asset();
+    IHubAsset(reward).transfer(eolVault, assets);
     emit EOLShareValueIncreased(eolVault, assets);
   }
 
-  function _decreaseEOLShareValue(address eolVault, uint256 assets) internal {
-    IHubAsset(IEOLVault(eolVault).asset()).burn(eolVault, assets);
-    emit EOLShareValueDecreased(eolVault, assets);
-  }
-
   function _routeClaimableReward(address eolVault, address reward, uint256 amount, bytes memory metadata) internal {
-    IHubAsset(reward).mint(address(this), amount);
-
     StorageV1 storage $ = _getStorageV1();
     DistributeType distributeType = $.rewardConfigurator.getDistributeType(eolVault, reward);
 
@@ -181,7 +174,7 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
     RewardInfo storage rewardInfo = _getStorageV1().rewardTreasury[eolVault][timestamp][index];
 
     if (!_isDispatchableRequest(rewardInfo, asset)) {
-      revert EOLSettlementManager__InvalidDispatchRequest(asset, index);
+      revert EOLRewardManager__InvalidDispatchRequest(asset, index);
     }
 
     _dispatchTo(rewardInfo, distributor, eolVault, asset, metadata);

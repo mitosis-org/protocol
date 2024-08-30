@@ -16,14 +16,14 @@ contract HubAsset is ERC20TwabSnapshots {
   modifier onlyHubAssetMintable() {
     // TODO(ray): When introduce RoleManagerContract, fill it.
     //
-    // HubAssetMintable address: AssetManager, EOLSettlementManager
+    // HubAssetMintable address: AssetManager
     _;
   }
 
   modifier onlyHubAssetBurnable() {
     // TODO(ray): When introduce RoleManagerContract, fill it.
     //
-    // HubAssetBurnable address: AssetManager, EOLSettlementManager
+    // HubAssetBurnable address: AssetManager
     _;
   }
 

@@ -4,7 +4,7 @@ pragma solidity ^0.8.26;
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 import { IEOLRewardConfigurator } from '../../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
 
-contract EOLSettlementManagerStorageV1 {
+contract EOLRewardManagerStorageV1 {
   using ERC7201Utils for string;
 
   struct RewardInfo {
@@ -19,7 +19,7 @@ contract EOLSettlementManagerStorageV1 {
     mapping(address eolVault => mapping(uint48 timestamp => RewardInfo[] rewardInfos)) rewardTreasury;
   }
 
-  string private constant _NAMESPACE = 'mitosis.storage.EOLSettlementManagerStorage.v1';
+  string private constant _NAMESPACE = 'mitosis.storage.EOLRewardManagerStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
