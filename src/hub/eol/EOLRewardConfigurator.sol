@@ -43,7 +43,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   }
 
   function getEOLAssetHolderRewardRatio() external pure returns (uint256) {
-    return 10000; // 100%
+    return REWARD_RATIO_PRECISION; // 100%
   }
 
   function isDistributorRegistered(IEOLRewardDistributor distributor) external view returns (bool) {
