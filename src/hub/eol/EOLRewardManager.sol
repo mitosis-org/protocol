@@ -8,7 +8,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
 
-import { DistributeType, IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
+import { DistributionType, IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
 import { EOLRewardManagerStorageV1 } from './storage/EOLRewardManagerStorageV1.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { IEOLRewardManager } from '../../interfaces/hub/eol/IEOLRewardManager.sol';
@@ -29,7 +29,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     address indexed rewardDistributor,
     address indexed eolVault,
     address indexed reward,
-    DistributeType distributeType,
+    DistributionType distributionType,
     uint256 amount
   );
   event UnspecifiedReward(address indexed eolVault, address indexed reward, uint48 timestamp, uint256 amount);
@@ -124,7 +124,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
 
   function _routeEOLClaimableReward(address eolVault, address reward, uint256 amount) internal {
     bytes memory metadata;
-    if (_getStorageV1().rewardConfigurator.getDistributeType(eolVault, reward) == DistributeType.TWAB) {
+    if (_getStorageV1().rewardConfigurator.getDistributionType(eolVault, reward) == DistributionType.TWAB) {
       metadata = HandleRewardTWABMetadata(eolVault, Time.timestamp()).encode();
     }
 
@@ -133,7 +133,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
 
   function _routeHubAssetHolderClaimableReward(address eolVault, address reward, uint256 amount) internal {
     bytes memory metadata;
-    if (_getStorageV1().rewardConfigurator.getDistributeType(eolVault, reward) == DistributeType.TWAB) {
+    if (_getStorageV1().rewardConfigurator.getDistributionType(eolVault, reward) == DistributionType.TWAB) {
       address underlyingAsset = IEOLVault(eolVault).asset();
       metadata = HandleRewardTWABMetadata(underlyingAsset, Time.timestamp()).encode();
     }
@@ -149,18 +149,18 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
 
   function _routeClaimableReward(address eolVault, address reward, uint256 amount, bytes memory metadata) internal {
     StorageV1 storage $ = _getStorageV1();
-    DistributeType distributeType = $.rewardConfigurator.getDistributeType(eolVault, reward);
+    DistributionType distributionType = $.rewardConfigurator.getDistributionType(eolVault, reward);
 
-    if (distributeType == DistributeType.Unspecified) {
+    if (distributionType == DistributionType.Unspecified) {
       _storeToRewardManager(eolVault, reward, amount, Time.timestamp());
       return;
     }
 
-    IEOLRewardDistributor distributor = _distributor($, distributeType);
+    IEOLRewardDistributor distributor = _distributor($, distributionType);
 
     IERC20(reward).approve(address(distributor), amount);
     distributor.handleReward(eolVault, reward, amount, metadata);
-    emit RouteClaimableReward(address(distributor), eolVault, reward, distributeType, amount);
+    emit RouteClaimableReward(address(distributor), eolVault, reward, distributionType, amount);
   }
 
   function _processDispatch(
@@ -202,15 +202,15 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     emit UnspecifiedReward(eolVault, reward, timestamp, amount);
   }
 
-  function _distributor(StorageV1 storage $, DistributeType distributeType)
+  function _distributor(StorageV1 storage $, DistributionType distributionType)
     internal
     view
     returns (IEOLRewardDistributor distributor)
   {
-    if (distributeType == DistributeType.TWAB) {
-      distributor = $.rewardConfigurator.getDefaultDistributor(DistributeType.TWAB);
-    } else if (distributeType == DistributeType.MerkleProof) {
-      distributor = $.rewardConfigurator.getDefaultDistributor(DistributeType.MerkleProof);
+    if (distributionType == DistributionType.TWAB) {
+      distributor = $.rewardConfigurator.getDefaultDistributor(DistributionType.TWAB);
+    } else if (distributionType == DistributionType.MerkleProof) {
+      distributor = $.rewardConfigurator.getDefaultDistributor(DistributionType.MerkleProof);
     } else {
       revert StdError.NotImplemented();
     }

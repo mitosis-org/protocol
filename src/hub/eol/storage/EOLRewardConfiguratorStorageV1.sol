@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { DistributeType } from '../../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
+import { DistributionType } from '../../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 import { IEOLRewardDistributor } from '../../../interfaces/hub/eol/IEOLRewardDistributor.sol';
 
@@ -11,11 +11,11 @@ contract EOLRewardConfiguratorStorageV1 {
   struct StorageV1 {
     // TODO(ray): Reward ratio
     //
-    mapping(address eolVault => mapping(address asset => DistributeType distributeType)) distributeTypes;
-    // note: We strictly manage the DefaultDistributor. DistributeTypes without a set
+    mapping(address eolVault => mapping(address asset => DistributionType distributionType)) distributionTypes;
+    // note: We strictly manage the DefaultDistributor. DistributionTypes without a set
     // DefaultDistributor cannot be configured as the distribution method for assets.
     // And once initialized, the DefaultDistributor cannot be set to a zero address.
-    mapping(DistributeType distributeType => IEOLRewardDistributor distributor) defaultDistributor;
+    mapping(DistributionType distributionType => IEOLRewardDistributor distributor) defaultDistributor;
     mapping(IEOLRewardDistributor distributor => bool registered) distributorRegistry;
   }
 

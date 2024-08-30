@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import { IEOLRewardDistributor } from './IEOLRewardDistributor.sol';
 
-enum DistributeType {
+enum DistributionType {
   Unspecified,
   MerkleProof,
   TWAB
@@ -12,9 +12,9 @@ enum DistributeType {
 interface IEOLRewardConfigurator {
   error IEOLRewardConfigurator__RewardDistributorNotRegistered();
 
-  function getDistributeType(address eolVault, address asset) external view returns (DistributeType);
+  function getDistributionType(address eolVault, address asset) external view returns (DistributionType);
 
-  function getDefaultDistributor(DistributeType distributeType) external view returns (IEOLRewardDistributor);
+  function getDefaultDistributor(DistributionType distributionType) external view returns (IEOLRewardDistributor);
 
   function getRewardRatioPrecision() external pure returns (uint256);
 
@@ -22,9 +22,9 @@ interface IEOLRewardConfigurator {
 
   function isDistributorRegistered(IEOLRewardDistributor distributor) external view returns (bool);
 
-  function setRewardDistributeType(address eolVault, address asset, DistributeType distributeType) external;
+  function setRewardDistributionType(address eolVault, address asset, DistributionType distributionType) external;
 
-  function setDefaultDistributor(DistributeType distributeType, IEOLRewardDistributor distributor) external;
+  function setDefaultDistributor(DistributionType distributionType, IEOLRewardDistributor distributor) external;
 
   function registerDistributor(IEOLRewardDistributor distributor) external;
 }

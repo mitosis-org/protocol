@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import { DistributeType } from './IEOLRewardConfigurator.sol';
+import { DistributionType } from './IEOLRewardConfigurator.sol';
 
 interface IEOLRewardDistributor {
-  function distributeType() external view returns (DistributeType);
+  function distributionType() external view returns (DistributionType);
 
   function description() external view returns (string memory);
 
