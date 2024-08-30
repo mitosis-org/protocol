@@ -70,35 +70,41 @@ contract MitosisLedger is IMitosisLedger, Ownable2StepUpgradeable, MitosisLedger
     _getStorageV1().chainStates[chainId].amounts[asset] -= amount;
   }
 
-  function recordOptIn(address eolVault, uint256 amount) external /* auth */ {
-    _getStorageV1().eolStates[eolVault].eolAmountState.total += amount;
+  // EOL Vault
+
+  function recordOptIn(address eolVault, uint256 shares) external /* auth */ {
+    EOLAmountState storage state = _getStorageV1().eolStates[eolVault].eolAmountState;
+    state.total += shares;
+    state.idle += shares;
   }
 
-  function recordOptOutRequest(address eolVault, uint256 amount) external /* auth */ {
+  function recordAllocateEOL(address eolVault, uint256 shares) external /* auth */ {
     EOLAmountState storage state = _getStorageV1().eolStates[eolVault].eolAmountState;
-    state.optOutPending += amount;
+    state.idle -= shares;
   }
 
-  function recordAllocateEOL(address eolVault, uint256 amount) external /* auth */ {
+  function recordDeallocateEOL(address eolVault, uint256 shares) external /* auth */ {
     EOLAmountState storage state = _getStorageV1().eolStates[eolVault].eolAmountState;
-    state.idle -= amount;
+    state.idle += shares;
   }
 
-  function recordDeallocateEOL(address eolVault, uint256 amount) external /* auth */ {
+  // Opt Out Queue
+
+  function recordOptOutRequest(address eolVault, uint256 assets) external /* auth */ {
     EOLAmountState storage state = _getStorageV1().eolStates[eolVault].eolAmountState;
-    state.idle += amount;
+    state.optOutPending += assets;
   }
 
-  function recordOptOutResolve(address eolVault, uint256 amount) external /* auth */ {
+  function recordOptOutResolve(address eolVault, uint256 shares) external /* auth */ {
     EOLAmountState storage state = _getStorageV1().eolStates[eolVault].eolAmountState;
-    state.idle -= amount;
-    state.optOutResolved += amount;
+    state.idle -= shares;
+    state.total -= shares;
+    state.optOutResolved += IEOLVault(eolVault).convertToAssets(shares);
   }
 
-  function recordOptOutClaim(address eolVault, uint256 amount) external /* auth */ {
+  function recordOptOutClaim(address eolVault, uint256 assets) external /* auth */ {
     EOLAmountState storage state = _getStorageV1().eolStates[eolVault].eolAmountState;
-    state.optOutPending -= amount;
-    state.optOutResolved -= amount;
-    state.total -= amount;
+    state.optOutPending -= assets;
+    state.optOutResolved -= assets;
   }
 }
