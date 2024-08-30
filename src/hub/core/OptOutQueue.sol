@@ -342,10 +342,10 @@ contract OptOutQueue is IOptOutQueue, Ownable2StepUpgradeable, OptOutQueueStorag
     IMitosisLedger.EOLAmountState memory state = $.ledger.eolAmountState(eolVault);
     if (state.idle == 0) return; // nothing to sync
 
-    uint256 pending = _queue($, eolVault).pending() + 1; // FIXME: tricky way to avoid rounding error
+    uint256 pending = _queue($, eolVault).pending();
     if (pending == 0) return; // nothing to reserve
 
-    uint256 pendingShares = IEOLVault(eolVault).convertToShares(pending);
+    uint256 pendingShares = IEOLVault(eolVault).convertToShares(pending + 1); // FIXME: tricky way to avoid rounding error
     uint256 resolveShares = Math.min(pendingShares, state.idle);
     uint256 resolveAssets = IEOLVault(eolVault).convertToAssets(resolveShares);
 
