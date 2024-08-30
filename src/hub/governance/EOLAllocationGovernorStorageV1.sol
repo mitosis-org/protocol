@@ -3,9 +3,9 @@ pragma solidity ^0.8.26;
 
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
-import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
 import { IEOLProtocolRegistry } from '../../interfaces/eol/IEOLProtocolRegistry.sol';
+import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 
 struct Epoch {
   uint256 id;
