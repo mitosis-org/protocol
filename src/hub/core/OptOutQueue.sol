@@ -9,28 +9,16 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 import { IEOLVault } from '../../interfaces/hub/core/IEolVault.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
+import { IOptOutQueue } from '../../interfaces/hub/core/IOptOutQueue.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { OptOutQueueStorageV1 } from './storage/OptOutQueueStorageV1.sol';
 
-contract OptOutQueue is Ownable2StepUpgradeable, OptOutQueueStorageV1 {
+contract OptOutQueue is IOptOutQueue, Ownable2StepUpgradeable, OptOutQueueStorageV1 {
   using SafeERC20 for IEOLVault;
   using SafeERC20 for IHubAsset;
   using Math for uint256;
   using LibRedeemQueue for *;
-
-  struct GetRequestResponse {
-    uint256 id;
-    uint256 shares;
-    LibRedeemQueue.Request request;
-  }
-
-  struct GetRequestByIndexResponse {
-    uint256 id;
-    uint256 indexId;
-    uint256 shares;
-    LibRedeemQueue.Request request;
-  }
 
   struct ClaimConfig {
     address receiver;

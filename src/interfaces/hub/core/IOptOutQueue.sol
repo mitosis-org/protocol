@@ -1,0 +1,59 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+import { LibRedeemQueue } from '../../../lib/LibRedeemQueue.sol';
+
+interface IOptOutQueue {
+  struct GetRequestResponse {
+    uint256 id;
+    uint256 shares;
+    LibRedeemQueue.Request request;
+  }
+
+  struct GetRequestByIndexResponse {
+    uint256 id;
+    uint256 indexId;
+    uint256 shares;
+    LibRedeemQueue.Request request;
+  }
+
+  // View functions
+  function redeemPeriod(address eolVault) external view returns (uint256);
+
+  function getRequest(address eolVault, uint256[] calldata reqIds)
+    external
+    view
+    returns (GetRequestResponse[] memory resp);
+  function getRequestByReceiver(address eolVault, address receiver, uint256[] calldata idxItemIds)
+    external
+    view
+    returns (GetRequestByIndexResponse[] memory resp);
+
+  function reservedAt(address eolVault, uint256 reqId) external view returns (uint256 reservedAt_, bool isReserved);
+  function resolvedAt(address eolVault, uint256 reqId) external view returns (uint256 resolvedAt_, bool isResolved);
+  function requestAmount(address eolVault, uint256 reqId) external view returns (uint256);
+
+  function queueSize(address eolVault) external view returns (uint256);
+  function queueIndexSize(address eolVault, address recipient) external view returns (uint256);
+  function queueOffset(address eolVault, bool simulate) external view returns (uint256 offset);
+  function queueIndexOffset(address eolVault, address recipient, bool simulate) external view returns (uint256 offset);
+
+  function totalReserved(address eolVault) external view returns (uint256);
+  function totalClaimed(address eolVault) external view returns (uint256);
+  function totalPending(address eolVault) external view returns (uint256);
+
+  function reserveHistory(address eolVault, uint256 index) external view returns (LibRedeemQueue.ReserveLog memory);
+  function reserveHistoryLength(address eolVault) external view returns (uint256);
+
+  function isEnabled(address eolVault) external view returns (bool);
+  function getBreadcrumb(address eolVault) external view returns (uint256);
+
+  // Queue functions
+  function request(uint256 shares, address receiver, address eolVault) external returns (uint256 reqId);
+  function claim(address receiver, address eolVault) external returns (uint256 totalClaimed_);
+  function sync(address eolVault) external;
+
+  // Config functions
+  function enable(address eolVault) external;
+  function setRedeemPeriod(address eolVault, uint256 redeemPeriod_) external;
+}
