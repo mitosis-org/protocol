@@ -79,6 +79,9 @@ contract OptOutQueueTest is Test, Toolkit {
   function test_onNormal() public {
     _optOutRequest(_user, 100 ether);
 
+    vm.expectRevert(_errNothingToClaim());
+    _optOutClaim(_user);
+
     vm.warp(block.timestamp + _optOutQueue.redeemPeriod(address(_eolVault)));
 
     _optOutClaim(_user);
@@ -89,6 +92,9 @@ contract OptOutQueueTest is Test, Toolkit {
 
   function test_onLossReported() public {
     _optOutRequest(_user, 100 ether);
+
+    vm.expectRevert(_errNothingToClaim());
+    _optOutClaim(_user);
 
     vm.warp(block.timestamp + _optOutQueue.redeemPeriod(address(_eolVault)));
 
@@ -101,6 +107,9 @@ contract OptOutQueueTest is Test, Toolkit {
 
   function test_onYieldReported() public {
     _optOutRequest(_user, 100 ether);
+
+    vm.expectRevert(_errNothingToClaim());
+    _optOutClaim(_user);
 
     vm.warp(block.timestamp + _optOutQueue.redeemPeriod(address(_eolVault)));
 
