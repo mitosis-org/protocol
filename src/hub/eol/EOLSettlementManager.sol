@@ -20,6 +20,20 @@ import { StdError } from '../../lib/StdError.sol';
 contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerStorageV1 {
   using DistributorHandleRewardMetadataLib for HandleRewardTWABMetadata;
 
+  event DispatchedTo(
+    address indexed rewardDistributor, address indexed eolVault, address indexed reward, uint256 amount
+  );
+  event EOLShareValueIncreased(address indexed eolVault, uint256 indexed amount);
+  event EOLShareValueDecreased(address indexed eolVault, uint256 indexed amount);
+  event RouteClaimableReward(
+    address indexed rewardDistributor,
+    address indexed eolVault,
+    address indexed reward,
+    DistributeType distributeType,
+    uint256 amount
+  );
+  event UnspecifiedReward(address indexed eolVault, address indexed reward, uint48 timestamp, uint256 amount);
+
   error EOLSettlementManager__InvalidDispatchRequest(address reward, uint256 index);
 
   constructor() {
@@ -130,10 +144,12 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
 
   function _increaseEOLShareValue(address eolVault, uint256 assets) internal {
     IHubAsset(IEOLVault(eolVault).asset()).mint(eolVault, assets);
+    emit EOLShareValueIncreased(eolVault, assets);
   }
 
   function _decreaseEOLShareValue(address eolVault, uint256 assets) internal {
     IHubAsset(IEOLVault(eolVault).asset()).burn(eolVault, assets);
+    emit EOLShareValueDecreased(eolVault, assets);
   }
 
   function _routeClaimableReward(address eolVault, address reward, uint256 amount, bytes memory metadata) internal {
@@ -151,6 +167,7 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
 
     IERC20(reward).approve(address(distributor), amount);
     distributor.handleReward(eolVault, reward, amount, metadata);
+    emit RouteClaimableReward(address(distributor), eolVault, reward, distributeType, amount);
   }
 
   function _processDispatch(
@@ -183,10 +200,13 @@ contract EOLSettlementManager is Ownable2StepUpgradeable, EOLSettlementManagerSt
     IERC20(asset).approve(address(distributor), amount);
 
     distributor.handleReward(eolVault, asset, amount, metadata);
+
+    emit DispatchedTo(address(distributor), eolVault, asset, amount);
   }
 
   function _storeToRewardManager(address eolVault, address reward, uint256 amount, uint48 timestamp) internal {
     _getStorageV1().rewardTreasury[eolVault][timestamp].push(RewardInfo(reward, amount, false));
+    emit UnspecifiedReward(eolVault, reward, timestamp, amount);
   }
 
   function _distributor(StorageV1 storage $, DistributeType distributeType)
