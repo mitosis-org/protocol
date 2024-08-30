@@ -204,6 +204,7 @@ contract OptOutQueue is IOptOutQueue, Ownable2StepUpgradeable, OptOutQueueStorag
     // NOTE: burn?
     $.states[eolVault].breadcrumb += breadcrumb;
 
+    $.ledger.recordOptOutClaim(eolVault, totalClaimed_);
     cfg.hubAsset.safeTransfer(receiver, totalClaimed_);
 
     emit OptOutRequestClaimed(receiver, eolVault, totalClaimed_, breadcrumb);
