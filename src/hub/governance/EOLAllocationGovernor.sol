@@ -30,6 +30,10 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
   error EOLAllocationGovernor__EpochNotFound(uint256 epochId);
   error EOLAllocationGovernor__EpochNotOngoing(uint256 epochId);
 
+  error EOLAllocationGovernor__ZeroGaugesLength();
+  error EOLAllocationGovernor__InvalidGaugesLength(uint256 actual, uint256 expected);
+  error EOLAllocationGovernor__InvalidGaugesSum();
+
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
   constructor() {
@@ -122,11 +126,11 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
     Epoch storage epoch = _ongoingEpoch($);
     EpochVoteInfo storage epochVoteInfo = _getOrInitEpochVoteInfo($, epoch, chainId);
 
-    if (gauges.length != 0) revert StdError.InvalidParameter('gauges: should not be empty');
+    if (gauges.length != 0) revert EOLAllocationGovernor__ZeroGaugesLength();
     if (gauges.length != epochVoteInfo.protocolIds.length) {
-      revert StdError.InvalidParameter('gauges: length should be equal to protocolIds');
+      revert EOLAllocationGovernor__InvalidGaugesLength(gauges.length, epochVoteInfo.protocolIds.length);
     }
-    if (_sum(gauges) != 100) revert StdError.InvalidParameter('gauges: sum should be 100');
+    if (_sum(gauges) != 100) revert EOLAllocationGovernor__InvalidGaugesSum();
 
     epochVoteInfo.gaugesByAccount[_msgSender()] = gauges;
 
