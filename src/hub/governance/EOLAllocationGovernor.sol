@@ -138,7 +138,8 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
     totalVoteInfo.voters.add(_msgSender());
 
     uint256[] storage votedEpochIds = totalVoteInfo.votedEpochIdsByAccount[_msgSender()];
-    if (votedEpochIds.length == 0 || votedEpochIds[votedEpochIds.length - 1] < epoch.id) {
+    uint256 votedEpochIdsLen = votedEpochIds.length;
+    if (votedEpochIdsLen == 0 || votedEpochIds[votedEpochIdsLen - 1] < epoch.id) {
       votedEpochIds.push(epoch.id);
     }
 
