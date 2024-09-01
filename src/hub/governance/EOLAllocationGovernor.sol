@@ -96,10 +96,10 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
     if (!exists) return (false, votingPower, 0, new uint256[](0));
 
     EpochVoteInfo storage latestVotedEpochVoteInfo = $.epochs[latestVotedEpochId].voteInfoByChainId[chainId];
-    uint256[] storage latestVotedProtocolIds = latestVotedEpochVoteInfo.protocolIds;
-    uint256[] storage latestVotedGauges = latestVotedEpochVoteInfo.gaugesByAccount[account];
+    uint256[] memory latestVotedProtocolIds = latestVotedEpochVoteInfo.protocolIds;
+    uint256[] memory latestVotedGauges = latestVotedEpochVoteInfo.gaugesByAccount[account];
 
-    uint256[] storage protocolIds_ = epoch.voteInfoByChainId[chainId].protocolIds;
+    uint256[] memory protocolIds_ = epoch.voteInfoByChainId[chainId].protocolIds;
     gauges = new uint256[](protocolIds_.length);
     gaugeSum = 0;
 
@@ -181,8 +181,8 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
     view
     returns (bool exists, uint256 latestVotedEpochId)
   {
-    uint256[] storage votedEpochIds = $.totalVoteInfoByChainId[chainId].votedEpochIdsByAccount[account];
-    uint256 upperBoundIdx = votedEpochIds.upperBound(epochIdBefore);
+    uint256[] memory votedEpochIds = $.totalVoteInfoByChainId[chainId].votedEpochIdsByAccount[account];
+    uint256 upperBoundIdx = votedEpochIds.upperBoundMemory(epochIdBefore);
     if (upperBoundIdx == 0) return (false, 0);
     else return (true, votedEpochIds[upperBoundIdx - 1]);
   }
