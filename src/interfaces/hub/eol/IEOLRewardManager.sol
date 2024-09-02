@@ -11,7 +11,7 @@ interface IEOLRewardManager {
   function dispatchTo(
     IEOLRewardDistributor distributor,
     address eolVault,
-    address asset,
+    address reward,
     uint48 timestamp,
     uint256[] calldata indexes,
     bytes[] calldata metadata
@@ -20,7 +20,7 @@ interface IEOLRewardManager {
   function dispatchTo(
     IEOLRewardDistributor distributor,
     address eolVault,
-    address asset,
+    address reward,
     uint48 timestamp,
     uint256 index,
     bytes memory metadata

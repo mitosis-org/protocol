@@ -21,9 +21,7 @@ import { EOLRewardManagerStorageV1 } from './storage/EOLRewardManagerStorageV1.s
 contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewardManagerStorageV1 {
   using LibDistributorHandleRewardMetadata for HandleRewardTWABMetadata;
 
-  event DispatchedTo(
-    address indexed rewardDistributor, address indexed eolVault, address indexed reward, uint256 amount
-  );
+  event Dispatched(address indexed rewardDistributor, address indexed eolVault, address indexed reward, uint256 amount);
   event EOLShareValueIncreased(address indexed eolVault, uint256 indexed amount);
   event RouteClaimableReward(
     address indexed rewardDistributor,
@@ -82,7 +80,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   function dispatchTo(
     IEOLRewardDistributor distributor,
     address eolVault,
-    address asset,
+    address reward,
     uint48 timestamp,
     uint256[] calldata indexes,
     bytes[] calldata metadata
@@ -94,14 +92,14 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     _assertDistributorRegistered($, distributor);
 
     for (uint256 i = 0; i < indexes.length; i++) {
-      _processDispatch($, distributor, eolVault, asset, timestamp, indexes[i], metadata[i]);
+      _processDispatch($, distributor, eolVault, reward, timestamp, indexes[i], metadata[i]);
     }
   }
 
   function dispatchTo(
     IEOLRewardDistributor distributor,
     address eolVault,
-    address asset,
+    address reward,
     uint48 timestamp,
     uint256 index,
     bytes memory metadata
@@ -110,7 +108,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
 
     _assertDistributorRegistered($, distributor);
 
-    _processDispatch($, distributor, eolVault, asset, timestamp, index, metadata);
+    _processDispatch($, distributor, eolVault, reward, timestamp, index, metadata);
   }
 
   function _calcReward(StorageV1 storage $, uint256 totalAmount)
@@ -176,18 +174,18 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     StorageV1 storage $,
     IEOLRewardDistributor distributor,
     address eolVault,
-    address asset,
+    address reward,
     uint48 timestamp,
     uint256 index,
     bytes memory metadata
   ) internal {
     RewardInfo storage rewardInfo = $.rewardTreasury[eolVault][timestamp][index];
 
-    if (!_isDispatchableRequest(rewardInfo, asset)) {
-      revert EOLRewardManager__InvalidDispatchRequest(asset, index);
+    if (!_isDispatchableRequest(rewardInfo, reward)) {
+      revert EOLRewardManager__InvalidDispatchRequest(reward, index);
     }
 
-    _dispatchTo(rewardInfo, distributor, eolVault, asset, metadata);
+    _dispatchTo(rewardInfo, distributor, eolVault, reward, metadata);
   }
 
   function _dispatchTo(
@@ -204,7 +202,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
 
     distributor.handleReward(eolVault, asset, amount, metadata);
 
-    emit DispatchedTo(address(distributor), eolVault, asset, amount);
+    emit Dispatched(address(distributor), eolVault, asset, amount);
   }
 
   function _storeToRewardManager(
