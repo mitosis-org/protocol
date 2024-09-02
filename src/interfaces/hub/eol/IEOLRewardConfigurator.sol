@@ -13,11 +13,12 @@ interface IEOLRewardConfigurator {
   error IEOLRewardConfigurator__RewardDistributorAlreadyRegistered();
   error IEOLRewardConfigurator__RewardDistributorNotRegistered();
 
+  // TODO(ray): Could be configurable.
+  function rewardRatioPrecision() external pure returns (uint256);
+
   function getDistributionType(address eolVault, address asset) external view returns (DistributionType);
 
   function getDefaultDistributor(DistributionType distributionType) external view returns (IEOLRewardDistributor);
-
-  function getRewardRatioPrecision() external pure returns (uint256);
 
   function getEOLAssetHolderRewardRatio() external view returns (uint256);
 

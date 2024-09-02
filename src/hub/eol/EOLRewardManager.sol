@@ -118,7 +118,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     returns (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward)
   {
     uint256 eolAssetHolderRatio = $.rewardConfigurator.getEOLAssetHolderRewardRatio();
-    uint256 precision = $.rewardConfigurator.getRewardRatioPrecision();
+    uint256 precision = $.rewardConfigurator.rewardRatioPrecision();
     eolAssetHolderReward = Math.mulDiv(totalAmount, eolAssetHolderRatio, precision);
     hubAssetHolderReward = totalAmount - eolAssetHolderReward;
   }

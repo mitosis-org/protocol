@@ -42,7 +42,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     return _getStorageV1().defaultDistributor[distributionType];
   }
 
-  function getRewardRatioPrecision() external pure returns (uint256) {
+  function rewardRatioPrecision() external pure returns (uint256) {
     return REWARD_RATIO_PRECISION;
   }
 
