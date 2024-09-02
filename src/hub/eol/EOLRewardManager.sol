@@ -46,6 +46,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     _getStorageV1().assetManager = assetManager;
   }
 
+  // TODO(ray): must be set when introdue RoleManager
   modifier onlyRewardManagerAdmin() {
     _;
   }
