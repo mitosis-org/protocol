@@ -53,6 +53,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     __Pausable_init();
     __Ownable2Step_init();
     _transferOwnership(owner_);
+
+    _assertOnlyContract(mitosisLedger_, 'mitosisLedger_');
+
     _getStorageV1().mitosisLedger = IMitosisLedger(mitosisLedger_);
   }
 
@@ -158,6 +161,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
   function initializeAsset(uint256 chainId, address hubAsset) external onlyOwner {
+    _assertOnlyContract(hubAsset, 'hubAsset');
+
     StorageV1 storage $ = _getStorageV1();
 
     address branchAsset = $.branchAssets[hubAsset][chainId];
@@ -168,6 +173,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external onlyOwner {
+    _assertOnlyContract(address(hubAsset), 'hubAsset');
+    _assertOnlyContract(address(branchAsset), 'branchAsset');
+
     // TODO(ray): handle already initialized asset through initializeAsset.
     //
     // https://github.com/mitosis-org/protocol/pull/23#discussion_r1728680943
@@ -178,16 +186,22 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function setEntrypoint(IAssetManagerEntrypoint entrypoint) external onlyOwner {
+    _assertOnlyContract(address(entrypoint), 'entrypoint');
+
     _getStorageV1().entrypoint = entrypoint;
     emit EntrypointSet(address(entrypoint));
   }
 
   function setEOLRewardManager(IEOLRewardManager rewardManager) external onlyOwner {
+    _assertOnlyContract(address(rewardManager), 'rewardManager');
+
     _getStorageV1().rewardManager = rewardManager;
     emit EOLRewardManagerSet(address(rewardManager));
   }
 
   function initializeEOL(uint256 chainId, address eolVault) external onlyOwner {
+    _assertOnlyContract(eolVault, 'eolVault');
+
     StorageV1 storage $ = _getStorageV1();
 
     address hubAsset = IEOLVault(eolVault).asset();
@@ -224,5 +238,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
   function _assertEOLRewardManagerSet(StorageV1 storage $) internal view {
     if (address($.rewardManager) == address(0)) revert AssetManager__EOLRewardManagerNotSet();
+  }
+
+  function _assertOnlyContract(address addr, string memory paramName) internal view {
+    if (addr.code.length == 0) revert StdError.InvalidParameter(paramName);
   }
 }

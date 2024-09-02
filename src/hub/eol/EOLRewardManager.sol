@@ -69,7 +69,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     IHubAsset(reward).transfer(address(this), amount);
 
     (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward) = _calcReward(_getStorageV1(), amount);
-    
+
     _routeEOLClaimableReward(eolVault, reward, eolAssetHolderReward);
     _routeHubAssetHolderClaimableReward(eolVault, reward, hubAssetHolderReward);
   }
