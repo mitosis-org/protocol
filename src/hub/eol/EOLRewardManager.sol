@@ -59,19 +59,23 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     address reward = IEOLVault(eolVault).asset();
     IHubAsset(reward).transfer(address(this), amount);
 
-    (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward) = _calcReward(_getStorageV1(), amount);
+    StorageV1 storage $ = _getStorageV1();
+
+    (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward) = _calcReward($, amount);
 
     _increaseEOLShareValue(eolVault, eolAssetHolderReward);
-    _routeHubAssetHolderClaimableReward(eolVault, reward, hubAssetHolderReward);
+    _routeHubAssetHolderClaimableReward($, eolVault, reward, hubAssetHolderReward);
   }
 
   function routeExtraReward(address eolVault, address reward, uint256 amount) external onlyAssetManager {
     IHubAsset(reward).transfer(address(this), amount);
 
-    (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward) = _calcReward(_getStorageV1(), amount);
+    StorageV1 storage $ = _getStorageV1();
 
-    _routeEOLClaimableReward(eolVault, reward, eolAssetHolderReward);
-    _routeHubAssetHolderClaimableReward(eolVault, reward, hubAssetHolderReward);
+    (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward) = _calcReward($, amount);
+
+    _routeEOLClaimableReward($, eolVault, reward, eolAssetHolderReward);
+    _routeHubAssetHolderClaimableReward($, eolVault, reward, hubAssetHolderReward);
   }
 
   function dispatchTo(
@@ -123,23 +127,25 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     hubAssetHolderReward = totalAmount - eolAssetHolderReward;
   }
 
-  function _routeEOLClaimableReward(address eolVault, address reward, uint256 amount) internal {
+  function _routeEOLClaimableReward(StorageV1 storage $, address eolVault, address reward, uint256 amount) internal {
     bytes memory metadata;
-    if (_getStorageV1().rewardConfigurator.getDistributionType(eolVault, reward) == DistributionType.TWAB) {
+    if ($.rewardConfigurator.getDistributionType(eolVault, reward) == DistributionType.TWAB) {
       metadata = HandleRewardTWABMetadata(eolVault, Time.timestamp()).encode();
     }
 
-    _routeClaimableReward(eolVault, reward, amount, metadata);
+    _routeClaimableReward($, eolVault, reward, amount, metadata);
   }
 
-  function _routeHubAssetHolderClaimableReward(address eolVault, address reward, uint256 amount) internal {
+  function _routeHubAssetHolderClaimableReward(StorageV1 storage $, address eolVault, address reward, uint256 amount)
+    internal
+  {
     bytes memory metadata;
-    if (_getStorageV1().rewardConfigurator.getDistributionType(eolVault, reward) == DistributionType.TWAB) {
+    if ($.rewardConfigurator.getDistributionType(eolVault, reward) == DistributionType.TWAB) {
       address underlyingAsset = IEOLVault(eolVault).asset();
       metadata = HandleRewardTWABMetadata(underlyingAsset, Time.timestamp()).encode();
     }
 
-    _routeClaimableReward(eolVault, reward, amount, metadata);
+    _routeClaimableReward($, eolVault, reward, amount, metadata);
   }
 
   function _increaseEOLShareValue(address eolVault, uint256 assets) internal {
@@ -148,8 +154,13 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     emit EOLShareValueIncreased(eolVault, assets);
   }
 
-  function _routeClaimableReward(address eolVault, address reward, uint256 amount, bytes memory metadata) internal {
-    StorageV1 storage $ = _getStorageV1();
+  function _routeClaimableReward(
+    StorageV1 storage $,
+    address eolVault,
+    address reward,
+    uint256 amount,
+    bytes memory metadata
+  ) internal {
     DistributionType distributionType = $.rewardConfigurator.getDistributionType(eolVault, reward);
 
     if (distributionType == DistributionType.Unspecified) {
