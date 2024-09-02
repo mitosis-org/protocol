@@ -15,11 +15,11 @@ import { IEOLRewardManager } from '../../interfaces/hub/eol/IEOLRewardManager.so
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { DistributorHandleRewardMetadataLib, HandleRewardTWABMetadata } from './DistributorHandleRewardMetadataLib.sol';
+import { LibDistributorHandleRewardMetadata, HandleRewardTWABMetadata } from './LibDistributorHandleRewardMetadata.sol';
 import { EOLRewardManagerStorageV1 } from './storage/EOLRewardManagerStorageV1.sol';
 
 contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewardManagerStorageV1 {
-  using DistributorHandleRewardMetadataLib for HandleRewardTWABMetadata;
+  using LibDistributorHandleRewardMetadata for HandleRewardTWABMetadata;
 
   event DispatchedTo(
     address indexed rewardDistributor, address indexed eolVault, address indexed reward, uint256 amount
