@@ -12,7 +12,7 @@ contract EOLRewardConfiguratorStorageV1 {
     // TODO(ray): Reward ratio
     //
     mapping(address eolVault => mapping(address asset => DistributionType distributionType)) distributionTypes;
-    mapping(DistributionType distributionType => IEOLRewardDistributor[] distributors) distributorList;
+    mapping(DistributionType distributionType => IEOLRewardDistributor[] distributors) distributorLists;
     // note: We strictly manage the DefaultDistributor. DistributionTypes without a set
     // DefaultDistributor cannot be configured as the distribution method for assets.
     // And once initialized, the DefaultDistributor cannot be set to a zero address.

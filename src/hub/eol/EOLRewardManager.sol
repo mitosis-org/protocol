@@ -93,7 +93,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     _assertDistributorRegistered($, distributor);
 
     for (uint256 i = 0; i < indexes.length; i++) {
-      _processDispatch(distributor, eolVault, asset, timestamp, indexes[i], metadata[i]);
+      _processDispatch($, distributor, eolVault, asset, timestamp, indexes[i], metadata[i]);
     }
   }
 
@@ -109,7 +109,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
 
     _assertDistributorRegistered($, distributor);
 
-    _processDispatch(distributor, eolVault, asset, timestamp, index, metadata);
+    _processDispatch($, distributor, eolVault, asset, timestamp, index, metadata);
   }
 
   function _calcReward(StorageV1 storage $, uint256 totalAmount)
@@ -160,7 +160,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     DistributionType distributionType = $.rewardConfigurator.getDistributionType(eolVault, reward);
 
     if (distributionType == DistributionType.Unspecified) {
-      _storeToRewardManager(eolVault, reward, amount, Time.timestamp());
+      _storeToRewardManager($, eolVault, reward, amount, Time.timestamp());
       return;
     }
 
@@ -172,6 +172,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   }
 
   function _processDispatch(
+    StorageV1 storage $,
     IEOLRewardDistributor distributor,
     address eolVault,
     address asset,
@@ -179,7 +180,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     uint256 index,
     bytes memory metadata
   ) internal {
-    RewardInfo storage rewardInfo = _getStorageV1().rewardTreasury[eolVault][timestamp][index];
+    RewardInfo storage rewardInfo = $.rewardTreasury[eolVault][timestamp][index];
 
     if (!_isDispatchableRequest(rewardInfo, asset)) {
       revert EOLRewardManager__InvalidDispatchRequest(asset, index);
@@ -205,8 +206,14 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     emit DispatchedTo(address(distributor), eolVault, asset, amount);
   }
 
-  function _storeToRewardManager(address eolVault, address reward, uint256 amount, uint48 timestamp) internal {
-    _getStorageV1().rewardTreasury[eolVault][timestamp].push(RewardInfo(reward, amount, false));
+  function _storeToRewardManager(
+    StorageV1 storage $,
+    address eolVault,
+    address reward,
+    uint256 amount,
+    uint48 timestamp
+  ) internal {
+    $.rewardTreasury[eolVault][timestamp].push(RewardInfo(reward, amount, false));
     emit UnspecifiedReward(eolVault, reward, timestamp, amount);
   }
 

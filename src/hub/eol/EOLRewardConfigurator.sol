@@ -85,7 +85,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
 
     _assertDistributorNotRegisered($, distributor);
 
-    _getStorageV1().distributorList[distributor.distributionType()].push(distributor);
+    $.distributorLists[distributor.distributionType()].push(distributor);
     emit RewardDistributorRegistered(distributor);
   }
 
@@ -95,7 +95,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     _assertDistributorRegisered($, distributor);
     _assertNotDefaultDistributor($, distributor);
 
-    IEOLRewardDistributor[] storage distributors = $.distributorList[distributor.distributionType()];
+    IEOLRewardDistributor[] storage distributors = $.distributorLists[distributor.distributionType()];
     for (uint256 i = 0; i < distributors.length - 1; i++) {
       if (address(distributor) == address(distributors[i])) {
         distributors[i] = distributors[i + 1];
@@ -112,7 +112,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     view
     returns (bool)
   {
-    IEOLRewardDistributor[] storage distributors = $.distributorList[distributor.distributionType()];
+    IEOLRewardDistributor[] storage distributors = $.distributorLists[distributor.distributionType()];
     for (uint256 i = 0; i < distributors.length; i++) {
       if (address(distributor) == address(distributors[i])) return true;
     }
