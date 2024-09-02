@@ -10,6 +10,7 @@ enum DistributionType {
 }
 
 interface IEOLRewardConfigurator {
+  error IEOLRewardConfigurator__RewardDistributorAlreadyRegistered();
   error IEOLRewardConfigurator__RewardDistributorNotRegistered();
 
   function getDistributionType(address eolVault, address asset) external view returns (DistributionType);

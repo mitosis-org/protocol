@@ -12,11 +12,11 @@ contract EOLRewardConfiguratorStorageV1 {
     // TODO(ray): Reward ratio
     //
     mapping(address eolVault => mapping(address asset => DistributionType distributionType)) distributionTypes;
+    mapping(DistributionType distributionType => IEOLRewardDistributor[] distributors) distributorList;
     // note: We strictly manage the DefaultDistributor. DistributionTypes without a set
     // DefaultDistributor cannot be configured as the distribution method for assets.
     // And once initialized, the DefaultDistributor cannot be set to a zero address.
     mapping(DistributionType distributionType => IEOLRewardDistributor distributor) defaultDistributor;
-    mapping(IEOLRewardDistributor distributor => bool registered) distributorRegistry;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.EOLRewardConfiguratorStorage.v1';

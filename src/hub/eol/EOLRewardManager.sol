@@ -228,7 +228,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     return rewardInfo.asset == asset || !rewardInfo.dispatched || rewardInfo.amount > 0;
   }
 
-  function _assertDistributorRegistered(StorageV1 storage $, IEOLRewardDistributor distirbutor) internal view {
+  function _assertDistributorRegistered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
     if (!$.rewardConfigurator.isDistributorRegistered(distributor)) {
       revert IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered();
     }

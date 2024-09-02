@@ -51,7 +51,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   }
 
   function isDistributorRegistered(IEOLRewardDistributor distributor) external view returns (bool) {
-    return _getStorageV1().distributorRegistry[distributor];
+    return _isDistributorRegistered(_getStorageV1(), distributor);
   }
 
   // Mutative functions
@@ -81,17 +81,42 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   }
 
   function registerDistributor(IEOLRewardDistributor distributor) external onlyOwner {
-    _getStorageV1().distributorRegistry[distributor] = true;
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertDistributorNotRegisered($, distributor);
+
+    _getStorageV1().distributorList[distributor.distributionType()].push(distributor);
     emit RewardDistributorRegistered(distributor);
   }
 
   function unregisterDistributor(IEOLRewardDistributor distributor) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertDistributorRegisered($, distributor);
     _assertNotDefaultDistributor($, distributor);
 
-    $.distributorRegistry[distributor] = false;
+    IEOLRewardDistributor[] storage distributors = $.distributorList[distributor.distributionType()];
+    for (uint256 i = 0; i < distributors.length - 1; i++) {
+      if (address(distributor) == address(distributors[i])) {
+        distributors[i] = distributors[i + 1];
+        distributors.pop();
+        break;
+      }
+    }
+
     emit RewardDistributorUnregistered(distributor);
+  }
+
+  function _isDistributorRegistered(StorageV1 storage $, IEOLRewardDistributor distributor)
+    internal
+    view
+    returns (bool)
+  {
+    IEOLRewardDistributor[] storage distributors = $.distributorList[distributor.distributionType()];
+    for (uint256 i = 0; i < distributors.length; i++) {
+      if (address(distributor) == address(distributors[i])) return true;
+    }
+    return false;
   }
 
   function _assertDefaultDistributorSet(StorageV1 storage $, DistributionType distributionType) internal view {
@@ -101,7 +126,11 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   }
 
   function _assertDistributorRegisered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
-    if (!$.distributorRegistry[distributor]) revert IEOLRewardConfigurator__RewardDistributorNotRegistered();
+    if (!_isDistributorRegistered($, distributor)) revert IEOLRewardConfigurator__RewardDistributorNotRegistered();
+  }
+
+  function _assertDistributorNotRegisered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
+    if (_isDistributorRegistered($, distributor)) revert IEOLRewardConfigurator__RewardDistributorAlreadyRegistered();
   }
 
   function _assertNotDefaultDistributor(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
