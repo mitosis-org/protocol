@@ -13,16 +13,14 @@ library DistributorHandleRewardMetadataLib {
     return abi.encodePacked(metadata.erc20TwabSnapshots, metadata.timestamp);
   }
 
-  function decodeHandleRewardTWABMetadata(bytes memory enc)
+  function decodeHandleRewardTWABMetadata(bytes calldata enc)
     internal
     pure
     returns (HandleRewardTWABMetadata memory metadata)
   {
-    if (enc.length != 28) revert DistributorHandleRewardMetadataLib__InvalidMsgLength(enc.length, 28);
+    if (enc.length != 26) revert DistributorHandleRewardMetadataLib__InvalidMsgLength(enc.length, 26);
 
-    (address erc20TwabSnapshots, uint48 timestamp) = abi.decode(enc, (address, uint48));
-
-    metadata.erc20TwabSnapshots = erc20TwabSnapshots;
-    metadata.timestamp = timestamp;
+    metadata.erc20TwabSnapshots = address(bytes20(enc[0:20]));
+    metadata.timestamp = uint48(bytes6(enc[20:26]));
   }
 }
