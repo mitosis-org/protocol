@@ -90,9 +90,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
 
     StorageV1 storage $ = _getStorageV1();
 
-    if (!$.rewardConfigurator.isDistributorRegistered(distributor)) {
-      revert IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered();
-    }
+    _assertDistributorRegistered($, distributor);
 
     for (uint256 i = 0; i < indexes.length; i++) {
       _processDispatch(distributor, eolVault, asset, timestamp, indexes[i], metadata[i]);
@@ -109,9 +107,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   ) external onlyRewardManagerAdmin {
     StorageV1 storage $ = _getStorageV1();
 
-    if (!$.rewardConfigurator.isDistributorRegistered(distributor)) {
-      revert IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered();
-    }
+    _assertDistributorRegistered($, distributor);
 
     _processDispatch(distributor, eolVault, asset, timestamp, index, metadata);
   }
@@ -230,5 +226,11 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
 
   function _isDispatchableRequest(RewardInfo memory rewardInfo, address asset) internal pure returns (bool) {
     return rewardInfo.asset == asset || !rewardInfo.dispatched || rewardInfo.amount > 0;
+  }
+
+  function _assertDistributorRegistered(StorageV1 storage $, IEOLRewardDistributor distirbutor) internal view {
+    if (!$.rewardConfigurator.isDistributorRegistered(distributor)) {
+      revert IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered();
+    }
   }
 }
