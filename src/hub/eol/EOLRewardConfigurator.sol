@@ -98,7 +98,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     IEOLRewardDistributor[] storage distributors = $.distributorLists[distributor.distributionType()];
     for (uint256 i = 0; i < distributors.length - 1; i++) {
       if (address(distributor) == address(distributors[i])) {
-        distributors[i] = distributors[i + 1];
+        distributors[i] = distributors[distributors.length - 1];
         distributors.pop();
         break;
       }
