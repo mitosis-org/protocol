@@ -65,5 +65,5 @@ forge-std = "1.9.1"
 openzeppelin-foundry-upgrades = "0.3.1"
 "@openzeppelin-contracts" = "5.0.2"
 "@openzeppelin-contracts-upgradeable" = "5.0.2"
-"@openzeppelin-contracts-v4" = { version = "4.9.6", git = "git@github.com:OpenZeppelin/openzeppelin-contracts.git", rev = "v4.9.6" }
-"@openzeppelin-contracts-upgradeable-v4" = { version = "4.9.6", git = "git@github.com:OpenZeppelin/openzeppelin-contracts-upgradeable.git", rev = "v4.9.6" }
+"@openzeppelin-contracts-v4" = { version = "4.9.6", url = "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/refs/tags/v4.9.6.zip" }
+"@openzeppelin-contracts-upgradeable-v4" = { version = "4.9.6", url = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/archive/refs/tags/v4.9.6.zip" }

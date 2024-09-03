@@ -32,11 +32,11 @@ checksum = "fb3f8db8541fc01636f91b0e7d9dd6f450f1bf7e2b4a17e96caf6e779ace8f5b"
 [[dependencies]]
 name = "@openzeppelin-contracts-v4"
 version = "4.9.6"
-source = "git@github.com:OpenZeppelin/openzeppelin-contracts.git"
-checksum = "v4.9.6"
+source = "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/refs/tags/v4.9.6.zip"
+checksum = "7af0307b0ad8560aa09405da10bd705fd189b544597695b2c3046b15ce637e47"
 
 [[dependencies]]
 name = "@openzeppelin-contracts-upgradeable-v4"
 version = "4.9.6"
-source = "git@github.com:OpenZeppelin/openzeppelin-contracts-upgradeable.git"
-checksum = "v4.9.6"
+source = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/archive/refs/tags/v4.9.6.zip"
+checksum = "f438c623b1aa398337ec45cd92a4c13b0e0b079d28008f3c3be70f334ab6eba7"
