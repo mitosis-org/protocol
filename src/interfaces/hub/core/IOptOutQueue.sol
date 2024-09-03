@@ -6,14 +6,12 @@ import { LibRedeemQueue } from '../../../lib/LibRedeemQueue.sol';
 interface IOptOutQueueStorageV1 {
   struct GetRequestResponse {
     uint256 id;
-    uint256 assets;
     LibRedeemQueue.Request request;
   }
 
   struct GetRequestByIndexResponse {
     uint256 id;
     uint256 indexId;
-    uint256 assets;
     LibRedeemQueue.Request request;
   }
 

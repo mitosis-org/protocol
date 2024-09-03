@@ -12,7 +12,8 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
  */
 library LibRedeemQueue {
   struct Request {
-    uint256 accumulated;
+    uint256 accumulatedShares;
+    uint256 accumulatedAssets;
     address recipient;
     uint48 createdAt;
     uint48 claimedAt;
@@ -40,8 +41,8 @@ library LibRedeemQueue {
   struct Queue {
     uint256 offset;
     uint256 size;
-    uint256 totalReserved;
-    uint256 totalClaimed;
+    uint256 totalReservedAssets;
+    uint256 totalClaimedAssets;
     uint256 redeemPeriod;
     ReserveLog[] reserveHistory;
     mapping(uint256 index => Request item) data;
@@ -59,16 +60,19 @@ library LibRedeemQueue {
   error LibRedeemQueue__EmptyIndex(address recipient);
   error LibRedeemQueue__IndexOutOfRange(uint256 index, uint256 from, uint256 to);
   error LibRedeemQueue__NotReadyToClaim(uint256 index);
-  error LibRedeemQueue__InvalidRequestAmount();
+  error LibRedeemQueue__InvalidRequestAssets();
+  error LibRedeemQueue__InvalidRequestShares();
   error LibRedeemQueue__InvalidReserveAmount();
 
   function eq(Request memory x, Request memory y) internal pure returns (bool) {
-    return x.accumulated == y.accumulated && x.recipient == y.recipient //
+    return x.accumulatedAssets == y.accumulatedAssets && x.accumulatedShares == y.accumulatedShares
+      && x.recipient == y.recipient //
       && x.createdAt == y.createdAt && x.claimedAt == y.claimedAt;
   }
 
   function isEmpty(Request memory x) internal pure returns (bool) {
-    return x.accumulated == 0 && x.recipient == address(0) && x.createdAt == 0 && x.claimedAt == 0;
+    return x.accumulatedAssets == 0 && x.accumulatedShares == 0 && x.recipient == address(0) && x.createdAt == 0
+      && x.claimedAt == 0;
   }
 
   function isClaimed(Request memory x) internal pure returns (bool) {
@@ -76,7 +80,7 @@ library LibRedeemQueue {
   }
 
   function isReserved(Queue storage q, Request memory x) internal view returns (bool) {
-    return x.accumulated <= q.totalReserved;
+    return x.accumulatedAssets <= q.totalReservedAssets;
   }
 
   function get(Queue storage q, uint256 itemIndex) internal view returns (Request memory req) {
@@ -93,9 +97,15 @@ library LibRedeemQueue {
     return get(q, get(idx, i));
   }
 
-  function amount(Queue storage q, uint256 itemIndex) internal view returns (uint256) {
-    uint256 accumulated = get(q, itemIndex).accumulated;
-    uint256 prevAccumulated = itemIndex == 0 ? 0 : get(q, itemIndex - 1).accumulated;
+  function shares(Queue storage q, uint256 itemIndex) internal view returns (uint256) {
+    uint256 accumulated = get(q, itemIndex).accumulatedShares;
+    uint256 prevAccumulated = itemIndex == 0 ? 0 : get(q, itemIndex - 1).accumulatedShares;
+    return accumulated - prevAccumulated;
+  }
+
+  function assets(Queue storage q, uint256 itemIndex) internal view returns (uint256) {
+    uint256 accumulated = get(q, itemIndex).accumulatedAssets;
+    uint256 prevAccumulated = itemIndex == 0 ? 0 : get(q, itemIndex - 1).accumulatedAssets;
     return accumulated - prevAccumulated;
   }
 
@@ -120,8 +130,8 @@ library LibRedeemQueue {
   }
 
   function pending(Queue storage q) internal view returns (uint256) {
-    uint256 totalRequested = q.size == 0 ? 0 : q.data[q.size - 1].accumulated;
-    uint256 totalReserved = q.totalReserved;
+    uint256 totalRequested = q.size == 0 ? 0 : q.data[q.size - 1].accumulatedAssets;
+    uint256 totalReserved = q.totalReservedAssets;
     return totalRequested > totalReserved ? totalRequested - totalReserved : 0;
   }
 
@@ -188,14 +198,25 @@ library LibRedeemQueue {
     return _searchReserveLogByTimestamp(q.reserveHistory, timestamp);
   }
 
-  function enqueue(Queue storage q, address recipient, uint256 requestAmount_) internal returns (uint256 itemIndex) {
-    if (requestAmount_ == 0) revert LibRedeemQueue__InvalidRequestAmount();
+  function enqueue(Queue storage q, address recipient, uint256 requestAssets, uint256 requestShares)
+    internal
+    returns (uint256 itemIndex)
+  {
+    if (requestAssets == 0) revert LibRedeemQueue__InvalidRequestAssets();
+    if (requestShares == 0) revert LibRedeemQueue__InvalidRequestShares();
     bool isPrevItemExists = q.size > 0;
     itemIndex = q.size;
 
     // store request
+    if (isPrevItemExists) {
+      Request memory prevReq = q.data[itemIndex - 1];
+      requestAssets += prevReq.accumulatedAssets;
+      requestShares += prevReq.accumulatedShares;
+    }
+
     q.data[itemIndex] = Request({
-      accumulated: isPrevItemExists ? q.data[itemIndex - 1].accumulated + requestAmount_ : requestAmount_,
+      accumulatedAssets: requestAssets,
+      accumulatedShares: requestShares,
       recipient: recipient,
       createdAt: uint48(block.timestamp),
       claimedAt: 0
@@ -207,7 +228,7 @@ library LibRedeemQueue {
     idx.data[idx.size] = itemIndex;
     idx.size += 1;
 
-    emit Queued(recipient, itemIndex, requestAmount_);
+    emit Queued(recipient, itemIndex, requestAssets);
 
     return itemIndex;
   }
@@ -216,34 +237,23 @@ library LibRedeemQueue {
     return _claim(q, itemIndex, true);
   }
 
-  function claim(Queue storage q, uint256[] memory itemIndexes) internal returns (uint256 totalClaimed) {
+  function claim(Queue storage q, uint256[] memory itemIndexes) internal returns (uint256 totalClaimedAssets) {
     for (uint256 i = 0; i < itemIndexes.length; i++) {
-      totalClaimed += _claim(q, itemIndexes[i], false);
+      totalClaimedAssets += _claim(q, itemIndexes[i], false);
     }
-    if (totalClaimed > 0) q.totalClaimed += totalClaimed;
-    return totalClaimed;
+    if (totalClaimedAssets > 0) q.totalClaimedAssets += totalClaimedAssets;
+    return totalClaimedAssets;
   }
 
-  function _claim(Queue storage q, uint256 itemIndex, bool applyToState) internal returns (uint256 claimed) {
-    if (itemIndex >= q.size) revert LibRedeemQueue__IndexOutOfRange(itemIndex, 0, q.size - 1);
-    if (itemIndex >= q.offset) revert LibRedeemQueue__NotReadyToClaim(itemIndex);
-    Request memory req = q.data[itemIndex];
-    if (!isClaimed(req)) {
-      q.data[itemIndex].claimedAt = uint48(block.timestamp);
-      // simplified version of calculating request amount
-      claimed = itemIndex == 0 ? req.accumulated : req.accumulated - q.data[itemIndex - 1].accumulated;
-      if (applyToState) q.totalClaimed += claimed;
-    }
-    emit Claimed(req.recipient, itemIndex);
-    return claimed;
-  }
-
-  function claim(Queue storage q, address recipient) internal returns (uint256 totalClaimed) {
+  function claim(Queue storage q, address recipient) internal returns (uint256 totalClaimedAssets) {
     return claim(q, recipient, DEFAULT_CLAIM_SIZE);
   }
 
-  function claim(Queue storage q, address recipient, uint256 maxClaimSize) internal returns (uint256 totalClaimed) {
-    _updateQueueOffset(q, q.totalReserved);
+  function claim(Queue storage q, address recipient, uint256 maxClaimSize)
+    internal
+    returns (uint256 totalClaimedAssets)
+  {
+    _updateQueueOffset(q, q.totalReservedAssets);
 
     Index storage idx = q.indexes[recipient];
 
@@ -259,24 +269,25 @@ library LibRedeemQueue {
       if (itemIndex >= queueOffset) break;
       q.data[itemIndex].claimedAt = uint48(block.timestamp);
       // simplified version of calculating request amount
-      totalClaimed += itemIndex == 0 ? req.accumulated : req.accumulated - q.data[itemIndex - 1].accumulated;
+      totalClaimedAssets +=
+        itemIndex == 0 ? req.accumulatedAssets : req.accumulatedAssets - q.data[itemIndex - 1].accumulatedAssets;
 
       emit Claimed(recipient, itemIndex);
     }
 
     // update index offset and total claimed if there's any claimed request
-    if (totalClaimed > 0) {
+    if (totalClaimedAssets > 0) {
       idx.offset = i;
-      q.totalClaimed += totalClaimed;
+      q.totalClaimedAssets += totalClaimedAssets;
     }
-    return totalClaimed;
+    return totalClaimedAssets;
   }
 
   function reserve(Queue storage q, uint256 amount_) internal {
     if (amount_ == 0) revert LibRedeemQueue__InvalidReserveAmount();
     uint256 historyIndex = q.reserveHistory.length;
 
-    q.totalReserved += amount_;
+    q.totalReservedAssets += amount_;
     q.reserveHistory.push(
       ReserveLog({
         accumulated: q.reserveHistory.length == 0
@@ -286,17 +297,41 @@ library LibRedeemQueue {
       })
     );
 
-    _updateQueueOffset(q, q.totalReserved);
+    _updateQueueOffset(q, q.totalReservedAssets);
 
     emit Reserved(amount_, historyIndex);
   }
 
   function update(Queue storage q) internal returns (uint256 offset, bool updated) {
-    return _updateQueueOffset(q, q.totalReserved);
+    return _updateQueueOffset(q, q.totalReservedAssets);
   }
 
   function _mid(uint256 low, uint256 high) private pure returns (uint256) {
     return (low & high) + (low ^ high) / 2; // avoid overflow
+  }
+
+  function _convertToAssets(
+    uint256 shares_,
+    uint8 decimalsOffset,
+    uint256 totalAssets,
+    uint256 totalSupply,
+    Math.Rounding rounding
+  ) private pure returns (uint256) {
+    return Math.mulDiv(shares_, totalAssets + 1, totalSupply + 10 ** decimalsOffset, rounding);
+  }
+
+  function _claim(Queue storage q, uint256 itemIndex, bool applyToState) internal returns (uint256 claimed) {
+    if (itemIndex >= q.size) revert LibRedeemQueue__IndexOutOfRange(itemIndex, 0, q.size - 1);
+    if (itemIndex >= q.offset) revert LibRedeemQueue__NotReadyToClaim(itemIndex);
+    Request memory req = q.data[itemIndex];
+    if (!isClaimed(req)) {
+      q.data[itemIndex].claimedAt = uint48(block.timestamp);
+      // simplified version of calculating request amount
+      claimed = itemIndex == 0 ? req.accumulatedAssets : req.accumulatedAssets - q.data[itemIndex - 1].accumulatedAssets;
+      if (applyToState) q.totalClaimedAssets += claimed;
+    }
+    emit Claimed(req.recipient, itemIndex);
+    return claimed;
   }
 
   function _reservedAt(Queue storage q, Request memory req)
@@ -306,7 +341,7 @@ library LibRedeemQueue {
   {
     if (!isReserved(q, req)) return (0, false);
 
-    (ReserveLog memory log, bool found) = _searchReserveLogByAccumulated(q.reserveHistory, req.accumulated);
+    (ReserveLog memory log, bool found) = _searchReserveLogByAccumulated(q.reserveHistory, req.accumulatedAssets);
     if (!found) return (0, false);
 
     return (log.reservedAt, true);
@@ -348,7 +383,7 @@ library LibRedeemQueue {
     while (low < high) {
       uint256 mid = _mid(low, high);
       Request memory req = q.data[mid];
-      if (req.accumulated <= accumulated && req.createdAt + redeemPeriod <= block.timestamp) low = mid + 1;
+      if (req.accumulatedAssets <= accumulated && req.createdAt + redeemPeriod <= block.timestamp) low = mid + 1;
       else high = mid;
     }
 

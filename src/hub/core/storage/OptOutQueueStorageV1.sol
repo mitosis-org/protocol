@@ -18,7 +18,6 @@ contract OptOutQueueStorageV1 is IOptOutQueueStorageV1 {
     // vault
     uint8 decimalsOffset;
     uint8 underlyingDecimals;
-    mapping(uint256 requestId => uint256 accumulatedAssets) accumulatedAssetsByRequestId;
   }
 
   struct StorageV1 {
@@ -53,7 +52,6 @@ contract OptOutQueueStorageV1 is IOptOutQueueStorageV1 {
     resp = new IOptOutQueueStorageV1.GetRequestResponse[](reqIds.length);
     for (uint256 i = 0; i < reqIds.length; i++) {
       resp[i].id = reqIds[i];
-      resp[i].assets = _requestAssets($, eolVault, reqIds[i]);
       resp[i].request = queue.get(reqIds[i]);
     }
     return resp;
@@ -71,7 +69,6 @@ contract OptOutQueueStorageV1 is IOptOutQueueStorageV1 {
     for (uint256 i = 0; i < idxItemIds.length; i++) {
       resp[i].id = idxItemIds[i];
       resp[i].indexId = queue.index(receiver).get(idxItemIds[i]);
-      resp[i].assets = _requestAssets($, eolVault, resp[i].indexId);
       resp[i].request = queue.get(resp[i].indexId);
     }
     return resp;
@@ -86,11 +83,11 @@ contract OptOutQueueStorageV1 is IOptOutQueueStorageV1 {
   }
 
   function requestShares(address eolVault, uint256 reqId) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).amount(reqId);
+    return _queue(_getStorageV1(), eolVault).shares(reqId);
   }
 
   function requestAssets(address eolVault, uint256 reqId) external view returns (uint256) {
-    return _requestAssets(_getStorageV1(), eolVault, reqId);
+    return _queue(_getStorageV1(), eolVault).assets(reqId);
   }
 
   function queueSize(address eolVault) external view returns (uint256) {
@@ -103,24 +100,24 @@ contract OptOutQueueStorageV1 is IOptOutQueueStorageV1 {
 
   function queueOffset(address eolVault, bool simulate) external view returns (uint256 offset) {
     LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), eolVault);
-    if (simulate) (offset,) = queue.searchQueueOffset(queue.totalReserved);
+    if (simulate) (offset,) = queue.searchQueueOffset(queue.totalReservedAssets);
     else offset = queue.offset;
     return offset;
   }
 
   function queueIndexOffset(address eolVault, address recipient, bool simulate) external view returns (uint256 offset) {
     LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), eolVault);
-    if (simulate) (offset,) = queue.searchIndexOffset(recipient, queue.totalReserved);
+    if (simulate) (offset,) = queue.searchIndexOffset(recipient, queue.totalReservedAssets);
     else offset = queue.index(recipient).offset;
     return offset;
   }
 
   function totalReserved(address eolVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).totalReserved;
+    return _queue(_getStorageV1(), eolVault).totalReservedAssets;
   }
 
   function totalClaimed(address eolVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).totalClaimed;
+    return _queue(_getStorageV1(), eolVault).totalClaimedAssets;
   }
 
   function totalPending(address eolVault) external view returns (uint256) {
@@ -145,11 +142,5 @@ contract OptOutQueueStorageV1 is IOptOutQueueStorageV1 {
 
   function _queue(StorageV1 storage $, address eolVault) internal view returns (LibRedeemQueue.Queue storage) {
     return $.states[eolVault].queue;
-  }
-
-  function _requestAssets(StorageV1 storage $, address eolVault, uint256 reqId) internal view returns (uint256) {
-    uint256 accumulated = $.states[eolVault].accumulatedAssetsByRequestId[reqId];
-    uint256 prevAccumulated = reqId == 0 ? 0 : $.states[eolVault].accumulatedAssetsByRequestId[reqId - 1];
-    return accumulated - prevAccumulated;
   }
 }

@@ -58,8 +58,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
 
     uint256 assets = IEOLVault(eolVault).previewRedeem(shares) - 1; // FIXME: tricky way to avoid rounding error
 
-    reqId = _queue($, eolVault).enqueue(receiver, shares);
-    $.states[eolVault].accumulatedAssetsByRequestId[reqId] = assets;
+    reqId = _queue($, eolVault).enqueue(receiver, assets, shares);
 
     IEOLVault(eolVault).redeem(shares, address(this), _msgSender());
 
@@ -196,7 +195,8 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
       if (reqId >= cfg.queueOffset) break;
       queue.data[reqId].claimedAt = uint48(block.timestamp);
 
-      uint256 assetsOnRequest = reqId == 0 ? req.accumulated : req.accumulated - queue.data[reqId - 1].accumulated;
+      uint256 assetsOnRequest =
+        reqId == 0 ? req.accumulatedAssets : req.accumulatedAssets - queue.data[reqId - 1].accumulatedAssets;
 
       uint256 assetsOnResolve;
       uint256 sharesOnRequest = $.states[address(cfg.eolVault)].accumulatedAssetsByRequestId[reqId];
