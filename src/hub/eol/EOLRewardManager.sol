@@ -192,17 +192,17 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     RewardInfo storage rewardInfo,
     IEOLRewardDistributor distributor,
     address eolVault,
-    address asset,
+    address reward,
     bytes memory metadata
   ) internal {
     rewardInfo.dispatched = true;
 
     uint256 amount = rewardInfo.amount;
-    IERC20(asset).approve(address(distributor), amount);
+    IERC20(reward).approve(address(distributor), amount);
 
-    distributor.handleReward(eolVault, asset, amount, metadata);
+    distributor.handleReward(eolVault, reward, amount, metadata);
 
-    emit Dispatched(address(distributor), eolVault, asset, amount);
+    emit Dispatched(address(distributor), eolVault, reward, amount);
   }
 
   function _storeToRewardManager(
@@ -230,8 +230,8 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     }
   }
 
-  function _isDispatchableRequest(RewardInfo memory rewardInfo, address asset) internal pure returns (bool) {
-    return rewardInfo.asset == asset || !rewardInfo.dispatched || rewardInfo.amount > 0;
+  function _isDispatchableRequest(RewardInfo memory rewardInfo, address reward) internal pure returns (bool) {
+    return rewardInfo.asset == reward || !rewardInfo.dispatched || rewardInfo.amount > 0;
   }
 
   function _assertDistributorRegistered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
