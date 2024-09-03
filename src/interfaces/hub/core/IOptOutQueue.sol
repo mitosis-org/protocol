@@ -3,21 +3,22 @@ pragma solidity ^0.8.26;
 
 import { LibRedeemQueue } from '../../../lib/LibRedeemQueue.sol';
 
-interface IOptOutQueue {
+interface IOptOutQueueStorageV1 {
   struct GetRequestResponse {
     uint256 id;
-    uint256 shares;
+    uint256 assets;
     LibRedeemQueue.Request request;
   }
 
   struct GetRequestByIndexResponse {
     uint256 id;
     uint256 indexId;
-    uint256 shares;
+    uint256 assets;
     LibRedeemQueue.Request request;
   }
 
   // View functions
+
   function redeemPeriod(address eolVault) external view returns (uint256);
 
   function getRequest(address eolVault, uint256[] calldata reqIds)
@@ -31,7 +32,8 @@ interface IOptOutQueue {
 
   function reservedAt(address eolVault, uint256 reqId) external view returns (uint256 reservedAt_, bool isReserved);
   function resolvedAt(address eolVault, uint256 reqId) external view returns (uint256 resolvedAt_, bool isResolved);
-  function requestAmount(address eolVault, uint256 reqId) external view returns (uint256);
+  function requestShares(address eolVault, uint256 reqId) external view returns (uint256);
+  function requestAssets(address eolVault, uint256 reqId) external view returns (uint256);
 
   function queueSize(address eolVault) external view returns (uint256);
   function queueIndexSize(address eolVault, address recipient) external view returns (uint256);
@@ -46,8 +48,9 @@ interface IOptOutQueue {
   function reserveHistoryLength(address eolVault) external view returns (uint256);
 
   function isEnabled(address eolVault) external view returns (bool);
-  function getBreadcrumb(address eolVault) external view returns (uint256);
+}
 
+interface IOptOutQueue is IOptOutQueueStorageV1 {
   // Queue functions
   function request(uint256 shares, address receiver, address eolVault) external returns (uint256 reqId);
   function claim(address receiver, address eolVault) external returns (uint256 totalClaimed_);

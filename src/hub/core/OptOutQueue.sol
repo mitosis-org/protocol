@@ -32,8 +32,8 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
 
   event QueueEnabled(address indexed eolVault);
   event RedeemPeriodSet(address indexed eolVault, uint256 redeemPeriod);
-  event OptOutRequested(address indexed receiver, address indexed eolVault, uint256 assets);
-  event OptOutRequestClaimed(address indexed receiver, address indexed eolVault, uint256 assets, uint256 breadcrumb);
+  event OptOutRequested(address indexed receiver, address indexed eolVault, uint256 shares, uint256 assets);
+  event OptOutRequestClaimed(address indexed receiver, address indexed eolVault, uint256 shares, uint256 assets);
 
   error OptOutQueue__QueueNotEnabled(address eolVault);
   error OptOutQueue__NothingToClaim();
@@ -42,119 +42,10 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     _disableInitializers();
   }
 
-  function initialize(address owner_, address ledger) public initializer {
+  function initialize(address owner_) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
     _transferOwnership(owner_);
-
-    if (ledger.code.length == 0) revert StdError.InvalidAddress('ledger');
-
-    StorageV1 storage $ = _getStorageV1();
-
-    $.ledger = IMitosisLedger(ledger);
-  }
-
-  // =========================== NOTE: VIEW FUNCTIONS =========================== //
-
-  function redeemPeriod(address eolVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).redeemPeriod;
-  }
-
-  function getRequest(address eolVault, uint256[] calldata reqIds)
-    external
-    view
-    returns (GetRequestResponse[] memory resp)
-  {
-    StorageV1 storage $ = _getStorageV1();
-    LibRedeemQueue.Queue storage queue = _queue($, eolVault);
-
-    resp = new GetRequestResponse[](reqIds.length);
-    for (uint256 i = 0; i < reqIds.length; i++) {
-      resp[i].id = reqIds[i];
-      resp[i].shares = $.states[eolVault].sharesByRequestId[reqIds[i]];
-      resp[i].request = queue.get(reqIds[i]);
-    }
-    return resp;
-  }
-
-  function getRequestByReceiver(address eolVault, address receiver, uint256[] calldata idxItemIds)
-    external
-    view
-    returns (GetRequestByIndexResponse[] memory resp)
-  {
-    StorageV1 storage $ = _getStorageV1();
-    LibRedeemQueue.Queue storage queue = _queue($, eolVault);
-
-    resp = new GetRequestByIndexResponse[](idxItemIds.length);
-    for (uint256 i = 0; i < idxItemIds.length; i++) {
-      resp[i].id = idxItemIds[i];
-      resp[i].shares = $.states[eolVault].sharesByRequestId[idxItemIds[i]];
-      resp[i].indexId = queue.index(receiver).get(idxItemIds[i]);
-      resp[i].request = queue.get(resp[i].indexId);
-    }
-    return resp;
-  }
-
-  function reservedAt(address eolVault, uint256 reqId) external view returns (uint256 reservedAt_, bool isReserved) {
-    return _queue(_getStorageV1(), eolVault).reservedAt(reqId);
-  }
-
-  function resolvedAt(address eolVault, uint256 reqId) external view returns (uint256 resolvedAt_, bool isResolved) {
-    return _queue(_getStorageV1(), eolVault).resolvedAt(reqId, block.timestamp);
-  }
-
-  function requestAmount(address eolVault, uint256 reqId) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).amount(reqId);
-  }
-
-  function queueSize(address eolVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).size;
-  }
-
-  function queueIndexSize(address eolVault, address recipient) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).index(recipient).size;
-  }
-
-  function queueOffset(address eolVault, bool simulate) external view returns (uint256 offset) {
-    LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), eolVault);
-    if (simulate) (offset,) = queue.searchQueueOffset(queue.totalReserved);
-    else offset = queue.offset;
-    return offset;
-  }
-
-  function queueIndexOffset(address eolVault, address recipient, bool simulate) external view returns (uint256 offset) {
-    LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), eolVault);
-    if (simulate) (offset,) = queue.searchIndexOffset(recipient, queue.totalReserved);
-    else offset = queue.index(recipient).offset;
-    return offset;
-  }
-
-  function totalReserved(address eolVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).totalReserved;
-  }
-
-  function totalClaimed(address eolVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).totalClaimed;
-  }
-
-  function totalPending(address eolVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).pending();
-  }
-
-  function reserveHistory(address eolVault, uint256 index) external view returns (LibRedeemQueue.ReserveLog memory) {
-    return _queue(_getStorageV1(), eolVault).reserveHistory[index];
-  }
-
-  function reserveHistoryLength(address eolVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).reserveHistory.length;
-  }
-
-  function isEnabled(address eolVault) external view returns (bool) {
-    return _getStorageV1().states[eolVault].isEnabled;
-  }
-
-  function getBreadcrumb(address eolVault) external view returns (uint256) {
-    return _getStorageV1().states[eolVault].breadcrumb;
   }
 
   // =========================== NOTE: QUEUE FUNCTIONS =========================== //
@@ -167,13 +58,12 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
 
     uint256 assets = IEOLVault(eolVault).previewRedeem(shares) - 1; // FIXME: tricky way to avoid rounding error
 
-    reqId = _queue($, eolVault).enqueue(receiver, assets);
-    $.states[eolVault].sharesByRequestId[reqId] = shares;
+    reqId = _queue($, eolVault).enqueue(receiver, shares);
+    $.states[eolVault].accumulatedAssetsByRequestId[reqId] = assets;
 
-    $.ledger.recordOptOutRequest(eolVault, shares);
     IEOLVault(eolVault).redeem(shares, address(this), _msgSender());
 
-    emit OptOutRequested(receiver, eolVault, assets);
+    emit OptOutRequested(receiver, eolVault, shares, assets);
 
     return reqId;
   }
@@ -200,18 +90,13 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
       idxOffset: index.offset
     });
 
-    uint256 breadcrumb;
     uint256 totalClaimedShares;
-    (totalClaimed_, totalClaimedShares, breadcrumb) = _claim($, queue, index, cfg);
+    (totalClaimed_, totalClaimedShares) = _claim($, queue, index, cfg);
     if (totalClaimed_ == 0) revert OptOutQueue__NothingToClaim();
 
-    // NOTE: burn?
-    $.states[eolVault].breadcrumb += breadcrumb;
-
-    $.ledger.recordOptOutClaim(eolVault, totalClaimed_);
     cfg.hubAsset.safeTransfer(receiver, totalClaimed_);
 
-    emit OptOutRequestClaimed(receiver, eolVault, totalClaimed_, breadcrumb);
+    emit OptOutRequestClaimed(receiver, eolVault, totalClaimed_, totalClaimedShares);
 
     return totalClaimed_;
   }
@@ -277,10 +162,6 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     return shares.mulDiv(totalAssets + 1, totalSupply + 10 ** decimalsOffset, rounding);
   }
 
-  function _queue(StorageV1 storage $, address eolVault) internal view returns (LibRedeemQueue.Queue storage) {
-    return $.states[eolVault].queue;
-  }
-
   function _loadPastSnapshot(IHubAsset hubAsset, address eolVault, uint256 timestamp)
     internal
     view
@@ -302,7 +183,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     LibRedeemQueue.Queue storage queue,
     LibRedeemQueue.Index storage index,
     ClaimConfig memory cfg
-  ) internal returns (uint256 totalClaimed_, uint256 totalClaimedShares, uint256 breadcrumb) {
+  ) internal returns (uint256 totalClaimed_, uint256 totalClaimedShares) {
     uint256 i = cfg.idxOffset;
 
     for (; i < index.size; i++) {
@@ -318,7 +199,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
       uint256 assetsOnRequest = reqId == 0 ? req.accumulated : req.accumulated - queue.data[reqId - 1].accumulated;
 
       uint256 assetsOnResolve;
-      uint256 sharesOnRequest = $.states[address(cfg.eolVault)].sharesByRequestId[reqId];
+      uint256 sharesOnRequest = $.states[address(cfg.eolVault)].accumulatedAssetsByRequestId[reqId];
       {
         (uint256 resolvedAt_,) = queue.resolvedAt(reqId, block.timestamp); // isResolved can be ignored
         (uint256 totalAssets, uint256 totalSupply) = _loadPastSnapshot(cfg.hubAsset, address(cfg.eolVault), resolvedAt_);
@@ -330,7 +211,6 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
       // apply loss if there's any reported loss while redeeming
       if (assetsOnRequest > assetsOnResolve) {
         totalClaimed_ += assetsOnResolve;
-        breadcrumb += assetsOnRequest - assetsOnResolve;
       } else {
         totalClaimed_ += assetsOnRequest;
       }
@@ -343,25 +223,21 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     // update index offset if there's any claimed request
     if (totalClaimed_ > 0) {
       index.offset = i;
-      queue.totalClaimed += totalClaimed_ + breadcrumb;
+      queue.totalClaimed += totalClaimed_;
     }
 
-    return (totalClaimed_, totalClaimedShares, breadcrumb);
+    return (totalClaimed_, totalClaimedShares);
   }
 
   function _sync(StorageV1 storage $, address eolVault) internal {
-    IMitosisLedger.EOLAmountState memory state = $.ledger.eolAmountState(eolVault);
-    if (state.idle == 0) return; // nothing to sync
-
     uint256 pending = _queue($, eolVault).pending();
     if (pending == 0) return; // nothing to reserve
 
     uint256 pendingShares = IEOLVault(eolVault).convertToShares(pending + 1); // FIXME: tricky way to avoid rounding error
-    uint256 resolveShares = Math.min(pendingShares, state.idle);
+    uint256 resolveShares = Math.min(pendingShares, 0); // FIXME
     uint256 resolveAssets = IEOLVault(eolVault).convertToAssets(resolveShares);
 
-    _queue($, eolVault).reserve(resolveAssets);
-    $.ledger.recordOptOutResolve(eolVault, resolveShares);
+    _queue($, eolVault).reserve(resolveAssets); // FIXME
   }
 
   // =========================== NOTE: ASSERTIONS =========================== //
