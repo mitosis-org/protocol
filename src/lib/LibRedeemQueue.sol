@@ -348,7 +348,7 @@ library LibRedeemQueue {
   }
 
   function _updateQueueOffset(Queue storage q, uint256 accumulated) private returns (uint256 offset, bool updated) {
-    (offset, updated) = searchQueueOffset(q, accumulated);
+    (offset, updated) = _searchQueueOffset(q, accumulated);
 
     // assign
     if (updated) {
