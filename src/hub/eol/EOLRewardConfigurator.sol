@@ -3,12 +3,16 @@ pragma solidity 0.8.26;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
+import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
+
 import { DistributionType, IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
 import { IEOLRewardDistributor } from '../../interfaces/hub/eol/IEOLRewardDistributor.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { EOLRewardConfiguratorStorageV1 } from './storage/EOLRewardConfiguratorStorageV1.sol';
 
 contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeable, EOLRewardConfiguratorStorageV1 {
+  using EnumerableSet for EnumerableSet.AddressSet;
+
   uint256 public constant REWARD_RATIO_PRECISION = 10e4;
 
   event RewardDistributionTypeSet(
@@ -85,7 +89,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
 
     _assertDistributorNotRegisered($, distributor);
 
-    $.distributorLists[distributor.distributionType()].push(distributor);
+    $.distributorLists[distributor.distributionType()].add(address(distributor));
     emit RewardDistributorRegistered(distributor);
   }
 
@@ -95,14 +99,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     _assertDistributorRegisered($, distributor);
     _assertNotDefaultDistributor($, distributor);
 
-    IEOLRewardDistributor[] storage distributors = $.distributorLists[distributor.distributionType()];
-    for (uint256 i = 0; i < distributors.length - 1; i++) {
-      if (address(distributor) == address(distributors[i])) {
-        distributors[i] = distributors[distributors.length - 1];
-        distributors.pop();
-        break;
-      }
-    }
+    $.distributorLists[distributor.distributionType()].remove(address(distributor));
 
     emit RewardDistributorUnregistered(distributor);
   }
@@ -112,11 +109,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     view
     returns (bool)
   {
-    IEOLRewardDistributor[] storage distributors = $.distributorLists[distributor.distributionType()];
-    for (uint256 i = 0; i < distributors.length; i++) {
-      if (address(distributor) == address(distributors[i])) return true;
-    }
-    return false;
+    return $.distributorLists[distributor.distributionType()].contains(address(distributor));
   }
 
   function _assertDefaultDistributorSet(StorageV1 storage $, DistributionType distributionType) internal view {
