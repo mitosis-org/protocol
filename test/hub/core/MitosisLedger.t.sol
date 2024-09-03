@@ -8,10 +8,10 @@ import { Vm } from '@std/Vm.sol';
 import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
-import { MitosisLedger } from '../../src/hub/core/MitosisLedger.sol';
-import { IMitosisLedger } from '../../src/interfaces/hub/core/IMitosisLedger.sol';
-import { StdError } from '../../src/lib/StdError.sol';
-import { Toolkit } from '../util/Toolkit.sol';
+import { MitosisLedger } from '../../../src/hub/core/MitosisLedger.sol';
+import { IMitosisLedger } from '../../../src/interfaces/hub/core/IMitosisLedger.sol';
+import { StdError } from '../../../src/lib/StdError.sol';
+import { Toolkit } from '../../util/Toolkit.sol';
 
 contract TestCrossChainRegistry is Test, Toolkit {
   MitosisLedger internal mitosisLedger;
