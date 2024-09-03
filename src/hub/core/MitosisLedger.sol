@@ -5,8 +5,8 @@ import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
-import { IEOLVault } from '../../interfaces/hub/core/IEOLVault.sol';
 import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
+import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { MitosisLedgerStorageV1 } from './storage/MitosisLedgerStorageV1.sol';
 
 /// Note: This contract stores state related to balances, EOL states.

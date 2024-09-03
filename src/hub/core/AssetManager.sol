@@ -8,10 +8,10 @@ import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
-import { IEOLVault } from '../../interfaces/hub/core/IEOLVault.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
-import { IRewardTreasury } from '../../interfaces/hub/core/IRewardTreasury.sol';
+import { IEOLRewardManager } from '../../interfaces/hub/eol/IEOLRewardManager.sol';
+import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { AssetManagerStorageV1 } from './storage/AssetManagerStorageV1.sol';
 
@@ -24,23 +24,24 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   event Deposited(uint256 indexed chainId, address indexed asset, address indexed to, uint256 amount);
   event Redeemed(uint256 indexed chainId, address indexed asset, address indexed to, uint256 amount);
 
-  event YieldSettled(uint256 indexed chainId, address indexed eolVault, uint256 amount);
-  event LossSettled(uint256 indexed chainId, address indexed eolVault, uint256 amount);
-  event ExtraRewardsSettled(uint256 indexed chainId, address indexed eolVault, address indexed reward, uint256 amount);
+  event RewardSettled(uint256 indexed chainId, address indexed eolVault, address indexed asset, uint256 amount);
+  event LossSettled(uint256 indexed chainId, address indexed eolVault, address indexed asset, uint256 amount);
+
+  event EOLShareValueDecreased(address indexed eolVault, uint256 indexed amount);
 
   event EOLAllocated(uint256 indexed chainId, address indexed eolVault, uint256 amount);
   event EOLDeallocated(uint256 indexed chainId, address indexed eolVault, uint256 amount);
 
   event AssetPairSet(address hubAsset, uint256 branchChainId, address branchAsset);
-  event RewardTreasurySet(address rewardTreasury);
+  event EOLRewardManagerSet(address rewardManager);
 
   event EntrypointSet(address entrypoint);
 
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
   error AssetManager__EOLInsufficient(address eolVault);
+  error AssetManager__EOLRewardManagerNotSet();
   error AssetManager__BranchAssetPairNotExist(address asset);
-  error AssetManager__RewardTreasuryNotSet();
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -52,6 +53,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     __Pausable_init();
     __Ownable2Step_init();
     _transferOwnership(owner_);
+
+    _assertOnlyContract(mitosisLedger_, 'mitosisLedger_');
+
     _getStorageV1().mitosisLedger = IMitosisLedger(mitosisLedger_);
   }
 
@@ -113,41 +117,54 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function settleYield(uint256 chainId, address eolVault, uint256 amount) external {
-    _assertOnlyEntrypoint(_getStorageV1());
+    StorageV1 storage $ = _getStorageV1();
 
-    // TODO(ray): we should give a specific portion of yield to hubAsset holders too.
-    _increaseEOLShareValue(eolVault, amount);
+    _assertOnlyEntrypoint($);
+    _assertEOLRewardManagerSet($);
 
-    emit YieldSettled(chainId, eolVault, amount);
+    address asset = IEOLVault(eolVault).asset();
+
+    _mint($, chainId, asset, address(this), amount);
+    emit RewardSettled(chainId, eolVault, asset, amount);
+
+    _addAllowance(address($.rewardManager), asset, amount);
+    $.rewardManager.routeYield(eolVault, amount);
   }
 
   function settleLoss(uint256 chainId, address eolVault, uint256 amount) external {
-    _assertOnlyEntrypoint(_getStorageV1());
+    StorageV1 storage $ = _getStorageV1();
 
-    _decreaseEOLShareValue(eolVault, amount);
+    _assertOnlyEntrypoint($);
+    _assertEOLRewardManagerSet($);
 
-    emit LossSettled(chainId, eolVault, amount);
+    // Decrease EOLVault's shares value.
+    address asset = IEOLVault(eolVault).asset();
+    _burn($, chainId, asset, eolVault, amount);
+
+    emit LossSettled(chainId, eolVault, asset, amount);
   }
 
   function settleExtraRewards(uint256 chainId, address eolVault, address reward, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertBranchAssetPairExist($, chainId, reward);
-    _assertRewardTreasurySet($);
+    _assertEOLRewardManagerSet($);
     _assertOnlyEntrypoint($);
 
     address hubAsset = $.hubAssets[chainId][reward];
-    _mint($, chainId, reward, address(this), amount);
 
-    IHubAsset(reward).approve(address($.rewardTreasury), amount);
-    $.rewardTreasury.deposit(hubAsset, amount, Time.timestamp());
+    _mint(_getStorageV1(), chainId, hubAsset, address(this), amount);
+    emit RewardSettled(chainId, eolVault, hubAsset, amount);
 
-    emit ExtraRewardsSettled(chainId, eolVault, reward, amount);
+    _addAllowance(address($.rewardManager), hubAsset, amount);
+    $.rewardManager.routeExtraReward(eolVault, hubAsset, amount);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
   function initializeAsset(uint256 chainId, address hubAsset) external onlyOwner {
+    _assertOnlyContract(hubAsset, 'hubAsset');
+
     StorageV1 storage $ = _getStorageV1();
 
     address branchAsset = $.branchAssets[hubAsset][chainId];
@@ -158,6 +175,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external onlyOwner {
+    _assertOnlyContract(address(hubAsset), 'hubAsset');
+    _assertOnlyContract(address(branchAsset), 'branchAsset');
+
     // TODO(ray): handle already initialized asset through initializeAsset.
     //
     // https://github.com/mitosis-org/protocol/pull/23#discussion_r1728680943
@@ -168,16 +188,22 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function setEntrypoint(IAssetManagerEntrypoint entrypoint) external onlyOwner {
+    _assertOnlyContract(address(entrypoint), 'entrypoint');
+
     _getStorageV1().entrypoint = entrypoint;
     emit EntrypointSet(address(entrypoint));
   }
 
-  function setRewardTreasury(IRewardTreasury rewardTreasury) external onlyOwner {
-    _getStorageV1().rewardTreasury = rewardTreasury;
-    emit RewardTreasurySet(address(rewardTreasury));
+  function setEOLRewardManager(IEOLRewardManager rewardManager) external onlyOwner {
+    _assertOnlyContract(address(rewardManager), 'rewardManager');
+
+    _getStorageV1().rewardManager = rewardManager;
+    emit EOLRewardManagerSet(address(rewardManager));
   }
 
   function initializeEOL(uint256 chainId, address eolVault) external onlyOwner {
+    _assertOnlyContract(eolVault, 'eolVault');
+
     StorageV1 storage $ = _getStorageV1();
 
     address hubAsset = IEOLVault(eolVault).asset();
@@ -190,14 +216,6 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _increaseEOLShareValue(address eolVault, uint256 assets) internal {
-    IHubAsset(IEOLVault(eolVault).asset()).mint(eolVault, assets);
-  }
-
-  function _decreaseEOLShareValue(address eolVault, uint256 assets) internal {
-    IHubAsset(IEOLVault(eolVault).asset()).burn(eolVault, assets);
-  }
-
   function _mint(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
     IHubAsset(asset).mint(account, amount);
     $.mitosisLedger.recordDeposit(chainId, asset, amount);
@@ -206,6 +224,11 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   function _burn(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
     IHubAsset(asset).burn(account, amount);
     $.mitosisLedger.recordWithdraw(chainId, asset, amount);
+  }
+
+  function _addAllowance(address to, address asset, uint256 amount) internal {
+    uint256 prevAllowance = IHubAsset(asset).allowance(address(this), address(to));
+    IHubAsset(asset).approve(address(to), prevAllowance + amount);
   }
 
   function _assertOnlyEntrypoint(StorageV1 storage $) internal view {
@@ -220,7 +243,11 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     if (_msgSender() != $.mitosisLedger.eolStrategist(eolVault)) revert StdError.InvalidAddress('strategist');
   }
 
-  function _assertRewardTreasurySet(StorageV1 storage $) internal view {
-    if (address($.rewardTreasury) == address(0)) revert AssetManager__RewardTreasuryNotSet();
+  function _assertEOLRewardManagerSet(StorageV1 storage $) internal view {
+    if (address($.rewardManager) == address(0)) revert AssetManager__EOLRewardManagerNotSet();
+  }
+
+  function _assertOnlyContract(address addr, string memory paramName) internal view {
+    if (addr.code.length == 0) revert StdError.InvalidParameter(paramName);
   }
 }
