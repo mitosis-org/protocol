@@ -25,6 +25,9 @@ interface IAssetManagerStorageV1 {
 interface IAssetManager is IAssetManagerStorageV1 {
   function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external;
 
+  function depositWithOptIn(uint256 chainId, address branchAsset, address to, address eolVault, uint256 amount)
+    external;
+
   function redeem(uint256 chainId, address branchAsset, address to, uint256 amount) external;
 
   function allocateEOL(uint256 chainId, address eolVault, uint256 amount) external;

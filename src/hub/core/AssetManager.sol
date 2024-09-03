@@ -21,6 +21,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   event EOLInitialized(uint256 indexed chainId, address eolVault, address asset);
 
   event Deposited(uint256 indexed chainId, address indexed asset, address indexed to, uint256 amount);
+  event DepositedWithOptIn(
+    uint256 indexed chainId, address indexed asset, address indexed to, address eolVault, uint256 amount
+  );
   event Redeemed(uint256 indexed chainId, address indexed asset, address indexed to, uint256 amount);
 
   event RewardSettled(uint256 indexed chainId, address indexed eolVault, address indexed asset, uint256 amount);
@@ -36,6 +39,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
   error AssetManager__EOLInsufficient(address eolVault);
+  error AssetManager__InvalidEOLVault(address eolVault, address hubAsset);
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -58,13 +62,31 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertBranchAssetPairExist($, chainId, branchAsset);
     _assertOnlyEntrypoint($);
+    _assertBranchAssetPairExist($, chainId, branchAsset);
 
     address hubAsset = $.hubAssets[chainId][branchAsset];
     _mint($, chainId, hubAsset, to, amount);
 
     emit Deposited(chainId, hubAsset, to, amount);
+  }
+
+  function depositWithOptIn(uint256 chainId, address branchAsset, address to, address eolVault, uint256 amount)
+    external
+  {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertOnlyEntrypoint($);
+    _assertBranchAssetPairExist($, chainId, branchAsset);
+    _assertEOLInitialized($, chainId, eolVault);
+
+    address hubAsset = $.hubAssets[chainId][branchAsset];
+    require(hubAsset == IEOLVault(eolVault).asset(), AssetManager__InvalidEOLVault(eolVault, hubAsset));
+
+    _mint($, chainId, hubAsset, address(this), amount);
+    IEOLVault(eolVault).deposit(amount, to);
+
+    emit DepositedWithOptIn(chainId, hubAsset, to, eolVault, amount);
   }
 
   function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external {
@@ -157,9 +179,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   function settleExtraRewards(uint256 chainId, address eolVault, address reward, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertOnlyEntrypoint($);
     _assertBranchAssetPairExist($, chainId, reward);
     _assertEOLRewardManagerSet($);
-    _assertOnlyEntrypoint($);
 
     address hubAsset = $.hubAssets[chainId][reward];
     _mint($, chainId, reward, address(this), amount);
