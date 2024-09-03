@@ -8,10 +8,16 @@ import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeabl
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 
+import { IEOLProtocolRegistry } from '../../interfaces/eol/IEOLProtocolRegistry.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { EOLProtocolRegistryStorageV1, ProtocolInfo } from './storage/EOLProtocolRegistryStorageV1.sol';
 
-contract EOLProtocolRegistry is Ownable2StepUpgradeable, AccessControlUpgradeable, EOLProtocolRegistryStorageV1 {
+contract EOLProtocolRegistry is
+  IEOLProtocolRegistry,
+  Ownable2StepUpgradeable,
+  AccessControlUpgradeable,
+  EOLProtocolRegistryStorageV1
+{
   using EnumerableSet for EnumerableSet.UintSet;
 
   event ProtocolRegistered(
@@ -24,8 +30,8 @@ contract EOLProtocolRegistry is Ownable2StepUpgradeable, AccessControlUpgradeabl
   event Authorized(address indexed eolAsset, address indexed account);
   event Unauthorized(address indexed eolAsset, address indexed account);
 
-  error EOLProtocolRegistry_AlreadyRegistered(uint256 protocolId, address eolAsset, uint256 chainId, string name);
-  error EOLProtocolRegistry_NotRegistered(uint256 protocolId);
+  error EOLProtocolRegistry__AlreadyRegistered(uint256 protocolId, address eolAsset, uint256 chainId, string name);
+  error EOLProtocolRegistry__NotRegistered(uint256 protocolId);
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -76,7 +82,7 @@ contract EOLProtocolRegistry is Ownable2StepUpgradeable, AccessControlUpgradeabl
     _assertOnlyAuthorized($, eolAsset);
     if (bytes(name).length == 0) revert StdError.InvalidParameter('name');
     if ($.protocols[id].protocolId != 0) {
-      revert EOLProtocolRegistry_AlreadyRegistered(id, eolAsset, chainId, name);
+      revert EOLProtocolRegistry__AlreadyRegistered(id, eolAsset, chainId, name);
     }
 
     $.protocols[id] = ProtocolInfo({
@@ -97,7 +103,7 @@ contract EOLProtocolRegistry is Ownable2StepUpgradeable, AccessControlUpgradeabl
     StorageV1 storage $ = _getStorageV1();
     ProtocolInfo storage p = $.protocols[protocolId_];
 
-    if (p.protocolId == 0) revert EOLProtocolRegistry_NotRegistered(protocolId_);
+    if (p.protocolId == 0) revert EOLProtocolRegistry__NotRegistered(protocolId_);
 
     _assertOnlyAuthorized($, p.eolAsset);
 
