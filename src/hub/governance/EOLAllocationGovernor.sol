@@ -23,7 +23,7 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
 
   event EpochStarted(uint256 indexed epochId, uint48 startsAt, uint48 endsAt);
   event ProtocolIdsFetched(uint256 indexed epochId, uint256 indexed chainId, uint256[] protocolIds);
-  event VoteCasted(uint256 indexed epochId, uint256 indexed chainId, address indexed account, uint256[] gauges);
+  event VoteCasted(uint256 indexed epochId, uint256 indexed chainId, address indexed account, uint32[] gauges);
 
   event EpochPeriodSet(uint32 epochPeriod);
 
@@ -86,21 +86,21 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
   function voteResult(uint256 epochId, uint256 chainId, address account)
     external
     view
-    returns (bool hasVoted, uint256 votingPower, uint256 gaugeSum, uint256[] memory gauges)
+    returns (bool hasVoted, uint256 votingPower, uint256 gaugeSum, uint32[] memory gauges)
   {
     StorageV1 storage $ = _getStorageV1();
     Epoch storage epoch = _epoch($, epochId);
     votingPower = _getVotingPower($, epoch, account);
 
     (bool exists, uint256 latestVotedEpochId) = _latestVotedEpochIdBefore($, epochId, chainId, account);
-    if (!exists) return (false, votingPower, 0, new uint256[](0));
+    if (!exists) return (false, votingPower, 0, new uint32[](0));
 
     EpochVoteInfo storage latestVotedEpochVoteInfo = $.epochs[latestVotedEpochId].voteInfoByChainId[chainId];
     uint256[] memory latestVotedProtocolIds = latestVotedEpochVoteInfo.protocolIds;
-    uint256[] memory latestVotedGauges = latestVotedEpochVoteInfo.gaugesByAccount[account];
+    uint32[] memory latestVotedGauges = latestVotedEpochVoteInfo.gaugesByAccount[account];
 
     uint256[] memory protocolIds_ = epoch.voteInfoByChainId[chainId].protocolIds;
-    gauges = new uint256[](protocolIds_.length);
+    gauges = new uint32[](protocolIds_.length);
     gaugeSum = 0;
 
     for (uint256 i = 0; i < protocolIds_.length; i++) {
@@ -118,7 +118,7 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
 
   //=========== NOTE: MUTATION FUNCTIONS ===========//
 
-  function castVote(uint256 chainId, uint256[] memory gauges) external {
+  function castVote(uint256 chainId, uint32[] memory gauges) external {
     StorageV1 storage $ = _getStorageV1();
 
     _moveToNextEpochIfNeeded($);
@@ -228,7 +228,7 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
     return $.eolAsset.getTotalTwabByTimestampRange(epoch.startsAt - $.twabPeriod, epoch.startsAt);
   }
 
-  function _sum(uint256[] memory arr) internal pure returns (uint256 sum) {
+  function _sum(uint32[] memory arr) internal pure returns (uint256 sum) {
     for (uint256 i = 0; i < arr.length; i++) {
       sum += arr[i];
     }

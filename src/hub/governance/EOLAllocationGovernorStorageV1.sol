@@ -16,7 +16,7 @@ struct Epoch {
 
 struct EpochVoteInfo {
   uint256[] protocolIds;
-  mapping(address account => uint256[] gauges) gaugesByAccount;
+  mapping(address account => uint32[] gauges) gaugesByAccount;
 }
 
 struct TotalVoteInfo {
