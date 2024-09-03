@@ -56,7 +56,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
 
   function routeYield(address eolVault, uint256 amount) external onlyAssetManager {
     address reward = IEOLVault(eolVault).asset();
-    IHubAsset(reward).transfer(address(this), amount);
+    IHubAsset(reward).transferFrom(_msgSender(), address(this), amount);
 
     StorageV1 storage $ = _getStorageV1();
 
@@ -67,7 +67,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   }
 
   function routeExtraReward(address eolVault, address reward, uint256 amount) external onlyAssetManager {
-    IHubAsset(reward).transfer(address(this), amount);
+    IHubAsset(reward).transferFrom(_msgSender(), address(this), amount);
 
     StorageV1 storage $ = _getStorageV1();
 

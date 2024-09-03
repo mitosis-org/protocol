@@ -127,6 +127,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _mint($, chainId, asset, address(this), amount);
     emit RewardSettled(chainId, eolVault, asset, amount);
 
+    _addAllowance(address($.rewardManager), asset, amount);
     $.rewardManager.routeYield(eolVault, amount);
   }
 
@@ -155,6 +156,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _mint(_getStorageV1(), chainId, hubAsset, address(this), amount);
     emit RewardSettled(chainId, eolVault, hubAsset, amount);
 
+    _addAllowance(address($.rewardManager), hubAsset, amount);
     $.rewardManager.routeExtraReward(eolVault, hubAsset, amount);
   }
 
@@ -222,6 +224,11 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   function _burn(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
     IHubAsset(asset).burn(account, amount);
     $.mitosisLedger.recordWithdraw(chainId, asset, amount);
+  }
+
+  function _addAllowance(address to, address asset, uint256 amount) internal {
+    uint256 prevAllowance = IHubAsset(asset).allowance(address(this), address(to));
+    IHubAsset(asset).approve(address(to), prevAllowance + amount);
   }
 
   function _assertOnlyEntrypoint(StorageV1 storage $) internal view {
