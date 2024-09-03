@@ -1,0 +1,2 @@
+# whether soldeer re-generates all remappings when installing, updating or uninstalling deps
+remappings_regenerate = false
