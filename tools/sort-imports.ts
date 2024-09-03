@@ -169,9 +169,9 @@ async function executeCommand(options: {
   const cache = await loadCache('sort-imports');
   const files = await glob(options.input);
 
-  const solidityFiles = files.filter((file) => path.extname(file) === '.sol');
-  if (solidityFiles.length === 0) {
-    throw new Error('No Solidity files found in the matched files.');
+  const targetFiles = files.filter((file) => path.extname(file) === '.sol');
+  if (targetFiles.length === 0) {
+    throw new Error('No target files found in the matched files.');
   }
 
   try {
@@ -182,7 +182,7 @@ async function executeCommand(options: {
     await promisify(exec)('forge fmt');
 
     await Promise.all(
-      solidityFiles.map(
+      targetFiles.map(
         (filePath) =>
           new Promise<void>((resolve, reject) =>
             processContract({ filePath, remappings, cache, options })
@@ -201,7 +201,7 @@ async function executeCommand(options: {
       'sort-imports',
       Object.fromEntries(
         await Promise.all(
-          solidityFiles.map(async (filePath) => {
+          targetFiles.map(async (filePath) => {
             const file = await fs.readFile(filePath, 'utf-8');
             const checksum = getFileChecksum(file);
             return [filePath, checksum];

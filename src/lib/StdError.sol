@@ -4,12 +4,12 @@ pragma solidity ^0.8.26;
 library StdError {
   error Halted();
   error Unauthorized();
-  error NotFound(string typ);
+  error NotFound(string description);
   error NotImplemented();
 
-  error InvalidId(string typ);
-  error InvalidAddress(string typ);
-  error InvalidParameter(string typ);
+  error InvalidId(string description);
+  error InvalidAddress(string description);
+  error InvalidParameter(string description);
   error ZeroAmount();
-  error ZeroAddress(string typ);
+  error ZeroAddress(string description);
 }
