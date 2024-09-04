@@ -45,6 +45,10 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1 {
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
+  function assetManager() external view returns (address) {
+    return address(_getStorageV1().assetManager);
+  }
+
   function redeemPeriod(address eolVault) external view returns (uint256) {
     return _queue(_getStorageV1(), eolVault).redeemPeriod;
   }
