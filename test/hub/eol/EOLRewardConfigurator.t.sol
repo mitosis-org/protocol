@@ -144,6 +144,12 @@ contract HubAssetTest is Test, Toolkit {
     vm.expectRevert(IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered.selector);
     rewardConfigurator.unregisterDistributor(distributor);
 
+    rewardConfigurator.registerDistributor(distributor);
+    rewardConfigurator.unregisterDistributor(distributor);
+
+    vm.expectRevert(IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered.selector);
+    rewardConfigurator.unregisterDistributor(distributor);
+
     vm.stopPrank();
   }
 
