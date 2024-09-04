@@ -7,7 +7,6 @@ import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 
 import { EOLVault } from '../../src/hub/core/EOLVault.sol';
 import { HubAsset } from '../../src/hub/core/HubAsset.sol';
-import { MitosisLedger } from '../../src/hub/core/MitosisLedger.sol';
 import { OptOutQueue } from '../../src/hub/core/OptOutQueue.sol';
 import { IERC20TwabSnapshots } from '../../src/interfaces/twab/IERC20TwabSnapshots.sol';
 import { Toolkit } from '../util/Toolkit.sol';
@@ -19,7 +18,6 @@ contract OptOutQueueTest is Test, Toolkit {
 
   address internal _assetManager = _addr('assetManager'); // mock
   ERC1967Factory internal _factory;
-  MitosisLedger internal _ledger;
   HubAsset internal _hubAsset;
   EOLVault internal _eolVault;
   OptOutQueue internal _optOutQueue;
@@ -35,12 +33,6 @@ contract OptOutQueueTest is Test, Toolkit {
   function setUp() public {
     _factory = new ERC1967Factory();
 
-    _ledger = MitosisLedger(
-      _proxy(
-        address(new MitosisLedger()),
-        abi.encodeCall(MitosisLedger.initialize, (_owner)) //
-      )
-    );
     _hubAsset = HubAsset(
       _proxy(
         address(new HubAsset()),
@@ -50,7 +42,7 @@ contract OptOutQueueTest is Test, Toolkit {
     _eolVault = EOLVault(
       _proxy(
         address(new EOLVault()),
-        abi.encodeCall(EOLVault.initialize, (IERC20TwabSnapshots(address(_hubAsset)), _ledger, 'miTest', 'miTT')) //
+        abi.encodeCall(EOLVault.initialize, (_assetManager, IERC20TwabSnapshots(address(_hubAsset)), 'miTest', 'miTT')) //
       )
     );
     _optOutQueue = OptOutQueue(
@@ -63,8 +55,6 @@ contract OptOutQueueTest is Test, Toolkit {
     // configure
 
     vm.startPrank(_owner);
-
-    _ledger.setOptOutQueue(address(_optOutQueue));
 
     _optOutQueue.enable(address(_eolVault));
     _optOutQueue.setRedeemPeriod(address(_eolVault), 1 days);
@@ -150,8 +140,6 @@ contract OptOutQueueTest is Test, Toolkit {
     if (mint) _mint(account, assets);
     shares = _optInInner(account, assets);
 
-    vm.prank(address(_eolVault));
-    _ledger.recordOptIn(address(_eolVault), shares);
     return shares;
   }
 

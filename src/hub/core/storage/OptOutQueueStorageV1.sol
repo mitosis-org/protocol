@@ -160,12 +160,12 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1 {
     emit QueueEnabled(eolVault);
   }
 
-  function _setAssetManager(StorageV1 storage $, address assetManager) internal {
-    if (assetManager.code.length == 0) revert StdError.InvalidAddress('AssetManager');
+  function _setAssetManager(StorageV1 storage $, address assetManager_) internal {
+    if (assetManager_.code.length == 0) revert StdError.InvalidAddress('AssetManager');
 
-    $.assetManager = IAssetManager(assetManager);
+    $.assetManager = IAssetManager(assetManager_);
 
-    emit AssetManagerSet(assetManager);
+    emit AssetManagerSet(assetManager_);
   }
 
   function _setRedeemPeriod(StorageV1 storage $, address eolVault, uint256 redeemPeriod_) internal {

@@ -32,7 +32,10 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
   }
 
   event OptOutRequested(address indexed receiver, address indexed eolVault, uint256 shares, uint256 assets);
-  event OptOutRequestClaimed(address indexed receiver, address indexed eolVault, uint256 assets, uint256 penalty);
+  event OptOutYieldReported(address indexed receiver, address indexed eolVault, uint256 yield);
+  event OptOutRequestClaimed(
+    address indexed receiver, address indexed eolVault, uint256 claimed, uint256 impact, ImpactType impactType
+  );
 
   error OptOutQueue__QueueNotEnabled(address eolVault);
   error OptOutQueue__NothingToClaim();
@@ -91,13 +94,28 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
       idxOffset: index.offset
     });
 
-    uint256 totalClaimedWithoutPenalty;
-    (totalClaimed_, totalClaimedWithoutPenalty) = _claim(queue, index, cfg);
+    // run actual claim logic
+    uint256 totalClaimedWithoutImpact;
+    (totalClaimed_, totalClaimedWithoutImpact) = _claim(queue, index, cfg);
     if (totalClaimed_ == 0) revert OptOutQueue__NothingToClaim();
 
+    // send total claim amount to receiver
     cfg.hubAsset.safeTransfer(receiver, totalClaimed_);
 
-    emit OptOutRequestClaimed(receiver, eolVault, totalClaimed_, totalClaimedWithoutPenalty - totalClaimed_);
+    // send diff to eolVault if there's any yield
+    (uint256 impact, bool loss) = _abs(totalClaimedWithoutImpact, totalClaimed_);
+    if (loss) {
+      cfg.hubAsset.safeTransfer(eolVault, impact);
+      emit OptOutYieldReported(receiver, eolVault, impact);
+    }
+
+    emit OptOutRequestClaimed(
+      receiver,
+      eolVault,
+      totalClaimed_,
+      impact,
+      impact == 0 ? ImpactType.None : loss ? ImpactType.Loss : ImpactType.Yield
+    );
 
     return totalClaimed_;
   }
@@ -143,14 +161,26 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
 
   // =========================== NOTE: INTERNAL FUNCTIONS =========================== //
 
+  function _abs(uint256 x, uint256 y) private pure returns (uint256, bool) {
+    return (x > y ? x - y : y - x, x > y);
+  }
+
   function _convertToAssets(
     uint256 shares,
     uint8 decimalsOffset,
     uint256 totalAssets,
     uint256 totalSupply,
     Math.Rounding rounding
-  ) internal pure virtual returns (uint256) {
+  ) private pure returns (uint256) {
     return shares.mulDiv(totalAssets + 1, totalSupply + 10 ** decimalsOffset, rounding);
+  }
+
+  function _idle(LibRedeemQueue.Queue storage queue, IAssetManager assetManager, address eolVault)
+    internal
+    view
+    returns (uint256)
+  {
+    return IEOLVault(eolVault).totalAssets() - queue.pending() - assetManager.eolAlloc(eolVault);
   }
 
   function _loadPastSnapshot(IHubAsset hubAsset, address eolVault, uint256 timestamp)
@@ -171,7 +201,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
 
   function _claim(LibRedeemQueue.Queue storage queue, LibRedeemQueue.Index storage index, ClaimConfig memory cfg)
     internal
-    returns (uint256 totalClaimed_, uint256 totalClaimedWithoutPanalty)
+    returns (uint256 totalClaimed_, uint256 totalClaimedWithoutImpact)
   {
     uint256 i = cfg.idxOffset;
 
@@ -187,7 +217,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
 
       uint256 assetsOnRequest = req.accumulatedAssets;
       uint256 sharesOnRequest = req.accumulatedShares;
-      uint256 resolveAssets = req.accumulatedAssets;
+      uint256 claimed;
       {
         if (reqId != 0) {
           LibRedeemQueue.Request memory prevReq = queue.data[reqId - 1];
@@ -195,28 +225,28 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
           sharesOnRequest -= prevReq.accumulatedShares;
         }
 
-        (uint256 resolvedAt_,) = queue.resolvedAt(reqId, block.timestamp); // isResolved can be ignored
-        (uint256 totalAssets, uint256 totalSupply) = _loadPastSnapshot(cfg.hubAsset, address(cfg.eolVault), resolvedAt_);
+        (uint256 reservedAt_,) = queue.reservedAt(reqId); // isResolved can be ignored
+        (uint256 totalAssets, uint256 totalSupply) = _loadPastSnapshot(cfg.hubAsset, address(cfg.eolVault), reservedAt_);
 
         uint256 assetsOnResolve =
           _convertToAssets(sharesOnRequest, cfg.decimalsOffset, totalAssets, totalSupply, Math.Rounding.Floor);
 
-        resolveAssets = Math.min(assetsOnRequest, assetsOnResolve);
+        claimed = Math.min(assetsOnRequest, assetsOnResolve);
       }
 
-      totalClaimedWithoutPanalty += assetsOnRequest;
-      totalClaimed_ += resolveAssets;
+      totalClaimedWithoutImpact += assetsOnRequest;
+      totalClaimed_ += claimed;
 
       emit LibRedeemQueue.Claimed(cfg.receiver, reqId);
     }
 
     // update index offset if there's any claimed request
-    if (totalClaimedWithoutPanalty > 0) {
+    if (totalClaimedWithoutImpact > 0) {
       index.offset = i;
-      queue.totalClaimedAssets += totalClaimedWithoutPanalty;
+      queue.totalClaimedAssets += totalClaimedWithoutImpact;
     }
 
-    return (totalClaimed_, totalClaimedWithoutPanalty);
+    return (totalClaimed_, totalClaimedWithoutImpact);
   }
 
   function _sync(StorageV1 storage $, address eolVault) internal {
@@ -225,13 +255,13 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     uint256 pending = queue.pending();
     if (pending == 0) return; // no pending assets to reserve
 
-    uint256 idle = $.assetManager.idleAssets(eolVault);
+    uint256 idle = _idle(queue, $.assetManager, eolVault);
     if (idle == 0) return; // no idle assets to reserve
 
     uint256 resolveAssets = Math.min(pending, idle);
     IEOLVault(eolVault).withdraw(resolveAssets, address(this), address(this));
 
-    queue.reserve(resolveAssets); // FIXME
+    queue.reserve(resolveAssets);
   }
 
   // =========================== NOTE: ASSERTIONS =========================== //

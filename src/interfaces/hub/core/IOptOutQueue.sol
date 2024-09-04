@@ -21,6 +21,8 @@ interface IOptOutQueueStorageV1 {
 
   // View functions
 
+  function assetManager() external view returns (address);
+
   function redeemPeriod(address eolVault) external view returns (uint256);
 
   function getRequest(address eolVault, uint256[] calldata reqIds)
@@ -53,6 +55,12 @@ interface IOptOutQueueStorageV1 {
 }
 
 interface IOptOutQueue is IOptOutQueueStorageV1 {
+  enum ImpactType {
+    None,
+    Loss,
+    Yield
+  }
+
   // Queue functions
   function request(uint256 shares, address receiver, address eolVault) external returns (uint256 reqId);
   function claim(address receiver, address eolVault) external returns (uint256 totalClaimed_);
