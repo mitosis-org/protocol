@@ -22,8 +22,12 @@ contract RedeemQueueWrapper {
     return queue.index(recipient).get(itemIndex);
   }
 
-  function amount(uint256 itemIndex) external view returns (uint256) {
-    return queue.amount(itemIndex);
+  function shares(uint256 itemIndex) external view returns (uint256) {
+    return queue.shares(itemIndex);
+  }
+
+  function assets(uint256 itemIndex) external view returns (uint256) {
+    return queue.assets(itemIndex);
   }
 
   function reservedAt(uint256 itemIndex) external view returns (uint256 reservedAt_, bool isReserved) {
@@ -50,12 +54,12 @@ contract RedeemQueueWrapper {
     return queue.index(recipient).size;
   }
 
-  function totalReserved() external view returns (uint256) {
-    return queue.totalReserved;
+  function totalReservedAssets() external view returns (uint256) {
+    return queue.totalReservedAssets;
   }
 
-  function totalClaimed() external view returns (uint256) {
-    return queue.totalClaimed;
+  function totalClaimedAssets() external view returns (uint256) {
+    return queue.totalClaimedAssets;
   }
 
   function reserveHistory() external view returns (LibRedeemQueue.ReserveLog[] memory) {
@@ -96,8 +100,8 @@ contract RedeemQueueWrapper {
 
   // =========================== NOTE: QUEUE FUNCTIONS =========================== //
 
-  function enqueue(address recipient, uint256 requestAmount) external returns (uint256) {
-    return queue.enqueue(recipient, requestAmount);
+  function enqueue(address recipient, uint256 requestShares, uint256 requestAssets) external returns (uint256) {
+    return queue.enqueue(recipient, requestShares, requestAssets);
   }
 
   function claim(uint256 itemIndex) external {

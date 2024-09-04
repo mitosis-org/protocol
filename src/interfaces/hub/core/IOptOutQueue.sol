@@ -15,6 +15,10 @@ interface IOptOutQueueStorageV1 {
     LibRedeemQueue.Request request;
   }
 
+  event QueueEnabled(address indexed eolVault);
+  event AssetManagerSet(address indexed assetManager);
+  event RedeemPeriodSet(address indexed eolVault, uint256 redeemPeriod);
+
   // View functions
 
   function redeemPeriod(address eolVault) external view returns (uint256);

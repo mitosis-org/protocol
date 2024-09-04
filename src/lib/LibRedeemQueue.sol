@@ -198,12 +198,12 @@ library LibRedeemQueue {
     return _searchReserveLogByTimestamp(q.reserveHistory, timestamp);
   }
 
-  function enqueue(Queue storage q, address recipient, uint256 requestAssets, uint256 requestShares)
+  function enqueue(Queue storage q, address recipient, uint256 requestShares, uint256 requestAssets)
     internal
     returns (uint256 itemIndex)
   {
-    if (requestAssets == 0) revert LibRedeemQueue__InvalidRequestAssets();
     if (requestShares == 0) revert LibRedeemQueue__InvalidRequestShares();
+    if (requestAssets == 0) revert LibRedeemQueue__InvalidRequestAssets();
     bool isPrevItemExists = q.size > 0;
     itemIndex = q.size;
 
@@ -308,16 +308,6 @@ library LibRedeemQueue {
 
   function _mid(uint256 low, uint256 high) private pure returns (uint256) {
     return (low & high) + (low ^ high) / 2; // avoid overflow
-  }
-
-  function _convertToAssets(
-    uint256 shares_,
-    uint8 decimalsOffset,
-    uint256 totalAssets,
-    uint256 totalSupply,
-    Math.Rounding rounding
-  ) private pure returns (uint256) {
-    return Math.mulDiv(shares_, totalAssets + 1, totalSupply + 10 ** decimalsOffset, rounding);
   }
 
   function _claim(Queue storage q, uint256 itemIndex, bool applyToState) internal returns (uint256 claimed) {

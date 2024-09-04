@@ -36,15 +36,17 @@ contract TestLibRedeemQueue is Test {
     // |-------------|-------------|-------------|
 
     dataset = new DataSet[](6);
-    dataset[0] = DataSet({ recipient: _addr('recipient-1'), amount: 2 ether });
-    dataset[1] = DataSet({ recipient: _addr('recipient-2'), amount: 4 ether });
-    dataset[2] = DataSet({ recipient: _addr('recipient-1'), amount: 3 ether });
-    dataset[3] = DataSet({ recipient: _addr('recipient-3'), amount: 6 ether });
-    dataset[4] = DataSet({ recipient: _addr('recipient-1'), amount: 4 ether });
-    dataset[5] = DataSet({ recipient: _addr('recipient-3'), amount: 7 ether });
+    dataset[0] = DataSet({ recipient: _addr('recipient-1'), shares: 2 ether, assets: 2 ether });
+    dataset[1] = DataSet({ recipient: _addr('recipient-2'), shares: 4 ether, assets: 4 ether });
+    dataset[2] = DataSet({ recipient: _addr('recipient-1'), shares: 3 ether, assets: 3 ether });
+    dataset[3] = DataSet({ recipient: _addr('recipient-3'), shares: 6 ether, assets: 6 ether });
+    dataset[4] = DataSet({ recipient: _addr('recipient-1'), shares: 4 ether, assets: 4 ether });
+    dataset[5] = DataSet({ recipient: _addr('recipient-3'), shares: 7 ether, assets: 7 ether });
 
     for (uint256 i = 0; i < dataset.length; i++) {
-      queue.enqueue(dataset[i].recipient, dataset[i].amount);
+      DataSet memory data = dataset[i];
+
+      queue.enqueue(data.recipient, data.shares, data.assets);
       vm.warp(block.timestamp + 10 seconds);
     }
 
@@ -53,8 +55,8 @@ contract TestLibRedeemQueue is Test {
 
   function _reqToStr(LibRedeemQueue.Request memory req) private pure returns (string memory) {
     return string.concat(
-      'Request(accumulated: ',
-      req.accumulated.toString(),
+      'Request(accumulatedAssets: ',
+      req.accumulatedAssets.toString(),
       ', recipient: ',
       req.recipient.toHexString(),
       ', createdAt: ',
@@ -140,7 +142,9 @@ contract TestLibRedeemQueue is Test {
     DataSet[] memory dataset = _loadTestdata();
 
     for (uint256 i = 0; i < dataset.length; i++) {
-      assertEq(queue.amount(i), dataset[i].amount);
+      DataSet memory data = dataset[i];
+      assertEq(queue.assets(i), data.assets);
+      assertEq(queue.shares(i), data.shares);
     }
   }
 
@@ -151,7 +155,7 @@ contract TestLibRedeemQueue is Test {
 
     for (uint256 i = 0; i < dataset.length; i++) {
       vm.warp(startTime + i * 10 seconds);
-      queue.reserve(dataset[i].amount);
+      queue.reserve(dataset[i].assets);
 
       (uint256 reservedAt, bool isReserved) = queue.reservedAt(i);
       assertEq(reservedAt, startTime + i * 10 seconds);
@@ -162,7 +166,7 @@ contract TestLibRedeemQueue is Test {
   function test_pending() public {
     DataSet[] memory dataset = _loadTestdata();
 
-    uint256 totalRequested = dataset.totalRequested();
+    uint256 totalRequested = dataset.totalRequestedAssets();
     assertEq(queue.pending(), totalRequested);
 
     queue.reserve(totalRequested / 2);
@@ -187,7 +191,7 @@ contract TestLibRedeemQueue is Test {
         itemIndexes[j] = requests[j].itemIndex;
       }
 
-      assertEq(itemIndexes, queue.claimable(recipient, lastItem.accumulated));
+      assertEq(itemIndexes, queue.claimable(recipient, lastItem.accumulatedAssets));
     }
   }
 
@@ -203,17 +207,17 @@ contract TestLibRedeemQueue is Test {
 
       // update and get a new offset
 
-      (newOffset, found) = queue.searchQueueOffset(curr.accumulated);
+      (newOffset, found) = queue.searchQueueOffset(curr.accumulatedAssets);
       assertEq(newOffset, i + 1);
       assertTrue(found);
-      assertLe(queue.get(i).accumulated, next.accumulated - 1 ether);
+      assertLe(queue.get(i).accumulatedAssets, next.accumulatedAssets - 1 ether);
 
       // update again, but not found
 
-      (newOffset, found) = queue.searchQueueOffset(next.accumulated - 1 ether);
+      (newOffset, found) = queue.searchQueueOffset(next.accumulatedAssets - 1 ether);
       assertEq(newOffset, i + 1);
       assertTrue(found);
-      assertLe(queue.get(i).accumulated, next.accumulated - 1 ether);
+      assertLe(queue.get(i).accumulatedAssets, next.accumulatedAssets - 1 ether);
     }
   }
 
@@ -226,7 +230,7 @@ contract TestLibRedeemQueue is Test {
     queue.setRedeemPeriod(10 seconds);
 
     vm.warp(1); // move to genesis
-    queue.reserve(dataset.totalRequested()); // reserve all
+    queue.reserve(dataset.totalRequestedAssets()); // reserve all
 
     (newOffset, updated) = queue.update();
     assertEq(newOffset, 0);
@@ -256,17 +260,17 @@ contract TestLibRedeemQueue is Test {
 
         // update and get a new offset
 
-        (newOffset, found) = queue.searchIndexOffset(recipient, curr.accumulated);
+        (newOffset, found) = queue.searchIndexOffset(recipient, curr.accumulatedAssets);
         assertEq(newOffset, j + 1);
         assertTrue(found);
-        assertLe(queue.get(recipient, j).accumulated, curr.accumulated);
+        assertLe(queue.get(recipient, j).accumulatedAssets, curr.accumulatedAssets);
 
         // update again, but not found
 
-        (newOffset, found) = queue.searchIndexOffset(recipient, next.accumulated - 1 ether);
+        (newOffset, found) = queue.searchIndexOffset(recipient, next.accumulatedAssets - 1 ether);
         assertEq(newOffset, j + 1);
         assertTrue(found);
-        assertLe(queue.get(recipient, j).accumulated, next.accumulated - 1 ether);
+        assertLe(queue.get(recipient, j).accumulatedAssets, next.accumulatedAssets - 1 ether);
       }
     }
   }
@@ -350,11 +354,12 @@ contract TestLibRedeemQueue is Test {
   function _test_enqueue(bool enqueueWithSameRecipient) internal {
     {
       address recipient = _addr('recipient-1');
-      uint256 itemIdx = queue.enqueue(recipient, 1 ether);
+      uint256 itemIdx = queue.enqueue(recipient, 1 ether, 1 ether);
 
       // check queue
       LibRedeemQueue.Request memory expected = LibRedeemQueue.Request({
-        accumulated: 1 ether,
+        accumulatedShares: 1 ether,
+        accumulatedAssets: 1 ether,
         recipient: recipient,
         createdAt: uint48(block.timestamp),
         claimedAt: 0
@@ -370,11 +375,12 @@ contract TestLibRedeemQueue is Test {
 
     {
       address recipient = enqueueWithSameRecipient ? _addr('recipient-1') : _addr('recipient-2');
-      uint256 itemIdx = queue.enqueue(recipient, 4 ether);
+      uint256 itemIdx = queue.enqueue(recipient, 4 ether, 4 ether);
 
       // check queue
       LibRedeemQueue.Request memory expected = LibRedeemQueue.Request({
-        accumulated: 5 ether, // 1 ether + 4 ether
+        accumulatedShares: 5 ether, // 1 ether + 4 ether
+        accumulatedAssets: 5 ether, // 1 ether + 4 ether
         recipient: recipient,
         createdAt: uint48(block.timestamp),
         claimedAt: 0
@@ -464,7 +470,7 @@ contract TestLibRedeemQueue is Test {
     uint256 claimSize = 10;
 
     for (uint256 i = 0; i < claimSize; i++) {
-      queue.enqueue(recipient, 1 ether);
+      queue.enqueue(recipient, 1 ether, 1 ether);
     }
 
     // resolve all
@@ -481,7 +487,7 @@ contract TestLibRedeemQueue is Test {
     address recipient = _addr('recipient');
 
     for (uint256 i = 0; i < (claimSize * 2) + 1; i++) {
-      queue.enqueue(recipient, 1 ether);
+      queue.enqueue(recipient, 1 ether, 1 ether);
     }
 
     // resolve all
@@ -522,15 +528,15 @@ contract TestLibRedeemQueue is Test {
       vm.expectEmit();
       emit LibRedeemQueue.QueueOffsetUpdated(i, i + 1);
 
-      queue.reserve(curr.accumulated - queue.totalReserved());
+      queue.reserve(curr.accumulatedAssets - queue.totalReservedAssets());
       assertEq(queue.offset(), i + 1);
-      assertLe(queue.get(i).accumulated, curr.accumulated);
+      assertLe(queue.get(i).accumulatedAssets, curr.accumulatedAssets);
 
       // update again, but not found
 
-      queue.reserve(next.accumulated - 1 ether - queue.totalReserved());
+      queue.reserve(next.accumulatedAssets - 1 ether - queue.totalReservedAssets());
       assertEq(queue.offset(), i + 1);
-      assertLe(queue.get(i).accumulated, next.accumulated - 1 ether);
+      assertLe(queue.get(i).accumulatedAssets, next.accumulatedAssets - 1 ether);
     }
   }
 
@@ -548,26 +554,31 @@ contract TestLibRedeemQueue is Test {
         LibRedeemQueue.Request memory next = queue.get(recipient, j + 1);
 
         // update and get a new offset
-        queue.reserve(curr.accumulated - queue.totalReserved());
+        queue.reserve(curr.accumulatedAssets - queue.totalReservedAssets());
 
         queue.claim(recipient);
         assertEq(queue.offset(recipient), j + 1);
-        assertLe(queue.get(recipient, j).accumulated, curr.accumulated);
+        assertLe(queue.get(recipient, j).accumulatedAssets, curr.accumulatedAssets);
 
         // update again, but not found
-        queue.reserve(next.accumulated - 1 ether - queue.totalReserved());
+        queue.reserve(next.accumulatedAssets - 1 ether - queue.totalReservedAssets());
         queue.claim(recipient);
         assertEq(queue.offset(recipient), j + 1);
-        assertLe(queue.get(recipient, j).accumulated, next.accumulated - 1 ether);
+        assertLe(queue.get(recipient, j).accumulatedAssets, next.accumulatedAssets - 1 ether);
       }
     }
   }
 
   // Add these tests to your TestLibRedeemQueue contract
 
-  function test_enqueue_zeroAmount() public {
-    vm.expectRevert(LibRedeemQueue.LibRedeemQueue__InvalidRequestAmount.selector);
-    queue.enqueue(_addr('recipient'), 0);
+  function test_enqueue_zeroAssets() public {
+    vm.expectRevert(LibRedeemQueue.LibRedeemQueue__InvalidRequestAssets.selector);
+    queue.enqueue(_addr('recipient'), 1 ether, 0);
+  }
+
+  function test_enqueue_zeroShares() public {
+    vm.expectRevert(LibRedeemQueue.LibRedeemQueue__InvalidRequestShares.selector);
+    queue.enqueue(_addr('recipient'), 0, 1 ether);
   }
 
   function test_reserve_zeroAmount() public {

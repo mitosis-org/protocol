@@ -56,7 +56,7 @@ contract OptOutQueueTest is Test, Toolkit {
     _optOutQueue = OptOutQueue(
       _proxy(
         address(new OptOutQueue()),
-        abi.encodeCall(OptOutQueue.initialize, (_owner)) //
+        abi.encodeCall(OptOutQueue.initialize, (_owner, _assetManager)) //
       )
     );
 

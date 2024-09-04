@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import { LibString } from '@solady/utils/LibString.sol';
+
+import { IAssetManager } from '../../../interfaces/hub/core/IAssetManager.sol';
+import { IEOLVault } from '../../../interfaces/hub/core/IEOLVault.sol';
+import { IHubAsset } from '../../../interfaces/hub/core/IHubAsset.sol';
 import { IMitosisLedger } from '../../../interfaces/hub/core/IMitosisLedger.sol';
 import { IOptOutQueueStorageV1 } from '../../../interfaces/hub/core/IOptOutQueue.sol';
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 import { LibRedeemQueue } from '../../../lib/LibRedeemQueue.sol';
+import { StdError } from '../../../lib/StdError.sol';
 
-contract OptOutQueueStorageV1 is IOptOutQueueStorageV1 {
+abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1 {
   using ERC7201Utils for string;
+  using LibString for address;
   using LibRedeemQueue for LibRedeemQueue.Queue;
   using LibRedeemQueue for LibRedeemQueue.Index;
 
@@ -21,6 +28,7 @@ contract OptOutQueueStorageV1 is IOptOutQueueStorageV1 {
   }
 
   struct StorageV1 {
+    IAssetManager assetManager;
     mapping(address eolVault => EOLVaultState state) states;
   }
 
@@ -138,9 +146,45 @@ contract OptOutQueueStorageV1 is IOptOutQueueStorageV1 {
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
+  function _enableQueue(StorageV1 storage $, address eolVault) internal {
+    $.states[eolVault].isEnabled = true;
+
+    uint8 underlyingDecimals = IHubAsset(IEOLVault(eolVault).asset()).decimals();
+    $.states[eolVault].underlyingDecimals = underlyingDecimals;
+    $.states[eolVault].decimalsOffset = IEOLVault(eolVault).decimals() - underlyingDecimals;
+
+    emit QueueEnabled(eolVault);
+  }
+
+  function _setAssetManager(StorageV1 storage $, address assetManager) internal {
+    if (assetManager.code.length == 0) revert StdError.InvalidAddress('AssetManager');
+
+    $.assetManager = IAssetManager(assetManager);
+
+    emit AssetManagerSet(assetManager);
+  }
+
+  function _setRedeemPeriod(StorageV1 storage $, address eolVault, uint256 redeemPeriod_) internal {
+    _assertQueueEnabled($, eolVault);
+
+    $.states[eolVault].queue.redeemPeriod = redeemPeriod_;
+
+    emit RedeemPeriodSet(eolVault, redeemPeriod_);
+  }
+
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _queue(StorageV1 storage $, address eolVault) internal view returns (LibRedeemQueue.Queue storage) {
+  function _queue(StorageV1 storage $, address eolVault) private view returns (LibRedeemQueue.Queue storage) {
     return $.states[eolVault].queue;
+  }
+
+  // ============================ NOTE: VIRTUAL FUNCTIONS ============================== //
+
+  /// @dev leave this function virtual to intend to use custom errors with overriding.
+  function _assertQueueEnabled(StorageV1 storage $, address eolVault) internal view virtual {
+    require(
+      $.states[eolVault].isEnabled,
+      string.concat('OptOutQueueStorageV1: queue not enabled for eolVault: ', eolVault.toHexString())
+    );
   }
 }

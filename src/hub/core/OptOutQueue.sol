@@ -6,6 +6,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
+import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IEOLVault } from '../../interfaces/hub/core/IEolVault.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
@@ -30,10 +31,8 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     uint256 idxOffset;
   }
 
-  event QueueEnabled(address indexed eolVault);
-  event RedeemPeriodSet(address indexed eolVault, uint256 redeemPeriod);
   event OptOutRequested(address indexed receiver, address indexed eolVault, uint256 shares, uint256 assets);
-  event OptOutRequestClaimed(address indexed receiver, address indexed eolVault, uint256 shares, uint256 assets);
+  event OptOutRequestClaimed(address indexed receiver, address indexed eolVault, uint256 assets, uint256 penalty);
 
   error OptOutQueue__QueueNotEnabled(address eolVault);
   error OptOutQueue__NothingToClaim();
@@ -42,10 +41,14 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     _disableInitializers();
   }
 
-  function initialize(address owner_) public initializer {
+  function initialize(address owner_, address assetManager) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
     _transferOwnership(owner_);
+
+    StorageV1 storage $ = _getStorageV1();
+
+    _setAssetManager($, assetManager);
   }
 
   // =========================== NOTE: QUEUE FUNCTIONS =========================== //
@@ -58,9 +61,8 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
 
     uint256 assets = IEOLVault(eolVault).previewRedeem(shares) - 1; // FIXME: tricky way to avoid rounding error
 
-    reqId = _queue($, eolVault).enqueue(receiver, assets, shares);
-
-    IEOLVault(eolVault).redeem(shares, address(this), _msgSender());
+    LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
+    reqId = queue.enqueue(receiver, assets, shares);
 
     emit OptOutRequested(receiver, eolVault, shares, assets);
 
@@ -75,7 +77,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
 
     _sync($, eolVault);
 
-    LibRedeemQueue.Queue storage queue = _queue($, eolVault);
+    LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
     LibRedeemQueue.Index storage index = queue.index(receiver);
 
     queue.update();
@@ -89,13 +91,13 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
       idxOffset: index.offset
     });
 
-    uint256 totalClaimedShares;
-    (totalClaimed_, totalClaimedShares) = _claim($, queue, index, cfg);
+    uint256 totalClaimedWithoutPenalty;
+    (totalClaimed_, totalClaimedWithoutPenalty) = _claim(queue, index, cfg);
     if (totalClaimed_ == 0) revert OptOutQueue__NothingToClaim();
 
     cfg.hubAsset.safeTransfer(receiver, totalClaimed_);
 
-    emit OptOutRequestClaimed(receiver, eolVault, totalClaimed_, totalClaimedShares);
+    emit OptOutRequestClaimed(receiver, eolVault, totalClaimed_, totalClaimedWithoutPenalty - totalClaimed_);
 
     return totalClaimed_;
   }
@@ -128,25 +130,15 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
   }
 
   function enable(address eolVault) external onlyOwner {
-    StorageV1 storage $ = _getStorageV1();
+    _enableQueue(_getStorageV1(), eolVault);
+  }
 
-    $.states[eolVault].isEnabled = true;
-
-    uint8 underlyingDecimals = IHubAsset(IEOLVault(eolVault).asset()).decimals();
-    $.states[eolVault].underlyingDecimals = underlyingDecimals;
-    $.states[eolVault].decimalsOffset = IEOLVault(eolVault).decimals() - underlyingDecimals;
-
-    emit QueueEnabled(eolVault);
+  function setAssetManager(address assetManager) external onlyOwner {
+    _setAssetManager(_getStorageV1(), assetManager);
   }
 
   function setRedeemPeriod(address eolVault, uint256 redeemPeriod_) external onlyOwner {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertQueueEnabled($, eolVault);
-
-    _queue($, eolVault).redeemPeriod = redeemPeriod_;
-
-    emit RedeemPeriodSet(eolVault, redeemPeriod_);
+    _setRedeemPeriod(_getStorageV1(), eolVault, redeemPeriod_);
   }
 
   // =========================== NOTE: INTERNAL FUNCTIONS =========================== //
@@ -177,12 +169,10 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     return (totalAssets, totalSupply);
   }
 
-  function _claim(
-    StorageV1 storage $,
-    LibRedeemQueue.Queue storage queue,
-    LibRedeemQueue.Index storage index,
-    ClaimConfig memory cfg
-  ) internal returns (uint256 totalClaimed_, uint256 totalClaimedShares) {
+  function _claim(LibRedeemQueue.Queue storage queue, LibRedeemQueue.Index storage index, ClaimConfig memory cfg)
+    internal
+    returns (uint256 totalClaimed_, uint256 totalClaimedWithoutPanalty)
+  {
     uint256 i = cfg.idxOffset;
 
     for (; i < index.size; i++) {
@@ -195,54 +185,58 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
       if (reqId >= cfg.queueOffset) break;
       queue.data[reqId].claimedAt = uint48(block.timestamp);
 
-      uint256 assetsOnRequest =
-        reqId == 0 ? req.accumulatedAssets : req.accumulatedAssets - queue.data[reqId - 1].accumulatedAssets;
-
-      uint256 assetsOnResolve;
-      uint256 sharesOnRequest = $.states[address(cfg.eolVault)].accumulatedAssetsByRequestId[reqId];
+      uint256 assetsOnRequest = req.accumulatedAssets;
+      uint256 sharesOnRequest = req.accumulatedShares;
+      uint256 resolveAssets = req.accumulatedAssets;
       {
+        if (reqId != 0) {
+          LibRedeemQueue.Request memory prevReq = queue.data[reqId - 1];
+          assetsOnRequest -= prevReq.accumulatedAssets;
+          sharesOnRequest -= prevReq.accumulatedShares;
+        }
+
         (uint256 resolvedAt_,) = queue.resolvedAt(reqId, block.timestamp); // isResolved can be ignored
         (uint256 totalAssets, uint256 totalSupply) = _loadPastSnapshot(cfg.hubAsset, address(cfg.eolVault), resolvedAt_);
 
-        assetsOnResolve =
+        uint256 assetsOnResolve =
           _convertToAssets(sharesOnRequest, cfg.decimalsOffset, totalAssets, totalSupply, Math.Rounding.Floor);
+
+        resolveAssets = Math.min(assetsOnRequest, assetsOnResolve);
       }
 
-      // apply loss if there's any reported loss while redeeming
-      if (assetsOnRequest > assetsOnResolve) {
-        totalClaimed_ += assetsOnResolve;
-      } else {
-        totalClaimed_ += assetsOnRequest;
-      }
-
-      totalClaimedShares += sharesOnRequest;
+      totalClaimedWithoutPanalty += assetsOnRequest;
+      totalClaimed_ += resolveAssets;
 
       emit LibRedeemQueue.Claimed(cfg.receiver, reqId);
     }
 
     // update index offset if there's any claimed request
-    if (totalClaimed_ > 0) {
+    if (totalClaimedWithoutPanalty > 0) {
       index.offset = i;
-      queue.totalClaimed += totalClaimed_;
+      queue.totalClaimedAssets += totalClaimedWithoutPanalty;
     }
 
-    return (totalClaimed_, totalClaimedShares);
+    return (totalClaimed_, totalClaimedWithoutPanalty);
   }
 
   function _sync(StorageV1 storage $, address eolVault) internal {
-    uint256 pending = _queue($, eolVault).pending();
-    if (pending == 0) return; // nothing to reserve
+    LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
 
-    uint256 pendingShares = IEOLVault(eolVault).convertToShares(pending + 1); // FIXME: tricky way to avoid rounding error
-    uint256 resolveShares = Math.min(pendingShares, 0); // FIXME
-    uint256 resolveAssets = IEOLVault(eolVault).convertToAssets(resolveShares);
+    uint256 pending = queue.pending();
+    if (pending == 0) return; // no pending assets to reserve
 
-    _queue($, eolVault).reserve(resolveAssets); // FIXME
+    uint256 idle = $.assetManager.idleAssets(eolVault);
+    if (idle == 0) return; // no idle assets to reserve
+
+    uint256 resolveAssets = Math.min(pending, idle);
+    IEOLVault(eolVault).withdraw(resolveAssets, address(this), address(this));
+
+    queue.reserve(resolveAssets); // FIXME
   }
 
   // =========================== NOTE: ASSERTIONS =========================== //
 
-  function _assertQueueEnabled(StorageV1 storage $, address eolVault) internal view {
+  function _assertQueueEnabled(StorageV1 storage $, address eolVault) internal view override {
     if (!$.states[eolVault].isEnabled) revert OptOutQueue__QueueNotEnabled(eolVault);
   }
 }
