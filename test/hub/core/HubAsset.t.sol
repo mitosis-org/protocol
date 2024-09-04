@@ -11,15 +11,14 @@ import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/Transparen
 
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
-import { Toolkit } from '../../util/Toolkit.sol';
 
-contract HubAssetTest is Test, Toolkit {
+contract HubAssetTest is Test {
   HubAsset hubAsset;
 
   ProxyAdmin internal _proxyAdmin;
-  address immutable owner = _addr('owner');
-  address immutable user1 = _addr('user1');
-  address immutable user2 = _addr('user2');
+  address immutable owner = makeAddr('owner');
+  address immutable user1 = makeAddr('user1');
+  address immutable user2 = makeAddr('user2');
 
   function setUp() public {
     _proxyAdmin = new ProxyAdmin(owner);

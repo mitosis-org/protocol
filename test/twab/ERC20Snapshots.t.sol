@@ -5,23 +5,13 @@ import { console } from '@std/console.sol';
 import { Test } from '@std/Test.sol';
 import { Vm } from '@std/Vm.sol';
 
-import { ERC20TwabSnapshots } from '../../src/twab/ERC20TwabSnapshots.sol';
+import { MockERC20TwabSnapshots } from '../mock/MockERC20TwabSnapshots.t.sol';
 
-contract TempERC20TwabSnapshots is ERC20TwabSnapshots {
-  function initialize(string memory name, string memory symbol) external initializer {
-    __ERC20_init(name, symbol);
-  }
-
-  function mint(address account, uint256 value) external {
-    _mint(account, value);
-  }
-}
-
-contract TokenTest is Test {
-  TempERC20TwabSnapshots public token;
+contract ERC20SnapshotsTest is Test {
+  MockERC20TwabSnapshots public token;
 
   function setUp() public {
-    token = new TempERC20TwabSnapshots();
+    token = new MockERC20TwabSnapshots();
     token.initialize('Token', 'TKN');
   }
 
