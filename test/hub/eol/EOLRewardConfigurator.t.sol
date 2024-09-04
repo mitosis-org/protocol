@@ -5,14 +5,16 @@ import { console } from '@std/console.sol';
 import { Test } from '@std/Test.sol';
 import { Vm } from '@std/Vm.sol';
 
+import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+
 import { IERC20Errors } from '@oz-v5/interfaces/draft-IERC6093.sol';
 import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
 import { EOLRewardConfigurator } from '../../../src/hub/eol/EOLRewardConfigurator.sol';
 import { DistributionType } from '../../../src/interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { IEOLRewardDistributor } from '../../../src/interfaces/hub/eol/IEOLRewardDistributor.sol';
 import { IEOLRewardConfigurator } from '../../../src/interfaces/hub/eol/IEOLRewardConfigurator.sol';
+import { IEOLRewardDistributor } from '../../../src/interfaces/hub/eol/IEOLRewardDistributor.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
@@ -31,11 +33,11 @@ contract MockDistributor is IEOLRewardDistributor {
     return 'MockDistributor';
   }
 
-  function claimable(address account, address eolVault, address asset) external view returns (bool) {
+  function claimable(address, address, address) external view returns (bool) {
     return true;
   }
 
-  function handleReward(address eolVault, address asset, uint256 amount, bytes memory metadata) external {
+  function handleReward(address, address, uint256, bytes memory) external {
     return;
   }
 }
@@ -45,7 +47,6 @@ contract HubAssetTest is Test, Toolkit {
 
   ProxyAdmin internal _proxyAdmin;
   address immutable owner = _addr('owner');
-  address immutable user1 = _addr('user1');
 
   function setUp() public {
     _proxyAdmin = new ProxyAdmin(owner);
@@ -85,7 +86,7 @@ contract HubAssetTest is Test, Toolkit {
 
   function test_registerDistributor_Unauthroized() public {
     MockDistributor distributor = new MockDistributor(DistributionType.TWAB);
-    vm.expectRevert(); // onlyOwner
+    vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
     rewardConfigurator.registerDistributor(distributor);
   }
 
@@ -131,7 +132,7 @@ contract HubAssetTest is Test, Toolkit {
     vm.prank(owner);
     rewardConfigurator.registerDistributor(distributor);
 
-    vm.expectRevert(); // onlyOwner
+    vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
     rewardConfigurator.unregisterDistributor(distributor);
   }
 
@@ -188,7 +189,7 @@ contract HubAssetTest is Test, Toolkit {
     vm.prank(owner);
     rewardConfigurator.registerDistributor(distributor);
 
-    vm.expectRevert();
+    vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
     rewardConfigurator.setDefaultDistributor(distributor);
   }
 
@@ -238,7 +239,7 @@ contract HubAssetTest is Test, Toolkit {
     address eolVault = _addr('eolVault');
     address asset = _addr('asset');
 
-    vm.expectRevert();
+    vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
     rewardConfigurator.setRewardDistributionType(eolVault, asset, DistributionType.TWAB);
   }
 
