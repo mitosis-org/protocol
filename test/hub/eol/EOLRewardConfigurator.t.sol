@@ -16,33 +16,10 @@ import { DistributionType } from '../../../src/interfaces/hub/eol/IEOLRewardConf
 import { IEOLRewardConfigurator } from '../../../src/interfaces/hub/eol/IEOLRewardConfigurator.sol';
 import { IEOLRewardDistributor } from '../../../src/interfaces/hub/eol/IEOLRewardDistributor.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
+import { MockDistributor } from '../../mock/MockDistributor.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
-contract MockDistributor is IEOLRewardDistributor {
-  DistributionType _distributionType;
-
-  constructor(DistributionType distributionType_) {
-    _distributionType = distributionType_;
-  }
-
-  function distributionType() external view returns (DistributionType) {
-    return _distributionType;
-  }
-
-  function description() external view returns (string memory) {
-    return 'MockDistributor';
-  }
-
-  function claimable(address, address, address) external view returns (bool) {
-    return true;
-  }
-
-  function handleReward(address, address, uint256, bytes memory) external {
-    return;
-  }
-}
-
-contract HubAssetTest is Test, Toolkit {
+contract EOLRewardConfiguratorTest is Test, Toolkit {
   EOLRewardConfigurator rewardConfigurator;
 
   ProxyAdmin internal _proxyAdmin;
