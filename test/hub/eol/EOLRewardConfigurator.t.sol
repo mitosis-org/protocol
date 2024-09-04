@@ -21,7 +21,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   EOLRewardConfigurator rewardConfigurator;
 
   ProxyAdmin internal _proxyAdmin;
-  address immutable owner = _addr('owner');
+  address immutable owner = makeAddr('owner');
 
   function setUp() public {
     _proxyAdmin = new ProxyAdmin(owner);
@@ -196,8 +196,8 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     rewardConfigurator.registerDistributor(distributor);
     rewardConfigurator.setDefaultDistributor(distributor);
 
-    address eolVault = _addr('eolVault');
-    address asset = _addr('asset');
+    address eolVault = makeAddr('eolVault');
+    address asset = makeAddr('asset');
 
     rewardConfigurator.setRewardDistributionType(eolVault, asset, DistributionType.TWAB);
     assertTrue(rewardConfigurator.getDistributionType(eolVault, asset) == DistributionType.TWAB);
@@ -217,8 +217,8 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
 
     vm.stopPrank();
 
-    address eolVault = _addr('eolVault');
-    address asset = _addr('asset');
+    address eolVault = makeAddr('eolVault');
+    address asset = makeAddr('asset');
 
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
     rewardConfigurator.setRewardDistributionType(eolVault, asset, DistributionType.TWAB);
@@ -232,8 +232,8 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     rewardConfigurator.registerDistributor(distributor);
     // rewardConfigurator.setDefaultDistributor(distributor);
 
-    address eolVault = _addr('eolVault');
-    address asset = _addr('asset');
+    address eolVault = makeAddr('eolVault');
+    address asset = makeAddr('asset');
 
     vm.expectRevert(_errDefaultDistributorNotSet(DistributionType.TWAB));
     rewardConfigurator.setRewardDistributionType(eolVault, asset, DistributionType.TWAB);
