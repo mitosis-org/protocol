@@ -5,8 +5,6 @@ import { console } from '@std/console.sol';
 import { Test } from '@std/Test.sol';
 import { Vm } from '@std/Vm.sol';
 
-import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
-
 import { IERC20Errors } from '@oz-v5/interfaces/draft-IERC6093.sol';
 import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
@@ -63,7 +61,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
 
   function test_registerDistributor_Unauthroized() public {
     MockDistributor distributor = new MockDistributor(DistributionType.TWAB);
-    vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
+    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
     rewardConfigurator.registerDistributor(distributor);
   }
 
@@ -74,7 +72,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
 
     rewardConfigurator.registerDistributor(distributor);
 
-    vm.expectRevert(IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorAlreadyRegistered.selector);
+    vm.expectRevert(_errRewardDistributorAlreadyRegistered());
     rewardConfigurator.registerDistributor(distributor);
 
     vm.stopPrank();
@@ -109,7 +107,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     vm.prank(owner);
     rewardConfigurator.registerDistributor(distributor);
 
-    vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
+    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
     rewardConfigurator.unregisterDistributor(distributor);
   }
 
@@ -118,13 +116,13 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
 
     vm.startPrank(owner);
 
-    vm.expectRevert(IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered.selector);
+    vm.expectRevert(_errRewardDistributorNotRegistered());
     rewardConfigurator.unregisterDistributor(distributor);
 
     rewardConfigurator.registerDistributor(distributor);
     rewardConfigurator.unregisterDistributor(distributor);
 
-    vm.expectRevert(IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered.selector);
+    vm.expectRevert(_errRewardDistributorNotRegistered());
     rewardConfigurator.unregisterDistributor(distributor);
 
     vm.stopPrank();
@@ -141,7 +139,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
 
     rewardConfigurator.setDefaultDistributor(distributor1);
 
-    vm.expectRevert(EOLRewardConfigurator.EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed.selector);
+    vm.expectRevert(_errUnregisterDefaultDistributorNotAllowed());
     rewardConfigurator.unregisterDistributor(distributor1);
 
     // change default distributor for unregister
@@ -172,7 +170,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     vm.prank(owner);
     rewardConfigurator.registerDistributor(distributor);
 
-    vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
+    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
     rewardConfigurator.setDefaultDistributor(distributor);
   }
 
@@ -181,7 +179,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
 
     vm.startPrank(owner);
 
-    vm.expectRevert(IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered.selector);
+    vm.expectRevert(_errRewardDistributorNotRegistered());
     rewardConfigurator.setDefaultDistributor(distributor);
 
     rewardConfigurator.registerDistributor(distributor);
@@ -222,7 +220,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     address eolVault = _addr('eolVault');
     address asset = _addr('asset');
 
-    vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(this)));
+    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
     rewardConfigurator.setRewardDistributionType(eolVault, asset, DistributionType.TWAB);
   }
 
@@ -237,13 +235,31 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     address eolVault = _addr('eolVault');
     address asset = _addr('asset');
 
-    vm.expectRevert(
-      abi.encodeWithSelector(
-        EOLRewardConfigurator.EOLRewardConfigurator__DefaultDistributorNotSet.selector, DistributionType.TWAB
-      )
-    );
+    vm.expectRevert(_errDefaultDistributorNotSet(DistributionType.TWAB));
     rewardConfigurator.setRewardDistributionType(eolVault, asset, DistributionType.TWAB);
 
     vm.stopPrank();
+  }
+
+  function _errRewardDistributorAlreadyRegistered() internal pure returns (bytes memory) {
+    return
+      abi.encodeWithSelector(IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorAlreadyRegistered.selector);
+  }
+
+  function _errRewardDistributorNotRegistered() internal pure returns (bytes memory) {
+    return
+      abi.encodeWithSelector(IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered.selector);
+  }
+
+  function _errUnregisterDefaultDistributorNotAllowed() internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(
+      EOLRewardConfigurator.EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed.selector
+    );
+  }
+
+  function _errDefaultDistributorNotSet(DistributionType distributionType) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(
+      EOLRewardConfigurator.EOLRewardConfigurator__DefaultDistributorNotSet.selector, distributionType
+    );
   }
 }
