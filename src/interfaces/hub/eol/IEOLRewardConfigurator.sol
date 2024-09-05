@@ -26,7 +26,7 @@ interface IEOLRewardConfigurator {
 
   function setRewardDistributionType(address eolVault, address asset, DistributionType distributionType) external;
 
-  function setDefaultDistributor(DistributionType distributionType, IEOLRewardDistributor distributor) external;
+  function setDefaultDistributor(IEOLRewardDistributor distributor) external;
 
   function registerDistributor(IEOLRewardDistributor distributor) external;
 }

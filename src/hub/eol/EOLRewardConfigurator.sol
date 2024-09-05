@@ -72,13 +72,12 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     emit RewardDistributionTypeSet(eolVault, asset, distributionType);
   }
 
-  function setDefaultDistributor(DistributionType distributionType, IEOLRewardDistributor distributor)
-    external
-    onlyOwner
-  {
+  function setDefaultDistributor(IEOLRewardDistributor distributor) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
 
     _assertDistributorRegisered($, distributor);
+
+    DistributionType distributionType = distributor.distributionType();
 
     $.defaultDistributor[distributionType] = distributor;
     emit DefaultDistributorSet(distributionType, distributor);
