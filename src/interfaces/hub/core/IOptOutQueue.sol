@@ -64,7 +64,7 @@ interface IOptOutQueue is IOptOutQueueStorageV1 {
   // Queue functions
   function request(uint256 shares, address receiver, address eolVault) external returns (uint256 reqId);
   function claim(address receiver, address eolVault) external returns (uint256 totalClaimed_);
-  function sync(address eolVault) external;
+  function sync(address eolVault, uint256 assets) external;
 
   // Config functions
   function enable(address eolVault) external;

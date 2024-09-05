@@ -112,6 +112,12 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     emit EOLDeallocated(chainId, eolVault, amount);
   }
 
+  function reserveEOL(address eolVault, uint256 amount) external {
+    StorageV1 storage $ = _getStorageV1();
+
+    $.optOutQueue.sync(eolVault, amount);
+  }
+
   /// @dev only entrypoint
   function settleYield(uint256 chainId, address eolVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();

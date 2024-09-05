@@ -10,8 +10,9 @@ import { IEOLVault } from '../../../interfaces/hub/eol/IEOLVault.sol';
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 import { LibRedeemQueue } from '../../../lib/LibRedeemQueue.sol';
 import { StdError } from '../../../lib/StdError.sol';
+import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
-abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1 {
+abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradeable {
   using ERC7201Utils for string;
   using LibString for address;
   using LibRedeemQueue for LibRedeemQueue.Queue;
@@ -182,6 +183,10 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1 {
   }
 
   // ============================ NOTE: VIRTUAL FUNCTIONS ============================== //
+
+  function _assertOnlyAssetManager(StorageV1 storage $) internal view virtual {
+    if (_msgSender() != address($.assetManager)) revert StdError.Unauthorized();
+  }
 
   /// @dev leave this function virtual to intend to use custom errors with overriding.
   function _assertQueueEnabled(StorageV1 storage $, address eolVault) internal view virtual {

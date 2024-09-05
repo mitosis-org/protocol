@@ -77,8 +77,6 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     _assertNotPaused();
     _assertQueueEnabled($, eolVault);
 
-    _sync($, eolVault);
-
     LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
     LibRedeemQueue.Index storage index = queue.index(receiver);
 
@@ -119,13 +117,14 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     return totalClaimed_;
   }
 
-  function sync(address eolVault) external {
+  function sync(address eolVault, uint256 assets) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertNotPaused();
+    _assertOnlyAssetManager($);
     _assertQueueEnabled($, eolVault);
 
-    _sync($, eolVault);
+    _sync($, eolVault, assets);
   }
 
   // =========================== NOTE: CONFIG FUNCTIONS =========================== //
@@ -248,19 +247,12 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     return (totalClaimed_, totalClaimedWithoutImpact);
   }
 
-  function _sync(StorageV1 storage $, address eolVault) internal {
+  function _sync(StorageV1 storage $, address eolVault, uint256 assets) internal {
     LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
 
-    uint256 pending = queue.pending();
-    if (pending == 0) return; // no pending assets to reserve
+    IEOLVault(eolVault).withdraw(assets, address(this), address(this));
 
-    uint256 idle = _idle(queue, $.assetManager, eolVault);
-    if (idle == 0) return; // no idle assets to reserve
-
-    uint256 reserveAssets = Math.min(pending, idle);
-    IEOLVault(eolVault).withdraw(reserveAssets, address(this), address(this));
-
-    queue.reserve(reserveAssets);
+    queue.reserve(assets);
   }
 
   // =========================== NOTE: ASSERTIONS =========================== //
