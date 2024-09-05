@@ -228,10 +228,10 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
         (uint256 reservedAt_,) = queue.reservedAt(reqId); // isResolved can be ignored
         (uint256 totalAssets, uint256 totalSupply) = _loadPastSnapshot(cfg.hubAsset, address(cfg.eolVault), reservedAt_);
 
-        uint256 assetsOnResolve =
+        uint256 assetsOnReserve =
           _convertToAssets(sharesOnRequest, cfg.decimalsOffset, totalAssets, totalSupply, Math.Rounding.Floor);
 
-        claimed = Math.min(assetsOnRequest, assetsOnResolve);
+        claimed = Math.min(assetsOnRequest, assetsOnReserve);
       }
 
       totalClaimedWithoutImpact += assetsOnRequest;
