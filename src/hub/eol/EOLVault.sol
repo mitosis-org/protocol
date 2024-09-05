@@ -10,6 +10,8 @@ import { IEOLVault } from '../../interfaces/hub/core/IEOLVault.sol';
 import { IERC20TwabSnapshots } from '../../interfaces/twab/IERC20TwabSnapshots.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { ERC4626TwabSnapshots } from '../../twab/ERC4626TwabSnapshots.sol';
+import { ERC4626TwabSnapshots } from '../../twab/ERC4626TwabSnapshots.sol';
+import { EOLVaultStorageV1 } from './storage/EOLVaultStorageV1.sol';
 import { EOLVaultStorageV1 } from './storage/EOLVaultStorageV1.sol';
 
 contract EOLVault is EOLVaultStorageV1, ERC4626TwabSnapshots {

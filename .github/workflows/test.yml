@@ -49,9 +49,15 @@ jobs:
         with:
           version: nightly
 
+      - name: Backup remappings.txt
+        run: cp remappings.txt remappings_backup.txt
+
       - name: Run Soldeer install
         run: |
           forge soldeer install
+
+      - name: Restore remappings.txt
+        run: cp remappings_backup.txt remappings.txt
 
       - name: Show Forge version
         run: |
