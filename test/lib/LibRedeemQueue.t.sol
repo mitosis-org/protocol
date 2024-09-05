@@ -10,7 +10,7 @@ import { LibRedeemQueue } from '../../src/lib/LibRedeemQueue.sol';
 import { DataSet, RequestSet, LibDataSet } from '../util/queue/RedeemQueueDataSet.sol';
 import { RedeemQueueWrapper } from '../util/queue/RedeemQueueWrapper.sol';
 
-contract TestLibRedeemQueue is Test {
+contract LibRedeemQueueTest is Test {
   using LibDataSet for *;
   using LibRedeemQueue for *;
   using LibString for *;
@@ -19,10 +19,6 @@ contract TestLibRedeemQueue is Test {
 
   function setUp() public {
     queue = new RedeemQueueWrapper();
-  }
-
-  function _addr(string memory name) private pure returns (address) {
-    return vm.addr(uint256(keccak256(bytes(name))));
   }
 
   function _loadTestdata() private returns (DataSet[] memory dataset) {
@@ -36,12 +32,12 @@ contract TestLibRedeemQueue is Test {
     // |-------------|-------------|-------------|
 
     dataset = new DataSet[](6);
-    dataset[0] = DataSet({ recipient: _addr('recipient-1'), amount: 2 ether });
-    dataset[1] = DataSet({ recipient: _addr('recipient-2'), amount: 4 ether });
-    dataset[2] = DataSet({ recipient: _addr('recipient-1'), amount: 3 ether });
-    dataset[3] = DataSet({ recipient: _addr('recipient-3'), amount: 6 ether });
-    dataset[4] = DataSet({ recipient: _addr('recipient-1'), amount: 4 ether });
-    dataset[5] = DataSet({ recipient: _addr('recipient-3'), amount: 7 ether });
+    dataset[0] = DataSet({ recipient: makeAddr('recipient-1'), amount: 2 ether });
+    dataset[1] = DataSet({ recipient: makeAddr('recipient-2'), amount: 4 ether });
+    dataset[2] = DataSet({ recipient: makeAddr('recipient-1'), amount: 3 ether });
+    dataset[3] = DataSet({ recipient: makeAddr('recipient-3'), amount: 6 ether });
+    dataset[4] = DataSet({ recipient: makeAddr('recipient-1'), amount: 4 ether });
+    dataset[5] = DataSet({ recipient: makeAddr('recipient-3'), amount: 7 ether });
 
     for (uint256 i = 0; i < dataset.length; i++) {
       queue.enqueue(dataset[i].recipient, dataset[i].amount);
@@ -127,7 +123,7 @@ contract TestLibRedeemQueue is Test {
   function test_get() public {
     _loadTestdata();
 
-    address recipient = _addr('recipient-1');
+    address recipient = makeAddr('recipient-1');
 
     vm.expectRevert(_errIndexOutOfRange(10, 0, 5));
     queue.get(10);
@@ -349,7 +345,7 @@ contract TestLibRedeemQueue is Test {
 
   function _test_enqueue(bool enqueueWithSameRecipient) internal {
     {
-      address recipient = _addr('recipient-1');
+      address recipient = makeAddr('recipient-1');
       uint256 itemIdx = queue.enqueue(recipient, 1 ether);
 
       // check queue
@@ -369,7 +365,7 @@ contract TestLibRedeemQueue is Test {
     vm.warp(block.timestamp + 10 seconds);
 
     {
-      address recipient = enqueueWithSameRecipient ? _addr('recipient-1') : _addr('recipient-2');
+      address recipient = enqueueWithSameRecipient ? makeAddr('recipient-1') : makeAddr('recipient-2');
       uint256 itemIdx = queue.enqueue(recipient, 4 ether);
 
       // check queue
@@ -460,7 +456,7 @@ contract TestLibRedeemQueue is Test {
   }
 
   function test_claim_full() public {
-    address recipient = _addr('recipient');
+    address recipient = makeAddr('recipient');
     uint256 claimSize = 10;
 
     for (uint256 i = 0; i < claimSize; i++) {
@@ -478,7 +474,7 @@ contract TestLibRedeemQueue is Test {
   }
 
   function _test_claim_index(uint256 claimSize) internal {
-    address recipient = _addr('recipient');
+    address recipient = makeAddr('recipient');
 
     for (uint256 i = 0; i < (claimSize * 2) + 1; i++) {
       queue.enqueue(recipient, 1 ether);
@@ -567,7 +563,7 @@ contract TestLibRedeemQueue is Test {
 
   function test_enqueue_zeroAmount() public {
     vm.expectRevert(LibRedeemQueue.LibRedeemQueue__InvalidRequestAmount.selector);
-    queue.enqueue(_addr('recipient'), 0);
+    queue.enqueue(makeAddr('recipient'), 0);
   }
 
   function test_reserve_zeroAmount() public {
@@ -600,14 +596,14 @@ contract TestLibRedeemQueue is Test {
   }
 
   function test_index_emptyIndex() public {
-    address nonExistentRecipient = _addr('non-existent');
+    address nonExistentRecipient = makeAddr('non-existent');
 
     vm.expectRevert(_errEmptyIndex(nonExistentRecipient));
     queue.getIndexItemId(nonExistentRecipient, 0);
   }
 
   function test_claimable_emptyIndex() public {
-    address nonExistentRecipient = _addr('non-existent');
+    address nonExistentRecipient = makeAddr('non-existent');
 
     vm.expectRevert(_errEmptyIndex(nonExistentRecipient));
     queue.claimable(nonExistentRecipient, 1 ether);

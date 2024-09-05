@@ -6,29 +6,18 @@ import { Test } from '@std/Test.sol';
 
 import { ITwabSnapshots } from '../../src/interfaces/twab/ITwabSnapshots.sol';
 import { TwabSnapshotsUtils } from '../../src/lib/TwabSnapshotsUtils.sol';
-import { ERC20TwabSnapshots } from '../../src/twab/ERC20TwabSnapshots.sol';
-import { Toolkit } from '../util/Toolkit.sol';
+import { MockERC20TwabSnapshots } from '../mock/MockERC20TwabSnapshots.t.sol';
 
-contract TempERC20TwabSnapshots is ERC20TwabSnapshots {
-  function initialize(string memory name, string memory symbol) external initializer {
-    __ERC20_init(name, symbol);
-  }
-
-  function mint(address account, uint256 value) external {
-    _mint(account, value);
-  }
-}
-
-contract TwapSnapshotsUtilsTest is Test, Toolkit {
+contract TwapSnapshotsUtilsTest is Test {
   using TwabSnapshotsUtils for *;
 
-  address immutable accA = _addr('A');
-  address immutable accB = _addr('B');
+  address immutable accA = makeAddr('A');
+  address immutable accB = makeAddr('B');
 
-  TempERC20TwabSnapshots public token;
+  MockERC20TwabSnapshots public token;
 
   function setUp() public {
-    token = new TempERC20TwabSnapshots();
+    token = new MockERC20TwabSnapshots();
     token.initialize('Token', 'TKN');
   }
 
