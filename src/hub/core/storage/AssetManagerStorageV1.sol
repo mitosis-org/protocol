@@ -26,6 +26,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     // Asset states
     mapping(address hubAsset => mapping(uint256 chainId => address branchAsset)) branchAssets;
     mapping(uint256 chainId => mapping(address branchAsset => address hubAsset)) hubAssets;
+    mapping(uint256 chainId => mapping(address hubAsset => uint256 amount)) collateralPerChain;
     // EOL states
     mapping(address eolVault => EOLStates state) eolStates;
   }
@@ -61,6 +62,10 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
 
   function hubAsset(uint256 chainId, address branchAsset_) external view returns (address) {
     return _getStorageV1().hubAssets[chainId][branchAsset_];
+  }
+
+  function collateral(uint256 chainId, address hubAsset_) external view returns (uint256) {
+    return _getStorageV1().collateralPerChain[chainId][hubAsset_];
   }
 
   function eolIdle(address eolVault) external view returns (uint256) {

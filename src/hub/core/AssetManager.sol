@@ -64,7 +64,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertOnlyEntrypoint($);
 
     address hubAsset = $.hubAssets[chainId][branchAsset];
-    _mint(hubAsset, to, amount);
+    _mint($, chainId, hubAsset, to, amount);
 
     emit Deposited(chainId, hubAsset, to, amount);
   }
@@ -78,7 +78,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     address branchAsset = $.branchAssets[hubAsset][chainId];
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    _burn(hubAsset, _msgSender(), amount);
+    _burn($, chainId, hubAsset, _msgSender(), amount);
     $.entrypoint.redeem(chainId, branchAsset, to, amount);
 
     emit Redeemed(chainId, hubAsset, to, amount);
@@ -133,7 +133,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
     address asset = IEOLVault(eolVault).asset();
 
-    _mint(asset, address(this), amount);
+    _mint($, chainId, asset, address(this), amount);
     emit RewardSettled(chainId, eolVault, asset, amount);
 
     _addAllowance(address($.rewardManager), asset, amount);
@@ -149,7 +149,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
     // Decrease EOLVault's shares value.
     address asset = IEOLVault(eolVault).asset();
-    _burn(asset, eolVault, amount);
+    _burn($, chainId, asset, eolVault, amount);
 
     emit LossSettled(chainId, eolVault, asset, amount);
   }
@@ -163,7 +163,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertOnlyEntrypoint($);
 
     address hubAsset = $.hubAssets[chainId][reward];
-    _mint(reward, address(this), amount);
+    _mint($, chainId, reward, address(this), amount);
     emit RewardSettled(chainId, eolVault, hubAsset, amount);
 
     _addAllowance(address($.rewardManager), hubAsset, amount);
@@ -232,12 +232,14 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     IHubAsset(IEOLVault(eolVault).asset()).burn(eolVault, assets);
   }
 
-  function _mint(address asset, address account, uint256 amount) internal {
+  function _mint(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
     IHubAsset(asset).mint(account, amount);
+    $.collateralPerChain[chainId][asset] += amount;
   }
 
-  function _burn(address asset, address account, uint256 amount) internal {
+  function _burn(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
     IHubAsset(asset).burn(account, amount);
+    $.collateralPerChain[chainId][asset] -= amount;
   }
 
   //=========== NOTE: ASSERTIONS ===========//
