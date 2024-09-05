@@ -4,20 +4,19 @@ pragma solidity ^0.8.26;
 import { console } from '@std/console.sol';
 import { Test } from '@std/Test.sol';
 
-import { ITwabSnapshots } from '../../src/interfaces/twab/ITwabSnapshots.sol';
-import { TwabSnapshotsUtils } from '../../src/lib/TwabSnapshotsUtils.sol';
-import { MockERC20TwabSnapshots } from '../mock/MockERC20TwabSnapshots.t.sol';
+import { TWABSnapshotsUtils } from '../../src/lib/TWABSnapshotsUtils.sol';
+import { MockERC20TWABSnapshots } from '../mock/MockERC20TWABSnapshots.t.sol';
 
-contract TwapSnapshotsUtilsTest is Test {
-  using TwabSnapshotsUtils for *;
+contract TWABSnapshotsUtilsTest is Test {
+  using TWABSnapshotsUtils for *;
 
   address immutable accA = makeAddr('A');
   address immutable accB = makeAddr('B');
 
-  MockERC20TwabSnapshots public token;
+  MockERC20TWABSnapshots public token;
 
   function setUp() public {
-    token = new MockERC20TwabSnapshots();
+    token = new MockERC20TWABSnapshots();
     token.initialize('Token', 'TKN');
   }
 
@@ -38,25 +37,25 @@ contract TwapSnapshotsUtilsTest is Test {
 
     vm.warp(1000);
 
-    uint256 accATwab;
-    uint256 accBTwab;
-    uint256 totalTwab;
+    uint256 accATWAB;
+    uint256 accBTWAB;
+    uint256 totalTWAB;
 
-    // account twab should be calculated correctly
-    accATwab = token.getAccountTwabByTimestampRange(accA, 0, 800);
-    accATwab -= token.getAccountTwabByTimestampRange(accA, 0, 500);
-    assertEq(accATwab, token.getAccountTwabByTimestampRange(accA, 500, 800));
+    // account TWAB should be calculated correctly
+    accATWAB = token.getAccountTWABByTimestampRange(accA, 0, 800);
+    accATWAB -= token.getAccountTWABByTimestampRange(accA, 0, 500);
+    assertEq(accATWAB, token.getAccountTWABByTimestampRange(accA, 500, 800));
 
-    // total twab should be calculated correctly
-    totalTwab = token.getTotalTwabByTimestampRange(0, 900);
-    totalTwab -= token.getTotalTwabByTimestampRange(0, 300);
-    assertEq(totalTwab, token.getTotalTwabByTimestampRange(300, 900));
+    // total TWAB should be calculated correctly
+    totalTWAB = token.getTotalTWABByTimestampRange(0, 900);
+    totalTWAB -= token.getTotalTWABByTimestampRange(0, 300);
+    assertEq(totalTWAB, token.getTotalTWABByTimestampRange(300, 900));
 
     // total should be matched to accA + accB
-    accATwab = token.getAccountTwabByTimestampRange(accA, 300, 900);
-    accBTwab = token.getAccountTwabByTimestampRange(accB, 300, 900);
-    totalTwab = token.getTotalTwabByTimestampRange(300, 900);
-    assertEq(accATwab + accBTwab, totalTwab);
+    accATWAB = token.getAccountTWABByTimestampRange(accA, 300, 900);
+    accBTWAB = token.getAccountTWABByTimestampRange(accB, 300, 900);
+    totalTWAB = token.getTotalTWABByTimestampRange(300, 900);
+    assertEq(accATWAB + accBTWAB, totalTWAB);
 
     vm.stopPrank();
   }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.0.0) (governance/extensions/GovernorVotesQuorumFraction.sol)
 
-// Modified to work with {ITwabSnapshots}.
+// Modified to work with {ITWABSnapshots}.
 pragma solidity ^0.8.26;
 
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
@@ -10,31 +10,30 @@ import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
 import { Initializable } from '@ozu-v5/proxy/utils/Initializable.sol';
 
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import { TwabSnapshotsUtils } from '../../lib/TwabSnapshotsUtils.sol';
-import { GovernorTwabVotesUpgradeable } from './GovernorTwabVotesUpgradeable.sol';
+import { GovernorTWABVotesUpgradeable } from './GovernorTWABVotesUpgradeable.sol';
 
 /**
- * @dev Extension of {Governor} for voting weight extraction from an {ITwabSnapshots} token and a quorum expressed as a
+ * @dev Extension of {Governor} for voting weight extraction from an {ITWABSnapshots} token and a quorum expressed as a
  * fraction of the total supply.
  */
-abstract contract GovernorTwabVotesQuorumFractionUpgradeable is Initializable, GovernorTwabVotesUpgradeable {
+abstract contract GovernorTWABVotesQuorumFractionUpgradeable is Initializable, GovernorTWABVotesUpgradeable {
   using ERC7201Utils for string;
   using Checkpoints for Checkpoints.Trace208;
 
-  struct GovernorTwabVotesQuorumFractionStorage {
+  struct GovernorTWABVotesQuorumFractionStorage {
     Checkpoints.Trace208 _quorumNumeratorHistory;
   }
 
-  string constant _GovernorTwabVotesQuorumFractionStorageNamespace = 'mitosis.storage.GovernorTwabVotesQuorumFraction';
-  bytes32 private immutable _GovernorTwabVotesQuorumFractionStorageLocation =
-    _GovernorTwabVotesQuorumFractionStorageNamespace.storageSlot();
+  string constant _GovernorTWABVotesQuorumFractionStorageNamespace = 'mitosis.storage.GovernorTWABVotesQuorumFraction';
+  bytes32 private immutable _GovernorTWABVotesQuorumFractionStorageLocation =
+    _GovernorTWABVotesQuorumFractionStorageNamespace.storageSlot();
 
-  function _getGovernorTwabVotesQuorumFractionStorage()
+  function _getGovernorTWABVotesQuorumFractionStorage()
     private
     view
-    returns (GovernorTwabVotesQuorumFractionStorage storage $)
+    returns (GovernorTWABVotesQuorumFractionStorage storage $)
   {
-    bytes32 slot = _GovernorTwabVotesQuorumFractionStorageLocation;
+    bytes32 slot = _GovernorTWABVotesQuorumFractionStorageLocation;
     assembly {
       $.slot := slot
     }
@@ -54,11 +53,11 @@ abstract contract GovernorTwabVotesQuorumFractionUpgradeable is Initializable, G
    * specified as a percent: a numerator of 10 corresponds to quorum being 10% of total supply. The denominator can be
    * customized by overriding {quorumDenominator}.
    */
-  function __GovernorTwabVotesQuorumFraction_init(uint256 quorumNumeratorValue) internal onlyInitializing {
-    __GovernorTwabVotesQuorumFraction_init_unchained(quorumNumeratorValue);
+  function __GovernorTWABVotesQuorumFraction_init(uint256 quorumNumeratorValue) internal onlyInitializing {
+    __GovernorTWABVotesQuorumFraction_init_unchained(quorumNumeratorValue);
   }
 
-  function __GovernorTwabVotesQuorumFraction_init_unchained(uint256 quorumNumeratorValue) internal onlyInitializing {
+  function __GovernorTWABVotesQuorumFraction_init_unchained(uint256 quorumNumeratorValue) internal onlyInitializing {
     _updateQuorumNumerator(quorumNumeratorValue);
   }
 
@@ -66,7 +65,7 @@ abstract contract GovernorTwabVotesQuorumFractionUpgradeable is Initializable, G
    * @dev Returns the current quorum numerator. See {quorumDenominator}.
    */
   function quorumNumerator() public view virtual returns (uint256) {
-    GovernorTwabVotesQuorumFractionStorage storage $ = _getGovernorTwabVotesQuorumFractionStorage();
+    GovernorTWABVotesQuorumFractionStorage storage $ = _getGovernorTWABVotesQuorumFractionStorage();
     return $._quorumNumeratorHistory.latest();
   }
 
@@ -74,7 +73,7 @@ abstract contract GovernorTwabVotesQuorumFractionUpgradeable is Initializable, G
    * @dev Returns the quorum numerator at a specific timepoint. See {quorumDenominator}.
    */
   function quorumNumerator(uint256 timepoint) public view virtual returns (uint256) {
-    GovernorTwabVotesQuorumFractionStorage storage $ = _getGovernorTwabVotesQuorumFractionStorage();
+    GovernorTWABVotesQuorumFractionStorage storage $ = _getGovernorTWABVotesQuorumFractionStorage();
     uint256 length = $._quorumNumeratorHistory._checkpoints.length;
 
     // Optimistic search, check the latest checkpoint
@@ -127,7 +126,7 @@ abstract contract GovernorTwabVotesQuorumFractionUpgradeable is Initializable, G
    * - New numerator must be smaller or equal to the denominator.
    */
   function _updateQuorumNumerator(uint256 newQuorumNumerator) internal virtual {
-    GovernorTwabVotesQuorumFractionStorage storage $ = _getGovernorTwabVotesQuorumFractionStorage();
+    GovernorTWABVotesQuorumFractionStorage storage $ = _getGovernorTWABVotesQuorumFractionStorage();
     uint256 denominator = quorumDenominator();
     if (newQuorumNumerator > denominator) {
       revert GovernorInvalidQuorumFraction(newQuorumNumerator, denominator);

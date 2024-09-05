@@ -4,7 +4,7 @@ pragma solidity ^0.8.26;
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
 import { IEOLProtocolRegistry } from '../../interfaces/eol/IEOLProtocolRegistry.sol';
-import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
+import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 
 struct Epoch {
@@ -29,7 +29,7 @@ contract EOLAllocationGovernorStorageV1 {
 
   struct StorageV1 {
     IEOLProtocolRegistry protocolRegistry;
-    ITwabSnapshots eolAsset;
+    ITWABSnapshots eolAsset;
     uint32 twabPeriod;
     uint32 epochPeriod;
     uint256 lastEpochId;
