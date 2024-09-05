@@ -225,7 +225,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
           sharesOnRequest -= prevReq.accumulatedShares;
         }
 
-        (uint256 reservedAt_,) = queue.reservedAt(reqId); // isResolved can be ignored
+        (uint256 reservedAt_,) = queue.reservedAt(reqId); // isReserved can be ignored
         (uint256 totalAssets, uint256 totalSupply) = _loadPastSnapshot(cfg.hubAsset, address(cfg.eolVault), reservedAt_);
 
         uint256 assetsOnReserve =
