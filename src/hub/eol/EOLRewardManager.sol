@@ -15,11 +15,11 @@ import { IEOLRewardManager } from '../../interfaces/hub/eol/IEOLRewardManager.so
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { LibDistributorHandleRewardMetadata, HandleRewardTWABMetadata } from './LibDistributorHandleRewardMetadata.sol';
+import { LibDistributorRewardMetadata, RewardTWABMetadata } from './LibDistributorRewardMetadata.sol';
 import { EOLRewardManagerStorageV1 } from './storage/EOLRewardManagerStorageV1.sol';
 
 contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewardManagerStorageV1 {
-  using LibDistributorHandleRewardMetadata for HandleRewardTWABMetadata;
+  using LibDistributorRewardMetadata for RewardTWABMetadata;
 
   event Dispatched(address indexed rewardDistributor, address indexed eolVault, address indexed reward, uint256 amount);
   event EOLShareValueIncreased(address indexed eolVault, uint256 indexed amount);
@@ -125,7 +125,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   function _routeEOLClaimableReward(StorageV1 storage $, address eolVault, address reward, uint256 amount) internal {
     bytes memory metadata;
     if ($.rewardConfigurator.getDistributionType(eolVault, reward) == DistributionType.TWAB) {
-      metadata = HandleRewardTWABMetadata(eolVault, Time.timestamp()).encode();
+      metadata = RewardTWABMetadata(eolVault, Time.timestamp()).encode();
     }
 
     _routeClaimableReward($, eolVault, reward, amount, metadata);
@@ -137,7 +137,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     bytes memory metadata;
     if ($.rewardConfigurator.getDistributionType(eolVault, reward) == DistributionType.TWAB) {
       address underlyingAsset = IEOLVault(eolVault).asset();
-      metadata = HandleRewardTWABMetadata(underlyingAsset, Time.timestamp()).encode();
+      metadata = RewardTWABMetadata(underlyingAsset, Time.timestamp()).encode();
     }
 
     _routeClaimableReward($, eolVault, reward, amount, metadata);
