@@ -8,7 +8,6 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
-import { IMitosisLedger } from '../../interfaces/hub/core/IMitosisLedger.sol';
 import { IOptOutQueue } from '../../interfaces/hub/core/IOptOutQueue.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/IEolVault.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';

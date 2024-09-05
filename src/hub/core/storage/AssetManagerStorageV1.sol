@@ -5,7 +5,6 @@ import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
 import { IAssetManagerStorageV1 } from '../../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
-import { IMitosisLedger } from '../../../interfaces/hub/core/IMitosisLedger.sol';
 import { IOptOutQueue } from '../../../interfaces/hub/core/IOptOutQueue.sol';
 import { IEOLRewardManager } from '../../../interfaces/hub/eol/IEOLRewardManager.sol';
 import { IEOLVault } from '../../../interfaces/hub/eol/IEOLVault.sol';

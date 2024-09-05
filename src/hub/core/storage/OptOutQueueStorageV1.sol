@@ -5,7 +5,6 @@ import { LibString } from '@solady/utils/LibString.sol';
 
 import { IAssetManager } from '../../../interfaces/hub/core/IAssetManager.sol';
 import { IHubAsset } from '../../../interfaces/hub/core/IHubAsset.sol';
-import { IMitosisLedger } from '../../../interfaces/hub/core/IMitosisLedger.sol';
 import { IOptOutQueueStorageV1 } from '../../../interfaces/hub/core/IOptOutQueue.sol';
 import { IEOLVault } from '../../../interfaces/hub/eol/IEOLVault.sol';
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
