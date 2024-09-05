@@ -9,14 +9,13 @@ import { HubAsset } from '../../src/hub/core/HubAsset.sol';
 import { OptOutQueue } from '../../src/hub/core/OptOutQueue.sol';
 import { EOLVault } from '../../src/hub/eol/EOLVault.sol';
 import { IERC20TwabSnapshots } from '../../src/interfaces/twab/IERC20TwabSnapshots.sol';
-import { Toolkit } from '../util/Toolkit.sol';
 
-contract OptOutQueueTest is Test, Toolkit {
-  address internal _admin = _addr('admin');
-  address internal _owner = _addr('owner');
-  address internal _user = _addr('user');
+contract OptOutQueueTest is Test {
+  address internal _admin = makeAddr('admin');
+  address internal _owner = makeAddr('owner');
+  address internal _user = makeAddr('user');
 
-  address internal _assetManager = _addr('assetManager'); // mock
+  address internal _assetManager = makeAddr('assetManager'); // mock
   ERC1967Factory internal _factory;
   HubAsset internal _hubAsset;
   EOLVault internal _eolVault;
