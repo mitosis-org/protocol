@@ -4,13 +4,13 @@ pragma solidity ^0.8.26;
 interface IAssetManagerStorageV1 {
   event EntrypointSet(address indexed entrypoint);
   event OptOutQueueSet(address indexed optOutQueue);
-  event RewardTreasurySet(address indexed rewardTreasury);
+  event RewardManagerSet(address indexed rewardManager);
 
   function entrypoint() external view returns (address entrypoint_);
 
   function optOutQueue() external view returns (address optOutQueue_);
 
-  function rewardTreasury() external view returns (address rewardTreasury_);
+  function rewardManager() external view returns (address rewardManager_);
 
   function branchAsset(address hubAsset_, uint256 chainId) external view returns (address branchAsset_);
 

@@ -7,7 +7,8 @@ import { IAssetManagerStorageV1 } from '../../../interfaces/hub/core/IAssetManag
 import { IAssetManagerEntrypoint } from '../../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IMitosisLedger } from '../../../interfaces/hub/core/IMitosisLedger.sol';
 import { IOptOutQueue } from '../../../interfaces/hub/core/IOptOutQueue.sol';
-import { IRewardTreasury } from '../../../interfaces/hub/core/IRewardTreasury.sol';
+import { IEOLRewardManager } from '../../../interfaces/hub/eol/IEOLRewardManager.sol';
+import { IEOLVault } from '../../../interfaces/hub/eol/IEOLVault.sol';
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 import { StdError } from '../../../lib/StdError.sol';
 
@@ -22,7 +23,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   struct StorageV1 {
     IAssetManagerEntrypoint entrypoint;
     IOptOutQueue optOutQueue;
-    IRewardTreasury rewardTreasury;
+    IEOLRewardManager rewardManager;
     // Asset states
     mapping(address hubAsset => mapping(uint256 chainId => address branchAsset)) branchAssets;
     mapping(uint256 chainId => mapping(address branchAsset => address hubAsset)) hubAssets;
@@ -51,8 +52,8 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return address(_getStorageV1().optOutQueue);
   }
 
-  function rewardTreasury() external view returns (address) {
-    return address(_getStorageV1().rewardTreasury);
+  function rewardManager() external view returns (address) {
+    return address(_getStorageV1().rewardManager);
   }
 
   function branchAsset(address hubAsset_, uint256 chainId) external view returns (address) {
@@ -89,12 +90,12 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     emit OptOutQueueSet(optOutQueue_);
   }
 
-  function _setRewardTreasury(StorageV1 storage $, address rewardTreasury_) internal {
-    if (rewardTreasury_.code.length == 0) revert StdError.InvalidAddress('RewardTreasury');
+  function _setRewardManager(StorageV1 storage $, address rewardManager_) internal {
+    if (rewardManager_.code.length == 0) revert StdError.InvalidAddress('EOLRewardManager');
 
-    $.rewardTreasury = IRewardTreasury(rewardTreasury_);
+    $.rewardManager = IEOLRewardManager(rewardManager_);
 
-    emit RewardTreasurySet(rewardTreasury_);
+    emit RewardManagerSet(rewardManager_);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
@@ -125,7 +126,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     require($.hubAssets[chainId][branchAsset_] != address(0), 'AssetManagerStorageV1: branch asset pair not exists');
   }
 
-  function _assertRewardTreasurySet(StorageV1 storage $) internal view virtual {
-    require(address($.rewardTreasury) != address(0), 'AssetManagerStorageV1: reward treasury not set');
+  function _assertEOLRewardManagerSet(StorageV1 storage $) internal view virtual {
+    require(address($.rewardManager) != address(0), 'AssetManagerStorageV1: reward manager not set');
   }
 }

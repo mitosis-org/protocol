@@ -5,9 +5,9 @@ import { Test } from '@std/Test.sol';
 
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 
-import { EOLVault } from '../../src/hub/core/EOLVault.sol';
 import { HubAsset } from '../../src/hub/core/HubAsset.sol';
 import { OptOutQueue } from '../../src/hub/core/OptOutQueue.sol';
+import { EOLVault } from '../../src/hub/eol/EOLVault.sol';
 import { IERC20TwabSnapshots } from '../../src/interfaces/twab/IERC20TwabSnapshots.sol';
 import { Toolkit } from '../util/Toolkit.sol';
 

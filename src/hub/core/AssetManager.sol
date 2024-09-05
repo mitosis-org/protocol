@@ -194,8 +194,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _setOptOutQueue(_getStorageV1(), optOutQueue_);
   }
 
-  function setRewardTreasury(address rewardTreasury_) external onlyOwner {
-    _setRewardTreasury(_getStorageV1(), rewardTreasury_);
+  function setRewardManager(address rewardManager_) external onlyOwner {
+    _setRewardManager(_getStorageV1(), rewardManager_);
   }
 
   function initializeEOL(uint256 chainId, address eolVault) external onlyOwner {
@@ -231,6 +231,15 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
   //=========== NOTE: ASSERTIONS ===========//
 
+  function _addAllowance(address to, address asset, uint256 amount) internal {
+    uint256 prevAllowance = IHubAsset(asset).allowance(address(this), address(to));
+    IHubAsset(asset).approve(address(to), prevAllowance + amount);
+  }
+
+  function _assertOnlyContract(address addr, string memory paramName) internal view {
+    if (addr.code.length == 0) revert StdError.InvalidParameter(paramName);
+  }
+
   function _assertBranchAssetPairExist(StorageV1 storage $, uint256 chainId, address branchAsset_)
     internal
     view
@@ -239,7 +248,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     if ($.hubAssets[chainId][branchAsset_] == address(0)) revert AssetManager__BranchAssetPairNotExist(branchAsset_);
   }
 
-  function _assertRewardTreasurySet(StorageV1 storage $) internal view override {
-    if (address($.rewardTreasury) == address(0)) revert AssetManager__RewardTreasuryNotSet();
+  function _assertEOLRewardManagerSet(StorageV1 storage $) internal view override {
+    if (address($.rewardManager) == address(0)) revert AssetManager__EOLRewardManagerNotSet();
   }
 }
