@@ -11,14 +11,13 @@ import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/Transparen
 import { MitosisLedger } from '../../../src/hub/core/MitosisLedger.sol';
 import { IMitosisLedger } from '../../../src/interfaces/hub/core/IMitosisLedger.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
-import { Toolkit } from '../../util/Toolkit.sol';
 
-contract TestCrossChainRegistry is Test, Toolkit {
+contract MitosisLedgerTest is Test {
   MitosisLedger internal mitosisLedger;
 
   ProxyAdmin internal _proxyAdmin;
-  address immutable owner = _addr('owner');
-  address immutable eolVault = _addr('eolVault');
+  address immutable owner = makeAddr('owner');
+  address immutable eolVault = makeAddr('eolVault');
 
   function setUp() public {
     vm.startPrank(owner);

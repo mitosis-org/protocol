@@ -2,15 +2,15 @@
 pragma solidity ^0.8.26;
 
 import { console } from '@std/console.sol';
+import { Test } from '@std/Test.sol';
 import { Vm } from '@std/Vm.sol';
 
 import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
 import { CrossChainRegistry } from '../../../src/hub/cross-chain/CrossChainRegistry.sol';
-import { Toolkit } from '../../util/Toolkit.sol';
 
-contract TestCrossChainRegistry is Toolkit {
+contract CrossChainRegistryTest is Test {
   CrossChainRegistry internal ccRegistry;
 
   ProxyAdmin internal _proxyAdmin;
@@ -39,7 +39,7 @@ contract TestCrossChainRegistry is Toolkit {
     uint256 chainID = 1;
     string memory name = 'Ethereum';
     uint32 hplDomain = 1;
-    address entrypoint = _addr('entrypoint');
+    address entrypoint = makeAddr('entrypoint');
 
     vm.expectRevert(); // 'AccessControlUnauthorizedAccount'
     ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
@@ -52,7 +52,7 @@ contract TestCrossChainRegistry is Toolkit {
     uint256 chainID = 1;
     string memory name = 'Ethereum';
     uint32 hplDomain = 1;
-    address entrypoint = _addr('entrypoint');
+    address entrypoint = makeAddr('entrypoint');
 
     ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
 
@@ -72,8 +72,8 @@ contract TestCrossChainRegistry is Toolkit {
 
   function test_setVault() public {
     uint256 chainID = 1;
-    address vault = _addr('vault');
-    address entrypoint = _addr('entrypoint');
+    address vault = makeAddr('vault');
+    address entrypoint = makeAddr('entrypoint');
 
     vm.expectRevert(); // 'not registered chain'
     ccRegistry.setVault(chainID, vault);
