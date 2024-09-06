@@ -6,7 +6,8 @@ import { RedeemQueueWrapper } from './RedeemQueueWrapper.sol';
 
 struct DataSet {
   address recipient;
-  uint256 amount;
+  uint256 shares;
+  uint256 assets;
 }
 
 struct RequestSet {
@@ -64,11 +65,30 @@ library LibDataSet {
     return requests_;
   }
 
-  function totalRequested(DataSet[] memory dataset) internal pure returns (uint256 totalRequested_) {
-    for (uint256 i = 0; i < dataset.length; i++) {
-      totalRequested_ += dataset[i].amount;
-    }
+  function totalRequestedShares(DataSet[] memory dataset) internal pure returns (uint256 totalRequested) {
+    return _accUint256(dataset, _shares);
+  }
 
-    return totalRequested_;
+  function totalRequestedAssets(DataSet[] memory dataset) internal pure returns (uint256 totalRequested) {
+    return _accUint256(dataset, _assets);
+  }
+
+  function _shares(DataSet memory data) private pure returns (uint256) {
+    return data.shares;
+  }
+
+  function _assets(DataSet memory data) private pure returns (uint256) {
+    return data.assets;
+  }
+
+  function _accUint256(DataSet[] memory dataset, function(DataSet memory) pure returns (uint256) f)
+    private
+    pure
+    returns (uint256 acc)
+  {
+    for (uint256 i = 0; i < dataset.length; i++) {
+      acc += f(dataset[i]);
+    }
+    return acc;
   }
 }

@@ -36,7 +36,6 @@ function toSorted(v: ImportObject[]): string[] {
   const sorted = v
     .sort(({ path: a }, { path: b }) => a.localeCompare(b))
     .map(({ full }) => full);
-  console.log(sorted);
   return sorted;
 }
 
