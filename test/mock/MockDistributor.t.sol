@@ -19,7 +19,7 @@ contract MockDistributor is IEOLRewardDistributor {
     return 'MockDistributor';
   }
 
-  function claimable(address, address, address) external pure returns (bool) {
+  function claimable(address, address, address, bytes memory) external pure returns (bool) {
     return true;
   }
 

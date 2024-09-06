@@ -9,7 +9,6 @@ interface IEOLRewardDistributor {
   function description() external view returns (string memory);
 
   // See the `src/hub/eol/LibDistributorRewardMetadata`.
-  function claimable(address account, address eolVault, address asset) external view returns (bool);
   function claimable(address account, address eolVault, address asset, bytes memory metadata)
     external
     view
