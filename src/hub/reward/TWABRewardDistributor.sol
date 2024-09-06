@@ -25,7 +25,8 @@ contract TWABRewardDistributor {
     address erc20TWABSnapshots;
     uint256 total;
     uint48 startsAt; // for store twabPeriod at point.
-    mapping(address account => bool claimed) claimed;
+    // TODO: change this
+    mapping(address account => uint256 claimed) claimed;
   }
 
   struct Asset {
@@ -34,6 +35,10 @@ contract TWABRewardDistributor {
 
   mapping(address eolVault => mapping(address asset => Asset info)) _assets;
 
+  constructor(uint48 period) {
+    twabPeriod = period;
+  }
+
   function description() external view returns (string memory) {
     return _description;
   }
@@ -41,8 +46,6 @@ contract TWABRewardDistributor {
   function distributionType() external view returns (DistributionType) {
     return _distributionType;
   }
-
-  function claimable(address account, address eolVault, address asset) external view returns (bool) { }
 
   function claimable(address account, address eolVault, address asset, bytes calldata metadata)
     external
@@ -61,7 +64,6 @@ contract TWABRewardDistributor {
 
     for (uint256 i = 0; i < rewards.length; i++) {
       Reward storage reward = rewards[i];
-      if (reward.claimed[account]) return false;
       uint256 userReward = _calculateUserReward(reward, account, rewardedAt);
       return userReward > 0;
     }
@@ -69,8 +71,35 @@ contract TWABRewardDistributor {
     return false;
   }
 
-  function encodeClaimableMetadata(address erc20TWABSnapshots, uint48 rewardedAt) external view returns (bytes memory) {
+  function encodeMetadata(address erc20TWABSnapshots, uint48 rewardedAt) external view returns (bytes memory) {
     return RewardTWABMetadata({ erc20TWABSnapshots: erc20TWABSnapshots, rewardedAt: rewardedAt }).encode();
+  }
+
+  function calculateUserReward(address account, address eolVault, address asset, bytes calldata metadata)
+    external
+    view
+    returns (uint256)
+  {
+    RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
+    // validation
+    if (twabMetadata.erc20TWABSnapshots == address(0)) revert('invalid erc20TWABSnapshots');
+
+    address erc20TWABSnapshots = twabMetadata.erc20TWABSnapshots;
+    uint48 rewardedAt = twabMetadata.rewardedAt;
+
+    Asset storage assetInfo = _assets[eolVault][asset];
+    Reward[] storage rewards = assetInfo.rewards[rewardedAt];
+
+    uint256 userReward;
+
+    for (uint256 i = 0; i < rewards.length; i++) {
+      Reward storage reward = rewards[i];
+      uint256 amount = _calculateUserReward(reward, account, rewardedAt);
+      if (reward.claimed[account] == amount) continue;
+      userReward += amount - reward.claimed[account];
+    }
+
+    return userReward;
   }
 
   // Mutative functions
@@ -82,8 +111,7 @@ contract TWABRewardDistributor {
       Reward storage reward = rewards[i];
       uint256 userAmount = _calculateUserReward(reward, msg.sender, rewardedAt);
 
-      reward.total -= userAmount;
-      reward.claimed[msg.sender] = true;
+      reward.claimed[msg.sender] += userAmount;
 
       IERC20(asset).transfer(msg.sender, userAmount);
     }
@@ -92,14 +120,18 @@ contract TWABRewardDistributor {
   function handleReward(address eolVault, address asset, uint256 amount, bytes calldata metadata)
     external /* onlyEOLRewardManager */
   {
+    IERC20(asset).transferFrom(msg.sender, address(this), amount);
+
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
     // validation
     if (twabMetadata.erc20TWABSnapshots == address(0)) revert('invalid erc20TWABSnapshots');
 
     Asset storage assetInfo = _assets[eolVault][asset];
 
+    assetInfo.rewards[twabMetadata.rewardedAt].push();
     uint256 rewardLength = assetInfo.rewards[twabMetadata.rewardedAt].length;
-    Reward storage reward = assetInfo.rewards[twabMetadata.rewardedAt][rewardLength == 0 ? 0 : rewardLength - 1];
+
+    Reward storage reward = assetInfo.rewards[twabMetadata.rewardedAt][rewardLength - 1];
     reward.erc20TWABSnapshots = twabMetadata.erc20TWABSnapshots;
     reward.total = amount;
     reward.startsAt = twabMetadata.rewardedAt - twabPeriod;
@@ -115,10 +147,14 @@ contract TWABRewardDistributor {
 
     uint256 totalTWAB =
       TwabSnapshotsUtils.getTotalTwabByTimestampRange(ITwabSnapshots(reward.erc20TWABSnapshots), startsAt, endsAt);
+
+    if (totalTWAB == 0) return 0;
+
     uint256 userTWAB = TwabSnapshotsUtils.getAccountTwabByTimestampRange(
-      ITwabSnapshots(reward.erc20TWABSnapshots), msg.sender, startsAt, endsAt
+      ITwabSnapshots(reward.erc20TWABSnapshots), account, startsAt, endsAt
     );
 
-    return reward.total * totalTWAB / userTWAB; // temp
+    uint256 userReward = (reward.total * userTWAB) / totalTWAB; // TODO: precision?
+    return userReward - reward.claimed[account];
   }
 }
