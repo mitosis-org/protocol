@@ -36,8 +36,6 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
   error AssetManager__EOLInsufficient(address eolVault);
-  error AssetManager__EOLRewardManagerNotSet();
-  error AssetManager__BranchAssetPairNotExist(address asset);
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -184,9 +182,21 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     emit AssetInitialized(chainId, branchAsset);
   }
 
+  function initializeEOL(uint256 chainId, address eolVault) external onlyOwner {
+    _assertOnlyContract(eolVault, 'eolVault');
+
+    StorageV1 storage $ = _getStorageV1();
+
+    address hubAsset = IEOLVault(eolVault).asset();
+    address branchAsset = $.branchAssets[hubAsset][chainId];
+    _assertBranchAssetPairExist($, chainId, branchAsset);
+
+    $.entrypoint.initializeEOL(chainId, eolVault, branchAsset);
+    emit EOLInitialized(chainId, eolVault, branchAsset);
+  }
+
   function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external onlyOwner {
     _assertOnlyContract(address(hubAsset), 'hubAsset');
-    _assertOnlyContract(address(branchAsset), 'branchAsset');
 
     // TODO(ray): handle already initialized asset through initializeAsset.
     //
@@ -209,17 +219,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _setRewardManager(_getStorageV1(), rewardManager_);
   }
 
-  function initializeEOL(uint256 chainId, address eolVault) external onlyOwner {
-    _assertOnlyContract(eolVault, 'eolVault');
-
-    StorageV1 storage $ = _getStorageV1();
-
-    address hubAsset = IEOLVault(eolVault).asset();
-    address branchAsset = $.branchAssets[hubAsset][chainId];
-    _assertBranchAssetPairExist($, chainId, branchAsset);
-
-    $.entrypoint.initializeEOL(chainId, eolVault, branchAsset);
-    emit EOLInitialized(chainId, eolVault, branchAsset);
+  function setStrategist(address eolVault, address strategist) external onlyOwner {
+    _setStrategist(_getStorageV1(), eolVault, strategist);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
@@ -242,26 +243,14 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     $.collateralPerChain[chainId][asset] -= amount;
   }
 
-  //=========== NOTE: ASSERTIONS ===========//
-
   function _addAllowance(address to, address asset, uint256 amount) internal {
     uint256 prevAllowance = IHubAsset(asset).allowance(address(this), address(to));
     IHubAsset(asset).approve(address(to), prevAllowance + amount);
   }
 
+  //=========== NOTE: ASSERTIONS ===========//
+
   function _assertOnlyContract(address addr, string memory paramName) internal view {
     require(addr.code.length > 0, StdError.InvalidParameter(paramName));
-  }
-
-  function _assertBranchAssetPairExist(StorageV1 storage $, uint256 chainId, address branchAsset_)
-    internal
-    view
-    override
-  {
-    require($.hubAssets[chainId][branchAsset_] != address(0), AssetManager__BranchAssetPairNotExist(branchAsset_));
-  }
-
-  function _assertEOLRewardManagerSet(StorageV1 storage $) internal view override {
-    require(address($.rewardManager) != address(0), AssetManager__EOLRewardManagerNotSet());
   }
 }

@@ -14,7 +14,10 @@ import { StdError } from '../../../lib/StdError.sol';
 abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgradeable {
   using ERC7201Utils for string;
 
-  struct EOLStates {
+  error AssetManagerStorageV1__BranchAssetPairNotExist(address branchAsset);
+  error AssetManagerStorageV1__EOLRewardManagerNotSet();
+
+  struct EOLState {
     address strategist;
     uint256 allocation;
   }
@@ -28,7 +31,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     mapping(uint256 chainId => mapping(address branchAsset => address hubAsset)) hubAssets;
     mapping(uint256 chainId => mapping(address hubAsset => uint256 amount)) collateralPerChain;
     // EOL states
-    mapping(address eolVault => EOLStates state) eolStates;
+    mapping(address eolVault => EOLState state) eolStates;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.AssetManagerStorage.v1';
@@ -76,6 +79,10 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return _getStorageV1().eolStates[eolVault].allocation;
   }
 
+  function stategist(address eolVault) external view returns (address) {
+    return _getStorageV1().eolStates[eolVault].strategist;
+  }
+
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   function _setEntrypoint(StorageV1 storage $, address entrypoint_) internal {
@@ -100,6 +107,12 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     $.rewardManager = IEOLRewardManager(rewardManager_);
 
     emit RewardManagerSet(rewardManager_);
+  }
+
+  function _setStrategist(StorageV1 storage $, address eolVault, address strategist) internal {
+    $.eolStates[eolVault].strategist = strategist;
+
+    emit StrategistSet(eolVault, strategist);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
@@ -127,10 +140,12 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     view
     virtual
   {
-    require($.hubAssets[chainId][branchAsset_] != address(0), 'AssetManagerStorageV1: branch asset pair not exists');
+    require(
+      $.hubAssets[chainId][branchAsset_] != address(0), AssetManagerStorageV1__BranchAssetPairNotExist(branchAsset_)
+    );
   }
 
   function _assertEOLRewardManagerSet(StorageV1 storage $) internal view virtual {
-    require(address($.rewardManager) != address(0), 'AssetManagerStorageV1: reward manager not set');
+    require(address($.rewardManager) != address(0), AssetManagerStorageV1__EOLRewardManagerNotSet());
   }
 }
