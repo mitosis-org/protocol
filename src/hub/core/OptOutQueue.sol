@@ -9,7 +9,7 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IOptOutQueue } from '../../interfaces/hub/core/IOptOutQueue.sol';
-import { IEOLVault } from '../../interfaces/hub/eol/IEolVault.sol';
+import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
