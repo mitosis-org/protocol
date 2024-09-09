@@ -7,7 +7,7 @@ import { TWABCheckpoints } from '../lib/TWABCheckpoints.sol';
 contract TWABSnapshotsStorageV1 {
   using ERC7201Utils for string;
 
-  struct TWABSnapshotsStorageV1 {
+  struct TWABSnapshotsStorageV1_ {
     mapping(address account => TWABCheckpoints.Trace) accountCheckpoints;
     TWABCheckpoints.Trace totalCheckpoints;
   }
@@ -15,7 +15,7 @@ contract TWABSnapshotsStorageV1 {
   string private constant _NAMESPACE = 'mitosis.storage.TWABSnapshotsStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
-  function _getTWABSnapshotsStorageV1() internal view returns (TWABSnapshotsStorageV1 storage $) {
+  function _getTWABSnapshotsStorageV1() internal view returns (TWABSnapshotsStorageV1_ storage $) {
     bytes32 slot = _slot;
     // slither-disable-next-line assembly
     assembly {
