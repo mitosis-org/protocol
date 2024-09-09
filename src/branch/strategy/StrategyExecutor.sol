@@ -176,7 +176,7 @@ contract StrategyExecutor is
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($);
-    require(address(_asset) != reward, StdError.InvalidAddress('reward'));
+    require(reward != address(_asset), StdError.InvalidAddress('reward'));
 
     IERC20(reward).approve(address(_vault), amount);
     _vault.settleExtraRewards(_eolId, reward, amount);

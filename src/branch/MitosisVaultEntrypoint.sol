@@ -31,7 +31,7 @@ contract MitosisVaultEntrypoint is
   bytes32 internal immutable _mitosisAddr;
 
   modifier onlyVault() {
-    require(msg.sender == address(_vault), StdError.InvalidAddress('vault'));
+    require(_msgSender() == address(_vault), StdError.InvalidAddress('vault'));
     _;
   }
 

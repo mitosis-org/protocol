@@ -298,7 +298,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function _assertAssetNotInitialized(StorageV1 storage $, address asset) internal view {
-    require(_isAssetInitialized($, asset), MitosisVault__AssetAlreadyInitialized(asset));
+    require(!_isAssetInitialized($, asset), MitosisVault__AssetAlreadyInitialized(asset));
   }
 
   function _assertEOLInitialized(StorageV1 storage $, uint256 eolId) internal view {
@@ -306,15 +306,15 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function _assertEOLNotInitialized(StorageV1 storage $, uint256 eolId) internal view {
-    require(_isEOLInitialized($, eolId), MitosisVault__EOLAlreadyInitialized(eolId));
+    require(!_isEOLInitialized($, eolId), MitosisVault__EOLAlreadyInitialized(eolId));
   }
 
   function _assertNotHalted(StorageV1 storage $, address asset, AssetAction action) internal view {
-    require(_isHalted($, asset, action), StdError.Halted());
+    require(!_isHalted($, asset, action), StdError.Halted());
   }
 
   function _assertNotHalted(StorageV1 storage $, uint256 eolId, EOLAction action) internal view {
-    require(_isHalted($, eolId, action), StdError.Halted());
+    require(!_isHalted($, eolId, action), StdError.Halted());
   }
 
   function _isHalted(StorageV1 storage $, address asset, AssetAction action) internal view returns (bool) {
