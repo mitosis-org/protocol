@@ -67,7 +67,7 @@ abstract contract TWABSnapshots is ITWABSnapshots, TWABSnapshotsStorageV1 {
   }
 
   function _snapshot(address from, address to, uint256 amount) internal virtual {
-    TWABSnapshotsStorageV1 storage $ = _getTWABSnapshotsStorageV1();
+    TWABSnapshotsStorageV1_ storage $ = _getTWABSnapshotsStorageV1();
 
     if (from != to && amount > 0) {
       if (from == address(0)) {
