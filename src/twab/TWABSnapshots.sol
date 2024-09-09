@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
@@ -17,9 +17,7 @@ abstract contract TWABSnapshots is ITWABSnapshots, TWABSnapshotsStorageV1 {
 
   function CLOCK_MODE() external view virtual returns (string memory) {
     // Check that the clock was not modified
-    if (clock() != Time.timestamp()) {
-      revert ERC6372InconsistentClock();
-    }
+    require(clock() == Time.timestamp(), ERC6372InconsistentClock());
     return 'mode=timestamp';
   }
 
@@ -43,9 +41,7 @@ abstract contract TWABSnapshots is ITWABSnapshots, TWABSnapshotsStorageV1 {
     returns (uint208 balance, uint256 twab, uint48 position)
   {
     uint48 currentTimestamp = clock();
-    if (timestamp >= currentTimestamp) {
-      revert ERC5805FutureLookup(timestamp, currentTimestamp);
-    }
+    require(timestamp < currentTimestamp, ERC5805FutureLookup(timestamp, currentTimestamp));
     return _getTWABSnapshotsStorageV1().accountCheckpoints[account].upperLookupRecent(SafeCast.toUint48(timestamp));
   }
 
@@ -60,9 +56,7 @@ abstract contract TWABSnapshots is ITWABSnapshots, TWABSnapshotsStorageV1 {
     returns (uint208 balance, uint256 twab, uint48 position)
   {
     uint48 currentTimestamp = clock();
-    if (timestamp >= currentTimestamp) {
-      revert ERC5805FutureLookup(timestamp, currentTimestamp);
-    }
+    require(timestamp < currentTimestamp, ERC5805FutureLookup(timestamp, currentTimestamp));
     return _getTWABSnapshotsStorageV1().totalCheckpoints.upperLookupRecent(SafeCast.toUint48(timestamp));
   }
 

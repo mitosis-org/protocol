@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { LibString } from '@solady/utils/LibString.sol';
 
@@ -162,7 +162,7 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
   }
 
   function _setAssetManager(StorageV1 storage $, address assetManager_) internal {
-    if (assetManager_.code.length == 0) revert StdError.InvalidAddress('AssetManager');
+    require(assetManager_.code.length > 0, StdError.InvalidAddress('AssetManager'));
 
     $.assetManager = IAssetManager(assetManager_);
 
@@ -186,7 +186,7 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
   // ============================ NOTE: VIRTUAL FUNCTIONS ============================== //
 
   function _assertOnlyAssetManager(StorageV1 storage $) internal view virtual {
-    if (_msgSender() != address($.assetManager)) revert StdError.Unauthorized();
+    require(_msgSender() == address($.assetManager), StdError.Unauthorized());
   }
 
   /// @dev leave this function virtual to intend to use custom errors with overriding.

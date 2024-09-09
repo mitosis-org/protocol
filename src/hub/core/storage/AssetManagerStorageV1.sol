@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
@@ -79,7 +79,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   function _setEntrypoint(StorageV1 storage $, address entrypoint_) internal {
-    if (entrypoint_.code.length == 0) revert StdError.InvalidAddress('Entrypoint');
+    require(entrypoint_.code.length > 0, StdError.InvalidAddress('Entrypoint'));
 
     $.entrypoint = IAssetManagerEntrypoint(entrypoint_);
 
@@ -87,7 +87,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   }
 
   function _setOptOutQueue(StorageV1 storage $, address optOutQueue_) internal {
-    if (optOutQueue_.code.length == 0) revert StdError.InvalidAddress('OptOutQueue');
+    require(optOutQueue_.code.length > 0, StdError.InvalidAddress('OptOutQueue'));
 
     $.optOutQueue = IOptOutQueue(optOutQueue_);
 
@@ -95,7 +95,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   }
 
   function _setRewardManager(StorageV1 storage $, address rewardManager_) internal {
-    if (rewardManager_.code.length == 0) revert StdError.InvalidAddress('EOLRewardManager');
+    require(rewardManager_.code.length > 0, StdError.InvalidAddress('EOLRewardManager'));
 
     $.rewardManager = IEOLRewardManager(rewardManager_);
 
@@ -115,11 +115,11 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   // ============================ NOTE: VIRTUAL FUNCTIONS ============================ //
 
   function _assertOnlyEntrypoint(StorageV1 storage $) internal view virtual {
-    if (_msgSender() != address($.entrypoint)) revert StdError.Unauthorized();
+    require(_msgSender() == address($.entrypoint), StdError.Unauthorized());
   }
 
   function _assertOnlyStrategist(StorageV1 storage $, address eolVault) internal view virtual {
-    if (_msgSender() != $.eolStates[eolVault].strategist) revert StdError.Unauthorized();
+    require(_msgSender() == $.eolStates[eolVault].strategist, StdError.Unauthorized());
   }
 
   function _assertBranchAssetPairExist(StorageV1 storage $, uint256 chainId, address branchAsset_)

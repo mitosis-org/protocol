@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 struct HandleRewardTWABMetadata {
   address erc20TWABSnapshots;
@@ -18,7 +18,7 @@ library LibDistributorHandleRewardMetadata {
     pure
     returns (HandleRewardTWABMetadata memory metadata)
   {
-    if (enc.length != 26) revert LibDistributorHandleRewardMetadata__InvalidMsgLength(enc.length, 26);
+    require(enc.length == 26, LibDistributorHandleRewardMetadata__InvalidMsgLength(enc.length, 26));
 
     metadata.erc20TWABSnapshots = address(bytes20(enc[0:20]));
     metadata.timestamp = uint48(bytes6(enc[20:26]));

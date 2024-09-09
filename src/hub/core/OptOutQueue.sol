@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
@@ -94,7 +94,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     // run actual claim logic
     uint256 totalClaimedWithoutImpact;
     (totalClaimed_, totalClaimedWithoutImpact) = _claim(queue, index, cfg);
-    if (totalClaimed_ == 0) revert OptOutQueue__NothingToClaim();
+    require(totalClaimed_ > 0, OptOutQueue__NothingToClaim());
 
     // send total claim amount to receiver
     cfg.hubAsset.safeTransfer(receiver, totalClaimed_);
@@ -258,6 +258,6 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
   // =========================== NOTE: ASSERTIONS =========================== //
 
   function _assertQueueEnabled(StorageV1 storage $, address eolVault) internal view override {
-    if (!$.states[eolVault].isEnabled) revert OptOutQueue__QueueNotEnabled(eolVault);
+    require($.states[eolVault].isEnabled, OptOutQueue__QueueNotEnabled(eolVault));
   }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 import { Context } from '@oz-v5/utils/Context.sol';
 
@@ -12,12 +12,12 @@ contract MockAssetManagerEntrypoint is Context, IAssetManagerEntrypoint {
   address internal _mailbox;
 
   modifier onlyAssetManager() {
-    if (_msgSender() != address(_assetManager)) revert StdError.Unauthorized();
+    require(_msgSender() == address(_assetManager), StdError.Unauthorized());
     _;
   }
 
   modifier onlyMailbox() {
-    if (_msgSender() != _mailbox) revert StdError.Unauthorized();
+    require(_msgSender() == _mailbox, StdError.Unauthorized());
     _;
   }
 

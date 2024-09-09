@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 
@@ -17,9 +17,7 @@ abstract contract ERC20TWABSnapshots is ERC20Upgradeable, TWABSnapshots {
     if (from == address(0)) {
       uint256 supply = totalSupply();
       uint256 cap = _maxSupply();
-      if (supply > cap) {
-        revert ERC20ExceededSafeSupply(supply, cap);
-      }
+      require(supply <= cap, ERC20ExceededSafeSupply(supply, cap));
     }
     _snapshot(from, to, value);
   }

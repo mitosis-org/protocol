@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
@@ -126,11 +126,12 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
     Epoch storage epoch = _ongoingEpoch($);
     EpochVoteInfo storage epochVoteInfo = _getOrInitEpochVoteInfo($, epoch, chainId);
 
-    if (gauges.length != 0) revert EOLAllocationGovernor__ZeroGaugesLength();
-    if (gauges.length != epochVoteInfo.protocolIds.length) {
-      revert EOLAllocationGovernor__InvalidGaugesLength(gauges.length, epochVoteInfo.protocolIds.length);
-    }
-    if (_sum(gauges) != 100) revert EOLAllocationGovernor__InvalidGaugesSum();
+    require(gauges.length > 0, EOLAllocationGovernor__ZeroGaugesLength());
+    require(
+      gauges.length == epochVoteInfo.protocolIds.length,
+      EOLAllocationGovernor__InvalidGaugesLength(gauges.length, epochVoteInfo.protocolIds.length)
+    );
+    require(_sum(gauges) == 100, EOLAllocationGovernor__InvalidGaugesSum());
 
     epochVoteInfo.gaugesByAccount[_msgSender()] = gauges;
 
@@ -161,7 +162,7 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
 
   function _epoch(StorageV1 storage $, uint256 epochId) internal view returns (Epoch storage) {
     Epoch storage epoch = $.epochs[epochId];
-    if (epoch.id == 0) revert EOLAllocationGovernor__EpochNotFound(epochId);
+    require(epoch.id != 0, EOLAllocationGovernor__EpochNotFound(epochId));
     return epoch;
   }
 
@@ -169,9 +170,9 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
     Epoch storage epoch = _epoch($, $.lastEpochId);
     uint48 currentTime = $.eolAsset.clock();
 
-    if (currentTime < epoch.startsAt || currentTime >= epoch.endsAt) {
-      revert EOLAllocationGovernor__EpochNotOngoing(epoch.id);
-    }
+    require(
+      currentTime >= epoch.startsAt && currentTime < epoch.endsAt, EOLAllocationGovernor__EpochNotOngoing(epoch.id)
+    );
 
     return epoch;
   }

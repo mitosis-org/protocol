@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { IERC20TWABSnapshots } from '../../twab/IERC20TWABSnapshots.sol';
 

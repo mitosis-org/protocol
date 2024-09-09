@@ -4,7 +4,7 @@
 //
 // Modified for the Mitosis development.
 
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
@@ -175,9 +175,7 @@ library TWABCheckpoints {
       Checkpoint memory last = _unsafeAccess(self, pos - 1);
 
       // Checkpoint timestamp must be non-decreasing.
-      if (last._timestamp > timestamp) {
-        revert CheckpointUnorderedInsertion();
-      }
+      require(last._timestamp <= timestamp, CheckpointUnorderedInsertion());
 
       // Update or push new checkpoint
       if (last._timestamp == timestamp) {

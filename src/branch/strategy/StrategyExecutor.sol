@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { SafeERC20, IERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
@@ -133,7 +133,7 @@ contract StrategyExecutor is
   function deallocateEOL(uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertStrategist($);
+    _assertOnlyStrategist($);
 
     _vault.deallocateEOL(_eolId, amount);
   }
@@ -141,7 +141,7 @@ contract StrategyExecutor is
   function fetchEOL(uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertStrategist($);
+    _assertOnlyStrategist($);
 
     _vault.fetchEOL(_eolId, amount);
   }
@@ -149,7 +149,7 @@ contract StrategyExecutor is
   function returnEOL(uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertStrategist($);
+    _assertOnlyStrategist($);
 
     _asset.approve(address(_vault), amount);
     _vault.returnEOL(_eolId, amount);
@@ -158,7 +158,7 @@ contract StrategyExecutor is
   function settle() external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertStrategist($);
+    _assertOnlyStrategist($);
 
     uint256 totalBalance_ = _totalBalance($);
     uint256 prevSettledBalance = $.lastSettledBalance;
@@ -175,8 +175,8 @@ contract StrategyExecutor is
   function settleExtraRewards(address reward, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertStrategist($);
-    if (address(_asset) == reward) revert StdError.InvalidAddress('reward');
+    _assertOnlyStrategist($);
+    require(address(_asset) != reward, StdError.InvalidAddress('reward'));
 
     IERC20(reward).approve(address(_vault), amount);
     _vault.settleExtraRewards(_eolId, reward, amount);
@@ -197,12 +197,12 @@ contract StrategyExecutor is
 
     StorageV1 storage $ = _getStorageV1();
 
-    _assertStrategist($);
+    _assertOnlyStrategist($);
 
     for (uint256 i = 0; i < calls.length; i++) {
       uint256 strategyId = calls[i].strategyId;
       Strategy memory strategy = _getStrategy($, strategyId);
-      if (!strategy.enabled) revert StrategyNotEnabled(strategyId);
+      require(strategy.enabled, StrategyNotEnabled(strategyId));
 
       for (uint256 j = 0; j < calls[i].callData.length; j++) {
         strategy.implementation.functionDelegateCall(calls[i].callData[j]);
@@ -219,12 +219,12 @@ contract StrategyExecutor is
     onlyOwner
     returns (uint256)
   {
-    if (implementation.code.length == 0) revert StdError.InvalidAddress('implementation');
+    require(implementation.code.length > 0, StdError.InvalidAddress('implementation'));
 
     StorageV1 storage $ = _getStorageV1();
     {
       uint256 id = $.strategies.idxByImpl[implementation];
-      if ($.strategies.reg[id].implementation == implementation) revert StrategyAlreadySet(implementation, id);
+      require(implementation != $.strategies.reg[id].implementation, StrategyAlreadySet(implementation, id));
     }
 
     uint256 nextId = $.strategies.len;
@@ -248,7 +248,7 @@ contract StrategyExecutor is
 
     // toggle
     Strategy storage strategy = _getStrategy($, strategyId);
-    if (strategy.enabled) revert StrategyAlreadyEnabled(strategyId);
+    require(!strategy.enabled, StrategyAlreadyEnabled(strategyId));
     strategy.enabled = true;
 
     // add to enabled list
@@ -262,7 +262,7 @@ contract StrategyExecutor is
 
     // toggle
     Strategy storage strategy = _getStrategy($, strategyId);
-    if (!strategy.enabled) revert StrategyNotEnabled(strategyId);
+    require(strategy.enabled, StrategyNotEnabled(strategyId));
     strategy.enabled = false;
 
     // remove from enabled list
@@ -281,13 +281,13 @@ contract StrategyExecutor is
   // MANAGES ROLES
 
   function setEmergencyManager(address emergencyManager_) external onlyOwner {
-    if (emergencyManager_ == address(0)) revert StdError.InvalidAddress('emergencyManager');
+    require(emergencyManager_ != address(0), StdError.InvalidAddress('emergencyManager'));
     _getStorageV1().emergencyManager = emergencyManager_;
     emit EmergencyManagerSet(emergencyManager_);
   }
 
   function setStrategist(address strategist_) external onlyOwner {
-    if (strategist_ == address(0)) revert StdError.InvalidAddress('strategist');
+    require(strategist_ != address(0), StdError.InvalidAddress('strategist'));
     _getStorageV1().strategist = strategist_;
     emit StrategistSet(strategist_);
   }
@@ -301,7 +301,7 @@ contract StrategyExecutor is
 
   function pause() external {
     StorageV1 storage $ = _getStorageV1();
-    if (_msgSender() != owner() && _msgSender() != $.emergencyManager) revert StdError.Unauthorized();
+    require(_msgSender() == owner() || _msgSender() == $.emergencyManager, StdError.Unauthorized());
     _pause();
   }
 
@@ -311,10 +311,10 @@ contract StrategyExecutor is
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _assertStrategist(StorageV1 storage $) internal view {
+  function _assertOnlyStrategist(StorageV1 storage $) internal view {
     address strategist_ = $.strategist;
-    if (strategist_ == address(0)) revert StrategistNotSet();
-    if (_msgSender() != strategist_) revert StdError.Unauthorized();
+    require(strategist_ != address(0), StrategistNotSet());
+    require(_msgSender() == strategist_, StdError.Unauthorized());
   }
 
   function _getStrategy(StorageV1 storage $, uint256 strategyId) internal view returns (Strategy storage strategy) {

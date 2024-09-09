@@ -2,7 +2,7 @@
 // OpenZeppelin Contracts (last updated v5.0.0) (token/ERC20/extensions/ERC4626.sol)
 //
 // Modified for the Mitosis development.
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
 import { IERC20Metadata } from '@oz-v5/token/ERC20/extensions/IERC20Metadata.sol';
@@ -223,9 +223,7 @@ abstract contract ERC4626TWABSnapshots is Initializable, ERC20TWABSnapshots, IER
    */
   function deposit(uint256 assets, address receiver) public virtual returns (uint256) {
     uint256 maxAssets = maxDeposit(receiver);
-    if (assets > maxAssets) {
-      revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
-    }
+    require(assets <= maxAssets, ERC4626ExceededMaxDeposit(receiver, assets, maxAssets));
 
     uint256 shares = previewDeposit(assets);
     _deposit(_msgSender(), receiver, assets, shares);
@@ -238,9 +236,7 @@ abstract contract ERC4626TWABSnapshots is Initializable, ERC20TWABSnapshots, IER
    */
   function mint(uint256 shares, address receiver) public virtual returns (uint256) {
     uint256 maxShares = maxMint(receiver);
-    if (shares > maxShares) {
-      revert ERC4626ExceededMaxMint(receiver, shares, maxShares);
-    }
+    require(shares <= maxShares, ERC4626ExceededMaxMint(receiver, shares, maxShares));
 
     uint256 assets = previewMint(shares);
     _deposit(_msgSender(), receiver, assets, shares);
@@ -253,9 +249,7 @@ abstract contract ERC4626TWABSnapshots is Initializable, ERC20TWABSnapshots, IER
    */
   function withdraw(uint256 assets, address receiver, address owner) public virtual returns (uint256) {
     uint256 maxAssets = maxWithdraw(owner);
-    if (assets > maxAssets) {
-      revert ERC4626ExceededMaxWithdraw(owner, assets, maxAssets);
-    }
+    require(assets <= maxAssets, ERC4626ExceededMaxWithdraw(owner, assets, maxAssets));
 
     uint256 shares = previewWithdraw(assets);
     _withdraw(_msgSender(), receiver, owner, assets, shares);
@@ -268,9 +262,7 @@ abstract contract ERC4626TWABSnapshots is Initializable, ERC20TWABSnapshots, IER
    */
   function redeem(uint256 shares, address receiver, address owner) public virtual returns (uint256) {
     uint256 maxShares = maxRedeem(owner);
-    if (shares > maxShares) {
-      revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
-    }
+    require(shares <= maxShares, ERC4626ExceededMaxRedeem(owner, shares, maxShares));
 
     uint256 assets = previewRedeem(shares);
     _withdraw(_msgSender(), receiver, owner, assets, shares);

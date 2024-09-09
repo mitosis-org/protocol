@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 interface IAssetManagerEntrypoint {
   function initializeAsset(uint256 chainId, address branchAsset) external;

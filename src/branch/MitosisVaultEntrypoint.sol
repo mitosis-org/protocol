@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 import { Router } from '@hpl-v5/client/Router.sol';
 import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
@@ -31,7 +31,7 @@ contract MitosisVaultEntrypoint is
   bytes32 internal immutable _mitosisAddr;
 
   modifier onlyVault() {
-    if (msg.sender != address(_vault)) revert StdError.InvalidAddress('vault');
+    require(msg.sender == address(_vault), StdError.InvalidAddress('vault'));
     _;
   }
 
@@ -97,9 +97,7 @@ contract MitosisVaultEntrypoint is
   //=========== NOTE: HANDLER FUNCTIONS ===========//
 
   function _handle(uint32 origin, bytes32 sender, bytes calldata msg_) internal override {
-    if (origin != _mitosisDomain || sender != _mitosisAddr) {
-      revert StdError.Unauthorized();
-    }
+    require(origin == _mitosisDomain && sender == _mitosisAddr, StdError.Unauthorized());
 
     MsgType msgType = msg_.msgType();
 

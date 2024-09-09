@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { ERC7201Utils } from './ERC7201Utils.sol';
 
@@ -77,7 +77,7 @@ contract Pausable {
   }
 
   function _assertNotPaused(bytes4 sig) internal view virtual {
-    if (_isPaused(sig)) revert Pausable__Paused(sig);
+    require(!_isPaused(sig), Pausable__Paused(sig));
   }
 
   function _assertPaused() internal view virtual {
@@ -85,6 +85,6 @@ contract Pausable {
   }
 
   function _assertPaused(bytes4 sig) internal view virtual {
-    if (!_isPaused(sig)) revert Pausable__NotPaused(sig);
+    require(_isPaused(sig), Pausable__NotPaused(sig));
   }
 }

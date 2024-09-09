@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
@@ -97,8 +97,8 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
     _assertAssetInitialized($, asset);
     _assertNotHalted($, asset, AssetAction.Deposit);
-    if (to == address(0)) revert StdError.ZeroAddress('to');
-    if (amount == 0) revert StdError.ZeroAmount();
+    require(to != address(0), StdError.ZeroAddress('to'));
+    require(amount != 0, StdError.ZeroAmount());
 
     IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
     $.entrypoint.deposit(asset, to, amount);
@@ -216,7 +216,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     _assertEOLInitialized($, eolId);
     _assertOnlyStrategyExecutor($, eolId);
     _assertAssetInitialized($, reward);
-    if ($.eols[eolId].asset == reward) revert StdError.InvalidAddress('reward');
+    require(reward != $.eols[eolId].asset, StdError.InvalidAddress('reward'));
 
     IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
     $.entrypoint.settleExtraRewards(eolId, reward, amount);
@@ -242,18 +242,18 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
       bool drained = IStrategyExecutor(eolInfo.strategyExecutor).totalBalance() == 0
         && IStrategyExecutor(eolInfo.strategyExecutor).lastSettledBalance() == 0;
 
-      if (!drained) revert MitosisVault__StrategyExecutorNotDrained(eolId, eolInfo.strategyExecutor);
+      require(drained, MitosisVault__StrategyExecutorNotDrained(eolId, eolInfo.strategyExecutor));
     }
 
-    if (eolId != IStrategyExecutor(strategyExecutor).eolId()) {
-      revert StdError.InvalidId('strategyExecutor.eolId');
-    }
-    if (address(this) != address(IStrategyExecutor(strategyExecutor).vault())) {
-      revert StdError.InvalidAddress('strategyExecutor.vault');
-    }
-    if (eolInfo.asset != address(IStrategyExecutor(strategyExecutor).asset())) {
-      revert StdError.InvalidAddress('strategyExecutor.asset');
-    }
+    require(eolId == IStrategyExecutor(strategyExecutor).eolId(), StdError.InvalidId('strategyExecutor.eolId'));
+    require(
+      address(this) == address(IStrategyExecutor(strategyExecutor).vault()),
+      StdError.InvalidAddress('strategyExecutor.vault')
+    );
+    require(
+      eolInfo.asset == address(IStrategyExecutor(strategyExecutor).asset()),
+      StdError.InvalidAddress('strategyExecutor.asset')
+    );
 
     eolInfo.strategyExecutor = strategyExecutor;
     emit StrategyExecutorSet(eolId, strategyExecutor);
@@ -286,35 +286,35 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
   function _assertOnlyEntrypoint(StorageV1 storage $) internal view {
-    if (_msgSender() != address($.entrypoint)) revert StdError.InvalidAddress('entrypoint');
+    require(_msgSender() == address($.entrypoint), StdError.InvalidAddress('entrypoint'));
   }
 
   function _assertOnlyStrategyExecutor(StorageV1 storage $, uint256 eolId) internal view {
-    if (_msgSender() != $.eols[eolId].strategyExecutor) revert StdError.InvalidAddress('strategyExecutor');
+    require(_msgSender() == $.eols[eolId].strategyExecutor, StdError.InvalidAddress('strategyExecutor'));
   }
 
   function _assertAssetInitialized(StorageV1 storage $, address asset) internal view {
-    if (!_isAssetInitialized($, asset)) revert MitosisVault__AssetNotInitialized(asset);
+    require(_isAssetInitialized($, asset), MitosisVault__AssetNotInitialized(asset));
   }
 
   function _assertAssetNotInitialized(StorageV1 storage $, address asset) internal view {
-    if (_isAssetInitialized($, asset)) revert MitosisVault__AssetAlreadyInitialized(asset);
+    require(_isAssetInitialized($, asset), MitosisVault__AssetAlreadyInitialized(asset));
   }
 
   function _assertEOLInitialized(StorageV1 storage $, uint256 eolId) internal view {
-    if (!_isEOLInitialized($, eolId)) revert MitosisVault__EOLNotInitialized(eolId);
+    require(_isEOLInitialized($, eolId), MitosisVault__EOLNotInitialized(eolId));
   }
 
   function _assertEOLNotInitialized(StorageV1 storage $, uint256 eolId) internal view {
-    if (_isEOLInitialized($, eolId)) revert MitosisVault__EOLAlreadyInitialized(eolId);
+    require(_isEOLInitialized($, eolId), MitosisVault__EOLAlreadyInitialized(eolId));
   }
 
   function _assertNotHalted(StorageV1 storage $, address asset, AssetAction action) internal view {
-    if (_isHalted($, asset, action)) revert StdError.Halted();
+    require(_isHalted($, asset, action), StdError.Halted());
   }
 
   function _assertNotHalted(StorageV1 storage $, uint256 eolId, EOLAction action) internal view {
-    if (_isHalted($, eolId, action)) revert StdError.Halted();
+    require(_isHalted($, eolId, action), StdError.Halted());
   }
 
   function _isHalted(StorageV1 storage $, address asset, AssetAction action) internal view returns (bool) {
