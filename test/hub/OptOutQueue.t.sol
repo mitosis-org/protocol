@@ -8,7 +8,7 @@ import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 import { HubAsset } from '../../src/hub/core/HubAsset.sol';
 import { OptOutQueue } from '../../src/hub/core/OptOutQueue.sol';
 import { EOLVault } from '../../src/hub/eol/EOLVault.sol';
-import { IERC20TwabSnapshots } from '../../src/interfaces/twab/IERC20TwabSnapshots.sol';
+import { IERC20TWABSnapshots } from '../../src/interfaces/twab/IERC20TWABSnapshots.sol';
 
 contract OptOutQueueTest is Test {
   address internal _admin = makeAddr('admin');
@@ -41,7 +41,7 @@ contract OptOutQueueTest is Test {
     _eolVault = EOLVault(
       _proxy(
         address(new EOLVault()),
-        abi.encodeCall(EOLVault.initialize, (_assetManager, IERC20TwabSnapshots(address(_hubAsset)), 'miTest', 'miTT')) //
+        abi.encodeCall(EOLVault.initialize, (_assetManager, IERC20TWABSnapshots(address(_hubAsset)), 'miTest', 'miTT')) //
       )
     );
     _optOutQueue = OptOutQueue(
