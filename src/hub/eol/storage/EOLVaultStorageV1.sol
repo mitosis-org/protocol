@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
@@ -35,7 +35,7 @@ contract EOLVaultStorageV1 is IEOLVaultStorageV1, ContextUpgradeable {
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   function _setAssetManager(StorageV1 storage $, address assetManager_) internal {
-    if (assetManager_.code.length == 0) revert StdError.InvalidAddress('AssetManager');
+    require(assetManager_.code.length > 0, StdError.InvalidAddress('AssetManager'));
 
     $.assetManager = IAssetManager(assetManager_);
 
@@ -45,6 +45,6 @@ contract EOLVaultStorageV1 is IEOLVaultStorageV1, ContextUpgradeable {
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   function _assertOnlyOptOutQueue(StorageV1 storage $) internal view {
-    if (_msgSender() != $.assetManager.optOutQueue()) revert StdError.Unauthorized();
+    require(_msgSender() == $.assetManager.optOutQueue(), StdError.Unauthorized());
   }
 }

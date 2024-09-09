@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { LibRedeemQueue } from '../../../src/lib/LibRedeemQueue.sol';
 import { RedeemQueueWrapper } from './RedeemQueueWrapper.sol';

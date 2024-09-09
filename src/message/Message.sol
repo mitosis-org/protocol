@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 enum MsgType {
   //=========== NOTE: Asset ===========//
@@ -90,13 +90,8 @@ library Message {
   }
 
   function assertMsg(bytes calldata msg_, MsgType expectedType, uint256 expectedLen) internal pure {
-    if (msgType(msg_) != expectedType) {
-      revert Message__InvalidMsgType(msgType(msg_), expectedType);
-    }
-
-    if (msg_.length != expectedLen) {
-      revert Message__InvalidMsgLength(msg_.length, expectedLen);
-    }
+    require(msgType(msg_) == expectedType, Message__InvalidMsgType(msgType(msg_), expectedType));
+    require(msg_.length == expectedLen, Message__InvalidMsgLength(msg_.length, expectedLen));
   }
 
   function encode(MsgInitializeAsset memory msg_) internal pure returns (bytes memory) {

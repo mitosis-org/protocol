@@ -2,7 +2,7 @@
 // OpenZeppelin Contracts (last updated v5.0.0) (governance/extensions/GovernorVotesQuorumFraction.sol)
 
 // Modified to work with {ITWABSnapshots}.
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
@@ -128,9 +128,7 @@ abstract contract GovernorTWABVotesQuorumFractionUpgradeable is Initializable, G
   function _updateQuorumNumerator(uint256 newQuorumNumerator) internal virtual {
     GovernorTWABVotesQuorumFractionStorage storage $ = _getGovernorTWABVotesQuorumFractionStorage();
     uint256 denominator = quorumDenominator();
-    if (newQuorumNumerator > denominator) {
-      revert GovernorInvalidQuorumFraction(newQuorumNumerator, denominator);
-    }
+    require(newQuorumNumerator <= denominator, GovernorInvalidQuorumFraction(newQuorumNumerator, denominator));
 
     uint256 oldQuorumNumerator = quorumNumerator();
     $._quorumNumeratorHistory.push(clock(), SafeCast.toUint208(newQuorumNumerator));

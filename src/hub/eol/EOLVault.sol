@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
@@ -42,9 +42,7 @@ contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
 
   function deposit(uint256 assets, address receiver) public override returns (uint256) {
     uint256 maxAssets = maxDeposit(receiver);
-    if (assets > maxAssets) {
-      revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
-    }
+    require(assets <= maxAssets, ERC4626ExceededMaxDeposit(receiver, assets, maxAssets));
 
     uint256 shares = previewDeposit(assets);
     _deposit(_msgSender(), receiver, assets, shares);
@@ -54,9 +52,7 @@ contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
 
   function mint(uint256 shares, address receiver) public override returns (uint256) {
     uint256 maxShares = maxMint(receiver);
-    if (shares > maxShares) {
-      revert ERC4626ExceededMaxMint(receiver, shares, maxShares);
-    }
+    require(shares <= maxShares, ERC4626ExceededMaxMint(receiver, shares, maxShares));
 
     uint256 assets = previewMint(shares);
     _deposit(_msgSender(), receiver, assets, shares);
@@ -70,9 +66,7 @@ contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
     _assertOnlyOptOutQueue($);
 
     uint256 maxAssets = maxWithdraw(owner);
-    if (assets > maxAssets) {
-      revert ERC4626ExceededMaxWithdraw(owner, assets, maxAssets);
-    }
+    require(assets <= maxAssets, ERC4626ExceededMaxWithdraw(owner, assets, maxAssets));
 
     uint256 shares = previewWithdraw(assets);
     _withdraw(_msgSender(), receiver, owner, assets, shares);
@@ -86,9 +80,7 @@ contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
     _assertOnlyOptOutQueue($);
 
     uint256 maxShares = maxRedeem(owner);
-    if (shares > maxShares) {
-      revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
-    }
+    require(shares <= maxShares, ERC4626ExceededMaxRedeem(owner, shares, maxShares));
 
     uint256 assets = previewRedeem(shares);
     _withdraw(_msgSender(), receiver, owner, assets, shares);

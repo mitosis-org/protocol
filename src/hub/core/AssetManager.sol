@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
@@ -72,8 +72,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    if (to == address(0)) revert StdError.ZeroAddress('to');
-    if (amount == 0) revert StdError.ZeroAmount();
+    require(to != address(0), StdError.ZeroAddress('to'));
+    require(amount != 0, StdError.ZeroAmount());
 
     address branchAsset = $.branchAssets[hubAsset][chainId];
     _assertBranchAssetPairExist($, chainId, branchAsset);
@@ -92,8 +92,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
     _assertOnlyStrategist($, eolVault);
 
-    uint256 eolIdle_ = _eolIdle($, eolVault);
-    if (eolIdle_ < amount) revert AssetManager__EOLInsufficient(eolVault);
+    uint256 idle = _eolIdle($, eolVault);
+    require(amount <= idle, AssetManager__EOLInsufficient(eolVault));
 
     $.entrypoint.allocateEOL(chainId, eolVault, amount);
     $.eolStates[eolVault].allocation += amount;
@@ -119,7 +119,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertOnlyStrategist($, eolVault);
 
     uint256 idle = _eolIdle($, eolVault);
-    if (idle < amount) revert AssetManager__EOLInsufficient(eolVault);
+    require(amount <= idle, AssetManager__EOLInsufficient(eolVault));
 
     $.optOutQueue.sync(eolVault, amount);
   }
@@ -250,7 +250,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function _assertOnlyContract(address addr, string memory paramName) internal view {
-    if (addr.code.length == 0) revert StdError.InvalidParameter(paramName);
+    require(addr.code.length > 0, StdError.InvalidParameter(paramName));
   }
 
   function _assertBranchAssetPairExist(StorageV1 storage $, uint256 chainId, address branchAsset_)
@@ -258,10 +258,10 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     view
     override
   {
-    if ($.hubAssets[chainId][branchAsset_] == address(0)) revert AssetManager__BranchAssetPairNotExist(branchAsset_);
+    require($.hubAssets[chainId][branchAsset_] != address(0), AssetManager__BranchAssetPairNotExist(branchAsset_));
   }
 
   function _assertEOLRewardManagerSet(StorageV1 storage $) internal view override {
-    if (address($.rewardManager) == address(0)) revert AssetManager__EOLRewardManagerNotSet();
+    require(address($.rewardManager) != address(0), AssetManager__EOLRewardManagerNotSet());
   }
 }

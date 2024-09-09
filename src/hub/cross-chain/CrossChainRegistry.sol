@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { IRouter } from '@hpl-v5/interfaces/IRouter.sol';
 
@@ -96,9 +96,10 @@ contract CrossChainRegistry is
   {
     StorageV1 storage $ = _getStorageV1();
 
-    if (_isRegisteredChain($.chains[chainId_]) || _isRegisteredHyperlane($.hyperlanes[hplDomain])) {
-      revert ICrossChainRegistry.ICrossChainRegistry__AlreadyRegistered();
-    }
+    require(
+      !_isRegisteredChain($.chains[chainId_]) && !_isRegisteredHyperlane($.hyperlanes[hplDomain]),
+      ICrossChainRegistry.ICrossChainRegistry__AlreadyRegistered()
+    );
 
     $.chainIds.push(chainId_);
     $.hplDomains.push(hplDomain);
@@ -112,13 +113,9 @@ contract CrossChainRegistry is
 
   function setVault(uint256 chainId_, address vault_) external onlyRegisterer {
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId_];
-    if (!_isRegisteredChain(chainInfo)) {
-      revert ICrossChainRegistry.ICrossChainRegistry__NotRegistered();
-    }
 
-    if (_isRegisteredVault(chainInfo)) {
-      revert ICrossChainRegistry.ICrossChainRegistry__AlreadyRegistered();
-    }
+    require(_isRegisteredChain(chainInfo), ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
+    require(!_isRegisteredVault(chainInfo), ICrossChainRegistry.ICrossChainRegistry__AlreadyRegistered());
 
     chainInfo.vault = vault_;
     emit VaultSet(chainId_, vault_);

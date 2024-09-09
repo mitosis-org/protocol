@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { CommonBase } from '@std/Base.sol';
 import { Vm } from '@std/Vm.sol';
@@ -38,7 +38,7 @@ contract MockHyperlaneEnv is CommonBase, Ownable {
 
   function envOf(uint32 domain) external view returns (Env memory env) {
     env = envs[domain];
-    if (env.forkId == 0) revert MockHyperlaneEnv__EnvNotFoundForDomain(domain);
+    require(env.forkId != 0, MockHyperlaneEnv__EnvNotFoundForDomain(domain));
     return env;
   }
 
@@ -51,7 +51,7 @@ contract MockHyperlaneEnv is CommonBase, Ownable {
   }
 
   function establish(uint32 domain, string memory domainAlias) external onlyOwner returns (Env memory) {
-    if (envs[domain].forkId != 0) revert MockHyperlaneEnv__DomainAlreadyEstablished(domain);
+    require(envs[domain].forkId == 0, MockHyperlaneEnv__DomainAlreadyEstablished(domain));
 
     uint256 currentForkId = vm.activeFork();
     uint256 forkId = vm.createSelectFork(domainAlias);

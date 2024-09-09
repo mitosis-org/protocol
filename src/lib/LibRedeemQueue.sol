@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
@@ -84,12 +84,12 @@ library LibRedeemQueue {
   }
 
   function get(Queue storage q, uint256 itemIndex) internal view returns (Request memory req) {
-    if (itemIndex >= q.size) revert LibRedeemQueue__IndexOutOfRange(itemIndex, 0, q.size - 1);
+    require(itemIndex < q.size, LibRedeemQueue__IndexOutOfRange(itemIndex, 0, q.size - 1));
     return q.data[itemIndex];
   }
 
   function get(Index storage idx, uint256 i) internal view returns (uint256 itemIndex) {
-    if (i >= idx.size) revert LibRedeemQueue__IndexOutOfRange(i, 0, idx.size - 1);
+    require(i < idx.size, LibRedeemQueue__IndexOutOfRange(i, 0, idx.size - 1));
     return idx.data[i];
   }
 
@@ -137,7 +137,7 @@ library LibRedeemQueue {
 
   function index(Queue storage q, address recipient) internal view returns (Index storage idx) {
     idx = q.indexes[recipient];
-    if (idx.size == 0) revert LibRedeemQueue__EmptyIndex(recipient);
+    require(idx.size != 0, LibRedeemQueue__EmptyIndex(recipient));
     return idx;
   }
 
@@ -202,8 +202,9 @@ library LibRedeemQueue {
     internal
     returns (uint256 itemIndex)
   {
-    if (requestShares == 0) revert LibRedeemQueue__InvalidRequestShares();
-    if (requestAssets == 0) revert LibRedeemQueue__InvalidRequestAssets();
+    require(requestShares != 0, LibRedeemQueue__InvalidRequestShares());
+    require(requestAssets != 0, LibRedeemQueue__InvalidRequestAssets());
+
     bool isPrevItemExists = q.size > 0;
     itemIndex = q.size;
 
@@ -284,7 +285,7 @@ library LibRedeemQueue {
   }
 
   function reserve(Queue storage q, uint256 amount_) internal {
-    if (amount_ == 0) revert LibRedeemQueue__InvalidReserveAmount();
+    require(amount_ != 0, LibRedeemQueue__InvalidReserveAmount());
     uint256 historyIndex = q.reserveHistory.length;
 
     q.totalReservedAssets += amount_;
@@ -311,8 +312,9 @@ library LibRedeemQueue {
   }
 
   function _claim(Queue storage q, uint256 itemIndex, bool applyToState) internal returns (uint256 claimed) {
-    if (itemIndex >= q.size) revert LibRedeemQueue__IndexOutOfRange(itemIndex, 0, q.size - 1);
-    if (itemIndex >= q.offset) revert LibRedeemQueue__NotReadyToClaim(itemIndex);
+    require(itemIndex < q.size, LibRedeemQueue__IndexOutOfRange(itemIndex, 0, q.size - 1));
+    require(itemIndex < q.offset, LibRedeemQueue__NotReadyToClaim(itemIndex));
+
     Request memory req = q.data[itemIndex];
     if (!isClaimed(req)) {
       q.data[itemIndex].claimedAt = uint48(block.timestamp);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 import { AssetAction, EOLAction } from '../../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../interfaces/branch/IMitosisVaultEntrypoint.sol';

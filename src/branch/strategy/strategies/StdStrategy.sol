@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
@@ -25,7 +25,7 @@ abstract contract StdStrategy is IStrategy, Context, StdStrategyStorageV1 {
   }
 
   modifier onlyDelegateCall() {
-    if (address(this) == _self) revert StdStrategy__OnlyDelegateCall();
+    require(address(this) != _self, StdStrategy__OnlyDelegateCall());
 
     _;
   }
