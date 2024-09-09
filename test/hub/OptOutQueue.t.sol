@@ -8,14 +8,16 @@ import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 import { HubAsset } from '../../src/hub/core/HubAsset.sol';
 import { OptOutQueue } from '../../src/hub/core/OptOutQueue.sol';
 import { EOLVault } from '../../src/hub/eol/EOLVault.sol';
+import { IAssetManager } from '../../src/interfaces/hub/core/IAssetManager.sol';
 import { IERC20TWABSnapshots } from '../../src/interfaces/twab/IERC20TWABSnapshots.sol';
+import { MockAssetManager } from '../mock/MockAssetManager.sol';
 
 contract OptOutQueueTest is Test {
   address internal _admin = makeAddr('admin');
   address internal _owner = makeAddr('owner');
   address internal _user = makeAddr('user');
 
-  address internal _assetManager = makeAddr('assetManager'); // mock
+  MockAssetManager internal _assetManager;
   ERC1967Factory internal _factory;
   HubAsset internal _hubAsset;
   EOLVault internal _eolVault;
@@ -32,6 +34,8 @@ contract OptOutQueueTest is Test {
   function setUp() public {
     _factory = new ERC1967Factory();
 
+    _assetManager = new MockAssetManager();
+
     _hubAsset = HubAsset(
       _proxy(
         address(new HubAsset()),
@@ -41,13 +45,15 @@ contract OptOutQueueTest is Test {
     _eolVault = EOLVault(
       _proxy(
         address(new EOLVault()),
-        abi.encodeCall(EOLVault.initialize, (_assetManager, IERC20TWABSnapshots(address(_hubAsset)), 'miTest', 'miTT')) //
+        abi.encodeCall(
+          EOLVault.initialize, (address(_assetManager), IERC20TWABSnapshots(address(_hubAsset)), 'miTest', 'miTT')
+        ) //
       )
     );
     _optOutQueue = OptOutQueue(
       _proxy(
         address(new OptOutQueue()),
-        abi.encodeCall(OptOutQueue.initialize, (_owner, _assetManager)) //
+        abi.encodeCall(OptOutQueue.initialize, (_owner, address(_assetManager))) //
       )
     );
 
@@ -55,6 +61,7 @@ contract OptOutQueueTest is Test {
 
     vm.startPrank(_owner);
 
+    _assetManager.setOptOutQueue(address(_optOutQueue));
     _optOutQueue.enable(address(_eolVault));
     _optOutQueue.setRedeemPeriod(address(_eolVault), 1 days);
 
@@ -73,6 +80,7 @@ contract OptOutQueueTest is Test {
 
     vm.warp(block.timestamp + _optOutQueue.redeemPeriod(address(_eolVault)));
 
+    _optOutReserve(100 ether);
     _optOutClaim(_user);
 
     vm.expectRevert(_errNothingToClaim());
@@ -88,8 +96,9 @@ contract OptOutQueueTest is Test {
     vm.warp(block.timestamp + _optOutQueue.redeemPeriod(address(_eolVault)));
 
     _burn(address(_eolVault), 100 ether); // report loss
-    _optOutClaim(_user);
+    _optOutReserve(90 ether);
 
+    // FIXME: declare share burn amount?
     vm.expectRevert(_errNothingToClaim());
     _optOutClaim(_user);
   }
@@ -103,6 +112,7 @@ contract OptOutQueueTest is Test {
     vm.warp(block.timestamp + _optOutQueue.redeemPeriod(address(_eolVault)));
 
     _mint(address(_eolVault), 100 ether); // report yield
+    _optOutReserve(100 ether);
     _optOutClaim(_user);
 
     vm.expectRevert(_errNothingToClaim());
@@ -126,12 +136,12 @@ contract OptOutQueueTest is Test {
   }
 
   function _mint(address to, uint256 amount) internal {
-    vm.prank(_assetManager);
+    vm.prank(address(_assetManager));
     _hubAsset.mint(to, amount);
   }
 
   function _burn(address from, uint256 amount) internal {
-    vm.prank(_assetManager);
+    vm.prank(address(_assetManager));
     _hubAsset.burn(from, amount);
   }
 
@@ -157,5 +167,9 @@ contract OptOutQueueTest is Test {
   function _optOutClaim(address account) internal withAccount(account) returns (uint256 totalClaimed) {
     totalClaimed = _optOutQueue.claim(account, address(_eolVault));
     return totalClaimed;
+  }
+
+  function _optOutReserve(uint256 amount) internal withAccount(address(_assetManager)) {
+    _optOutQueue.sync(address(_eolVault), amount);
   }
 }
