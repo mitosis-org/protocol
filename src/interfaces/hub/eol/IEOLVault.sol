@@ -9,4 +9,4 @@ interface IEOLVaultStorageV1 {
   function assetManager() external view returns (address);
 }
 
-interface IEOLVault is IERC4626TwabSnapshots, IEOLVaultStorageV1 { }
+interface IEOLVault is IERC4626TWABSnapshots, IEOLVaultStorageV1 { }
