@@ -3,9 +3,9 @@ pragma solidity ^0.8.26;
 
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 
-import { TwabSnapshots } from './TwabSnapshots.sol';
+import { TWABSnapshots } from './TWABSnapshots.sol';
 
-abstract contract ERC20TwabSnapshots is ERC20Upgradeable, TwabSnapshots {
+abstract contract ERC20TWABSnapshots is ERC20Upgradeable, TWABSnapshots {
   error ERC20ExceededSafeSupply(uint256 increasedSupply, uint256 cap);
 
   function _maxSupply() internal view virtual returns (uint256) {

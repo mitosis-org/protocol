@@ -4,12 +4,12 @@ pragma solidity ^0.8.26;
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
-import { ITwabSnapshots } from '../interfaces/twab/ITwabSnapshots.sol';
-import { TwabCheckpoints } from '../lib/TwabCheckpoints.sol';
-import { TwabSnapshotsStorageV1 } from './TwabSnapshotsStorageV1.sol';
+import { ITWABSnapshots } from '../interfaces/twab/ITWABSnapshots.sol';
+import { TWABCheckpoints } from '../lib/TWABCheckpoints.sol';
+import { TWABSnapshotsStorageV1 } from './TWABSnapshotsStorageV1.sol';
 
-abstract contract TwabSnapshots is ITwabSnapshots, TwabSnapshotsStorageV1 {
-  using TwabCheckpoints for TwabCheckpoints.Trace;
+abstract contract TWABSnapshots is ITWABSnapshots, TWABSnapshotsStorageV1 {
+  using TWABCheckpoints for TWABCheckpoints.Trace;
 
   error ERC6372InconsistentClock();
 
@@ -33,7 +33,7 @@ abstract contract TwabSnapshots is ITwabSnapshots, TwabSnapshotsStorageV1 {
     virtual
     returns (uint208 balnace, uint256 twab, uint48 position)
   {
-    return _getTwabSnapshotStorageV1().accountCheckpoints[account].latest();
+    return _getTWABSnapshotsStorageV1().accountCheckpoints[account].latest();
   }
 
   function getPastSnapshot(address account, uint256 timestamp)
@@ -46,11 +46,11 @@ abstract contract TwabSnapshots is ITwabSnapshots, TwabSnapshotsStorageV1 {
     if (timestamp >= currentTimestamp) {
       revert ERC5805FutureLookup(timestamp, currentTimestamp);
     }
-    return _getTwabSnapshotStorageV1().accountCheckpoints[account].upperLookupRecent(SafeCast.toUint48(timestamp));
+    return _getTWABSnapshotsStorageV1().accountCheckpoints[account].upperLookupRecent(SafeCast.toUint48(timestamp));
   }
 
   function getLatestTotalSnapshot() external view virtual returns (uint208 balance, uint256 twab, uint48 position) {
-    return _getTwabSnapshotStorageV1().totalCheckpoints.latest();
+    return _getTWABSnapshotsStorageV1().totalCheckpoints.latest();
   }
 
   function getPastTotalSnapshot(uint256 timestamp)
@@ -63,11 +63,11 @@ abstract contract TwabSnapshots is ITwabSnapshots, TwabSnapshotsStorageV1 {
     if (timestamp >= currentTimestamp) {
       revert ERC5805FutureLookup(timestamp, currentTimestamp);
     }
-    return _getTwabSnapshotStorageV1().totalCheckpoints.upperLookupRecent(SafeCast.toUint48(timestamp));
+    return _getTWABSnapshotsStorageV1().totalCheckpoints.upperLookupRecent(SafeCast.toUint48(timestamp));
   }
 
   function _snapshot(address from, address to, uint256 amount) internal virtual {
-    TwabSnapshotStorageV1 storage $ = _getTwabSnapshotStorageV1();
+    TWABSnapshotsStorageV1 storage $ = _getTWABSnapshotsStorageV1();
 
     if (from != to && amount > 0) {
       if (from == address(0)) {
@@ -85,26 +85,26 @@ abstract contract TwabSnapshots is ITwabSnapshots, TwabSnapshotsStorageV1 {
   }
 
   function _push(
-    TwabCheckpoints.Trace storage store,
+    TWABCheckpoints.Trace storage store,
     function(uint208, uint208) view returns (uint208) op,
     uint208 delta
   ) private returns (uint208, uint208, uint256, uint256) {
-    (uint208 lastBalance, uint256 lastTwab, uint48 lastPosition) = store.latest();
+    (uint208 lastBalance, uint256 lastTWAB, uint48 lastPosition) = store.latest();
 
     uint208 balance = op(lastBalance, delta);
 
-    uint256 twab = lastTwab;
+    uint256 twab = lastTWAB;
     uint48 timestamp = clock();
     // TWAB is a cumulative value, so it is not affected by the current balance.
     if (timestamp > lastPosition) {
-      twab = _calcAccumulatedTwab(lastTwab, lastBalance, timestamp - lastPosition);
+      twab = _calcAccumulatedTWAB(lastTWAB, lastBalance, timestamp - lastPosition);
     }
 
-    return TwabCheckpoints.push(store, timestamp, balance, twab);
+    return TWABCheckpoints.push(store, timestamp, balance, twab);
   }
 
-  function _calcAccumulatedTwab(uint256 lastTwab, uint208 lastBalance, uint48 duration) private pure returns (uint256) {
-    return lastTwab + (lastBalance * duration);
+  function _calcAccumulatedTWAB(uint256 lastTWAB, uint208 lastBalance, uint48 duration) private pure returns (uint256) {
+    return lastTWAB + (lastBalance * duration);
   }
 
   function _add(uint208 a, uint208 b) private pure returns (uint208) {

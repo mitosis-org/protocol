@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
 
-interface ITwabSnapshots is IERC6372 {
+interface ITWABSnapshots is IERC6372 {
   function getLatestSnapshot(address account) external view returns (uint208 balnace, uint256 twab, uint48 position);
 
   function getPastSnapshot(address account, uint256 timestamp)

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v5.0.0) (governance/extensions/GovernorVotes.sol)
 
-// Modified to work with {ITwabSnapshots}.
+// Modified to work with {ITWABSnapshots}.
 pragma solidity ^0.8.26;
 
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
@@ -9,39 +9,39 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
 import { Initializable } from '@ozu-v5/proxy/utils/Initializable.sol';
 
-import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
+import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { TwabSnapshotsUtils } from '../../lib/TwabSnapshotsUtils.sol';
+import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
 
 /**
- * @dev Extension of {Governor} for voting weight extraction from an {ITwabSnapshots} token.
+ * @dev Extension of {Governor} for voting weight extraction from an {ITWABSnapshots} token.
  */
-abstract contract GovernorTwabVotesUpgradeable is Initializable, GovernorUpgradeable {
+abstract contract GovernorTWABVotesUpgradeable is Initializable, GovernorUpgradeable {
   using ERC7201Utils for string;
-  using TwabSnapshotsUtils for ITwabSnapshots;
+  using TWABSnapshotsUtils for ITWABSnapshots;
 
-  struct GovernorTwabVotesStorage {
-    ITwabSnapshots token;
+  struct GovernorTWABVotesStorage {
+    ITWABSnapshots token;
     uint32 twabPeriod;
   }
 
-  string constant _GovernorTwabVotesStorageNamespace = 'mitosis.storage.GovernorTwabVotes';
-  bytes32 private immutable _GovernorTwabVotesStorageLocation = _GovernorTwabVotesStorageNamespace.storageSlot();
+  string constant _GovernorTWABVotesStorageNamespace = 'mitosis.storage.GovernorTWABVotes';
+  bytes32 private immutable _GovernorTWABVotesStorageLocation = _GovernorTWABVotesStorageNamespace.storageSlot();
 
-  function _getGovernorTwabVotesStorage() private view returns (GovernorTwabVotesStorage storage $) {
-    bytes32 slot = _GovernorTwabVotesStorageLocation;
+  function _getGovernorTWABVotesStorage() private view returns (GovernorTWABVotesStorage storage $) {
+    bytes32 slot = _GovernorTWABVotesStorageLocation;
     assembly {
       $.slot := slot
     }
   }
 
-  function __GovernorTwabVotes_init(ITwabSnapshots token_, uint32 twabPeriod_) internal onlyInitializing {
-    __GovernorTwabVotes_init_unchained(token_, twabPeriod_);
+  function __GovernorTWABVotes_init(ITWABSnapshots token_, uint32 twabPeriod_) internal onlyInitializing {
+    __GovernorTWABVotes_init_unchained(token_, twabPeriod_);
   }
 
-  function __GovernorTwabVotes_init_unchained(ITwabSnapshots token_, uint32 twabPeriod_) internal onlyInitializing {
-    GovernorTwabVotesStorage storage $ = _getGovernorTwabVotesStorage();
+  function __GovernorTWABVotes_init_unchained(ITWABSnapshots token_, uint32 twabPeriod_) internal onlyInitializing {
+    GovernorTWABVotesStorage storage $ = _getGovernorTWABVotesStorage();
     $.token = token_;
     $.twabPeriod = twabPeriod_;
   }
@@ -49,8 +49,8 @@ abstract contract GovernorTwabVotesUpgradeable is Initializable, GovernorUpgrade
   /**
    * @dev The token that voting power is sourced from.
    */
-  function token() public view returns (ITwabSnapshots) {
-    GovernorTwabVotesStorage storage $ = _getGovernorTwabVotesStorage();
+  function token() public view returns (ITWABSnapshots) {
+    GovernorTWABVotesStorage storage $ = _getGovernorTWABVotesStorage();
     return $.token;
   }
 
@@ -58,7 +58,7 @@ abstract contract GovernorTwabVotesUpgradeable is Initializable, GovernorUpgrade
    * @dev The period of time in seconds for which the voting power is calculated.
    */
   function twabPeriod() external view returns (uint32) {
-    GovernorTwabVotesStorage storage $ = _getGovernorTwabVotesStorage();
+    GovernorTWABVotesStorage storage $ = _getGovernorTWABVotesStorage();
     return $.twabPeriod;
   }
 
@@ -92,15 +92,15 @@ abstract contract GovernorTwabVotesUpgradeable is Initializable, GovernorUpgrade
   }
 
   function _getVotingPower(address account, uint256 timepoint) internal view virtual returns (uint256) {
-    GovernorTwabVotesStorage storage $ = _getGovernorTwabVotesStorage();
-    return $.token.getAccountTwabByTimestampRange(
+    GovernorTWABVotesStorage storage $ = _getGovernorTWABVotesStorage();
+    return $.token.getAccountTWABByTimestampRange(
       account, SafeCast.toUint48(timepoint - $.twabPeriod), SafeCast.toUint48(timepoint)
     );
   }
 
   function _getTotalVotingPower(uint256 timepoint) internal view virtual returns (uint256) {
-    GovernorTwabVotesStorage storage $ = _getGovernorTwabVotesStorage();
+    GovernorTWABVotesStorage storage $ = _getGovernorTWABVotesStorage();
     return
-      $.token.getTotalTwabByTimestampRange(SafeCast.toUint48(timepoint - $.twabPeriod), SafeCast.toUint48(timepoint));
+      $.token.getTotalTWABByTimestampRange(SafeCast.toUint48(timepoint - $.twabPeriod), SafeCast.toUint48(timepoint));
   }
 }

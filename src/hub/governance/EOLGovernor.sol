@@ -7,10 +7,10 @@ import { GovernorCountingSimpleUpgradeable } from '@ozu-v5/governance/extensions
 import { GovernorSettingsUpgradeable } from '@ozu-v5/governance/extensions/GovernorSettingsUpgradeable.sol';
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
 
-import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
-import { GovernorTwabVotesQuorumFractionUpgradeable } from
-  '../../twab/governance/GovernorTwabVotesQuorumFractionUpgradeable.sol';
-import { GovernorTwabVotesUpgradeable } from '../../twab/governance/GovernorTwabVotesUpgradeable.sol';
+import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
+import { GovernorTWABVotesQuorumFractionUpgradeable } from
+  '../../twab/governance/GovernorTWABVotesQuorumFractionUpgradeable.sol';
+import { GovernorTWABVotesUpgradeable } from '../../twab/governance/GovernorTWABVotesUpgradeable.sol';
 
 // TODO(thai): Consider the way all EOL governances for different tokens are managed by only one governor contract.
 
@@ -18,8 +18,8 @@ contract EOLGovernor is
   Ownable2StepUpgradeable,
   AccessControlUpgradeable,
   GovernorUpgradeable,
-  GovernorTwabVotesUpgradeable,
-  GovernorTwabVotesQuorumFractionUpgradeable,
+  GovernorTWABVotesUpgradeable,
+  GovernorTWABVotesQuorumFractionUpgradeable,
   GovernorCountingSimpleUpgradeable,
   GovernorSettingsUpgradeable
 {
@@ -37,7 +37,7 @@ contract EOLGovernor is
   function initialize(
     address owner_,
     string memory name_,
-    ITwabSnapshots token_,
+    ITWABSnapshots token_,
     uint32 twabPeriod_,
     uint32 quorumFraction_,
     uint32 votingDelay_,
@@ -51,8 +51,8 @@ contract EOLGovernor is
     _grantRole(DEFAULT_ADMIN_ROLE, owner_);
 
     __Governor_init(name_);
-    __GovernorTwabVotes_init(token_, twabPeriod_);
-    __GovernorTwabVotesQuorumFraction_init(quorumFraction_);
+    __GovernorTWABVotes_init(token_, twabPeriod_);
+    __GovernorTWABVotesQuorumFraction_init(quorumFraction_);
     __GovernorCountingSimple_init();
     __GovernorSettings_init(votingDelay_, votingPeriod_, proposalThreshold_);
   }
