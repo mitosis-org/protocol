@@ -17,6 +17,7 @@ import { TWABRewardDistributorStorageV1 } from './TWABRewardDistributorStorageV1
 contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeable, TWABRewardDistributorStorageV1 {
   using LibDistributorRewardMetadata for RewardTWABMetadata;
   using LibDistributorRewardMetadata for bytes;
+  using TWABSnapshotsUtils for ITWABSnapshots;
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -173,14 +174,13 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     uint48 startsAt = rewardInfo.startsAt;
     uint48 endsAt = rewardedAt;
 
-    uint256 totalTWAB =
-      TWABSnapshotsUtils.getTotalTWABByTimestampRange(ITWABSnapshots(rewardInfo.erc20TWABSnapshots), startsAt, endsAt);
+    ITWABSnapshots twabSnapshots = ITWABSnapshots(rewardInfo.erc20TWABSnapshots);
 
+    uint256 totalTWAB = twabSnapshots.getTotalTWABByTimestampRange(startsAt, endsAt);
     if (totalTWAB == 0) return 0;
 
-    uint256 userTWAB = TWABSnapshotsUtils.getAccountTWABByTimestampRange(
-      ITWABSnapshots(rewardInfo.erc20TWABSnapshots), account, startsAt, endsAt
-    );
+    uint256 userTWAB = twabSnapshots.getAccountTWABByTimestampRange(account, startsAt, endsAt);
+    if (userTWAB == 0) return 0;
 
     uint256 precision = _getStorageV1().rewardConfigurator.rewardRatioPrecision();
 
