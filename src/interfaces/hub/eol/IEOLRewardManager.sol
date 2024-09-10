@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IEOLRewardDistributor } from './IEOLRewardDistributor.sol';
+import { IRewardDistributor } from '../reward/IRewardDistributor.sol';
 
 interface IEOLRewardManager {
   function routeYield(address eolVault, uint256 amount) external;
@@ -9,7 +9,7 @@ interface IEOLRewardManager {
   function routeExtraReward(address eolVault, address reward, uint256 amount) external;
 
   function dispatchTo(
-    IEOLRewardDistributor distributor,
+    IRewardDistributor distributor,
     address eolVault,
     address reward,
     uint48 timestamp,
@@ -18,7 +18,7 @@ interface IEOLRewardManager {
   ) external;
 
   function dispatchTo(
-    IEOLRewardDistributor distributor,
+    IRewardDistributor distributor,
     address eolVault,
     address reward,
     uint48 timestamp,

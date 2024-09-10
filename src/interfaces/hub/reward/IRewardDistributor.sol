@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { DistributionType } from './IEOLRewardConfigurator.sol';
+enum DistributionType {
+  Unspecified,
+  MerkleProof,
+  TWAB
+}
 
-interface IEOLRewardDistributor {
+interface IRewardDistributor {
   function distributionType() external view returns (DistributionType);
 
   function description() external view returns (string memory);

@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { DistributionType } from '../../src/interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { IEOLRewardDistributor } from '../../src/interfaces/hub/eol/IEOLRewardDistributor.sol';
+import { IRewardDistributor, DistributionType } from '../../src/interfaces/hub/reward/IRewardDistributor.sol';
 
-contract MockDistributor is IEOLRewardDistributor {
+contract MockDistributor is IRewardDistributor {
   DistributionType _distributionType;
 
   constructor(DistributionType distributionType_) {

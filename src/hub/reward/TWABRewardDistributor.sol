@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 
-// move to reward or something. not `/eol`
 import { DistributionType } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { LibDistributorRewardMetadata, RewardTWABMetadata } from '../eol/LibDistributorRewardMetadata.sol';
-import { TwabSnapshotsUtils } from '../../lib/TwabSnapshotsUtils.sol';
 import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
+import { TwabSnapshotsUtils } from '../../lib/TwabSnapshotsUtils.sol';
+import { LibDistributorRewardMetadata, RewardTWABMetadata } from './LibDistributorRewardMetadata.sol';
+
+// move to reward or something. not `/eol`
 
 contract TWABRewardDistributor {
   using LibDistributorRewardMetadata for RewardTWABMetadata;

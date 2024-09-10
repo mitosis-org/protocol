@@ -3,8 +3,7 @@ pragma solidity ^0.8.27;
 
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
-import { DistributionType } from '../../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { IEOLRewardDistributor } from '../../../interfaces/hub/eol/IEOLRewardDistributor.sol';
+import { IRewardDistributor, DistributionType } from '../../../interfaces/hub/reward/IRewardDistributor.sol';
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 
 contract EOLRewardConfiguratorStorageV1 {
@@ -18,7 +17,7 @@ contract EOLRewardConfiguratorStorageV1 {
     // note: We strictly manage the DefaultDistributor. DistributionTypes without a set
     // DefaultDistributor cannot be configured as the distribution method for assets.
     // And once initialized, the DefaultDistributor cannot be set to a zero address.
-    mapping(DistributionType distributionType => IEOLRewardDistributor distributor) defaultDistributor;
+    mapping(DistributionType distributionType => IRewardDistributor distributor) defaultDistributor;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.EOLRewardConfiguratorStorage.v1';

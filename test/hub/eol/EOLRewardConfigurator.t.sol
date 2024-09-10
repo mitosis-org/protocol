@@ -10,9 +10,8 @@ import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
 import { EOLRewardConfigurator } from '../../../src/hub/eol/EOLRewardConfigurator.sol';
-import { DistributionType } from '../../../src/interfaces/hub/eol/IEOLRewardConfigurator.sol';
 import { IEOLRewardConfigurator } from '../../../src/interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { IEOLRewardDistributor } from '../../../src/interfaces/hub/eol/IEOLRewardDistributor.sol';
+import { IRewardDistributor, DistributionType } from '../../../src/interfaces/hub/reward/IRewardDistributor.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { MockDistributor } from '../../mock/MockDistributor.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
@@ -158,7 +157,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     rewardConfigurator.registerDistributor(distributor);
     rewardConfigurator.setDefaultDistributor(distributor);
 
-    IEOLRewardDistributor defaultDistributor = rewardConfigurator.getDefaultDistributor(DistributionType.TWAB);
+    IRewardDistributor defaultDistributor = rewardConfigurator.getDefaultDistributor(DistributionType.TWAB);
     assertTrue(address(distributor) == address(defaultDistributor));
 
     vm.stopPrank();
