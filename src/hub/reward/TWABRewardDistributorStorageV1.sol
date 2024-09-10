@@ -83,6 +83,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   }
 
   function _setTWABPeriod(StorageV1 storage $, uint48 period) internal {
+    require(period > 0, ITWABRewardDistributorStorageV1__ZeroPeriod());
     $.twabPeriod = period;
     emit TWABPeriodSet(period);
   }
