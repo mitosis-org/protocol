@@ -30,7 +30,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
 
   struct StorageV1 {
     DistributionType distributionType;
-    IRewardConfigurator rewardConfigurator;
+    address rewardConfigurator;
     address rewardManager;
     string description;
     uint48 twabPeriod;
@@ -58,7 +58,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
     return _getStorageV1().description;
   }
 
-  function rewardConfigurator() external view returns (IRewardConfigurator) {
+  function rewardConfigurator() external view returns (address) {
     return _getStorageV1().rewardConfigurator;
   }
 
@@ -72,9 +72,9 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  function _setRewardConfigurator(StorageV1 storage $, IRewardConfigurator rewardConfigurator_) internal {
+  function _setRewardConfigurator(StorageV1 storage $, address rewardConfigurator_) internal {
     $.rewardConfigurator = rewardConfigurator_;
-    emit RewardConfiguratorSet(address(rewardConfigurator_));
+    emit RewardConfiguratorSet(rewardConfigurator_);
   }
 
   function _setRewardManager(StorageV1 storage $, address rewardManager_) internal {

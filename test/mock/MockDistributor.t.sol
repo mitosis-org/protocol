@@ -25,8 +25,8 @@ contract MockDistributor is IRewardDistributor {
     return address(0);
   }
 
-  function rewardConfigurator() external view returns (IRewardConfigurator) {
-    return IRewardConfigurator(_rewardConfigurator);
+  function rewardConfigurator() external view returns (address) {
+    return _rewardConfigurator;
   }
 
   function claimable(address, address, address, bytes memory) external pure returns (bool) {
@@ -46,7 +46,7 @@ contract MockDistributor is IRewardDistributor {
   }
 
   function setRewardManager(address rewardManager_) external { }
-  
+
   function setRewardConfigurator(address rewardConfigurator_) external {
     _rewardConfigurator = rewardConfigurator_;
   }

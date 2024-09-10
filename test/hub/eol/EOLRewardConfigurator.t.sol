@@ -86,7 +86,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     rewardConfigurator.registerDistributor(distributor);
 
     distributor.setRewardConfigurator(address(rewardConfigurator));
-    
+
     rewardConfigurator.registerDistributor(distributor);
 
     vm.stopPrank();

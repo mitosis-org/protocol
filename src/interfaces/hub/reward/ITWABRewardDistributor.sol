@@ -9,6 +9,7 @@ interface ITWABRewardDistributorStorageV1 is IRewardDistributorStorage {
 
   error ITWABRewardDistributorStorageV1__ZeroPeriod();
 
+  // Returns the TWAB period.
   function twabPeriod() external view returns (uint48);
 }
 
@@ -17,5 +18,6 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
   error ITWABRewardDistributor__InvalidERC20TWABSnapshots();
   error ITWABRewardDistributor__InvalidRewardedAt();
 
+  /// @dev Sets the TWAB period.
   function setTWABPeriod(uint48 period) external;
 }

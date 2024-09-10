@@ -34,7 +34,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
     StorageV1 storage $ = _getStorageV1();
     _setRewardManager($, rewardManager_);
-    _setRewardConfigurator($, IRewardConfigurator(rewardConfigurator_));
+    _setRewardConfigurator($, rewardConfigurator_);
     _setTWABPeriod($, twabPeriod_);
   }
 
@@ -85,7 +85,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
     _assertOnlyRewardConfigurator($);
 
-    _setRewardConfigurator($, IRewardConfigurator(rewardConfigurator_));
+    _setRewardConfigurator($, rewardConfigurator_);
   }
 
   function setTWABPeriod(uint48 period) external {
@@ -197,7 +197,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     uint256 userTWAB = twabSnapshots.getAccountTWABByTimestampRange(account, startsAt, endsAt);
     if (userTWAB == 0) return 0;
 
-    uint256 precision = _getStorageV1().rewardConfigurator.rewardRatioPrecision();
+    uint256 precision = IRewardConfigurator(_getStorageV1().rewardConfigurator).rewardRatioPrecision();
 
     uint256 userRatio = Math.mulDiv(userTWAB, precision, totalTWAB);
     if (userRatio == 0) return 0;
