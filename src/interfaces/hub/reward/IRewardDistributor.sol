@@ -21,6 +21,11 @@ interface IRewardDistributor is IRewardDistributorStorage {
     view
     returns (bool);
 
+  function claimableAmount(address account, address eolVault, address asset, bytes calldata metadata)
+    external
+    view
+    returns (uint256);
+
   function claim(address eolVault, address reward, bytes calldata metadata) external;
 
   function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external;

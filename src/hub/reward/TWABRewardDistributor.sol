@@ -42,10 +42,10 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     view
     returns (bool)
   {
-    return calculateUserReward(account, eolVault, asset, metadata) > 0;
+    return claimableAmount(account, eolVault, asset, metadata) > 0;
   }
 
-  function calculateUserReward(address account, address eolVault, address asset, bytes calldata metadata)
+  function claimableAmount(address account, address eolVault, address asset, bytes calldata metadata)
     public
     view
     returns (uint256)
