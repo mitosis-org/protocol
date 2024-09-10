@@ -98,7 +98,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
     _assertOnlyRewardManager($);
 
-    IERC20(reward).transferFrom(msg.sender, address(this), amount);
+    IERC20(reward).transferFrom(_msgSender(), address(this), amount);
 
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
 
@@ -126,34 +126,34 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     }
   }
 
-  function _claimAllReward(AssetRewards storage assetRewards, address sender, address reward, uint48 rewardedAt)
+  function _claimAllReward(AssetRewards storage assetRewards, address account, address reward, uint48 rewardedAt)
     internal
   {
-    Receipt storage receipt = assetRewards.receipts[rewardedAt][sender];
-    uint256 totalReward = _calculateTotalReward(assetRewards.rewards[rewardedAt], sender, rewardedAt);
+    Receipt storage receipt = assetRewards.receipts[rewardedAt][account];
+    uint256 totalReward = _calculateTotalReward(assetRewards.rewards[rewardedAt], account, rewardedAt);
     uint256 claimableReward = totalReward - receipt.claimedAmount;
 
     if (claimableReward > 0) {
       _updateReceipt(receipt, totalReward, claimableReward);
-      IERC20(reward).transfer(sender, claimableReward);
+      IERC20(reward).transfer(account, claimableReward);
     }
   }
 
   function _claimPartialReward(
     AssetRewards storage assetRewards,
-    address sender,
+    address account,
     address reward,
     uint48 rewardedAt,
     uint256 amount
   ) internal {
-    Receipt storage receipt = assetRewards.receipts[rewardedAt][sender];
-    uint256 totalReward = _calculateTotalReward(assetRewards.rewards[rewardedAt], sender, rewardedAt);
+    Receipt storage receipt = assetRewards.receipts[rewardedAt][account];
+    uint256 totalReward = _calculateTotalReward(assetRewards.rewards[rewardedAt], account, rewardedAt);
     uint256 claimableReward = totalReward - receipt.claimedAmount;
 
     require(claimableReward >= amount, ITWABRewardDistributor__InsufficientReward());
 
     _updateReceipt(receipt, totalReward, amount);
-    IERC20(reward).transfer(sender, amount);
+    IERC20(reward).transfer(account, amount);
   }
 
   function _updateReceipt(Receipt storage receipt, uint256 totalReward, uint256 claimedReward) internal {
