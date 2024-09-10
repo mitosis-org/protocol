@@ -24,7 +24,7 @@ abstract contract MitosisVaultStorageV1 {
   struct StorageV1 {
     IMitosisVaultEntrypoint entrypoint;
     mapping(address asset => AssetInfo) assets;
-    mapping(uint256 eolId => EOLInfo) eols;
+    mapping(address hubEOLVault => EOLInfo) eols;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.MitosisVaultStorage.v1';
