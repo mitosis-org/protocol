@@ -52,7 +52,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
   {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
 
-    _assertValidateRewardMetadata(twabMetadata);
+    _assertValidRewardMetadata(twabMetadata);
 
     uint48 rewardedAt = twabMetadata.rewardedAt;
 
@@ -78,7 +78,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
   function claim(address eolVault, address reward, bytes calldata metadata) external {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
 
-    _assertValidateRewardMetadata(twabMetadata);
+    _assertValidRewardMetadata(twabMetadata);
 
     AssetRewards storage assetRewards = _assetRewards(eolVault, reward);
     _claimAllReward(assetRewards, _msgSender(), reward, twabMetadata.rewardedAt);
@@ -87,7 +87,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
   function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
 
-    _assertValidateRewardMetadata(twabMetadata);
+    _assertValidRewardMetadata(twabMetadata);
 
     AssetRewards storage assetRewards = _assetRewards(eolVault, reward);
     _claimPartialReward(assetRewards, _msgSender(), reward, twabMetadata.rewardedAt, amount);
@@ -102,7 +102,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
 
-    _assertValidateRewardMetadata(twabMetadata);
+    _assertValidRewardMetadata(twabMetadata);
 
     AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
 
@@ -183,7 +183,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     return (rewardInfo.total * userTWAB) / totalTWAB; // TODO: precision?
   }
 
-  function _assertValidateRewardMetadata(RewardTWABMetadata memory metadata) internal view {
+  function _assertValidRewardMetadata(RewardTWABMetadata memory metadata) internal view {
     require(metadata.erc20TWABSnapshots != address(0), ITWABRewardDistributor__InvalidERC20TWABSnapshots());
     require(metadata.rewardedAt >= block.timestamp, ITWABRewardDistributor__InvalidRewardedAt());
   }
