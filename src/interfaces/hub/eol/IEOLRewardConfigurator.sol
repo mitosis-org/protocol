@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import { IRewardConfigurator } from '../reward/IRewardConfigurator.sol';
 import { IRewardDistributor, DistributionType } from '../reward/IRewardDistributor.sol';
 
-interface IEOLRewardConfigurator {
+interface IEOLRewardConfigurator is IRewardConfigurator {
   error IEOLRewardConfigurator__RewardDistributorAlreadyRegistered();
   error IEOLRewardConfigurator__RewardDistributorNotRegistered();
-
-  // TODO(ray): Could be configurable.
-  function rewardRatioPrecision() external pure returns (uint256);
 
   function getDistributionType(address eolVault, address asset) external view returns (DistributionType);
 

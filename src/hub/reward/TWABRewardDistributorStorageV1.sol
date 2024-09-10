@@ -3,6 +3,7 @@ pragma solidity 0.8.27;
 
 import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
+import { IRewardConfigurator } from '../../interfaces/hub/reward/IRewardConfigurator.sol';
 import { IRewardDistributor, DistributionType } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { ITWABRewardDistributorStorageV1 } from '../../interfaces/hub/reward/ITWABRewardDistributor.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
@@ -29,6 +30,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
 
   struct StorageV1 {
     DistributionType distributionType;
+    IRewardConfigurator rewardConfigurator;
     address rewardManager;
     string description;
     uint48 twabPeriod;
@@ -56,6 +58,10 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
     return _getStorageV1().description;
   }
 
+  function rewardConfigurator() external view returns (IRewardConfigurator) {
+    return _getStorageV1().rewardConfigurator;
+  }
+
   function rewardManager() external view returns (address) {
     return _getStorageV1().rewardManager;
   }
@@ -65,6 +71,11 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
+
+  function _setRewardConfigurator(StorageV1 storage $, IRewardConfigurator rewardConfigurator_) internal {
+    $.rewardConfigurator = rewardConfigurator_;
+    emit RewardConfiguratorSet(address(rewardConfigurator_));
+  }
 
   function _setRewardManager(StorageV1 storage $, address rewardManager_) internal {
     $.rewardManager = rewardManager_;

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import { IRewardConfigurator } from './IRewardConfigurator.sol';
+
 enum DistributionType {
   Unspecified,
   MerkleProof,
@@ -8,9 +10,13 @@ enum DistributionType {
 }
 
 interface IRewardDistributorStorage {
+  event RewardConfiguratorSet(address indexed rewardConfigurator);
+
   function distributionType() external view returns (DistributionType);
 
   function description() external view returns (string memory);
+
+  function rewardConfigurator() external view returns (IRewardConfigurator);
 }
 
 interface IRewardDistributor is IRewardDistributorStorage {
