@@ -27,8 +27,8 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     _transferOwnership(owner_);
 
     StorageV1 storage $ = _getStorageV1();
-    _setTWABPeriod($, twabPeriod_);
     _setRewardManager($, rewardManager_);
+    _setTWABPeriod($, twabPeriod_);
   }
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
