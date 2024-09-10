@@ -5,7 +5,7 @@ import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
-import { IEOLProtocolRegistry } from '../../interfaces/eol/IEOLProtocolRegistry.sol';
+import { IEOLProtocolRegistry } from '../../interfaces/hub/eol/IEOLProtocolRegistry.sol';
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { Arrays } from '../../lib/Arrays.sol';
 import { StdError } from '../../lib/StdError.sol';
