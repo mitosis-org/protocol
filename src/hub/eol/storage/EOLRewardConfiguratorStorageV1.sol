@@ -4,10 +4,15 @@ pragma solidity ^0.8.27;
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
 import { DistributionType } from '../../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
+import {
+  IEOLRewardConfigurator,
+  IEOLRewardConfiguratorStorageV1
+} from '../../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
 import { IEOLRewardDistributor } from '../../../interfaces/hub/eol/IEOLRewardDistributor.sol';
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 
-contract EOLRewardConfiguratorStorageV1 {
+contract EOLRewardConfiguratorStorageV1 is IEOLRewardConfiguratorStorageV1 {
+  using EnumerableSet for EnumerableSet.AddressSet;
   using ERC7201Utils for string;
 
   struct StorageV1 {
@@ -30,5 +35,70 @@ contract EOLRewardConfiguratorStorageV1 {
     assembly {
       $.slot := slot
     }
+  }
+
+  // View functions
+
+  function distributionType(address eolVault, address asset) external view returns (DistributionType) {
+    return _getStorageV1().distributionTypes[eolVault][asset];
+  }
+
+  function defaultDistributor(DistributionType distributionType_) external view returns (IEOLRewardDistributor) {
+    return _getStorageV1().defaultDistributor[distributionType_];
+  }
+
+  function rewardRatioPrecision() public pure returns (uint256) {
+    return 10e4;
+  }
+
+  function eolAssetHolderRewardRatio() external pure returns (uint256) {
+    return rewardRatioPrecision(); // 100%
+  }
+
+  function isDistributorRegistered(IEOLRewardDistributor distributor) external view returns (bool) {
+    return _isDistributorRegistered(_getStorageV1(), distributor);
+  }
+
+  // Mutative functions
+
+  function _setRewardDistributionType(address eolVault, address asset, DistributionType distributionType_) internal {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertDefaultDistributorSet($, distributionType_);
+
+    $.distributionTypes[eolVault][asset] = distributionType_;
+    emit RewardDistributionTypeSet(eolVault, asset, distributionType_);
+  }
+
+  function _setDefaultDistributor(IEOLRewardDistributor distributor) internal {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertDistributorRegisered($, distributor);
+
+    DistributionType _distributionType = distributor.distributionType();
+
+    $.defaultDistributor[_distributionType] = distributor;
+    emit DefaultDistributorSet(_distributionType, distributor);
+  }
+
+  // Internal functions
+
+  function _isDistributorRegistered(StorageV1 storage $, IEOLRewardDistributor distributor)
+    internal
+    view
+    returns (bool)
+  {
+    return $.distributorLists[distributor.distributionType()].contains(address(distributor));
+  }
+
+  function _assertDefaultDistributorSet(StorageV1 storage $, DistributionType distributionType_) internal view {
+    require(
+      address($.defaultDistributor[distributionType_]) != address(0),
+      IEOLRewardConfiguratorStorageV1__DefaultDistributorNotSet(distributionType_)
+    );
+  }
+
+  function _assertDistributorRegisered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
+    require(_isDistributorRegistered($, distributor), IEOLRewardConfiguratorStorageV1__RewardDistributorNotRegistered());
   }
 }

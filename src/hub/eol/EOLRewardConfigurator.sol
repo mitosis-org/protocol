@@ -13,20 +13,6 @@ import { EOLRewardConfiguratorStorageV1 } from './storage/EOLRewardConfiguratorS
 contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeable, EOLRewardConfiguratorStorageV1 {
   using EnumerableSet for EnumerableSet.AddressSet;
 
-  uint256 public constant REWARD_RATIO_PRECISION = 10e4;
-
-  event RewardDistributionTypeSet(
-    address indexed eolVault, address indexed asset, DistributionType indexed distributionType
-  );
-  event DefaultDistributorSet(
-    DistributionType indexed distributionType, IEOLRewardDistributor indexed rewardDistributor
-  );
-  event RewardDistributorRegistered(IEOLRewardDistributor indexed distributor);
-  event RewardDistributorUnregistered(IEOLRewardDistributor indexed distributor);
-
-  error EOLRewardConfigurator__DefaultDistributorNotSet(DistributionType);
-  error EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed();
-
   constructor() {
     _disableInitializers();
   }
@@ -36,51 +22,17 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     _transferOwnership(owner);
   }
 
-  // View functions
-
-  function getDistributionType(address eolVault, address asset) external view returns (DistributionType) {
-    return _getStorageV1().distributionTypes[eolVault][asset];
-  }
-
-  function getDefaultDistributor(DistributionType distributionType) external view returns (IEOLRewardDistributor) {
-    return _getStorageV1().defaultDistributor[distributionType];
-  }
-
-  function rewardRatioPrecision() external pure returns (uint256) {
-    return REWARD_RATIO_PRECISION;
-  }
-
-  function getEOLAssetHolderRewardRatio() external pure returns (uint256) {
-    return REWARD_RATIO_PRECISION; // 100%
-  }
-
-  function isDistributorRegistered(IEOLRewardDistributor distributor) external view returns (bool) {
-    return _isDistributorRegistered(_getStorageV1(), distributor);
-  }
-
   // Mutative functions
 
   function setRewardDistributionType(address eolVault, address asset, DistributionType distributionType)
     external
     onlyOwner
   {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertDefaultDistributorSet($, distributionType);
-
-    $.distributionTypes[eolVault][asset] = distributionType;
-    emit RewardDistributionTypeSet(eolVault, asset, distributionType);
+    _setRewardDistributionType(eolVault, asset, distributionType);
   }
 
   function setDefaultDistributor(IEOLRewardDistributor distributor) external onlyOwner {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertDistributorRegisered($, distributor);
-
-    DistributionType distributionType = distributor.distributionType();
-
-    $.defaultDistributor[distributionType] = distributor;
-    emit DefaultDistributorSet(distributionType, distributor);
+    _setDefaultDistributor(distributor);
   }
 
   function registerDistributor(IEOLRewardDistributor distributor) external onlyOwner {
@@ -103,34 +55,17 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     emit RewardDistributorUnregistered(distributor);
   }
 
-  function _isDistributorRegistered(StorageV1 storage $, IEOLRewardDistributor distributor)
-    internal
-    view
-    returns (bool)
-  {
-    return $.distributorLists[distributor.distributionType()].contains(address(distributor));
-  }
-
-  function _assertDefaultDistributorSet(StorageV1 storage $, DistributionType distributionType) internal view {
+  function _assertDistributorNotRegisered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
     require(
-      address($.defaultDistributor[distributionType]) != address(0),
-      EOLRewardConfigurator__DefaultDistributorNotSet(distributionType)
+      !_isDistributorRegistered($, distributor), IEOLRewardConfiguratorStorageV1__RewardDistributorNotRegistered()
     );
   }
 
-  function _assertDistributorRegisered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
-    require(_isDistributorRegistered($, distributor), IEOLRewardConfigurator__RewardDistributorNotRegistered());
-  }
-
-  function _assertDistributorNotRegisered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
-    require(!_isDistributorRegistered($, distributor), IEOLRewardConfigurator__RewardDistributorAlreadyRegistered());
-  }
-
   function _assertNotDefaultDistributor(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
-    DistributionType distributionType = distributor.distributionType();
+    DistributionType _distributionType = distributor.distributionType();
     require(
-      address(distributor) != address($.defaultDistributor[distributionType]),
-      EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed()
+      address(distributor) != address($.defaultDistributor[_distributionType]),
+      IEOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed()
     );
   }
 }

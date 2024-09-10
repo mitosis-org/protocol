@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
+
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
 import { IEOLProtocolRegistryStorageV1, ProtocolInfo } from '../../../interfaces/hub/eol/IEOLProtocolRegistry.sol';

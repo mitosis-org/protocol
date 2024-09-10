@@ -11,7 +11,10 @@ import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/Transparen
 
 import { EOLRewardConfigurator } from '../../../src/hub/eol/EOLRewardConfigurator.sol';
 import { DistributionType } from '../../../src/interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { IEOLRewardConfigurator } from '../../../src/interfaces/hub/eol/IEOLRewardConfigurator.sol';
+import {
+  IEOLRewardConfigurator,
+  IEOLRewardConfiguratorStorageV1
+} from '../../../src/interfaces/hub/eol/IEOLRewardConfigurator.sol';
 import { IEOLRewardDistributor } from '../../../src/interfaces/hub/eol/IEOLRewardDistributor.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { MockDistributor } from '../../mock/MockDistributor.t.sol';
@@ -158,7 +161,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     rewardConfigurator.registerDistributor(distributor);
     rewardConfigurator.setDefaultDistributor(distributor);
 
-    IEOLRewardDistributor defaultDistributor = rewardConfigurator.getDefaultDistributor(DistributionType.TWAB);
+    IEOLRewardDistributor defaultDistributor = rewardConfigurator.defaultDistributor(DistributionType.TWAB);
     assertTrue(address(distributor) == address(defaultDistributor));
 
     vm.stopPrank();
@@ -200,9 +203,9 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     address asset = makeAddr('asset');
 
     rewardConfigurator.setRewardDistributionType(eolVault, asset, DistributionType.TWAB);
-    assertTrue(rewardConfigurator.getDistributionType(eolVault, asset) == DistributionType.TWAB);
+    assertTrue(rewardConfigurator.distributionType(eolVault, asset) == DistributionType.TWAB);
 
-    assertTrue(rewardConfigurator.getDistributionType(address(0), address(0)) == DistributionType.Unspecified);
+    assertTrue(rewardConfigurator.distributionType(address(0), address(0)) == DistributionType.Unspecified);
 
     vm.stopPrank();
   }
@@ -242,24 +245,27 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   }
 
   function _errRewardDistributorAlreadyRegistered() internal pure returns (bytes memory) {
-    return
-      abi.encodeWithSelector(IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorAlreadyRegistered.selector);
+    return abi.encodeWithSelector(
+      IEOLRewardConfiguratorStorageV1.IEOLRewardConfiguratorStorageV1__RewardDistributorAlreadyRegistered.selector
+    );
   }
 
   function _errRewardDistributorNotRegistered() internal pure returns (bytes memory) {
-    return
-      abi.encodeWithSelector(IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered.selector);
+    return abi.encodeWithSelector(
+      IEOLRewardConfiguratorStorageV1.IEOLRewardConfiguratorStorageV1__RewardDistributorNotRegistered.selector
+    );
   }
 
   function _errUnregisterDefaultDistributorNotAllowed() internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
-      EOLRewardConfigurator.EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed.selector
+      IEOLRewardConfigurator.IEOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed.selector
     );
   }
 
   function _errDefaultDistributorNotSet(DistributionType distributionType) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
-      EOLRewardConfigurator.EOLRewardConfigurator__DefaultDistributorNotSet.selector, distributionType
+      IEOLRewardConfiguratorStorageV1.IEOLRewardConfiguratorStorageV1__DefaultDistributorNotSet.selector,
+      distributionType
     );
   }
 }
