@@ -112,7 +112,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     RewardInfo storage rewardInfo = assetRewards.rewards[twabMetadata.rewardedAt].push();
     rewardInfo.erc20TWABSnapshots = twabMetadata.erc20TWABSnapshots;
     rewardInfo.total = amount;
-    rewardInfo.startsAt = twabMetadata.rewardedAt - $.twabPeriod;
+    rewardInfo.twabPeriod = $.twabPeriod;
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
@@ -171,7 +171,10 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     view
     returns (uint256)
   {
-    uint48 startsAt = rewardInfo.startsAt;
+    uint48 twabPeriod = rewardInfo.twabPeriod;
+    uint48 startsAt;
+    startsAt = twabPeriod > rewardedAt ? 0 : rewardedAt - twabPeriod;
+
     uint48 endsAt = rewardedAt;
 
     ITWABSnapshots twabSnapshots = ITWABSnapshots(rewardInfo.erc20TWABSnapshots);

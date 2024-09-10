@@ -15,7 +15,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   struct RewardInfo {
     address erc20TWABSnapshots;
     uint256 total;
-    uint48 startsAt; // for store twabPeriod at point.
+    uint48 twabPeriod; // Store twabPeriod at point.
   }
 
   struct Receipt {
