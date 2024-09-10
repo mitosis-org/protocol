@@ -9,7 +9,7 @@ import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
 
 import { Initializable } from '@ozu-v5/proxy/utils/Initializable.sol';
 
-import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { GovernorTWABVotesUpgradeable } from './GovernorTWABVotesUpgradeable.sol';
 
 /**

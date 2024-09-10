@@ -3,14 +3,14 @@ pragma solidity ^0.8.27;
 
 import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { GovernorCountingSimpleUpgradeable } from '@ozu-v5/governance/extensions/GovernorCountingSimpleUpgradeable.sol';
 import { GovernorSettingsUpgradeable } from '@ozu-v5/governance/extensions/GovernorSettingsUpgradeable.sol';
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
 
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { GovernorTWABVotesQuorumFractionUpgradeable } from
-  '../../twab/governance/GovernorTWABVotesQuorumFractionUpgradeable.sol';
-import { GovernorTWABVotesUpgradeable } from '../../twab/governance/GovernorTWABVotesUpgradeable.sol';
+  '../../governance/GovernorTWABVotesQuorumFractionUpgradeable.sol';
+import { GovernorTWABVotesUpgradeable } from '../../governance/GovernorTWABVotesUpgradeable.sol';
+import { GovernorCountingBravoUpgradeable } from '../../governance/GovernorCountingBravoUpgradeable.sol';
 
 // TODO(thai): Consider the way all EOL governances for different tokens are managed by only one governor contract.
 
@@ -20,7 +20,7 @@ contract EOLGovernor is
   GovernorUpgradeable,
   GovernorTWABVotesUpgradeable,
   GovernorTWABVotesQuorumFractionUpgradeable,
-  GovernorCountingSimpleUpgradeable,
+  GovernorCountingBravoUpgradeable,
   GovernorSettingsUpgradeable
 {
   bytes32 public constant PROPOSER_ROLE = keccak256('PROPOSER_ROLE');
@@ -53,7 +53,7 @@ contract EOLGovernor is
     __Governor_init(name_);
     __GovernorTWABVotes_init(token_, twabPeriod_);
     __GovernorTWABVotesQuorumFraction_init(quorumFraction_);
-    __GovernorCountingSimple_init();
+    __GovernorCountingBravo_init();
     __GovernorSettings_init(votingDelay_, votingPeriod_, proposalThreshold_);
   }
 

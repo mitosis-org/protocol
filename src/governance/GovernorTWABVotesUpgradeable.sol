@@ -9,10 +9,10 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
 import { Initializable } from '@ozu-v5/proxy/utils/Initializable.sol';
 
-import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
-import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import { StdError } from '../../lib/StdError.sol';
-import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
+import { ITWABSnapshots } from '../interfaces/twab/ITWABSnapshots.sol';
+import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
+import { StdError } from '../lib/StdError.sol';
+import { TWABSnapshotsUtils } from '../lib/TWABSnapshotsUtils.sol';
 
 /**
  * @dev Extension of {Governor} for voting weight extraction from an {ITWABSnapshots} token.
