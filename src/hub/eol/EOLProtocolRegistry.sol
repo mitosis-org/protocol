@@ -27,9 +27,6 @@ contract EOLProtocolRegistry is
     uint256 indexed protocolId, address indexed eolAsset, uint256 indexed chainId, string name
   );
 
-  event Authorized(address indexed eolAsset, address indexed account);
-  event Unauthorized(address indexed eolAsset, address indexed account);
-
   error EOLProtocolRegistry__AlreadyRegistered(uint256 protocolId, address eolAsset, uint256 chainId, string name);
   error EOLProtocolRegistry__NotRegistered(uint256 protocolId);
 
@@ -45,32 +42,6 @@ contract EOLProtocolRegistry is
 
     __AccessControl_init();
     _grantRole(DEFAULT_ADMIN_ROLE, owner);
-  }
-
-  //=========== NOTE: VIEW FUNCTIONS ===========//
-
-  function protocolIds(address eolAsset, uint256 chainId) external view returns (uint256[] memory) {
-    return _getStorageV1().indexes[eolAsset][chainId].protocolIds.values();
-  }
-
-  function protocolId(address eolAsset, uint256 chainId, string memory name) external pure returns (uint256) {
-    return _protocolId(eolAsset, chainId, name);
-  }
-
-  function protocol(uint256 protocolId_) public view returns (ProtocolInfo memory) {
-    return _getStorageV1().protocols[protocolId_];
-  }
-
-  function isProtocolRegistered(uint256 protocolId_) external view returns (bool) {
-    return protocol(protocolId_).protocolId != 0;
-  }
-
-  function isProtocolRegistered(address eolAsset, uint256 chainId, string memory name) external view returns (bool) {
-    return protocol(_protocolId(eolAsset, chainId, name)).protocolId != 0;
-  }
-
-  function isAuthorized(address eolAsset, address account) external view returns (bool) {
-    return _getStorageV1().isAuthorized[eolAsset][account];
   }
 
   //=========== NOTE: MUTATION FUNCTIONS ===========//
@@ -110,26 +81,11 @@ contract EOLProtocolRegistry is
     emit ProtocolUnregistered(protocolId_, p.eolAsset, p.chainId, p.name);
   }
 
-  //=========== NOTE: OWNABLE FUNCTIONS ===========//
-
   function authorize(address eolAsset, address account) external onlyOwner {
-    _getStorageV1().isAuthorized[eolAsset][account] = true;
-    emit Authorized(eolAsset, account);
+    _authorize(eolAsset, account);
   }
 
   function unauthorize(address eolAsset, address account) external onlyOwner {
-    _getStorageV1().isAuthorized[eolAsset][account] = false;
-    emit Unauthorized(eolAsset, account);
-  }
-
-  //=========== NOTE: INTERNAL FUNCTIONS ===========//
-
-  function _assertOnlyAuthorized(StorageV1 storage $, address eolAsset) internal view {
-    require($.isAuthorized[eolAsset][_msgSender()], StdError.Unauthorized());
-  }
-
-  function _protocolId(address eolAsset, uint256 chainId, string memory name) internal pure returns (uint256) {
-    bytes32 nameHash = keccak256(bytes(name));
-    return uint256(keccak256(abi.encode(eolAsset, chainId, nameHash)));
+    _unauthorize(eolAsset, account);
   }
 }

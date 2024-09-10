@@ -10,7 +10,7 @@ struct ProtocolInfo {
   uint48 registeredAt;
 }
 
-interface IEOLProtocolRegistry {
+interface IEOLProtocolRegistryStorageV1 {
   function protocolIds(address eolAsset, uint256 chainId) external view returns (uint256[] memory);
 
   function protocolId(address eolAsset, uint256 chainId, string memory name) external pure returns (uint256);
@@ -20,4 +20,16 @@ interface IEOLProtocolRegistry {
   function isProtocolRegistered(uint256 protocolId_) external view returns (bool);
 
   function isProtocolRegistered(address eolAsset, uint256 chainId, string memory name) external view returns (bool);
+
+  function isAuthorized(address eolAsset, address account) external view returns (bool);
+}
+
+interface IEOLProtocolRegistry is IEOLProtocolRegistryStorageV1 {
+  function registerProtocol(address eolAsset, uint256 chainId, string memory name, string memory metadata) external;
+
+  function unregisterProtocol(uint256 protocolId_) external;
+
+  function authorize(address eolAsset, address account) external;
+
+  function unauthorize(address eolAsset, address account) external;
 }
