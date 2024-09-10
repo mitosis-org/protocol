@@ -7,15 +7,25 @@ enum DistributionType {
   TWAB
 }
 
-interface IRewardDistributor {
+interface IRewardDistributorStorage {
   function distributionType() external view returns (DistributionType);
 
   function description() external view returns (string memory);
+}
 
-  // See the `src/hub/eol/LibDistributorRewardMetadata`.
-  function claimable(address account, address eolVault, address asset, bytes memory metadata)
+interface IRewardDistributor is IRewardDistributorStorage {
+  // metadata: See the `src/hub/eol/LibDistributorRewardMetadata`.
+
+  function claimable(address account, address eolVault, address asset, bytes calldata metadata)
     external
     view
     returns (bool);
-  function handleReward(address eolVault, address asset, uint256 amount, bytes memory metadata) external;
+
+  function claim(address eolVault, address reward, bytes calldata metadata) external;
+
+  function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external;
+
+  function handleReward(address eolVault, address asset, uint256 amount, bytes calldata metadata) external;
+
+  function setRewardManager(address rewardManager_) external;
 }

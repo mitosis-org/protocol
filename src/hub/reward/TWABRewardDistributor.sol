@@ -1,51 +1,40 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 
 import { DistributionType } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
+import { ITWABRewardDistributor } from '../../interfaces/hub/reward/ITWABRewardDistributor.sol';
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
 import { LibDistributorRewardMetadata, RewardTWABMetadata } from './LibDistributorRewardMetadata.sol';
+import { TWABRewardDistributorStorageV1 } from './TWABRewardDistributorStorageV1.sol';
 
-// move to reward or something. not `/eol`
-
-contract TWABRewardDistributor {
+contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeable, TWABRewardDistributorStorageV1 {
   using LibDistributorRewardMetadata for RewardTWABMetadata;
   using LibDistributorRewardMetadata for bytes;
 
-  DistributionType _distributionType;
-  string _description;
-  uint48 twabPeriod;
+  //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  // 1. We could return `claimbable` without `rewardedAt`
-  // 2. We could call `claim` without `rewardedAt`
-  // 3. We could one-time all asset claim
-
-  struct Reward {
-    address erc20TWABSnapshots;
-    uint256 total;
-    uint48 startsAt; // for store twabPeriod at point.
-    // TODO: change this
-    mapping(address account => uint256 claimed) claimed;
+  constructor() {
+    _disableInitializers();
   }
 
-  struct Asset {
-    mapping(uint48 rewardedAt => Reward[] rewards) rewards;
+  function initialize(address owner_, address rewardManager_, uint48 twabPeriod_) public initializer {
+    __Ownable2Step_init();
+    _transferOwnership(owner_);
+
+    StorageV1 storage $ = _getStorageV1();
+    _setTWABPeriod($, twabPeriod_);
+    _setRewardManager($, rewardManager_);
   }
 
-  mapping(address eolVault => mapping(address asset => Asset info)) _assets;
+  //=========== NOTE: VIEW FUNCTIONS ===========//
 
-  constructor(uint48 period) {
-    twabPeriod = period;
-  }
-
-  function description() external view returns (string memory) {
-    return _description;
-  }
-
-  function distributionType() external view returns (DistributionType) {
-    return _distributionType;
+  function encodeMetadata(address erc20TWABSnapshots, uint48 rewardedAt) external pure returns (bytes memory) {
+    return RewardTWABMetadata({ erc20TWABSnapshots: erc20TWABSnapshots, rewardedAt: rewardedAt }).encode();
   }
 
   function claimable(address account, address eolVault, address asset, bytes calldata metadata)
@@ -53,109 +42,149 @@ contract TWABRewardDistributor {
     view
     returns (bool)
   {
-    RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-    // validation
-    if (twabMetadata.erc20TWABSnapshots == address(0)) revert('invalid erc20TWABSnapshots');
-
-    address erc20TWABSnapshots = twabMetadata.erc20TWABSnapshots;
-    uint48 rewardedAt = twabMetadata.rewardedAt;
-
-    Asset storage assetInfo = _assets[eolVault][asset];
-    Reward[] storage rewards = assetInfo.rewards[rewardedAt];
-
-    for (uint256 i = 0; i < rewards.length; i++) {
-      Reward storage reward = rewards[i];
-      uint256 userReward = _calculateUserReward(reward, account, rewardedAt);
-      return userReward > 0;
-    }
-
-    return false;
-  }
-
-  function encodeMetadata(address erc20TWABSnapshots, uint48 rewardedAt) external view returns (bytes memory) {
-    return RewardTWABMetadata({ erc20TWABSnapshots: erc20TWABSnapshots, rewardedAt: rewardedAt }).encode();
+    return calculateUserReward(account, eolVault, asset, metadata) > 0;
   }
 
   function calculateUserReward(address account, address eolVault, address asset, bytes calldata metadata)
-    external
+    public
     view
     returns (uint256)
   {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-    // validation
-    if (twabMetadata.erc20TWABSnapshots == address(0)) revert('invalid erc20TWABSnapshots');
 
-    address erc20TWABSnapshots = twabMetadata.erc20TWABSnapshots;
+    _assertValidateRewardMetadata(twabMetadata);
+
     uint48 rewardedAt = twabMetadata.rewardedAt;
 
-    Asset storage assetInfo = _assets[eolVault][asset];
-    Reward[] storage rewards = assetInfo.rewards[rewardedAt];
+    StorageV1 storage $ = _getStorageV1();
 
-    uint256 userReward;
+    RewardInfo[] storage rewards = _rewardInfos($, eolVault, asset, rewardedAt);
+    uint256 totalReawrd = _calculateTotalReward(rewards, account, rewardedAt);
 
-    for (uint256 i = 0; i < rewards.length; i++) {
-      Reward storage reward = rewards[i];
-      uint256 amount = _calculateUserReward(reward, account, rewardedAt);
-      if (reward.claimed[account] == amount) continue;
-      userReward += amount - reward.claimed[account];
-    }
-
-    return userReward;
+    Receipt storage receipt = _receipt($, account, eolVault, asset, rewardedAt);
+    return totalReawrd - receipt.claimedAmount;
   }
 
-  // Mutative functions
+  //=========== NOTE: MUTATIVE FUNCTIONS ===========//
 
-  function claim(address eolVault, address asset, uint48 rewardedAt) external {
-    Asset storage assetInfo = _assets[eolVault][asset];
-    Reward[] storage rewards = assetInfo.rewards[rewardedAt];
-    for (uint256 i = 0; i < rewards.length; i++) {
-      Reward storage reward = rewards[i];
-      uint256 userAmount = _calculateUserReward(reward, msg.sender, rewardedAt);
-
-      reward.claimed[msg.sender] += userAmount;
-
-      IERC20(asset).transfer(msg.sender, userAmount);
-    }
+  function setRewardManager(address rewardManager_) external onlyOwner {
+    _setRewardManager(_getStorageV1(), rewardManager_);
   }
 
-  function handleReward(address eolVault, address asset, uint256 amount, bytes calldata metadata)
-    external /* onlyEOLRewardManager */
-  {
-    IERC20(asset).transferFrom(msg.sender, address(this), amount);
+  function setTWABPeriod(uint48 period) external onlyOwner {
+    _setTWABPeriod(_getStorageV1(), period);
+  }
+
+  function claim(address eolVault, address reward, bytes calldata metadata) external {
+    RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
+
+    _assertValidateRewardMetadata(twabMetadata);
+
+    AssetRewards storage assetRewards = _assetRewards(eolVault, reward);
+    _claimAllReward(assetRewards, _msgSender(), reward, twabMetadata.rewardedAt);
+  }
+
+  function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
+    RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
+
+    _assertValidateRewardMetadata(twabMetadata);
+
+    AssetRewards storage assetRewards = _assetRewards(eolVault, reward);
+    _claimPartialReward(assetRewards, _msgSender(), reward, twabMetadata.rewardedAt, amount);
+  }
+
+  function handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertOnlyRewardManager($);
+
+    IERC20(reward).transferFrom(msg.sender, address(this), amount);
 
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-    // validation
-    if (twabMetadata.erc20TWABSnapshots == address(0)) revert('invalid erc20TWABSnapshots');
 
-    Asset storage assetInfo = _assets[eolVault][asset];
+    _assertValidateRewardMetadata(twabMetadata);
 
-    assetInfo.rewards[twabMetadata.rewardedAt].push();
-    uint256 rewardLength = assetInfo.rewards[twabMetadata.rewardedAt].length;
+    AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
 
-    Reward storage reward = assetInfo.rewards[twabMetadata.rewardedAt][rewardLength - 1];
-    reward.erc20TWABSnapshots = twabMetadata.erc20TWABSnapshots;
-    reward.total = amount;
-    reward.startsAt = twabMetadata.rewardedAt - twabPeriod;
+    RewardInfo storage rewardInfo = assetRewards.rewards[twabMetadata.rewardedAt].push();
+    rewardInfo.erc20TWABSnapshots = twabMetadata.erc20TWABSnapshots;
+    rewardInfo.total = amount;
+    rewardInfo.startsAt = twabMetadata.rewardedAt - $.twabPeriod;
   }
 
-  function _calculateUserReward(Reward storage reward, address account, uint48 rewardedAt)
+  //=========== NOTE: INTERNAL FUNCTIONS ===========//
+
+  function _calculateTotalReward(RewardInfo[] storage rewards, address account, uint48 rewardedAt)
+    internal
+    view
+    returns (uint256 totalReward)
+  {
+    for (uint256 i = 0; i < rewards.length; i++) {
+      RewardInfo storage rewardInfo = rewards[i];
+      uint256 rewardAmount = _calculateUserReward(rewardInfo, account, rewardedAt);
+      totalReward += rewardAmount;
+    }
+  }
+
+  function _claimAllReward(AssetRewards storage assetRewards, address sender, address reward, uint48 rewardedAt)
+    internal
+  {
+    Receipt storage receipt = assetRewards.receipts[rewardedAt][sender];
+    uint256 totalReward = _calculateTotalReward(assetRewards.rewards[rewardedAt], sender, rewardedAt);
+    uint256 claimableReward = totalReward - receipt.claimedAmount;
+
+    if (claimableReward > 0) {
+      _updateReceipt(receipt, totalReward, claimableReward);
+      IERC20(reward).transfer(sender, claimableReward);
+    }
+  }
+
+  function _claimPartialReward(
+    AssetRewards storage assetRewards,
+    address sender,
+    address reward,
+    uint48 rewardedAt,
+    uint256 amount
+  ) internal {
+    Receipt storage receipt = assetRewards.receipts[rewardedAt][sender];
+    uint256 totalReward = _calculateTotalReward(assetRewards.rewards[rewardedAt], sender, rewardedAt);
+    uint256 claimableReward = totalReward - receipt.claimedAmount;
+
+    require(claimableReward >= amount, ITWABRewardDistributor__InsufficientReward());
+
+    _updateReceipt(receipt, totalReward, amount);
+    IERC20(reward).transfer(sender, amount);
+  }
+
+  function _updateReceipt(Receipt storage receipt, uint256 totalReward, uint256 claimedReward) internal {
+    receipt.claimedAmount += claimedReward;
+    if (receipt.claimedAmount == totalReward) {
+      receipt.claimed = true;
+    }
+  }
+
+  function _calculateUserReward(RewardInfo storage rewardInfo, address account, uint48 rewardedAt)
     internal
     view
     returns (uint256)
   {
-    uint48 startsAt = reward.startsAt;
+    uint48 startsAt = rewardInfo.startsAt;
     uint48 endsAt = rewardedAt;
 
     uint256 totalTWAB =
-      TWABSnapshotsUtils.getTotalTWABByTimestampRange(ITWABSnapshots(reward.erc20TWABSnapshots), startsAt, endsAt);
+      TWABSnapshotsUtils.getTotalTWABByTimestampRange(ITWABSnapshots(rewardInfo.erc20TWABSnapshots), startsAt, endsAt);
 
     if (totalTWAB == 0) return 0;
 
     uint256 userTWAB = TWABSnapshotsUtils.getAccountTWABByTimestampRange(
-      ITWABSnapshots(reward.erc20TWABSnapshots), account, startsAt, endsAt
+      ITWABSnapshots(rewardInfo.erc20TWABSnapshots), account, startsAt, endsAt
     );
 
-    uint256 userReward = (reward.total * userTWAB) / totalTWAB; // TODO: precision?
-    return userReward - reward.claimed[account];
+    return (rewardInfo.total * userTWAB) / totalTWAB; // TODO: precision?
+  }
+
+  function _assertValidateRewardMetadata(RewardTWABMetadata memory metadata) internal view {
+    require(metadata.erc20TWABSnapshots != address(0), ITWABRewardDistributor__InvalidERC20TWABSnapshots());
+    require(metadata.rewardedAt >= block.timestamp, ITWABRewardDistributor__InvalidRewardedAt());
   }
 }
