@@ -22,9 +22,6 @@ contract CrossChainRegistry is
 
   bytes32 public constant REGISTERER_ROLE = keccak256('REGISTERER_ROLE');
 
-  event ChainSet(uint256 indexed chainId, uint32 indexed hplDomain, address indexed entrypoint, string name);
-  event VaultSet(uint256 indexed chainId, address indexed vault);
-
   modifier onlyRegisterer() {
     _checkRole(REGISTERER_ROLE);
     _;
@@ -43,40 +40,6 @@ contract CrossChainRegistry is
     _grantRole(DEFAULT_ADMIN_ROLE, owner);
   }
 
-  // View functions
-
-  function chainIds() external view returns (uint256[] memory) {
-    return _getStorageV1().chainIds;
-  }
-
-  function chainName(uint256 chainId_) external view returns (string memory) {
-    return _getStorageV1().chains[chainId_].name;
-  }
-
-  function hyperlaneDomain(uint256 chainId_) external view returns (uint32) {
-    return _getStorageV1().chains[chainId_].hplDomain;
-  }
-
-  function entrypoint(uint256 chainId_) external view returns (address) {
-    return _getStorageV1().chains[chainId_].entrypoint;
-  }
-
-  function vault(uint256 chainId_) external view returns (address) {
-    return _getStorageV1().chains[chainId_].vault;
-  }
-
-  function entrypointEnrolled(uint256 chainId_) external view returns (bool) {
-    return _isEntrypointEnrolled(_getStorageV1().chains[chainId_]);
-  }
-
-  function chainId(uint32 hplDomain) external view returns (uint256) {
-    return _getStorageV1().hyperlanes[hplDomain].chainId;
-  }
-
-  function isRegisteredChain(uint256 chainId_) external view returns (bool) {
-    return _isRegisteredChain(_getStorageV1().chains[chainId_]);
-  }
-
   // Mutative functions
   //
   // TODO: update methods
@@ -85,31 +48,11 @@ contract CrossChainRegistry is
     external
     onlyRegisterer
   {
-    StorageV1 storage $ = _getStorageV1();
-
-    require(
-      !_isRegisteredChain($.chains[chainId_]) && !_isRegisteredHyperlane($.hyperlanes[hplDomain]),
-      ICrossChainRegistry.ICrossChainRegistry__AlreadyRegistered()
-    );
-
-    $.chainIds.push(chainId_);
-    $.hplDomains.push(hplDomain);
-    $.chains[chainId_].name = name;
-    $.chains[chainId_].hplDomain = hplDomain;
-    $.chains[chainId_].entrypoint = entrypoint_;
-    $.hyperlanes[hplDomain].chainId = chainId_;
-
-    emit ChainSet(chainId_, hplDomain, entrypoint_, name);
+    _setChain(chainId_, name, hplDomain, entrypoint_);
   }
 
   function setVault(uint256 chainId_, address vault_) external onlyRegisterer {
-    ChainInfo storage chainInfo = _getStorageV1().chains[chainId_];
-
-    require(_isRegisteredChain(chainInfo), ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
-    require(!_isRegisteredVault(chainInfo), ICrossChainRegistry.ICrossChainRegistry__AlreadyRegistered());
-
-    chainInfo.vault = vault_;
-    emit VaultSet(chainId_, vault_);
+    _setVault(chainId_, vault_);
   }
 
   function enrollEntrypoint(address hplRouter) external onlyRegisterer {
@@ -126,27 +69,5 @@ contract CrossChainRegistry is
       chainInfo.entrypointEnrolled = true;
       IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.entrypoint.toBytes32());
     }
-  }
-
-  // Internal functions
-
-  function _isRegisteredChain(ChainInfo storage chainInfo) internal view returns (bool) {
-    return bytes(chainInfo.name).length > 0;
-  }
-
-  function _isRegisteredVault(ChainInfo storage chainInfo) internal view returns (bool) {
-    return chainInfo.vault != address(0);
-  }
-
-  function _isEntrypointEnrolled(ChainInfo storage chainInfo) internal view returns (bool) {
-    return chainInfo.entrypointEnrolled;
-  }
-
-  function _isEnrollableChain(ChainInfo storage chainInfo) internal view returns (bool) {
-    return _isRegisteredChain(chainInfo) && !_isEntrypointEnrolled(chainInfo);
-  }
-
-  function _isRegisteredHyperlane(HyperlaneInfo storage hplInfo) internal view returns (bool) {
-    return hplInfo.chainId > 0;
   }
 }

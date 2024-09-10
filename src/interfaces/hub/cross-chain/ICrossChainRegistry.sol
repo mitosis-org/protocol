@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-interface ICrossChainRegistry {
-  error ICrossChainRegistry__NotRegistered();
-  error ICrossChainRegistry__AlreadyRegistered();
-  error ICrossChainRegistry__NotEnrolled();
-  error ICrossChainRegistry__AlreadyEnrolled();
+interface ICrossChainRegistryStorageV1 {
+  error ICrossChainRegistryStorageV1__NotRegistered();
+  error ICrossChainRegistryStorageV1__AlreadyRegistered();
+  error ICrossChainRegistryStorageV1__NotEnrolled();
+  error ICrossChainRegistryStorageV1__AlreadyEnrolled();
 
   /// @dev Returns all of the registered ChainIDs.
   function chainIds() external view returns (uint256[] memory);
@@ -28,7 +28,9 @@ interface ICrossChainRegistry {
   function chainId(uint32 hplDomain) external view returns (uint256);
 
   function isRegisteredChain(uint256 chainId) external view returns (bool);
+}
 
+interface ICrossChainRegistry is ICrossChainRegistryStorageV1 {
   /// @dev Sets the chain information including ChainID, name, and Hyperlane domain.
   function setChain(uint256 chainId, string calldata name, uint32 hplDomain, address entrypoint) external;
 

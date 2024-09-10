@@ -10,7 +10,9 @@ import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
-import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
+import {
+  ICrossChainRegistry, ICrossChainRegistryStorageV1
+} from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 import { Conv } from '../../lib/Conv.sol';
 import { StdError } from '../../lib/StdError.sol';
 import '../../message/Message.sol';
@@ -37,8 +39,12 @@ contract AssetManagerEntrypoint is
   }
 
   modifier onlyDispachable(uint256 chainId) {
-    require(_ccRegistry.isRegisteredChain(chainId), ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
-    require(_ccRegistry.entrypointEnrolled(chainId), ICrossChainRegistry.ICrossChainRegistry__NotEnrolled());
+    require(
+      _ccRegistry.isRegisteredChain(chainId), ICrossChainRegistryStorageV1.ICrossChainRegistryStorageV1__NotRegistered()
+    );
+    require(
+      _ccRegistry.entrypointEnrolled(chainId), ICrossChainRegistryStorageV1.ICrossChainRegistryStorageV1__NotEnrolled()
+    );
     _;
   }
 
@@ -114,10 +120,10 @@ contract AssetManagerEntrypoint is
 
   function _handle(uint32 origin, bytes32 sender, bytes calldata msg_) internal override {
     uint256 chainId = _ccRegistry.chainId(origin);
-    require(chainId != 0, ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
+    require(chainId != 0, ICrossChainRegistryStorageV1.ICrossChainRegistryStorageV1__NotRegistered());
 
     address vault = _ccRegistry.vault(chainId);
-    require(sender.toAddress() == vault, ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
+    require(sender.toAddress() == vault, ICrossChainRegistryStorageV1.ICrossChainRegistryStorageV1__NotRegistered());
 
     MsgType msgType = msg_.msgType();
 
