@@ -58,8 +58,6 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
   {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
 
-    _assertValidRewardMetadata(twabMetadata);
-
     uint48 rewardedAt = twabMetadata.rewardedAt;
 
     StorageV1 storage $ = _getStorageV1();
@@ -77,24 +75,22 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     _setRewardManager(_getStorageV1(), rewardManager_);
   }
 
+  function setRewardConfigurator(address rewardConfigurator_) external onlyOwner {
+    _setRewardConfigurator(_getStorageV1(), IRewardConfigurator(rewardConfigurator_));
+  }
+
   function setTWABPeriod(uint48 period) external onlyOwner {
     _setTWABPeriod(_getStorageV1(), period);
   }
 
   function claim(address eolVault, address reward, bytes calldata metadata) external {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-
-    _assertValidRewardMetadata(twabMetadata);
-
     AssetRewards storage assetRewards = _assetRewards(eolVault, reward);
     _claimAllReward(assetRewards, _msgSender(), reward, twabMetadata.rewardedAt);
   }
 
   function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-
-    _assertValidRewardMetadata(twabMetadata);
-
     AssetRewards storage assetRewards = _assetRewards(eolVault, reward);
     _claimPartialReward(assetRewards, _msgSender(), reward, twabMetadata.rewardedAt, amount);
   }
@@ -187,7 +183,11 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     );
 
     uint256 precision = _getStorageV1().rewardConfigurator.rewardRatioPrecision();
-    return Math.mulDiv(rewardInfo.total * precision, userTWAB, totalTWAB);
+
+    uint256 userRatio = Math.mulDiv(userTWAB, precision, totalTWAB);
+    if (userRatio == 0) return 0;
+
+    return Math.mulDiv(rewardInfo.total, userRatio, precision);
   }
 
   function _assertValidRewardMetadata(RewardTWABMetadata memory metadata) internal view {
