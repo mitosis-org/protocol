@@ -4,8 +4,8 @@ pragma solidity ^0.8.27;
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 
 import { DistributionType } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
-import { TwabSnapshotsUtils } from '../../lib/TwabSnapshotsUtils.sol';
+import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
+import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
 import { LibDistributorRewardMetadata, RewardTWABMetadata } from './LibDistributorRewardMetadata.sol';
 
 // move to reward or something. not `/eol`
@@ -147,12 +147,12 @@ contract TWABRewardDistributor {
     uint48 endsAt = rewardedAt;
 
     uint256 totalTWAB =
-      TwabSnapshotsUtils.getTotalTwabByTimestampRange(ITwabSnapshots(reward.erc20TWABSnapshots), startsAt, endsAt);
+      TWABSnapshotsUtils.getTotalTWABByTimestampRange(ITWABSnapshots(reward.erc20TWABSnapshots), startsAt, endsAt);
 
     if (totalTWAB == 0) return 0;
 
-    uint256 userTWAB = TwabSnapshotsUtils.getAccountTwabByTimestampRange(
-      ITwabSnapshots(reward.erc20TWABSnapshots), account, startsAt, endsAt
+    uint256 userTWAB = TWABSnapshotsUtils.getAccountTWABByTimestampRange(
+      ITWABSnapshots(reward.erc20TWABSnapshots), account, startsAt, endsAt
     );
 
     uint256 userReward = (reward.total * userTWAB) / totalTWAB; // TODO: precision?

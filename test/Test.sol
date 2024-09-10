@@ -5,16 +5,16 @@ import { console } from '@std/console.sol';
 import { Test } from '@std/Test.sol';
 
 import { TWABRewardDistributor } from '../src/hub/reward/TWABRewardDistributor.sol';
-import { MockERC20TwabSnapshots } from './mock/MockERC20TwabSnapshots.t.sol';
+import { MockERC20TWABSnapshots } from './mock/MockERC20TWABSnapshots.t.sol';
 
 contract MyTest is Test {
   TWABRewardDistributor distributor;
-  MockERC20TwabSnapshots token;
+  MockERC20TWABSnapshots token;
 
   function setUp() public {
     distributor = new TWABRewardDistributor(100);
 
-    token = new MockERC20TwabSnapshots();
+    token = new MockERC20TWABSnapshots();
     token.initialize('Token', 'TKN');
   }
 
