@@ -75,10 +75,10 @@ contract EOLRewardConfiguratorStorageV1 is IEOLRewardConfiguratorStorageV1 {
 
     _assertDistributorRegisered($, distributor);
 
-    DistributionType _distributionType = distributor.distributionType();
+    DistributionType distributionType_ = distributor.distributionType();
 
-    $.defaultDistributor[_distributionType] = distributor;
-    emit DefaultDistributorSet(_distributionType, distributor);
+    $.defaultDistributor[distributionType_] = distributor;
+    emit DefaultDistributorSet(distributionType_, distributor);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
