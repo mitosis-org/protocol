@@ -24,6 +24,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
 
   error EOLRewardConfigurator__DefaultDistributorNotSet(DistributionType);
   error EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed();
+  error EOLRewardConfigurator__InvalidRewardConfigurator();
 
   constructor() {
     _disableInitializers();
@@ -84,6 +85,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   function registerDistributor(IRewardDistributor distributor) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertValidRewardConfigurator(distributor);
     _assertDistributorNotRegisered($, distributor);
 
     $.distributorLists[distributor.distributionType()].add(address(distributor));
@@ -125,6 +127,12 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     require(
       address(distributor) != address($.defaultDistributor[distributionType]),
       EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed()
+    );
+  }
+
+  function _assertValidRewardConfigurator(IRewardDistributor distributor) internal view {
+    require(
+      address(this) == address(distributor.rewardConfigurator()), EOLRewardConfigurator__InvalidRewardConfigurator()
     );
   }
 }

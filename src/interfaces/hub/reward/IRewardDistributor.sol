@@ -18,6 +18,9 @@ interface IRewardDistributorStorage {
   /// @dev Returns the description.
   function description() external view returns (string memory);
 
+  /// @dev Returns the set RewardManager.
+  function rewardManager() external view returns (address);
+
   /// @dev Returns the set RewardConfigurator.
   function rewardConfigurator() external view returns (IRewardConfigurator);
 }
@@ -47,6 +50,7 @@ interface IRewardDistributor is IRewardDistributorStorage {
   /// This method can only be called by the RewardManager.
   function handleReward(address eolVault, address asset, uint256 amount, bytes calldata metadata) external;
 
-  /// @dev Sets the reward manager address.
   function setRewardManager(address rewardManager_) external;
+
+  function setRewardConfigurator(address rewardConfigurator_) external;
 }

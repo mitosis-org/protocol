@@ -72,16 +72,28 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
 
-  function setRewardManager(address rewardManager_) external onlyOwner {
-    _setRewardManager(_getStorageV1(), rewardManager_);
+  function setRewardManager(address rewardManager_) external {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertOnlyRewardConfigurator($);
+
+    _setRewardManager($, rewardManager_);
   }
 
-  function setRewardConfigurator(address rewardConfigurator_) external onlyOwner {
-    _setRewardConfigurator(_getStorageV1(), IRewardConfigurator(rewardConfigurator_));
+  function setRewardConfigurator(address rewardConfigurator_) external {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertOnlyRewardConfigurator($);
+
+    _setRewardConfigurator($, IRewardConfigurator(rewardConfigurator_));
   }
 
-  function setTWABPeriod(uint48 period) external onlyOwner {
-    _setTWABPeriod(_getStorageV1(), period);
+  function setTWABPeriod(uint48 period) external {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertOnlyRewardConfigurator($);
+
+    _setTWABPeriod($, period);
   }
 
   function claim(address eolVault, address reward, bytes calldata metadata) external {

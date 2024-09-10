@@ -137,4 +137,8 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   function _assertOnlyRewardManager(StorageV1 storage $) internal view {
     require($.rewardManager == _msgSender(), StdError.Unauthorized());
   }
+
+  function _assertOnlyRewardConfigurator(StorageV1 storage $) internal view {
+    require(address($.rewardConfigurator) == _msgSender(), StdError.Unauthorized());
+  }
 }
