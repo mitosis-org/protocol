@@ -40,9 +40,9 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   }
 
   function test_registerDistributor() public {
-    MockDistributor distributor1 = new MockDistributor(DistributionType.TWAB);
-    MockDistributor distributor2 = new MockDistributor(DistributionType.TWAB);
-    MockDistributor distributor3 = new MockDistributor(DistributionType.MerkleProof);
+    MockDistributor distributor1 = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
+    MockDistributor distributor2 = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
+    MockDistributor distributor3 = new MockDistributor(DistributionType.MerkleProof, address(rewardConfigurator));
 
     vm.startPrank(owner);
 
@@ -59,13 +59,13 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   }
 
   function test_registerDistributor_Unauthroized() public {
-    MockDistributor distributor = new MockDistributor(DistributionType.TWAB);
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
     rewardConfigurator.registerDistributor(distributor);
   }
 
   function test_registerDistributor_RewardDistributorAlreadyRegistered() public {
-    MockDistributor distributor = new MockDistributor(DistributionType.TWAB);
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
 
     vm.startPrank(owner);
 
@@ -77,10 +77,25 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     vm.stopPrank();
   }
 
+  function test_registerDistributor_InvalidRewardConfigurator() public {
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(1));
+
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errInvalidRewardDistributor());
+    rewardConfigurator.registerDistributor(distributor);
+
+    distributor.setRewardConfigurator(address(rewardConfigurator));
+    
+    rewardConfigurator.registerDistributor(distributor);
+
+    vm.stopPrank();
+  }
+
   function test_unregisterDistributor() public {
-    MockDistributor distributor1 = new MockDistributor(DistributionType.TWAB);
-    MockDistributor distributor2 = new MockDistributor(DistributionType.TWAB);
-    MockDistributor distributor3 = new MockDistributor(DistributionType.MerkleProof);
+    MockDistributor distributor1 = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
+    MockDistributor distributor2 = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
+    MockDistributor distributor3 = new MockDistributor(DistributionType.MerkleProof, address(rewardConfigurator));
 
     vm.startPrank(owner);
 
@@ -101,7 +116,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   }
 
   function test_unregisterDistributor_Unauthorized() public {
-    MockDistributor distributor = new MockDistributor(DistributionType.TWAB);
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
 
     vm.prank(owner);
     rewardConfigurator.registerDistributor(distributor);
@@ -111,7 +126,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   }
 
   function test_unregisterDistributor_RewardDistributorNotRegistered() public {
-    MockDistributor distributor = new MockDistributor(DistributionType.TWAB);
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
 
     vm.startPrank(owner);
 
@@ -128,8 +143,8 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   }
 
   function test_unregisterDistributor_UnregisterDefaultDistributorNotAllowed() public {
-    MockDistributor distributor1 = new MockDistributor(DistributionType.TWAB);
-    MockDistributor distributor2 = new MockDistributor(DistributionType.TWAB);
+    MockDistributor distributor1 = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
+    MockDistributor distributor2 = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
 
     vm.startPrank(owner);
 
@@ -150,7 +165,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   }
 
   function test_setDefaultDistributor() public {
-    MockDistributor distributor = new MockDistributor(DistributionType.TWAB);
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
 
     vm.startPrank(owner);
 
@@ -164,7 +179,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   }
 
   function test_setDefaultDistributor_Unauthorized() public {
-    MockDistributor distributor = new MockDistributor(DistributionType.TWAB);
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
 
     vm.prank(owner);
     rewardConfigurator.registerDistributor(distributor);
@@ -174,7 +189,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   }
 
   function test_setDefaultDistributor_RewardDistributorNotRegistered() public {
-    MockDistributor distributor = new MockDistributor(DistributionType.TWAB);
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
 
     vm.startPrank(owner);
 
@@ -188,7 +203,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   }
 
   function test_setRewardDistributionType() public {
-    MockDistributor distributor = new MockDistributor(DistributionType.TWAB);
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
 
     vm.startPrank(owner);
 
@@ -207,7 +222,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   }
 
   function test_setRewardDistributionType_Unauthorized() public {
-    MockDistributor distributor = new MockDistributor(DistributionType.TWAB);
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
 
     vm.startPrank(owner);
 
@@ -224,7 +239,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   }
 
   function test_setRewardDistributionType_DefaultDistributorNotSet() public {
-    MockDistributor distributor = new MockDistributor(DistributionType.TWAB);
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(rewardConfigurator));
 
     vm.startPrank(owner);
 
@@ -243,6 +258,10 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   function _errRewardDistributorAlreadyRegistered() internal pure returns (bytes memory) {
     return
       abi.encodeWithSelector(IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorAlreadyRegistered.selector);
+  }
+
+  function _errInvalidRewardDistributor() internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(EOLRewardConfigurator.EOLRewardConfigurator__InvalidRewardConfigurator.selector);
   }
 
   function _errRewardDistributorNotRegistered() internal pure returns (bytes memory) {

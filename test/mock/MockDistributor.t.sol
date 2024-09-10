@@ -6,9 +6,11 @@ import { IRewardDistributor, DistributionType } from '../../src/interfaces/hub/r
 
 contract MockDistributor is IRewardDistributor {
   DistributionType _distributionType;
+  address _rewardConfigurator;
 
-  constructor(DistributionType distributionType_) {
+  constructor(DistributionType distributionType_, address rewardConfigurator_) {
     _distributionType = distributionType_;
+    _rewardConfigurator = rewardConfigurator_;
   }
 
   function distributionType() external view returns (DistributionType) {
@@ -19,15 +21,19 @@ contract MockDistributor is IRewardDistributor {
     return 'MockDistributor';
   }
 
-  function rewardConfigurator() external pure returns (IRewardConfigurator) {
-    return IRewardConfigurator(address(0));
+  function rewardManager() external pure returns (address) {
+    return address(0);
+  }
+
+  function rewardConfigurator() external view returns (IRewardConfigurator) {
+    return IRewardConfigurator(_rewardConfigurator);
   }
 
   function claimable(address, address, address, bytes memory) external pure returns (bool) {
     return true;
   }
 
-  function claimableAmount(address, address, address, bytes calldata) external view returns (uint256) {
+  function claimableAmount(address, address, address, bytes calldata) external pure returns (uint256) {
     return 0;
   }
 
@@ -40,4 +46,8 @@ contract MockDistributor is IRewardDistributor {
   }
 
   function setRewardManager(address rewardManager_) external { }
+  
+  function setRewardConfigurator(address rewardConfigurator_) external {
+    _rewardConfigurator = rewardConfigurator_;
+  }
 }
