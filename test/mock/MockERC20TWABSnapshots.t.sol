@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
-import { ERC20TwabSnapshots } from '../../src/twab/ERC20TwabSnapshots.sol';
+import { ERC20TWABSnapshots } from '../../src/twab/ERC20TWABSnapshots.sol';
 
-contract MockERC20TwabSnapshots is ERC20TwabSnapshots {
+contract MockERC20TWABSnapshots is ERC20TWABSnapshots {
   function initialize(string memory name, string memory symbol) external initializer {
     __ERC20_init(name, symbol);
   }

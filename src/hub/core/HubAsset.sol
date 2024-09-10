@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { StdError } from '../../lib/StdError.sol';
-import { ERC20TwabSnapshots } from '../../twab/ERC20TwabSnapshots.sol';
+import { ERC20TWABSnapshots } from '../../twab/ERC20TWABSnapshots.sol';
 
-contract HubAsset is ERC20TwabSnapshots {
+contract HubAsset is ERC20TWABSnapshots {
   constructor() {
     _disableInitializers();
   }

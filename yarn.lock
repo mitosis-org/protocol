@@ -878,7 +878,7 @@ __metadata:
     husky: "npm:^9.1.5"
     prettier: "npm:^3.3.3"
     prettier-plugin-sort-json: "npm:^4.0.0"
-    solc: "npm:^0.8.26"
+    solc: "npm:^0.8.27"
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.5.4"
     viem: "npm:^2.18.7"
@@ -3840,9 +3840,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"solc@npm:^0.8.26":
-  version: 0.8.26
-  resolution: "solc@npm:0.8.26"
+"solc@npm:^0.8.27":
+  version: 0.8.27
+  resolution: "solc@npm:0.8.27"
   dependencies:
     command-exists: "npm:^1.2.8"
     commander: "npm:^8.1.0"
@@ -3853,7 +3853,7 @@ __metadata:
     tmp: "npm:0.0.33"
   bin:
     solcjs: solc.js
-  checksum: 10c0/1eea35da99c228d0dc1d831c29f7819e7921b67824c889a5e5f2e471a2ef5856a15fabc0b5de067f5ba994fa36fb5a563361963646fe98dad58a0e4fa17c8b2d
+  checksum: 10c0/6b7bed9531c6e1f1efcd30eb4ef4a741954bafb79b4d016faa728992990c8ca36a16d38118e3eeb39a205e834557c519e75cf4188a6212ac871e9755663c478d
   languageName: node
   linkType: hard
 

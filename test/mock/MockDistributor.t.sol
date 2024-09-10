@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { DistributionType } from '../../src/interfaces/hub/eol/IEOLRewardConfigurator.sol';
 import { IEOLRewardDistributor } from '../../src/interfaces/hub/eol/IEOLRewardDistributor.sol';

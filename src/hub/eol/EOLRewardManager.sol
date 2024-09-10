@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
@@ -50,7 +50,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   }
 
   modifier onlyAssetManager() {
-    if (_msgSender() != _getStorageV1().assetManager) revert StdError.Unauthorized();
+    require(_msgSender() == _getStorageV1().assetManager, StdError.Unauthorized());
     _;
   }
 
@@ -85,7 +85,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     uint256[] calldata indexes,
     bytes[] calldata metadata
   ) external onlyRewardManagerAdmin {
-    if (indexes.length != metadata.length) revert StdError.InvalidParameter('metadata');
+    require(indexes.length == metadata.length, StdError.InvalidParameter('metadata'));
 
     StorageV1 storage $ = _getStorageV1();
 
@@ -181,9 +181,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   ) internal {
     RewardInfo storage rewardInfo = $.rewardTreasury[eolVault][timestamp][index];
 
-    if (!_isDispatchableRequest(rewardInfo, reward)) {
-      revert EOLRewardManager__InvalidDispatchRequest(reward, index);
-    }
+    require(_isDispatchableRequest(rewardInfo, reward), EOLRewardManager__InvalidDispatchRequest(reward, index));
 
     _dispatchTo(rewardInfo, distributor, eolVault, reward, metadata);
   }
@@ -235,8 +233,9 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   }
 
   function _assertDistributorRegistered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
-    if (!$.rewardConfigurator.isDistributorRegistered(distributor)) {
-      revert IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered();
-    }
+    require(
+      $.rewardConfigurator.isDistributorRegistered(distributor),
+      IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered()
+    );
   }
 }

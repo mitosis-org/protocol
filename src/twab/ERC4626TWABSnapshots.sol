@@ -2,7 +2,7 @@
 // OpenZeppelin Contracts (last updated v5.0.0) (token/ERC20/extensions/ERC4626.sol)
 //
 // Modified for the Mitosis development.
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
 import { IERC20Metadata } from '@oz-v5/token/ERC20/extensions/IERC20Metadata.sol';
@@ -13,8 +13,8 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 import { Initializable } from '@ozu-v5/proxy/utils/Initializable.sol';
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 
-import '../interfaces/twab/IERC20TwabSnapshots.sol';
-import './ERC20TwabSnapshots.sol';
+import '../interfaces/twab/IERC20TWABSnapshots.sol';
+import './ERC20TWABSnapshots.sol';
 
 /**
  * @dev Implementation of the ERC-4626 "Tokenized Vault Standard" as defined in
@@ -53,7 +53,7 @@ import './ERC20TwabSnapshots.sol';
  * To learn more, check out our xref:ROOT:erc4626.adoc[ERC-4626 guide].
  * ====
  */
-abstract contract ERC4626TwabSnapshots is Initializable, ERC20TwabSnapshots, IERC4626 {
+abstract contract ERC4626TWABSnapshots is Initializable, ERC20TWABSnapshots, IERC4626 {
   using Math for uint256;
 
   /// @custom:storage-location erc7201:openzeppelin.storage.ERC4626
@@ -223,9 +223,7 @@ abstract contract ERC4626TwabSnapshots is Initializable, ERC20TwabSnapshots, IER
    */
   function deposit(uint256 assets, address receiver) public virtual returns (uint256) {
     uint256 maxAssets = maxDeposit(receiver);
-    if (assets > maxAssets) {
-      revert ERC4626ExceededMaxDeposit(receiver, assets, maxAssets);
-    }
+    require(assets <= maxAssets, ERC4626ExceededMaxDeposit(receiver, assets, maxAssets));
 
     uint256 shares = previewDeposit(assets);
     _deposit(_msgSender(), receiver, assets, shares);
@@ -238,9 +236,7 @@ abstract contract ERC4626TwabSnapshots is Initializable, ERC20TwabSnapshots, IER
    */
   function mint(uint256 shares, address receiver) public virtual returns (uint256) {
     uint256 maxShares = maxMint(receiver);
-    if (shares > maxShares) {
-      revert ERC4626ExceededMaxMint(receiver, shares, maxShares);
-    }
+    require(shares <= maxShares, ERC4626ExceededMaxMint(receiver, shares, maxShares));
 
     uint256 assets = previewMint(shares);
     _deposit(_msgSender(), receiver, assets, shares);
@@ -253,9 +249,7 @@ abstract contract ERC4626TwabSnapshots is Initializable, ERC20TwabSnapshots, IER
    */
   function withdraw(uint256 assets, address receiver, address owner) public virtual returns (uint256) {
     uint256 maxAssets = maxWithdraw(owner);
-    if (assets > maxAssets) {
-      revert ERC4626ExceededMaxWithdraw(owner, assets, maxAssets);
-    }
+    require(assets <= maxAssets, ERC4626ExceededMaxWithdraw(owner, assets, maxAssets));
 
     uint256 shares = previewWithdraw(assets);
     _withdraw(_msgSender(), receiver, owner, assets, shares);
@@ -268,9 +262,7 @@ abstract contract ERC4626TwabSnapshots is Initializable, ERC20TwabSnapshots, IER
    */
   function redeem(uint256 shares, address receiver, address owner) public virtual returns (uint256) {
     uint256 maxShares = maxRedeem(owner);
-    if (shares > maxShares) {
-      revert ERC4626ExceededMaxRedeem(owner, shares, maxShares);
-    }
+    require(shares <= maxShares, ERC4626ExceededMaxRedeem(owner, shares, maxShares));
 
     uint256 assets = previewRedeem(shares);
     _withdraw(_msgSender(), receiver, owner, assets, shares);

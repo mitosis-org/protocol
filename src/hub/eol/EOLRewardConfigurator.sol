@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
@@ -112,23 +112,25 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   }
 
   function _assertDefaultDistributorSet(StorageV1 storage $, DistributionType distributionType) internal view {
-    if (address($.defaultDistributor[distributionType]) == address(0)) {
-      revert EOLRewardConfigurator__DefaultDistributorNotSet(distributionType);
-    }
+    require(
+      address($.defaultDistributor[distributionType]) != address(0),
+      EOLRewardConfigurator__DefaultDistributorNotSet(distributionType)
+    );
   }
 
   function _assertDistributorRegisered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
-    if (!_isDistributorRegistered($, distributor)) revert IEOLRewardConfigurator__RewardDistributorNotRegistered();
+    require(_isDistributorRegistered($, distributor), IEOLRewardConfigurator__RewardDistributorNotRegistered());
   }
 
   function _assertDistributorNotRegisered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
-    if (_isDistributorRegistered($, distributor)) revert IEOLRewardConfigurator__RewardDistributorAlreadyRegistered();
+    require(!_isDistributorRegistered($, distributor), IEOLRewardConfigurator__RewardDistributorAlreadyRegistered());
   }
 
   function _assertNotDefaultDistributor(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
     DistributionType distributionType = distributor.distributionType();
-    if (address($.defaultDistributor[distributionType]) == address(distributor)) {
-      revert EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed();
-    }
+    require(
+      address(distributor) != address($.defaultDistributor[distributionType]),
+      EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed()
+    );
   }
 }

@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { console } from '@std/console.sol';
 import { Test } from '@std/Test.sol';
 import { Vm } from '@std/Vm.sol';
 
-import { MockERC20TwabSnapshots } from '../mock/MockERC20TwabSnapshots.t.sol';
+import { MockERC20TWABSnapshots } from '../mock/MockERC20TWABSnapshots.t.sol';
 
 contract ERC20SnapshotsTest is Test {
-  MockERC20TwabSnapshots public token;
+  MockERC20TWABSnapshots public token;
 
   function setUp() public {
-    token = new MockERC20TwabSnapshots();
+    token = new MockERC20TWABSnapshots();
     token.initialize('Token', 'TKN');
   }
 
@@ -32,7 +32,7 @@ contract ERC20SnapshotsTest is Test {
     assertEq(twab, 0);
 
     // // // // // // // // // // // // // //
-    // lastTwab + (lastBalance * duration) //
+    // lastTWAB + (lastBalance * duration) //
     // // // // // // // // // // // // // //
 
     vm.warp(block.timestamp + 100);

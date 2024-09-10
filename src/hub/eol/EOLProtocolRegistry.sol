@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
@@ -80,10 +80,8 @@ contract EOLProtocolRegistry is
     uint256 id = _protocolId(eolAsset, chainId, name);
 
     _assertOnlyAuthorized($, eolAsset);
-    if (bytes(name).length == 0) revert StdError.InvalidParameter('name');
-    if ($.protocols[id].protocolId != 0) {
-      revert EOLProtocolRegistry__AlreadyRegistered(id, eolAsset, chainId, name);
-    }
+    require(bytes(name).length > 0, StdError.InvalidParameter('name'));
+    require($.protocols[id].protocolId == 0, EOLProtocolRegistry__AlreadyRegistered(id, eolAsset, chainId, name));
 
     $.protocols[id] = ProtocolInfo({
       protocolId: id,
@@ -103,8 +101,7 @@ contract EOLProtocolRegistry is
     StorageV1 storage $ = _getStorageV1();
     ProtocolInfo storage p = $.protocols[protocolId_];
 
-    if (p.protocolId == 0) revert EOLProtocolRegistry__NotRegistered(protocolId_);
-
+    require(p.protocolId != 0, EOLProtocolRegistry__NotRegistered(protocolId_));
     _assertOnlyAuthorized($, p.eolAsset);
 
     p.protocolId = 0;
@@ -128,7 +125,7 @@ contract EOLProtocolRegistry is
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
   function _assertOnlyAuthorized(StorageV1 storage $, address eolAsset) internal view {
-    if (!$.isAuthorized[eolAsset][_msgSender()]) revert StdError.Unauthorized();
+    require($.isAuthorized[eolAsset][_msgSender()], StdError.Unauthorized());
   }
 
   function _protocolId(address eolAsset, uint256 chainId, string memory name) internal pure returns (uint256) {

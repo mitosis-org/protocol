@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
-import { ITwabSnapshots } from '../interfaces/twab/ITwabSnapshots.sol';
+import { ITWABSnapshots } from '../interfaces/twab/ITWABSnapshots.sol';
 
-library TwabSnapshotsUtils {
-  function getAccountTwabByTimestampRange(ITwabSnapshots snapshots, address account, uint48 startsAt, uint48 endsAt)
+library TWABSnapshotsUtils {
+  function getAccountTWABByTimestampRange(ITWABSnapshots snapshots, address account, uint48 startsAt, uint48 endsAt)
     public
     view
     returns (uint256)
@@ -12,13 +12,13 @@ library TwabSnapshotsUtils {
     (uint208 balanceA, uint256 twabA, uint48 positionA) = snapshots.getPastSnapshot(account, startsAt);
     (uint208 balanceB, uint256 twabB, uint48 positionB) = snapshots.getPastSnapshot(account, endsAt);
 
-    twabA = _calculateTwab(balanceA, twabA, positionA, startsAt);
-    twabB = _calculateTwab(balanceB, twabB, positionB, endsAt);
+    twabA = _calculateTWAB(balanceA, twabA, positionA, startsAt);
+    twabB = _calculateTWAB(balanceB, twabB, positionB, endsAt);
 
     return twabB - twabA;
   }
 
-  function getTotalTwabByTimestampRange(ITwabSnapshots snapshots, uint48 startsAt, uint48 endsAt)
+  function getTotalTWABByTimestampRange(ITWABSnapshots snapshots, uint48 startsAt, uint48 endsAt)
     public
     view
     returns (uint256)
@@ -26,8 +26,8 @@ library TwabSnapshotsUtils {
     (uint208 balanceA, uint256 twabA, uint48 positionA) = snapshots.getPastTotalSnapshot(startsAt);
     (uint208 balanceB, uint256 twabB, uint48 positionB) = snapshots.getPastTotalSnapshot(endsAt);
 
-    twabA = _calculateTwab(balanceA, twabA, positionA, startsAt);
-    twabB = _calculateTwab(balanceB, twabB, positionB, endsAt);
+    twabA = _calculateTWAB(balanceA, twabA, positionA, startsAt);
+    twabB = _calculateTWAB(balanceB, twabB, positionB, endsAt);
 
     return twabB - twabA;
   }
@@ -56,7 +56,7 @@ library TwabSnapshotsUtils {
              │  │               │      │   
              A                  B                          
     */
-  function _calculateTwab(uint208 balance, uint256 twab, uint48 position, uint48 timestamp)
+  function _calculateTWAB(uint208 balance, uint256 twab, uint48 position, uint48 timestamp)
     private
     pure
     returns (uint256)

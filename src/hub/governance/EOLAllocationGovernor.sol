@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
 import { IEOLProtocolRegistry } from '../../interfaces/eol/IEOLProtocolRegistry.sol';
-import { ITwabSnapshots } from '../../interfaces/twab/ITwabSnapshots.sol';
+import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { Arrays } from '../../lib/Arrays.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { TwabSnapshotsUtils } from '../../lib/TwabSnapshotsUtils.sol';
+import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
 import {
   EOLAllocationGovernorStorageV1, Epoch, EpochVoteInfo, TotalVoteInfo
 } from './EOLAllocationGovernorStorageV1.sol';
@@ -17,7 +17,7 @@ import {
 // TODO(thai): add more view and ownable functions
 
 contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernorStorageV1 {
-  using TwabSnapshotsUtils for ITwabSnapshots;
+  using TWABSnapshotsUtils for ITWABSnapshots;
   using EnumerableSet for EnumerableSet.AddressSet;
   using Arrays for uint256[];
 
@@ -43,7 +43,7 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
   function initialize(
     address owner,
     IEOLProtocolRegistry protocolRegistry_,
-    ITwabSnapshots eolAsset,
+    ITWABSnapshots eolAsset,
     uint32 twabPeriod,
     uint32 epochPeriod,
     uint48 startsAt
@@ -126,11 +126,12 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
     Epoch storage epoch = _ongoingEpoch($);
     EpochVoteInfo storage epochVoteInfo = _getOrInitEpochVoteInfo($, epoch, chainId);
 
-    if (gauges.length != 0) revert EOLAllocationGovernor__ZeroGaugesLength();
-    if (gauges.length != epochVoteInfo.protocolIds.length) {
-      revert EOLAllocationGovernor__InvalidGaugesLength(gauges.length, epochVoteInfo.protocolIds.length);
-    }
-    if (_sum(gauges) != 100) revert EOLAllocationGovernor__InvalidGaugesSum();
+    require(gauges.length > 0, EOLAllocationGovernor__ZeroGaugesLength());
+    require(
+      gauges.length == epochVoteInfo.protocolIds.length,
+      EOLAllocationGovernor__InvalidGaugesLength(gauges.length, epochVoteInfo.protocolIds.length)
+    );
+    require(_sum(gauges) == 100, EOLAllocationGovernor__InvalidGaugesSum());
 
     epochVoteInfo.gaugesByAccount[_msgSender()] = gauges;
 
@@ -161,7 +162,7 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
 
   function _epoch(StorageV1 storage $, uint256 epochId) internal view returns (Epoch storage) {
     Epoch storage epoch = $.epochs[epochId];
-    if (epoch.id == 0) revert EOLAllocationGovernor__EpochNotFound(epochId);
+    require(epoch.id != 0, EOLAllocationGovernor__EpochNotFound(epochId));
     return epoch;
   }
 
@@ -169,9 +170,9 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
     Epoch storage epoch = _epoch($, $.lastEpochId);
     uint48 currentTime = $.eolAsset.clock();
 
-    if (currentTime < epoch.startsAt || currentTime >= epoch.endsAt) {
-      revert EOLAllocationGovernor__EpochNotOngoing(epoch.id);
-    }
+    require(
+      currentTime >= epoch.startsAt && currentTime < epoch.endsAt, EOLAllocationGovernor__EpochNotOngoing(epoch.id)
+    );
 
     return epoch;
   }
@@ -221,11 +222,11 @@ contract EOLAllocationGovernor is Ownable2StepUpgradeable, EOLAllocationGovernor
   }
 
   function _getVotingPower(StorageV1 storage $, Epoch storage epoch, address account) internal view returns (uint256) {
-    return $.eolAsset.getAccountTwabByTimestampRange(account, epoch.startsAt - $.twabPeriod, epoch.startsAt);
+    return $.eolAsset.getAccountTWABByTimestampRange(account, epoch.startsAt - $.twabPeriod, epoch.startsAt);
   }
 
   function _getTotalVotingPower(StorageV1 storage $, Epoch storage epoch) internal view returns (uint256) {
-    return $.eolAsset.getTotalTwabByTimestampRange(epoch.startsAt - $.twabPeriod, epoch.startsAt);
+    return $.eolAsset.getTotalTWABByTimestampRange(epoch.startsAt - $.twabPeriod, epoch.startsAt);
   }
 
   function _sum(uint32[] memory arr) internal pure returns (uint256 sum) {

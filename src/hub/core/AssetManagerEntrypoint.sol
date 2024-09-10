@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.27;
 
 import { Router } from '@hpl-v5/client/Router.sol';
 import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
@@ -32,18 +32,18 @@ contract AssetManagerEntrypoint is
   ICrossChainRegistry internal immutable _ccRegistry;
 
   modifier onlyAssetManager() {
-    if (msg.sender != address(_assetManager)) revert StdError.InvalidAddress('AssetManager');
+    require(_msgSender() == address(_assetManager), StdError.InvalidAddress('AssetManager'));
     _;
   }
 
   modifier onlyDispachable(uint256 chainId) {
-    if (!_ccRegistry.isRegisteredChain(chainId)) revert ICrossChainRegistry.ICrossChainRegistry__NotRegistered();
-    if (!_ccRegistry.entrypointEnrolled(chainId)) revert ICrossChainRegistry.ICrossChainRegistry__NotEnrolled();
+    require(_ccRegistry.isRegisteredChain(chainId), ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
+    require(_ccRegistry.entrypointEnrolled(chainId), ICrossChainRegistry.ICrossChainRegistry__NotEnrolled());
     _;
   }
 
   modifier onlyEolIdAssigned(address eolVault) {
-    if (_ccRegistry.eolId(eolVault) == 0) revert ICrossChainRegistry.ICrossChainRegistry__EolIdNotAssigned();
+    require(_ccRegistry.eolId(eolVault) != 0, ICrossChainRegistry.ICrossChainRegistry__EolIdNotAssigned());
     _;
   }
 
@@ -121,10 +121,10 @@ contract AssetManagerEntrypoint is
 
   function _handle(uint32 origin, bytes32 sender, bytes calldata msg_) internal override {
     uint256 chainId = _ccRegistry.chainId(origin);
-    if (chainId == 0) revert ICrossChainRegistry.ICrossChainRegistry__NotRegistered();
+    require(chainId != 0, ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
 
     address vault = _ccRegistry.vault(chainId);
-    if (sender.toAddress() != vault) revert ICrossChainRegistry.ICrossChainRegistry__NotRegistered();
+    require(sender.toAddress() == vault, ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
 
     MsgType msgType = msg_.msgType();
 
