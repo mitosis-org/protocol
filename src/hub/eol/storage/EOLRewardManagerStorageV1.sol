@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import {
+  DistributionType, IEOLRewardConfiguratorStorageV1
+} from '../../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
+import { IEOLRewardManagerStorageV1 } from '../../../interfaces/hub/eol/IEOLRewardManager.sol';
 import { IEOLRewardConfigurator } from '../../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
+import { IEOLRewardDistributor } from '../../../interfaces/hub/eol/IEOLRewardDistributor.sol';
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
+import { StdError } from '../../../lib/StdError.sol';
 
-contract EOLRewardManagerStorageV1 {
+contract EOLRewardManagerStorageV1 is IEOLRewardManagerStorageV1 {
   using ERC7201Utils for string;
 
   struct RewardInfo {
@@ -28,5 +34,26 @@ contract EOLRewardManagerStorageV1 {
     assembly {
       $.slot := slot
     }
+  }
+
+  function _distributor(StorageV1 storage $, DistributionType distributionType)
+    internal
+    view
+    returns (IEOLRewardDistributor distributor)
+  {
+    if (distributionType == DistributionType.TWAB) {
+      distributor = $.rewardConfigurator.defaultDistributor(DistributionType.TWAB);
+    } else if (distributionType == DistributionType.MerkleProof) {
+      distributor = $.rewardConfigurator.defaultDistributor(DistributionType.MerkleProof);
+    } else {
+      revert StdError.NotImplemented();
+    }
+  }
+
+  function _assertDistributorRegistered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
+    require(
+      $.rewardConfigurator.isDistributorRegistered(distributor),
+      IEOLRewardConfiguratorStorageV1.IEOLRewardConfiguratorStorageV1__RewardDistributorNotRegistered()
+    );
   }
 }

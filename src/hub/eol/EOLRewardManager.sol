@@ -218,28 +218,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     emit UnspecifiedReward(eolVault, reward, timestamp, amount);
   }
 
-  function _distributor(StorageV1 storage $, DistributionType distributionType)
-    internal
-    view
-    returns (IEOLRewardDistributor distributor)
-  {
-    if (distributionType == DistributionType.TWAB) {
-      distributor = $.rewardConfigurator.defaultDistributor(DistributionType.TWAB);
-    } else if (distributionType == DistributionType.MerkleProof) {
-      distributor = $.rewardConfigurator.defaultDistributor(DistributionType.MerkleProof);
-    } else {
-      revert StdError.NotImplemented();
-    }
-  }
-
   function _isDispatchableRequest(RewardInfo memory rewardInfo, address reward) internal pure returns (bool) {
     return rewardInfo.asset == reward || !rewardInfo.dispatched || rewardInfo.amount > 0;
-  }
-
-  function _assertDistributorRegistered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
-    require(
-      $.rewardConfigurator.isDistributorRegistered(distributor),
-      IEOLRewardConfiguratorStorageV1.IEOLRewardConfiguratorStorageV1__RewardDistributorNotRegistered()
-    );
   }
 }

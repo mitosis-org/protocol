@@ -3,7 +3,9 @@ pragma solidity ^0.8.27;
 
 import { IEOLRewardDistributor } from './IEOLRewardDistributor.sol';
 
-interface IEOLRewardManager {
+interface IEOLRewardManagerStorageV1 { }
+
+interface IEOLRewardManager is IEOLRewardManagerStorageV1 {
   function routeYield(address eolVault, uint256 amount) external;
 
   function routeExtraReward(address eolVault, address reward, uint256 amount) external;
