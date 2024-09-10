@@ -4,8 +4,10 @@ pragma solidity ^0.8.27;
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
+import { Math } from '@oz-v5/utils/math/Math.sol';
 
 import { DistributionType } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
+import { IRewardConfigurator } from '../../interfaces/hub/reward/IRewardConfigurator.sol';
 import { ITWABRewardDistributor } from '../../interfaces/hub/reward/ITWABRewardDistributor.sol';
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
@@ -22,12 +24,16 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     _disableInitializers();
   }
 
-  function initialize(address owner_, address rewardManager_, uint48 twabPeriod_) public initializer {
+  function initialize(address owner_, address rewardManager_, address rewardConfigurator_, uint48 twabPeriod_)
+    public
+    initializer
+  {
     __Ownable2Step_init();
     _transferOwnership(owner_);
 
     StorageV1 storage $ = _getStorageV1();
     _setRewardManager($, rewardManager_);
+    _setRewardConfigurator($, IRewardConfigurator(rewardConfigurator_));
     _setTWABPeriod($, twabPeriod_);
   }
 
@@ -180,7 +186,8 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
       ITWABSnapshots(rewardInfo.erc20TWABSnapshots), account, startsAt, endsAt
     );
 
-    return (rewardInfo.total * userTWAB) / totalTWAB; // TODO: precision?
+    uint256 precision = _getStorageV1().rewardConfigurator.rewardRatioPrecision();
+    return Math.mulDiv(rewardInfo.total * precision, userTWAB, totalTWAB);
   }
 
   function _assertValidRewardMetadata(RewardTWABMetadata memory metadata) internal view {
