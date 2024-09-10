@@ -89,6 +89,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($, eolVault);
+    _assertEOLInitialized($, chainId, eolVault);
 
     uint256 idle = _eolIdle($, eolVault);
     require(amount <= idle, AssetManager__EOLInsufficient(eolVault));
@@ -190,6 +191,9 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     address hubAsset = IEOLVault(eolVault).asset();
     address branchAsset = $.branchAssets[hubAsset][chainId];
     _assertBranchAssetPairExist($, chainId, branchAsset);
+
+    _assertEOLNotInitialized($, chainId, eolVault);
+    $.eolInitialized[chainId][eolVault] = true;
 
     $.entrypoint.initializeEOL(chainId, eolVault, branchAsset);
     emit EOLInitialized(chainId, eolVault, branchAsset);

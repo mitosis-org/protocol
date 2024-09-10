@@ -6,7 +6,6 @@ interface ICrossChainRegistry {
   error ICrossChainRegistry__AlreadyRegistered();
   error ICrossChainRegistry__NotEnrolled();
   error ICrossChainRegistry__AlreadyEnrolled();
-  error ICrossChainRegistry__EolIdNotAssigned();
 
   /// @dev Returns all of the registered ChainIDs.
   function chainIds() external view returns (uint256[] memory);
@@ -30,17 +29,11 @@ interface ICrossChainRegistry {
 
   function isRegisteredChain(uint256 chainId) external view returns (bool);
 
-  function eolVault(uint256 eolId_) external view returns (address);
-
-  function eolId(address eolVault_) external view returns (uint256);
-
   /// @dev Sets the chain information including ChainID, name, and Hyperlane domain.
   function setChain(uint256 chainId, string calldata name, uint32 hplDomain, address entrypoint) external;
 
   /// @dev Sets the vault address for a specific ChainID.
   function setVault(uint256 chainId, address vault) external;
-
-  function assignEolId(address eolVault) external returns (uint256 eolId);
 
   /// @dev Sets the Other chain's MitosisVaultEntrypoint addresses.
   function enrollEntrypoint(address hplRouter) external;

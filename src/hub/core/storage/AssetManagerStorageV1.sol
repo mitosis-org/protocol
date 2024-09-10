@@ -17,6 +17,9 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   error AssetManagerStorageV1__BranchAssetPairNotExist(address branchAsset);
   error AssetManagerStorageV1__EOLRewardManagerNotSet();
 
+  error AssetManagerStorageV1__EOLNotInitialized(uint256 chainId, address eolVault);
+  error AssetManagerStorageV1__EOLAlreadyInitialized(uint256 chainId, address eolVault);
+
   struct EOLState {
     address strategist;
     uint256 allocation;
@@ -32,6 +35,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     mapping(uint256 chainId => mapping(address hubAsset => uint256 amount)) collateralPerChain;
     // EOL states
     mapping(address eolVault => EOLState state) eolStates;
+    mapping(uint256 chainId => mapping(address eolVault => bool initialized)) eolInitialized;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.AssetManagerStorage.v1';
@@ -147,5 +151,13 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
 
   function _assertEOLRewardManagerSet(StorageV1 storage $) internal view virtual {
     require(address($.rewardManager) != address(0), AssetManagerStorageV1__EOLRewardManagerNotSet());
+  }
+
+  function _assertEOLInitialized(StorageV1 storage $, uint256 chainId, address eolVault) internal view virtual {
+    require($.eolInitialized[chainId][eolVault], AssetManagerStorageV1__EOLNotInitialized(chainId, eolVault));
+  }
+
+  function _assertEOLNotInitialized(StorageV1 storage $, uint256 chainId, address eolVault) internal view virtual {
+    require(!$.eolInitialized[chainId][eolVault], AssetManagerStorageV1__EOLAlreadyInitialized(chainId, eolVault));
   }
 }

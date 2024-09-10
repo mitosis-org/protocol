@@ -15,8 +15,6 @@ import { EOLVaultStorageV1 } from './storage/EOLVaultStorageV1.sol';
 contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
   using Math for uint256;
 
-  error EOLVault__EolIdNotSet();
-
   constructor() {
     _disableInitializers();
   }

@@ -46,14 +46,14 @@ contract StrategyExecutor is
 
   IMitosisVault internal immutable _vault;
   IERC20 internal immutable _asset;
-  uint256 internal immutable _eolId;
+  address internal immutable _hubEOLVault;
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  constructor(IMitosisVault vault_, IERC20 asset_, uint256 eolId_) initializer {
+  constructor(IMitosisVault vault_, IERC20 asset_, address hubEOLVault_) initializer {
     _vault = vault_;
     _asset = asset_;
-    _eolId = eolId_;
+    _hubEOLVault = hubEOLVault_;
   }
 
   fallback() external payable {
@@ -84,8 +84,8 @@ contract StrategyExecutor is
     return _asset;
   }
 
-  function eolId() public view returns (uint256 eolId_) {
-    return _eolId;
+  function hubEOLVault() public view returns (address hubEOLVault_) {
+    return _hubEOLVault;
   }
 
   function strategist() external view returns (address strategist_) {
@@ -135,7 +135,7 @@ contract StrategyExecutor is
 
     _assertOnlyStrategist($);
 
-    _vault.deallocateEOL(_eolId, amount);
+    _vault.deallocateEOL(_hubEOLVault, amount);
   }
 
   function fetchEOL(uint256 amount) external whenNotPaused {
@@ -143,7 +143,7 @@ contract StrategyExecutor is
 
     _assertOnlyStrategist($);
 
-    _vault.fetchEOL(_eolId, amount);
+    _vault.fetchEOL(_hubEOLVault, amount);
   }
 
   function returnEOL(uint256 amount) external whenNotPaused {
@@ -152,7 +152,7 @@ contract StrategyExecutor is
     _assertOnlyStrategist($);
 
     _asset.approve(address(_vault), amount);
-    _vault.returnEOL(_eolId, amount);
+    _vault.returnEOL(_hubEOLVault, amount);
   }
 
   function settle() external whenNotPaused {
@@ -166,9 +166,9 @@ contract StrategyExecutor is
     $.lastSettledBalance = totalBalance_;
 
     if (totalBalance_ >= prevSettledBalance) {
-      _vault.settleYield(_eolId, totalBalance_ - prevSettledBalance);
+      _vault.settleYield(_hubEOLVault, totalBalance_ - prevSettledBalance);
     } else {
-      _vault.settleLoss(_eolId, prevSettledBalance - totalBalance_);
+      _vault.settleLoss(_hubEOLVault, prevSettledBalance - totalBalance_);
     }
   }
 
@@ -179,7 +179,7 @@ contract StrategyExecutor is
     require(reward != address(_asset), StdError.InvalidAddress('reward'));
 
     IERC20(reward).approve(address(_vault), amount);
-    _vault.settleExtraRewards(_eolId, reward, amount);
+    _vault.settleExtraRewards(_hubEOLVault, reward, amount);
   }
 
   /**
