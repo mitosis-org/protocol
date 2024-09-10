@@ -9,7 +9,20 @@ enum EOLAction {
   FetchEOL
 }
 
-interface IMitosisVault {
+interface IMitosisVaultStorageV1 {
+  event EntrypointSet(address entrypoint);
+  event StrategyExecutorSet(address indexed hubEOLVault, address indexed strategyExecutor);
+
+  event AssetHalted(address indexed asset, AssetAction action);
+  event AssetResumed(address indexed asset, AssetAction action);
+
+  event EOLHalted(address indexed hubEOLVault, EOLAction action);
+  event EOLResumed(address indexed hubEOLVault, EOLAction action);
+
+  error IMitosisVaultStorageV1__StrategyExecutorNotDrained(address hubEOLVault, address strategyExecutor);
+}
+
+interface IMitosisVault is IMitosisVaultStorageV1 {
   //=========== NOTE: Asset ===========//
 
   function initializeAsset(address asset) external;

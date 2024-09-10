@@ -38,15 +38,6 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   event LossSettled(address indexed hubEOLVault, uint256 amount);
   event ExtraRewardsSettled(address indexed hubEOLVault, address indexed reward, uint256 amount);
 
-  event EntrypointSet(address entrypoint);
-  event StrategyExecutorSet(address indexed hubEOLVault, address indexed strategyExecutor);
-
-  event AssetHalted(address indexed asset, AssetAction action);
-  event AssetResumed(address indexed asset, AssetAction action);
-
-  event EOLHalted(address indexed hubEOLVault, EOLAction action);
-  event EOLResumed(address indexed hubEOLVault, EOLAction action);
-
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
   error MitosisVault__AssetNotInitialized(address asset);
@@ -54,8 +45,6 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
   error MitosisVault__EOLNotInitialized(address hubEOLVault);
   error MitosisVault__EOLAlreadyInitialized(address hubEOLVault);
-
-  error MitosisVault__StrategyExecutorNotDrained(address hubEOLVault, address strategyExecutor);
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -227,39 +216,15 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
   function setEntrypoint(IMitosisVaultEntrypoint entrypoint) external onlyOwner {
-    _getStorageV1().entrypoint = entrypoint;
-    emit EntrypointSet(address(entrypoint));
+    _setEntrypoint(entrypoint);
   }
 
   function setStrategyExecutor(address hubEOLVault, address strategyExecutor) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    EOLInfo storage eolInfo = $.eols[hubEOLVault];
 
     _assertEOLInitialized($, hubEOLVault);
 
-    if (eolInfo.strategyExecutor != address(0)) {
-      // NOTE: no way to check if every extra rewards are settled.
-      bool drained = IStrategyExecutor(eolInfo.strategyExecutor).totalBalance() == 0
-        && IStrategyExecutor(eolInfo.strategyExecutor).lastSettledBalance() == 0;
-
-      require(drained, MitosisVault__StrategyExecutorNotDrained(hubEOLVault, eolInfo.strategyExecutor));
-    }
-
-    require(
-      hubEOLVault == IStrategyExecutor(strategyExecutor).hubEOLVault(),
-      StdError.InvalidId('strategyExecutor.hubEOLVault')
-    );
-    require(
-      address(this) == address(IStrategyExecutor(strategyExecutor).vault()),
-      StdError.InvalidAddress('strategyExecutor.vault')
-    );
-    require(
-      eolInfo.asset == address(IStrategyExecutor(strategyExecutor).asset()),
-      StdError.InvalidAddress('strategyExecutor.asset')
-    );
-
-    eolInfo.strategyExecutor = strategyExecutor;
-    emit StrategyExecutorSet(hubEOLVault, strategyExecutor);
+    _setStrategyExecutor($, hubEOLVault, strategyExecutor);
   }
 
   function haltAsset(address asset, AssetAction action) external onlyOwner {
@@ -334,25 +299,5 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
   function _isEOLInitialized(StorageV1 storage $, address hubEOLVault) internal view returns (bool) {
     return $.eols[hubEOLVault].initialized;
-  }
-
-  function _haltAsset(StorageV1 storage $, address asset, AssetAction action) internal {
-    $.assets[asset].isHalted[action] = true;
-    emit AssetHalted(asset, action);
-  }
-
-  function _resumeAsset(StorageV1 storage $, address asset, AssetAction action) internal {
-    $.assets[asset].isHalted[action] = false;
-    emit AssetResumed(asset, action);
-  }
-
-  function _haltEOL(StorageV1 storage $, address hubEOLVault, EOLAction action) internal {
-    $.eols[hubEOLVault].isHalted[action] = true;
-    emit EOLHalted(hubEOLVault, action);
-  }
-
-  function _resumeEOL(StorageV1 storage $, address hubEOLVault, EOLAction action) internal {
-    $.eols[hubEOLVault].isHalted[action] = false;
-    emit EOLResumed(hubEOLVault, action);
   }
 }
