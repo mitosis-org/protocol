@@ -26,13 +26,13 @@ contract EOLVaultStorageV1 is IEOLVaultStorageV1, ContextUpgradeable {
     }
   }
 
-  // ============================ NOTE: VIEW FUNCTIONS ============================ //
+  //=========== NOTE: VIEW FUNCTIONS ===========//
 
   function assetManager() external view returns (address) {
     return address(_getStorageV1().assetManager);
   }
 
-  // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
+  //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
   function _setAssetManager(StorageV1 storage $, address assetManager_) internal {
     require(assetManager_.code.length > 0, StdError.InvalidAddress('AssetManager'));
@@ -42,7 +42,7 @@ contract EOLVaultStorageV1 is IEOLVaultStorageV1, ContextUpgradeable {
     emit AssetManagerSet(assetManager_);
   }
 
-  // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
+  //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
   function _assertOnlyOptOutQueue(StorageV1 storage $) internal view {
     require(_msgSender() == $.assetManager.optOutQueue(), StdError.Unauthorized());

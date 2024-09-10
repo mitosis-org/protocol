@@ -37,6 +37,8 @@ abstract contract EOLProtocolRegistryStorageV1 is IEOLProtocolRegistryStorageV1,
     }
   }
 
+  //=========== NOTE: VIEW FUNCTIONS ===========//
+
   function protocolIds(address eolAsset, uint256 chainId) external view returns (uint256[] memory) {
     return _getStorageV1().indexes[eolAsset][chainId].protocolIds.values();
   }

@@ -37,7 +37,7 @@ contract EOLRewardConfiguratorStorageV1 is IEOLRewardConfiguratorStorageV1 {
     }
   }
 
-  // View functions
+  //=========== NOTE: VIEW FUNCTIONS ===========//
 
   function distributionType(address eolVault, address asset) external view returns (DistributionType) {
     return _getStorageV1().distributionTypes[eolVault][asset];
@@ -59,7 +59,7 @@ contract EOLRewardConfiguratorStorageV1 is IEOLRewardConfiguratorStorageV1 {
     return _isDistributorRegistered(_getStorageV1(), distributor);
   }
 
-  // Mutative functions
+  //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
   function _setRewardDistributionType(address eolVault, address asset, DistributionType distributionType_) internal {
     StorageV1 storage $ = _getStorageV1();
@@ -81,7 +81,7 @@ contract EOLRewardConfiguratorStorageV1 is IEOLRewardConfiguratorStorageV1 {
     emit DefaultDistributorSet(_distributionType, distributor);
   }
 
-  // Internal functions
+  //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
   function _isDistributorRegistered(StorageV1 storage $, IEOLRewardDistributor distributor)
     internal

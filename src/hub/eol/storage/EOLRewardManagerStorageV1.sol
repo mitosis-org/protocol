@@ -36,6 +36,8 @@ contract EOLRewardManagerStorageV1 is IEOLRewardManagerStorageV1 {
     }
   }
 
+  //=========== NOTE: INTERNAL FUNCTIONS ===========//
+
   function _distributor(StorageV1 storage $, DistributionType distributionType)
     internal
     view
