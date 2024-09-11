@@ -98,14 +98,12 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
   function claim(address eolVault, address reward, bytes calldata metadata) external {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-    AssetRewards storage assetRewards = _assetRewards(eolVault, reward);
-    _claimAllReward(assetRewards, _msgSender(), reward, twabMetadata.rewardedAt);
+    _claimAllReward(_msgSender(), eolVault, reward, twabMetadata.rewardedAt);
   }
 
   function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-    AssetRewards storage assetRewards = _assetRewards(eolVault, reward);
-    _claimPartialReward(assetRewards, _msgSender(), reward, twabMetadata.rewardedAt, amount);
+    _claimPartialReward(_msgSender(), eolVault, reward, twabMetadata.rewardedAt, amount);
   }
 
   function handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
@@ -141,10 +139,10 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     }
   }
 
-  function _claimAllReward(AssetRewards storage assetRewards, address account, address reward, uint48 rewardedAt)
-    internal
-  {
+  function _claimAllReward(address account, address eolVault, address reward, uint48 rewardedAt) internal {
+    AssetRewards storage assetRewards = _assetRewards(eolVault, reward);
     Receipt storage receipt = assetRewards.receipts[rewardedAt][account];
+
     uint256 totalReward = _calculateTotalReward(assetRewards.rewards[rewardedAt], account, rewardedAt);
     uint256 claimableReward = totalReward - receipt.claimedAmount;
 
@@ -154,14 +152,12 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     }
   }
 
-  function _claimPartialReward(
-    AssetRewards storage assetRewards,
-    address account,
-    address reward,
-    uint48 rewardedAt,
-    uint256 amount
-  ) internal {
+  function _claimPartialReward(address account, address eolVault, address reward, uint48 rewardedAt, uint256 amount)
+    internal
+  {
+    AssetRewards storage assetRewards = _assetRewards(eolVault, reward);
     Receipt storage receipt = assetRewards.receipts[rewardedAt][account];
+
     uint256 totalReward = _calculateTotalReward(assetRewards.rewards[rewardedAt], account, rewardedAt);
     uint256 claimableReward = totalReward - receipt.claimedAmount;
 
