@@ -8,7 +8,7 @@ import { Address } from '@oz-v5/utils/Address.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 
-import { MitosisVaultStorageV1 } from '../branch/storage/MitosisVaultStorageV1.sol';
+import { MitosisVaultStorageV1 } from '../branch/MitosisVaultStorageV1.sol';
 import { AssetAction, EOLAction, IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IStrategyExecutor } from '../interfaces/branch/strategy/IStrategyExecutor.sol';

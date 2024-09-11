@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import { AssetAction, EOLAction } from '../../interfaces/branch/IMitosisVault.sol';
-import { IMitosisVaultEntrypoint } from '../../interfaces/branch/IMitosisVaultEntrypoint.sol';
-import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { AssetAction, EOLAction } from '../interfaces/branch/IMitosisVault.sol';
+import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
+import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 
 abstract contract MitosisVaultStorageV1 {
   using ERC7201Utils for string;

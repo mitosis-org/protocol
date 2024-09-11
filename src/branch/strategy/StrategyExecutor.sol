@@ -9,7 +9,7 @@ import { Address } from '@oz-v5/utils/Address.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 
-import { StrategyExecutorStorageV1 } from '../../branch/strategy/storage/StrategyExecutorStorageV1.sol';
+import { StrategyExecutorStorageV1 } from '../../branch/strategy/StrategyExecutorStorageV1.sol';
 import { StdStrategy } from '../../branch/strategy/strategies/StdStrategy.sol';
 import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
 import { IStrategy, IStrategyDependency } from '../../interfaces/branch/strategy/IStrategy.sol';

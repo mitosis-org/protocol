@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IEOLRewardConfigurator } from '../../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
+import { IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 
 contract EOLRewardManagerStorageV1 {
   using ERC7201Utils for string;

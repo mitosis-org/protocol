@@ -8,7 +8,7 @@ import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 import { DistributionType, IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
 import { IEOLRewardDistributor } from '../../interfaces/hub/eol/IEOLRewardDistributor.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import { EOLRewardConfiguratorStorageV1 } from './storage/EOLRewardConfiguratorStorageV1.sol';
+import { EOLRewardConfiguratorStorageV1 } from './EOLRewardConfiguratorStorageV1.sol';
 
 contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeable, EOLRewardConfiguratorStorageV1 {
   using EnumerableSet for EnumerableSet.AddressSet;

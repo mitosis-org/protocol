@@ -10,7 +10,7 @@ import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 
 import { IEOLProtocolRegistry } from '../../interfaces/eol/IEOLProtocolRegistry.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { EOLProtocolRegistryStorageV1, ProtocolInfo } from './storage/EOLProtocolRegistryStorageV1.sol';
+import { EOLProtocolRegistryStorageV1, ProtocolInfo } from './EOLProtocolRegistryStorageV1.sol';
 
 contract EOLProtocolRegistry is
   IEOLProtocolRegistry,
