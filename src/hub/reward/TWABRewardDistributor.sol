@@ -119,10 +119,9 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
     AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
 
-    RewardInfo storage rewardInfo = assetRewards.rewards[twabMetadata.rewardedAt].push();
-    rewardInfo.erc20TWABSnapshots = twabMetadata.erc20TWABSnapshots;
-    rewardInfo.total = amount;
-    rewardInfo.twabPeriod = $.twabPeriod;
+    assetRewards.rewards[twabMetadata.rewardedAt].push(
+      RewardInfo({ erc20TWABSnapshots: twabMetadata.erc20TWABSnapshots, total: amount, twabPeriod: $.twabPeriod })
+    );
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
