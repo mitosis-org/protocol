@@ -85,7 +85,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   function registerDistributor(IRewardDistributor distributor) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertValidRewardConfigurator(distributor);
+    _assertValidRewardDistributor(distributor);
     _assertDistributorNotRegisered($, distributor);
 
     $.distributorLists[distributor.distributionType()].add(address(distributor));
@@ -130,7 +130,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     );
   }
 
-  function _assertValidRewardConfigurator(IRewardDistributor distributor) internal view {
+  function _assertValidRewardDistributor(IRewardDistributor distributor) internal view {
     require(
       address(this) == address(distributor.rewardConfigurator()), EOLRewardConfigurator__InvalidRewardConfigurator()
     );
