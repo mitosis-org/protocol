@@ -86,7 +86,7 @@ abstract contract GovernorCountingBravoUpgradeable is Initializable, GovernorUpg
     GovernorCountingBravoStorage storage $ = _getGovernorCountingBravoStorage();
     ProposalVote storage proposalVote = $._proposalVotes[proposalId];
 
-    return quorum(proposalSnapshot(proposalId)) <= proposalVote.forVotes + proposalVote.abstainVotes;
+    return quorum(proposalSnapshot(proposalId)) <= proposalVote.forVotes;
   }
 
   /**
