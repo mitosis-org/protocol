@@ -12,7 +12,7 @@ import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IEOLRewardManager } from '../../interfaces/hub/eol/IEOLRewardManager.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { AssetManagerStorageV1 } from './storage/AssetManagerStorageV1.sol';
+import { AssetManagerStorageV1 } from './AssetManagerStorageV1.sol';
 
 contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgradeable, AssetManagerStorageV1 {
   //=========== NOTE: EVENT DEFINITIONS ===========//

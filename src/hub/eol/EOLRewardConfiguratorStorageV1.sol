@@ -3,9 +3,9 @@ pragma solidity ^0.8.27;
 
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
-import { DistributionType } from '../../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { IEOLRewardDistributor } from '../../../interfaces/hub/eol/IEOLRewardDistributor.sol';
-import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
+import { DistributionType } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
+import { IEOLRewardDistributor } from '../../interfaces/hub/eol/IEOLRewardDistributor.sol';
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 
 contract EOLRewardConfiguratorStorageV1 {
   using ERC7201Utils for string;
