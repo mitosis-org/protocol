@@ -37,6 +37,12 @@ contract MockDistributor is IRewardDistributor {
     return 0;
   }
 
+  function rewardedAts(address, address, uint256, uint256) external view returns (uint48[] memory result) { }
+
+  function rewardedAtsLength(address, address) external pure returns (uint256) {
+    return 0;
+  }
+
   function claim(address eolVault, address reward, bytes calldata metadata) external { }
 
   function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external { }

@@ -64,10 +64,29 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     StorageV1 storage $ = _getStorageV1();
 
     RewardInfo[] storage rewards = _rewardInfos($, eolVault, asset, rewardedAt);
-    uint256 totalReawrd = _calculateTotalReward(rewards, account, rewardedAt);
-
     Receipt storage receipt = _receipt($, account, eolVault, asset, rewardedAt);
+
+    if (receipt.claimed) return 0;
+
+    uint256 totalReawrd = _calculateTotalReward(rewards, account, rewardedAt);
     return totalReawrd - receipt.claimedAmount;
+  }
+
+  function rewardedAts(address eolVault, address asset, uint256 startIndex, uint256 endIndex)
+    external
+    view
+    returns (uint48[] memory result)
+  {
+    AssetRewards storage assetRewards = _assetRewards(eolVault, asset);
+
+    result = new uint48[](endIndex - startIndex);
+    for (uint256 i = startIndex; i < endIndex; i++) {
+      result[i - startIndex] = assetRewards.rewardedAts[i];
+    }
+  }
+
+  function rewardedAtsLength(address eolVault, address asset) external view returns (uint256) {
+    return _assetRewards(eolVault, asset).rewardedAts.length;
   }
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
@@ -118,8 +137,13 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     _assertValidRewardMetadata(twabMetadata);
 
     AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
+    RewardInfo[] storage rewards = assetRewards.rewards[twabMetadata.rewardedAt];
 
-    assetRewards.rewards[twabMetadata.rewardedAt].push(
+    if (rewards.length == 0) {
+      assetRewards.rewardedAts.push(twabMetadata.rewardedAt);
+    }
+
+    rewards.push(
       RewardInfo({ erc20TWABSnapshots: twabMetadata.erc20TWABSnapshots, total: amount, twabPeriod: $.twabPeriod })
     );
   }

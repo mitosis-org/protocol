@@ -24,6 +24,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   }
 
   struct AssetRewards {
+    uint48[] rewardedAts;
     mapping(uint48 rewardedAt => RewardInfo[] rewardInfos) rewards;
     mapping(uint48 rewardedAt => mapping(address account => Receipt receipt)) receipts;
   }
