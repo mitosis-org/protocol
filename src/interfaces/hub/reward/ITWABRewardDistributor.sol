@@ -15,7 +15,7 @@ interface ITWABRewardDistributorStorageV1 is IRewardDistributorStorage {
 
 interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorStorageV1 {
   error ITWABRewardDistributor__InsufficientReward();
-  error ITWABRewardDistributor__InvalidERC20TWABSnapshots();
+  error ITWABRewardDistributor__InvalidTWABCriteria();
   error ITWABRewardDistributor__InvalidRewardedAt();
 
   /// @dev Sets the TWAB period.

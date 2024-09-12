@@ -40,8 +40,8 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
 
-  function encodeMetadata(address erc20TWABSnapshots, uint48 rewardedAt) external pure returns (bytes memory) {
-    return RewardTWABMetadata({ erc20TWABSnapshots: erc20TWABSnapshots, rewardedAt: rewardedAt }).encode();
+  function encodeMetadata(address twabCriteria, uint48 rewardedAt) external pure returns (bytes memory) {
+    return RewardTWABMetadata({ twabCriteria: twabCriteria, rewardedAt: rewardedAt }).encode();
   }
 
   function claimable(address account, address eolVault, address asset, bytes calldata metadata)
@@ -144,11 +144,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     }
 
     rewards.push(
-      RewardInfo({
-        twabCriteria: ITWABSnapshots(twabMetadata.erc20TWABSnapshots),
-        total: amount,
-        twabPeriod: $.twabPeriod
-      })
+      RewardInfo({ twabCriteria: ITWABSnapshots(twabMetadata.twabCriteria), total: amount, twabPeriod: $.twabPeriod })
     );
   }
 
@@ -229,7 +225,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
   }
 
   function _assertValidRewardMetadata(RewardTWABMetadata memory metadata) internal view {
-    require(metadata.erc20TWABSnapshots != address(0), ITWABRewardDistributor__InvalidERC20TWABSnapshots());
+    require(metadata.twabCriteria != address(0), ITWABRewardDistributor__InvalidTWABCriteria());
     require(metadata.rewardedAt >= block.timestamp, ITWABRewardDistributor__InvalidRewardedAt());
   }
 }
