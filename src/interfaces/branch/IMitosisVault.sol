@@ -36,6 +36,5 @@ interface IMitosisVault {
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
   function setEntrypoint(IMitosisVaultEntrypoint entrypoint) external;
-
   function setStrategyExecutor(address hubEOLVault, address strategyExecutor) external;
 }
