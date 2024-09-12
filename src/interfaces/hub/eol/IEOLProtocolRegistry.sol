@@ -20,4 +20,8 @@ interface IEOLProtocolRegistry {
   function isProtocolRegistered(uint256 protocolId_) external view returns (bool);
 
   function isProtocolRegistered(address eolAsset, uint256 chainId, string memory name) external view returns (bool);
+
+  function registerProtocol(address eolAsset, uint256 chainId, string memory name, string memory metadata) external;
+
+  function unregisterProtocol(uint256 protocolId_) external;
 }
