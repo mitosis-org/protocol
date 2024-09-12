@@ -15,8 +15,8 @@ import { IEOLRewardManager } from '../../interfaces/hub/eol/IEOLRewardManager.so
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { LibDistributorHandleRewardMetadata, HandleRewardTWABMetadata } from './LibDistributorHandleRewardMetadata.sol';
 import { EOLRewardManagerStorageV1 } from './EOLRewardManagerStorageV1.sol';
+import { LibDistributorHandleRewardMetadata, HandleRewardTWABMetadata } from './LibDistributorHandleRewardMetadata.sol';
 
 contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewardManagerStorageV1 {
   using LibDistributorHandleRewardMetadata for HandleRewardTWABMetadata;
