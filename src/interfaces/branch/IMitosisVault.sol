@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
+import { IMitosisVaultEntrypoint } from './IMitosisVaultEntrypoint.sol';
+
 enum AssetAction {
   Deposit
 }
@@ -30,4 +32,10 @@ interface IMitosisVault {
   function settleYield(address hubEOLVault, uint256 amount) external;
   function settleLoss(address hubEOLVault, uint256 amount) external;
   function settleExtraRewards(address hubEOLVault, address reward, uint256 amount) external;
+
+  //=========== NOTE: OWNABLE FUNCTIONS ===========//
+
+  function setEntrypoint(IMitosisVaultEntrypoint entrypoint) external;
+
+  function setStrategyExecutor(address hubEOLVault, address strategyExecutor) external;
 }
