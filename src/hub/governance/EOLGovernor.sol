@@ -10,11 +10,13 @@ import { GovernorCountingBravoUpgradeable } from '../../governance/GovernorCount
 import { GovernorTWABVotesQuorumFractionUpgradeable } from
   '../../governance/GovernorTWABVotesQuorumFractionUpgradeable.sol';
 import { GovernorTWABVotesUpgradeable } from '../../governance/GovernorTWABVotesUpgradeable.sol';
+import { IEOLGovernor } from '../../interfaces/hub/governance/IEOLGovernor.sol';
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 
 // TODO(thai): Consider the way all EOL governances for different tokens are managed by only one governor contract.
 
 contract EOLGovernor is
+  IEOLGovernor,
   Ownable2StepUpgradeable,
   AccessControlUpgradeable,
   GovernorUpgradeable,
@@ -62,18 +64,23 @@ contract EOLGovernor is
     uint256[] memory values,
     bytes[] memory calldatas,
     string memory description
-  ) public override onlyProposer returns (uint256) {
+  ) public override(IEOLGovernor, GovernorUpgradeable) onlyProposer returns (uint256) {
     return super.propose(targets, values, calldatas, description);
   }
 
-  function proposalThreshold() public view override(GovernorUpgradeable, GovernorSettingsUpgradeable) returns (uint256) {
+  function proposalThreshold()
+    public
+    view
+    override(IEOLGovernor, GovernorUpgradeable, GovernorSettingsUpgradeable)
+    returns (uint256)
+  {
     return GovernorSettingsUpgradeable.proposalThreshold();
   }
 
   function supportsInterface(bytes4 interfaceId)
     public
     view
-    override(AccessControlUpgradeable, GovernorUpgradeable)
+    override(IEOLGovernor, AccessControlUpgradeable, GovernorUpgradeable)
     returns (bool)
   {
     return AccessControlUpgradeable.supportsInterface(interfaceId) || GovernorUpgradeable.supportsInterface(interfaceId);
