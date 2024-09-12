@@ -16,7 +16,7 @@ import { IRewardDistributor, DistributionType } from '../../interfaces/hub/rewar
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { LibDistributorRewardMetadata, RewardTWABMetadata } from '../reward/LibDistributorRewardMetadata.sol';
-import { EOLRewardManagerStorageV1 } from './storage/EOLRewardManagerStorageV1.sol';
+import { EOLRewardManagerStorageV1 } from './EOLRewardManagerStorageV1.sol';
 
 contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewardManagerStorageV1 {
   using LibDistributorRewardMetadata for RewardTWABMetadata;

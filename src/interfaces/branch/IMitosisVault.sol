@@ -19,15 +19,15 @@ interface IMitosisVault {
 
   //=========== NOTE: EOL ===========//
 
-  function initializeEOL(uint256 eolId, address asset) external;
+  function initializeEOL(address hubEOLVault, address asset) external;
 
-  function allocateEOL(uint256 eolId, uint256 amount) external;
-  function deallocateEOL(uint256 eolId, uint256 amount) external;
+  function allocateEOL(address hubEOLVault, uint256 amount) external;
+  function deallocateEOL(address hubEOLVault, uint256 amount) external;
 
-  function fetchEOL(uint256 eolId, uint256 amount) external;
-  function returnEOL(uint256 eolId, uint256 amount) external;
+  function fetchEOL(address hubEOLVault, uint256 amount) external;
+  function returnEOL(address hubEOLVault, uint256 amount) external;
 
-  function settleYield(uint256 eolId, uint256 amount) external;
-  function settleLoss(uint256 eolId, uint256 amount) external;
-  function settleExtraRewards(uint256 eolId, address reward, uint256 amount) external;
+  function settleYield(address hubEOLVault, uint256 amount) external;
+  function settleLoss(address hubEOLVault, uint256 amount) external;
+  function settleExtraRewards(address hubEOLVault, address reward, uint256 amount) external;
 }

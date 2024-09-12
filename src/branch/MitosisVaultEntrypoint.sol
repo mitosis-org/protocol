@@ -69,23 +69,24 @@ contract MitosisVaultEntrypoint is
     _dispatchToMitosis(enc);
   }
 
-  function deallocateEOL(uint256 eolId, uint256 amount) external onlyVault {
-    bytes memory enc = MsgDeallocateEOL({ eolId: eolId, amount: amount }).encode();
+  function deallocateEOL(address hubEOLVault, uint256 amount) external onlyVault {
+    bytes memory enc = MsgDeallocateEOL({ eolVault: hubEOLVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 
-  function settleYield(uint256 eolId, uint256 amount) external onlyVault {
-    bytes memory enc = MsgSettleYield({ eolId: eolId, amount: amount }).encode();
+  function settleYield(address hubEOLVault, uint256 amount) external onlyVault {
+    bytes memory enc = MsgSettleYield({ eolVault: hubEOLVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 
-  function settleLoss(uint256 eolId, uint256 amount) external onlyVault {
-    bytes memory enc = MsgSettleLoss({ eolId: eolId, amount: amount }).encode();
+  function settleLoss(address hubEOLVault, uint256 amount) external onlyVault {
+    bytes memory enc = MsgSettleLoss({ eolVault: hubEOLVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 
-  function settleExtraRewards(uint256 eolId, address reward, uint256 amount) external onlyVault {
-    bytes memory enc = MsgSettleExtraRewards({ eolId: eolId, reward: reward.toBytes32(), amount: amount }).encode();
+  function settleExtraRewards(address hubEOLVault, address reward, uint256 amount) external onlyVault {
+    bytes memory enc =
+      MsgSettleExtraRewards({ eolVault: hubEOLVault.toBytes32(), reward: reward.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 
@@ -113,12 +114,12 @@ contract MitosisVaultEntrypoint is
 
     if (msgType == MsgType.MsgInitializeEOL) {
       MsgInitializeEOL memory decoded = msg_.decodeInitializeEOL();
-      _vault.initializeEOL(decoded.eolId, decoded.asset.toAddress());
+      _vault.initializeEOL(decoded.eolVault.toAddress(), decoded.asset.toAddress());
     }
 
     if (msgType == MsgType.MsgAllocateEOL) {
       MsgAllocateEOL memory decoded = msg_.decodeAllocateEOL();
-      _vault.allocateEOL(decoded.eolId, decoded.amount);
+      _vault.allocateEOL(decoded.eolVault.toAddress(), decoded.amount);
     }
   }
 

@@ -42,11 +42,6 @@ contract AssetManagerEntrypoint is
     _;
   }
 
-  modifier onlyEolIdAssigned(address eolVault) {
-    require(_ccRegistry.eolId(eolVault) != 0, ICrossChainRegistry.ICrossChainRegistry__EolIdNotAssigned());
-    _;
-  }
-
   constructor(address mailbox, address assetManager_, address ccRegistry_) Router(mailbox) initializer {
     _assetManager = IAssetManager(assetManager_);
     _ccRegistry = ICrossChainRegistry(ccRegistry_);
@@ -86,9 +81,8 @@ contract AssetManagerEntrypoint is
     external
     onlyAssetManager
     onlyDispachable(chainId)
-    onlyEolIdAssigned(eolVault)
   {
-    bytes memory enc = MsgInitializeEOL({ eolId: _ccRegistry.eolId(eolVault), asset: branchAsset.toBytes32() }).encode();
+    bytes memory enc = MsgInitializeEOL({ eolVault: eolVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
     _dispatchToBranch(chainId, enc);
   }
 
@@ -105,9 +99,8 @@ contract AssetManagerEntrypoint is
     external
     onlyAssetManager
     onlyDispachable(chainId)
-    onlyEolIdAssigned(eolVault)
   {
-    bytes memory enc = MsgAllocateEOL({ eolId: _ccRegistry.eolId(eolVault), amount: amount }).encode();
+    bytes memory enc = MsgAllocateEOL({ eolVault: eolVault.toBytes32(), amount: amount }).encode();
     _dispatchToBranch(chainId, enc);
   }
 
@@ -135,23 +128,23 @@ contract AssetManagerEntrypoint is
 
     if (msgType == MsgType.MsgDeallocateEOL) {
       MsgDeallocateEOL memory decoded = msg_.decodeDeallocateEOL();
-      _assetManager.deallocateEOL(chainId, _ccRegistry.eolVault(decoded.eolId), decoded.amount);
+      _assetManager.deallocateEOL(chainId, decoded.eolVault.toAddress(), decoded.amount);
     }
 
     if (msgType == MsgType.MsgSettleYield) {
       MsgSettleYield memory decoded = msg_.decodeSettleYield();
-      _assetManager.settleYield(chainId, _ccRegistry.eolVault(decoded.eolId), decoded.amount);
+      _assetManager.settleYield(chainId, decoded.eolVault.toAddress(), decoded.amount);
     }
 
     if (msgType == MsgType.MsgSettleLoss) {
       MsgSettleLoss memory decoded = msg_.decodeSettleLoss();
-      _assetManager.settleLoss(chainId, _ccRegistry.eolVault(decoded.eolId), decoded.amount);
+      _assetManager.settleLoss(chainId, decoded.eolVault.toAddress(), decoded.amount);
     }
 
     if (msgType == MsgType.MsgSettleExtraRewards) {
       MsgSettleExtraRewards memory decoded = msg_.decodeSettleExtraRewards();
       _assetManager.settleExtraRewards(
-        chainId, _ccRegistry.eolVault(decoded.eolId), decoded.reward.toAddress(), decoded.amount
+        chainId, decoded.eolVault.toAddress(), decoded.reward.toAddress(), decoded.amount
       );
     }
   }

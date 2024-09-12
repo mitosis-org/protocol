@@ -5,6 +5,7 @@ interface IAssetManagerStorageV1 {
   event EntrypointSet(address indexed entrypoint);
   event OptOutQueueSet(address indexed optOutQueue);
   event RewardManagerSet(address indexed rewardManager);
+  event StrategistSet(address indexed eolVault, address indexed strategist);
 
   function entrypoint() external view returns (address entrypoint_);
 

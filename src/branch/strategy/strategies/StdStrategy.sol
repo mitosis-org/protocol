@@ -5,7 +5,7 @@ import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { Context } from '@oz-v5/utils/Context.sol';
 
-import { StdStrategyStorageV1 } from '../../../branch/strategy/storage/StdStrategyStorageV1.sol';
+import { StdStrategyStorageV1 } from './StdStrategyStorageV1.sol';
 import { IStrategy, IStrategyDependency } from '../../../interfaces/branch/strategy/IStrategy.sol';
 import { IStrategyExecutor } from '../../../interfaces/branch/strategy/IStrategyExecutor.sol';
 import { StdError } from '../../../lib/StdError.sol';

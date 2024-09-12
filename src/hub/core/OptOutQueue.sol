@@ -13,7 +13,7 @@ import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { OptOutQueueStorageV1 } from './storage/OptOutQueueStorageV1.sol';
+import { OptOutQueueStorageV1 } from './OptOutQueueStorageV1.sol';
 
 contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQueueStorageV1 {
   using SafeERC20 for IEOLVault;
