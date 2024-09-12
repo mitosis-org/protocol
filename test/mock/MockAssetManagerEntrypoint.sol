@@ -21,9 +21,25 @@ contract MockAssetManagerEntrypoint is Context, IAssetManagerEntrypoint {
     _;
   }
 
-  constructor(IAssetManager assetManager, address mailbox) {
-    _assetManager = assetManager;
+  constructor(IAssetManager assetManager_, address mailbox) {
+    _assetManager = assetManager_;
     _mailbox = mailbox;
+  }
+
+  function assetManager() external view returns (IAssetManager assetManger_) {
+    return _assetManager;
+  }
+
+  function branchDomain(uint256) external pure returns (uint32) {
+    return 0;
+  }
+
+  function branchVault(uint256) external pure returns (address) {
+    return address(0);
+  }
+
+  function branchEntrypointAddr(uint256) external pure returns (address) {
+    return address(0);
   }
 
   // ============================= NOTE: DISPATCHER ============================= //
