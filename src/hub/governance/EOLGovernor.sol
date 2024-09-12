@@ -6,11 +6,11 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { GovernorSettingsUpgradeable } from '@ozu-v5/governance/extensions/GovernorSettingsUpgradeable.sol';
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
 
-import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
+import { GovernorCountingBravoUpgradeable } from '../../governance/GovernorCountingBravoUpgradeable.sol';
 import { GovernorTWABVotesQuorumFractionUpgradeable } from
   '../../governance/GovernorTWABVotesQuorumFractionUpgradeable.sol';
 import { GovernorTWABVotesUpgradeable } from '../../governance/GovernorTWABVotesUpgradeable.sol';
-import { GovernorCountingBravoUpgradeable } from '../../governance/GovernorCountingBravoUpgradeable.sol';
+import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 
 // TODO(thai): Consider the way all EOL governances for different tokens are managed by only one governor contract.
 
