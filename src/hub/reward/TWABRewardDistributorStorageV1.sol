@@ -6,6 +6,7 @@ import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 import { IRewardConfigurator } from '../../interfaces/hub/reward/IRewardConfigurator.sol';
 import { IRewardDistributor, DistributionType } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { ITWABRewardDistributorStorageV1 } from '../../interfaces/hub/reward/ITWABRewardDistributor.sol';
+import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
@@ -13,7 +14,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   using ERC7201Utils for string;
 
   struct RewardInfo {
-    address erc20TWABSnapshots;
+    ITWABSnapshots twabCriteria;
     uint256 total;
     uint48 twabPeriod; // Store twabPeriod at point.
   }

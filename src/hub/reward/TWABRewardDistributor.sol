@@ -144,7 +144,11 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     }
 
     rewards.push(
-      RewardInfo({ erc20TWABSnapshots: twabMetadata.erc20TWABSnapshots, total: amount, twabPeriod: $.twabPeriod })
+      RewardInfo({
+        twabCriteria: ITWABSnapshots(twabMetadata.erc20TWABSnapshots),
+        total: amount,
+        twabPeriod: $.twabPeriod
+      })
     );
   }
 
@@ -208,12 +212,12 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
     uint48 endsAt = rewardedAt;
 
-    ITWABSnapshots twabSnapshots = ITWABSnapshots(rewardInfo.erc20TWABSnapshots);
+    ITWABSnapshots criteria = rewardInfo.twabCriteria;
 
-    uint256 totalTWAB = twabSnapshots.getTotalTWABByTimestampRange(startsAt, endsAt);
+    uint256 totalTWAB = criteria.getTotalTWABByTimestampRange(startsAt, endsAt);
     if (totalTWAB == 0) return 0;
 
-    uint256 userTWAB = twabSnapshots.getAccountTWABByTimestampRange(account, startsAt, endsAt);
+    uint256 userTWAB = criteria.getAccountTWABByTimestampRange(account, startsAt, endsAt);
     if (userTWAB == 0) return 0;
 
     uint256 precision = IRewardConfigurator(_getStorageV1().rewardConfigurator).rewardRatioPrecision();
