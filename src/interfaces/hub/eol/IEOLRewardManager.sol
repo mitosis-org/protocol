@@ -6,7 +6,7 @@ import { IEOLRewardDistributor } from './IEOLRewardDistributor.sol';
 interface IEOLRewardManager {
   function routeYield(address eolVault, uint256 amount) external;
 
-  function routeExtraReward(address eolVault, address reward, uint256 amount) external;
+  function routeExtraRewards(address eolVault, address reward, uint256 amount) external;
 
   function dispatchTo(
     IEOLRewardDistributor distributor,

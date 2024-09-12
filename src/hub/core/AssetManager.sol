@@ -84,6 +84,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     require(hubAsset == IEOLVault(eolVault).asset(), AssetManager__InvalidEOLVault(eolVault, hubAsset));
 
     _mint($, chainId, hubAsset, address(this), amount);
+
+    IHubAsset(hubAsset).approve(eolVault, amount);
     IEOLVault(eolVault).deposit(amount, to);
 
     emit DepositedWithOptIn(chainId, hubAsset, to, eolVault, amount);
@@ -157,7 +159,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _mint($, chainId, asset, address(this), amount);
     emit RewardSettled(chainId, eolVault, asset, amount);
 
-    _addAllowance(address($.rewardManager), asset, amount);
+    IHubAsset(asset).approve(address($.rewardManager), amount);
     $.rewardManager.routeYield(eolVault, amount);
   }
 
@@ -187,8 +189,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _mint($, chainId, reward, address(this), amount);
     emit RewardSettled(chainId, eolVault, hubAsset, amount);
 
-    _addAllowance(address($.rewardManager), hubAsset, amount);
-    $.rewardManager.routeExtraReward(eolVault, hubAsset, amount);
+    IHubAsset(hubAsset).approve(address($.rewardManager), amount);
+    $.rewardManager.routeExtraRewards(eolVault, hubAsset, amount);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
@@ -267,11 +269,6 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
   function _burn(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
     IHubAsset(asset).burn(account, amount);
     $.collateralPerChain[chainId][asset] -= amount;
-  }
-
-  function _addAllowance(address to, address asset, uint256 amount) internal {
-    uint256 prevAllowance = IHubAsset(asset).allowance(address(this), address(to));
-    IHubAsset(asset).approve(address(to), prevAllowance + amount);
   }
 
   //=========== NOTE: ASSERTIONS ===========//

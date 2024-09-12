@@ -66,7 +66,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     _routeHubAssetHolderClaimableReward($, eolVault, reward, hubAssetHolderReward);
   }
 
-  function routeExtraReward(address eolVault, address reward, uint256 amount) external onlyAssetManager {
+  function routeExtraRewards(address eolVault, address reward, uint256 amount) external onlyAssetManager {
     IHubAsset(reward).transferFrom(_msgSender(), address(this), amount);
 
     StorageV1 storage $ = _getStorageV1();
