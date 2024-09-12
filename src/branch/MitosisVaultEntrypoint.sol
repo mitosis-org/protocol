@@ -69,6 +69,16 @@ contract MitosisVaultEntrypoint is
     _dispatchToMitosis(enc);
   }
 
+  function depositWithOptIn(address asset, address to, address hubEOLVault, uint256 amount) external onlyVault {
+    bytes memory enc = MsgDepositWithOptIn({
+      asset: asset.toBytes32(),
+      to: to.toBytes32(),
+      eolVault: hubEOLVault.toBytes32(),
+      amount: amount
+    }).encode();
+    _dispatchToMitosis(enc);
+  }
+
   function deallocateEOL(address hubEOLVault, uint256 amount) external onlyVault {
     bytes memory enc = MsgDeallocateEOL({ eolVault: hubEOLVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);

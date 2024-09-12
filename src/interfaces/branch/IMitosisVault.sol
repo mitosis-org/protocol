@@ -15,6 +15,7 @@ interface IMitosisVault {
   function initializeAsset(address asset) external;
 
   function deposit(address asset, address to, uint256 amount) external;
+  function depositWithOptIn(address asset, address to, address hubEOLVault, uint256 amount) external;
   function redeem(address asset, address to, uint256 amount) external;
 
   //=========== NOTE: EOL ===========//
