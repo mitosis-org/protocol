@@ -16,7 +16,6 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   struct RewardInfo {
     ITWABSnapshots twabCriteria;
     uint256 total;
-    uint48 twabPeriod; // Store twabPeriod at point.
   }
 
   struct Receipt {
@@ -25,9 +24,10 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   }
 
   struct AssetRewards {
-    uint48[] rewardedAts;
-    mapping(uint48 rewardedAt => RewardInfo[] rewardInfos) rewards;
-    mapping(uint48 rewardedAt => mapping(address account => Receipt receipt)) receipts;
+    uint48 lastBatchTimestamp;
+    uint48[] batchTimestamps;
+    mapping(uint48 batchTimestamp => RewardInfo[] rewardInfos) rewardBatches;
+    mapping(uint48 batchTimestamp => mapping(address account => Receipt receipt)) receipts;
   }
 
   struct StorageV1 {
@@ -125,7 +125,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
     view
     returns (RewardInfo[] storage)
   {
-    return _getStorageV1().eolVaultRewards[eolVault][asset].rewards[rewardedAt];
+    return _getStorageV1().eolVaultRewards[eolVault][asset].rewardBatches[rewardedAt];
   }
 
   function _rewardInfos(StorageV1 storage $, address eolVault, address asset, uint48 rewardedAt)
@@ -133,7 +133,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
     view
     returns (RewardInfo[] storage)
   {
-    return $.eolVaultRewards[eolVault][asset].rewards[rewardedAt];
+    return $.eolVaultRewards[eolVault][asset].rewardBatches[rewardedAt];
   }
 
   function _assertOnlyRewardManager(StorageV1 storage $) internal view {

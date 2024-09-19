@@ -40,15 +40,6 @@ interface IRewardDistributor is IRewardDistributorStorage {
     view
     returns (uint256);
 
-  /// @dev Returns an array of timestamps when rewards were distributed for the specified vault and asset within the given range.
-  function rewardedAts(address eolVault, address asset, uint256 startIndex, uint256 endIndex)
-    external
-    view
-    returns (uint48[] memory result);
-
-  /// @dev Returns the length of the rewardedAts array for the specified vault and asset.
-  function rewardedAtsLength(address eolVault, address asset) external view returns (uint256);
-
   /// @dev Claims all of the rewards for the specified vault and reward.
   function claim(address eolVault, address reward, bytes calldata metadata) external;
 

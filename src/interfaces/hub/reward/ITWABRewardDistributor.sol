@@ -9,7 +9,7 @@ interface ITWABRewardDistributorStorageV1 is IRewardDistributorStorage {
 
   error ITWABRewardDistributorStorageV1__ZeroPeriod();
 
-  // Returns the TWAB period.
+  /// @dev Returns the TWAB period.
   function twabPeriod() external view returns (uint48);
 }
 
@@ -18,6 +18,6 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
   error ITWABRewardDistributor__InvalidTWABCriteria();
   error ITWABRewardDistributor__InvalidRewardedAt();
 
-  /// @dev Sets the TWAB period.
-  function setTWABPeriod(uint48 period) external;
+  /// @dev Returns the first batch timestamp. If it does not exist, returns zero.
+  function getFirstBatchTimestamp(address eolVault, address asset) external view returns (uint256);
 }

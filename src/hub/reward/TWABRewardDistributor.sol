@@ -68,25 +68,13 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
     if (receipt.claimed) return 0;
 
-    uint256 totalReawrd = _calculateTotalReward(rewards, account, rewardedAt);
+    uint256 totalReawrd = _calculateTotalReward($, rewards, account, rewardedAt);
     return totalReawrd - receipt.claimedAmount;
   }
 
-  function rewardedAts(address eolVault, address asset, uint256 startIndex, uint256 endIndex)
-    external
-    view
-    returns (uint48[] memory result)
-  {
+  function getFirstBatchTimestamp(address eolVault, address asset) external view returns (uint256) {
     AssetRewards storage assetRewards = _assetRewards(eolVault, asset);
-
-    result = new uint48[](endIndex - startIndex);
-    for (uint256 i = startIndex; i < endIndex; i++) {
-      result[i - startIndex] = assetRewards.rewardedAts[i];
-    }
-  }
-
-  function rewardedAtsLength(address eolVault, address asset) external view returns (uint256) {
-    return _assetRewards(eolVault, asset).rewardedAts.length;
+    return assetRewards.batchTimestamps.length == 0 ? 0 : assetRewards.batchTimestamps[0];
   }
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
@@ -127,46 +115,79 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
   function handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
     StorageV1 storage $ = _getStorageV1();
-
     _assertOnlyRewardManager($);
 
     IERC20(reward).transferFrom(_msgSender(), address(this), amount);
 
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-
     _assertValidRewardMetadata(twabMetadata);
 
     AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
-    RewardInfo[] storage rewards = assetRewards.rewards[twabMetadata.rewardedAt];
+    uint48[] storage batchTimestamps = assetRewards.batchTimestamps;
 
-    if (rewards.length == 0) {
-      assetRewards.rewardedAts.push(twabMetadata.rewardedAt);
+    uint48 batchTimestamp;
+    uint48 rewardedAt = twabMetadata.rewardedAt;
+
+    if (batchTimestamps.length == 0) {
+      batchTimestamp = rewardedAt;
+      assetRewards.batchTimestamps.push(rewardedAt);
+      assetRewards.lastBatchTimestamp = rewardedAt;
+    } else {
+      uint48 prevBatchTimestamp = assetRewards.lastBatchTimestamp - $.twabPeriod;
+      uint48 nextBatchTimestamp = assetRewards.lastBatchTimestamp + $.twabPeriod;
+
+      // Move to next batch
+      if (nextBatchTimestamp <= rewardedAt + $.twabPeriod) {
+        batchTimestamp = nextBatchTimestamp;
+        assetRewards.batchTimestamps.push(batchTimestamp);
+        assetRewards.lastBatchTimestamp = batchTimestamp;
+      } else if (prevBatchTimestamp < rewardedAt + $.twabPeriod) {
+        // Handle previous rewardedAt
+        batchTimestamp = _findBatchTimestamp(assetRewards.batchTimestamps[0], rewardedAt, $.twabPeriod);
+      } else {
+        // In current batch
+        batchTimestamp = assetRewards.lastBatchTimestamp;
+      }
     }
 
-    rewards.push(
-      RewardInfo({ twabCriteria: ITWABSnapshots(twabMetadata.twabCriteria), total: amount, twabPeriod: $.twabPeriod })
+    assetRewards.rewardBatches[batchTimestamp].push(
+      RewardInfo({ twabCriteria: ITWABSnapshots(twabMetadata.twabCriteria), total: amount })
     );
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _calculateTotalReward(RewardInfo[] storage rewards, address account, uint48 rewardedAt)
+  function _findBatchTimestamp(uint48 startBatchTimestamp, uint48 timestamp, uint48 period)
+    internal
+    pure
+    returns (uint48 result)
+  {
+    if (startBatchTimestamp > timestamp) {
+      uint48 periodsAhead = (startBatchTimestamp - timestamp + period - 1) / period;
+      result = startBatchTimestamp + periodsAhead * period;
+    } else {
+      result = startBatchTimestamp;
+    }
+  }
+
+  function _calculateTotalReward(StorageV1 storage $, RewardInfo[] storage rewards, address account, uint48 rewardedAt)
     internal
     view
     returns (uint256 totalReward)
   {
     for (uint256 i = 0; i < rewards.length; i++) {
       RewardInfo storage rewardInfo = rewards[i];
-      uint256 rewardAmount = _calculateUserReward(rewardInfo, account, rewardedAt);
+      uint256 rewardAmount = _calculateUserReward($, rewardInfo, account, rewardedAt);
       totalReward += rewardAmount;
     }
   }
 
   function _claimAllReward(address account, address eolVault, address reward, uint48 rewardedAt) internal {
-    AssetRewards storage assetRewards = _assetRewards(eolVault, reward);
+    StorageV1 storage $ = _getStorageV1();
+    AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
     Receipt storage receipt = assetRewards.receipts[rewardedAt][account];
 
-    uint256 totalReward = _calculateTotalReward(assetRewards.rewards[rewardedAt], account, rewardedAt);
+    uint256 totalReward = _calculateTotalReward($, assetRewards.rewardBatches[rewardedAt], account, rewardedAt);
     uint256 claimableReward = totalReward - receipt.claimedAmount;
 
     if (claimableReward > 0) {
@@ -178,10 +199,11 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
   function _claimPartialReward(address account, address eolVault, address reward, uint48 rewardedAt, uint256 amount)
     internal
   {
-    AssetRewards storage assetRewards = _assetRewards(eolVault, reward);
+    StorageV1 storage $ = _getStorageV1();
+    AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
     Receipt storage receipt = assetRewards.receipts[rewardedAt][account];
 
-    uint256 totalReward = _calculateTotalReward(assetRewards.rewards[rewardedAt], account, rewardedAt);
+    uint256 totalReward = _calculateTotalReward($, assetRewards.rewardBatches[rewardedAt], account, rewardedAt);
     uint256 claimableReward = totalReward - receipt.claimedAmount;
 
     require(claimableReward >= amount, ITWABRewardDistributor__InsufficientReward());
@@ -197,17 +219,18 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     }
   }
 
-  function _calculateUserReward(RewardInfo storage rewardInfo, address account, uint48 rewardedAt)
+  function _calculateUserReward(StorageV1 storage $, RewardInfo storage rewardInfo, address account, uint48 rewardedAt)
     internal
     view
     returns (uint256)
   {
-    uint48 twabPeriod = rewardInfo.twabPeriod;
+    uint48 twabPeriod = $.twabPeriod;
     uint48 startsAt;
     startsAt = twabPeriod > rewardedAt ? 0 : rewardedAt - twabPeriod;
 
     uint48 endsAt = rewardedAt;
 
+    // TODO: Improve me. If has same criteria, we don't need to get the TWAB per call.
     ITWABSnapshots criteria = rewardInfo.twabCriteria;
 
     uint256 totalTWAB = criteria.getTotalTWABByTimestampRange(startsAt, endsAt);
@@ -216,7 +239,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     uint256 userTWAB = criteria.getAccountTWABByTimestampRange(account, startsAt, endsAt);
     if (userTWAB == 0) return 0;
 
-    uint256 precision = IRewardConfigurator(_getStorageV1().rewardConfigurator).rewardRatioPrecision();
+    uint256 precision = IRewardConfigurator($.rewardConfigurator).rewardRatioPrecision();
 
     uint256 userRatio = Math.mulDiv(userTWAB, precision, totalTWAB);
     if (userRatio == 0) return 0;
@@ -226,6 +249,6 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
   function _assertValidRewardMetadata(RewardTWABMetadata memory metadata) internal view {
     require(metadata.twabCriteria != address(0), ITWABRewardDistributor__InvalidTWABCriteria());
-    require(metadata.rewardedAt >= block.timestamp, ITWABRewardDistributor__InvalidRewardedAt());
+    require(metadata.rewardedAt == block.timestamp, ITWABRewardDistributor__InvalidRewardedAt());
   }
 }
