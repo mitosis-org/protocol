@@ -103,14 +103,22 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     _setTWABPeriod($, period);
   }
 
-  function claim(address eolVault, address reward, bytes calldata metadata) external {
+  function claim(address receiver, address eolVault, address reward, bytes calldata metadata) public {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-    _claimAllReward(_msgSender(), eolVault, reward, twabMetadata.rewardedAt);
+    _claimAllReward(_msgSender(), receiver, eolVault, reward, twabMetadata.rewardedAt);
+  }
+
+  function claim(address eolVault, address reward, bytes calldata metadata) external {
+    claim(_msgSender(), eolVault, reward, metadata);
+  }
+
+  function claim(address receiver, address eolVault, address reward, uint256 amount, bytes calldata metadata) public {
+    RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
+    _claimPartialReward(_msgSender(), receiver, eolVault, reward, twabMetadata.rewardedAt, amount);
   }
 
   function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
-    RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-    _claimPartialReward(_msgSender(), eolVault, reward, twabMetadata.rewardedAt, amount);
+    claim(_msgSender(), eolVault, reward, amount, metadata);
   }
 
   function handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
@@ -182,7 +190,9 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     }
   }
 
-  function _claimAllReward(address account, address eolVault, address reward, uint48 rewardedAt) internal {
+  function _claimAllReward(address account, address receiver, address eolVault, address reward, uint48 rewardedAt)
+    internal
+  {
     StorageV1 storage $ = _getStorageV1();
     AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
     Receipt storage receipt = assetRewards.receipts[rewardedAt][account];
@@ -192,13 +202,18 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
     if (claimableReward > 0) {
       _updateReceipt(receipt, totalReward, claimableReward);
-      IERC20(reward).transfer(account, claimableReward);
+      IERC20(reward).transfer(receiver, claimableReward);
     }
   }
 
-  function _claimPartialReward(address account, address eolVault, address reward, uint48 rewardedAt, uint256 amount)
-    internal
-  {
+  function _claimPartialReward(
+    address account,
+    address receiver,
+    address eolVault,
+    address reward,
+    uint48 rewardedAt,
+    uint256 amount
+  ) internal {
     StorageV1 storage $ = _getStorageV1();
     AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
     Receipt storage receipt = assetRewards.receipts[rewardedAt][account];
@@ -209,7 +224,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     require(claimableReward >= amount, ITWABRewardDistributor__InsufficientReward());
 
     _updateReceipt(receipt, totalReward, amount);
-    IERC20(reward).transfer(account, amount);
+    IERC20(reward).transfer(receiver, amount);
   }
 
   function _updateReceipt(Receipt storage receipt, uint256 totalReward, uint256 claimedReward) internal {
