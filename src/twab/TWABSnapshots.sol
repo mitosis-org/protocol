@@ -7,13 +7,24 @@ import { Time } from '@oz-v5/utils/types/Time.sol';
 import { ITWABSnapshots } from '../interfaces/twab/ITWABSnapshots.sol';
 import { TWABCheckpoints } from '../lib/TWABCheckpoints.sol';
 import { TWABSnapshotsStorageV1 } from './TWABSnapshotsStorageV1.sol';
+import { TokenRegistry } from './TokenRegistry.sol';
 
 abstract contract TWABSnapshots is ITWABSnapshots, TWABSnapshotsStorageV1 {
   using TWABCheckpoints for TWABCheckpoints.Trace;
 
-  error ERC6372InconsistentClock();
+  event DelegateVotesChanged(
+    address indexed delegate, uint208 lastBalance, uint208 currentBalance, uint256 lastTWAB, uint256 currentTWAB
+  );
 
+  error ERC6372InconsistentClock();
   error ERC5805FutureLookup(uint256 timepoint, uint48 clock);
+
+  TokenRegistry private immutable _tokenRegistry;
+
+  constructor(TokenRegistry registry) {
+    _tokenRegistry = registry;
+    _tokenRegistry.register(address(this));
+  }
 
   function CLOCK_MODE() external view virtual returns (string memory) {
     // Check that the clock was not modified
@@ -60,8 +71,33 @@ abstract contract TWABSnapshots is ITWABSnapshots, TWABSnapshotsStorageV1 {
     return _getTWABSnapshotsStorageV1().totalCheckpoints.upperLookupRecent(SafeCast.toUint48(timestamp));
   }
 
+  function delegates(address account) external view virtual returns (address) {
+    return _tokenRegistry.delegates(account);
+  }
+
+  function moveVotingPower(address src, address dst, uint256 amount) external {
+    TWABSnapshotsStorageV1_ storage $ = _getTWABSnapshotsStorageV1();
+
+    if (src != dst && amount > 0) {
+      if (src != address(0)) {
+        (uint208 lastBalance, uint208 currentBalance, uint256 lastTWAB, uint256 currentTWAB) =
+          _push($.accountCheckpoints[src], _sub, SafeCast.toUint208(amount));
+        emit DelegateVotesChanged(src, lastBalance, currentBalance, lastTWAB, currentTWAB);
+      }
+
+      if (dst != address(0)) {
+        (uint208 lastBalance, uint208 currentBalance, uint256 lastTWAB, uint256 currentTWAB) =
+          _push($.accountCheckpoints[dst], _add, SafeCast.toUint208(amount));
+        emit DelegateVotesChanged(dst, lastBalance, currentBalance, lastTWAB, currentTWAB);
+      }
+    }
+  }
+
   function _snapshot(address from, address to, uint256 amount) internal virtual {
     TWABSnapshotsStorageV1_ storage $ = _getTWABSnapshotsStorageV1();
+
+    from = _tokenRegistry.delegates(from);
+    to = _tokenRegistry.delegates(to);
 
     if (from != to && amount > 0) {
       if (from == address(0)) {
