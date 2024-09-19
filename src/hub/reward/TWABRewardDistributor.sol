@@ -8,6 +8,7 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 
 import { DistributionType } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
 import { IRewardConfigurator } from '../../interfaces/hub/reward/IRewardConfigurator.sol';
+import { IRewardDistributor } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { ITWABRewardDistributor } from '../../interfaces/hub/reward/ITWABRewardDistributor.sol';
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
@@ -161,6 +162,8 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     assetRewards.rewardBatches[batchTimestamp].push(
       RewardInfo({ twabCriteria: ITWABSnapshots(twabMetadata.twabCriteria), total: amount })
     );
+
+    emit IRewardDistributor.RewardHandled(eolVault, reward, amount, $.distributionType, metadata);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
@@ -203,6 +206,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     if (claimableReward > 0) {
       _updateReceipt(receipt, totalReward, claimableReward);
       IERC20(reward).transfer(receiver, claimableReward);
+      emit IRewardDistributor.Claimed(account, receiver, eolVault, reward, claimableReward);
     }
   }
 
@@ -225,6 +229,8 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
     _updateReceipt(receipt, totalReward, amount);
     IERC20(reward).transfer(receiver, amount);
+
+    emit IRewardDistributor.Claimed(account, receiver, eolVault, reward, amount);
   }
 
   function _updateReceipt(Receipt storage receipt, uint256 totalReward, uint256 claimedReward) internal {

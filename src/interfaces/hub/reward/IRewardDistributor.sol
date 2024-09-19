@@ -26,6 +26,17 @@ interface IRewardDistributorStorage {
 }
 
 interface IRewardDistributor is IRewardDistributorStorage {
+  event Claimed(
+    address indexed account, address indexed receiver, address indexed eolVault, address reward, uint256 amount
+  );
+  event RewardHandled(
+    address indexed eolVault,
+    address indexed asset,
+    uint256 indexed amount,
+    DistributionType distributionType,
+    bytes metadata
+  );
+
   // metadata: See the `src/hub/eol/LibDistributorRewardMetadata`.RewardTWABMetadata
 
   /// @dev Checks if the account can claim.
