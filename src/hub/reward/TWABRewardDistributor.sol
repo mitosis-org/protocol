@@ -184,11 +184,11 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     AssetRewards storage assetRewards = _assetRewards($, eligibleRewardAsset, reward);
     Receipt storage receipt = assetRewards.receipts[rewardedAt][account];
 
-    uint256 totalReward = assetRewards.batchReward[rewardedAt];
-    uint256 claimableReward = totalReward - receipt.claimedAmount;
+    uint256 userReward = _calculateUserReward($, eligibleRewardAsset, account, reward, rewardedAt);
+    uint256 claimableReward = userReward - receipt.claimedAmount;
 
     if (claimableReward > 0) {
-      _updateReceipt(receipt, totalReward, claimableReward);
+      _updateReceipt(receipt, userReward, claimableReward);
       IERC20(reward).transfer(receiver, claimableReward);
       emit IRewardDistributor.Claimed(account, receiver, eligibleRewardAsset, reward, claimableReward);
     }
