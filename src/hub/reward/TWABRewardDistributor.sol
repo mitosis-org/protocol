@@ -155,7 +155,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
     assetRewards.batchReward[batchTimestamp] += amount;
 
-    emit IRewardDistributor.RewardHandled(twabCriteria, reward, amount, $.distributionType, metadata);
+    emit RewardHandled(twabCriteria, reward, amount, $.distributionType, metadata);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
@@ -190,7 +190,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     if (claimableReward > 0) {
       _updateReceipt(receipt, userReward, claimableReward);
       IERC20(reward).transfer(receiver, claimableReward);
-      emit IRewardDistributor.Claimed(account, receiver, eligibleRewardAsset, reward, claimableReward);
+      emit Claimed(account, receiver, eligibleRewardAsset, reward, claimableReward);
     }
   }
 
@@ -214,7 +214,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     _updateReceipt(receipt, userReward, amount);
     IERC20(reward).transfer(receiver, amount);
 
-    emit IRewardDistributor.Claimed(account, receiver, eligibleRewardAsset, reward, amount);
+    emit Claimed(account, receiver, eligibleRewardAsset, reward, amount);
   }
 
   function _updateReceipt(Receipt storage receipt, uint256 userReward, uint256 claimedReward) internal {
