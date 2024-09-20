@@ -88,12 +88,8 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     _setRewardConfigurator($, rewardConfigurator_);
   }
 
-  function setTWABPeriod(uint48 period) external {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertOnlyRewardConfigurator($);
-
-    _setTWABPeriod($, period);
+  function claim(address reward, bytes calldata metadata) external {
+    claim(_msgSender(), reward, metadata);
   }
 
   function claim(address receiver, address reward, bytes calldata metadata) public {
@@ -101,17 +97,13 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     _claimAllReward(_msgSender(), receiver, twabMetadata.twabCriteria, reward, twabMetadata.rewardedAt);
   }
 
-  function claim(address reward, bytes calldata metadata) external {
-    claim(_msgSender(), reward, metadata);
+  function claim(address reward, uint256 amount, bytes calldata metadata) external {
+    claim(_msgSender(), reward, amount, metadata);
   }
 
   function claim(address receiver, address reward, uint256 amount, bytes calldata metadata) public {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
     _claimPartialReward(_msgSender(), receiver, twabMetadata.twabCriteria, reward, twabMetadata.rewardedAt, amount);
-  }
-
-  function claim(address reward, uint256 amount, bytes calldata metadata) external {
-    claim(_msgSender(), reward, amount, metadata);
   }
 
   function handleReward(address, address reward, uint256 amount, bytes calldata metadata) external {
@@ -142,16 +134,16 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
       uint48 prevBatchTimestamp = assetRewards.lastBatchTimestamp - $.twabPeriod;
       uint48 nextBatchTimestamp = assetRewards.lastBatchTimestamp + $.twabPeriod;
 
-      // Move to next batch
+      // Case 1: Move to next batch
       if (nextBatchTimestamp <= rewardedAt + $.twabPeriod) {
         batchTimestamp = nextBatchTimestamp;
         assetRewards.batchTimestamps.push(batchTimestamp);
         assetRewards.lastBatchTimestamp = batchTimestamp;
       } else if (prevBatchTimestamp < rewardedAt + $.twabPeriod) {
-        // Handle previous rewardedAt
+        // Case 2: Handle previous rewardedAt
         batchTimestamp = _findBatchTimestamp(assetRewards.batchTimestamps[0], rewardedAt, $.twabPeriod);
       } else {
-        // In current batch
+        // Case 3: In current batch
         batchTimestamp = assetRewards.lastBatchTimestamp;
       }
     }
@@ -172,14 +164,15 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
   function _findBatchTimestamp(uint48 startBatchTimestamp, uint48 timestamp, uint48 period)
     internal
     pure
-    returns (uint48 result)
+    returns (uint48)
   {
-    if (startBatchTimestamp > timestamp) {
-      uint48 periodsAhead = (startBatchTimestamp - timestamp + period - 1) / period;
-      result = startBatchTimestamp + periodsAhead * period;
-    } else {
-      result = startBatchTimestamp;
+    if (timestamp <= startBatchTimestamp) {
+      return startBatchTimestamp;
     }
+    uint48 timeDifference = timestamp - startBatchTimestamp;
+    uint48 periodsPassed = (timeDifference + period - 1) / period;
+    uint48 batchTimestamp = startBatchTimestamp + (periodsPassed * period);
+    return _roundUpToMidnight(batchTimestamp);
   }
 
   function _claimAllReward(address account, address receiver, address twabCriteria, address reward, uint48 rewardedAt)
@@ -270,6 +263,9 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
   function _assertValidRewardMetadata(RewardTWABMetadata memory metadata) internal view {
     require(metadata.twabCriteria != address(0), ITWABRewardDistributor__InvalidTWABCriteria());
+    // TODO(ray): handleReward.Case 2, we should consider removing this
+    // require, which means that the `batchTimestamps` array will no
+    // longer be sorted.
     require(metadata.rewardedAt == block.timestamp, ITWABRewardDistributor__InvalidRewardedAt());
   }
 }
