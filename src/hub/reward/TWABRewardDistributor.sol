@@ -132,6 +132,9 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     uint48 batchTimestamp;
 
     if (batchTimestamps.length == 0) {
+      // note(ray): We round `batchTimestamp` up to midnight because it's
+      // convenient for future calls. It ensures that the batch reward for
+      // all `twabCriteria` has the same `batchTimestamp` range.
       batchTimestamp = _roundUpToMidnight(rewardedAt + $.twabPeriod);
       assetRewards.batchTimestamps.push(batchTimestamp);
       assetRewards.lastBatchTimestamp = batchTimestamp;
