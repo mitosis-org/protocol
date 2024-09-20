@@ -45,28 +45,28 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     return RewardTWABMetadata({ twabCriteria: twabCriteria, rewardedAt: rewardedAt }).encode();
   }
 
-  function claimable(address account, address asset, bytes calldata metadata) external view returns (bool) {
-    return claimableAmount(account, asset, metadata) > 0;
+  function claimable(address account, address reward, bytes calldata metadata) external view returns (bool) {
+    return claimableAmount(account, reward, metadata) > 0;
   }
 
-  function claimableAmount(address account, address asset, bytes calldata metadata) public view returns (uint256) {
+  function claimableAmount(address account, address reward, bytes calldata metadata) public view returns (uint256) {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
 
     address eligibleRewardAsset = twabMetadata.twabCriteria;
     uint48 rewardedAt = twabMetadata.rewardedAt;
 
     StorageV1 storage $ = _getStorageV1();
-    Receipt storage receipt = _receipt($, account, eligibleRewardAsset, asset, rewardedAt);
+    Receipt storage receipt = _receipt($, account, eligibleRewardAsset, reward, rewardedAt);
 
     if (receipt.claimed) return 0;
 
-    uint256 userReward = _calculateUserReward($, eligibleRewardAsset, account, asset, rewardedAt);
+    uint256 userReward = _calculateUserReward($, eligibleRewardAsset, account, reward, rewardedAt);
 
     return userReward - receipt.claimedAmount;
   }
 
-  function getFirstBatchTimestamp(address eligibleRewardAsset, address asset) external view returns (uint256) {
-    AssetRewards storage assetRewards = _assetRewards(eligibleRewardAsset, asset);
+  function getFirstBatchTimestamp(address eligibleRewardAsset, address reward) external view returns (uint256) {
+    AssetRewards storage assetRewards = _assetRewards(eligibleRewardAsset, reward);
     return assetRewards.batchTimestamps.length == 0 ? 0 : assetRewards.batchTimestamps[0];
   }
 

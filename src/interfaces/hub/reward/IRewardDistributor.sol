@@ -35,7 +35,7 @@ interface IRewardDistributor is IRewardDistributorStorage {
   );
   event RewardHandled(
     address indexed eligibleRewardAsset,
-    address indexed asset,
+    address indexed reward,
     uint256 indexed amount,
     DistributionType distributionType,
     bytes metadata
@@ -55,9 +55,9 @@ interface IRewardDistributor is IRewardDistributorStorage {
   /// @dev Claims a specific amount of rewards for the specified vault and reward.
   function claim(address reward, uint256 amount, bytes calldata metadata) external;
 
-  /// @dev Handles the distribution of rewards for the specified vault and asset.
+  /// @dev Handles the distribution of rewards for the specified vault and reward.
   /// This method can only be called by the RewardManager.
-  function handleReward(address eolVault, address asset, uint256 amount, bytes calldata metadata) external;
+  function handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) external;
 
   /// @dev Sets the RewardManager address.
   function setRewardManager(address rewardManager_) external;

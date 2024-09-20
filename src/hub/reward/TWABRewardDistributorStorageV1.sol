@@ -31,7 +31,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
     address rewardManager;
     string description;
     uint48 twabPeriod;
-    mapping(address eligibleRewardAsset => mapping(address asset => AssetRewards AssetRewards)) rewards;
+    mapping(address eligibleRewardAsset => mapping(address reward => AssetRewards AssetRewards)) rewards;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.TWABRewardDistributorStorage.v1';
@@ -87,44 +87,46 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _assetRewards(address eligibleRewardAsset, address asset) internal view returns (AssetRewards storage) {
-    return _getStorageV1().rewards[eligibleRewardAsset][asset];
+  function _assetRewards(address eligibleRewardAsset, address reward) internal view returns (AssetRewards storage) {
+    return _getStorageV1().rewards[eligibleRewardAsset][reward];
   }
 
-  function _assetRewards(StorageV1 storage $, address eligibleRewardAsset, address asset)
+  function _assetRewards(StorageV1 storage $, address eligibleRewardAsset, address reward)
     internal
     view
     returns (AssetRewards storage)
   {
-    return $.rewards[eligibleRewardAsset][asset];
+    return $.rewards[eligibleRewardAsset][reward];
   }
 
-  function _receipt(address account, address eligibleRewardAsset, address asset, uint48 rewardedAt)
+  function _receipt(address account, address eligibleRewardAsset, address reward, uint48 rewardedAt)
     internal
     view
     returns (Receipt storage)
   {
-    return _getStorageV1().rewards[eligibleRewardAsset][asset].receipts[rewardedAt][account];
+    return _getStorageV1().rewards[eligibleRewardAsset][reward].receipts[rewardedAt][account];
   }
 
-  function _receipt(StorageV1 storage $, address account, address eligibleRewardAsset, address asset, uint48 rewardedAt)
-    internal
-    view
-    returns (Receipt storage)
-  {
-    return $.rewards[eligibleRewardAsset][asset].receipts[rewardedAt][account];
+  function _receipt(
+    StorageV1 storage $,
+    address account,
+    address eligibleRewardAsset,
+    address reward,
+    uint48 rewardedAt
+  ) internal view returns (Receipt storage) {
+    return $.rewards[eligibleRewardAsset][reward].receipts[rewardedAt][account];
   }
 
-  function _totalReward(address eligibleRewardAsset, address asset, uint48 rewardedAt) internal view returns (uint256) {
-    return _getStorageV1().rewards[eligibleRewardAsset][asset].batchReward[rewardedAt];
+  function _totalReward(address eligibleRewardAsset, address reward, uint48 rewardedAt) internal view returns (uint256) {
+    return _getStorageV1().rewards[eligibleRewardAsset][reward].batchReward[rewardedAt];
   }
 
-  function _totalReward(StorageV1 storage $, address eligibleRewardAsset, address asset, uint48 rewardedAt)
+  function _totalReward(StorageV1 storage $, address eligibleRewardAsset, address reward, uint48 rewardedAt)
     internal
     view
     returns (uint256)
   {
-    return $.rewards[eligibleRewardAsset][asset].batchReward[rewardedAt];
+    return $.rewards[eligibleRewardAsset][reward].batchReward[rewardedAt];
   }
 
   function _assertOnlyRewardManager(StorageV1 storage $) internal view {
