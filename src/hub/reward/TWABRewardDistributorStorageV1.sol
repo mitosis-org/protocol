@@ -31,7 +31,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
     address rewardManager;
     string description;
     uint48 twabPeriod;
-    mapping(address twabCriteria => mapping(address reward => AssetRewards AssetRewards)) rewards;
+    mapping(address twabCriteria => mapping(address reward => AssetRewards assetRewards)) rewards;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.TWABRewardDistributorStorage.v1';
