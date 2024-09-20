@@ -19,5 +19,5 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
   error ITWABRewardDistributor__InvalidRewardedAt();
 
   /// @dev Returns the first batch timestamp. If it does not exist, returns zero.
-  function getFirstBatchTimestamp(address eolVault, address asset) external view returns (uint256);
+  function getFirstBatchTimestamp(address twabCriteria, address asset) external view returns (uint48);
 }

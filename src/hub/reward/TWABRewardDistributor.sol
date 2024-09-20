@@ -52,21 +52,21 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
   function claimableAmount(address account, address reward, bytes calldata metadata) public view returns (uint256) {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
 
-    address eligibleRewardAsset = twabMetadata.twabCriteria;
+    address twabCriteria = twabMetadata.twabCriteria;
     uint48 rewardedAt = twabMetadata.rewardedAt;
 
     StorageV1 storage $ = _getStorageV1();
-    Receipt storage receipt = _receipt($, account, eligibleRewardAsset, reward, rewardedAt);
+    Receipt storage receipt = _receipt($, account, twabCriteria, reward, rewardedAt);
 
     if (receipt.claimed) return 0;
 
-    uint256 userReward = _calculateUserReward($, eligibleRewardAsset, account, reward, rewardedAt);
+    uint256 userReward = _calculateUserReward($, twabCriteria, account, reward, rewardedAt);
 
     return userReward - receipt.claimedAmount;
   }
 
-  function getFirstBatchTimestamp(address eligibleRewardAsset, address reward) external view returns (uint256) {
-    AssetRewards storage assetRewards = _assetRewards(eligibleRewardAsset, reward);
+  function getFirstBatchTimestamp(address twabCriteria, address reward) external view returns (uint48) {
+    AssetRewards storage assetRewards = _assetRewards(twabCriteria, reward);
     return assetRewards.batchTimestamps.length == 0 ? 0 : assetRewards.batchTimestamps[0];
   }
 
@@ -173,40 +173,36 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     }
   }
 
-  function _claimAllReward(
-    address account,
-    address receiver,
-    address eligibleRewardAsset,
-    address reward,
-    uint48 rewardedAt
-  ) internal {
+  function _claimAllReward(address account, address receiver, address twabCriteria, address reward, uint48 rewardedAt)
+    internal
+  {
     StorageV1 storage $ = _getStorageV1();
-    AssetRewards storage assetRewards = _assetRewards($, eligibleRewardAsset, reward);
+    AssetRewards storage assetRewards = _assetRewards($, twabCriteria, reward);
     Receipt storage receipt = assetRewards.receipts[rewardedAt][account];
 
-    uint256 userReward = _calculateUserReward($, eligibleRewardAsset, account, reward, rewardedAt);
+    uint256 userReward = _calculateUserReward($, twabCriteria, account, reward, rewardedAt);
     uint256 claimableReward = userReward - receipt.claimedAmount;
 
     if (claimableReward > 0) {
       _updateReceipt(receipt, userReward, claimableReward);
       IERC20(reward).transfer(receiver, claimableReward);
-      emit Claimed(account, receiver, eligibleRewardAsset, reward, claimableReward);
+      emit Claimed(account, receiver, twabCriteria, reward, claimableReward);
     }
   }
 
   function _claimPartialReward(
     address account,
     address receiver,
-    address eligibleRewardAsset,
+    address twabCriteria,
     address reward,
     uint48 rewardedAt,
     uint256 amount
   ) internal {
     StorageV1 storage $ = _getStorageV1();
-    AssetRewards storage assetRewards = _assetRewards($, eligibleRewardAsset, reward);
+    AssetRewards storage assetRewards = _assetRewards($, twabCriteria, reward);
     Receipt storage receipt = assetRewards.receipts[rewardedAt][account];
 
-    uint256 userReward = _calculateUserReward($, eligibleRewardAsset, account, reward, rewardedAt);
+    uint256 userReward = _calculateUserReward($, twabCriteria, account, reward, rewardedAt);
     uint256 claimableReward = userReward - receipt.claimedAmount;
 
     require(claimableReward >= amount, ITWABRewardDistributor__InsufficientReward());
@@ -214,7 +210,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     _updateReceipt(receipt, userReward, amount);
     IERC20(reward).transfer(receiver, amount);
 
-    emit Claimed(account, receiver, eligibleRewardAsset, reward, amount);
+    emit Claimed(account, receiver, twabCriteria, reward, amount);
   }
 
   function _updateReceipt(Receipt storage receipt, uint256 userReward, uint256 claimedReward) internal {
@@ -224,7 +220,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     }
   }
 
-  function _calculateUserRatio(StorageV1 storage $, address eligibleRewardAsset, address account, uint48 rewardedAt)
+  function _calculateUserRatio(StorageV1 storage $, address twabCriteria, address account, uint48 rewardedAt)
     internal
     view
     returns (uint256)
@@ -234,7 +230,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
     uint48 endsAt = rewardedAt;
 
-    ITWABSnapshots criteria = ITWABSnapshots(eligibleRewardAsset);
+    ITWABSnapshots criteria = ITWABSnapshots(twabCriteria);
 
     uint256 totalTWAB = criteria.getTotalTWABByTimestampRange(startsAt, endsAt);
     if (totalTWAB == 0) return 0;
@@ -252,13 +248,13 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
   function _calculateUserReward(
     StorageV1 storage $,
-    address eligibleRewardAsset,
+    address twabCriteria,
     address account,
     address reward,
     uint48 rewardedAt
   ) internal view returns (uint256) {
-    uint256 totalReward = _batchRewards($, eligibleRewardAsset, reward, rewardedAt);
-    uint256 userRatio = _calculateUserRatio($, eligibleRewardAsset, account, rewardedAt);
+    uint256 totalReward = _batchRewards($, twabCriteria, reward, rewardedAt);
+    uint256 userRatio = _calculateUserRatio($, twabCriteria, account, rewardedAt);
     uint256 precision = IRewardConfigurator($.rewardConfigurator).rewardRatioPrecision();
     return Math.mulDiv(totalReward, userRatio, precision);
   }
