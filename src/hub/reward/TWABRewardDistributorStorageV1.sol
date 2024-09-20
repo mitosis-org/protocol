@@ -13,11 +13,6 @@ import { StdError } from '../../lib/StdError.sol';
 abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorageV1, ContextUpgradeable {
   using ERC7201Utils for string;
 
-  struct RewardInfo {
-    ITWABSnapshots twabCriteria;
-    uint256 total;
-  }
-
   struct Receipt {
     bool claimed;
     uint256 claimedAmount;
@@ -26,7 +21,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   struct AssetRewards {
     uint48 lastBatchTimestamp;
     uint48[] batchTimestamps;
-    mapping(uint48 batchTimestamp => RewardInfo[] rewardInfos) rewardBatches;
+    mapping(uint48 batchTimestamp => uint256 total) batchReward;
     mapping(uint48 batchTimestamp => mapping(address account => Receipt receipt)) receipts;
   }
 
@@ -36,7 +31,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
     address rewardManager;
     string description;
     uint48 twabPeriod;
-    mapping(address eolVault => mapping(address asset => AssetRewards assetRewards)) eolVaultRewards;
+    mapping(address eligibleRewardAsset => mapping(address asset => AssetRewards AssetRewards)) rewards;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.TWABRewardDistributorStorage.v1';
@@ -92,48 +87,44 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _assetRewards(address eolVault, address asset) internal view returns (AssetRewards storage) {
-    return _getStorageV1().eolVaultRewards[eolVault][asset];
+  function _assetRewards(address eligibleRewardAsset, address asset) internal view returns (AssetRewards storage) {
+    return _getStorageV1().rewards[eligibleRewardAsset][asset];
   }
 
-  function _assetRewards(StorageV1 storage $, address eolVault, address asset)
+  function _assetRewards(StorageV1 storage $, address eligibleRewardAsset, address asset)
     internal
     view
     returns (AssetRewards storage)
   {
-    return $.eolVaultRewards[eolVault][asset];
+    return $.rewards[eligibleRewardAsset][asset];
   }
 
-  function _receipt(address account, address eolVault, address asset, uint48 rewardedAt)
+  function _receipt(address account, address eligibleRewardAsset, address asset, uint48 rewardedAt)
     internal
     view
     returns (Receipt storage)
   {
-    return _getStorageV1().eolVaultRewards[eolVault][asset].receipts[rewardedAt][account];
+    return _getStorageV1().rewards[eligibleRewardAsset][asset].receipts[rewardedAt][account];
   }
 
-  function _receipt(StorageV1 storage $, address account, address eolVault, address asset, uint48 rewardedAt)
+  function _receipt(StorageV1 storage $, address account, address eligibleRewardAsset, address asset, uint48 rewardedAt)
     internal
     view
     returns (Receipt storage)
   {
-    return $.eolVaultRewards[eolVault][asset].receipts[rewardedAt][account];
+    return $.rewards[eligibleRewardAsset][asset].receipts[rewardedAt][account];
   }
 
-  function _rewardInfos(address eolVault, address asset, uint48 rewardedAt)
-    internal
-    view
-    returns (RewardInfo[] storage)
-  {
-    return _getStorageV1().eolVaultRewards[eolVault][asset].rewardBatches[rewardedAt];
+  function _totalReward(address eligibleRewardAsset, address asset, uint48 rewardedAt) internal view returns (uint256) {
+    return _getStorageV1().rewards[eligibleRewardAsset][asset].batchReward[rewardedAt];
   }
 
-  function _rewardInfos(StorageV1 storage $, address eolVault, address asset, uint48 rewardedAt)
+  function _totalReward(StorageV1 storage $, address eligibleRewardAsset, address asset, uint48 rewardedAt)
     internal
     view
-    returns (RewardInfo[] storage)
+    returns (uint256)
   {
-    return $.eolVaultRewards[eolVault][asset].rewardBatches[rewardedAt];
+    return $.rewards[eligibleRewardAsset][asset].batchReward[rewardedAt];
   }
 
   function _assertOnlyRewardManager(StorageV1 storage $) internal view {

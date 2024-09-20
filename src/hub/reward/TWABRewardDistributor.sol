@@ -45,15 +45,15 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     return RewardTWABMetadata({ twabCriteria: twabCriteria, rewardedAt: rewardedAt }).encode();
   }
 
-  function claimable(address account, address eolVault, address asset, bytes calldata metadata)
+  function claimable(address account, address eligibleRewardAsset, address asset, bytes calldata metadata)
     external
     view
     returns (bool)
   {
-    return claimableAmount(account, eolVault, asset, metadata) > 0;
+    return claimableAmount(account, eligibleRewardAsset, asset, metadata) > 0;
   }
 
-  function claimableAmount(address account, address eolVault, address asset, bytes calldata metadata)
+  function claimableAmount(address account, address eligibleRewardAsset, address asset, bytes calldata metadata)
     public
     view
     returns (uint256)
@@ -63,18 +63,17 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     uint48 rewardedAt = twabMetadata.rewardedAt;
 
     StorageV1 storage $ = _getStorageV1();
-
-    RewardInfo[] storage rewards = _rewardInfos($, eolVault, asset, rewardedAt);
-    Receipt storage receipt = _receipt($, account, eolVault, asset, rewardedAt);
+    Receipt storage receipt = _receipt($, account, eligibleRewardAsset, asset, rewardedAt);
 
     if (receipt.claimed) return 0;
 
-    uint256 totalReawrd = _calculateTotalReward($, rewards, account, rewardedAt);
-    return totalReawrd - receipt.claimedAmount;
+    uint256 userReward = _calculateUserReward($, eligibleRewardAsset, account, asset, rewardedAt);
+
+    return userReward - receipt.claimedAmount;
   }
 
-  function getFirstBatchTimestamp(address eolVault, address asset) external view returns (uint256) {
-    AssetRewards storage assetRewards = _assetRewards(eolVault, asset);
+  function getFirstBatchTimestamp(address eligibleRewardAsset, address asset) external view returns (uint256) {
+    AssetRewards storage assetRewards = _assetRewards(eligibleRewardAsset, asset);
     return assetRewards.batchTimestamps.length == 0 ? 0 : assetRewards.batchTimestamps[0];
   }
 
@@ -104,25 +103,27 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     _setTWABPeriod($, period);
   }
 
-  function claim(address receiver, address eolVault, address reward, bytes calldata metadata) public {
+  function claim(address receiver, address eligibleRewardAsset, address reward, bytes calldata metadata) public {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-    _claimAllReward(_msgSender(), receiver, eolVault, reward, twabMetadata.rewardedAt);
+    _claimAllReward(_msgSender(), receiver, eligibleRewardAsset, reward, twabMetadata.rewardedAt);
   }
 
-  function claim(address eolVault, address reward, bytes calldata metadata) external {
-    claim(_msgSender(), eolVault, reward, metadata);
+  function claim(address eligibleRewardAsset, address reward, bytes calldata metadata) external {
+    claim(_msgSender(), eligibleRewardAsset, reward, metadata);
   }
 
-  function claim(address receiver, address eolVault, address reward, uint256 amount, bytes calldata metadata) public {
+  function claim(address receiver, address eligibleRewardAsset, address reward, uint256 amount, bytes calldata metadata)
+    public
+  {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-    _claimPartialReward(_msgSender(), receiver, eolVault, reward, twabMetadata.rewardedAt, amount);
+    _claimPartialReward(_msgSender(), receiver, eligibleRewardAsset, reward, twabMetadata.rewardedAt, amount);
   }
 
-  function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
-    claim(_msgSender(), eolVault, reward, amount, metadata);
+  function claim(address eligibleRewardAsset, address reward, uint256 amount, bytes calldata metadata) external {
+    claim(_msgSender(), eligibleRewardAsset, reward, amount, metadata);
   }
 
-  function handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
+  function handleReward(address, address reward, uint256 amount, bytes calldata metadata) external {
     StorageV1 storage $ = _getStorageV1();
     _assertOnlyRewardManager($);
 
@@ -131,11 +132,13 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
     _assertValidRewardMetadata(twabMetadata);
 
-    AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
+    address twabCriteria = twabMetadata.twabCriteria;
+    uint48 rewardedAt = twabMetadata.rewardedAt;
+
+    AssetRewards storage assetRewards = _assetRewards($, twabCriteria, reward);
     uint48[] storage batchTimestamps = assetRewards.batchTimestamps;
 
     uint48 batchTimestamp;
-    uint48 rewardedAt = twabMetadata.rewardedAt;
 
     if (batchTimestamps.length == 0) {
       batchTimestamp = rewardedAt;
@@ -159,11 +162,9 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
       }
     }
 
-    assetRewards.rewardBatches[batchTimestamp].push(
-      RewardInfo({ twabCriteria: ITWABSnapshots(twabMetadata.twabCriteria), total: amount })
-    );
+    assetRewards.batchReward[batchTimestamp] += amount;
 
-    emit IRewardDistributor.RewardHandled(eolVault, reward, amount, $.distributionType, metadata);
+    emit IRewardDistributor.RewardHandled(twabCriteria, reward, amount, $.distributionType, metadata);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
@@ -181,78 +182,68 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     }
   }
 
-  function _calculateTotalReward(StorageV1 storage $, RewardInfo[] storage rewards, address account, uint48 rewardedAt)
-    internal
-    view
-    returns (uint256 totalReward)
-  {
-    for (uint256 i = 0; i < rewards.length; i++) {
-      RewardInfo storage rewardInfo = rewards[i];
-      uint256 rewardAmount = _calculateUserReward($, rewardInfo, account, rewardedAt);
-      totalReward += rewardAmount;
-    }
-  }
-
-  function _claimAllReward(address account, address receiver, address eolVault, address reward, uint48 rewardedAt)
-    internal
-  {
+  function _claimAllReward(
+    address account,
+    address receiver,
+    address eligibleRewardAsset,
+    address reward,
+    uint48 rewardedAt
+  ) internal {
     StorageV1 storage $ = _getStorageV1();
-    AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
+    AssetRewards storage assetRewards = _assetRewards($, eligibleRewardAsset, reward);
     Receipt storage receipt = assetRewards.receipts[rewardedAt][account];
 
-    uint256 totalReward = _calculateTotalReward($, assetRewards.rewardBatches[rewardedAt], account, rewardedAt);
+    uint256 totalReward = assetRewards.batchReward[rewardedAt];
     uint256 claimableReward = totalReward - receipt.claimedAmount;
 
     if (claimableReward > 0) {
       _updateReceipt(receipt, totalReward, claimableReward);
       IERC20(reward).transfer(receiver, claimableReward);
-      emit IRewardDistributor.Claimed(account, receiver, eolVault, reward, claimableReward);
+      emit IRewardDistributor.Claimed(account, receiver, eligibleRewardAsset, reward, claimableReward);
     }
   }
 
   function _claimPartialReward(
     address account,
     address receiver,
-    address eolVault,
+    address eligibleRewardAsset,
     address reward,
     uint48 rewardedAt,
     uint256 amount
   ) internal {
     StorageV1 storage $ = _getStorageV1();
-    AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
+    AssetRewards storage assetRewards = _assetRewards($, eligibleRewardAsset, reward);
     Receipt storage receipt = assetRewards.receipts[rewardedAt][account];
 
-    uint256 totalReward = _calculateTotalReward($, assetRewards.rewardBatches[rewardedAt], account, rewardedAt);
-    uint256 claimableReward = totalReward - receipt.claimedAmount;
+    uint256 userReward = _calculateUserReward($, eligibleRewardAsset, account, reward, rewardedAt);
+    uint256 claimableReward = userReward - receipt.claimedAmount;
 
     require(claimableReward >= amount, ITWABRewardDistributor__InsufficientReward());
 
-    _updateReceipt(receipt, totalReward, amount);
+    _updateReceipt(receipt, userReward, amount);
     IERC20(reward).transfer(receiver, amount);
 
-    emit IRewardDistributor.Claimed(account, receiver, eolVault, reward, amount);
+    emit IRewardDistributor.Claimed(account, receiver, eligibleRewardAsset, reward, amount);
   }
 
-  function _updateReceipt(Receipt storage receipt, uint256 totalReward, uint256 claimedReward) internal {
+  function _updateReceipt(Receipt storage receipt, uint256 userReward, uint256 claimedReward) internal {
     receipt.claimedAmount += claimedReward;
-    if (receipt.claimedAmount == totalReward) {
+    if (receipt.claimedAmount == userReward) {
       receipt.claimed = true;
     }
   }
 
-  function _calculateUserReward(StorageV1 storage $, RewardInfo storage rewardInfo, address account, uint48 rewardedAt)
+  function _calculateUserRatio(StorageV1 storage $, address eligibleRewardAsset, address account, uint48 rewardedAt)
     internal
     view
     returns (uint256)
   {
-    uint48 twabPeriod = $.twabPeriod;
     uint48 startsAt;
-    startsAt = twabPeriod > rewardedAt ? 0 : rewardedAt - twabPeriod;
+    startsAt = $.twabPeriod > rewardedAt ? 0 : rewardedAt - $.twabPeriod;
 
     uint48 endsAt = rewardedAt;
 
-    // TODO: Improve me. If has same criteria, we don't need to get the TWAB per call.
-    ITWABSnapshots criteria = rewardInfo.twabCriteria;
+    ITWABSnapshots criteria = ITWABSnapshots(eligibleRewardAsset);
 
     uint256 totalTWAB = criteria.getTotalTWABByTimestampRange(startsAt, endsAt);
     if (totalTWAB == 0) return 0;
@@ -265,7 +256,20 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     uint256 userRatio = Math.mulDiv(userTWAB, precision, totalTWAB);
     if (userRatio == 0) return 0;
 
-    return Math.mulDiv(rewardInfo.total, userRatio, precision);
+    return userRatio;
+  }
+
+  function _calculateUserReward(
+    StorageV1 storage $,
+    address eligibleRewardAsset,
+    address account,
+    address reward,
+    uint48 rewardedAt
+  ) internal view returns (uint256) {
+    uint256 totalReward = _totalReward($, eligibleRewardAsset, reward, rewardedAt);
+    uint256 userRatio = _calculateUserRatio($, eligibleRewardAsset, account, rewardedAt);
+    uint256 precision = IRewardConfigurator($.rewardConfigurator).rewardRatioPrecision();
+    return Math.mulDiv(totalReward, userRatio, precision);
   }
 
   function _assertValidRewardMetadata(RewardTWABMetadata memory metadata) internal view {
