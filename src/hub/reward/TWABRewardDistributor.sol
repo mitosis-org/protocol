@@ -153,7 +153,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
       }
     }
 
-    assetRewards.batchReward[batchTimestamp] += amount;
+    assetRewards.batchRewards[batchTimestamp] += amount;
 
     emit RewardHandled(twabCriteria, reward, amount, $.distributionType, metadata);
   }
@@ -257,7 +257,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     address reward,
     uint48 rewardedAt
   ) internal view returns (uint256) {
-    uint256 totalReward = _totalReward($, eligibleRewardAsset, reward, rewardedAt);
+    uint256 totalReward = _batchRewards($, eligibleRewardAsset, reward, rewardedAt);
     uint256 userRatio = _calculateUserRatio($, eligibleRewardAsset, account, rewardedAt);
     uint256 precision = IRewardConfigurator($.rewardConfigurator).rewardRatioPrecision();
     return Math.mulDiv(totalReward, userRatio, precision);

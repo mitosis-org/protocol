@@ -21,7 +21,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   struct AssetRewards {
     uint48 lastBatchTimestamp;
     uint48[] batchTimestamps;
-    mapping(uint48 batchTimestamp => uint256 total) batchReward;
+    mapping(uint48 batchTimestamp => uint256 total) batchRewards;
     mapping(uint48 batchTimestamp => mapping(address account => Receipt receipt)) receipts;
   }
 
@@ -117,16 +117,20 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
     return $.rewards[eligibleRewardAsset][reward].receipts[rewardedAt][account];
   }
 
-  function _totalReward(address eligibleRewardAsset, address reward, uint48 rewardedAt) internal view returns (uint256) {
-    return _getStorageV1().rewards[eligibleRewardAsset][reward].batchReward[rewardedAt];
-  }
-
-  function _totalReward(StorageV1 storage $, address eligibleRewardAsset, address reward, uint48 rewardedAt)
+  function _batchRewards(address eligibleRewardAsset, address reward, uint48 rewardedAt)
     internal
     view
     returns (uint256)
   {
-    return $.rewards[eligibleRewardAsset][reward].batchReward[rewardedAt];
+    return _getStorageV1().rewards[eligibleRewardAsset][reward].batchRewards[rewardedAt];
+  }
+
+  function _batchRewards(StorageV1 storage $, address eligibleRewardAsset, address reward, uint48 rewardedAt)
+    internal
+    view
+    returns (uint256)
+  {
+    return $.rewards[eligibleRewardAsset][reward].batchRewards[rewardedAt];
   }
 
   function _assertOnlyRewardManager(StorageV1 storage $) internal view {
