@@ -22,6 +22,8 @@ contract TWABRewardDistributortTest is Test {
   ProxyAdmin internal _proxyAdmin;
   address immutable owner = makeAddr('owner');
 
+  uint48 twabPeriod = 100;
+
   function setUp() public {
     rewardConfigurator = new MockRewardConfigurator(10e8);
 
@@ -34,7 +36,7 @@ contract TWABRewardDistributortTest is Test {
           new TransparentUpgradeableProxy(
             address(twabRewardDistributorImpl),
             address(_proxyAdmin),
-            abi.encodeCall(twabRewardDistributor.initialize, (owner, owner, address(rewardConfigurator), 100))
+            abi.encodeCall(twabRewardDistributor.initialize, (owner, owner, address(rewardConfigurator), twabPeriod))
           )
         )
       )
@@ -52,9 +54,11 @@ contract TWABRewardDistributortTest is Test {
     vm.startPrank(owner);
 
     uint256 ownerAmount = 10 ether;
-    uint256 userAmount = 90 ether;
+    uint256 rewardAmount = 10 ether;
+    uint256 userAmount = 80 ether;
 
     token.mint(owner, ownerAmount);
+    token.mint(owner, rewardAmount);
     token.mint(address(1), userAmount);
     token.approve(address(twabRewardDistributor), ownerAmount);
 
@@ -62,17 +66,32 @@ contract TWABRewardDistributortTest is Test {
 
     bytes memory metadata = twabRewardDistributor.encodeMetadata(address(token), 200);
 
-    twabRewardDistributor.handleReward(eolVault, address(token), ownerAmount, metadata);
+    twabRewardDistributor.handleReward(eolVault, address(token), rewardAmount, metadata);
 
-    vm.warp(300);
+    assertEq(twabRewardDistributor.getFirstBatchTimestamp(address(token), address(token)), 200 + twabPeriod);
 
+    vm.warp(301);
+
+    metadata = twabRewardDistributor.encodeMetadata(address(token), 300);
+
+    uint256 prevBalance;
+    uint256 expectReward;
+
+    prevBalance = token.balanceOf(owner);
+    expectReward = 10 ether / 100 * 10;
     twabRewardDistributor.claim(address(token), metadata);
-    assertTrue(token.balanceOf(owner) == 10 ether / 100 * 10);
+    assertTrue(token.balanceOf(owner) == prevBalance + expectReward);
 
     vm.stopPrank();
 
-    vm.prank(address(1));
+    vm.startPrank(address(1));
+
+    prevBalance = token.balanceOf(address(1));
+    expectReward = 10 ether / 100 * 80;
+
     twabRewardDistributor.claim(address(token), metadata);
-    assertTrue(token.balanceOf(address(1)) == 10 ether / 100 * 90 + userAmount);
+    assertTrue(token.balanceOf(address(1)) == prevBalance + expectReward);
+
+    vm.stopPrank();
   }
 }
