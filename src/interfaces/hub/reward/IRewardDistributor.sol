@@ -52,8 +52,14 @@ interface IRewardDistributor is IRewardDistributorStorage {
   /// @dev Claims all of the rewards for the specified vault and reward.
   function claim(address reward, bytes calldata metadata) external;
 
+  /// @dev Claims all of the rewards for the specified vault and reward, sending them to the receiver.
+  function claim(address receiver, address reward, bytes calldata metadata) external;
+
   /// @dev Claims a specific amount of rewards for the specified vault and reward.
   function claim(address reward, uint256 amount, bytes calldata metadata) external;
+
+  /// @dev Claims a specific amount of rewards for the specified vault and reward, sending them to the receiver.
+  function claim(address receiver, address reward, uint256 amount, bytes calldata metadata) external;
 
   /// @dev Handles the distribution of rewards for the specified vault and reward.
   /// This method can only be called by the RewardManager.
