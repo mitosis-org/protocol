@@ -132,9 +132,9 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     uint48 batchTimestamp;
 
     if (batchTimestamps.length == 0) {
-      batchTimestamp = rewardedAt;
-      assetRewards.batchTimestamps.push(rewardedAt);
-      assetRewards.lastBatchTimestamp = rewardedAt;
+      batchTimestamp = rewardedAt + $.twabPeriod;
+      assetRewards.batchTimestamps.push(batchTimestamp);
+      assetRewards.lastBatchTimestamp = batchTimestamp;
     } else {
       uint48 prevBatchTimestamp = assetRewards.lastBatchTimestamp - $.twabPeriod;
       uint48 nextBatchTimestamp = assetRewards.lastBatchTimestamp + $.twabPeriod;
