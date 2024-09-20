@@ -15,8 +15,8 @@ import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { IRewardDistributor, DistributionType } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { LibDistributorRewardMetadata, RewardTWABMetadata } from '../reward/LibDistributorRewardMetadata.sol';
 import { EOLRewardManagerStorageV1 } from './EOLRewardManagerStorageV1.sol';
+import { LibDistributorRewardMetadata, RewardTWABMetadata } from '../reward/LibDistributorRewardMetadata.sol';
 
 contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewardManagerStorageV1 {
   using LibDistributorRewardMetadata for RewardTWABMetadata;
@@ -66,7 +66,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     _routeHubAssetHolderClaimableReward($, eolVault, reward, hubAssetHolderReward);
   }
 
-  function routeExtraReward(address eolVault, address reward, uint256 amount) external onlyAssetManager {
+  function routeExtraRewards(address eolVault, address reward, uint256 amount) external onlyAssetManager {
     IHubAsset(reward).transferFrom(_msgSender(), address(this), amount);
 
     StorageV1 storage $ = _getStorageV1();

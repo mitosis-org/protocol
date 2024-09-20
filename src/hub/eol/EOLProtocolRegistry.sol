@@ -8,7 +8,7 @@ import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeabl
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 
-import { IEOLProtocolRegistry } from '../../interfaces/eol/IEOLProtocolRegistry.sol';
+import { IEOLProtocolRegistry } from '../../interfaces/hub/eol/IEOLProtocolRegistry.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { EOLProtocolRegistryStorageV1, ProtocolInfo } from './EOLProtocolRegistryStorageV1.sol';
 

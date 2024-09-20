@@ -63,10 +63,10 @@ jobs:
         run: |
           forge --version
 
-      - name: Run Forge fmt
+      - name: Run linter checks
         run: |
-          forge fmt --check
-        id: fmt
+          yarn lint:check
+        id: lint
 
       - name: Run Forge build
         run: |

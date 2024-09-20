@@ -25,6 +25,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   event AssetInitialized(address asset);
 
   event Deposited(address indexed asset, address indexed to, uint256 amount);
+  event DepositedWithOptIn(address indexed asset, address indexed to, address indexed eolVault, uint256 amount);
   event Redeemed(address indexed asset, address indexed to, uint256 amount);
 
   event EOLInitialized(address hubEOLVault, address asset);
@@ -54,6 +55,8 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
   error MitosisVault__EOLNotInitialized(address hubEOLVault);
   error MitosisVault__EOLAlreadyInitialized(address hubEOLVault);
+
+  error MitosisVault__InvalidEOLVault(address hubEOLVault, address asset);
 
   error MitosisVault__StrategyExecutorNotDrained(address hubEOLVault, address strategyExecutor);
 
@@ -94,16 +97,21 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
   function deposit(address asset, address to, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
+    _deposit($, asset, to, amount);
 
-    _assertAssetInitialized($, asset);
-    _assertNotHalted($, asset, AssetAction.Deposit);
-    require(to != address(0), StdError.ZeroAddress('to'));
-    require(amount != 0, StdError.ZeroAmount());
-
-    IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
     $.entrypoint.deposit(asset, to, amount);
-
     emit Deposited(asset, to, amount);
+  }
+
+  function depositWithOptIn(address asset, address to, address hubEOLVault, uint256 amount) external {
+    StorageV1 storage $ = _getStorageV1();
+    _deposit($, asset, to, amount);
+
+    _assertEOLInitialized($, hubEOLVault);
+    require(asset == $.eols[hubEOLVault].asset, MitosisVault__InvalidEOLVault(hubEOLVault, asset));
+
+    $.entrypoint.depositWithOptIn(asset, to, hubEOLVault, amount);
+    emit DepositedWithOptIn(asset, to, hubEOLVault, amount);
   }
 
   function redeem(address asset, address to, uint256 amount) external {
@@ -354,5 +362,14 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   function _resumeEOL(StorageV1 storage $, address hubEOLVault, EOLAction action) internal {
     $.eols[hubEOLVault].isHalted[action] = false;
     emit EOLResumed(hubEOLVault, action);
+  }
+
+  function _deposit(StorageV1 storage $, address asset, address to, uint256 amount) internal {
+    _assertAssetInitialized($, asset);
+    _assertNotHalted($, asset, AssetAction.Deposit);
+    require(to != address(0), StdError.ZeroAddress('to'));
+    require(amount != 0, StdError.ZeroAmount());
+
+    IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
   }
 }

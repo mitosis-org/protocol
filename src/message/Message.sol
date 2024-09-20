@@ -5,6 +5,7 @@ enum MsgType {
   //=========== NOTE: Asset ===========//
   MsgInitializeAsset,
   MsgDeposit,
+  MsgDepositWithOptIn,
   MsgRedeem,
   //=========== NOTE: EOL ===========//
   MsgInitializeEOL,
@@ -24,6 +25,14 @@ struct MsgInitializeAsset {
 struct MsgDeposit {
   bytes32 asset;
   bytes32 to;
+  uint256 amount;
+}
+
+// branch -> hub
+struct MsgDepositWithOptIn {
+  bytes32 asset;
+  bytes32 to;
+  bytes32 eolVault;
   uint256 amount;
 }
 
@@ -77,6 +86,7 @@ library Message {
 
   uint256 public constant LEN_MSG_INITIALIZE_ASSET = 33;
   uint256 public constant LEN_MSG_DEPOSIT = 97;
+  uint256 public constant LEN_MSG_DEPOSIT_WITH_OPT_IN = 129;
   uint256 public constant LEN_MSG_REDEEM = 97;
   uint256 public constant LEN_MSG_INITIALIZE_EOL = 65;
   uint256 public constant LEN_MSG_ALLOCATE_EOL = 65;
@@ -114,6 +124,19 @@ library Message {
     decoded.asset = bytes32(msg_[1:33]);
     decoded.to = bytes32(msg_[33:65]);
     decoded.amount = uint256(bytes32(msg_[65:]));
+  }
+
+  function encode(MsgDepositWithOptIn memory msg_) internal pure returns (bytes memory) {
+    return abi.encodePacked(uint8(MsgType.MsgDepositWithOptIn), msg_.asset, msg_.to, msg_.eolVault, msg_.amount);
+  }
+
+  function decodeDepositWithOptIn(bytes calldata msg_) internal pure returns (MsgDepositWithOptIn memory decoded) {
+    assertMsg(msg_, MsgType.MsgDepositWithOptIn, LEN_MSG_DEPOSIT_WITH_OPT_IN);
+
+    decoded.asset = bytes32(msg_[1:33]);
+    decoded.to = bytes32(msg_[33:65]);
+    decoded.eolVault = bytes32(msg_[65:97]);
+    decoded.amount = uint256(bytes32(msg_[97:]));
   }
 
   function encode(MsgRedeem memory msg_) internal pure returns (bytes memory) {
