@@ -155,7 +155,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
     assetRewards.batchRewards[batchTimestamp] += amount;
 
-    emit RewardHandled(twabCriteria, reward, amount, $.distributionType, metadata);
+    emit RewardHandled(twabCriteria, reward, amount, batchTimestamp, $.distributionType, metadata);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//

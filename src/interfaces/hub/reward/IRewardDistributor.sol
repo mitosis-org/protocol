@@ -37,6 +37,7 @@ interface IRewardDistributor is IRewardDistributorStorage {
     address indexed eligibleRewardAsset,
     address indexed reward,
     uint256 indexed amount,
+    uint256 batchTimestamp,
     DistributionType distributionType,
     bytes metadata
   );
