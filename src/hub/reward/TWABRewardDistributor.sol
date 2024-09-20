@@ -45,21 +45,14 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     return RewardTWABMetadata({ twabCriteria: twabCriteria, rewardedAt: rewardedAt }).encode();
   }
 
-  function claimable(address account, address eligibleRewardAsset, address asset, bytes calldata metadata)
-    external
-    view
-    returns (bool)
-  {
-    return claimableAmount(account, eligibleRewardAsset, asset, metadata) > 0;
+  function claimable(address account, address asset, bytes calldata metadata) external view returns (bool) {
+    return claimableAmount(account, asset, metadata) > 0;
   }
 
-  function claimableAmount(address account, address eligibleRewardAsset, address asset, bytes calldata metadata)
-    public
-    view
-    returns (uint256)
-  {
+  function claimableAmount(address account, address asset, bytes calldata metadata) public view returns (uint256) {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
 
+    address eligibleRewardAsset = twabMetadata.twabCriteria;
     uint48 rewardedAt = twabMetadata.rewardedAt;
 
     StorageV1 storage $ = _getStorageV1();
@@ -103,24 +96,22 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     _setTWABPeriod($, period);
   }
 
-  function claim(address receiver, address eligibleRewardAsset, address reward, bytes calldata metadata) public {
+  function claim(address receiver, address reward, bytes calldata metadata) public {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-    _claimAllReward(_msgSender(), receiver, eligibleRewardAsset, reward, twabMetadata.rewardedAt);
+    _claimAllReward(_msgSender(), receiver, twabMetadata.twabCriteria, reward, twabMetadata.rewardedAt);
   }
 
-  function claim(address eligibleRewardAsset, address reward, bytes calldata metadata) external {
-    claim(_msgSender(), eligibleRewardAsset, reward, metadata);
+  function claim(address reward, bytes calldata metadata) external {
+    claim(_msgSender(), reward, metadata);
   }
 
-  function claim(address receiver, address eligibleRewardAsset, address reward, uint256 amount, bytes calldata metadata)
-    public
-  {
+  function claim(address receiver, address reward, uint256 amount, bytes calldata metadata) public {
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-    _claimPartialReward(_msgSender(), receiver, eligibleRewardAsset, reward, twabMetadata.rewardedAt, amount);
+    _claimPartialReward(_msgSender(), receiver, twabMetadata.twabCriteria, reward, twabMetadata.rewardedAt, amount);
   }
 
-  function claim(address eligibleRewardAsset, address reward, uint256 amount, bytes calldata metadata) external {
-    claim(_msgSender(), eligibleRewardAsset, reward, amount, metadata);
+  function claim(address reward, uint256 amount, bytes calldata metadata) external {
+    claim(_msgSender(), reward, amount, metadata);
   }
 
   function handleReward(address, address reward, uint256 amount, bytes calldata metadata) external {

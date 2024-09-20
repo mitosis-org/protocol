@@ -44,22 +44,16 @@ interface IRewardDistributor is IRewardDistributorStorage {
   // metadata: See the `src/hub/eol/LibDistributorRewardMetadata`.RewardTWABMetadata
 
   /// @dev Checks if the account can claim.
-  function claimable(address account, address eligibleRewardAsset, address asset, bytes calldata metadata)
-    external
-    view
-    returns (bool);
+  function claimable(address account, address reward, bytes calldata metadata) external view returns (bool);
 
   /// @dev Returns the amount of claimable rewards for the account.
-  function claimableAmount(address account, address eligibleRewardAsset, address asset, bytes calldata metadata)
-    external
-    view
-    returns (uint256);
+  function claimableAmount(address account, address reward, bytes calldata metadata) external view returns (uint256);
 
   /// @dev Claims all of the rewards for the specified vault and reward.
-  function claim(address eligibleRewardAsset, address reward, bytes calldata metadata) external;
+  function claim(address reward, bytes calldata metadata) external;
 
   /// @dev Claims a specific amount of rewards for the specified vault and reward.
-  function claim(address eligibleRewardAsset, address reward, uint256 amount, bytes calldata metadata) external;
+  function claim(address reward, uint256 amount, bytes calldata metadata) external;
 
   /// @dev Handles the distribution of rewards for the specified vault and asset.
   /// This method can only be called by the RewardManager.
