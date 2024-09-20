@@ -66,13 +66,13 @@ contract TWABRewardDistributortTest is Test {
 
     vm.warp(300);
 
-    twabRewardDistributor.claim(eolVault, address(token), metadata);
+    twabRewardDistributor.claim(address(token), metadata);
     assertTrue(token.balanceOf(owner) == 10 ether / 100 * 10);
 
     vm.stopPrank();
 
     vm.prank(address(1));
-    twabRewardDistributor.claim(eolVault, address(token), metadata);
+    twabRewardDistributor.claim(address(token), metadata);
     assertTrue(token.balanceOf(address(1)) == 10 ether / 100 * 90 + userAmount);
   }
 }

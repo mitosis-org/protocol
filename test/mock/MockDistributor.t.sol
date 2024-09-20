@@ -43,13 +43,13 @@ contract MockDistributor is IRewardDistributor {
     return 0;
   }
 
-  function claim(address, bytes calldata) external {}
+  function claim(address, bytes calldata) external { }
 
   function claim(address, address, bytes calldata) external { }
 
   function claim(address, address, uint256, bytes calldata) external { }
 
-  function claim(address, uint256, bytes calldata) external {}
+  function claim(address, uint256, bytes calldata) external { }
 
   function handleReward(address, address, uint256, bytes memory) external pure {
     return;
