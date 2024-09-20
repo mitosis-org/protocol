@@ -9,17 +9,17 @@ import { Time } from '@oz-v5/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
-import { DistributionType, IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { IEOLRewardDistributor } from '../../interfaces/hub/eol/IEOLRewardDistributor.sol';
+import { IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
 import { IEOLRewardManager } from '../../interfaces/hub/eol/IEOLRewardManager.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
+import { IRewardDistributor, DistributionType } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { LibDistributorRewardMetadata, RewardTWABMetadata } from '../reward/LibDistributorRewardMetadata.sol';
 import { EOLRewardManagerStorageV1 } from './EOLRewardManagerStorageV1.sol';
-import { LibDistributorHandleRewardMetadata, HandleRewardTWABMetadata } from './LibDistributorHandleRewardMetadata.sol';
 
 contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewardManagerStorageV1 {
-  using LibDistributorHandleRewardMetadata for HandleRewardTWABMetadata;
+  using LibDistributorRewardMetadata for RewardTWABMetadata;
 
   event Dispatched(address indexed rewardDistributor, address indexed eolVault, address indexed reward, uint256 amount);
   event EOLShareValueIncreased(address indexed eolVault, uint256 indexed amount);
@@ -78,7 +78,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   }
 
   function dispatchTo(
-    IEOLRewardDistributor distributor,
+    IRewardDistributor distributor,
     address eolVault,
     address reward,
     uint48 timestamp,
@@ -97,7 +97,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   }
 
   function dispatchTo(
-    IEOLRewardDistributor distributor,
+    IRewardDistributor distributor,
     address eolVault,
     address reward,
     uint48 timestamp,
@@ -125,7 +125,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   function _routeEOLClaimableReward(StorageV1 storage $, address eolVault, address reward, uint256 amount) internal {
     bytes memory metadata;
     if ($.rewardConfigurator.getDistributionType(eolVault, reward) == DistributionType.TWAB) {
-      metadata = HandleRewardTWABMetadata(eolVault, Time.timestamp()).encode();
+      metadata = RewardTWABMetadata(eolVault, Time.timestamp()).encode();
     }
 
     _routeClaimableReward($, eolVault, reward, amount, metadata);
@@ -137,7 +137,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     bytes memory metadata;
     if ($.rewardConfigurator.getDistributionType(eolVault, reward) == DistributionType.TWAB) {
       address underlyingAsset = IEOLVault(eolVault).asset();
-      metadata = HandleRewardTWABMetadata(underlyingAsset, Time.timestamp()).encode();
+      metadata = RewardTWABMetadata(underlyingAsset, Time.timestamp()).encode();
     }
 
     _routeClaimableReward($, eolVault, reward, amount, metadata);
@@ -163,7 +163,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
       return;
     }
 
-    IEOLRewardDistributor distributor = _distributor($, distributionType);
+    IRewardDistributor distributor = _distributor($, distributionType);
 
     IERC20(reward).approve(address(distributor), amount);
     distributor.handleReward(eolVault, reward, amount, metadata);
@@ -172,7 +172,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
 
   function _processDispatch(
     StorageV1 storage $,
-    IEOLRewardDistributor distributor,
+    IRewardDistributor distributor,
     address eolVault,
     address reward,
     uint48 timestamp,
@@ -188,7 +188,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
 
   function _dispatchTo(
     RewardInfo storage rewardInfo,
-    IEOLRewardDistributor distributor,
+    IRewardDistributor distributor,
     address eolVault,
     address reward,
     bytes memory metadata
@@ -217,7 +217,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   function _distributor(StorageV1 storage $, DistributionType distributionType)
     internal
     view
-    returns (IEOLRewardDistributor distributor)
+    returns (IRewardDistributor distributor)
   {
     if (distributionType == DistributionType.TWAB) {
       distributor = $.rewardConfigurator.getDefaultDistributor(DistributionType.TWAB);
@@ -232,7 +232,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     return rewardInfo.asset == reward || !rewardInfo.dispatched || rewardInfo.amount > 0;
   }
 
-  function _assertDistributorRegistered(StorageV1 storage $, IEOLRewardDistributor distributor) internal view {
+  function _assertDistributorRegistered(StorageV1 storage $, IRewardDistributor distributor) internal view {
     require(
       $.rewardConfigurator.isDistributorRegistered(distributor),
       IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered()
