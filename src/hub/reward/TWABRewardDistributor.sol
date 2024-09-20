@@ -132,7 +132,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     uint48 batchTimestamp;
 
     if (batchTimestamps.length == 0) {
-      batchTimestamp = rewardedAt + $.twabPeriod;
+      batchTimestamp = _roundUpToMidnight(rewardedAt + $.twabPeriod);
       assetRewards.batchTimestamps.push(batchTimestamp);
       assetRewards.lastBatchTimestamp = batchTimestamp;
     } else {
@@ -159,6 +159,12 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
+
+  function _roundUpToMidnight(uint48 timestamp) internal pure returns (uint48) {
+    uint48 currentMidnight = timestamp - (timestamp % 1 days);
+    uint48 nextMidnight = currentMidnight + 1 days;
+    return nextMidnight;
+  }
 
   function _findBatchTimestamp(uint48 startBatchTimestamp, uint48 timestamp, uint48 period)
     internal

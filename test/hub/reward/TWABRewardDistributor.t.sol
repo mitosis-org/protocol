@@ -68,11 +68,12 @@ contract TWABRewardDistributortTest is Test {
 
     twabRewardDistributor.handleReward(eolVault, address(token), rewardAmount, metadata);
 
-    assertEq(twabRewardDistributor.getFirstBatchTimestamp(address(token), address(token)), 200 + twabPeriod);
+    // TODO(ray): add midnight roundup examples
+    assertEq(twabRewardDistributor.getFirstBatchTimestamp(address(token), address(token)), 1 days);
 
-    vm.warp(301);
+    vm.warp(200 + 1 days);
 
-    metadata = twabRewardDistributor.encodeMetadata(address(token), 300);
+    metadata = twabRewardDistributor.encodeMetadata(address(token), 1 days);
 
     uint256 prevBalance;
     uint256 expectReward;
