@@ -319,7 +319,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function _assertOnlyStrategyExecutor(StorageV1 storage $, address hubEOLVault) internal view {
-    require(_msgSender() == $.eols[hubEOLVault].strategyExecutor, StdError.InvalidAddress('strategyExecutor'));
+    require(_msgSender() == $.eols[hubEOLVault].strategyExecutor, StdError.Unauthorized());
   }
 
   function _assertAssetInitialized(StorageV1 storage $, address asset) internal view {
