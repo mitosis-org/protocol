@@ -41,7 +41,12 @@ contract MockStrategyExecutor is IStrategyExecutor {
   function lastSettledBalance() external view returns (uint256 lastSettledBalance_) { }
 
   function fetchEOL(uint256 amount) external { }
-  function returnEOL(uint256 amount) external { }
+
+  function returnEOL(uint256 amount) external {
+    _asset.approve(address(_vault), amount);
+    _vault.returnEOL(_hubEOLVault, amount);
+  }
+
   function settle() external { }
   function settleExtraRewards(address reward, uint256 amount) external { }
   function execute(Call[] calldata calls) external { }

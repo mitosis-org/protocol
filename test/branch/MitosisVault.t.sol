@@ -449,9 +449,69 @@ contract MitosisVaultTest is Test {
     assertEq(_mitosisVault.availableEOL(hubEOLVault), 0 ether);
   }
 
-  function test_deallocateEOL_EOLNotInitialized() public { }
-  function test_deallocateEOL_Unauthorized() public { }
-  function test_deallocateEOL_balance______() public { }
+  function test_deallocateEOL_Unauthorized() public {
+    test_allocateEOL();
+    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    vm.expectRevert(StdError.Unauthorized.selector);
+    _mitosisVault.deallocateEOL(hubEOLVault, 10 ether);
+  }
+
+  function test_deallocateEOL_InsufficientEOL() public {
+    test_allocateEOL();
+    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    vm.expectRevert();
+    _mitosisVault.deallocateEOL(hubEOLVault, 101 ether);
+  }
+
+  function test_fetchEOL() public {
+    test_allocateEOL();
+    _token.mint(address(_mitosisVault), 100 ether);
+    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+    assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    vm.startPrank(address(_strategyExecutor));
+    _mitosisVault.fetchEOL(hubEOLVault, 10 ether);
+    assertEq(_token.balanceOf(address(_strategyExecutor)), 10 ether);
+
+    _mitosisVault.fetchEOL(hubEOLVault, 90 ether);
+    assertEq(_token.balanceOf(address(_strategyExecutor)), 100 ether);
+
+    vm.stopPrank();
+  }
+
+  function test_fetchEOL_EOLNotInitialized() public { }
+  function test_fetchEOL_Unauthorized() public { }
+  function test_fetchEOL_AssetHalted() public { }
+  function test_fetchEOL_InsufficientEOL() public { }
+
+  function test_returnEOL() public {
+    test_fetchEOL();
+    assertEq(_token.balanceOf(address(_strategyExecutor)), 100 ether);
+    assertEq(_token.balanceOf(address(_mitosisVault)), 0);
+    assertEq(_mitosisVault.availableEOL(hubEOLVault), 0);
+
+    vm.startPrank(address(_strategyExecutor));
+
+    _strategyExecutor.returnEOL(100 ether);
+    assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
+    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+
+    vm.stopPrank();
+  }
+
+  function test_returnEOL_EOLNotInitialized() public { }
+  function test_returnEOL_Unauthorized() public { }
 
   function _errAssetAlreadyInitialized(address asset) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(MitosisVault.MitosisVault__AssetAlreadyInitialized.selector, asset);
@@ -461,12 +521,12 @@ contract MitosisVaultTest is Test {
     return abi.encodeWithSelector(MitosisVault.MitosisVault__AssetNotInitialized.selector, asset);
   }
 
-  function _errEOLAlreadyInitialized(address hubEOLVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(MitosisVault.MitosisVault__EOLAlreadyInitialized.selector, hubEOLVault);
+  function _errEOLAlreadyInitialized(address _hubEOLVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(MitosisVault.MitosisVault__EOLAlreadyInitialized.selector, _hubEOLVault);
   }
 
-  function _errEOLNotInitiailized(address hubEOLVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(MitosisVault.MitosisVault__EOLNotInitialized.selector, hubEOLVault);
+  function _errEOLNotInitiailized(address _hubEOLVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(MitosisVault.MitosisVault__EOLNotInitialized.selector, _hubEOLVault);
   }
 
   function _errZeroToAddress() internal pure returns (bytes memory) {
