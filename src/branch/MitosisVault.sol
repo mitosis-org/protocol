@@ -80,7 +80,23 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     _transferOwnership(owner_);
   }
 
-  //=========== NOTE: ASSET FUNCTIONS ===========//
+  //=========== NOTE: VIEW FUNCTIONS ===========//
+
+  function isAssetInitialized(address asset) external view returns (bool) {
+    return _isAssetInitialized(_getStorageV1(), asset);
+  }
+
+  function isEOLInitialized(address hubEOLVault) external view returns (bool) {
+    return _isEOLInitialized(_getStorageV1(), hubEOLVault);
+  }
+
+  function availableEOL(address hubEOLVault) external view returns (uint256) {
+    return _getStorageV1().eols[hubEOLVault].availableEOL;
+  }
+
+  //=========== NOTE: MUTATIVE FUNCTIONS ===========//
+
+  //=========== NOTE: MUTATIVE - ASSET FUNCTIONS ===========//
 
   function initializeAsset(address asset) external {
     StorageV1 storage $ = _getStorageV1();
@@ -125,7 +141,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     emit Redeemed(asset, to, amount);
   }
 
-  //=========== NOTE: EOL FUNCTIONS ===========//
+  //=========== NOTE: MUTATIVE - EOL FUNCTIONS ===========//
 
   function initializeEOL(address hubEOLVault, address asset) external {
     StorageV1 storage $ = _getStorageV1();
@@ -136,6 +152,8 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
     $.eols[hubEOLVault].initialized = true;
     $.eols[hubEOLVault].asset = asset;
+
+    // TODO(ray): no halt?
 
     emit EOLInitialized(hubEOLVault, asset);
   }
@@ -297,7 +315,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
   function _assertOnlyEntrypoint(StorageV1 storage $) internal view {
-    require(_msgSender() == address($.entrypoint), StdError.InvalidAddress('entrypoint'));
+    require(_msgSender() == address($.entrypoint), StdError.Unauthorized());
   }
 
   function _assertOnlyStrategyExecutor(StorageV1 storage $, address hubEOLVault) internal view {

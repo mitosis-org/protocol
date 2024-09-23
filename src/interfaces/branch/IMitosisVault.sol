@@ -12,6 +12,11 @@ enum EOLAction {
 }
 
 interface IMitosisVault {
+  // TODO
+  function isAssetInitialized(address asset) external view returns (bool);
+  function isEOLInitialized(address hubEOLVault) external view returns (bool);
+  function availableEOL(address hubEOLVault) external view returns (uint256);
+
   //=========== NOTE: Asset ===========//
 
   function initializeAsset(address asset) external;
