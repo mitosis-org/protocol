@@ -11,10 +11,6 @@ import { TWABSnapshotsStorageV1 } from './TWABSnapshotsStorageV1.sol';
 abstract contract TWABSnapshots is ITWABSnapshots, TWABSnapshotsStorageV1 {
   using TWABCheckpoints for TWABCheckpoints.Trace;
 
-  error ERC6372InconsistentClock();
-
-  error ERC5805FutureLookup(uint256 timepoint, uint48 clock);
-
   function CLOCK_MODE() external view virtual returns (string memory) {
     // Check that the clock was not modified
     require(clock() == Time.timestamp(), ERC6372InconsistentClock());

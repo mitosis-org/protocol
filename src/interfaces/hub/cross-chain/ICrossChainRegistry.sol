@@ -2,6 +2,9 @@
 pragma solidity ^0.8.27;
 
 interface ICrossChainRegistry {
+  event ChainSet(uint256 indexed chainId, uint32 indexed hplDomain, address indexed entrypoint, string name);
+  event VaultSet(uint256 indexed chainId, address indexed vault);
+
   error ICrossChainRegistry__NotRegistered();
   error ICrossChainRegistry__AlreadyRegistered();
   error ICrossChainRegistry__NotEnrolled();
