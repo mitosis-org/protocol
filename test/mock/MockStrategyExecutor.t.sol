@@ -37,7 +37,10 @@ contract MockStrategyExecutor is IStrategyExecutor {
   function isStrategyEnabled(uint256 strategyId) external view returns (bool enabled) { }
   function isStrategyEnabled(address implementation) external view returns (bool enabled) { }
 
-  function totalBalance() external view returns (uint256 totalBalance_) { }
+  function totalBalance() external view returns (uint256 totalBalance_) {
+    return _asset.balanceOf(address(this));
+  }
+
   function lastSettledBalance() external view returns (uint256 lastSettledBalance_) { }
 
   function fetchEOL(uint256 amount) external { }

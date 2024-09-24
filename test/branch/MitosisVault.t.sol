@@ -6,10 +6,12 @@ import { Test } from '@std/Test.sol';
 
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 
+import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
-import { MitosisVault, AssetAction } from '../../src/branch/MitosisVault.sol';
+import { MitosisVault, AssetAction, EOLAction } from '../../src/branch/MitosisVault.sol';
+import { IMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { StdError } from '../../src/lib/StdError.sol';
 import { MockERC20TWABSnapshots } from '../mock/MockERC20TWABSnapshots.t.sol';
@@ -376,7 +378,6 @@ contract MitosisVaultTest is Test {
 
   function test_initializeEOL_EOLAlreadyInitialized() public {
     test_initializeEOL();
-
     assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
     vm.startPrank(address(_mitosisVaultEntrypoint));
@@ -490,10 +491,59 @@ contract MitosisVaultTest is Test {
     vm.stopPrank();
   }
 
-  function test_fetchEOL_EOLNotInitialized() public { }
-  function test_fetchEOL_Unauthorized() public { }
-  function test_fetchEOL_AssetHalted() public { }
-  function test_fetchEOL_InsufficientEOL() public { }
+  function test_fetchEOL_EOLNotInitialized() public {
+    // No occurrence case until methods like deinitializeEOL are added.
+  }
+
+  function test_fetchEOL_Unauthorized() public {
+    test_allocateEOL();
+    _token.mint(address(_mitosisVault), 100 ether);
+    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+    assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    vm.expectRevert(StdError.Unauthorized.selector);
+    _mitosisVault.fetchEOL(hubEOLVault, 10 ether);
+  }
+
+  function test_fetchEOL_AssetHalted() public {
+    test_allocateEOL();
+    _token.mint(address(_mitosisVault), 100 ether);
+    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+    assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    vm.prank(owner);
+    _mitosisVault.haltEOL(hubEOLVault, EOLAction.FetchEOL);
+
+    vm.startPrank(address(_strategyExecutor));
+
+    vm.expectRevert(StdError.Halted.selector);
+    _mitosisVault.fetchEOL(hubEOLVault, 10 ether);
+
+    vm.stopPrank();
+  }
+
+  function test_fetchEOL_InsufficientEOL() public {
+    test_allocateEOL();
+    _token.mint(address(_mitosisVault), 100 ether);
+    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+    assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    vm.startPrank(address(_strategyExecutor));
+
+    vm.expectRevert();
+    _mitosisVault.fetchEOL(hubEOLVault, 101 ether);
+
+    vm.stopPrank();
+  }
 
   function test_returnEOL() public {
     test_fetchEOL();
@@ -503,50 +553,274 @@ contract MitosisVaultTest is Test {
 
     vm.startPrank(address(_strategyExecutor));
 
-    _strategyExecutor.returnEOL(100 ether);
+    _token.approve(address(_mitosisVault), 100 ether);
+    _mitosisVault.returnEOL(hubEOLVault, 100 ether);
+
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
     assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_returnEOL_EOLNotInitialized() public { }
-  function test_returnEOL_Unauthorized() public { }
+  function test_returnEOL_EOLNotInitialized() public {
+    // No occurrence case until methods like deinitializeEOL are added.
+  }
 
-  function test_settleYield() public { }
-  function test_settleYield_EOLNotInitialized() public { }
-  function test_settleYield_Unauthorized() public { }
+  function test_returnEOL_Unauthorized() public {
+    test_fetchEOL();
+    assertEq(_token.balanceOf(address(_strategyExecutor)), 100 ether);
+    assertEq(_token.balanceOf(address(_mitosisVault)), 0);
+    assertEq(_mitosisVault.availableEOL(hubEOLVault), 0);
 
-  function test_settleLoss() public { }
-  function test_settleLoss_EOLNotInitialized() public { }
-  function test_settleLoss_Unauthorized() public { }
+    vm.prank(address(_strategyExecutor));
+    _token.approve(address(_mitosisVault), 100 ether);
 
-  function test_settleExtraRewards() public { }
-  function test_settleExtraRewards_EOLNotInitialized() public { }
-  function test_settleExtraRewards_Unauthorized() public { }
-  function test_settleExtraRewards_AssetNotInitialized() public { }
+    vm.expectRevert(StdError.Unauthorized.selector);
+    _mitosisVault.returnEOL(hubEOLVault, 100 ether);
+  }
 
-  function test_setEntrypoint() public { }
-  function test_setEntrypoint_Unauthorized() public { }
+  function test_settleYield() public {
+    test_initializeEOL();
+    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
-  function test_setStrategyExecutor() public { }
-  function test_setStrategyExecutor_EOLNotInitialized() public { }
-  function test_setStrategyExecutor_StrategyExecutorNotDrained() public { }
-  function test_setStrategyExecutor_InvalidVaultAddress() public { }
-  function test_setStrategyExecutor_InvalidAssetAddress() public { }
-  function test_setStrategyExecutor_InvalidHubEOLVault() public { }
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
 
-  function test_haltAsset() public { }
-  function test_haltAsset_Unauthorized() public { }
+    vm.prank(address(_strategyExecutor));
+    _mitosisVault.settleYield(hubEOLVault, 100 ether);
+  }
 
-  function test_resumeAsset() public { }
-  function test_resumeAsset_Unauthorized() public { }
+  function test_settleYield_EOLNotInitialized() public {
+    // No occurrence case until methods like deinitializeEOL are added.
+  }
 
-  function test_haltEOL() public { }
-  function test_haltEOL_Unauthorized() public { }
+  function test_settleYield_Unauthorized() public {
+    test_initializeEOL();
+    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
-  function test_resumeEOL() public { }
-  function test_resumeEOL_Unauthorized() public { }
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    vm.expectRevert(StdError.Unauthorized.selector);
+    _mitosisVault.settleYield(hubEOLVault, 100 ether);
+  }
+
+  function test_settleLoss() public {
+    test_initializeEOL();
+    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    vm.prank(address(_strategyExecutor));
+    _mitosisVault.settleLoss(hubEOLVault, 100 ether);
+  }
+
+  function test_settleLoss_EOLNotInitialized() public {
+    // No occurrence case until methods like deinitializeEOL are added.
+  }
+
+  function test_settleLoss_Unauthorized() public {
+    test_initializeEOL();
+    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    vm.expectRevert(StdError.Unauthorized.selector);
+    _mitosisVault.settleLoss(hubEOLVault, 100 ether);
+  }
+
+  function test_settleExtraRewards() public {
+    test_initializeEOL();
+    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    MockERC20TWABSnapshots reward = new MockERC20TWABSnapshots();
+    reward.initialize('Reward', 'REWARD');
+
+    vm.prank(address(_mitosisVaultEntrypoint));
+    _mitosisVault.initializeAsset(address(reward));
+
+    vm.startPrank(address(_strategyExecutor));
+
+    reward.mint(address(_strategyExecutor), 100 ether);
+    reward.approve(address(_mitosisVault), 100 ether);
+
+    _mitosisVault.settleExtraRewards(hubEOLVault, address(reward), 100 ether);
+
+    vm.stopPrank();
+  }
+
+  function test_settleExtraRewards_EOLNotInitialized() public {
+    // No occurrence case until methods like deinitializeEOL are added.
+  }
+
+  function test_settleExtraRewards_Unauthorized() public {
+    test_initializeEOL();
+    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    MockERC20TWABSnapshots reward = new MockERC20TWABSnapshots();
+    reward.initialize('Reward', 'REWARD');
+
+    vm.prank(address(_mitosisVaultEntrypoint));
+    _mitosisVault.initializeAsset(address(reward));
+
+    reward.mint(address(_strategyExecutor), 100 ether);
+
+    vm.prank(address(_strategyExecutor));
+    reward.approve(address(_mitosisVault), 100 ether);
+
+    vm.expectRevert(StdError.Unauthorized.selector);
+    _mitosisVault.settleExtraRewards(hubEOLVault, address(reward), 100 ether);
+  }
+
+  function test_settleExtraRewards_AssetNotInitialized() public {
+    test_initializeEOL();
+    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    MockERC20TWABSnapshots reward = new MockERC20TWABSnapshots();
+    reward.initialize('Reward', 'REWARD');
+
+    // vm.prank(address(_mitosisVaultEntrypoint));
+    // _mitosisVault.initializeAsset(address(reward));
+
+    vm.startPrank(address(_strategyExecutor));
+
+    reward.mint(address(_strategyExecutor), 100 ether);
+    reward.approve(address(_mitosisVault), 100 ether);
+
+    vm.expectRevert(_errAssetNotInitialized(address(reward)));
+    _mitosisVault.settleExtraRewards(hubEOLVault, address(reward), 100 ether);
+
+    vm.stopPrank();
+  }
+
+  function test_settleExtraRewards_InvalidRewardAddress() public {
+    test_initializeEOL();
+    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    vm.startPrank(address(_strategyExecutor));
+
+    _token.mint(address(_strategyExecutor), 100 ether);
+    _token.approve(address(_mitosisVault), 100 ether);
+
+    vm.expectRevert(_errInvalidAddress('reward'));
+    _mitosisVault.settleExtraRewards(hubEOLVault, address(_token), 100 ether);
+
+    vm.stopPrank();
+  }
+
+  function test_setEntrypoint_Unauthorized() public {
+    vm.expectRevert();
+    _mitosisVault.setEntrypoint(IMitosisVaultEntrypoint(address(0)));
+  }
+
+  function test_setStrategyExecutor() public {
+    test_initializeEOL();
+    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+  }
+
+  function test_setStrategyExecutor_EOLNotInitialized() public {
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errEOLNotInitiailized(hubEOLVault));
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    vm.stopPrank();
+  }
+
+  function test_setStrategyExecutor_StrategyExecutorNotDrained() public {
+    test_initializeEOL();
+    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+
+    _token.mint(address(_strategyExecutor), 100 ether);
+    assertTrue(_strategyExecutor.totalBalance() > 0);
+
+    MockStrategyExecutor newStrategyExecutor = new MockStrategyExecutor(_mitosisVault, _token, hubEOLVault);
+
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errStrategyExecutorNotDraind(hubEOLVault, address(_strategyExecutor)));
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(newStrategyExecutor));
+
+    vm.stopPrank();
+
+    vm.prank(address(_strategyExecutor));
+    _token.transfer(address(1), 100 ether);
+
+    assertEq(_strategyExecutor.totalBalance(), 0);
+
+    vm.prank(owner);
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(newStrategyExecutor));
+
+    assertEq(_mitosisVault.strategyExecutor(hubEOLVault), address(newStrategyExecutor));
+  }
+
+  function test_setStrategyExecutor_InvalidVaultAddress() public {
+    test_initializeEOL();
+    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+
+    MockStrategyExecutor newStrategyExecutor = new MockStrategyExecutor(IMitosisVault(address(0)), _token, hubEOLVault);
+
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errInvalidAddress('strategyExecutor.vault'));
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(newStrategyExecutor));
+
+    vm.stopPrank();
+  }
+
+  function test_setStrategyExecutor_InvalidAssetAddress() public {
+    test_initializeEOL();
+    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+
+    MockStrategyExecutor newStrategyExecutor = new MockStrategyExecutor(_mitosisVault, IERC20(address(0)), hubEOLVault);
+
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errInvalidAddress('strategyExecutor.asset'));
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(newStrategyExecutor));
+
+    vm.stopPrank();
+  }
+
+  function test_setStrategyExecutor_InvalidHubEOLVault() public {
+    test_initializeEOL();
+    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+
+    MockStrategyExecutor newStrategyExecutor;
+    newStrategyExecutor = new MockStrategyExecutor(_mitosisVault, _token, address(0));
+
+    vm.startPrank(owner);
+
+    vm.expectRevert();
+    _mitosisVault.setStrategyExecutor(hubEOLVault, address(newStrategyExecutor));
+
+    newStrategyExecutor = new MockStrategyExecutor(_mitosisVault, _token, hubEOLVault);
+
+    vm.expectRevert();
+    _mitosisVault.setStrategyExecutor(address(0), address(newStrategyExecutor));
+
+    vm.stopPrank();
+  }
 
   function _errAssetAlreadyInitialized(address asset) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(MitosisVault.MitosisVault__AssetAlreadyInitialized.selector, asset);
@@ -564,7 +838,21 @@ contract MitosisVaultTest is Test {
     return abi.encodeWithSelector(MitosisVault.MitosisVault__EOLNotInitialized.selector, _hubEOLVault);
   }
 
+  function _errStrategyExecutorNotDraind(address _hubEOLVault, address _strategyExecutor)
+    internal
+    pure
+    returns (bytes memory)
+  {
+    return abi.encodeWithSelector(
+      MitosisVault.MitosisVault__StrategyExecutorNotDrained.selector, _hubEOLVault, _strategyExecutor
+    );
+  }
+
   function _errZeroToAddress() internal pure returns (bytes memory) {
     return abi.encodeWithSelector(StdError.ZeroAddress.selector, 'to');
+  }
+
+  function _errInvalidAddress(string memory context) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(StdError.InvalidAddress.selector, context);
   }
 }
