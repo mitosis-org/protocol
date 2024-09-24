@@ -261,7 +261,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
   }
 
   function _errInvalidRewardDistributor() internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IEOLRewardConfigurator.EOLRewardConfigurator__InvalidRewardConfigurator.selector);
+    return abi.encodeWithSelector(IEOLRewardConfigurator.IEOLRewardConfigurator__InvalidRewardConfigurator.selector);
   }
 
   function _errRewardDistributorNotRegistered() internal pure returns (bytes memory) {
@@ -271,13 +271,13 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
 
   function _errUnregisterDefaultDistributorNotAllowed() internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
-      IEOLRewardConfigurator.EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed.selector
+      IEOLRewardConfigurator.IEOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed.selector
     );
   }
 
   function _errDefaultDistributorNotSet(DistributionType distributionType) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
-      IEOLRewardConfigurator.EOLRewardConfigurator__DefaultDistributorNotSet.selector, distributionType
+      IEOLRewardConfigurator.IEOLRewardConfigurator__DefaultDistributorNotSet.selector, distributionType
     );
   }
 }

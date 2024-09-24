@@ -99,7 +99,7 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   function _assertDefaultDistributorSet(StorageV1 storage $, DistributionType distributionType) internal view {
     require(
       address($.defaultDistributor[distributionType]) != address(0),
-      EOLRewardConfigurator__DefaultDistributorNotSet(distributionType)
+      IEOLRewardConfigurator__DefaultDistributorNotSet(distributionType)
     );
   }
 
@@ -115,13 +115,13 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     DistributionType distributionType = distributor.distributionType();
     require(
       address(distributor) != address($.defaultDistributor[distributionType]),
-      EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed()
+      IEOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed()
     );
   }
 
   function _assertValidRewardDistributor(IRewardDistributor distributor) internal view {
     require(
-      address(this) == address(distributor.rewardConfigurator()), EOLRewardConfigurator__InvalidRewardConfigurator()
+      address(this) == address(distributor.rewardConfigurator()), IEOLRewardConfigurator__InvalidRewardConfigurator()
     );
   }
 }

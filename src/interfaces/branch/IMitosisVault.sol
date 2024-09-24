@@ -42,15 +42,15 @@ interface IMitosisVault {
 
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
-  error MitosisVault__AssetNotInitialized(address asset);
-  error MitosisVault__AssetAlreadyInitialized(address asset);
+  error IMitosisVault__AssetNotInitialized(address asset);
+  error IMitosisVault__AssetAlreadyInitialized(address asset);
 
-  error MitosisVault__EOLNotInitialized(address hubEOLVault);
-  error MitosisVault__EOLAlreadyInitialized(address hubEOLVault);
+  error IMitosisVault__EOLNotInitialized(address hubEOLVault);
+  error IMitosisVault__EOLAlreadyInitialized(address hubEOLVault);
 
-  error MitosisVault__InvalidEOLVault(address hubEOLVault, address asset);
+  error IMitosisVault__InvalidEOLVault(address hubEOLVault, address asset);
 
-  error MitosisVault__StrategyExecutorNotDrained(address hubEOLVault, address strategyExecutor);
+  error IMitosisVault__StrategyExecutorNotDrained(address hubEOLVault, address strategyExecutor);
 
   //=========== NOTE: Asset ===========//
 

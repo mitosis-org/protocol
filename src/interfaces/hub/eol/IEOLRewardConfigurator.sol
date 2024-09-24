@@ -12,9 +12,9 @@ interface IEOLRewardConfigurator is IRewardConfigurator {
   event RewardDistributorRegistered(IRewardDistributor indexed distributor);
   event RewardDistributorUnregistered(IRewardDistributor indexed distributor);
 
-  error EOLRewardConfigurator__DefaultDistributorNotSet(DistributionType);
-  error EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed();
-  error EOLRewardConfigurator__InvalidRewardConfigurator();
+  error IEOLRewardConfigurator__DefaultDistributorNotSet(DistributionType);
+  error IEOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed();
+  error IEOLRewardConfigurator__InvalidRewardConfigurator();
 
   error IEOLRewardConfigurator__RewardDistributorAlreadyRegistered();
   error IEOLRewardConfigurator__RewardDistributorNotRegistered();

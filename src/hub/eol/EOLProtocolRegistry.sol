@@ -68,7 +68,7 @@ contract EOLProtocolRegistry is
 
     _assertOnlyAuthorized($, eolAsset);
     require(bytes(name).length > 0, StdError.InvalidParameter('name'));
-    require($.protocols[id].protocolId == 0, EOLProtocolRegistry__AlreadyRegistered(id, eolAsset, chainId, name));
+    require($.protocols[id].protocolId == 0, IEOLProtocolRegistry__AlreadyRegistered(id, eolAsset, chainId, name));
 
     $.protocols[id] = ProtocolInfo({
       protocolId: id,
@@ -88,7 +88,7 @@ contract EOLProtocolRegistry is
     StorageV1 storage $ = _getStorageV1();
     ProtocolInfo storage p = $.protocols[protocolId_];
 
-    require(p.protocolId != 0, EOLProtocolRegistry__NotRegistered(protocolId_));
+    require(p.protocolId != 0, IEOLProtocolRegistry__NotRegistered(protocolId_));
     _assertOnlyAuthorized($, p.eolAsset);
 
     p.protocolId = 0;

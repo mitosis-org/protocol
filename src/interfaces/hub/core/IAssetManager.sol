@@ -50,8 +50,8 @@ interface IAssetManager is IAssetManagerStorageV1 {
 
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
-  error AssetManager__EOLInsufficient(address eolVault);
-  error AssetManager__InvalidEOLVault(address eolVault, address hubAsset);
+  error IAssetManager__EOLInsufficient(address eolVault);
+  error IAssetManager__InvalidEOLVault(address eolVault, address hubAsset);
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
 

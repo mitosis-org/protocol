@@ -21,8 +21,8 @@ interface IEOLProtocolRegistry {
   event Authorized(address indexed eolAsset, address indexed account);
   event Unauthorized(address indexed eolAsset, address indexed account);
 
-  error EOLProtocolRegistry__AlreadyRegistered(uint256 protocolId, address eolAsset, uint256 chainId, string name);
-  error EOLProtocolRegistry__NotRegistered(uint256 protocolId);
+  error IEOLProtocolRegistry__AlreadyRegistered(uint256 protocolId, address eolAsset, uint256 chainId, string name);
+  error IEOLProtocolRegistry__NotRegistered(uint256 protocolId);
 
   function protocolIds(address eolAsset, uint256 chainId) external view returns (uint256[] memory);
 

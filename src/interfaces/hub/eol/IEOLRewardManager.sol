@@ -15,7 +15,7 @@ interface IEOLRewardManager {
   );
   event UnspecifiedReward(address indexed eolVault, address indexed reward, uint48 timestamp, uint256 amount);
 
-  error EOLRewardManager__InvalidDispatchRequest(address reward, uint256 index);
+  error IEOLRewardManager__InvalidDispatchRequest(address reward, uint256 index);
 
   function routeYield(address eolVault, uint256 amount) external;
 

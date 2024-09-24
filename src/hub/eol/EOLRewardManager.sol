@@ -168,7 +168,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   ) internal {
     RewardInfo storage rewardInfo = $.rewardTreasury[eolVault][timestamp][index];
 
-    require(_isDispatchableRequest(rewardInfo, reward), EOLRewardManager__InvalidDispatchRequest(reward, index));
+    require(_isDispatchableRequest(rewardInfo, reward), IEOLRewardManager__InvalidDispatchRequest(reward, index));
 
     _dispatchTo(rewardInfo, distributor, eolVault, reward, metadata);
   }

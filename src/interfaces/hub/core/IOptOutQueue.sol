@@ -78,8 +78,8 @@ interface IOptOutQueue is IOptOutQueueStorageV1 {
     address indexed receiver, address indexed eolVault, uint256 claimed, uint256 impact, ImpactType impactType
   );
 
-  error OptOutQueue__QueueNotEnabled(address eolVault);
-  error OptOutQueue__NothingToClaim();
+  error IOptOutQueue__QueueNotEnabled(address eolVault);
+  error IOptOutQueue__NothingToClaim();
 
   // Queue functions
   function request(uint256 shares, address receiver, address eolVault) external returns (uint256 reqId);

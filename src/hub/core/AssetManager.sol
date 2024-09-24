@@ -55,7 +55,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertEOLInitialized($, chainId, eolVault);
 
     address hubAsset = $.hubAssets[chainId][branchAsset];
-    require(hubAsset == IEOLVault(eolVault).asset(), AssetManager__InvalidEOLVault(eolVault, hubAsset));
+    require(hubAsset == IEOLVault(eolVault).asset(), IAssetManager__InvalidEOLVault(eolVault, hubAsset));
 
     _mint($, chainId, hubAsset, address(this), amount);
 
@@ -90,7 +90,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertEOLInitialized($, chainId, eolVault);
 
     uint256 idle = _eolIdle($, eolVault);
-    require(amount <= idle, AssetManager__EOLInsufficient(eolVault));
+    require(amount <= idle, IAssetManager__EOLInsufficient(eolVault));
 
     $.entrypoint.allocateEOL(chainId, eolVault, amount);
     $.eolStates[eolVault].allocation += amount;
@@ -116,7 +116,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertOnlyStrategist($, eolVault);
 
     uint256 idle = _eolIdle($, eolVault);
-    require(amount <= idle, AssetManager__EOLInsufficient(eolVault));
+    require(amount <= idle, IAssetManager__EOLInsufficient(eolVault));
 
     $.optOutQueue.sync(eolVault, amount);
   }

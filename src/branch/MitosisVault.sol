@@ -68,7 +68,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     _deposit($, asset, to, amount);
 
     _assertEOLInitialized($, hubEOLVault);
-    require(asset == $.eols[hubEOLVault].asset, MitosisVault__InvalidEOLVault(hubEOLVault, asset));
+    require(asset == $.eols[hubEOLVault].asset, IMitosisVault__InvalidEOLVault(hubEOLVault, asset));
 
     $.entrypoint.depositWithOptIn(asset, to, hubEOLVault, amount);
     emit DepositedWithOptIn(asset, to, hubEOLVault, amount);
@@ -210,7 +210,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
       bool drained = IStrategyExecutor(eolInfo.strategyExecutor).totalBalance() == 0
         && IStrategyExecutor(eolInfo.strategyExecutor).lastSettledBalance() == 0;
 
-      require(drained, MitosisVault__StrategyExecutorNotDrained(hubEOLVault, eolInfo.strategyExecutor));
+      require(drained, IMitosisVault__StrategyExecutorNotDrained(hubEOLVault, eolInfo.strategyExecutor));
     }
 
     require(
@@ -265,19 +265,19 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   }
 
   function _assertAssetInitialized(StorageV1 storage $, address asset) internal view {
-    require(_isAssetInitialized($, asset), MitosisVault__AssetNotInitialized(asset));
+    require(_isAssetInitialized($, asset), IMitosisVault__AssetNotInitialized(asset));
   }
 
   function _assertAssetNotInitialized(StorageV1 storage $, address asset) internal view {
-    require(!_isAssetInitialized($, asset), MitosisVault__AssetAlreadyInitialized(asset));
+    require(!_isAssetInitialized($, asset), IMitosisVault__AssetAlreadyInitialized(asset));
   }
 
   function _assertEOLInitialized(StorageV1 storage $, address hubEOLVault) internal view {
-    require(_isEOLInitialized($, hubEOLVault), MitosisVault__EOLNotInitialized(hubEOLVault));
+    require(_isEOLInitialized($, hubEOLVault), IMitosisVault__EOLNotInitialized(hubEOLVault));
   }
 
   function _assertEOLNotInitialized(StorageV1 storage $, address hubEOLVault) internal view {
-    require(!_isEOLInitialized($, hubEOLVault), MitosisVault__EOLAlreadyInitialized(hubEOLVault));
+    require(!_isEOLInitialized($, hubEOLVault), IMitosisVault__EOLAlreadyInitialized(hubEOLVault));
   }
 
   function _assertNotHalted(StorageV1 storage $, address asset, AssetAction action) internal view {

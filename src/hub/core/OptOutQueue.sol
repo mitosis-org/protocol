@@ -76,7 +76,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     // run actual claim logic
     uint256 totalClaimedWithoutImpact;
     (totalClaimed_, totalClaimedWithoutImpact) = _claim(queue, index, cfg);
-    require(totalClaimed_ > 0, OptOutQueue__NothingToClaim());
+    require(totalClaimed_ > 0, IOptOutQueue__NothingToClaim());
 
     // send total claim amount to receiver
     cfg.hubAsset.safeTransfer(receiver, totalClaimed_);
@@ -240,6 +240,6 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
   // =========================== NOTE: ASSERTIONS =========================== //
 
   function _assertQueueEnabled(StorageV1 storage $, address eolVault) internal view override {
-    require($.states[eolVault].isEnabled, OptOutQueue__QueueNotEnabled(eolVault));
+    require($.states[eolVault].isEnabled, IOptOutQueue__QueueNotEnabled(eolVault));
   }
 }

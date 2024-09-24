@@ -121,11 +121,11 @@ contract OptOutQueueTest is Test {
   }
 
   function _errQueueNotEnabled(address eolVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IOptOutQueue.OptOutQueue__QueueNotEnabled.selector, address(eolVault));
+    return abi.encodeWithSelector(IOptOutQueue.IOptOutQueue__QueueNotEnabled.selector, address(eolVault));
   }
 
   function _errNothingToClaim() internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IOptOutQueue.OptOutQueue__NothingToClaim.selector);
+    return abi.encodeWithSelector(IOptOutQueue.IOptOutQueue__NothingToClaim.selector);
   }
 
   function _proxy(address impl) internal returns (address) {
