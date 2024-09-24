@@ -94,6 +94,14 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     return _getStorageV1().eols[hubEOLVault].availableEOL;
   }
 
+  function entrypoint() external view returns (IMitosisVaultEntrypoint) {
+    return _getStorageV1().entrypoint;
+  }
+
+  function strategyExecutor(address hubEOLVault) external view returns (address) {
+    return _getStorageV1().eols[hubEOLVault].strategyExecutor;
+  }
+
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
 
   //=========== NOTE: MUTATIVE - ASSET FUNCTIONS ===========//

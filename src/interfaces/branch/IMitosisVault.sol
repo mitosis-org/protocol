@@ -16,6 +16,8 @@ interface IMitosisVault {
   function isAssetInitialized(address asset) external view returns (bool);
   function isEOLInitialized(address hubEOLVault) external view returns (bool);
   function availableEOL(address hubEOLVault) external view returns (uint256);
+  function entrypoint() external view returns (IMitosisVaultEntrypoint);
+  function strategyExecutor(address hubEOLVault) external view returns (address);
 
   //=========== NOTE: Asset ===========//
 
