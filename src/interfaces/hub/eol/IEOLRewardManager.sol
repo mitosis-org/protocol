@@ -1,9 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IRewardDistributor } from '../reward/IRewardDistributor.sol';
+import { IRewardDistributor, DistributionType } from '../reward/IRewardDistributor.sol';
 
 interface IEOLRewardManager {
+  event Dispatched(address indexed rewardDistributor, address indexed eolVault, address indexed reward, uint256 amount);
+  event EOLShareValueIncreased(address indexed eolVault, uint256 indexed amount);
+  event RouteClaimableReward(
+    address indexed rewardDistributor,
+    address indexed eolVault,
+    address indexed reward,
+    DistributionType distributionType,
+    uint256 amount
+  );
+  event UnspecifiedReward(address indexed eolVault, address indexed reward, uint48 timestamp, uint256 amount);
+
+  error EOLRewardManager__InvalidDispatchRequest(address reward, uint256 index);
+
   function routeYield(address eolVault, uint256 amount) external;
 
   function routeExtraRewards(address eolVault, address reward, uint256 amount) external;

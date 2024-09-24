@@ -21,19 +21,6 @@ import { EOLRewardManagerStorageV1 } from './EOLRewardManagerStorageV1.sol';
 contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewardManagerStorageV1 {
   using LibDistributorRewardMetadata for RewardTWABMetadata;
 
-  event Dispatched(address indexed rewardDistributor, address indexed eolVault, address indexed reward, uint256 amount);
-  event EOLShareValueIncreased(address indexed eolVault, uint256 indexed amount);
-  event RouteClaimableReward(
-    address indexed rewardDistributor,
-    address indexed eolVault,
-    address indexed reward,
-    DistributionType distributionType,
-    uint256 amount
-  );
-  event UnspecifiedReward(address indexed eolVault, address indexed reward, uint48 timestamp, uint256 amount);
-
-  error EOLRewardManager__InvalidDispatchRequest(address reward, uint256 index);
-
   constructor() {
     _disableInitializers();
   }
