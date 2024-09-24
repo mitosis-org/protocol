@@ -513,6 +513,41 @@ contract MitosisVaultTest is Test {
   function test_returnEOL_EOLNotInitialized() public { }
   function test_returnEOL_Unauthorized() public { }
 
+  function test_settleYield() public { }
+  function test_settleYield_EOLNotInitialized() public { }
+  function test_settleYield_Unauthorized() public { }
+
+  function test_settleLoss() public { }
+  function test_settleLoss_EOLNotInitialized() public { }
+  function test_settleLoss_Unauthorized() public { }
+
+  function test_settleExtraRewards() public { }
+  function test_settleExtraRewards_EOLNotInitialized() public { }
+  function test_settleExtraRewards_Unauthorized() public { }
+  function test_settleExtraRewards_AssetNotInitialized() public { }
+
+  function test_setEntrypoint() public { }
+  function test_setEntrypoint_Unauthorized() public { }
+
+  function test_setStrategyExecutor() public { }
+  function test_setStrategyExecutor_EOLNotInitialized() public { }
+  function test_setStrategyExecutor_StrategyExecutorNotDrained() public { }
+  function test_setStrategyExecutor_InvalidVaultAddress() public { }
+  function test_setStrategyExecutor_InvalidAssetAddress() public { }
+  function test_setStrategyExecutor_InvalidHubEOLVault() public { }
+
+  function test_haltAsset() public { }
+  function test_haltAsset_Unauthorized() public { }
+
+  function test_resumeAsset() public { }
+  function test_resumeAsset_Unauthorized() public { }
+
+  function test_haltEOL() public { }
+  function test_haltEOL_Unauthorized() public { }
+
+  function test_resumeEOL() public { }
+  function test_resumeEOL_Unauthorized() public { }
+
   function _errAssetAlreadyInitialized(address asset) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(MitosisVault.MitosisVault__AssetAlreadyInitialized.selector, asset);
   }
