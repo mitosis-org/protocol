@@ -15,17 +15,6 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
 
   uint256 public constant REWARD_RATIO_PRECISION = 10e4;
 
-  event RewardDistributionTypeSet(
-    address indexed eolVault, address indexed asset, DistributionType indexed distributionType
-  );
-  event DefaultDistributorSet(DistributionType indexed distributionType, IRewardDistributor indexed rewardDistributor);
-  event RewardDistributorRegistered(IRewardDistributor indexed distributor);
-  event RewardDistributorUnregistered(IRewardDistributor indexed distributor);
-
-  error EOLRewardConfigurator__DefaultDistributorNotSet(DistributionType);
-  error EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed();
-  error EOLRewardConfigurator__InvalidRewardConfigurator();
-
   constructor() {
     _disableInitializers();
   }

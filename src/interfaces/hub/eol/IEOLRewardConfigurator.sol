@@ -5,6 +5,17 @@ import { IRewardConfigurator } from '../reward/IRewardConfigurator.sol';
 import { IRewardDistributor, DistributionType } from '../reward/IRewardDistributor.sol';
 
 interface IEOLRewardConfigurator is IRewardConfigurator {
+  event RewardDistributionTypeSet(
+    address indexed eolVault, address indexed asset, DistributionType indexed distributionType
+  );
+  event DefaultDistributorSet(DistributionType indexed distributionType, IRewardDistributor indexed rewardDistributor);
+  event RewardDistributorRegistered(IRewardDistributor indexed distributor);
+  event RewardDistributorUnregistered(IRewardDistributor indexed distributor);
+
+  error EOLRewardConfigurator__DefaultDistributorNotSet(DistributionType);
+  error EOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed();
+  error EOLRewardConfigurator__InvalidRewardConfigurator();
+
   error IEOLRewardConfigurator__RewardDistributorAlreadyRegistered();
   error IEOLRewardConfigurator__RewardDistributorNotRegistered();
 
