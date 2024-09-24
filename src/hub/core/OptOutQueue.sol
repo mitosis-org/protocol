@@ -21,24 +21,6 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
   using Math for uint256;
   using LibRedeemQueue for *;
 
-  struct ClaimConfig {
-    address receiver;
-    IEOLVault eolVault;
-    IHubAsset hubAsset;
-    uint8 decimalsOffset;
-    uint256 queueOffset;
-    uint256 idxOffset;
-  }
-
-  event OptOutRequested(address indexed receiver, address indexed eolVault, uint256 shares, uint256 assets);
-  event OptOutYieldReported(address indexed receiver, address indexed eolVault, uint256 yield);
-  event OptOutRequestClaimed(
-    address indexed receiver, address indexed eolVault, uint256 claimed, uint256 impact, ImpactType impactType
-  );
-
-  error OptOutQueue__QueueNotEnabled(address eolVault);
-  error OptOutQueue__NothingToClaim();
-
   constructor() {
     _disableInitializers();
   }

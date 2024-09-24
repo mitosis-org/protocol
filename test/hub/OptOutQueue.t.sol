@@ -9,6 +9,7 @@ import { HubAsset } from '../../src/hub/core/HubAsset.sol';
 import { OptOutQueue } from '../../src/hub/core/OptOutQueue.sol';
 import { EOLVault } from '../../src/hub/eol/EOLVault.sol';
 import { IAssetManager } from '../../src/interfaces/hub/core/IAssetManager.sol';
+import { IOptOutQueue } from '../../src/interfaces/hub/core/IOptOutQueue.sol';
 import { IERC20TWABSnapshots } from '../../src/interfaces/twab/IERC20TWABSnapshots.sol';
 import { MockAssetManager } from '../mock/MockAssetManager.sol';
 
@@ -120,11 +121,11 @@ contract OptOutQueueTest is Test {
   }
 
   function _errQueueNotEnabled(address eolVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(OptOutQueue.OptOutQueue__QueueNotEnabled.selector, address(eolVault));
+    return abi.encodeWithSelector(IOptOutQueue.OptOutQueue__QueueNotEnabled.selector, address(eolVault));
   }
 
   function _errNothingToClaim() internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(OptOutQueue.OptOutQueue__NothingToClaim.selector);
+    return abi.encodeWithSelector(IOptOutQueue.OptOutQueue__NothingToClaim.selector);
   }
 
   function _proxy(address impl) internal returns (address) {

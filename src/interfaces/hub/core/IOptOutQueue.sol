@@ -2,6 +2,8 @@
 pragma solidity ^0.8.27;
 
 import { LibRedeemQueue } from '../../../lib/LibRedeemQueue.sol';
+import { IEOLVault } from '../eol/IEOLVault.sol';
+import { IHubAsset } from './IHubAsset.sol';
 
 interface IOptOutQueueStorageV1 {
   struct GetRequestResponse {
@@ -55,11 +57,29 @@ interface IOptOutQueueStorageV1 {
 }
 
 interface IOptOutQueue is IOptOutQueueStorageV1 {
+  struct ClaimConfig {
+    address receiver;
+    IEOLVault eolVault;
+    IHubAsset hubAsset;
+    uint8 decimalsOffset;
+    uint256 queueOffset;
+    uint256 idxOffset;
+  }
+
   enum ImpactType {
     None,
     Loss,
     Yield
   }
+
+  event OptOutRequested(address indexed receiver, address indexed eolVault, uint256 shares, uint256 assets);
+  event OptOutYieldReported(address indexed receiver, address indexed eolVault, uint256 yield);
+  event OptOutRequestClaimed(
+    address indexed receiver, address indexed eolVault, uint256 claimed, uint256 impact, ImpactType impactType
+  );
+
+  error OptOutQueue__QueueNotEnabled(address eolVault);
+  error OptOutQueue__NothingToClaim();
 
   // Queue functions
   function request(uint256 shares, address receiver, address eolVault) external returns (uint256 reqId);
