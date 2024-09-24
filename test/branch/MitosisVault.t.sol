@@ -823,28 +823,28 @@ contract MitosisVaultTest is Test {
   }
 
   function _errAssetAlreadyInitialized(address asset) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(MitosisVault.MitosisVault__AssetAlreadyInitialized.selector, asset);
+    return abi.encodeWithSelector(IMitosisVault.IMitosisVault__AssetAlreadyInitialized.selector, asset);
   }
 
   function _errAssetNotInitialized(address asset) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(MitosisVault.MitosisVault__AssetNotInitialized.selector, asset);
+    return abi.encodeWithSelector(IMitosisVault.IMitosisVault__AssetNotInitialized.selector, asset);
   }
 
   function _errEOLAlreadyInitialized(address _hubEOLVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(MitosisVault.MitosisVault__EOLAlreadyInitialized.selector, _hubEOLVault);
+    return abi.encodeWithSelector(IMitosisVault.IMitosisVault__EOLAlreadyInitialized.selector, _hubEOLVault);
   }
 
   function _errEOLNotInitiailized(address _hubEOLVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(MitosisVault.MitosisVault__EOLNotInitialized.selector, _hubEOLVault);
+    return abi.encodeWithSelector(IMitosisVault.IMitosisVault__EOLNotInitialized.selector, _hubEOLVault);
   }
 
-  function _errStrategyExecutorNotDraind(address _hubEOLVault, address _strategyExecutor)
+  function _errStrategyExecutorNotDraind(address _hubEOLVault, address strategyExecutor_)
     internal
     pure
     returns (bytes memory)
   {
     return abi.encodeWithSelector(
-      MitosisVault.MitosisVault__StrategyExecutorNotDrained.selector, _hubEOLVault, _strategyExecutor
+      IMitosisVault.IMitosisVault__StrategyExecutorNotDrained.selector, _hubEOLVault, strategyExecutor_
     );
   }
 

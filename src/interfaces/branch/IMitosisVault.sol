@@ -53,7 +53,7 @@ interface IMitosisVault {
   error IMitosisVault__StrategyExecutorNotDrained(address hubEOLVault, address strategyExecutor);
 
   //=========== NOTE: View functions ===========//
-  
+
   function isAssetInitialized(address asset) external view returns (bool);
   function isEOLInitialized(address hubEOLVault) external view returns (bool);
   function availableEOL(address hubEOLVault) external view returns (uint256);

@@ -220,12 +220,12 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
-  function setEntrypoint(IMitosisVaultEntrypoint entrypoint) external onlyOwner {
-    _getStorageV1().entrypoint = entrypoint;
-    emit EntrypointSet(address(entrypoint));
+  function setEntrypoint(IMitosisVaultEntrypoint entrypoint_) external onlyOwner {
+    _getStorageV1().entrypoint = entrypoint_;
+    emit EntrypointSet(address(entrypoint_));
   }
 
-  function setStrategyExecutor(address hubEOLVault, address strategyExecutor) external onlyOwner {
+  function setStrategyExecutor(address hubEOLVault, address strategyExecutor_) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
     EOLInfo storage eolInfo = $.eols[hubEOLVault];
 
@@ -240,20 +240,20 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     }
 
     require(
-      hubEOLVault == IStrategyExecutor(strategyExecutor).hubEOLVault(),
+      hubEOLVault == IStrategyExecutor(strategyExecutor_).hubEOLVault(),
       StdError.InvalidId('strategyExecutor.hubEOLVault')
     );
     require(
-      address(this) == address(IStrategyExecutor(strategyExecutor).vault()),
+      address(this) == address(IStrategyExecutor(strategyExecutor_).vault()),
       StdError.InvalidAddress('strategyExecutor.vault')
     );
     require(
-      eolInfo.asset == address(IStrategyExecutor(strategyExecutor).asset()),
+      eolInfo.asset == address(IStrategyExecutor(strategyExecutor_).asset()),
       StdError.InvalidAddress('strategyExecutor.asset')
     );
 
-    eolInfo.strategyExecutor = strategyExecutor;
-    emit StrategyExecutorSet(hubEOLVault, strategyExecutor);
+    eolInfo.strategyExecutor = strategyExecutor_;
+    emit StrategyExecutorSet(hubEOLVault, strategyExecutor_);
   }
 
   function haltAsset(address asset, AssetAction action) external onlyOwner {
