@@ -121,8 +121,6 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     $.eols[hubEOLVault].initialized = true;
     $.eols[hubEOLVault].asset = asset;
 
-    // TODO(ray): no halt?
-
     emit EOLInitialized(hubEOLVault, asset);
   }
 
