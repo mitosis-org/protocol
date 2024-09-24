@@ -22,9 +22,6 @@ contract CrossChainRegistry is
 
   bytes32 public constant REGISTERER_ROLE = keccak256('REGISTERER_ROLE');
 
-  event ChainSet(uint256 indexed chainId, uint32 indexed hplDomain, address indexed entrypoint, string name);
-  event VaultSet(uint256 indexed chainId, address indexed vault);
-
   modifier onlyRegisterer() {
     _checkRole(REGISTERER_ROLE);
     _;

@@ -20,19 +20,6 @@ contract EOLProtocolRegistry is
 {
   using EnumerableSet for EnumerableSet.UintSet;
 
-  event ProtocolRegistered(
-    uint256 indexed protocolId, address indexed eolAsset, uint256 indexed chainId, string name, string metadata
-  );
-  event ProtocolUnregistered(
-    uint256 indexed protocolId, address indexed eolAsset, uint256 indexed chainId, string name
-  );
-
-  event Authorized(address indexed eolAsset, address indexed account);
-  event Unauthorized(address indexed eolAsset, address indexed account);
-
-  error EOLProtocolRegistry__AlreadyRegistered(uint256 protocolId, address eolAsset, uint256 chainId, string name);
-  error EOLProtocolRegistry__NotRegistered(uint256 protocolId);
-
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
   constructor() {
@@ -81,7 +68,7 @@ contract EOLProtocolRegistry is
 
     _assertOnlyAuthorized($, eolAsset);
     require(bytes(name).length > 0, StdError.InvalidParameter('name'));
-    require($.protocols[id].protocolId == 0, EOLProtocolRegistry__AlreadyRegistered(id, eolAsset, chainId, name));
+    require($.protocols[id].protocolId == 0, IEOLProtocolRegistry__AlreadyRegistered(id, eolAsset, chainId, name));
 
     $.protocols[id] = ProtocolInfo({
       protocolId: id,
@@ -101,7 +88,7 @@ contract EOLProtocolRegistry is
     StorageV1 storage $ = _getStorageV1();
     ProtocolInfo storage p = $.protocols[protocolId_];
 
-    require(p.protocolId != 0, EOLProtocolRegistry__NotRegistered(protocolId_));
+    require(p.protocolId != 0, IEOLProtocolRegistry__NotRegistered(protocolId_));
     _assertOnlyAuthorized($, p.eolAsset);
 
     p.protocolId = 0;

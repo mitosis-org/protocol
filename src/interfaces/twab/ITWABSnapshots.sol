@@ -4,6 +4,10 @@ pragma solidity ^0.8.27;
 import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
 
 interface ITWABSnapshots is IERC6372 {
+  error ERC6372InconsistentClock();
+
+  error ERC5805FutureLookup(uint256 timepoint, uint48 clock);
+
   function getLatestSnapshot(address account) external view returns (uint208 balnace, uint256 twab, uint48 position);
 
   function getPastSnapshot(address account, uint256 timestamp)
