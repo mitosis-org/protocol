@@ -40,7 +40,31 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     _transferOwnership(owner_);
   }
 
-  //=========== NOTE: ASSET FUNCTIONS ===========//
+  //=========== NOTE: VIEW FUNCTIONS ===========//
+
+  function isAssetInitialized(address asset) external view returns (bool) {
+    return _isAssetInitialized(_getStorageV1(), asset);
+  }
+
+  function isEOLInitialized(address hubEOLVault) external view returns (bool) {
+    return _isEOLInitialized(_getStorageV1(), hubEOLVault);
+  }
+
+  function availableEOL(address hubEOLVault) external view returns (uint256) {
+    return _getStorageV1().eols[hubEOLVault].availableEOL;
+  }
+
+  function entrypoint() external view returns (IMitosisVaultEntrypoint) {
+    return _getStorageV1().entrypoint;
+  }
+
+  function strategyExecutor(address hubEOLVault) external view returns (address) {
+    return _getStorageV1().eols[hubEOLVault].strategyExecutor;
+  }
+
+  //=========== NOTE: MUTATIVE FUNCTIONS ===========//
+
+  //=========== NOTE: MUTATIVE - ASSET FUNCTIONS ===========//
 
   function initializeAsset(address asset) external {
     StorageV1 storage $ = _getStorageV1();
@@ -85,7 +109,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     emit Redeemed(asset, to, amount);
   }
 
-  //=========== NOTE: EOL FUNCTIONS ===========//
+  //=========== NOTE: MUTATIVE - EOL FUNCTIONS ===========//
 
   function initializeEOL(address hubEOLVault, address asset) external {
     StorageV1 storage $ = _getStorageV1();
@@ -96,6 +120,8 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
     $.eols[hubEOLVault].initialized = true;
     $.eols[hubEOLVault].asset = asset;
+
+    // TODO(ray): no halt?
 
     emit EOLInitialized(hubEOLVault, asset);
   }
@@ -194,12 +220,12 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
-  function setEntrypoint(IMitosisVaultEntrypoint entrypoint) external onlyOwner {
-    _getStorageV1().entrypoint = entrypoint;
-    emit EntrypointSet(address(entrypoint));
+  function setEntrypoint(IMitosisVaultEntrypoint entrypoint_) external onlyOwner {
+    _getStorageV1().entrypoint = entrypoint_;
+    emit EntrypointSet(address(entrypoint_));
   }
 
-  function setStrategyExecutor(address hubEOLVault, address strategyExecutor) external onlyOwner {
+  function setStrategyExecutor(address hubEOLVault, address strategyExecutor_) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
     EOLInfo storage eolInfo = $.eols[hubEOLVault];
 
@@ -214,20 +240,20 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     }
 
     require(
-      hubEOLVault == IStrategyExecutor(strategyExecutor).hubEOLVault(),
+      hubEOLVault == IStrategyExecutor(strategyExecutor_).hubEOLVault(),
       StdError.InvalidId('strategyExecutor.hubEOLVault')
     );
     require(
-      address(this) == address(IStrategyExecutor(strategyExecutor).vault()),
+      address(this) == address(IStrategyExecutor(strategyExecutor_).vault()),
       StdError.InvalidAddress('strategyExecutor.vault')
     );
     require(
-      eolInfo.asset == address(IStrategyExecutor(strategyExecutor).asset()),
+      eolInfo.asset == address(IStrategyExecutor(strategyExecutor_).asset()),
       StdError.InvalidAddress('strategyExecutor.asset')
     );
 
-    eolInfo.strategyExecutor = strategyExecutor;
-    emit StrategyExecutorSet(hubEOLVault, strategyExecutor);
+    eolInfo.strategyExecutor = strategyExecutor_;
+    emit StrategyExecutorSet(hubEOLVault, strategyExecutor_);
   }
 
   function haltAsset(address asset, AssetAction action) external onlyOwner {
@@ -257,11 +283,11 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
   function _assertOnlyEntrypoint(StorageV1 storage $) internal view {
-    require(_msgSender() == address($.entrypoint), StdError.InvalidAddress('entrypoint'));
+    require(_msgSender() == address($.entrypoint), StdError.Unauthorized());
   }
 
   function _assertOnlyStrategyExecutor(StorageV1 storage $, address hubEOLVault) internal view {
-    require(_msgSender() == $.eols[hubEOLVault].strategyExecutor, StdError.InvalidAddress('strategyExecutor'));
+    require(_msgSender() == $.eols[hubEOLVault].strategyExecutor, StdError.Unauthorized());
   }
 
   function _assertAssetInitialized(StorageV1 storage $, address asset) internal view {
