@@ -80,9 +80,11 @@ contract MitosisVault is IMitosisVault, Ownable2StepUpgradeable, MitosisVaultSto
     $.assets[asset].initialized = true;
     emit AssetInitialized(asset);
 
-    // NOTE: we halt all of the asset deposit by default.
-    $.globalAccessControlManager.pause(address(this), MitosisVault.deposit.selector);
-    $.globalAccessControlManager.pause(address(this), MitosisVault.depositWithOptIn.selector);
+    // NOTE: we halt deposit by default.
+    $.globalAccessControlManager.pause(address(this), MitosisVault.deposit.selector, keccak256(abi.encode(asset)));
+    $.globalAccessControlManager.pause(
+      address(this), MitosisVault.depositWithOptIn.selector, keccak256(abi.encode(asset))
+    );
   }
 
   function deposit(address asset, address to, uint256 amount) external {
