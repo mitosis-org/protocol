@@ -3,14 +3,6 @@ pragma solidity 0.8.27;
 
 import { IMitosisVaultEntrypoint } from './IMitosisVaultEntrypoint.sol';
 
-enum AssetAction {
-  Deposit
-}
-
-enum EOLAction {
-  FetchEOL
-}
-
 interface IMitosisVault {
   //=========== NOTE: EVENT DEFINITIONS ===========//
 
@@ -34,12 +26,6 @@ interface IMitosisVault {
   event EntrypointSet(address entrypoint);
   event StrategyExecutorSet(address indexed hubEOLVault, address indexed strategyExecutor);
 
-  event AssetHalted(address indexed asset, AssetAction action);
-  event AssetResumed(address indexed asset, AssetAction action);
-
-  event EOLHalted(address indexed hubEOLVault, EOLAction action);
-  event EOLResumed(address indexed hubEOLVault, EOLAction action);
-
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
   error IMitosisVault__AssetNotInitialized(address asset);
@@ -51,6 +37,14 @@ interface IMitosisVault {
   error IMitosisVault__InvalidEOLVault(address hubEOLVault, address asset);
 
   error IMitosisVault__StrategyExecutorNotDrained(address hubEOLVault, address strategyExecutor);
+
+  //=========== NOTE: View functions ===========//
+
+  function isAssetInitialized(address asset) external view returns (bool);
+  function isEOLInitialized(address hubEOLVault) external view returns (bool);
+  function availableEOL(address hubEOLVault) external view returns (uint256);
+  function entrypoint() external view returns (IMitosisVaultEntrypoint);
+  function strategyExecutor(address hubEOLVault) external view returns (address);
 
   //=========== NOTE: Asset ===========//
 

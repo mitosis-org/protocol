@@ -6,17 +6,17 @@ import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { Address } from '@oz-v5/utils/Address.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 
 import { MitosisVaultStorageV1 } from '../branch/MitosisVaultStorageV1.sol';
-import { AssetAction, EOLAction, IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
+import { IGlobalAccessControlManager } from '../interfaces/auth/IGlobalAccessControlManager.sol';
+import { IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IStrategyExecutor } from '../interfaces/branch/strategy/IStrategyExecutor.sol';
 import { StdError } from '../lib/StdError.sol';
 
 // TODO(thai): add some view functions in MitosisVault
 
-contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgradeable, MitosisVaultStorageV1 {
+contract MitosisVault is IMitosisVault, Ownable2StepUpgradeable, MitosisVaultStorageV1 {
   using SafeERC20 for IERC20;
   using Address for address;
 
@@ -34,29 +34,62 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     revert StdError.Unauthorized();
   }
 
-  function initialize(address owner_) public initializer {
-    __Pausable_init();
+  function initialize(address owner_, address globalAccessControlManager_) public initializer {
     __Ownable2Step_init();
     _transferOwnership(owner_);
+
+    require(globalAccessControlManager_.code.length > 0, StdError.InvalidParameter('globalAccessControlManager'));
+
+    StorageV1 storage $ = _getStorageV1();
+    $.globalAccessControlManager = IGlobalAccessControlManager(globalAccessControlManager_);
   }
 
-  //=========== NOTE: ASSET FUNCTIONS ===========//
+  //=========== NOTE: VIEW FUNCTIONS ===========//
+
+  function isAssetInitialized(address asset) external view returns (bool) {
+    return _isAssetInitialized(_getStorageV1(), asset);
+  }
+
+  function isEOLInitialized(address hubEOLVault) external view returns (bool) {
+    return _isEOLInitialized(_getStorageV1(), hubEOLVault);
+  }
+
+  function availableEOL(address hubEOLVault) external view returns (uint256) {
+    return _getStorageV1().eols[hubEOLVault].availableEOL;
+  }
+
+  function entrypoint() external view returns (IMitosisVaultEntrypoint) {
+    return _getStorageV1().entrypoint;
+  }
+
+  function strategyExecutor(address hubEOLVault) external view returns (address) {
+    return _getStorageV1().eols[hubEOLVault].strategyExecutor;
+  }
+
+  //=========== NOTE: MUTATIVE FUNCTIONS ===========//
+
+  //=========== NOTE: MUTATIVE - ASSET FUNCTIONS ===========//
 
   function initializeAsset(address asset) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertOnlyEntrypoint($);
+    $.globalAccessControlManager.assertNotPaused(address(this), msg.sig);
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
     _assertAssetNotInitialized($, asset);
 
     $.assets[asset].initialized = true;
     emit AssetInitialized(asset);
 
-    // NOTE: we halt deposit by default.
-    _haltAsset($, asset, AssetAction.Deposit);
+    // NOTE: we halt all of the asset deposit by default.
+    $.globalAccessControlManager.pause(address(this), MitosisVault.deposit.selector);
+    $.globalAccessControlManager.pause(address(this), MitosisVault.depositWithOptIn.selector);
   }
 
   function deposit(address asset, address to, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
+
+    $.globalAccessControlManager.assertNotPaused(address(this), msg.sig, keccak256(abi.encode(asset)));
+
     _deposit($, asset, to, amount);
 
     $.entrypoint.deposit(asset, to, amount);
@@ -65,6 +98,9 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
   function depositWithOptIn(address asset, address to, address hubEOLVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
+
+    $.globalAccessControlManager.assertNotPaused(address(this), msg.sig, keccak256(abi.encode(asset)));
+
     _deposit($, asset, to, amount);
 
     _assertEOLInitialized($, hubEOLVault);
@@ -77,7 +113,8 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   function redeem(address asset, address to, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertOnlyEntrypoint($);
+    $.globalAccessControlManager.assertNotPaused(address(this), msg.sig, keccak256(abi.encode(asset)));
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
     _assertAssetInitialized($, asset);
 
     IERC20(asset).safeTransfer(to, amount);
@@ -85,12 +122,13 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     emit Redeemed(asset, to, amount);
   }
 
-  //=========== NOTE: EOL FUNCTIONS ===========//
+  //=========== NOTE: MUTATIVE - EOL FUNCTIONS ===========//
 
   function initializeEOL(address hubEOLVault, address asset) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertOnlyEntrypoint($);
+    $.globalAccessControlManager.assertNotPaused(address(this), msg.sig);
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
     _assertEOLNotInitialized($, hubEOLVault);
     _assertAssetInitialized($, asset);
 
@@ -103,7 +141,8 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   function allocateEOL(address hubEOLVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertOnlyEntrypoint($);
+    $.globalAccessControlManager.assertNotPaused(address(this), msg.sig, keccak256(abi.encode(hubEOLVault)));
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
     _assertEOLInitialized($, hubEOLVault);
 
     EOLInfo storage eolInfo = $.eols[hubEOLVault];
@@ -116,8 +155,9 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   function deallocateEOL(address hubEOLVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    $.globalAccessControlManager.assertNotPaused(address(this), msg.sig, keccak256(abi.encode(hubEOLVault)));
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
     _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyStrategyExecutor($, hubEOLVault);
 
     EOLInfo storage eolInfo = $.eols[hubEOLVault];
 
@@ -130,9 +170,9 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   function fetchEOL(address hubEOLVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    $.globalAccessControlManager.assertNotPaused(address(this), msg.sig, keccak256(abi.encode(hubEOLVault)));
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
     _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyStrategyExecutor($, hubEOLVault);
-    _assertNotHalted($, hubEOLVault, EOLAction.FetchEOL);
 
     EOLInfo storage eolInfo = $.eols[hubEOLVault];
 
@@ -145,8 +185,9 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   function returnEOL(address hubEOLVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    $.globalAccessControlManager.assertNotPaused(address(this), msg.sig, keccak256(abi.encode(hubEOLVault)));
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
     _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyStrategyExecutor($, hubEOLVault);
 
     EOLInfo storage eolInfo = $.eols[hubEOLVault];
 
@@ -159,8 +200,9 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   function settleYield(address hubEOLVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    $.globalAccessControlManager.assertNotPaused(address(this), msg.sig, keccak256(abi.encode(hubEOLVault)));
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
     _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyStrategyExecutor($, hubEOLVault);
 
     $.entrypoint.settleYield(hubEOLVault, amount);
 
@@ -170,8 +212,9 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   function settleLoss(address hubEOLVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    $.globalAccessControlManager.assertNotPaused(address(this), msg.sig, keccak256(abi.encode(hubEOLVault)));
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
     _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyStrategyExecutor($, hubEOLVault);
 
     $.entrypoint.settleLoss(hubEOLVault, amount);
 
@@ -181,8 +224,9 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
   function settleExtraRewards(address hubEOLVault, address reward, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    $.globalAccessControlManager.assertNotPaused(address(this), msg.sig, keccak256(abi.encode(hubEOLVault)));
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
     _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyStrategyExecutor($, hubEOLVault);
     _assertAssetInitialized($, reward);
     require(reward != $.eols[hubEOLVault].asset, StdError.InvalidAddress('reward'));
 
@@ -194,13 +238,33 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
-  function setEntrypoint(IMitosisVaultEntrypoint entrypoint) external onlyOwner {
-    _getStorageV1().entrypoint = entrypoint;
-    emit EntrypointSet(address(entrypoint));
+  function setEntrypoint(IMitosisVaultEntrypoint entrypoint_) external {
+    StorageV1 storage $ = _getStorageV1();
+
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
+
+    if (address($.entrypoint) != address(0)) {
+      $.globalAccessControlManager.revoke(address(this), MitosisVault.initializeAsset.selector, address(entrypoint_));
+      $.globalAccessControlManager.revoke(address(this), MitosisVault.initializeEOL.selector, address(entrypoint_));
+      $.globalAccessControlManager.revoke(address(this), MitosisVault.redeem.selector, address(entrypoint_));
+      $.globalAccessControlManager.revoke(address(this), MitosisVault.allocateEOL.selector, address(entrypoint_));
+    }
+
+    $.globalAccessControlManager.grant(address(this), MitosisVault.initializeAsset.selector, address(entrypoint_));
+    $.globalAccessControlManager.grant(address(this), MitosisVault.initializeEOL.selector, address(entrypoint_));
+    $.globalAccessControlManager.grant(address(this), MitosisVault.redeem.selector, address(entrypoint_));
+    $.globalAccessControlManager.grant(address(this), MitosisVault.allocateEOL.selector, address(entrypoint_));
+
+    $.entrypoint = entrypoint_;
+
+    emit EntrypointSet(address(entrypoint_));
   }
 
-  function setStrategyExecutor(address hubEOLVault, address strategyExecutor) external onlyOwner {
+  function setStrategyExecutor(address hubEOLVault, address strategyExecutor_) external {
     StorageV1 storage $ = _getStorageV1();
+
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
+
     EOLInfo storage eolInfo = $.eols[hubEOLVault];
 
     _assertEOLInitialized($, hubEOLVault);
@@ -209,60 +273,100 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
       // NOTE: no way to check if every extra rewards are settled.
       bool drained = IStrategyExecutor(eolInfo.strategyExecutor).totalBalance() == 0
         && IStrategyExecutor(eolInfo.strategyExecutor).lastSettledBalance() == 0;
-
       require(drained, IMitosisVault__StrategyExecutorNotDrained(hubEOLVault, eolInfo.strategyExecutor));
+
+      $.globalAccessControlManager.revoke(address(this), MitosisVault.deallocateEOL.selector, eolInfo.strategyExecutor);
+      $.globalAccessControlManager.revoke(address(this), MitosisVault.fetchEOL.selector, eolInfo.strategyExecutor);
+      $.globalAccessControlManager.revoke(address(this), MitosisVault.returnEOL.selector, eolInfo.strategyExecutor);
+      $.globalAccessControlManager.revoke(address(this), MitosisVault.settleYield.selector, eolInfo.strategyExecutor);
+      $.globalAccessControlManager.revoke(address(this), MitosisVault.settleLoss.selector, eolInfo.strategyExecutor);
+      $.globalAccessControlManager.revoke(
+        address(this), MitosisVault.settleExtraRewards.selector, eolInfo.strategyExecutor
+      );
     }
 
     require(
-      hubEOLVault == IStrategyExecutor(strategyExecutor).hubEOLVault(),
+      hubEOLVault == IStrategyExecutor(strategyExecutor_).hubEOLVault(),
       StdError.InvalidId('strategyExecutor.hubEOLVault')
     );
     require(
-      address(this) == address(IStrategyExecutor(strategyExecutor).vault()),
+      address(this) == address(IStrategyExecutor(strategyExecutor_).vault()),
       StdError.InvalidAddress('strategyExecutor.vault')
     );
     require(
-      eolInfo.asset == address(IStrategyExecutor(strategyExecutor).asset()),
+      eolInfo.asset == address(IStrategyExecutor(strategyExecutor_).asset()),
       StdError.InvalidAddress('strategyExecutor.asset')
     );
 
-    eolInfo.strategyExecutor = strategyExecutor;
-    emit StrategyExecutorSet(hubEOLVault, strategyExecutor);
+    $.globalAccessControlManager.grant(address(this), MitosisVault.deallocateEOL.selector, strategyExecutor_);
+    $.globalAccessControlManager.grant(address(this), MitosisVault.fetchEOL.selector, strategyExecutor_);
+    $.globalAccessControlManager.grant(address(this), MitosisVault.returnEOL.selector, strategyExecutor_);
+    $.globalAccessControlManager.grant(address(this), MitosisVault.settleYield.selector, strategyExecutor_);
+    $.globalAccessControlManager.grant(address(this), MitosisVault.settleLoss.selector, strategyExecutor_);
+    $.globalAccessControlManager.grant(address(this), MitosisVault.settleExtraRewards.selector, strategyExecutor_);
+    eolInfo.strategyExecutor = strategyExecutor_;
+    emit StrategyExecutorSet(hubEOLVault, strategyExecutor_);
   }
 
-  function haltAsset(address asset, AssetAction action) external onlyOwner {
+  function haltAssetDeposit(address asset) external {
     StorageV1 storage $ = _getStorageV1();
+
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
     _assertAssetInitialized($, asset);
-    return _haltAsset($, asset, action);
+
+    $.globalAccessControlManager.pause(address(this), MitosisVault.deposit.selector, keccak256(abi.encode(asset)));
   }
 
-  function resumeAsset(address asset, AssetAction action) external onlyOwner {
+  function haltDepositWithOptIn(address asset) external {
     StorageV1 storage $ = _getStorageV1();
+
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
     _assertAssetInitialized($, asset);
-    return _resumeAsset($, asset, action);
+
+    $.globalAccessControlManager.pause(
+      address(this), MitosisVault.depositWithOptIn.selector, keccak256(abi.encode(asset))
+    );
   }
 
-  function haltEOL(address hubEOLVault, EOLAction action) external onlyOwner {
+  function resumeAssetDeposit(address asset) external {
     StorageV1 storage $ = _getStorageV1();
-    _assertEOLInitialized($, hubEOLVault);
-    return _haltEOL($, hubEOLVault, action);
+
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
+    _assertAssetInitialized($, asset);
+
+    $.globalAccessControlManager.unpause(address(this), MitosisVault.deposit.selector);
   }
 
-  function resumeEOL(address hubEOLVault, EOLAction action) external onlyOwner {
+  function resumeAssetDepositWithOptIn(address asset) external {
     StorageV1 storage $ = _getStorageV1();
+
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
+    _assertAssetInitialized($, asset);
+
+    $.globalAccessControlManager.unpause(address(this), MitosisVault.depositWithOptIn.selector);
+  }
+
+  function haltFetchEOL(address hubEOLVault) external {
+    StorageV1 storage $ = _getStorageV1();
+
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
     _assertEOLInitialized($, hubEOLVault);
-    return _resumeEOL($, hubEOLVault, action);
+
+    $.globalAccessControlManager.pause(
+      address(this), MitosisVault.fetchEOL.selector, keccak256(abi.encode(hubEOLVault))
+    );
+  }
+
+  function resumeFetchEOL(address hubEOLVault) external {
+    StorageV1 storage $ = _getStorageV1();
+
+    $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
+    _assertEOLInitialized($, hubEOLVault);
+
+    $.globalAccessControlManager.unpause(address(this), MitosisVault.fetchEOL.selector);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
-
-  function _assertOnlyEntrypoint(StorageV1 storage $) internal view {
-    require(_msgSender() == address($.entrypoint), StdError.InvalidAddress('entrypoint'));
-  }
-
-  function _assertOnlyStrategyExecutor(StorageV1 storage $, address hubEOLVault) internal view {
-    require(_msgSender() == $.eols[hubEOLVault].strategyExecutor, StdError.InvalidAddress('strategyExecutor'));
-  }
 
   function _assertAssetInitialized(StorageV1 storage $, address asset) internal view {
     require(_isAssetInitialized($, asset), IMitosisVault__AssetNotInitialized(asset));
@@ -280,22 +384,6 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     require(!_isEOLInitialized($, hubEOLVault), IMitosisVault__EOLAlreadyInitialized(hubEOLVault));
   }
 
-  function _assertNotHalted(StorageV1 storage $, address asset, AssetAction action) internal view {
-    require(!_isHalted($, asset, action), StdError.Halted());
-  }
-
-  function _assertNotHalted(StorageV1 storage $, address hubEOLVault, EOLAction action) internal view {
-    require(!_isHalted($, hubEOLVault, action), StdError.Halted());
-  }
-
-  function _isHalted(StorageV1 storage $, address asset, AssetAction action) internal view returns (bool) {
-    return $.assets[asset].isHalted[action];
-  }
-
-  function _isHalted(StorageV1 storage $, address hubEOLVault, EOLAction action) internal view returns (bool) {
-    return $.eols[hubEOLVault].isHalted[action];
-  }
-
   function _isAssetInitialized(StorageV1 storage $, address asset) internal view returns (bool) {
     return $.assets[asset].initialized;
   }
@@ -304,29 +392,9 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     return $.eols[hubEOLVault].initialized;
   }
 
-  function _haltAsset(StorageV1 storage $, address asset, AssetAction action) internal {
-    $.assets[asset].isHalted[action] = true;
-    emit AssetHalted(asset, action);
-  }
-
-  function _resumeAsset(StorageV1 storage $, address asset, AssetAction action) internal {
-    $.assets[asset].isHalted[action] = false;
-    emit AssetResumed(asset, action);
-  }
-
-  function _haltEOL(StorageV1 storage $, address hubEOLVault, EOLAction action) internal {
-    $.eols[hubEOLVault].isHalted[action] = true;
-    emit EOLHalted(hubEOLVault, action);
-  }
-
-  function _resumeEOL(StorageV1 storage $, address hubEOLVault, EOLAction action) internal {
-    $.eols[hubEOLVault].isHalted[action] = false;
-    emit EOLResumed(hubEOLVault, action);
-  }
-
   function _deposit(StorageV1 storage $, address asset, address to, uint256 amount) internal {
     _assertAssetInitialized($, asset);
-    _assertNotHalted($, asset, AssetAction.Deposit);
+
     require(to != address(0), StdError.ZeroAddress('to'));
     require(amount != 0, StdError.ZeroAmount());
 

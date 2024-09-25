@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import { AssetAction, EOLAction } from '../interfaces/branch/IMitosisVault.sol';
+import { IGlobalAccessControlManager } from '../interfaces/auth/IGlobalAccessControlManager.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 
@@ -10,7 +10,6 @@ abstract contract MitosisVaultStorageV1 {
 
   struct AssetInfo {
     bool initialized;
-    mapping(AssetAction => bool) isHalted; // TODO(thai): consider better ACL management (e.g. similar to solmate's way)
   }
 
   struct EOLInfo {
@@ -18,10 +17,10 @@ abstract contract MitosisVaultStorageV1 {
     address asset;
     address strategyExecutor;
     uint256 availableEOL;
-    mapping(EOLAction => bool) isHalted;
   }
 
   struct StorageV1 {
+    IGlobalAccessControlManager globalAccessControlManager;
     IMitosisVaultEntrypoint entrypoint;
     mapping(address asset => AssetInfo) assets;
     mapping(address hubEOLVault => EOLInfo) eols;
