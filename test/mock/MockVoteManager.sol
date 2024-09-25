@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { IVoteManager } from '../../src/interfaces/hub/core/IVoteManager.sol';
+import { StdError } from '../../src/lib/StdError.sol';
 
 contract MockVoteManager is IVoteManager {
   mapping(address account => address delegationManager) private _delegationManagers;
@@ -21,5 +22,10 @@ contract MockVoteManager is IVoteManager {
 
   function setDefaultDelegatee(address defaultDelegatee_) external override {
     _defaultDelegatees[msg.sender] = defaultDelegatee_;
+  }
+
+  function setDefaultDelegateByManager(address account, address defaultDelegatee_) external override {
+    require(msg.sender == _delegationManagers[account], StdError.Unauthorized());
+    _defaultDelegatees[account] = defaultDelegatee_;
   }
 }

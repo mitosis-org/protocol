@@ -12,4 +12,6 @@ interface IVoteManager {
   function setDelegationManager(address delegationManager_) external;
 
   function setDefaultDelegatee(address defaultDelegatee_) external;
+
+  function setDefaultDelegateByManager(address account, address defaultDelegatee_) external;
 }
