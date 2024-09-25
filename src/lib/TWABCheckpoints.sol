@@ -41,7 +41,7 @@ library TWABCheckpoints {
    */
   function push(Trace storage self, uint48 timestamp, uint208 balance, uint256 accumulatedTWAB)
     internal
-    returns (uint208, uint208, uint256, uint256)
+    returns (uint208 lastBalance, uint208 currentBalance, uint256 lastTWAB, uint256 currentTWAB)
   {
     return _insert(self._checkpoints, timestamp, balance, accumulatedTWAB);
   }

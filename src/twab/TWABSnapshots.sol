@@ -78,7 +78,7 @@ abstract contract TWABSnapshots is ITWABSnapshots, TWABSnapshotsStorageV1 {
     TWABCheckpoints.Trace storage store,
     function(uint208, uint208) view returns (uint208) op,
     uint208 delta
-  ) private returns (uint208, uint208, uint256, uint256) {
+  ) internal virtual returns (uint208 lastBalance_, uint208 currentBalance_, uint256 lastTWAB_, uint256 currentTWAB_) {
     (uint208 lastBalance, uint256 lastTWAB, uint48 lastPosition) = store.latest();
 
     uint208 balance = op(lastBalance, delta);
@@ -93,15 +93,15 @@ abstract contract TWABSnapshots is ITWABSnapshots, TWABSnapshotsStorageV1 {
     return TWABCheckpoints.push(store, timestamp, balance, twab);
   }
 
-  function _calcAccumulatedTWAB(uint256 lastTWAB, uint208 lastBalance, uint48 duration) private pure returns (uint256) {
+  function _calcAccumulatedTWAB(uint256 lastTWAB, uint208 lastBalance, uint48 duration) internal pure returns (uint256) {
     return lastTWAB + (lastBalance * duration);
   }
 
-  function _add(uint208 a, uint208 b) private pure returns (uint208) {
+  function _add(uint208 a, uint208 b) internal pure returns (uint208) {
     return a + b;
   }
 
-  function _sub(uint208 a, uint208 b) private pure returns (uint208) {
+  function _sub(uint208 a, uint208 b) internal pure returns (uint208) {
     return a - b;
   }
 }
