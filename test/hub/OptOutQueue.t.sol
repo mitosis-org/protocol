@@ -12,6 +12,7 @@ import { IAssetManager } from '../../src/interfaces/hub/core/IAssetManager.sol';
 import { IOptOutQueue } from '../../src/interfaces/hub/core/IOptOutQueue.sol';
 import { IERC20TWABSnapshots } from '../../src/interfaces/twab/IERC20TWABSnapshots.sol';
 import { MockAssetManager } from '../mock/MockAssetManager.sol';
+import { MockVoteManager } from '../mock/MockVoteManager.sol';
 
 contract OptOutQueueTest is Test {
   address internal _admin = makeAddr('admin');
@@ -19,6 +20,7 @@ contract OptOutQueueTest is Test {
   address internal _user = makeAddr('user');
 
   MockAssetManager internal _assetManager;
+  MockVoteManager internal _voteManager;
   ERC1967Factory internal _factory;
   HubAsset internal _hubAsset;
   EOLVault internal _eolVault;
@@ -36,11 +38,12 @@ contract OptOutQueueTest is Test {
     _factory = new ERC1967Factory();
 
     _assetManager = new MockAssetManager();
+    _voteManager = new MockVoteManager();
 
     _hubAsset = HubAsset(
       _proxy(
         address(new HubAsset()),
-        abi.encodeCall(HubAsset.initialize, ('Test', 'TT')) //
+        abi.encodeCall(HubAsset.initialize, (_voteManager, 'Test', 'TT')) //
       )
     );
     _eolVault = EOLVault(

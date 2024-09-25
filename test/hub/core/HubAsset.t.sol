@@ -11,16 +11,19 @@ import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/Transparen
 
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
+import { MockVoteManager } from '../../mock/MockVoteManager.sol';
 
 contract HubAssetTest is Test {
   HubAsset hubAsset;
 
+  MockVoteManager internal _voteManager;
   ProxyAdmin internal _proxyAdmin;
   address immutable owner = makeAddr('owner');
   address immutable user1 = makeAddr('user1');
   address immutable user2 = makeAddr('user2');
 
   function setUp() public {
+    _voteManager = new MockVoteManager();
     _proxyAdmin = new ProxyAdmin(owner);
     HubAsset hubAssetImpl = new HubAsset();
 
@@ -28,7 +31,9 @@ contract HubAssetTest is Test {
       payable(
         address(
           new TransparentUpgradeableProxy(
-            address(hubAssetImpl), address(_proxyAdmin), abi.encodeCall(hubAsset.initialize, ('Token', 'TKN'))
+            address(hubAssetImpl),
+            address(_proxyAdmin),
+            abi.encodeCall(hubAsset.initialize, (_voteManager, 'Token', 'TKN'))
           )
         )
       )
