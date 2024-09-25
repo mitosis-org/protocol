@@ -14,7 +14,7 @@ contract ERC20TWABSnapshotsWithVoteStorageV1 {
     mapping(address account => TWABCheckpoints.Trace) delegateCheckpoints;
   }
 
-  string private constant _NAMESPACE = 'mitosis.storage.TWABVoteSnapshotsStorage.v1';
+  string private constant _NAMESPACE = 'mitosis.storage.ERC20TWABSnapshotsWithVoteStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
