@@ -11,4 +11,8 @@ contract MockERC20TWABSnapshots is ERC20TWABSnapshots {
   function mint(address account, uint256 value) external {
     _mint(account, value);
   }
+
+  function _getVotingUnits(address account) internal view override returns (uint256) {
+    return balanceOf(account);
+  }
 }

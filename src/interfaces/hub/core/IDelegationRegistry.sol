@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-interface IVoteManager {
+interface IDelegationRegistry {
   event DelegationManagerSet(address indexed account, address indexed delegationManager);
   event DefaultDelegateeSet(address indexed account, address indexed delegatee);
 

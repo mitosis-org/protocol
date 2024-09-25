@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IVoteManager } from '../../src/interfaces/hub/core/IVoteManager.sol';
+import { IDelegationRegistry } from '../../src/interfaces/hub/core/IDelegationRegistry.sol';
 import { StdError } from '../../src/lib/StdError.sol';
 
-contract MockVoteManager is IVoteManager {
+contract MockDelegationRegistry is IDelegationRegistry {
   mapping(address account => address delegationManager) private _delegationManagers;
   mapping(address account => address defaultDelegatee) private _defaultDelegatees;
 

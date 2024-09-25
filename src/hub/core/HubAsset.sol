@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IVoteManager } from '../../interfaces/hub/core/IVoteManager.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { ERC20TWABSnapshotsWithVote } from '../../twab/ERC20TWABSnapshotsWithVote.sol';
+import { ERC20TWABSnapshots } from '../../twab/ERC20TWABSnapshots.sol';
 
-contract HubAsset is ERC20TWABSnapshotsWithVote {
+contract HubAsset is ERC20TWABSnapshots {
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(IVoteManager voteManager, string memory name_, string memory symbol_) external initializer {
-    __ERC20TWABSnapshotsWithVote_init(voteManager, name_, symbol_);
+  function initialize(address delegationRegistry_, string memory name_, string memory symbol_) external initializer {
+    __ERC20TWABSnapshots_init(delegationRegistry_, name_, symbol_);
   }
 
   modifier onlyHubAssetMintable() {
