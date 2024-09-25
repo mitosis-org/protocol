@@ -42,7 +42,8 @@ abstract contract ERC20TWABSnapshotsWithVote is
   // ================== NOTE: View Functions ================== //
 
   function delegates(address account) external view returns (address) {
-    return _getStorageV1().delegates[account];
+    address delegates_ = _getStorageV1().delegates[account];
+    return delegates_ == address(0) ? account : delegates_;
   }
 
   function getPastTotalSupply(uint256 timepoint) external view returns (uint256) {
