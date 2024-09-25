@@ -162,9 +162,10 @@ abstract contract ERC20TWABSnapshots is
       address defaultDelegatee = $.delegationRegistry.defaultDelegatee(to);
       if (defaultDelegatee != address(0)) {
         _delegate($, to, defaultDelegatee);
+        toDelegatee = defaultDelegatee;
       } else {
-        toDelegatee = to;
         $.delegates[to] = to;
+        toDelegatee = to;
       }
     }
 
