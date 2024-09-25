@@ -120,7 +120,7 @@ abstract contract ERC20TWABSnapshotsWithVote is
       else $.delegates[to] = to;
     }
 
-    _moveDelegateVotes($, $.delegates[from], $.delegates[to], value);
+    _moveDelegateVotes($, $.delegates[from], toDelegatee, value);
   }
 
   function _getPastVoteSnapshot(StorageV1 storage $, address account, uint256 timepoint)
