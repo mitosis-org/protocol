@@ -5,10 +5,10 @@ import { IVoteManager } from '../interfaces/hub/core/IVoteManager.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { TWABCheckpoints } from '../lib/TWABCheckpoints.sol';
 
-contract TWABVoteSnapshotsStorageV1 {
+contract ERC20TWABSnapshotsWithVoteStorageV1 {
   using ERC7201Utils for string;
 
-  struct TWABVoteSnapshotsStorageV1_ {
+  struct StorageV1 {
     IVoteManager voteManager;
     mapping(address account => address delegate) delegates;
     mapping(address account => TWABCheckpoints.Trace) delegateCheckpoints;
@@ -17,7 +17,7 @@ contract TWABVoteSnapshotsStorageV1 {
   string private constant _NAMESPACE = 'mitosis.storage.TWABVoteSnapshotsStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
-  function _getTWABVoteSnapshotsStorageV1() internal view returns (TWABVoteSnapshotsStorageV1_ storage $) {
+  function _getStorageV1() internal view returns (StorageV1 storage $) {
     bytes32 slot = _slot;
     // slither-disable-next-line assembly
     assembly {

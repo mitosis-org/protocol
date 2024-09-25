@@ -12,11 +12,11 @@ import { IERC5805TWAB } from '../interfaces/twab/IERC5805TWAB.sol';
 import { StdError } from '../lib/StdError.sol';
 import { TWABCheckpoints } from '../lib/TWABCheckpoints.sol';
 import { ERC20TWABSnapshots } from './ERC20TWABSnapshots.sol';
-import { TWABVoteSnapshotsStorageV1 } from './TWABVoteSnapshotsStorageV1.sol';
+import { ERC20TWABSnapshotsWithVoteStorageV1 } from './ERC20TWABSnapshotsWithVoteStorageV1.sol';
 
 abstract contract ERC20TWABSnapshotsWithVote is
   ERC20TWABSnapshots,
-  TWABVoteSnapshotsStorageV1,
+  ERC20TWABSnapshotsWithVoteStorageV1,
   EIP712Upgradeable,
   NoncesUpgradeable,
   IERC5805TWAB
@@ -34,7 +34,7 @@ abstract contract ERC20TWABSnapshotsWithVote is
     __EIP712_init_unchained(name_, '1');
     __Nonces_init_unchained();
 
-    TWABVoteSnapshotsStorageV1_ storage $ = _getTWABVoteSnapshotsStorageV1();
+    StorageV1 storage $ = _getStorageV1();
 
     $.voteManager = IVoteManager(voteManager);
   }
@@ -42,7 +42,7 @@ abstract contract ERC20TWABSnapshotsWithVote is
   // ================== NOTE: View Functions ================== //
 
   function delegates(address account) external view returns (address) {
-    return _getTWABVoteSnapshotsStorageV1().delegates[account];
+    return _getStorageV1().delegates[account];
   }
 
   function getPastTotalSupply(uint256 timepoint) external view returns (uint256) {
@@ -51,16 +51,16 @@ abstract contract ERC20TWABSnapshotsWithVote is
   }
 
   function getVotes(address account) external view returns (uint256) {
-    (uint208 vote,,) = _getTWABVoteSnapshotsStorageV1().delegateCheckpoints[account].latest();
+    (uint208 vote,,) = _getStorageV1().delegateCheckpoints[account].latest();
     return uint256(vote);
   }
 
   function getVoteSnapshot(address account) external view returns (uint208 balance, uint256 twab, uint48 position) {
-    return _getTWABVoteSnapshotsStorageV1().delegateCheckpoints[account].latest();
+    return _getStorageV1().delegateCheckpoints[account].latest();
   }
 
   function getPastVotes(address account, uint256 timepoint) external view returns (uint256) {
-    (uint208 vote,,) = _getPastVoteSnapshot(_getTWABVoteSnapshotsStorageV1(), account, timepoint);
+    (uint208 vote,,) = _getPastVoteSnapshot(_getStorageV1(), account, timepoint);
     return uint256(vote);
   }
 
@@ -69,14 +69,14 @@ abstract contract ERC20TWABSnapshotsWithVote is
     view
     returns (uint208 balance, uint256 twab, uint48 position)
   {
-    return _getPastVoteSnapshot(_getTWABVoteSnapshotsStorageV1(), account, timepoint);
+    return _getPastVoteSnapshot(_getStorageV1(), account, timepoint);
   }
 
   // ================== NOTE: Mutative Functions ================== //
 
   function delegate(address delegatee) external {
     address account = _msgSender();
-    _delegate(_getTWABVoteSnapshotsStorageV1(), account, delegatee);
+    _delegate(_getStorageV1(), account, delegatee);
   }
 
   function delegateBySig(address delegatee, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) external {
@@ -85,11 +85,11 @@ abstract contract ERC20TWABSnapshotsWithVote is
     address signer =
       ECDSA.recover(_hashTypedDataV4(keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry))), v, r, s);
     _useCheckedNonce(signer, nonce);
-    _delegate(_getTWABVoteSnapshotsStorageV1(), signer, delegatee);
+    _delegate(_getStorageV1(), signer, delegatee);
   }
 
   function delegateByManager(address account, address delegatee) external {
-    TWABVoteSnapshotsStorageV1_ storage $ = _getTWABVoteSnapshotsStorageV1();
+    StorageV1 storage $ = _getStorageV1();
 
     address delegationManager = $.voteManager.delegationManager(account);
     if (delegationManager != _msgSender()) revert StdError.Unauthorized();
@@ -99,7 +99,7 @@ abstract contract ERC20TWABSnapshotsWithVote is
 
   // ================== NOTE: Internal Functions ================== //
 
-  function _delegate(TWABVoteSnapshotsStorageV1_ storage $, address account, address delegatee) internal {
+  function _delegate(StorageV1 storage $, address account, address delegatee) internal {
     address oldDelegate = $.delegates[account];
     $.delegates[account] = delegatee;
 
@@ -110,18 +110,19 @@ abstract contract ERC20TWABSnapshotsWithVote is
   function _update(address from, address to, uint256 value) internal override {
     super._update(from, to, value);
 
-    TWABVoteSnapshotsStorageV1_ storage $ = _getTWABVoteSnapshotsStorageV1();
+    StorageV1 storage $ = _getStorageV1();
 
     address toDelegatee = $.delegates[to];
     if (toDelegatee == address(0)) {
       address defaultDelegatee = $.voteManager.defaultDelegatee(to);
       if (defaultDelegatee != address(0)) _delegate($, to, defaultDelegatee);
+      else $.delegates[to] = to;
     }
 
     _moveDelegateVotes($, $.delegates[from], $.delegates[to], value);
   }
 
-  function _getPastVoteSnapshot(TWABVoteSnapshotsStorageV1_ storage $, address account, uint256 timepoint)
+  function _getPastVoteSnapshot(StorageV1 storage $, address account, uint256 timepoint)
     internal
     view
     returns (uint208 balance, uint256 twab, uint48 position)
@@ -134,7 +135,7 @@ abstract contract ERC20TWABSnapshotsWithVote is
   /**
    * @dev Moves delegated votes from one delegate to another.
    */
-  function _moveDelegateVotes(TWABVoteSnapshotsStorageV1_ storage $, address from, address to, uint256 amount) private {
+  function _moveDelegateVotes(StorageV1 storage $, address from, address to, uint256 amount) private {
     if (from != to && amount > 0) {
       if (from != address(0)) {
         (uint256 oldValue, uint256 newValue,,) = _push($.delegateCheckpoints[from], _sub, SafeCast.toUint208(amount));
