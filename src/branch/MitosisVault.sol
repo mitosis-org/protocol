@@ -66,28 +66,6 @@ contract MitosisVault is IMitosisVault, Ownable2StepUpgradeable, MitosisVaultSto
     return _getStorageV1().eols[hubEOLVault].strategyExecutor;
   }
 
-  //=========== NOTE: VIEW FUNCTIONS ===========//
-
-  function isAssetInitialized(address asset) external view returns (bool) {
-    return _isAssetInitialized(_getStorageV1(), asset);
-  }
-
-  function isEOLInitialized(address hubEOLVault) external view returns (bool) {
-    return _isEOLInitialized(_getStorageV1(), hubEOLVault);
-  }
-
-  function availableEOL(address hubEOLVault) external view returns (uint256) {
-    return _getStorageV1().eols[hubEOLVault].availableEOL;
-  }
-
-  function entrypoint() external view returns (IMitosisVaultEntrypoint) {
-    return _getStorageV1().entrypoint;
-  }
-
-  function strategyExecutor(address hubEOLVault) external view returns (address) {
-    return _getStorageV1().eols[hubEOLVault].strategyExecutor;
-  }
-
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
 
   //=========== NOTE: MUTATIVE - ASSET FUNCTIONS ===========//
