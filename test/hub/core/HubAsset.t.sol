@@ -11,7 +11,7 @@ import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/Transparen
 
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
-import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.sol';
+import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol';
 
 contract HubAssetTest is Test {
   HubAsset hubAsset;

@@ -5,14 +5,17 @@ import { console } from '@std/console.sol';
 import { Test } from '@std/Test.sol';
 import { Vm } from '@std/Vm.sol';
 
+import { MockDelegationRegistry } from '../mock/MockDelegationRegistry.t.sol';
 import { MockERC20TWABSnapshots } from '../mock/MockERC20TWABSnapshots.t.sol';
 
 contract ERC20SnapshotsTest is Test {
+  MockDelegationRegistry public delegationRegistry;
   MockERC20TWABSnapshots public token;
 
   function setUp() public {
+    delegationRegistry = new MockDelegationRegistry();
     token = new MockERC20TWABSnapshots();
-    token.initialize('Token', 'TKN');
+    token.initialize(address(delegationRegistry), 'Token', 'TKN');
   }
 
   function test_AddSnapshots() public {
