@@ -31,15 +31,11 @@ interface IGlobalAccessControlManager {
 
   function globalAccessControlManager() external view returns (address);
   function isGlobalAccessControlManager(address target) external view returns (bool);
-  function hasManagerRole(address target) external view returns (bool);
   function hasManagerRole(address target, address account) external view returns (bool);
   function hasManagerRole(address target, bytes4 sig, address account) external view returns (bool);
-  function hasPauseRole(address target) external view returns (bool);
   function hasPauseRole(address target, address account) external view returns (bool);
   function hasPauseRole(address target, bytes4 sig, address account) external view returns (bool);
-  function hasAdminRole(address target) external view returns (bool);
   function hasAdminRole(address target, address account) external view returns (bool);
-  function hasRole(address target, bytes4 sig) external view returns (bool);
   function hasRole(address target, bytes4 sig, address account) external view returns (bool);
   function isPaused(address target, bytes4 sig) external view returns (bool);
   function isPaused(address target, bytes4 sig, bytes32 param) external view returns (bool);

@@ -73,16 +73,8 @@ contract GlobalAccessControlManager is IGlobalAccessControlManager, Ownable2Step
     return _getGlobalAccessControlManagerStorage().globalAccessControlManager == target;
   }
 
-  function hasAdminRole(address target) external view returns (bool) {
-    return _hasAdminRole(_getGlobalAccessControlManagerStorage().roles[target], _msgSender());
-  }
-
   function hasAdminRole(address target, address account) external view returns (bool) {
     return _hasAdminRole(_getGlobalAccessControlManagerStorage().roles[target], account);
-  }
-
-  function hasManagerRole(address target) external view returns (bool) {
-    return _hasAdminRole(_getGlobalAccessControlManagerStorage().roleManagers[target], _msgSender());
   }
 
   function hasManagerRole(address target, address account) external view returns (bool) {
@@ -93,20 +85,12 @@ contract GlobalAccessControlManager is IGlobalAccessControlManager, Ownable2Step
     return _hasRole(_getGlobalAccessControlManagerStorage().roleManagers[target], sig, account);
   }
 
-  function hasPauseRole(address target) external view returns (bool) {
-    return _hasAdminRole(_getGlobalAccessControlManagerStorage().pauseManagers[target], _msgSender());
-  }
-
   function hasPauseRole(address target, address account) external view returns (bool) {
     return _hasAdminRole(_getGlobalAccessControlManagerStorage().pauseManagers[target], account);
   }
 
   function hasPauseRole(address target, bytes4 sig, address account) external view returns (bool) {
     return _hasRole(_getGlobalAccessControlManagerStorage().pauseManagers[target], sig, account);
-  }
-
-  function hasRole(address target, bytes4 sig) external view returns (bool) {
-    return _hasRole(_getGlobalAccessControlManagerStorage().roles[target], sig, _msgSender());
   }
 
   function hasRole(address target, bytes4 sig, address account) external view returns (bool) {
