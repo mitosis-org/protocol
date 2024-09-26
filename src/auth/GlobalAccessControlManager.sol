@@ -229,7 +229,7 @@ contract GlobalAccessControlManager is IGlobalAccessControlManager, Ownable2Step
   }
 
   function pause(address target) external {
-    _assertGlobalPausable(_getGlobalAccessControlManagerStorage(), target);
+    _assertPausable(_getGlobalAccessControlManagerStorage(), target);
     _pause(target);
     emit GlobalPaused(target);
   }
@@ -247,7 +247,7 @@ contract GlobalAccessControlManager is IGlobalAccessControlManager, Ownable2Step
   }
 
   function unpause(address target) external {
-    _assertGlobalPausable(_getGlobalAccessControlManagerStorage(), target);
+    _assertPausable(_getGlobalAccessControlManagerStorage(), target);
     _unpause(target);
     emit GlobalUnpaused(target);
   }
@@ -374,10 +374,9 @@ contract GlobalAccessControlManager is IGlobalAccessControlManager, Ownable2Step
     require($.pauseManagers[target].hasRole[msgSender][sig], StdError.Unauthorized());
   }
 
-  function _assertGlobalPausable(GlobalAccessControlManagerStorage storage $, address target) internal view {
+  function _assertPausable(GlobalAccessControlManagerStorage storage $, address target) internal view {
     address msgSender = _msgSender();
     if ($.globalAccessControlManager == msgSender) return;
-    if ($.pauseManagers[target].admins[msgSender]) return;
     require($.pauseManagers[target].admins[msgSender], StdError.Unauthorized());
   }
 }
