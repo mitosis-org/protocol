@@ -88,8 +88,4 @@ contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
 
     return assets;
   }
-
-  function _getVotingUnits(address account) internal view override returns (uint256) {
-    return balanceOf(account);
-  }
 }

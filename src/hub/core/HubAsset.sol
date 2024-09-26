@@ -34,8 +34,4 @@ contract HubAsset is ERC20TWABSnapshots {
   function burn(address account, uint256 value) external onlyHubAssetBurnable {
     _burn(account, value);
   }
-
-  function _getVotingUnits(address account) internal view override returns (uint256) {
-    return balanceOf(account);
-  }
 }

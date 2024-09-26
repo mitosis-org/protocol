@@ -9,8 +9,8 @@ library TWABSnapshotsUtils {
     view
     returns (uint256)
   {
-    (uint208 balanceA, uint256 twabA, uint48 positionA) = snapshots.getPastSnapshot(account, startsAt);
-    (uint208 balanceB, uint256 twabB, uint48 positionB) = snapshots.getPastSnapshot(account, endsAt);
+    (uint208 balanceA, uint256 twabA, uint48 positionA) = snapshots.delegateSnapshotByTime(account, startsAt);
+    (uint208 balanceB, uint256 twabB, uint48 positionB) = snapshots.delegateSnapshotByTime(account, endsAt);
 
     twabA = _calculateTWAB(balanceA, twabA, positionA, startsAt);
     twabB = _calculateTWAB(balanceB, twabB, positionB, endsAt);
@@ -23,8 +23,8 @@ library TWABSnapshotsUtils {
     view
     returns (uint256)
   {
-    (uint208 balanceA, uint256 twabA, uint48 positionA) = snapshots.getPastTotalSnapshot(startsAt);
-    (uint208 balanceB, uint256 twabB, uint48 positionB) = snapshots.getPastTotalSnapshot(endsAt);
+    (uint208 balanceA, uint256 twabA, uint48 positionA) = snapshots.totalSupplySnapshotByTime(startsAt);
+    (uint208 balanceB, uint256 twabB, uint48 positionB) = snapshots.totalSupplySnapshotByTime(endsAt);
 
     twabA = _calculateTWAB(balanceA, twabA, positionA, startsAt);
     twabB = _calculateTWAB(balanceB, twabB, positionB, endsAt);
