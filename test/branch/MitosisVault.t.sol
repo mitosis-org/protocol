@@ -65,7 +65,18 @@ contract MitosisVaultTest is Test {
     vm.startPrank(owner);
 
     _globalAccessControlManager.grantPauseManager(address(_mitosisVault), address(_mitosisVault));
-    _globalAccessControlManager.grantRoleManager(address(_mitosisVault), address(_mitosisVault));
+
+    _globalAccessControlManager.grantRoleManager(address(_mitosisVault), MitosisVault.initializeAsset.selector, address(_mitosisVault));
+    _globalAccessControlManager.grantRoleManager(address(_mitosisVault), MitosisVault.initializeEOL.selector, address(_mitosisVault));
+    _globalAccessControlManager.grantRoleManager(address(_mitosisVault), MitosisVault.redeem.selector, address(_mitosisVault));
+    _globalAccessControlManager.grantRoleManager(address(_mitosisVault), MitosisVault.allocateEOL.selector, address(_mitosisVault));
+    _globalAccessControlManager.grantRoleManager(address(_mitosisVault), MitosisVault.deallocateEOL.selector, address(_mitosisVault));
+    _globalAccessControlManager.grantRoleManager(address(_mitosisVault), MitosisVault.fetchEOL.selector, address(_mitosisVault));
+    _globalAccessControlManager.grantRoleManager(address(_mitosisVault), MitosisVault.returnEOL.selector, address(_mitosisVault));
+    _globalAccessControlManager.grantRoleManager(address(_mitosisVault), MitosisVault.settleYield.selector, address(_mitosisVault));
+    _globalAccessControlManager.grantRoleManager(address(_mitosisVault), MitosisVault.settleLoss.selector, address(_mitosisVault));
+    _globalAccessControlManager.grantRoleManager(address(_mitosisVault), MitosisVault.settleExtraRewards.selector, address(_mitosisVault));
+
     _globalAccessControlManager.grant(address(_mitosisVault), MitosisVault.setEntrypoint.selector, owner);
     _globalAccessControlManager.grant(address(_mitosisVault), MitosisVault.setStrategyExecutor.selector, owner);
     _globalAccessControlManager.grant(address(_mitosisVault), MitosisVault.haltAssetDeposit.selector, owner);
