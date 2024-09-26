@@ -246,16 +246,10 @@ contract MitosisVault is IMitosisVault, Ownable2StepUpgradeable, MitosisVaultSto
     $.globalAccessControlManager.assertHasRole(address(this), msg.sig, _msgSender());
 
     if (address($.entrypoint) != address(0)) {
-      $.globalAccessControlManager.revoke(address(this), MitosisVault.initializeAsset.selector, address(entrypoint_));
-      $.globalAccessControlManager.revoke(address(this), MitosisVault.initializeEOL.selector, address(entrypoint_));
-      $.globalAccessControlManager.revoke(address(this), MitosisVault.redeem.selector, address(entrypoint_));
-      $.globalAccessControlManager.revoke(address(this), MitosisVault.allocateEOL.selector, address(entrypoint_));
+      $.globalAccessControlManager.revoke(address(this), _mitosisVaultEntrypointRoles(), address(entrypoint_));
     }
 
-    $.globalAccessControlManager.grant(address(this), MitosisVault.initializeAsset.selector, address(entrypoint_));
-    $.globalAccessControlManager.grant(address(this), MitosisVault.initializeEOL.selector, address(entrypoint_));
-    $.globalAccessControlManager.grant(address(this), MitosisVault.redeem.selector, address(entrypoint_));
-    $.globalAccessControlManager.grant(address(this), MitosisVault.allocateEOL.selector, address(entrypoint_));
+    $.globalAccessControlManager.grant(address(this), _mitosisVaultEntrypointRoles(), address(entrypoint_));
 
     $.entrypoint = entrypoint_;
 
@@ -277,14 +271,7 @@ contract MitosisVault is IMitosisVault, Ownable2StepUpgradeable, MitosisVaultSto
         && IStrategyExecutor(eolInfo.strategyExecutor).lastSettledBalance() == 0;
       require(drained, IMitosisVault__StrategyExecutorNotDrained(hubEOLVault, eolInfo.strategyExecutor));
 
-      $.globalAccessControlManager.revoke(address(this), MitosisVault.deallocateEOL.selector, eolInfo.strategyExecutor);
-      $.globalAccessControlManager.revoke(address(this), MitosisVault.fetchEOL.selector, eolInfo.strategyExecutor);
-      $.globalAccessControlManager.revoke(address(this), MitosisVault.returnEOL.selector, eolInfo.strategyExecutor);
-      $.globalAccessControlManager.revoke(address(this), MitosisVault.settleYield.selector, eolInfo.strategyExecutor);
-      $.globalAccessControlManager.revoke(address(this), MitosisVault.settleLoss.selector, eolInfo.strategyExecutor);
-      $.globalAccessControlManager.revoke(
-        address(this), MitosisVault.settleExtraRewards.selector, eolInfo.strategyExecutor
-      );
+      $.globalAccessControlManager.revoke(address(this), _strategyExecutorRoles(), eolInfo.strategyExecutor);
     }
 
     require(
@@ -300,12 +287,8 @@ contract MitosisVault is IMitosisVault, Ownable2StepUpgradeable, MitosisVaultSto
       StdError.InvalidAddress('strategyExecutor.asset')
     );
 
-    $.globalAccessControlManager.grant(address(this), MitosisVault.deallocateEOL.selector, strategyExecutor_);
-    $.globalAccessControlManager.grant(address(this), MitosisVault.fetchEOL.selector, strategyExecutor_);
-    $.globalAccessControlManager.grant(address(this), MitosisVault.returnEOL.selector, strategyExecutor_);
-    $.globalAccessControlManager.grant(address(this), MitosisVault.settleYield.selector, strategyExecutor_);
-    $.globalAccessControlManager.grant(address(this), MitosisVault.settleLoss.selector, strategyExecutor_);
-    $.globalAccessControlManager.grant(address(this), MitosisVault.settleExtraRewards.selector, strategyExecutor_);
+    $.globalAccessControlManager.grant(address(this), _strategyExecutorRoles(), strategyExecutor_);
+
     eolInfo.strategyExecutor = strategyExecutor_;
     emit StrategyExecutorSet(hubEOLVault, strategyExecutor_);
   }
@@ -369,6 +352,24 @@ contract MitosisVault is IMitosisVault, Ownable2StepUpgradeable, MitosisVaultSto
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
+
+  function _mitosisVaultEntrypointRoles() internal pure returns (bytes4[] memory sigs) {
+    sigs = new bytes4[](4);
+    sigs[0] = MitosisVault.initializeAsset.selector;
+    sigs[1] = MitosisVault.initializeEOL.selector;
+    sigs[2] = MitosisVault.redeem.selector;
+    sigs[3] = MitosisVault.allocateEOL.selector;
+  }
+
+  function _strategyExecutorRoles() internal pure returns (bytes4[] memory sigs) {
+    sigs = new bytes4[](6);
+    sigs[0] = MitosisVault.deallocateEOL.selector;
+    sigs[1] = MitosisVault.fetchEOL.selector;
+    sigs[2] = MitosisVault.returnEOL.selector;
+    sigs[3] = MitosisVault.settleYield.selector;
+    sigs[4] = MitosisVault.settleLoss.selector;
+    sigs[5] = MitosisVault.settleExtraRewards.selector;
+  }
 
   function _assertAssetInitialized(StorageV1 storage $, address asset) internal view {
     require(_isAssetInitialized($, asset), IMitosisVault__AssetNotInitialized(asset));
