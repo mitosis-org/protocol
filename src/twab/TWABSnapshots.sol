@@ -5,6 +5,7 @@ import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
 import { ECDSA } from '@oz-v5/utils/cryptography/ECDSA.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
+import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
 
 import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 import { EIP712Upgradeable } from '@ozu-v5/utils/cryptography/EIP712Upgradeable.sol';
@@ -12,7 +13,7 @@ import { NoncesUpgradeable } from '@ozu-v5/utils/NoncesUpgradeable.sol';
 
 import { IDelegationRegistry } from '../interfaces/hub/core/IDelegationRegistry.sol';
 import { ITWABSnapshots } from '../interfaces/twab/ITWABSnapshots.sol';
-import { Checkpoints } from '../lib/Checkpoints.sol';
+
 import { StdError } from '../lib/StdError.sol';
 import { TWABCheckpoints } from '../lib/TWABCheckpoints.sol';
 import { TWABSnapshotsStorageV1 } from './TWABSnapshotsStorageV1.sol';
@@ -25,7 +26,7 @@ abstract contract TWABSnapshots is
   TWABSnapshotsStorageV1
 {
   using SafeCast for uint256;
-  using Checkpoints for Checkpoints.Trace;
+  using Checkpoints for Checkpoints.Trace208;
   using TWABCheckpoints for TWABCheckpoints.Trace;
 
   bytes32 private constant DELEGATION_TYPEHASH = keccak256('Delegation(address delegatee,uint256 nonce,uint256 expiry)');
@@ -68,12 +69,12 @@ abstract contract TWABSnapshots is
   }
 
   function getPastVotes(address account, uint256 timepoint) external view returns (uint256) {
-    (uint208 amount,,) = _delegationSnapshotByTime(_getTWABSnapshotsStorageV1(), account, timepoint);
+    (uint208 amount,,) = _delegationSnapshot(_getTWABSnapshotsStorageV1(), account, timepoint);
     return uint256(amount);
   }
 
   function getPastTotalSupply(uint256 timepoint) external view virtual returns (uint256 balance) {
-    (uint208 amount,,) = _totalSupplySnapshotByTime(_getTWABSnapshotsStorageV1(), timepoint);
+    (uint208 amount,,) = _totalSupplySnapshot(_getTWABSnapshotsStorageV1(), timepoint);
     return uint256(amount);
   }
 
@@ -87,26 +88,17 @@ abstract contract TWABSnapshots is
     return _getTWABSnapshotsStorageV1().totalCheckpoints.latest();
   }
 
-  function totalSupplySnapshotByTime(uint256 timepoint)
+  function totalSupplySnapshot(uint256 timepoint)
     external
     view
     virtual
     returns (uint208 balance, uint256 twab, uint48 position)
   {
-    return _totalSupplySnapshotByTime(_getTWABSnapshotsStorageV1(), timepoint);
+    return _totalSupplySnapshot(_getTWABSnapshotsStorageV1(), timepoint);
   }
 
-  function balanceSnapshot(address account) external view virtual returns (uint208 balance, uint48 position) {
-    return _getTWABSnapshotsStorageV1().balanceCheckpoints[account].latest();
-  }
-
-  function balanceSnapshotByTime(address account, uint256 timepoint)
-    external
-    view
-    virtual
-    returns (uint208 balance, uint48 position)
-  {
-    return _balanceSnapshotByTime(_getTWABSnapshotsStorageV1(), account, timepoint);
+  function balanceSnapshot(address account, uint256 timepoint) external view virtual returns (uint208 balance) {
+    return _balanceSnapshot(_getTWABSnapshotsStorageV1(), account, timepoint);
   }
 
   function delegateSnapshot(address account)
@@ -119,14 +111,14 @@ abstract contract TWABSnapshots is
     return _getTWABSnapshotsStorageV1().delegateCheckpoints[account].latest();
   }
 
-  function delegateSnapshotByTime(address account, uint256 timestamp)
+  function delegateSnapshot(address account, uint256 timestamp)
     external
     view
     virtual
     override
     returns (uint208 balance, uint256 twab, uint48 position)
   {
-    return _delegationSnapshotByTime(_getTWABSnapshotsStorageV1(), account, timestamp);
+    return _delegationSnapshot(_getTWABSnapshotsStorageV1(), account, timestamp);
   }
 
   // ================== NOTE: Mutative Functions ================== //

@@ -10,21 +10,16 @@ interface ITWABSnapshots is IERC5805 {
 
   function totalSupplySnapshot() external view returns (uint208 balance, uint256 twab, uint48 position);
 
-  function totalSupplySnapshotByTime(uint256 timepoint)
+  function totalSupplySnapshot(uint256 timepoint)
     external
     view
     returns (uint208 balance, uint256 twab, uint48 position);
 
-  function balanceSnapshot(address account) external view returns (uint208 balance, uint48 position);
-
-  function balanceSnapshotByTime(address account, uint256 timepoint)
-    external
-    view
-    returns (uint208 balance, uint48 position);
+  function balanceSnapshot(address account, uint256 timepoint) external view returns (uint208 balance);
 
   function delegateSnapshot(address account) external view returns (uint208 balance, uint256 twab, uint48 position);
 
-  function delegateSnapshotByTime(address account, uint256 timepoint)
+  function delegateSnapshot(address account, uint256 timepoint)
     external
     view
     returns (uint208 balance, uint256 twab, uint48 position);

@@ -174,11 +174,11 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
       totalSupply = IEOLVault(eolVault).totalSupply();
     } else {
       {
-        (uint208 totalAssets208,) = hubAsset.balanceSnapshotByTime(eolVault, timestamp);
+        uint208 totalAssets208 = hubAsset.balanceSnapshot(eolVault, timestamp);
         totalAssets = totalAssets208;
       }
       {
-        (uint208 totalSupply208,,) = IEOLVault(eolVault).totalSupplySnapshotByTime(timestamp);
+        (uint208 totalSupply208,,) = IEOLVault(eolVault).totalSupplySnapshot(timestamp);
         totalSupply = totalSupply208;
       }
     }

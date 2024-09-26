@@ -74,25 +74,17 @@ contract ERC20SnapshotsTest is Test {
     address alice = makeAddr('alice');
     address bob = makeAddr('bob');
 
-    uint256 value;
-    uint256 twab;
-
     token.mint(alice, 100 ether);
     token.mint(bob, 100 ether);
     assertEq(token.totalSupply(), 200 ether);
     assertEq(token.balanceOf(alice), 100 ether);
     assertEq(token.balanceOf(bob), 100 ether);
 
-    (value, twab,) = token.totalSupplySnapshot();
-    assertEq(value, 200 ether);
-    assertEq(twab, 0);
+    _assertTotalSupplySnapshot(200 ether, 0, 0);
 
-    (value,) = token.balanceSnapshot(alice);
-    assertEq(value, 100 ether);
+    _assertBalanceSnapshot(alice, 100 ether);
 
-    (value, twab,) = token.delegateSnapshot(alice);
-    assertEq(value, 100 ether);
-    assertEq(twab, 0);
+    _assertDelegateSnapshot(alice, 100 ether, 0, 0);
   }
 
   function test_transfer() public {
@@ -111,10 +103,10 @@ contract ERC20SnapshotsTest is Test {
 
     _assertTotalSupplySnapshot(200 ether, 0, past);
 
-    _assertBalanceSnapshot(alice, 90 ether, next);
+    _assertBalanceSnapshot(alice, 90 ether);
     _assertDelegateSnapshot(alice, 90 ether, 100 ether, next); // 0 + (100 * 1)
 
-    _assertBalanceSnapshot(bob, 110 ether, next);
+    _assertBalanceSnapshot(bob, 110 ether);
     _assertDelegateSnapshot(bob, 110 ether, 100 ether, next); // 0 + (100 * 1)
   }
 
@@ -135,13 +127,13 @@ contract ERC20SnapshotsTest is Test {
 
     _assertTotalSupplySnapshot(200 ether, 0, past);
 
-    _assertBalanceSnapshot(alice, 100 ether, past); // balance snapshot will not be updated
+    _assertBalanceSnapshot(alice, 100 ether); // balance snapshot will not be updated
     _assertDelegateSnapshot(alice, 0 ether, 100 ether, next); // 0 + (100 * 1)
 
-    _assertBalanceSnapshot(bob, 100 ether, past);
+    _assertBalanceSnapshot(bob, 100 ether);
     _assertDelegateSnapshot(bob, 100 ether, 0, past);
 
-    _assertBalanceSnapshot(carol, 0 ether, 0); // nothing
+    _assertBalanceSnapshot(carol, 0 ether); // nothing
     _assertDelegateSnapshot(carol, 100 ether, 0 ether, next);
   }
 
@@ -217,17 +209,15 @@ contract ERC20SnapshotsTest is Test {
     assertEq(timestamp_, timestamp);
   }
 
-  function _assertBalanceSnapshot(address account, uint208 balance, uint48 timestamp) internal view {
-    uint256 balance_;
-    uint48 timestamp_;
+  function _assertBalanceSnapshot(address account, uint208 balance) internal view {
+    uint208 balance_;
 
-    (balance_, timestamp_) = token.balanceSnapshot(account);
+    balance_ = token.balanceSnapshot(account, _time());
     assertEq(balance_, balance);
-    assertEq(timestamp_, timestamp);
   }
 
   function _assertDelegateSnapshot(address account, uint208 balance, uint256 twab, uint48 timestamp) internal view {
-    uint256 balance_;
+    uint208 balance_;
     uint256 twab_;
     uint48 timestamp_;
 
