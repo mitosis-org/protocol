@@ -21,6 +21,8 @@ interface IAssetManagerStorageV1 {
 
   function hubAsset(uint256 chainId, address branchAsset_) external view returns (address hubAsset_);
 
+  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool);
+
   function eolIdle(address eolVault) external view returns (uint256 eolVaultIdleBalance);
 
   function eolAlloc(address eolVault) external view returns (uint256 eolVaultAllocation);

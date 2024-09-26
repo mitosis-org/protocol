@@ -75,6 +75,10 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return _getStorageV1().collateralPerChain[chainId][hubAsset_];
   }
 
+  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool) {
+    return _getStorageV1().eolInitialized[chainId][eolVault];
+  }
+
   function eolIdle(address eolVault) external view returns (uint256) {
     return _eolIdle(_getStorageV1(), eolVault);
   }

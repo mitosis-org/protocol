@@ -14,6 +14,7 @@ contract MockAssetManager is IAssetManager {
     external
   { }
   function entrypoint() external view returns (address entrypoint_) { }
+  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool) { }
   function eolAlloc(address eolVault) external view returns (uint256 eolVaultAllocation) { }
   function eolIdle(address eolVault) external view returns (uint256 eolVaultIdleBalance) { }
   function hubAsset(uint256 chainId, address branchAsset_) external view returns (address hubAsset_) { }
