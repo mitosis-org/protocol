@@ -160,7 +160,7 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertEOLRewardManagerSet($);
 
     address hubAsset = $.hubAssets[chainId][reward];
-    _mint($, chainId, reward, address(this), amount);
+    _mint($, chainId, hubAsset, address(this), amount);
     emit RewardSettled(chainId, eolVault, hubAsset, amount);
 
     IHubAsset(hubAsset).approve(address($.rewardManager), amount);
