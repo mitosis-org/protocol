@@ -26,6 +26,8 @@ interface IAssetManagerStorageV1 {
   function eolIdle(address eolVault) external view returns (uint256 eolVaultIdleBalance);
 
   function eolAlloc(address eolVault) external view returns (uint256 eolVaultAllocation);
+
+  function strategist(address eolVault) external view returns (address);
 }
 
 interface IAssetManager is IAssetManagerStorageV1 {
@@ -76,7 +78,15 @@ interface IAssetManager is IAssetManagerStorageV1 {
 
   function initializeAsset(uint256 chainId, address hubAsset) external;
 
+  function initializeEOL(uint256 chainId, address eolVault) external;
+
   function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external;
 
-  function initializeEOL(uint256 chainId, address eolVault) external;
+  function setEntrypoint(address entrypoint_) external;
+
+  function setOptOutQueue(address optOutQueue_) external;
+
+  function setRewardManager(address rewardManager_) external;
+
+  function setStrategist(address eolVault, address strategist) external;
 }
