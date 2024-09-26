@@ -15,11 +15,15 @@ contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1,
   function initialize() external initializer { }
 
   function delegationManager(address account) external view override returns (address delegationManager_) {
-    return _getStorageV1().delegationManagers[account];
+    return _delegationManager(_getStorageV1(), account);
   }
 
   function defaultDelegatee(address account) external view override returns (address defaultDelegatee_) {
     return _getStorageV1().defaultDelegatees[account];
+  }
+
+  function redistributionRule(address account) external view returns (address redistributionRule_) {
+    return _getStorageV1().redistributionRules[account];
   }
 
   function setDelegationManager(address delegationManager_) external override {
@@ -27,16 +31,31 @@ contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1,
     emit DelegationManagerSet(_msgSender(), delegationManager_);
   }
 
-  function setDefaultDelegatee(address defaultDelegatee_) external override {
-    _getStorageV1().defaultDelegatees[_msgSender()] = defaultDelegatee_;
-    emit DefaultDelegateeSet(_msgSender(), defaultDelegatee_);
-  }
-
-  function setDefaultDelegateByManager(address account, address defaultDelegatee_) external override {
+  function setDefaultDelegatee(address account, address defaultDelegatee_) external override {
     StorageV1 storage $ = _getStorageV1();
-    require(_msgSender() == $.delegationManagers[account], StdError.Unauthorized());
+    _assertSelfOrManager($, account);
 
     $.defaultDelegatees[account] = defaultDelegatee_;
     emit DefaultDelegateeSet(account, defaultDelegatee_);
+  }
+
+  function setRedistributionRule(address account, address redistributionRule_) external override {
+    require(redistributionRule_.code.length > 0, StdError.InvalidAddress('redistributionRule'));
+
+    StorageV1 storage $ = _getStorageV1();
+    _assertSelfOrManager($, account);
+
+    $.redistributionRules[account] = redistributionRule_;
+    emit RedistributionRuleSet(account, redistributionRule_);
+  }
+
+  function _delegationManager(StorageV1 storage $, address account) internal view returns (address delegationManager_) {
+    delegationManager_ = $.delegationManagers[account];
+    return delegationManager_ == address(0) ? account : delegationManager_; // default to account
+  }
+
+  function _assertSelfOrManager(StorageV1 storage $, address account) private view {
+    address sender = _msgSender();
+    require(sender == account || sender == _delegationManager($, account), StdError.Unauthorized());
   }
 }

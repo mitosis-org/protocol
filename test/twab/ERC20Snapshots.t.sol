@@ -60,7 +60,7 @@ contract ERC20SnapshotsTest is Test {
     address carol = makeAddr('carol'); // registered
 
     vm.prank(bob);
-    delegationRegistry.setDefaultDelegatee(makeAddr('bob-delegatee'));
+    delegationRegistry.setDefaultDelegatee(bob, makeAddr('bob-delegatee'));
 
     vm.prank(carol);
     token.delegate(makeAddr('carol-delegatee'));
