@@ -39,6 +39,7 @@ contract AssetManagerTest is Toolkit {
   uint48 branchChainId = 10;
   address branchAsset1 = makeAddr('branchAsset1');
   address branchAsset2 = makeAddr('branchAsset2');
+  address branchRewardTokenAddress = makeAddr('branchRewardTokenAddress');
   address strategist = makeAddr('strategist');
 
   function setUp() public {
@@ -493,41 +494,311 @@ contract AssetManagerTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_settleExtraRewards() public { }
-  function test_settleExtraRewards_Unauthorized() public { }
-  function test_settleExtraRewards_BranchAssetPairNotExist() public { }
-  function test_settleExtraRewards_EOLRewardManagerNotSet() public { }
+  function test_settleExtraRewards() public {
+    MockERC20TWABSnapshots rewardToken = new MockERC20TWABSnapshots();
+    rewardToken.initialize('Reward', '$REWARD');
 
-  function test_initializeAsset() public { }
-  function test_initializeAsset_Unauthorized() public { }
-  function test_initializeAsset_InvalidParameter() public { }
-  function test_initializeAsset_BranchAssetPairNotExist() public { }
+    vm.startPrank(owner);
+    _assetManager.setRewardManager(address(_eolRewardManager));
+    _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
+    vm.stopPrank();
 
-  function test_initializeEOL() public { }
-  function test_initializeEOL_Unauthorized() public { }
-  function test_initializeEOL_InvalidParameter() public { }
-  function test_initializeEOL_BranchAssetPairNotExist() public { }
-  function test_initializeEOL_EOLAlreadyInitialized() public { }
+    assertEq(rewardToken.totalSupply(), 0);
 
-  function test_setAssetPair() public { }
-  function test_setAssetPair_Unauthorized() public { }
-  function test_setAssetPair_InvalidParameter() public { }
+    vm.prank(address(_assetManagerEntrypoint));
+    _assetManager.settleExtraRewards(branchChainId, address(_eolVault), branchRewardTokenAddress, 100 ether);
 
-  function test_setEntrypoint() public { }
-  function test_setEntrypoint_Unauthorized() public { }
-  function test_setEntrypoint_InvalidParameter() public { }
+    assertEq(rewardToken.totalSupply(), 100 ether);
+  }
 
-  function test_setOptOutQueue() public { }
-  function test_setOptOutQueue_Unauthorized() public { }
-  function test_setOptOutQueue_InvalidParameter() public { }
+  function test_settleExtraRewards_Unauthorized() public {
+    MockERC20TWABSnapshots rewardToken = new MockERC20TWABSnapshots();
+    rewardToken.initialize('Reward', '$REWARD');
 
-  function test_setRewardManager() public { }
-  function test_setRewardManager_Unauthorized() public { }
-  function test_setRewardManager_InvalidParameter() public { }
+    vm.startPrank(owner);
+    _assetManager.setRewardManager(address(_eolRewardManager));
+    _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
+    vm.stopPrank();
 
-  function test_setStrategist() public { }
-  function test_setStrategist_Unauthorized() public { }
-  function test_setStrategist_InvalidParameter() public { }
+    vm.expectRevert(StdError.Unauthorized.selector);
+    _assetManager.settleExtraRewards(branchChainId, address(_eolVault), branchRewardTokenAddress, 100 ether);
+  }
+
+  function test_settleExtraRewards_BranchAssetPairNotExist() public {
+    vm.startPrank(owner);
+    _assetManager.setRewardManager(address(_eolRewardManager));
+    // _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
+    vm.stopPrank();
+
+    vm.startPrank(address(_assetManagerEntrypoint));
+
+    vm.expectRevert(_errBranchAssetPairNotExist(branchRewardTokenAddress));
+    _assetManager.settleExtraRewards(branchChainId, address(_eolVault), branchRewardTokenAddress, 100 ether);
+
+    vm.stopPrank();
+  }
+
+  function test_settleExtraRewards_EOLRewardManagerNotSet() public {
+    MockERC20TWABSnapshots rewardToken = new MockERC20TWABSnapshots();
+    rewardToken.initialize('Reward', '$REWARD');
+
+    vm.startPrank(owner);
+    // _assetManager.setRewardManager(address(_eolRewardManager));
+    _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
+    vm.stopPrank();
+
+    vm.startPrank(address(_assetManagerEntrypoint));
+
+    vm.expectRevert(_errEOLRewardManagerNotSet());
+    _assetManager.settleExtraRewards(branchChainId, address(_eolVault), branchRewardTokenAddress, 100 ether);
+
+    vm.stopPrank();
+  }
+
+  function test_initializeAsset() public {
+    vm.prank(owner);
+    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+
+    vm.prank(owner);
+    _assetManager.initializeAsset(branchChainId, address(_token));
+
+    assertEq(_assetManager.branchAsset(address(_token), branchChainId), branchAsset1);
+  }
+
+  function test_initializeAsset_Unauthorized() public {
+    vm.prank(owner);
+    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+
+    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
+    _assetManager.initializeAsset(branchChainId, address(_token));
+  }
+
+  function test_initializeAsset_InvalidParameter() public {
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errInvalidParameter('hubAsset'));
+    _assetManager.initializeAsset(branchChainId, address(0));
+
+    vm.stopPrank();
+  }
+
+  function test_initializeAsset_BranchAssetPairNotExist() public {
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errBranchAssetPairNotExist(address(0)));
+    _assetManager.initializeAsset(branchChainId, address(_token));
+
+    vm.stopPrank();
+  }
+
+  function test_initializeEOL() public {
+    vm.prank(owner);
+    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+
+    vm.prank(owner);
+    _assetManager.initializeEOL(branchChainId, address(_eolVault));
+
+    assertTrue(_assetManager.eolInitialized(branchChainId, address(_eolVault)));
+  }
+
+  function test_initializeEOL_Unauthorized() public {
+    vm.prank(owner);
+    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+
+    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
+    _assetManager.initializeEOL(branchChainId, address(_eolVault));
+  }
+
+  function test_initializeEOL_InvalidParameter() public {
+    vm.prank(owner);
+    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errInvalidParameter('eolVault'));
+    _assetManager.initializeEOL(branchChainId, address(0));
+
+    vm.stopPrank();
+  }
+
+  function test_initializeEOL_BranchAssetPairNotExist() public {
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errBranchAssetPairNotExist(address(0)));
+    _assetManager.initializeEOL(branchChainId, address(_eolVault));
+
+    vm.stopPrank();
+  }
+
+  function test_initializeEOL_EOLAlreadyInitialized() public {
+    test_initializeEOL();
+    assertTrue(_assetManager.eolInitialized(branchChainId, address(_eolVault)));
+
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errEOLAlreadyInitialized(branchChainId, address(_eolVault)));
+    _assetManager.initializeEOL(branchChainId, address(_eolVault));
+
+    vm.stopPrank();
+  }
+
+  function test_setAssetPair() public {
+    vm.prank(owner);
+    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+
+    assertEq(_assetManager.branchAsset(address(_token), branchChainId), branchAsset1);
+  }
+
+  function test_setAssetPair_Unauthorized() public {
+    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
+    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+  }
+
+  function test_setAssetPair_InvalidParameter() public {
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errInvalidParameter('hubAsset'));
+    _assetManager.setAssetPair(address(0), branchChainId, branchAsset1);
+
+    vm.stopPrank();
+  }
+
+  function test_setEntrypoint() public {
+    MockAssetManagerEntrypoint newAssetManagerEntrypoint = new MockAssetManagerEntrypoint(_assetManager, address(0));
+
+    assertEq(_assetManager.entrypoint(), address(_assetManagerEntrypoint));
+
+    vm.startPrank(owner);
+
+    _assetManager.setEntrypoint(address(newAssetManagerEntrypoint));
+    vm.stopPrank();
+
+    assertEq(_assetManager.entrypoint(), address(newAssetManagerEntrypoint));
+  }
+
+  function test_setEntrypoint_Unauthorized() public {
+    MockAssetManagerEntrypoint newAssetManagerEntrypoint = new MockAssetManagerEntrypoint(_assetManager, address(0));
+
+    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
+    _assetManager.setEntrypoint(address(newAssetManagerEntrypoint));
+  }
+
+  function test_setEntrypoint_InvalidParameter() public {
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errInvalidParameter('Entrypoint'));
+    _assetManager.setEntrypoint(address(0));
+
+    vm.stopPrank();
+  }
+
+  function test_setOptOutQueue() public {
+    OptOutQueue optOutQueueImpl = new OptOutQueue();
+    OptOutQueue newOptOutQueue = OptOutQueue(
+      payable(
+        address(
+          new TransparentUpgradeableProxy(
+            address(optOutQueueImpl),
+            address(_proxyAdmin),
+            abi.encodeCall(OptOutQueue.initialize, (owner, address(_assetManager)))
+          )
+        )
+      )
+    );
+
+    assertEq(_assetManager.optOutQueue(), address(_optOutQueue));
+
+    vm.prank(owner);
+    _assetManager.setOptOutQueue(address(newOptOutQueue));
+    assertEq(_assetManager.optOutQueue(), address(newOptOutQueue));
+  }
+
+  function test_setOptOutQueue_Unauthorized() public {
+    OptOutQueue optOutQueueImpl = new OptOutQueue();
+    OptOutQueue newOptOutQueue = OptOutQueue(
+      payable(
+        address(
+          new TransparentUpgradeableProxy(
+            address(optOutQueueImpl),
+            address(_proxyAdmin),
+            abi.encodeCall(OptOutQueue.initialize, (owner, address(_assetManager)))
+          )
+        )
+      )
+    );
+
+    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
+    _assetManager.setOptOutQueue(address(newOptOutQueue));
+  }
+
+  function test_setOptOutQueue_InvalidParameter() public {
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errInvalidParameter('OptOutQueue'));
+    _assetManager.setOptOutQueue(address(0));
+
+    vm.stopPrank();
+  }
+
+  function test_setRewardManager() public {
+    assertEq(_assetManager.rewardManager(), address(0));
+
+    vm.prank(owner);
+    _assetManager.setRewardManager(address(_eolRewardManager));
+
+    assertEq(_assetManager.rewardManager(), address(_eolRewardManager));
+
+    MockEOLRewardManager newEOLRewardManager = new MockEOLRewardManager();
+
+    vm.prank(owner);
+    _assetManager.setRewardManager(address(newEOLRewardManager));
+
+    assertEq(_assetManager.rewardManager(), address(newEOLRewardManager));
+  }
+
+  function test_setRewardManager_Unauthorized() public {
+    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
+    _assetManager.setRewardManager(address(_eolRewardManager));
+  }
+
+  function test_setRewardManager_InvalidParameter() public {
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errInvalidParameter('EOLRewardManager'));
+    _assetManager.setRewardManager(address(0));
+
+    vm.stopPrank();
+  }
+
+  function test_setStrategist() public {
+    assertEq(_assetManager.strategist(address(_eolVault)), address(0));
+
+    vm.prank(owner);
+    _assetManager.setStrategist(address(_eolVault), strategist);
+
+    assertEq(_assetManager.strategist(address(_eolVault)), strategist);
+
+    address newStrategist = makeAddr('newStrategist');
+
+    vm.prank(owner);
+    _assetManager.setStrategist(address(_eolVault), newStrategist);
+
+    assertEq(_assetManager.strategist(address(_eolVault)), newStrategist);
+  }
+
+  function test_setStrategist_Unauthorized() public {
+    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
+    _assetManager.setStrategist(address(_eolVault), strategist);
+  }
+
+  function test_setStrategist_InvalidParameter() public {
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errInvalidParameter('EOLVault'));
+    _assetManager.setStrategist(address(0), strategist);
+
+    vm.stopPrank();
+  }
 
   function _errBranchAssetPairNotExist(address branchAsset) internal pure returns (bytes memory) {
     return
@@ -537,6 +808,12 @@ contract AssetManagerTest is Toolkit {
   function _errEOLNotInitialized(uint256 chainId, address eolVault) internal pure returns (bytes memory) {
     return
       abi.encodeWithSelector(AssetManagerStorageV1.AssetManagerStorageV1__EOLNotInitialized.selector, chainId, eolVault);
+  }
+
+  function _errEOLAlreadyInitialized(uint256 chainId, address eolVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(
+      AssetManagerStorageV1.AssetManagerStorageV1__EOLAlreadyInitialized.selector, chainId, eolVault
+    );
   }
 
   function _errInvalidEOLVault(address eolVault, address hubAsset) internal pure returns (bytes memory) {
