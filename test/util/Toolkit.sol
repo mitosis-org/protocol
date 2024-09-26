@@ -15,4 +15,16 @@ contract Toolkit is Test {
   function _errUnauthorized() internal pure returns (bytes memory) {
     return abi.encodeWithSelector(StdError.Unauthorized.selector);
   }
+
+  function _errZeroToAddress() internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(StdError.ZeroAddress.selector, 'to');
+  }
+
+  function _errZeroAmount() internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(StdError.ZeroAmount.selector);
+  }
+
+  function _errInvalidAddress(string memory context) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(StdError.InvalidAddress.selector, context);
+  }
 }
