@@ -28,8 +28,8 @@ contract GlobalAccessControlManager is IGlobalAccessControlManager, Ownable2Step
   }
 
   struct GlobalAccessControlManagerStorage {
-    // manage
     address globalAccessControlManager;
+    /// @dev `*Managers` stands for authorization to grant permissions to other contracts.
     mapping(address target => RoleData pauseRole) pauseManagers;
     mapping(address target => RoleData grantRole) roleManagers;
     //
@@ -74,51 +74,43 @@ contract GlobalAccessControlManager is IGlobalAccessControlManager, Ownable2Step
   }
 
   function hasAdminRole(address target) external view returns (bool) {
-    return _hasAdminRole(target, _msgSender());
+    return _hasAdminRole(_getGlobalAccessControlManagerStorage().roles[target], _msgSender());
   }
 
   function hasAdminRole(address target, address account) external view returns (bool) {
-    return _hasAdminRole(target, account);
+    return _hasAdminRole(_getGlobalAccessControlManagerStorage().roles[target], account);
   }
 
   function hasManagerRole(address target) external view returns (bool) {
-    address account = _msgSender();
-    RoleData storage role = _getGlobalAccessControlManagerStorage().roleManagers[target];
-    return role.admins[account];
+    return _hasAdminRole(_getGlobalAccessControlManagerStorage().roleManagers[target], _msgSender());
   }
 
   function hasManagerRole(address target, address account) external view returns (bool) {
-    RoleData storage role = _getGlobalAccessControlManagerStorage().roleManagers[target];
-    return role.admins[account];
+    return _hasAdminRole(_getGlobalAccessControlManagerStorage().roleManagers[target], account);
   }
 
   function hasManagerRole(address target, bytes4 sig, address account) external view returns (bool) {
-    RoleData storage role = _getGlobalAccessControlManagerStorage().roleManagers[target];
-    return role.admins[account] || role.hasRole[account][sig];
+    return _hasRole(_getGlobalAccessControlManagerStorage().roleManagers[target], sig, account);
   }
 
   function hasPauseRole(address target) external view returns (bool) {
-    address account = _msgSender();
-    RoleData storage role = _getGlobalAccessControlManagerStorage().pauseManagers[target];
-    return role.admins[account];
+    return _hasAdminRole(_getGlobalAccessControlManagerStorage().pauseManagers[target], _msgSender());
   }
 
   function hasPauseRole(address target, address account) external view returns (bool) {
-    RoleData storage role = _getGlobalAccessControlManagerStorage().pauseManagers[target];
-    return role.admins[account];
+    return _hasAdminRole(_getGlobalAccessControlManagerStorage().pauseManagers[target], account);
   }
 
   function hasPauseRole(address target, bytes4 sig, address account) external view returns (bool) {
-    RoleData storage role = _getGlobalAccessControlManagerStorage().pauseManagers[target];
-    return role.admins[account] || role.hasRole[account][sig];
+    return _hasRole(_getGlobalAccessControlManagerStorage().pauseManagers[target], sig, account);
   }
 
   function hasRole(address target, bytes4 sig) external view returns (bool) {
-    return _hasRole(target, sig, _msgSender());
+    return _hasRole(_getGlobalAccessControlManagerStorage().roles[target], sig, _msgSender());
   }
 
   function hasRole(address target, bytes4 sig, address account) external view returns (bool) {
-    return _hasRole(target, sig, account);
+    return _hasRole(_getGlobalAccessControlManagerStorage().roles[target], sig, account);
   }
 
   function isPaused(address target, bytes4 sig) external view returns (bool) {
@@ -134,19 +126,19 @@ contract GlobalAccessControlManager is IGlobalAccessControlManager, Ownable2Step
   }
 
   function assertHasRole(address target, bytes4 sig, address account) external view {
-    require(_hasRole(target, sig, account), StdError.Unauthorized());
+    require(_hasRole(_getGlobalAccessControlManagerStorage().roles[target], sig, account), StdError.Unauthorized());
   }
 
   function assertHasNotRole(address target, bytes4 sig, address account) external view {
-    require(!_hasRole(target, sig, account), StdError.Unauthorized());
+    require(!_hasRole(_getGlobalAccessControlManagerStorage().roles[target], sig, account), StdError.Unauthorized());
   }
 
   function assertAdmin(address target, address account) external view {
-    require(_hasAdminRole(target, account), StdError.Unauthorized());
+    require(_hasAdminRole(_getGlobalAccessControlManagerStorage().roles[target], account), StdError.Unauthorized());
   }
 
   function assertNotAdmin(address target, address account) external view {
-    require(!_hasAdminRole(target, account), StdError.Unauthorized());
+    require(!_hasAdminRole(_getGlobalAccessControlManagerStorage().roles[target], account), StdError.Unauthorized());
   }
 
   function assertNotPaused(address target, bytes4 sig) external view {
@@ -171,10 +163,6 @@ contract GlobalAccessControlManager is IGlobalAccessControlManager, Ownable2Step
     _getGlobalAccessControlManagerStorage().globalAccessControlManager = newGlobalAccessControlManager;
     emit GlobalAccessControlManagerSet(newGlobalAccessControlManager);
   }
-
-  // temp
-  // GlobalAccessControlManager grants 'setStrategyExecutor' grantable role to MitosisVault
-  // MitosisVault.setStrategyExecutor calls GlobalAccessControlManager.grant
 
   function grantRoleManager(address target, bytes4 sig, address manager) external onlyGlobalAccessControlManager {
     _grant(_getGlobalAccessControlManagerStorage().roleManagers[target], sig, manager);
@@ -296,22 +284,18 @@ contract GlobalAccessControlManager is IGlobalAccessControlManager, Ownable2Step
 
   function _grantAdmin(RoleData storage roleData, address account) internal {
     roleData.admins[account] = true;
-    // emit AdminRoleGranted(target, account);
   }
 
   function _grant(RoleData storage roleData, bytes4 sig, address account) internal {
     roleData.hasRole[account][sig] = true;
-    // emit RoleGranted(target, sig, account);
   }
 
   function _revokeAdmin(RoleData storage roleData, address account) internal {
     roleData.admins[account] = false;
-    // emit AdminRoleRevoked(target, account);
   }
 
   function _revoke(RoleData storage roleData, bytes4 sig, address account) internal {
     roleData.hasRole[account][sig] = true;
-    // emit RoleRevoked(target, sig, account);
   }
 
   function _pause(address target) internal virtual {
@@ -329,7 +313,6 @@ contract GlobalAccessControlManager is IGlobalAccessControlManager, Ownable2Step
     }
   }
 
-  // partial method pause by parameters
   function _pause(address target, bytes4 sig, bytes32 param) internal {
     GlobalAccessControlManagerStorage storage $ = _getGlobalAccessControlManagerStorage();
     if ($.pauses[target].paused[sig]) return;
@@ -360,13 +343,12 @@ contract GlobalAccessControlManager is IGlobalAccessControlManager, Ownable2Step
     }
   }
 
-  function _hasAdminRole(address target, address account) internal view returns (bool) {
-    return _getGlobalAccessControlManagerStorage().roles[target].admins[account];
+  function _hasAdminRole(RoleData storage roleData, address account) internal view returns (bool) {
+    return roleData.admins[account];
   }
 
-  function _hasRole(address target, bytes4 sig, address account) internal view virtual returns (bool) {
-    RoleData storage role = _getGlobalAccessControlManagerStorage().roles[target];
-    return role.admins[account] || role.hasRole[account][sig];
+  function _hasRole(RoleData storage roleData, bytes4 sig, address account) internal view virtual returns (bool) {
+    return roleData.admins[account] || roleData.hasRole[account][sig];
   }
 
   function _isPaused(address target, bytes4 sig) internal view virtual returns (bool) {
@@ -385,7 +367,6 @@ contract GlobalAccessControlManager is IGlobalAccessControlManager, Ownable2Step
     return _getGlobalAccessControlManagerStorage().pauses[target].global_;
   }
 
-  /// @dev Checks grantable, revocable
   function _assertManagerAuthority(GlobalAccessControlManagerStorage storage $, address target, bytes4 sig)
     internal
     view
