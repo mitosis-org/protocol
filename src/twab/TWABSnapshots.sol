@@ -4,8 +4,8 @@ pragma solidity ^0.8.27;
 import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
 import { ECDSA } from '@oz-v5/utils/cryptography/ECDSA.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
-import { Time } from '@oz-v5/utils/types/Time.sol';
 import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
+import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 import { EIP712Upgradeable } from '@ozu-v5/utils/cryptography/EIP712Upgradeable.sol';
@@ -13,7 +13,6 @@ import { NoncesUpgradeable } from '@ozu-v5/utils/NoncesUpgradeable.sol';
 
 import { IDelegationRegistry } from '../interfaces/hub/core/IDelegationRegistry.sol';
 import { ITWABSnapshots } from '../interfaces/twab/ITWABSnapshots.sol';
-
 import { StdError } from '../lib/StdError.sol';
 import { TWABCheckpoints } from '../lib/TWABCheckpoints.sol';
 import { TWABSnapshotsStorageV1 } from './TWABSnapshotsStorageV1.sol';
