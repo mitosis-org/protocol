@@ -27,4 +27,8 @@ contract Toolkit is Test {
   function _errInvalidAddress(string memory context) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(StdError.InvalidAddress.selector, context);
   }
+
+  function _errInvalidParameter(string memory context) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(StdError.InvalidParameter.selector, context);
+  }
 }
