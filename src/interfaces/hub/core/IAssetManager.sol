@@ -74,7 +74,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
 
   function settleLoss(uint256 chainId, address eolVault, uint256 amount) external;
 
-  function settleExtraRewards(uint256 chainId, address eolVault, address reward, uint256 amount) external;
+  function settleExtraRewards(uint256 chainId, address eolVault, address branchReward, uint256 amount) external;
 
   function initializeAsset(uint256 chainId, address hubAsset) external;
 
