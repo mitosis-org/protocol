@@ -7,9 +7,9 @@ interface IRedistributionRule {
 
   function getTotalWeight(address source) external returns (uint256 totalWeight);
 
-  function getTotalWeight(address[] memory source) external returns (uint256[] memory totalWeights);
+  function getTotalWeights(address[] memory source) external returns (uint256[] memory totalWeights);
 
   function getWeight(address source, address account) external returns (uint256 weight);
 
-  function getWeight(address source, address[] memory accounts) external returns (uint256[] memory weights);
+  function getWeights(address source, address[] memory accounts) external returns (uint256[] memory weights);
 }

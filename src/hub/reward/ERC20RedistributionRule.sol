@@ -10,7 +10,7 @@ import { IRedistributionRule } from '../../interfaces/hub/reward/IRedistribution
  * @notice A redistribution rule that redistributes rewards based on the balances of an ERC20 token.
  * @dev This contract assumed that the source account is ERC20 token.
  */
-contract ERC20Redistributor is IRedistributionRule {
+contract ERC20RedistributionRule is IRedistributionRule {
   IDelegationRegistry internal immutable _delegationRegistry;
 
   constructor(address delegationRegistry_) {
@@ -25,7 +25,7 @@ contract ERC20Redistributor is IRedistributionRule {
     return _validateSource(source_).totalSupply();
   }
 
-  function getTotalWeight(address[] memory sources_) external view override returns (uint256[] memory totalWeights) {
+  function getTotalWeights(address[] memory sources_) external view override returns (uint256[] memory totalWeights) {
     totalWeights = new uint256[](sources_.length);
     for (uint256 i; i < sources_.length; i++) {
       totalWeights[i] = _validateSource(sources_[i]).totalSupply();
@@ -37,7 +37,7 @@ contract ERC20Redistributor is IRedistributionRule {
     return _validateSource(source_).balanceOf(account);
   }
 
-  function getWeight(address source_, address[] memory accounts)
+  function getWeights(address source_, address[] memory accounts)
     external
     view
     override
