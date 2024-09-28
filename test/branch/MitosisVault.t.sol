@@ -14,6 +14,7 @@ import { MitosisVault, AssetAction, EOLAction } from '../../src/branch/MitosisVa
 import { IMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { StdError } from '../../src/lib/StdError.sol';
+import { MockDelegationRegistry } from '../mock/MockDelegationRegistry.t.sol';
 import { MockERC20TWABSnapshots } from '../mock/MockERC20TWABSnapshots.t.sol';
 import { MockMitosisVaultEntrypoint } from '../mock/MockMitosisVaultEntrypoint.t.sol';
 import { MockStrategyExecutor } from '../mock/MockStrategyExecutor.t.sol';
@@ -24,11 +25,13 @@ contract MitosisVaultTest is Test {
   ProxyAdmin _proxyAdmin;
   MockERC20TWABSnapshots _token;
   MockStrategyExecutor _strategyExecutor;
+  MockDelegationRegistry _delegationRegistry;
 
   address immutable owner = makeAddr('owner');
   address immutable hubEOLVault = makeAddr('hubEOLVault');
 
   function setUp() public {
+    _delegationRegistry = new MockDelegationRegistry();
     _proxyAdmin = new ProxyAdmin(owner);
 
     MitosisVault mitosisVaultImpl = new MitosisVault();
@@ -45,7 +48,7 @@ contract MitosisVaultTest is Test {
     _mitosisVaultEntrypoint = new MockMitosisVaultEntrypoint();
 
     _token = new MockERC20TWABSnapshots();
-    _token.initialize('Token', 'TKN');
+    _token.initialize(address(_delegationRegistry), 'Token', 'TKN');
 
     _strategyExecutor = new MockStrategyExecutor(_mitosisVault, _token, hubEOLVault);
 
@@ -639,7 +642,7 @@ contract MitosisVaultTest is Test {
     _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
 
     MockERC20TWABSnapshots reward = new MockERC20TWABSnapshots();
-    reward.initialize('Reward', 'REWARD');
+    reward.initialize(address(_delegationRegistry), 'Reward', 'REWARD');
 
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(reward));
@@ -666,7 +669,7 @@ contract MitosisVaultTest is Test {
     _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
 
     MockERC20TWABSnapshots reward = new MockERC20TWABSnapshots();
-    reward.initialize('Reward', 'REWARD');
+    reward.initialize(address(_delegationRegistry), 'Reward', 'REWARD');
 
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(reward));
@@ -688,7 +691,7 @@ contract MitosisVaultTest is Test {
     _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
 
     MockERC20TWABSnapshots reward = new MockERC20TWABSnapshots();
-    reward.initialize('Reward', 'REWARD');
+    reward.initialize(address(_delegationRegistry), 'Reward', 'REWARD');
 
     // vm.prank(address(_mitosisVaultEntrypoint));
     // _mitosisVault.initializeAsset(address(reward));
