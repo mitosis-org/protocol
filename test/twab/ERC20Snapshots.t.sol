@@ -80,11 +80,11 @@ contract ERC20SnapshotsTest is Test {
     assertEq(token.balanceOf(alice), 100 ether);
     assertEq(token.balanceOf(bob), 100 ether);
 
-    _assertTotalSupplySnapshot(200 ether, 0, 0);
+    _assertTotalSupplySnapshot(200 ether, 0, 1);
 
     _assertBalanceSnapshot(alice, 100 ether);
 
-    _assertDelegateSnapshot(alice, 100 ether, 0, 0);
+    _assertDelegateSnapshot(alice, 100 ether, 0, 1);
   }
 
   function test_transfer() public {
