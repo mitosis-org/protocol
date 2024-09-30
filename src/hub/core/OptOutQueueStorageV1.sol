@@ -3,6 +3,9 @@ pragma solidity ^0.8.27;
 
 import { LibString } from '@solady/utils/LibString.sol';
 
+import { Math } from '@oz-v5/utils/math/Math.sol';
+import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+
 import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
@@ -15,6 +18,7 @@ import { StdError } from '../../lib/StdError.sol';
 
 abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradeable {
   using ERC7201Utils for string;
+  using SafeCast for uint256;
   using LibString for address;
   using LibRedeemQueue for LibRedeemQueue.Queue;
   using LibRedeemQueue for LibRedeemQueue.Index;
@@ -113,14 +117,14 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
 
   function queueOffset(address eolVault, bool simulate) external view returns (uint256 offset) {
     LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), eolVault);
-    if (simulate) (offset,) = queue.searchQueueOffset(queue.totalReservedAssets);
+    if (simulate) (offset,) = queue.searchQueueOffset(queue.totalReservedAssets, block.timestamp);
     else offset = queue.offset;
     return offset;
   }
 
   function queueIndexOffset(address eolVault, address recipient, bool simulate) external view returns (uint256 offset) {
     LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), eolVault);
-    if (simulate) (offset,) = queue.searchIndexOffset(recipient, queue.totalReservedAssets);
+    if (simulate) (offset,) = queue.searchIndexOffset(recipient, queue.totalReservedAssets, block.timestamp);
     else offset = queue.index(recipient).offset;
     return offset;
   }

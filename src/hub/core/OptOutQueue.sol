@@ -5,6 +5,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
+import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
@@ -18,6 +19,7 @@ import { OptOutQueueStorageV1 } from './OptOutQueueStorageV1.sol';
 contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQueueStorageV1 {
   using SafeERC20 for IEOLVault;
   using SafeERC20 for IHubAsset;
+  using SafeCast for uint256;
   using Math for uint256;
   using LibRedeemQueue for *;
 
@@ -46,7 +48,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     IEOLVault(eolVault).safeTransferFrom(_msgSender(), address(this), shares);
     uint256 assets = IEOLVault(eolVault).previewRedeem(shares) - 1; // FIXME: tricky way to avoid rounding error
     LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
-    reqId = queue.enqueue(receiver, assets, shares);
+    reqId = queue.enqueue(receiver, assets, shares, IEOLVault(eolVault).clock());
 
     emit OptOutRequested(receiver, eolVault, shares, assets);
 
@@ -62,9 +64,12 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
     LibRedeemQueue.Index storage index = queue.index(receiver);
 
-    queue.update();
+    uint256 timestamp = uint256(IEOLVault(eolVault).clock());
+
+    queue.update(timestamp);
 
     ClaimConfig memory cfg = ClaimConfig({
+      timestamp: timestamp,
       receiver: receiver,
       eolVault: IEOLVault(eolVault),
       hubAsset: IHubAsset(IEOLVault(eolVault).asset()),
@@ -82,7 +87,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     cfg.hubAsset.safeTransfer(receiver, totalClaimed_);
 
     // send diff to eolVault if there's any yield
-    (uint256 impact, bool loss) = _abs(totalClaimedWithoutImpact, totalClaimed_);
+    (uint256 impact, bool loss) = _abssub(totalClaimedWithoutImpact, totalClaimed_);
     if (loss) {
       cfg.hubAsset.safeTransfer(eolVault, impact);
       emit OptOutYieldReported(receiver, eolVault, impact);
@@ -106,7 +111,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     _assertOnlyAssetManager($);
     _assertQueueEnabled($, eolVault);
 
-    _sync($, eolVault, assets);
+    _sync($, IEOLVault(eolVault), assets);
   }
 
   // =========================== NOTE: CONFIG FUNCTIONS =========================== //
@@ -141,7 +146,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
 
   // =========================== NOTE: INTERNAL FUNCTIONS =========================== //
 
-  function _abs(uint256 x, uint256 y) private pure returns (uint256, bool) {
+  function _abssub(uint256 x, uint256 y) private pure returns (uint256, bool) {
     return (x > y ? x - y : y - x, x > y);
   }
 
@@ -163,28 +168,6 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     return IEOLVault(eolVault).totalAssets() - queue.pending() - assetManager.eolAlloc(eolVault);
   }
 
-  function _loadPastSnapshot(IHubAsset hubAsset, address eolVault, uint256 timestamp)
-    internal
-    view
-    returns (uint256 totalAssets, uint256 totalSupply)
-  {
-    // prevent future lookup
-    if (timestamp == block.timestamp) {
-      totalAssets = IEOLVault(eolVault).totalAssets();
-      totalSupply = IEOLVault(eolVault).totalSupply();
-    } else {
-      {
-        uint208 totalAssets208 = hubAsset.balanceSnapshot(eolVault, timestamp);
-        totalAssets = totalAssets208;
-      }
-      {
-        (uint208 totalSupply208,,) = IEOLVault(eolVault).totalSupplySnapshot(timestamp);
-        totalSupply = totalSupply208;
-      }
-    }
-    return (totalAssets, totalSupply);
-  }
-
   function _claim(LibRedeemQueue.Queue storage queue, LibRedeemQueue.Index storage index, ClaimConfig memory cfg)
     internal
     returns (uint256 totalClaimed_, uint256 totalClaimedWithoutImpact)
@@ -199,7 +182,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
       LibRedeemQueue.Request memory req = queue.data[reqId];
       if (req.isClaimed()) continue;
       if (reqId >= cfg.queueOffset) break;
-      queue.data[reqId].claimedAt = uint48(block.timestamp);
+      queue.data[reqId].claimedAt = cfg.timestamp.toUint48();
 
       uint256 assetsOnRequest = req.accumulatedAssets;
       uint256 sharesOnRequest = req.accumulatedShares;
@@ -211,11 +194,11 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
           sharesOnRequest -= prevReq.accumulatedShares;
         }
 
-        (uint256 reservedAt_,) = queue.reservedAt(reqId); // isReserved can be ignored
-        (uint256 totalAssets, uint256 totalSupply) = _loadPastSnapshot(cfg.hubAsset, address(cfg.eolVault), reservedAt_);
+        (LibRedeemQueue.ReserveLog memory reserveLog,) = queue.reserveLog(reqId); // found can be ignored
 
-        uint256 assetsOnReserve =
-          _convertToAssets(sharesOnRequest, cfg.decimalsOffset, totalAssets, totalSupply, Math.Rounding.Floor);
+        uint256 assetsOnReserve = _convertToAssets(
+          sharesOnRequest, cfg.decimalsOffset, reserveLog.totalAssets, reserveLog.totalShares, Math.Rounding.Floor
+        );
 
         claimed = Math.min(assetsOnRequest, assetsOnReserve);
       }
@@ -235,12 +218,12 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     return (totalClaimed_, totalClaimedWithoutImpact);
   }
 
-  function _sync(StorageV1 storage $, address eolVault, uint256 assets) internal {
-    LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
+  function _sync(StorageV1 storage $, IEOLVault eolVault, uint256 assets) internal {
+    EOLVaultState storage eolVaultState = $.states[address(eolVault)];
 
-    IEOLVault(eolVault).withdraw(assets, address(this), address(this));
+    eolVault.withdraw(assets, address(this), address(this));
 
-    queue.reserve(assets);
+    eolVaultState.queue.reserve(assets, eolVault.totalSupply(), eolVault.totalAssets(), eolVault.clock());
   }
 
   // =========================== NOTE: ASSERTIONS =========================== //

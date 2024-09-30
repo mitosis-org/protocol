@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { Math } from '@oz-v5/utils/math/Math.sol';
+import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 /**
  * @dev LIFECYCLE:
@@ -11,6 +12,8 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
  * 3. claim (single, multiple, by recipient, by recipient with custom claim size)
  */
 library LibRedeemQueue {
+  using SafeCast for uint256;
+
   struct Request {
     uint256 accumulatedShares;
     uint256 accumulatedAssets;
@@ -26,8 +29,10 @@ library LibRedeemQueue {
   }
 
   struct ReserveLog {
-    uint208 accumulated;
+    uint256 accumulated;
     uint48 reservedAt;
+    uint208 totalShares;
+    uint208 totalAssets;
   }
 
   // INVARIANTS:
@@ -109,6 +114,15 @@ library LibRedeemQueue {
     return accumulated - prevAccumulated;
   }
 
+  function reserveLog(Queue storage q, uint256 itemIndex)
+    internal
+    view
+    returns (ReserveLog memory reserveLog_, bool isReserved_)
+  {
+    Request memory req = get(q, itemIndex);
+    return _searchReserveLogByAccumulated(q.reserveHistory, req.accumulatedAssets);
+  }
+
   function reservedAt(Queue storage q, uint256 itemIndex) internal view returns (uint256 reservedAt_, bool isReserved_) {
     return _reservedAt(q, get(q, itemIndex));
   }
@@ -141,7 +155,7 @@ library LibRedeemQueue {
     return idx;
   }
 
-  function claimable(Queue storage q, address recipient, uint256 accumulated)
+  function claimable(Queue storage q, address recipient, uint256 accumulated, uint256 timestamp)
     internal
     view
     returns (uint256[] memory indexes)
@@ -149,7 +163,7 @@ library LibRedeemQueue {
     Index storage idx = index(q, recipient);
 
     uint256 offset = idx.offset;
-    (uint256 queueOffset,) = _searchQueueOffset(q, accumulated);
+    (uint256 queueOffset,) = _searchQueueOffset(q, accumulated, timestamp);
     (uint256 newOffset,) = _searchIndexOffset(idx, queueOffset);
 
     uint256 count = 0;
@@ -169,16 +183,20 @@ library LibRedeemQueue {
     return indexes;
   }
 
-  function searchQueueOffset(Queue storage q, uint256 accumulated) internal view returns (uint256 offset, bool found) {
-    return _searchQueueOffset(q, accumulated);
-  }
-
-  function searchIndexOffset(Queue storage q, address recipient, uint256 accumulated)
+  function searchQueueOffset(Queue storage q, uint256 accumulated, uint256 timestamp)
     internal
     view
     returns (uint256 offset, bool found)
   {
-    (uint256 queueOffset,) = _searchQueueOffset(q, accumulated);
+    return _searchQueueOffset(q, accumulated, timestamp);
+  }
+
+  function searchIndexOffset(Queue storage q, address recipient, uint256 accumulated, uint256 timestamp)
+    internal
+    view
+    returns (uint256 offset, bool found)
+  {
+    (uint256 queueOffset,) = _searchQueueOffset(q, accumulated, timestamp);
     return _searchIndexOffset(q.indexes[recipient], queueOffset);
   }
 
@@ -198,7 +216,7 @@ library LibRedeemQueue {
     return _searchReserveLogByTimestamp(q.reserveHistory, timestamp);
   }
 
-  function enqueue(Queue storage q, address recipient, uint256 requestShares, uint256 requestAssets)
+  function enqueue(Queue storage q, address recipient, uint256 requestShares, uint256 requestAssets, uint256 timestamp)
     internal
     returns (uint256 itemIndex)
   {
@@ -219,7 +237,7 @@ library LibRedeemQueue {
       accumulatedAssets: requestAssets,
       accumulatedShares: requestShares,
       recipient: recipient,
-      createdAt: uint48(block.timestamp),
+      createdAt: timestamp.toUint48(),
       claimedAt: 0
     });
     q.size += 1;
@@ -234,27 +252,30 @@ library LibRedeemQueue {
     return itemIndex;
   }
 
-  function claim(Queue storage q, uint256 itemIndex) internal returns (uint256 claimed) {
-    return _claim(q, itemIndex, true);
+  function claim(Queue storage q, uint256 itemIndex, uint256 timestamp) internal returns (uint256 claimed) {
+    return _claim(q, itemIndex, timestamp, true);
   }
 
-  function claim(Queue storage q, uint256[] memory itemIndexes) internal returns (uint256 totalClaimedAssets) {
+  function claim(Queue storage q, uint256[] memory itemIndexes, uint256 timestamp)
+    internal
+    returns (uint256 totalClaimedAssets)
+  {
     for (uint256 i = 0; i < itemIndexes.length; i++) {
-      totalClaimedAssets += _claim(q, itemIndexes[i], false);
+      totalClaimedAssets += _claim(q, itemIndexes[i], timestamp, false);
     }
     if (totalClaimedAssets > 0) q.totalClaimedAssets += totalClaimedAssets;
     return totalClaimedAssets;
   }
 
-  function claim(Queue storage q, address recipient) internal returns (uint256 totalClaimedAssets) {
-    return claim(q, recipient, DEFAULT_CLAIM_SIZE);
+  function claim(Queue storage q, address recipient, uint256 timestamp) internal returns (uint256 totalClaimedAssets) {
+    return claim(q, recipient, DEFAULT_CLAIM_SIZE, timestamp);
   }
 
-  function claim(Queue storage q, address recipient, uint256 maxClaimSize)
+  function claim(Queue storage q, address recipient, uint256 maxClaimSize, uint256 timestamp)
     internal
     returns (uint256 totalClaimedAssets)
   {
-    _updateQueueOffset(q, q.totalReservedAssets);
+    _updateQueueOffset(q, q.totalReservedAssets, timestamp);
 
     Index storage idx = q.indexes[recipient];
 
@@ -268,7 +289,7 @@ library LibRedeemQueue {
       Request memory req = q.data[itemIndex];
       if (isClaimed(req)) continue;
       if (itemIndex >= queueOffset) break;
-      q.data[itemIndex].claimedAt = uint48(block.timestamp);
+      q.data[itemIndex].claimedAt = timestamp.toUint48();
       // simplified version of calculating request amount
       totalClaimedAssets +=
         itemIndex == 0 ? req.accumulatedAssets : req.accumulatedAssets - q.data[itemIndex - 1].accumulatedAssets;
@@ -284,40 +305,45 @@ library LibRedeemQueue {
     return totalClaimedAssets;
   }
 
-  function reserve(Queue storage q, uint256 amount_) internal {
+  function reserve(Queue storage q, uint256 amount_, uint256 totalShares, uint256 totalAssets, uint256 timestamp)
+    internal
+  {
     require(amount_ != 0, LibRedeemQueue__InvalidReserveAmount());
     uint256 historyIndex = q.reserveHistory.length;
 
     q.totalReservedAssets += amount_;
     q.reserveHistory.push(
       ReserveLog({
-        accumulated: q.reserveHistory.length == 0
-          ? uint208(amount_)
-          : q.reserveHistory[historyIndex - 1].accumulated + uint208(amount_),
-        reservedAt: uint48(block.timestamp)
+        accumulated: q.reserveHistory.length == 0 ? amount_ : q.reserveHistory[historyIndex - 1].accumulated + amount_,
+        reservedAt: timestamp.toUint48(),
+        totalShares: totalShares.toUint208(),
+        totalAssets: totalAssets.toUint208()
       })
     );
 
-    _updateQueueOffset(q, q.totalReservedAssets);
+    _updateQueueOffset(q, q.totalReservedAssets, timestamp);
 
     emit Reserved(amount_, historyIndex);
   }
 
-  function update(Queue storage q) internal returns (uint256 offset, bool updated) {
-    return _updateQueueOffset(q, q.totalReservedAssets);
+  function update(Queue storage q, uint256 timestamp) internal returns (uint256 offset, bool updated) {
+    return _updateQueueOffset(q, q.totalReservedAssets, timestamp);
   }
 
   function _mid(uint256 low, uint256 high) private pure returns (uint256) {
     return (low & high) + (low ^ high) / 2; // avoid overflow
   }
 
-  function _claim(Queue storage q, uint256 itemIndex, bool applyToState) internal returns (uint256 claimed) {
+  function _claim(Queue storage q, uint256 itemIndex, uint256 timestamp, bool applyToState)
+    internal
+    returns (uint256 claimed)
+  {
     require(itemIndex < q.size, LibRedeemQueue__IndexOutOfRange(itemIndex, 0, q.size - 1));
     require(itemIndex < q.offset, LibRedeemQueue__NotReadyToClaim(itemIndex));
 
     Request memory req = q.data[itemIndex];
     if (!isClaimed(req)) {
-      q.data[itemIndex].claimedAt = uint48(block.timestamp);
+      q.data[itemIndex].claimedAt = timestamp.toUint48();
       // simplified version of calculating request amount
       claimed = itemIndex == 0 ? req.accumulatedAssets : req.accumulatedAssets - q.data[itemIndex - 1].accumulatedAssets;
       if (applyToState) q.totalClaimedAssets += claimed;
@@ -339,8 +365,11 @@ library LibRedeemQueue {
     return (log.reservedAt, true);
   }
 
-  function _updateQueueOffset(Queue storage q, uint256 accumulated) private returns (uint256 offset, bool updated) {
-    (offset, updated) = _searchQueueOffset(q, accumulated);
+  function _updateQueueOffset(Queue storage q, uint256 accumulated, uint256 timestamp)
+    private
+    returns (uint256 offset, bool updated)
+  {
+    (offset, updated) = _searchQueueOffset(q, accumulated, timestamp);
 
     // assign
     if (updated) {
@@ -364,7 +393,11 @@ library LibRedeemQueue {
     return (offset, updated);
   }
 
-  function _searchQueueOffset(Queue storage q, uint256 accumulated) private view returns (uint256 offset, bool found) {
+  function _searchQueueOffset(Queue storage q, uint256 accumulated, uint256 timestamp)
+    private
+    view
+    returns (uint256 offset, bool found)
+  {
     offset = q.offset;
 
     uint256 low = offset;
@@ -375,7 +408,7 @@ library LibRedeemQueue {
     while (low < high) {
       uint256 mid = _mid(low, high);
       Request memory req = q.data[mid];
-      if (req.accumulatedAssets <= accumulated && req.createdAt + redeemPeriod <= block.timestamp) low = mid + 1;
+      if (req.accumulatedAssets <= accumulated && req.createdAt + redeemPeriod <= timestamp) low = mid + 1;
       else high = mid;
     }
 
