@@ -4,8 +4,10 @@
 @ozfu-v5=dependencies/openzeppelin-foundry-upgrades-0.3.1/src
 @ozu-v5=dependencies/@openzeppelin-contracts-upgradeable-5.0.2
 @oz-v5=dependencies/@openzeppelin-contracts-5.0.2
+@murky=dependencies/@murky-0.1.0/src
 @openzeppelin/contracts=dependencies/@openzeppelin-contracts-5.0.2
 @openzeppelin/contracts-upgradeable=dependencies/@openzeppelin-contracts-upgradeable-5.0.2
+@murky-0.1.0/=dependencies/@murky-0.1.0
 @solady-0.0.230=dependencies/solady-0.0.230
 @forge-std-1.9.1=dependencies/forge-std-1.9.1
 @openzeppelin-foundry-upgrades-0.3.1=dependencies/openzeppelin-foundry-upgrades-0.3.1

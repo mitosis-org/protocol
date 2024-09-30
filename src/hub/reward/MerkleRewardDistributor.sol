@@ -7,7 +7,7 @@ import { MerkleProof } from '@oz-v5/utils/cryptography/MerkleProof.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
-import { IRewardDistributor } from '../../interfaces/hub/reward/IRewardDistributor.sol';
+import { IRewardDistributor, DistributionType } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { LibDistributorRewardMetadata, RewardMerkleMetadata } from './LibDistributorRewardMetadata.sol';
 import { MerkleRewardDistributorStorageV1 } from './MerkleRewardDistributorStorageV1.sol';
 
@@ -20,7 +20,40 @@ contract MerkleRewardDistributor is IRewardDistributor, Ownable2StepUpgradeable,
   error MerkleRewardDistributor__AlreadyClaimed();
   error MerkleRewardDistributor__InvalidProof();
 
+  constructor() {
+    _disableInitializers();
+  }
+
+  function initialize(address owner_, address rewardManager_, address rewardConfigurator_) public initializer {
+    __Ownable2Step_init();
+    _transferOwnership(owner_);
+
+    StorageV1 storage $ = _getStorageV1();
+
+    $.distributionType = DistributionType.MerkleProof;
+    $.description = 'MerkleRewardDistributor';
+
+    _setRewardManager($, rewardManager_);
+    _setRewardConfigurator($, rewardConfigurator_);
+  }
+
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
+
+  function encodeMetadata(address eolVault, uint256 stage, uint256 amount, bytes32[] calldata proof)
+    external
+    pure
+    returns (bytes memory)
+  {
+    return RewardMerkleMetadata({ eolVault: eolVault, stage: stage, amount: amount, proof: proof }).encode();
+  }
+
+  function encodeLeaf(address eolVault, address reward, uint256 stage, address account, uint256 amount)
+    external
+    pure
+    returns (bytes32 leaf)
+  {
+    return _leaf(eolVault, reward, stage, account, amount);
+  }
 
   /// @dev Checks if the account can claim.
   function claimable(address account, address reward, bytes calldata metadata) external view returns (bool) {
@@ -111,7 +144,9 @@ contract MerkleRewardDistributor is IRewardDistributor, Ownable2StepUpgradeable,
   function _claim(address account, address reward, RewardMerkleMetadata memory metadata) internal {
     StorageV1 storage $ = _getStorageV1();
     Stage storage stage = _stage($, metadata.eolVault, reward, metadata.stage);
+
     require(!stage.claimed[account], MerkleRewardDistributor__AlreadyClaimed());
+    stage.claimed[account] = true;
 
     bytes32 leaf = _leaf(metadata.eolVault, reward, metadata.stage, account, metadata.amount);
     require(metadata.proof.verify(stage.root, leaf), MerkleRewardDistributor__InvalidProof());
