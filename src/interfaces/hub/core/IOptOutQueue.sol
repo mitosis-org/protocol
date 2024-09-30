@@ -61,7 +61,6 @@ interface IOptOutQueue is IOptOutQueueStorageV1 {
     uint256 timestamp;
     address receiver;
     IEOLVault eolVault;
-    IHubAsset hubAsset;
     uint8 decimalsOffset;
     uint256 queueOffset;
     uint256 idxOffset;
@@ -74,7 +73,6 @@ interface IOptOutQueue is IOptOutQueueStorageV1 {
   }
 
   event OptOutRequested(address indexed receiver, address indexed eolVault, uint256 shares, uint256 assets);
-  event OptOutYieldReported(address indexed receiver, address indexed eolVault, uint256 yield);
   event OptOutRequestClaimed(
     address indexed receiver, address indexed eolVault, uint256 claimed, uint256 impact, ImpactType impactType
   );

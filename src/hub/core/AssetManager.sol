@@ -146,7 +146,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
     // Decrease EOLVault's shares value.
     address asset = IEOLVault(eolVault).asset();
-    _burn($, chainId, asset, eolVault, amount);
+    IEOLVault(eolVault).settleLoss(amount);
+    $.collateralPerChain[chainId][asset] -= amount;
 
     emit LossSettled(chainId, eolVault, asset, amount);
   }

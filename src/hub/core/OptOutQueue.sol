@@ -45,8 +45,8 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     _assertNotPaused();
     _assertQueueEnabled($, eolVault);
 
-    IEOLVault(eolVault).safeTransferFrom(_msgSender(), address(this), shares);
-    uint256 assets = IEOLVault(eolVault).previewRedeem(shares) - 1; // FIXME: tricky way to avoid rounding error
+    uint256 assets = IEOLVault(eolVault).redeem(shares, address(0), _msgSender());
+
     LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
     reqId = queue.enqueue(receiver, assets, shares, IEOLVault(eolVault).clock());
 
@@ -72,7 +72,6 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
       timestamp: timestamp,
       receiver: receiver,
       eolVault: IEOLVault(eolVault),
-      hubAsset: IHubAsset(IEOLVault(eolVault).asset()),
       decimalsOffset: $.states[eolVault].decimalsOffset,
       queueOffset: queue.offset,
       idxOffset: index.offset
@@ -84,14 +83,11 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     require(totalClaimed_ > 0, IOptOutQueue__NothingToClaim());
 
     // send total claim amount to receiver
-    cfg.hubAsset.safeTransfer(receiver, totalClaimed_);
+    cfg.eolVault.claim(totalClaimed_, receiver);
 
-    // send diff to eolVault if there's any yield
+    // report diff to eolVault if there's any loss
     (uint256 impact, bool loss) = _abssub(totalClaimedWithoutImpact, totalClaimed_);
-    if (loss) {
-      cfg.hubAsset.safeTransfer(eolVault, impact);
-      emit OptOutYieldReported(receiver, eolVault, impact);
-    }
+    if (loss) cfg.eolVault.settleYield(impact);
 
     emit OptOutRequestClaimed(
       receiver,
@@ -111,7 +107,11 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     _assertOnlyAssetManager($);
     _assertQueueEnabled($, eolVault);
 
-    _sync($, IEOLVault(eolVault), assets);
+    EOLVaultState storage eolVaultState = $.states[eolVault];
+
+    eolVaultState.queue.reserve(
+      assets, IEOLVault(eolVault).totalSupply(), IEOLVault(eolVault).totalAssets(), IEOLVault(eolVault).clock()
+    );
   }
 
   // =========================== NOTE: CONFIG FUNCTIONS =========================== //
@@ -158,14 +158,6 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     Math.Rounding rounding
   ) private pure returns (uint256) {
     return shares.mulDiv(totalAssets + 1, totalSupply + 10 ** decimalsOffset, rounding);
-  }
-
-  function _idle(LibRedeemQueue.Queue storage queue, IAssetManager assetManager, address eolVault)
-    internal
-    view
-    returns (uint256)
-  {
-    return IEOLVault(eolVault).totalAssets() - queue.pending() - assetManager.eolAlloc(eolVault);
   }
 
   function _claim(LibRedeemQueue.Queue storage queue, LibRedeemQueue.Index storage index, ClaimConfig memory cfg)
@@ -216,14 +208,6 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     }
 
     return (totalClaimed_, totalClaimedWithoutImpact);
-  }
-
-  function _sync(StorageV1 storage $, IEOLVault eolVault, uint256 assets) internal {
-    EOLVaultState storage eolVaultState = $.states[address(eolVault)];
-
-    eolVault.withdraw(assets, address(this), address(this));
-
-    eolVaultState.queue.reserve(assets, eolVault.totalSupply(), eolVault.totalAssets(), eolVault.clock());
   }
 
   // =========================== NOTE: ASSERTIONS =========================== //

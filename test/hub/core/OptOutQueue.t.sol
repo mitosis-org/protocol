@@ -5,14 +5,14 @@ import { Test } from '@std/Test.sol';
 
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 
-import { HubAsset } from '../../src/hub/core/HubAsset.sol';
-import { OptOutQueue } from '../../src/hub/core/OptOutQueue.sol';
-import { EOLVault } from '../../src/hub/eol/EOLVault.sol';
-import { IAssetManager } from '../../src/interfaces/hub/core/IAssetManager.sol';
-import { IOptOutQueue } from '../../src/interfaces/hub/core/IOptOutQueue.sol';
-import { IERC20TWABSnapshots } from '../../src/interfaces/twab/IERC20TWABSnapshots.sol';
-import { MockAssetManager } from '../mock/MockAssetManager.t.sol';
-import { MockDelegationRegistry } from '../mock/MockDelegationRegistry.t.sol';
+import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
+import { OptOutQueue } from '../../../src/hub/core/OptOutQueue.sol';
+import { EOLVault } from '../../../src/hub/eol/EOLVault.sol';
+import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.sol';
+import { IOptOutQueue } from '../../../src/interfaces/hub/core/IOptOutQueue.sol';
+import { IERC20TWABSnapshots } from '../../../src/interfaces/twab/IERC20TWABSnapshots.sol';
+import { MockAssetManager } from '../../mock/MockAssetManager.t.sol';
+import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol';
 
 contract OptOutQueueTest is Test {
   address internal _admin = makeAddr('admin');
@@ -53,6 +53,7 @@ contract OptOutQueueTest is Test {
           EOLVault.initialize,
           (
             address(_delegationRegistry),
+            address(_assetManager),
             address(_assetManager),
             IERC20TWABSnapshots(address(_hubAsset)),
             'miTest',
@@ -106,7 +107,7 @@ contract OptOutQueueTest is Test {
 
     vm.warp(block.timestamp + _optOutQueue.redeemPeriod(address(_eolVault)));
 
-    _burn(address(_eolVault), 100 ether); // report loss
+    _settleLoss(address(_optOutQueue), 100 ether); // report loss
     _optOutReserve(90 ether);
 
     // FIXME: declare share burn amount?
@@ -122,7 +123,7 @@ contract OptOutQueueTest is Test {
 
     vm.warp(block.timestamp + _optOutQueue.redeemPeriod(address(_eolVault)));
 
-    _mint(address(_eolVault), 100 ether); // report yield
+    _settleYield(address(_optOutQueue), 100 ether); // report yield
     _optOutReserve(100 ether);
     _optOutClaim(_user);
 
@@ -182,5 +183,13 @@ contract OptOutQueueTest is Test {
 
   function _optOutReserve(uint256 amount) internal withAccount(address(_assetManager)) {
     _optOutQueue.sync(address(_eolVault), amount);
+  }
+
+  function _settleYield(address sender, uint256 amount) internal withAccount(sender) {
+    _eolVault.settleYield(amount);
+  }
+
+  function _settleLoss(address sender, uint256 amount) internal withAccount(sender) {
+    _eolVault.settleLoss(amount);
   }
 }

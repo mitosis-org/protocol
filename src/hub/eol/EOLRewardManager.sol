@@ -132,7 +132,8 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
 
   function _increaseEOLShareValue(address eolVault, uint256 assets) internal {
     address reward = IEOLVault(eolVault).asset();
-    IHubAsset(reward).transfer(eolVault, assets);
+    IHubAsset(reward).burn(address(0), assets);
+    IEOLVault(eolVault).settleYield(assets);
     emit EOLShareValueIncreased(eolVault, assets);
   }
 
