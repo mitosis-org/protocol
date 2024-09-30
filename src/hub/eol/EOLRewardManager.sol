@@ -25,10 +25,13 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     _disableInitializers();
   }
 
-  function initialize(address owner, address assetManager) external initializer {
+  function initialize(address owner, address assetManager, address eolRewardConfigurator) external initializer {
     __Ownable2Step_init();
     _transferOwnership(owner);
-    _getStorageV1().assetManager = assetManager;
+
+    StorageV1 storage $ = _getStorageV1();
+    $.assetManager = assetManager;
+    $.rewardConfigurator = IEOLRewardConfigurator(eolRewardConfigurator);
   }
 
   // TODO(ray): must be set when introdue RoleManager
