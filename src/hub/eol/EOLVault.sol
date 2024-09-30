@@ -19,17 +19,20 @@ contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
     _disableInitializers();
   }
 
-  function initialize(address assetManager_, IERC20TWABSnapshots asset_, string memory name, string memory symbol)
-    external
-    initializer
-  {
+  function initialize(
+    address delegationRegistry_,
+    address assetManager_,
+    IERC20TWABSnapshots asset_,
+    string memory name,
+    string memory symbol
+  ) external initializer {
     if (bytes(name).length == 0 || bytes(symbol).length == 0) {
       name = string.concat('Mitosis', asset_.name());
       symbol = string.concat('mi', asset_.symbol());
     }
 
     __ERC4626_init(asset_);
-    __ERC20_init(name, symbol);
+    __ERC20TWABSnapshots_init(delegationRegistry_, name, symbol);
 
     StorageV1 storage $ = _getStorageV1();
 
