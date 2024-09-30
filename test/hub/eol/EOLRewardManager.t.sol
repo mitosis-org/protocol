@@ -12,6 +12,7 @@ import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/Transparen
 import { EOLRewardConfigurator } from '../../../src/hub/eol/EOLRewardConfigurator.sol';
 import { EOLRewardManager } from '../../../src/hub/eol/EOLRewardManager.sol';
 import { EOLVault } from '../../../src/hub/eol/EOLVault.sol';
+import { IEOLRewardConfigurator } from '../../../src/interfaces/hub/eol/IEOLRewardConfigurator.sol';
 import { IRewardDistributor, DistributionType } from '../../../src/interfaces/hub/reward/IRewardDistributor.sol';
 import { IERC20TWABSnapshots } from '../../../src/interfaces/twab/IERC20TWABSnapshots.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
@@ -90,6 +91,11 @@ contract EOLRewardManagerTest is Toolkit {
   }
 
   function test_routeYield_case_Unspecified() public {
+    // ratio = eolAssetHolder: 80, hubAssetHolder: 20
+    uint256 rewardRatioPrecision = _eolRewardConfigurator.rewardRatioPrecision();
+    vm.prank(owner);
+    _eolRewardConfigurator.setEOLAssetHolderRewardRatio(80 * rewardRatioPrecision / 100);
+
     _token.mint(address(_assetManager), 100 ether);
 
     vm.startPrank(address(_assetManager));
@@ -99,32 +105,430 @@ contract EOLRewardManagerTest is Toolkit {
 
     vm.stopPrank();
 
-    // vm.startPrank(user1);
+    assertEq(_token.balanceOf(address(_eolVault)), 80 ether);
 
-    // _token.approve(address(_eolVault), 100 ether);
-    // _eolVault.deposit(100 ether, user1);
+    (uint256[] memory rewards,) =
+      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
-    // vm.stopPrank();
+    assertEq(rewards.length, 1);
+    assertEq(rewards[0], 20 ether);
   }
 
-  function test_routeYield_case_TWAB() public { }
-  function test_routeYield_case_MerkleProof() public { }
-  function test_routeYield_Unauthorized() public { }
-  function test_routeYield_DefaultDistributorNotSet() public { }
+  function test_routeYield_case_TWAB() public {
+    // ratio = eolAssetHolder: 80, hubAssetHolder: 20
+    uint256 rewardRatioPrecision = _eolRewardConfigurator.rewardRatioPrecision();
 
-  function test_routeExtraRewards_case_Unspecified() public { }
-  function test_routeExtraRewards_case_TWAB() public { }
-  function test_routeExtraRewards_case_MerkleProof() public { }
-  function test_routeExtraRewards_Unauthorized() public { }
-  function test_routeExtraRewards_DefaultDistributorNotSet() public { }
+    vm.startPrank(owner);
 
-  function test_dispatchTo() public { }
-  function test_dispatchTo_Unauthorized() public { }
-  function test_dispatchTo_DistributorNotRegistered() public { }
-  function test_dispatchTo_InvalidDispatchRequest() public { }
+    _eolRewardConfigurator.setEOLAssetHolderRewardRatio(80 * rewardRatioPrecision / 100);
 
-  function test_dispatchTo_batch() public { }
-  function test_dispatchTo_batch_Unauthorized() public { }
-  function test_dispatchTo_batch_DistributorNotRegistered() public { }
-  function test_dispatchTo_batch_InvalidDispatchRequest() public { }
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
+    _eolRewardConfigurator.registerDistributor(distributor);
+    _eolRewardConfigurator.setDefaultDistributor(distributor);
+    _eolRewardConfigurator.setRewardDistributionType(address(_eolVault), address(_token), DistributionType.TWAB);
+
+    vm.stopPrank();
+
+    _token.mint(address(_assetManager), 100 ether);
+
+    vm.startPrank(address(_assetManager));
+
+    _token.approve(address(_eolRewardManager), 100 ether);
+    _eolRewardManager.routeYield(address(_eolVault), 100 ether);
+
+    vm.stopPrank();
+
+    assertEq(_token.balanceOf(address(_eolVault)), 80 ether);
+    assertEq(_token.balanceOf(address(distributor)), 20 ether);
+
+    (uint256[] memory rewards,) =
+      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+    assertEq(rewards.length, 0);
+  }
+
+  function test_routeYield_case_MerkleProof() public {
+    // ratio = eolAssetHolder: 80, hubAssetHolder: 20
+    uint256 rewardRatioPrecision = _eolRewardConfigurator.rewardRatioPrecision();
+
+    vm.startPrank(owner);
+
+    _eolRewardConfigurator.setEOLAssetHolderRewardRatio(80 * rewardRatioPrecision / 100);
+
+    MockDistributor distributor = new MockDistributor(DistributionType.MerkleProof, address(_eolRewardConfigurator));
+    _eolRewardConfigurator.registerDistributor(distributor);
+    _eolRewardConfigurator.setDefaultDistributor(distributor);
+    _eolRewardConfigurator.setRewardDistributionType(address(_eolVault), address(_token), DistributionType.MerkleProof);
+
+    vm.stopPrank();
+
+    _token.mint(address(_assetManager), 100 ether);
+
+    vm.startPrank(address(_assetManager));
+
+    _token.approve(address(_eolRewardManager), 100 ether);
+    _eolRewardManager.routeYield(address(_eolVault), 100 ether);
+
+    vm.stopPrank();
+
+    assertEq(_token.balanceOf(address(_eolVault)), 80 ether);
+    assertEq(_token.balanceOf(address(distributor)), 20 ether);
+
+    (uint256[] memory rewards,) =
+      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+    assertEq(rewards.length, 0);
+  }
+
+  function test_routeYield_Unauthorized() public {
+    _token.mint(address(_assetManager), 100 ether);
+
+    vm.prank(address(_assetManager));
+    _token.approve(address(_eolRewardManager), 100 ether);
+
+    vm.expectRevert(StdError.Unauthorized.selector);
+    _eolRewardManager.routeYield(address(_eolVault), 100 ether);
+  }
+
+  function test_routeExtraRewards_case_Unspecified() public {
+    // ratio = eolAssetHolder: 80, hubAssetHolder: 20
+    uint256 rewardRatioPrecision = _eolRewardConfigurator.rewardRatioPrecision();
+    vm.prank(owner);
+    _eolRewardConfigurator.setEOLAssetHolderRewardRatio(80 * rewardRatioPrecision / 100);
+
+    _token.mint(address(_assetManager), 100 ether);
+
+    vm.startPrank(address(_assetManager));
+
+    _token.approve(address(_eolRewardManager), 100 ether);
+    _eolRewardManager.routeExtraRewards(address(_eolVault), address(_token), 100 ether);
+
+    vm.stopPrank();
+
+    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
+
+    (uint256[] memory rewards,) =
+      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+
+    assertEq(rewards.length, 2);
+    assertEq(rewards[0], 80 ether);
+    assertEq(rewards[1], 20 ether);
+  }
+
+  function test_routeExtraRewards_case_Unspecified_DiffReward() public {
+    // ratio = eolAssetHolder: 80, hubAssetHolder: 20
+    uint256 rewardRatioPrecision = _eolRewardConfigurator.rewardRatioPrecision();
+    vm.prank(owner);
+    _eolRewardConfigurator.setEOLAssetHolderRewardRatio(80 * rewardRatioPrecision / 100);
+
+    MockERC20TWABSnapshots rewardToken = new MockERC20TWABSnapshots();
+    rewardToken.initialize(address(_delegationRegistry), 'Reward', 'REWARD');
+
+    rewardToken.mint(address(_assetManager), 100 ether);
+
+    vm.startPrank(address(_assetManager));
+
+    rewardToken.approve(address(_eolRewardManager), 100 ether);
+    _eolRewardManager.routeExtraRewards(address(_eolVault), address(rewardToken), 100 ether);
+
+    vm.stopPrank();
+
+    assertEq(rewardToken.balanceOf(address(_eolRewardManager)), 100 ether);
+
+    (uint256[] memory rewards,) =
+      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(rewardToken), uint48(block.timestamp));
+
+    assertEq(rewards.length, 2);
+    assertEq(rewards[0], 80 ether);
+    assertEq(rewards[1], 20 ether);
+  }
+
+  function test_routeExtraRewards_case_TWAB() public {
+    // ratio = eolAssetHolder: 80, hubAssetHolder: 20
+    uint256 rewardRatioPrecision = _eolRewardConfigurator.rewardRatioPrecision();
+
+    vm.startPrank(owner);
+
+    _eolRewardConfigurator.setEOLAssetHolderRewardRatio(80 * rewardRatioPrecision / 100);
+
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
+    _eolRewardConfigurator.registerDistributor(distributor);
+    _eolRewardConfigurator.setDefaultDistributor(distributor);
+    _eolRewardConfigurator.setRewardDistributionType(address(_eolVault), address(_token), DistributionType.TWAB);
+
+    vm.stopPrank();
+
+    _token.mint(address(_assetManager), 100 ether);
+
+    vm.startPrank(address(_assetManager));
+
+    _token.approve(address(_eolRewardManager), 100 ether);
+    _eolRewardManager.routeExtraRewards(address(_eolVault), address(_token), 100 ether);
+
+    vm.stopPrank();
+
+    assertEq(_token.balanceOf(address(distributor)), 100 ether);
+
+    (uint256[] memory rewards,) =
+      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+    assertEq(rewards.length, 0);
+  }
+
+  function test_routeExtraRewards_case_MerkleProof() public {
+    // ratio = eolAssetHolder: 80, hubAssetHolder: 20
+    uint256 rewardRatioPrecision = _eolRewardConfigurator.rewardRatioPrecision();
+
+    vm.startPrank(owner);
+
+    _eolRewardConfigurator.setEOLAssetHolderRewardRatio(80 * rewardRatioPrecision / 100);
+
+    MockDistributor distributor = new MockDistributor(DistributionType.MerkleProof, address(_eolRewardConfigurator));
+    _eolRewardConfigurator.registerDistributor(distributor);
+    _eolRewardConfigurator.setDefaultDistributor(distributor);
+    _eolRewardConfigurator.setRewardDistributionType(address(_eolVault), address(_token), DistributionType.MerkleProof);
+
+    vm.stopPrank();
+
+    _token.mint(address(_assetManager), 100 ether);
+
+    vm.startPrank(address(_assetManager));
+
+    _token.approve(address(_eolRewardManager), 100 ether);
+    _eolRewardManager.routeExtraRewards(address(_eolVault), address(_token), 100 ether);
+
+    vm.stopPrank();
+
+    assertEq(_token.balanceOf(address(distributor)), 100 ether);
+
+    (uint256[] memory rewards,) =
+      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+    assertEq(rewards.length, 0);
+  }
+
+  function test_routeExtraRewards_Unauthorized() public {
+    _token.mint(address(_assetManager), 100 ether);
+
+    vm.prank(address(_assetManager));
+    _token.approve(address(_eolRewardManager), 100 ether);
+
+    vm.expectRevert(StdError.Unauthorized.selector);
+    _eolRewardManager.routeExtraRewards(address(_eolVault), address(_token), 100 ether);
+  }
+
+  function test_dispatchTo() public {
+    test_routeYield_case_Unspecified();
+    assertEq(_token.balanceOf(address(_eolVault)), 80 ether);
+
+    (uint256[] memory rewards,) =
+      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+
+    assertEq(rewards.length, 1);
+    assertEq(rewards[0], 20 ether);
+
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
+
+    vm.startPrank(owner);
+    _eolRewardConfigurator.registerDistributor(distributor);
+    _eolRewardManager.setRewardManager(owner);
+    _eolRewardManager.dispatchTo(distributor, address(_eolVault), address(_token), uint48(block.timestamp), 0, '');
+    vm.stopPrank();
+
+    assertEq(_token.balanceOf(address(distributor)), 20 ether);
+  }
+
+  function test_dispatchTo_Unauthorized() public {
+    test_routeYield_case_Unspecified();
+    assertEq(_token.balanceOf(address(_eolVault)), 80 ether);
+
+    (uint256[] memory rewards,) =
+      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+
+    assertEq(rewards.length, 1);
+    assertEq(rewards[0], 20 ether);
+
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
+
+    vm.prank(owner);
+    _eolRewardConfigurator.registerDistributor(distributor);
+
+    vm.expectRevert(StdError.Unauthorized.selector);
+    _eolRewardManager.dispatchTo(distributor, address(_eolVault), address(_token), uint48(block.timestamp), 0, '');
+  }
+
+  function test_dispatchTo_RewardDistributorNotRegistered() public {
+    test_routeYield_case_Unspecified();
+    assertEq(_token.balanceOf(address(_eolVault)), 80 ether);
+
+    (uint256[] memory rewards,) =
+      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+
+    assertEq(rewards.length, 1);
+    assertEq(rewards[0], 20 ether);
+
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
+
+    vm.startPrank(owner);
+    // _eolRewardConfigurator.registerDistributor(distributor);
+    _eolRewardManager.setRewardManager(owner);
+
+    vm.expectRevert(_errRewardDistributorNotRegistered());
+    _eolRewardManager.dispatchTo(distributor, address(_eolVault), address(_token), uint48(block.timestamp), 0, '');
+
+    vm.stopPrank();
+  }
+
+  function test_dispatchTo_batch() public {
+    test_routeExtraRewards_case_Unspecified();
+    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
+
+    (uint256[] memory rewards,) =
+      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+
+    assertEq(rewards.length, 2);
+    assertEq(rewards[0], 80 ether);
+    assertEq(rewards[1], 20 ether);
+
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
+
+    vm.startPrank(owner);
+    _eolRewardConfigurator.registerDistributor(distributor);
+    _eolRewardManager.setRewardManager(owner);
+    vm.stopPrank();
+
+    uint256[] memory indexes = new uint256[](2);
+    bytes[] memory metadata = new bytes[](2);
+
+    indexes[0] = 0;
+    indexes[1] = 1;
+    metadata[0] = '';
+    metadata[1] = '';
+
+    vm.prank(owner);
+    _eolRewardManager.dispatchTo(
+      distributor, address(_eolVault), address(_token), uint48(block.timestamp), indexes, metadata
+    );
+
+    assertEq(_token.balanceOf(address(distributor)), 100 ether);
+  }
+
+  function test_dispatchTo_batch_Unauthorized() public {
+    test_routeExtraRewards_case_Unspecified();
+    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
+
+    (uint256[] memory rewards,) =
+      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+
+    assertEq(rewards.length, 2);
+    assertEq(rewards[0], 80 ether);
+    assertEq(rewards[1], 20 ether);
+
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
+
+    vm.startPrank(owner);
+    _eolRewardConfigurator.registerDistributor(distributor);
+    _eolRewardManager.setRewardManager(owner);
+    vm.stopPrank();
+
+    uint256[] memory indexes = new uint256[](2);
+    bytes[] memory metadata = new bytes[](2);
+
+    indexes[0] = 0;
+    indexes[1] = 1;
+    metadata[0] = '';
+    metadata[1] = '';
+
+    vm.expectRevert(StdError.Unauthorized.selector);
+    _eolRewardManager.dispatchTo(
+      distributor, address(_eolVault), address(_token), uint48(block.timestamp), indexes, metadata
+    );
+  }
+
+  function test_dispatchTo_batch_DistributorNotRegistered() public {
+    test_routeExtraRewards_case_Unspecified();
+    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
+
+    (uint256[] memory rewards,) =
+      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+
+    assertEq(rewards.length, 2);
+    assertEq(rewards[0], 80 ether);
+    assertEq(rewards[1], 20 ether);
+
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
+
+    vm.startPrank(owner);
+    // _eolRewardConfigurator.registerDistributor(distributor);
+    _eolRewardManager.setRewardManager(owner);
+    vm.stopPrank();
+
+    uint256[] memory indexes = new uint256[](2);
+    bytes[] memory metadata = new bytes[](2);
+
+    indexes[0] = 0;
+    indexes[1] = 1;
+    metadata[0] = '';
+    metadata[1] = '';
+
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errRewardDistributorNotRegistered());
+    _eolRewardManager.dispatchTo(
+      distributor, address(_eolVault), address(_token), uint48(block.timestamp), indexes, metadata
+    );
+
+    vm.stopPrank();
+  }
+
+  function test_dispatchTo_batch_InvalidParameter() public {
+    test_routeExtraRewards_case_Unspecified();
+    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
+
+    (uint256[] memory rewards,) =
+      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+
+    assertEq(rewards.length, 2);
+    assertEq(rewards[0], 80 ether);
+    assertEq(rewards[1], 20 ether);
+
+    MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
+
+    vm.startPrank(owner);
+    _eolRewardConfigurator.registerDistributor(distributor);
+    _eolRewardManager.setRewardManager(owner);
+    vm.stopPrank();
+
+    uint256[] memory indexes = new uint256[](1);
+    bytes[] memory metadata = new bytes[](2);
+
+    indexes[0] = 0;
+    // indexes[1] = 1;
+    metadata[0] = '';
+    metadata[1] = '';
+
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errInvalidParameter('metadata'));
+    _eolRewardManager.dispatchTo(
+      distributor, address(_eolVault), address(_token), uint48(block.timestamp), indexes, metadata
+    );
+
+    vm.stopPrank();
+  }
+
+  function test_setRewardManager() public {
+    assertFalse(_eolRewardManager.isRewardManager(address(1)));
+
+    vm.prank(owner);
+    _eolRewardManager.setRewardManager(address(1));
+
+    assertTrue(_eolRewardManager.isRewardManager(address(1)));
+  }
+
+  function test_setRewardManager_Unauthorized() public {
+    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
+    _eolRewardManager.setRewardManager(address(1));
+  }
+
+  function _errRewardDistributorNotRegistered() internal pure returns (bytes memory) {
+    return
+      abi.encodeWithSelector(IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorNotRegistered.selector);
+  }
 }
