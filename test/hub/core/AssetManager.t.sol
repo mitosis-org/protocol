@@ -99,7 +99,14 @@ contract AssetManagerTest is Toolkit {
             address(_proxyAdmin),
             abi.encodeCall(
               _eolVault.initialize,
-              (address(_delegationRegistry), address(_assetManager), IERC20TWABSnapshots(address(_token)), '', '')
+              (
+                address(_delegationRegistry),
+                address(_assetManager),
+                address(_assetManager),
+                IERC20TWABSnapshots(address(_token)),
+                '',
+                ''
+              )
             )
           )
         )
@@ -193,7 +200,14 @@ contract AssetManagerTest is Toolkit {
             address(_proxyAdmin),
             abi.encodeCall(
               _eolVault.initialize,
-              (address(_delegationRegistry), address(_assetManager), IERC20TWABSnapshots(address(myToken)), '', '')
+              (
+                address(_delegationRegistry),
+                address(_assetManager),
+                address(_assetManager),
+                IERC20TWABSnapshots(address(myToken)),
+                '',
+                ''
+              )
             )
           )
         )
