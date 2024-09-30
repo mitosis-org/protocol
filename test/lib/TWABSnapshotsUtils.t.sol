@@ -5,6 +5,7 @@ import { console } from '@std/console.sol';
 import { Test } from '@std/Test.sol';
 
 import { TWABSnapshotsUtils } from '../../src/lib/TWABSnapshotsUtils.sol';
+import { MockDelegationRegistry } from '../mock/MockDelegationRegistry.t.sol';
 import { MockERC20TWABSnapshots } from '../mock/MockERC20TWABSnapshots.t.sol';
 
 contract TWABSnapshotsUtilsTest is Test {
@@ -14,10 +15,12 @@ contract TWABSnapshotsUtilsTest is Test {
   address immutable accB = makeAddr('B');
 
   MockERC20TWABSnapshots public token;
+  MockDelegationRegistry public delegationRegistry;
 
   function setUp() public {
+    delegationRegistry = new MockDelegationRegistry();
     token = new MockERC20TWABSnapshots();
-    token.initialize('Token', 'TKN');
+    token.initialize(address(delegationRegistry), 'Token', 'TKN');
   }
 
   function test() public {

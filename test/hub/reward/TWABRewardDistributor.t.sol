@@ -11,6 +11,7 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 import { TWABRewardDistributor } from '../../../src/hub/reward/TWABRewardDistributor.sol';
 import { IRewardConfigurator } from '../../../src/interfaces/hub/reward/IRewardConfigurator.sol';
 import { TWABSnapshotsUtils } from '../../../src/lib/TWABSnapshotsUtils.sol';
+import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol';
 import { MockERC20TWABSnapshots } from '../../mock/MockERC20TWABSnapshots.t.sol';
 import { MockRewardConfigurator } from '../../mock/MockRewardConfigurator.t.sol';
 
@@ -18,6 +19,7 @@ contract TWABRewardDistributortTest is Test {
   TWABRewardDistributor twabRewardDistributor;
   MockRewardConfigurator rewardConfigurator;
   MockERC20TWABSnapshots token;
+  MockDelegationRegistry delegationRegistry;
 
   ProxyAdmin internal _proxyAdmin;
   address immutable owner = makeAddr('owner');
@@ -25,6 +27,7 @@ contract TWABRewardDistributortTest is Test {
   uint48 twabPeriod = 100;
 
   function setUp() public {
+    delegationRegistry = new MockDelegationRegistry();
     rewardConfigurator = new MockRewardConfigurator(10e8);
 
     _proxyAdmin = new ProxyAdmin(owner);
@@ -43,7 +46,7 @@ contract TWABRewardDistributortTest is Test {
     );
 
     token = new MockERC20TWABSnapshots();
-    token.initialize('Token', 'TKN');
+    token.initialize(address(delegationRegistry), 'Token', 'TKN');
   }
 
   function test_simple_claim() public {

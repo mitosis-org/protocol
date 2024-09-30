@@ -10,7 +10,7 @@ abstract contract MitosisVaultStorageV1 {
 
   struct AssetInfo {
     bool initialized;
-    mapping(AssetAction => bool) isHalted; // TODO(thai): consider better ACL management (e.g. similar to solmate's way)
+    mapping(AssetAction => bool) isHalted;
   }
 
   struct EOLInfo {

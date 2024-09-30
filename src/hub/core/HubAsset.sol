@@ -9,8 +9,8 @@ contract HubAsset is ERC20TWABSnapshots {
     _disableInitializers();
   }
 
-  function initialize(string memory name_, string memory symbol_) external initializer {
-    __ERC20_init(name_, symbol_);
+  function initialize(address delegationRegistry_, string memory name_, string memory symbol_) external initializer {
+    __ERC20TWABSnapshots_init(delegationRegistry_, name_, symbol_);
   }
 
   modifier onlyHubAssetMintable() {

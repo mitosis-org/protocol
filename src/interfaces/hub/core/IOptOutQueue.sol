@@ -58,6 +58,7 @@ interface IOptOutQueueStorageV1 {
 
 interface IOptOutQueue is IOptOutQueueStorageV1 {
   struct ClaimConfig {
+    uint256 timestamp;
     address receiver;
     IEOLVault eolVault;
     IHubAsset hubAsset;

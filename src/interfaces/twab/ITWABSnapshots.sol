@@ -1,24 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
+import { IERC5805 } from '@oz-v5/interfaces/IERC5805.sol';
 
-interface ITWABSnapshots is IERC6372 {
+interface ITWABSnapshots is IERC5805 {
   error ERC6372InconsistentClock();
 
-  error ERC5805FutureLookup(uint256 timepoint, uint48 clock);
+  error ERC5805FutureLookup(uint256 timestamp, uint256 now_);
 
-  function getLatestSnapshot(address account) external view returns (uint208 balnace, uint256 twab, uint48 position);
+  function totalSupplySnapshot() external view returns (uint208 balance, uint256 twab, uint48 position);
 
-  function getPastSnapshot(address account, uint256 timestamp)
+  function totalSupplySnapshot(uint256 timepoint)
     external
     view
     returns (uint208 balance, uint256 twab, uint48 position);
 
-  function getLatestTotalSnapshot() external view returns (uint208 balance, uint256 twab, uint48 position);
+  function balanceSnapshot(address account, uint256 timepoint) external view returns (uint208 balance);
 
-  function getPastTotalSnapshot(uint256 timestamp)
+  function delegateSnapshot(address account) external view returns (uint208 balance, uint256 twab, uint48 position);
+
+  function delegateSnapshot(address account, uint256 timepoint)
     external
     view
     returns (uint208 balance, uint256 twab, uint48 position);
+
+  /**
+   * @dev Delegates from account to `delegatee` by manager.
+   */
+  function delegateByManager(address account, address delegatee) external;
 }
