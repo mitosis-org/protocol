@@ -11,7 +11,7 @@ import { EOLVault } from '../../src/hub/eol/EOLVault.sol';
 import { IAssetManager } from '../../src/interfaces/hub/core/IAssetManager.sol';
 import { IOptOutQueue } from '../../src/interfaces/hub/core/IOptOutQueue.sol';
 import { IERC20TWABSnapshots } from '../../src/interfaces/twab/IERC20TWABSnapshots.sol';
-import { MockAssetManager } from '../mock/MockAssetManager.sol';
+import { MockAssetManager } from '../mock/MockAssetManager.t.sol';
 
 contract OptOutQueueTest is Test {
   address internal _admin = makeAddr('admin');
