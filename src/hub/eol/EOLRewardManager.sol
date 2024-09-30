@@ -36,6 +36,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
 
   // TODO(ray): must be set when introdue RoleManager
   modifier onlyRewardManagerAdmin() {
+    require(_getStorageV1().isRewardManager[_msgSender()], StdError.Unauthorized());
     _;
   }
 
@@ -45,6 +46,10 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   }
 
   // View functions
+
+  function isRewardManager(address account) external view returns (bool) {
+    return _getStorageV1().isRewardManager[account];
+  }
 
   function getRewardTreasuryRewardInfos(address eolVault, address reward_, uint48 timestamp)
     external
@@ -69,6 +74,11 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   }
 
   // Mutative functions
+
+  function setRewardManager(address account) external onlyOwner {
+    _getStorageV1().isRewardManager[account] = true;
+    emit RewardManagerSet(account);
+  }
 
   function routeYield(address eolVault, uint256 amount) external onlyAssetManager {
     address reward = IEOLVault(eolVault).asset();
