@@ -75,6 +75,10 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return _getStorageV1().collateralPerChain[chainId][hubAsset_];
   }
 
+  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool) {
+    return _getStorageV1().eolInitialized[chainId][eolVault];
+  }
+
   function eolIdle(address eolVault) external view returns (uint256) {
     return _eolIdle(_getStorageV1(), eolVault);
   }
@@ -83,14 +87,14 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return _getStorageV1().eolStates[eolVault].allocation;
   }
 
-  function stategist(address eolVault) external view returns (address) {
+  function strategist(address eolVault) external view returns (address) {
     return _getStorageV1().eolStates[eolVault].strategist;
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   function _setEntrypoint(StorageV1 storage $, address entrypoint_) internal {
-    require(entrypoint_.code.length > 0, StdError.InvalidAddress('Entrypoint'));
+    require(entrypoint_.code.length > 0, StdError.InvalidParameter('Entrypoint'));
 
     $.entrypoint = IAssetManagerEntrypoint(entrypoint_);
 
@@ -98,7 +102,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   }
 
   function _setOptOutQueue(StorageV1 storage $, address optOutQueue_) internal {
-    require(optOutQueue_.code.length > 0, StdError.InvalidAddress('OptOutQueue'));
+    require(optOutQueue_.code.length > 0, StdError.InvalidParameter('OptOutQueue'));
 
     $.optOutQueue = IOptOutQueue(optOutQueue_);
 
@@ -106,17 +110,19 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   }
 
   function _setRewardManager(StorageV1 storage $, address rewardManager_) internal {
-    require(rewardManager_.code.length > 0, StdError.InvalidAddress('EOLRewardManager'));
+    require(rewardManager_.code.length > 0, StdError.InvalidParameter('EOLRewardManager'));
 
     $.rewardManager = IEOLRewardManager(rewardManager_);
 
     emit RewardManagerSet(rewardManager_);
   }
 
-  function _setStrategist(StorageV1 storage $, address eolVault, address strategist) internal {
-    $.eolStates[eolVault].strategist = strategist;
+  function _setStrategist(StorageV1 storage $, address eolVault, address strategist_) internal {
+    require(eolVault.code.length > 0, StdError.InvalidParameter('EOLVault'));
 
-    emit StrategistSet(eolVault, strategist);
+    $.eolStates[eolVault].strategist = strategist_;
+
+    emit StrategistSet(eolVault, strategist_);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
