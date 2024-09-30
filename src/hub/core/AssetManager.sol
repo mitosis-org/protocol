@@ -227,14 +227,6 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _increaseEOLShareValue(address eolVault, uint256 assets) internal {
-    IHubAsset(IEOLVault(eolVault).asset()).mint(eolVault, assets);
-  }
-
-  function _decreaseEOLShareValue(address eolVault, uint256 assets) internal {
-    IHubAsset(IEOLVault(eolVault).asset()).burn(eolVault, assets);
-  }
-
   function _mint(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
     IHubAsset(asset).mint(account, amount);
     $.collateralPerChain[chainId][asset] += amount;
