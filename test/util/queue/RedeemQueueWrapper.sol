@@ -128,35 +128,35 @@ contract RedeemQueueWrapper {
   // =========================== NOTE: QUEUE FUNCTIONS =========================== //
 
   function enqueue(address recipient, uint256 requestShares, uint256 requestAssets) external returns (uint256) {
-    return queue.enqueue(recipient, requestShares, requestAssets, block.timestamp);
+    return queue.enqueue(recipient, requestShares, requestAssets, block.timestamp.toUint48());
   }
 
   function claim(uint256 itemIndex) external {
-    queue.claim(itemIndex, block.timestamp);
+    queue.claim(itemIndex, block.timestamp.toUint48());
   }
 
   function claim(uint256[] memory itemIndexes) external {
-    queue.claim(itemIndexes, block.timestamp);
+    queue.claim(itemIndexes, block.timestamp.toUint48());
   }
 
   function claim(address recipient) external {
-    queue.claim(recipient, block.timestamp);
+    queue.claim(recipient, block.timestamp.toUint48());
   }
 
   function claim(address recipient, uint256 maxClaimSize) external {
-    queue.claim(recipient, maxClaimSize, block.timestamp);
+    queue.claim(recipient, maxClaimSize, block.timestamp.toUint48());
   }
 
   function reserve(uint256 amount_) external {
-    queue.reserve(amount_, 1 ether, 1 ether, block.timestamp);
+    queue.reserve(amount_, 1 ether, 1 ether, block.timestamp.toUint48());
   }
 
   function reserve(uint256 amount_, uint256 totalShares_, uint256 totalAssets_) external {
-    queue.reserve(amount_, totalShares_.toUint208(), totalAssets_.toUint208(), block.timestamp);
+    queue.reserve(amount_, totalShares_.toUint208(), totalAssets_.toUint208(), block.timestamp.toUint48());
   }
 
   function update() external returns (uint256 offset_, bool updated) {
-    return queue.update(block.timestamp);
+    return queue.update(block.timestamp.toUint48());
   }
 
   // =========================== NOTE: CONFIG FUNCTIONS =========================== //

@@ -64,7 +64,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
     LibRedeemQueue.Index storage index = queue.index(receiver);
 
-    uint256 timestamp = uint256(IEOLVault(eolVault).clock());
+    uint48 timestamp = IEOLVault(eolVault).clock();
 
     queue.update(timestamp);
 
