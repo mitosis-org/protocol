@@ -16,9 +16,9 @@ import { IRewardDistributor, DistributionType } from '../../../src/interfaces/hu
 import { IERC20TWABSnapshots } from '../../../src/interfaces/twab/IERC20TWABSnapshots.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { MockAssetManager } from '../../mock/MockAssetManager.t.sol';
+import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol';
 import { MockDistributor } from '../../mock/MockDistributor.t.sol';
 import { MockERC20TWABSnapshots } from '../../mock/MockERC20TWABSnapshots.t.sol';
-import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract EOLRewardManagerTest is Toolkit {
@@ -59,7 +59,9 @@ contract EOLRewardManagerTest is Toolkit {
           new TransparentUpgradeableProxy(
             address(eolRewardManagerImpl),
             address(_proxyAdmin),
-            abi.encodeCall(_eolRewardManager.initialize, (owner, address(_assetManager), address(_eolRewardConfigurator)))
+            abi.encodeCall(
+              _eolRewardManager.initialize, (owner, address(_assetManager), address(_eolRewardConfigurator))
+            )
           )
         )
       )
@@ -77,7 +79,10 @@ contract EOLRewardManagerTest is Toolkit {
           new TransparentUpgradeableProxy(
             address(eolVaultImpl),
             address(_proxyAdmin),
-            abi.encodeCall(_eolVault.initialize, (address(_delegationRegistry), address(_assetManager), IERC20TWABSnapshots(address(_token)), '', ''))
+            abi.encodeCall(
+              _eolVault.initialize,
+              (address(_delegationRegistry), address(_assetManager), IERC20TWABSnapshots(address(_token)), '', '')
+            )
           )
         )
       )
@@ -100,8 +105,6 @@ contract EOLRewardManagerTest is Toolkit {
     // _eolVault.deposit(100 ether, user1);
 
     // vm.stopPrank();
-
-    
   }
 
   function test_routeYield_case_TWAB() public { }

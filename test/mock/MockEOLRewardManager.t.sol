@@ -8,6 +8,12 @@ import { IEOLRewardManager } from '../../src/interfaces/hub/eol/IEOLRewardManage
 import { IRewardDistributor } from '../../src/interfaces/hub/reward/IRewardDistributor.sol';
 
 contract MockEOLRewardManager is IEOLRewardManager {
+  function getRewardTreasuryRewardInfos(address eolVault, address reward_, uint48 timestamp)
+    external
+    view
+    returns (uint256[] memory amounts, bool[] memory dispatched)
+  { }
+
   function routeYield(address eolVault, uint256 amount) external {
     address asset = IERC4626(eolVault).asset();
     IERC20(asset).transferFrom(msg.sender, address(this), amount);

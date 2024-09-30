@@ -280,7 +280,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     rewardConfigurator.setEOLAssetHolderRewardRatio(rewardRatioPrecision);
     assertEq(rewardConfigurator.eolAssetHolderRewardRatio(), rewardRatioPrecision);
 
-    vm.expectRevert();
+    vm.expectRevert(_errInvalidParameter('ratio'));
     rewardConfigurator.setEOLAssetHolderRewardRatio(rewardRatioPrecision + 1);
 
     vm.stopPrank();
