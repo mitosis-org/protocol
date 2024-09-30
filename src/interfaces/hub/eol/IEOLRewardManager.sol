@@ -13,9 +13,20 @@ interface IEOLRewardManager {
     DistributionType distributionType,
     uint256 amount
   );
-  event UnspecifiedReward(address indexed eolVault, address indexed reward, uint48 timestamp, uint256 amount);
+  event UnspecifiedReward(
+    address indexed eolVault, address indexed reward, uint48 timestamp, uint256 index, uint256 amount
+  );
 
   error IEOLRewardManager__InvalidDispatchRequest(address reward, uint256 index);
+
+  // View functions
+
+  function getRewardTreasuryRewardInfos(address eolVault, address reward_, uint48 timestamp)
+    external
+    view
+    returns (uint256[] memory amounts, bool[] memory dispatched);
+
+  // Mutative function
 
   function routeYield(address eolVault, uint256 amount) external;
 
