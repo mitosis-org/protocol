@@ -2,7 +2,6 @@
 pragma solidity ^0.8.27;
 
 import { console } from '@std/console.sol';
-import { Test } from '@std/Test.sol';
 
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 
@@ -18,8 +17,9 @@ import { MockDelegationRegistry } from '../mock/MockDelegationRegistry.t.sol';
 import { MockERC20TWABSnapshots } from '../mock/MockERC20TWABSnapshots.t.sol';
 import { MockMitosisVaultEntrypoint } from '../mock/MockMitosisVaultEntrypoint.t.sol';
 import { MockStrategyExecutor } from '../mock/MockStrategyExecutor.t.sol';
+import { Toolkit } from '../util/Toolkit.sol';
 
-contract MitosisVaultTest is Test {
+contract MitosisVaultTest is Toolkit {
   MitosisVault _mitosisVault;
   MockMitosisVaultEntrypoint _mitosisVaultEntrypoint;
   ProxyAdmin _proxyAdmin;
@@ -849,13 +849,5 @@ contract MitosisVaultTest is Test {
     return abi.encodeWithSelector(
       IMitosisVault.IMitosisVault__StrategyExecutorNotDrained.selector, _hubEOLVault, strategyExecutor_
     );
-  }
-
-  function _errZeroToAddress() internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(StdError.ZeroAddress.selector, 'to');
-  }
-
-  function _errInvalidAddress(string memory context) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(StdError.InvalidAddress.selector, context);
   }
 }
