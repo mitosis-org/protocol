@@ -8,6 +8,7 @@ import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 import { DistributionType, IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
 import { DistributionType, IRewardDistributor } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { StdError } from '../../lib/StdError.sol';
 import { EOLRewardConfiguratorStorageV1 } from './EOLRewardConfiguratorStorageV1.sol';
 
 contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeable, EOLRewardConfiguratorStorageV1 {
@@ -26,11 +27,11 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
 
   // View functions
 
-  function getDistributionType(address eolVault, address asset) external view returns (DistributionType) {
+  function distributionType(address eolVault, address asset) external view returns (DistributionType) {
     return _getStorageV1().distributionTypes[eolVault][asset];
   }
 
-  function getDefaultDistributor(DistributionType distributionType) external view returns (IRewardDistributor) {
+  function defaultDistributor(DistributionType distributionType) external view returns (IRewardDistributor) {
     return _getStorageV1().defaultDistributor[distributionType];
   }
 
@@ -38,8 +39,9 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     return REWARD_RATIO_PRECISION;
   }
 
-  function getEOLAssetHolderRewardRatio() external pure returns (uint256) {
-    return REWARD_RATIO_PRECISION; // 100%
+  function eolAssetHolderRewardRatio() external view returns (uint256) {
+    uint256 _eolAssetHolderRewardRatio = _getStorageV1().eolAssetHolderRewardRatio;
+    return _eolAssetHolderRewardRatio == 0 ? REWARD_RATIO_PRECISION : _eolAssetHolderRewardRatio;
   }
 
   function isDistributorRegistered(IRewardDistributor distributor) external view returns (bool) {
@@ -47,6 +49,12 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   }
 
   // Mutative functions
+
+  function setEOLAssetHolderRewardRatio(uint256 ratio) external onlyOwner {
+    require(ratio <= REWARD_RATIO_PRECISION, StdError.InvalidParameter('ratio'));
+    _getStorageV1().eolAssetHolderRewardRatio = ratio;
+    emit EOLAssetHolderRewardRatioSet(ratio);
+  }
 
   function setRewardDistributionType(address eolVault, address asset, DistributionType distributionType)
     external

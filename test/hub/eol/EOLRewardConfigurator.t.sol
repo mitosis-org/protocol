@@ -172,7 +172,7 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     rewardConfigurator.registerDistributor(distributor);
     rewardConfigurator.setDefaultDistributor(distributor);
 
-    IRewardDistributor defaultDistributor = rewardConfigurator.getDefaultDistributor(DistributionType.TWAB);
+    IRewardDistributor defaultDistributor = rewardConfigurator.defaultDistributor(DistributionType.TWAB);
     assertTrue(address(distributor) == address(defaultDistributor));
 
     vm.stopPrank();
@@ -214,9 +214,9 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     address asset = makeAddr('asset');
 
     rewardConfigurator.setRewardDistributionType(eolVault, asset, DistributionType.TWAB);
-    assertTrue(rewardConfigurator.getDistributionType(eolVault, asset) == DistributionType.TWAB);
+    assertTrue(rewardConfigurator.distributionType(eolVault, asset) == DistributionType.TWAB);
 
-    assertTrue(rewardConfigurator.getDistributionType(address(0), address(0)) == DistributionType.Unspecified);
+    assertTrue(rewardConfigurator.distributionType(address(0), address(0)) == DistributionType.Unspecified);
 
     vm.stopPrank();
   }
@@ -251,6 +251,37 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
 
     vm.expectRevert(_errDefaultDistributorNotSet(DistributionType.TWAB));
     rewardConfigurator.setRewardDistributionType(eolVault, asset, DistributionType.TWAB);
+
+    vm.stopPrank();
+  }
+
+  function test_setEOLAssetHolderRewardRatio() public {
+    uint256 rewardRatioPrecision = rewardConfigurator.rewardRatioPrecision();
+    assertEq(rewardConfigurator.eolAssetHolderRewardRatio(), rewardRatioPrecision);
+
+    vm.prank(owner);
+    rewardConfigurator.setEOLAssetHolderRewardRatio(50 * rewardRatioPrecision / 100);
+
+    assertEq(rewardConfigurator.eolAssetHolderRewardRatio(), 50 * rewardRatioPrecision / 100);
+  }
+
+  function test_setEOLAssetHolderRewardRatio_Unauthorized() public {
+    uint256 rewardRatioPrecision = rewardConfigurator.rewardRatioPrecision();
+    vm.expectRevert();
+    rewardConfigurator.setEOLAssetHolderRewardRatio(50 * rewardRatioPrecision / 100);
+  }
+
+  function test_setEOLAssetHolderRewardRatio_InvalidParamter() public {
+    uint256 rewardRatioPrecision = rewardConfigurator.rewardRatioPrecision();
+    assertEq(rewardConfigurator.eolAssetHolderRewardRatio(), rewardRatioPrecision);
+
+    vm.startPrank(owner);
+
+    rewardConfigurator.setEOLAssetHolderRewardRatio(rewardRatioPrecision);
+    assertEq(rewardConfigurator.eolAssetHolderRewardRatio(), rewardRatioPrecision);
+
+    vm.expectRevert();
+    rewardConfigurator.setEOLAssetHolderRewardRatio(rewardRatioPrecision + 1);
 
     vm.stopPrank();
   }
