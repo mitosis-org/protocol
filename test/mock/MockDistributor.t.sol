@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
+
 import { IRewardConfigurator } from '../../src/interfaces/hub/reward/IRewardConfigurator.sol';
 import { IRewardDistributor, DistributionType } from '../../src/interfaces/hub/reward/IRewardDistributor.sol';
 
@@ -51,8 +53,8 @@ contract MockDistributor is IRewardDistributor {
 
   function claim(address, uint256, bytes calldata) external { }
 
-  function handleReward(address, address, uint256, bytes memory) external pure {
-    return;
+  function handleReward(address, address reward, uint256 amount, bytes memory) external {
+    IERC20(reward).transferFrom(msg.sender, address(this), amount);
   }
 
   function setRewardManager(address rewardManager_) external { }

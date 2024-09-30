@@ -31,8 +31,8 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     return _getStorageV1().distributionTypes[eolVault][asset];
   }
 
-  function defaultDistributor(DistributionType distributionType) external view returns (IRewardDistributor) {
-    return _getStorageV1().defaultDistributor[distributionType];
+  function defaultDistributor(DistributionType distributionType_) external view returns (IRewardDistributor) {
+    return _getStorageV1().defaultDistributor[distributionType_];
   }
 
   function rewardRatioPrecision() external pure returns (uint256) {
@@ -56,16 +56,16 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     emit EOLAssetHolderRewardRatioSet(ratio);
   }
 
-  function setRewardDistributionType(address eolVault, address asset, DistributionType distributionType)
+  function setRewardDistributionType(address eolVault, address asset, DistributionType distributionType_)
     external
     onlyOwner
   {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertDefaultDistributorSet($, distributionType);
+    _assertDefaultDistributorSet($, distributionType_);
 
-    $.distributionTypes[eolVault][asset] = distributionType;
-    emit RewardDistributionTypeSet(eolVault, asset, distributionType);
+    $.distributionTypes[eolVault][asset] = distributionType_;
+    emit RewardDistributionTypeSet(eolVault, asset, distributionType_);
   }
 
   function setDefaultDistributor(IRewardDistributor distributor) external onlyOwner {
@@ -73,10 +73,10 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
 
     _assertDistributorRegisered($, distributor);
 
-    DistributionType distributionType = distributor.distributionType();
+    DistributionType _distributionType = distributor.distributionType();
 
-    $.defaultDistributor[distributionType] = distributor;
-    emit DefaultDistributorSet(distributionType, distributor);
+    $.defaultDistributor[_distributionType] = distributor;
+    emit DefaultDistributorSet(_distributionType, distributor);
   }
 
   function registerDistributor(IRewardDistributor distributor) external onlyOwner {
@@ -104,10 +104,10 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     return $.distributorLists[distributor.distributionType()].contains(address(distributor));
   }
 
-  function _assertDefaultDistributorSet(StorageV1 storage $, DistributionType distributionType) internal view {
+  function _assertDefaultDistributorSet(StorageV1 storage $, DistributionType distributionType_) internal view {
     require(
-      address($.defaultDistributor[distributionType]) != address(0),
-      IEOLRewardConfigurator__DefaultDistributorNotSet(distributionType)
+      address($.defaultDistributor[distributionType_]) != address(0),
+      IEOLRewardConfigurator__DefaultDistributorNotSet(distributionType_)
     );
   }
 
@@ -120,9 +120,9 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
   }
 
   function _assertNotDefaultDistributor(StorageV1 storage $, IRewardDistributor distributor) internal view {
-    DistributionType distributionType = distributor.distributionType();
+    DistributionType _distributionType = distributor.distributionType();
     require(
-      address(distributor) != address($.defaultDistributor[distributionType]),
+      address(distributor) != address($.defaultDistributor[_distributionType]),
       IEOLRewardConfigurator__UnregisterDefaultDistributorNotAllowed()
     );
   }
