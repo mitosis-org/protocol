@@ -155,7 +155,7 @@ contract EOLProtocolRegistryTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_protocolId() public {
+  function test_protocolId() public view {
     bytes32 nameHash = keccak256(bytes('Test'));
     uint256 expect = uint256(keccak256(abi.encode(eolAsset, chainId, nameHash)));
     assertEq(_eolProtocolRegistry.protocolId(eolAsset, chainId, 'Test'), expect);
@@ -166,7 +166,6 @@ contract EOLProtocolRegistryTest is Toolkit {
     pure
     returns (bytes memory)
   {
-    // uint256 protocolId, address eolAsset, uint256 chainId, string name
     return abi.encodeWithSelector(
       IEOLProtocolRegistry.IEOLProtocolRegistry__AlreadyRegistered.selector, protocolId, eolAsset_, chainId_, name
     );
