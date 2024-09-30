@@ -3,6 +3,7 @@ pragma solidity 0.8.27;
 
 import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
+import { IMerkleRewardDistributorStorageV1 } from '../../interfaces/hub/reward/IMerkleRewardDistributor.sol';
 import { IRewardConfigurator } from '../../interfaces/hub/reward/IRewardConfigurator.sol';
 import {
   IRewardDistributor,
@@ -12,7 +13,7 @@ import {
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-abstract contract MerkleRewardDistributorStorageV1 is IRewardDistributorStorage, ContextUpgradeable {
+abstract contract MerkleRewardDistributorStorageV1 is IMerkleRewardDistributorStorageV1, ContextUpgradeable {
   using ERC7201Utils for string;
 
   struct Stage {
@@ -58,6 +59,12 @@ abstract contract MerkleRewardDistributorStorageV1 is IRewardDistributorStorage,
     return _getStorageV1().rewardManager;
   }
 
+  function stage(address eolVault, address reward, uint256 stage_) external view returns (StageResponse memory) {
+    StorageV1 storage $ = _getStorageV1();
+    Stage storage s = _stage($, eolVault, reward, stage_);
+    return StageResponse({ amount: s.amount, root: s.root });
+  }
+
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   function _setRewardConfigurator(StorageV1 storage $, address rewardConfigurator_) internal {
@@ -72,12 +79,12 @@ abstract contract MerkleRewardDistributorStorageV1 is IRewardDistributorStorage,
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _stage(StorageV1 storage $, address eolVault, address reward, uint256 stage)
+  function _stage(StorageV1 storage $, address eolVault, address reward, uint256 stage_)
     internal
     view
     returns (Stage storage)
   {
-    return $.stages[eolVault][reward][stage];
+    return $.stages[eolVault][reward][stage_];
   }
 
   function _assertOnlyRewardManager(StorageV1 storage $) internal view {

@@ -7,18 +7,20 @@ import { MerkleProof } from '@oz-v5/utils/cryptography/MerkleProof.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
+import { IMerkleRewardDistributor } from '../../interfaces/hub/reward/IMerkleRewardDistributor.sol';
 import { IRewardDistributor, DistributionType } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { LibDistributorRewardMetadata, RewardMerkleMetadata } from './LibDistributorRewardMetadata.sol';
 import { MerkleRewardDistributorStorageV1 } from './MerkleRewardDistributorStorageV1.sol';
 
-contract MerkleRewardDistributor is IRewardDistributor, Ownable2StepUpgradeable, MerkleRewardDistributorStorageV1 {
+contract MerkleRewardDistributor is
+  IMerkleRewardDistributor,
+  Ownable2StepUpgradeable,
+  MerkleRewardDistributorStorageV1
+{
   using SafeERC20 for IERC20;
   using MerkleProof for bytes32[];
   using LibDistributorRewardMetadata for bytes;
   using LibDistributorRewardMetadata for RewardMerkleMetadata;
-
-  error MerkleRewardDistributor__AlreadyClaimed();
-  error MerkleRewardDistributor__InvalidProof();
 
   constructor() {
     _disableInitializers();
@@ -39,20 +41,20 @@ contract MerkleRewardDistributor is IRewardDistributor, Ownable2StepUpgradeable,
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
-  function encodeMetadata(address eolVault, uint256 stage, uint256 amount, bytes32[] calldata proof)
+  function encodeMetadata(address eolVault, uint256 stage_, uint256 amount, bytes32[] calldata proof)
     external
     pure
     returns (bytes memory)
   {
-    return RewardMerkleMetadata({ eolVault: eolVault, stage: stage, amount: amount, proof: proof }).encode();
+    return RewardMerkleMetadata({ eolVault: eolVault, stage: stage_, amount: amount, proof: proof }).encode();
   }
 
-  function encodeLeaf(address eolVault, address reward, uint256 stage, address account, uint256 amount)
+  function encodeLeaf(address eolVault, address reward, uint256 stage_, address account, uint256 amount)
     external
     pure
     returns (bytes32 leaf)
   {
-    return _leaf(eolVault, reward, stage, account, amount);
+    return _leaf(eolVault, reward, stage_, account, amount);
   }
 
   /// @dev Checks if the account can claim.
@@ -145,20 +147,20 @@ contract MerkleRewardDistributor is IRewardDistributor, Ownable2StepUpgradeable,
     StorageV1 storage $ = _getStorageV1();
     Stage storage stage = _stage($, metadata.eolVault, reward, metadata.stage);
 
-    require(!stage.claimed[account], MerkleRewardDistributor__AlreadyClaimed());
+    require(!stage.claimed[account], IMerkleRewardDistributor__AlreadyClaimed());
     stage.claimed[account] = true;
 
     bytes32 leaf = _leaf(metadata.eolVault, reward, metadata.stage, account, metadata.amount);
-    require(metadata.proof.verify(stage.root, leaf), MerkleRewardDistributor__InvalidProof());
+    require(metadata.proof.verify(stage.root, leaf), IMerkleRewardDistributor__InvalidProof());
 
     IERC20(reward).safeTransfer(account, metadata.amount);
   }
 
-  function _leaf(address eolVault, address reward, uint256 stage, address account, uint256 amount)
+  function _leaf(address eolVault, address reward, uint256 stage_, address account, uint256 amount)
     internal
     pure
     returns (bytes32 leaf)
   {
-    return keccak256(abi.encodePacked(eolVault, reward, stage, account, amount));
+    return keccak256(abi.encodePacked(eolVault, reward, stage_, account, amount));
   }
 }

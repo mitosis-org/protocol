@@ -12,6 +12,7 @@ import {
   LibDistributorRewardMetadata, RewardMerkleMetadata
 } from '../../../src/hub/reward/LibDistributorRewardMetadata.sol';
 import { MerkleRewardDistributor } from '../../../src/hub/reward/MerkleRewardDistributor.sol';
+import { IMerkleRewardDistributor } from '../../../src/interfaces/hub/reward/IMerkleRewardDistributor.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract MerkleRewardDistributorTest is Toolkit {
@@ -139,10 +140,10 @@ contract MerkleRewardDistributorTest is Toolkit {
   }
 
   function _errAlreadyClaimed() internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(MerkleRewardDistributor.MerkleRewardDistributor__AlreadyClaimed.selector);
+    return abi.encodeWithSelector(IMerkleRewardDistributor.IMerkleRewardDistributor__AlreadyClaimed.selector);
   }
 
   function _errInvalidProof() internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(MerkleRewardDistributor.MerkleRewardDistributor__InvalidProof.selector);
+    return abi.encodeWithSelector(IMerkleRewardDistributor.IMerkleRewardDistributor__InvalidProof.selector);
   }
 }
