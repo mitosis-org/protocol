@@ -5,7 +5,6 @@ import { IRewardDistributor, IRewardDistributorStorage, DistributionType } from 
 
 interface ITWABRewardDistributorStorageV1 is IRewardDistributorStorage {
   event TWABPeriodSet(uint48 indexed period);
-  event RewardManagerSet(address indexed rewardManger);
 
   error ITWABRewardDistributorStorageV1__ZeroPeriod();
 
