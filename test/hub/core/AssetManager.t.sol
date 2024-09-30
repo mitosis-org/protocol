@@ -17,7 +17,8 @@ import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.so
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
 import { IERC20TWABSnapshots } from '../../../src/interfaces/twab/IERC20TWABSnapshots.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
-import { MockAssetManagerEntrypoint } from '../../mock/MockAssetManagerEntrypoint.sol';
+import { MockAssetManagerEntrypoint } from '../../mock/MockAssetManagerEntrypoint.t.sol';
+import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol';
 import { MockEOLRewardManager } from '../../mock/MockEOLRewardManager.t.sol';
 import { MockERC20TWABSnapshots } from '../../mock/MockERC20TWABSnapshots.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
@@ -29,6 +30,7 @@ contract AssetManagerTest is Toolkit {
   AssetManager _assetManager;
   MockEOLRewardManager _eolRewardManager;
   MockAssetManagerEntrypoint _assetManagerEntrypoint;
+  MockDelegationRegistry _delegationRegistry;
   EOLVault _eolVault;
   HubAsset _token;
   ProxyAdmin internal _proxyAdmin;
@@ -73,13 +75,16 @@ contract AssetManagerTest is Toolkit {
 
     _eolRewardManager = new MockEOLRewardManager();
     _assetManagerEntrypoint = new MockAssetManagerEntrypoint(_assetManager, address(0));
+    _delegationRegistry = new MockDelegationRegistry();
 
     HubAsset tokenImpl = new HubAsset();
     _token = HubAsset(
       payable(
         address(
           new TransparentUpgradeableProxy(
-            address(tokenImpl), address(_proxyAdmin), abi.encodeCall(_token.initialize, ('Token', 'TKN'))
+            address(tokenImpl),
+            address(_proxyAdmin),
+            abi.encodeCall(_token.initialize, (address(_delegationRegistry), 'Token', 'TKN'))
           )
         )
       )
@@ -92,7 +97,10 @@ contract AssetManagerTest is Toolkit {
           new TransparentUpgradeableProxy(
             address(eolVaultImpl),
             address(_proxyAdmin),
-            abi.encodeCall(_eolVault.initialize, (address(_assetManager), IERC20TWABSnapshots(address(_token)), '', ''))
+            abi.encodeCall(
+              _eolVault.initialize,
+              (address(_delegationRegistry), address(_assetManager), IERC20TWABSnapshots(address(_token)), '', '')
+            )
           )
         )
       )
@@ -174,7 +182,7 @@ contract AssetManagerTest is Toolkit {
 
   function test_depositWithOptIn_InvalidEOLVault() public {
     MockERC20TWABSnapshots myToken = new MockERC20TWABSnapshots();
-    myToken.initialize('Token', 'TKN');
+    myToken.initialize(address(_delegationRegistry), 'Token', 'TKN');
 
     EOLVault eolVaultImpl = new EOLVault();
     EOLVault incorrectEOLVault = EOLVault(
@@ -184,7 +192,8 @@ contract AssetManagerTest is Toolkit {
             address(eolVaultImpl),
             address(_proxyAdmin),
             abi.encodeCall(
-              _eolVault.initialize, (address(_assetManager), IERC20TWABSnapshots(address(myToken)), '', '')
+              _eolVault.initialize,
+              (address(_delegationRegistry), address(_assetManager), IERC20TWABSnapshots(address(myToken)), '', '')
             )
           )
         )
@@ -496,7 +505,7 @@ contract AssetManagerTest is Toolkit {
 
   function test_settleExtraRewards() public {
     MockERC20TWABSnapshots rewardToken = new MockERC20TWABSnapshots();
-    rewardToken.initialize('Reward', '$REWARD');
+    rewardToken.initialize(address(_delegationRegistry), 'Reward', '$REWARD');
 
     vm.startPrank(owner);
     _assetManager.setRewardManager(address(_eolRewardManager));
@@ -513,7 +522,7 @@ contract AssetManagerTest is Toolkit {
 
   function test_settleExtraRewards_Unauthorized() public {
     MockERC20TWABSnapshots rewardToken = new MockERC20TWABSnapshots();
-    rewardToken.initialize('Reward', '$REWARD');
+    rewardToken.initialize(address(_delegationRegistry), 'Reward', '$REWARD');
 
     vm.startPrank(owner);
     _assetManager.setRewardManager(address(_eolRewardManager));
@@ -540,7 +549,7 @@ contract AssetManagerTest is Toolkit {
 
   function test_settleExtraRewards_EOLRewardManagerNotSet() public {
     MockERC20TWABSnapshots rewardToken = new MockERC20TWABSnapshots();
-    rewardToken.initialize('Reward', '$REWARD');
+    rewardToken.initialize(address(_delegationRegistry), 'Reward', '$REWARD');
 
     vm.startPrank(owner);
     // _assetManager.setRewardManager(address(_eolRewardManager));
