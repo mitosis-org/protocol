@@ -103,8 +103,7 @@ contract EOLProtocolRegistryTest is Toolkit {
 
     vm.startPrank(owner);
 
-    // vm.expectRevert(_errInvalidParameter('name'));
-    vm.expectRevert();
+    vm.expectRevert(_errInvalidParameter('name'));
     _eolProtocolRegistry.registerProtocol(eolAsset, chainId, '', 'For testing');
 
     vm.stopPrank();
