@@ -16,7 +16,7 @@ abstract contract MitosisVaultStorageV1 {
   struct EOLInfo {
     bool initialized;
     address asset;
-    address strategyExecutor;
+    address eolStrategyExecutor;
     uint256 availableEOL;
     mapping(EOLAction => bool) isHalted;
   }

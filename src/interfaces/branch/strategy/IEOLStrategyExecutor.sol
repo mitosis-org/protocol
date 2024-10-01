@@ -5,7 +5,7 @@ import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 
 import { IMitosisVault } from '../IMitosisVault.sol';
 
-interface IStrategyExecutor {
+interface IEOLStrategyExecutor {
   struct Strategy {
     uint256 priority;
     address implementation;

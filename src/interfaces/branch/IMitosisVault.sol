@@ -32,7 +32,7 @@ interface IMitosisVault {
   event ExtraRewardsSettled(address indexed hubEOLVault, address indexed reward, uint256 amount);
 
   event EntrypointSet(address entrypoint);
-  event StrategyExecutorSet(address indexed hubEOLVault, address indexed strategyExecutor);
+  event EOLStrategyExecutorSet(address indexed hubEOLVault, address indexed eolStrategyExecutor);
 
   event AssetHalted(address indexed asset, AssetAction action);
   event AssetResumed(address indexed asset, AssetAction action);
@@ -50,7 +50,7 @@ interface IMitosisVault {
 
   error IMitosisVault__InvalidEOLVault(address hubEOLVault, address asset);
 
-  error IMitosisVault__StrategyExecutorNotDrained(address hubEOLVault, address strategyExecutor);
+  error IMitosisVault__EOLStrategyExecutorNotDrained(address hubEOLVault, address eolStrategyExecutor);
 
   //=========== NOTE: View functions ===========//
 
@@ -58,7 +58,7 @@ interface IMitosisVault {
   function isEOLInitialized(address hubEOLVault) external view returns (bool);
   function availableEOL(address hubEOLVault) external view returns (uint256);
   function entrypoint() external view returns (IMitosisVaultEntrypoint);
-  function strategyExecutor(address hubEOLVault) external view returns (address);
+  function eolStrategyExecutor(address hubEOLVault) external view returns (address);
 
   //=========== NOTE: Asset ===========//
 
@@ -85,5 +85,5 @@ interface IMitosisVault {
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
   function setEntrypoint(IMitosisVaultEntrypoint entrypoint) external;
-  function setStrategyExecutor(address hubEOLVault, address strategyExecutor) external;
+  function setEOLStrategyExecutor(address hubEOLVault, address eolStrategyExecutor) external;
 }

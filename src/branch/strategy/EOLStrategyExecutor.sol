@@ -9,19 +9,19 @@ import { Address } from '@oz-v5/utils/Address.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 
+import { EOLStrategyExecutorStorageV1 } from '../../branch/strategy/EOLStrategyExecutorStorageV1.sol';
 import { StdStrategy } from '../../branch/strategy/strategies/StdStrategy.sol';
-import { StrategyExecutorStorageV1 } from '../../branch/strategy/StrategyExecutorStorageV1.sol';
 import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
+import { IEOLStrategyExecutor } from '../../interfaces/branch/strategy/IEOLStrategyExecutor.sol';
 import { IStrategy, IStrategyDependency } from '../../interfaces/branch/strategy/IStrategy.sol';
-import { IStrategyExecutor } from '../../interfaces/branch/strategy/IStrategyExecutor.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-contract StrategyExecutor is
+contract EOLStrategyExecutor is
   IStrategyDependency,
-  IStrategyExecutor,
+  IEOLStrategyExecutor,
   PausableUpgradeable,
   Ownable2StepUpgradeable,
-  StrategyExecutorStorageV1
+  EOLStrategyExecutorStorageV1
 {
   using SafeERC20 for IERC20;
   using Address for address;
@@ -80,7 +80,7 @@ contract StrategyExecutor is
     return _vault;
   }
 
-  function asset() public view override(IStrategyExecutor, IStrategyDependency) returns (IERC20 asset_) {
+  function asset() public view override(IEOLStrategyExecutor, IStrategyDependency) returns (IERC20 asset_) {
     return _asset;
   }
 
@@ -188,7 +188,7 @@ contract StrategyExecutor is
    *
    * @dev only strategist can call this function
    */
-  function execute(IStrategyExecutor.Call[] calldata calls) external whenNotPaused {
+  function execute(IEOLStrategyExecutor.Call[] calldata calls) external whenNotPaused {
     // TODO(thai): check that total balance is almost the same before and after the execution.
 
     // TODO(thai): for now, strategist can move funds to defi positions not tracked by `totalBalance`.

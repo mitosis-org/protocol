@@ -11,7 +11,7 @@ import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 import { MitosisVaultStorageV1 } from '../branch/MitosisVaultStorageV1.sol';
 import { AssetAction, EOLAction, IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
-import { IStrategyExecutor } from '../interfaces/branch/strategy/IStrategyExecutor.sol';
+import { IEOLStrategyExecutor } from '../interfaces/branch/strategy/IEOLStrategyExecutor.sol';
 import { StdError } from '../lib/StdError.sol';
 
 // TODO(thai): add some view functions in MitosisVault
@@ -58,8 +58,8 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     return _getStorageV1().entrypoint;
   }
 
-  function strategyExecutor(address hubEOLVault) external view returns (address) {
-    return _getStorageV1().eols[hubEOLVault].strategyExecutor;
+  function eolStrategyExecutor(address hubEOLVault) external view returns (address) {
+    return _getStorageV1().eols[hubEOLVault].eolStrategyExecutor;
   }
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
@@ -141,7 +141,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyStrategyExecutor($, hubEOLVault);
+    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
 
     EOLInfo storage eolInfo = $.eols[hubEOLVault];
 
@@ -155,13 +155,13 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyStrategyExecutor($, hubEOLVault);
+    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
     _assertNotHalted($, hubEOLVault, EOLAction.FetchEOL);
 
     EOLInfo storage eolInfo = $.eols[hubEOLVault];
 
     eolInfo.availableEOL -= amount;
-    IERC20(eolInfo.asset).safeTransfer(eolInfo.strategyExecutor, amount);
+    IERC20(eolInfo.asset).safeTransfer(eolInfo.eolStrategyExecutor, amount);
 
     emit EOLFetched(hubEOLVault, amount);
   }
@@ -170,11 +170,11 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyStrategyExecutor($, hubEOLVault);
+    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
 
     EOLInfo storage eolInfo = $.eols[hubEOLVault];
 
-    IERC20(eolInfo.asset).safeTransferFrom(eolInfo.strategyExecutor, address(this), amount);
+    IERC20(eolInfo.asset).safeTransferFrom(eolInfo.eolStrategyExecutor, address(this), amount);
     eolInfo.availableEOL += amount;
 
     emit EOLReturned(hubEOLVault, amount);
@@ -184,7 +184,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyStrategyExecutor($, hubEOLVault);
+    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
 
     $.entrypoint.settleYield(hubEOLVault, amount);
 
@@ -195,7 +195,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyStrategyExecutor($, hubEOLVault);
+    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
 
     $.entrypoint.settleLoss(hubEOLVault, amount);
 
@@ -206,7 +206,7 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyStrategyExecutor($, hubEOLVault);
+    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
     _assertAssetInitialized($, reward);
     require(reward != $.eols[hubEOLVault].asset, StdError.InvalidAddress('reward'));
 
@@ -223,35 +223,35 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     emit EntrypointSet(address(entrypoint_));
   }
 
-  function setStrategyExecutor(address hubEOLVault, address strategyExecutor_) external onlyOwner {
+  function setEOLStrategyExecutor(address hubEOLVault, address eolStrategyExecutor_) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
     EOLInfo storage eolInfo = $.eols[hubEOLVault];
 
     _assertEOLInitialized($, hubEOLVault);
 
-    if (eolInfo.strategyExecutor != address(0)) {
+    if (eolInfo.eolStrategyExecutor != address(0)) {
       // NOTE: no way to check if every extra rewards are settled.
-      bool drained = IStrategyExecutor(eolInfo.strategyExecutor).totalBalance() == 0
-        && IStrategyExecutor(eolInfo.strategyExecutor).lastSettledBalance() == 0;
+      bool drained = IEOLStrategyExecutor(eolInfo.eolStrategyExecutor).totalBalance() == 0
+        && IEOLStrategyExecutor(eolInfo.eolStrategyExecutor).lastSettledBalance() == 0;
 
-      require(drained, IMitosisVault__StrategyExecutorNotDrained(hubEOLVault, eolInfo.strategyExecutor));
+      require(drained, IMitosisVault__EOLStrategyExecutorNotDrained(hubEOLVault, eolInfo.eolStrategyExecutor));
     }
 
     require(
-      hubEOLVault == IStrategyExecutor(strategyExecutor_).hubEOLVault(),
-      StdError.InvalidId('strategyExecutor.hubEOLVault')
+      hubEOLVault == IEOLStrategyExecutor(eolStrategyExecutor_).hubEOLVault(),
+      StdError.InvalidId('eolStrategyExecutor.hubEOLVault')
     );
     require(
-      address(this) == address(IStrategyExecutor(strategyExecutor_).vault()),
-      StdError.InvalidAddress('strategyExecutor.vault')
+      address(this) == address(IEOLStrategyExecutor(eolStrategyExecutor_).vault()),
+      StdError.InvalidAddress('eolStrategyExecutor.vault')
     );
     require(
-      eolInfo.asset == address(IStrategyExecutor(strategyExecutor_).asset()),
-      StdError.InvalidAddress('strategyExecutor.asset')
+      eolInfo.asset == address(IEOLStrategyExecutor(eolStrategyExecutor_).asset()),
+      StdError.InvalidAddress('eolStrategyExecutor.asset')
     );
 
-    eolInfo.strategyExecutor = strategyExecutor_;
-    emit StrategyExecutorSet(hubEOLVault, strategyExecutor_);
+    eolInfo.eolStrategyExecutor = eolStrategyExecutor_;
+    emit EOLStrategyExecutorSet(hubEOLVault, eolStrategyExecutor_);
   }
 
   function haltAsset(address asset, AssetAction action) external onlyOwner {
@@ -284,8 +284,8 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     require(_msgSender() == address($.entrypoint), StdError.Unauthorized());
   }
 
-  function _assertOnlyStrategyExecutor(StorageV1 storage $, address hubEOLVault) internal view {
-    require(_msgSender() == $.eols[hubEOLVault].strategyExecutor, StdError.Unauthorized());
+  function _assertOnlyEOLStrategyExecutor(StorageV1 storage $, address hubEOLVault) internal view {
+    require(_msgSender() == $.eols[hubEOLVault].eolStrategyExecutor, StdError.Unauthorized());
   }
 
   function _assertAssetInitialized(StorageV1 storage $, address asset) internal view {
