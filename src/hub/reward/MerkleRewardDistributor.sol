@@ -81,14 +81,20 @@ contract MerkleRewardDistributor is
 
   /// @dev Claims a specific amount of rewards for the specified vault and reward.
   /// param `amount` will be ignored.
-  function claim(address reward, uint256, bytes calldata metadata) external {
-    _claim(_msgSender(), reward, metadata.decodeRewardMerkleMetadata());
+  function claim(address reward, uint256 amount, bytes calldata metadata) external {
+    RewardMerkleMetadata memory metadata_ = metadata.decodeRewardMerkleMetadata();
+    require(metadata_.amount == amount, IMerkleRewardDistributor__InvalidAmount());
+
+    _claim(_msgSender(), reward, metadata_);
   }
 
   /// @dev Claims a specific amount of rewards for the specified vault and reward, sending them to the receiver.
   /// param `amount` will be ignored.
-  function claim(address receiver, address reward, uint256, bytes calldata metadata) external {
-    _claim(receiver, reward, metadata.decodeRewardMerkleMetadata());
+  function claim(address receiver, address reward, uint256 amount, bytes calldata metadata) external {
+    RewardMerkleMetadata memory metadata_ = metadata.decodeRewardMerkleMetadata();
+    require(metadata_.amount == amount, IMerkleRewardDistributor__InvalidAmount());
+
+    _claim(receiver, reward, metadata_);
   }
 
   /// @dev Handles the distribution of rewards for the specified vault and reward.
