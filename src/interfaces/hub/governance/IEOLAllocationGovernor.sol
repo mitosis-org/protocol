@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-interface IEOLAllocationGovernor {
+interface IEOLGaugeGovernor {
   function voters(uint256 chainId) external view returns (address[] memory);
 
   function lastEpochId() external view returns (uint256);

@@ -24,7 +24,7 @@ struct TotalVoteInfo {
   mapping(address account => uint256[] votedEpochIds) votedEpochIdsByAccount;
 }
 
-contract EOLAllocationGovernorStorageV1 {
+contract EOLGaugeGovernorStorageV1 {
   using ERC7201Utils for string;
 
   struct StorageV1 {
@@ -37,7 +37,7 @@ contract EOLAllocationGovernorStorageV1 {
     mapping(uint256 chainId => TotalVoteInfo) totalVoteInfoByChainId;
   }
 
-  string private constant _NAMESPACE = 'mitosis.storage.EOLAllocationGovernorStorage.v1';
+  string private constant _NAMESPACE = 'mitosis.storage.EOLGaugeGovernorStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
