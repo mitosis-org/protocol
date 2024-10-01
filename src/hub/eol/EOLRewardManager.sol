@@ -83,24 +83,12 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
   function routeYield(address eolVault, uint256 amount) external onlyAssetManager {
     address reward = IEOLVault(eolVault).asset();
     IHubAsset(reward).transferFrom(_msgSender(), address(this), amount);
-
-    StorageV1 storage $ = _getStorageV1();
-
-    (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward) = _calcReward($, amount);
-
-    _increaseEOLShareValue(eolVault, eolAssetHolderReward);
-    _routeHubAssetHolderClaimableReward($, eolVault, reward, hubAssetHolderReward);
+    _increaseEOLShareValue(eolVault, amount);
   }
 
   function routeExtraRewards(address eolVault, address reward, uint256 amount) external onlyAssetManager {
     IHubAsset(reward).transferFrom(_msgSender(), address(this), amount);
-
-    StorageV1 storage $ = _getStorageV1();
-
-    (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward) = _calcReward($, amount);
-
-    _routeEOLClaimableReward($, eolVault, reward, eolAssetHolderReward);
-    _routeHubAssetHolderClaimableReward($, eolVault, reward, hubAssetHolderReward);
+    _routeEOLClaimableReward(_getStorageV1(), eolVault, reward, amount);
   }
 
   function dispatchTo(
@@ -137,33 +125,10 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     _processDispatch($, distributor, eolVault, reward, timestamp, index, metadata);
   }
 
-  function _calcReward(StorageV1 storage $, uint256 totalAmount)
-    internal
-    view
-    returns (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward)
-  {
-    uint256 eolAssetHolderRatio = $.rewardConfigurator.eolAssetHolderRewardRatio();
-    uint256 precision = $.rewardConfigurator.rewardRatioPrecision();
-    eolAssetHolderReward = Math.mulDiv(totalAmount, eolAssetHolderRatio, precision);
-    hubAssetHolderReward = totalAmount - eolAssetHolderReward;
-  }
-
   function _routeEOLClaimableReward(StorageV1 storage $, address eolVault, address reward, uint256 amount) internal {
     bytes memory metadata;
     if ($.rewardConfigurator.distributionType(eolVault, reward) == DistributionType.TWAB) {
       metadata = RewardTWABMetadata(eolVault, Time.timestamp()).encode();
-    }
-
-    _routeClaimableReward($, eolVault, reward, amount, metadata);
-  }
-
-  function _routeHubAssetHolderClaimableReward(StorageV1 storage $, address eolVault, address reward, uint256 amount)
-    internal
-  {
-    bytes memory metadata;
-    if ($.rewardConfigurator.distributionType(eolVault, reward) == DistributionType.TWAB) {
-      address underlyingAsset = IEOLVault(eolVault).asset();
-      metadata = RewardTWABMetadata(underlyingAsset, Time.timestamp()).encode();
     }
 
     _routeClaimableReward($, eolVault, reward, amount, metadata);
