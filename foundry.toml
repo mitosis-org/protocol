@@ -3,10 +3,31 @@ src = "src"
 out = "out"
 script = "script"
 libs = ["lib", "dependencies", "node_modules"]
-solc = "0.8.27"                                # to have cancun support
-evm_version = 'cancun'                         # by default
+solc = "0.8.27" # to have cancun support
+evm_version = 'cancun' # by default
 optimizer = true
 optimizer_runs = 99999
+remappings = [
+    "@hpl-v5=node_modules/hpl-v5/contracts",
+    "@murky=dependencies/@murky-0.0.1/src",
+    "@murky-0.0.1/=dependencies/@murky-0.0.1/",
+    "@openzeppelin/contracts=dependencies/@openzeppelin-contracts-5.0.2",
+    "@openzeppelin/contracts-upgradeable=dependencies/@openzeppelin-contracts-upgradeable-5.0.2",
+    "@openzeppelin-contracts-5.0.2/=dependencies/@openzeppelin-contracts-5.0.2/",
+    "@openzeppelin-contracts-upgradeable-5.0.2/=dependencies/@openzeppelin-contracts-upgradeable-5.0.2/",
+    "@openzeppelin-contracts-upgradeable-v4-4.9.6/=dependencies/@openzeppelin-contracts-upgradeable-v4-4.9.6/",
+    "@openzeppelin-contracts-v4-4.9.6/=dependencies/@openzeppelin-contracts-v4-4.9.6/",
+    "@oz-v5=dependencies/@openzeppelin-contracts-5.0.2",
+    "@ozfu-v5=dependencies/openzeppelin-foundry-upgrades-0.3.1/src",
+    "@ozu-v5=dependencies/@openzeppelin-contracts-upgradeable-5.0.2",
+    "@oz-v4=dependencies/@openzeppelin-contracts-v4-4.9.6/contracts",
+    "@ozu-v4=dependencies/@openzeppelin-contracts-upgradeable-v4-4.9.6/contracts",
+    "@solady=dependencies/solady-0.0.230/src",
+    "@std=dependencies/forge-std-1.9.1/src",
+    "forge-std-1.9.1/=dependencies/forge-std-1.9.1/",
+    "openzeppelin-foundry-upgrades-0.3.1/=dependencies/openzeppelin-foundry-upgrades-0.3.1/",
+    "solady-0.0.230/=dependencies/solady-0.0.230/",
+]
 
 [rpc_endpoints]
 # MAINNET
@@ -57,6 +78,11 @@ bracket_spacing = true
 quote_style = "single"
 ignore = ['./src/external/**/*']
 
+[soldeer]
+remappings_regenerate = false
+
+remappings_location = "config"
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 
 [dependencies]
@@ -67,4 +93,4 @@ openzeppelin-foundry-upgrades = "0.3.1"
 "@openzeppelin-contracts-upgradeable" = "5.0.2"
 "@openzeppelin-contracts-v4" = { version = "4.9.6", url = "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/refs/tags/v4.9.6.zip" }
 "@openzeppelin-contracts-upgradeable-v4" = { version = "4.9.6", url = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/archive/refs/tags/v4.9.6.zip" }
-"@murky" = { version = "0.1.0", git = "git@github.com:dmfxyz/murky.git", rev = "5feccd1253d7da820f7cccccdedf64471025455d" }
+"@murky" = { version = "0.0.1", url = "https://github.com/mitosis-org/murky/archive/refs/tags/v0.0.1.zip" }

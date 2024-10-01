@@ -5,6 +5,7 @@ import { promises as fs } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { glob } from 'glob';
 import path from 'path';
+import toml from 'toml';
 import { promisify } from 'util';
 
 import {
@@ -174,9 +175,16 @@ async function executeCommand(options: {
   }
 
   try {
-    const remappings = (await readFile('remappings.txt', 'utf-8'))
-      .split('\n')
-      .map((l) => l.split('=')[0]);
+    const foundryConfig = await readFile('foundry.toml', 'utf-8');
+    const {
+      profile: {
+        default: { remappings: remappingsList },
+      },
+    } = toml.parse(foundryConfig) as {
+      profile: { default: { remappings: string[] } };
+    };
+
+    const remappings = remappingsList.map((l) => l.split('=')[0]);
 
     await promisify(exec)('forge fmt');
 
