@@ -12,7 +12,7 @@ interface IDelegationRegistry {
 
   function redistributionRule(address account) external view returns (address redistributionRule_);
 
-  function setDelegationManager(address delegationManager_) external;
+  function setDelegationManager(address account, address delegationManager_) external;
 
   function setDefaultDelegatee(address account, address defaultDelegatee_) external;
 
