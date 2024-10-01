@@ -30,7 +30,7 @@ abstract contract MerkleRewardDistributorStorageV1 is IMerkleRewardDistributorSt
     mapping(address eolVault => mapping(address reward => mapping(uint256 stage => Stage))) stages;
   }
 
-  string private constant _NAMESPACE = 'mitosis.storage.MerkleRewardDistributor.v1';
+  string private constant _NAMESPACE = 'mitosis.storage.MerkleRewardDistributorStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {

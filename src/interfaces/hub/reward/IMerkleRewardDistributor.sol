@@ -15,6 +15,7 @@ interface IMerkleRewardDistributorStorageV1 is IRewardDistributorStorage {
 interface IMerkleRewardDistributor is IRewardDistributor, IMerkleRewardDistributorStorageV1 {
   error IMerkleRewardDistributor__AlreadyClaimed();
   error IMerkleRewardDistributor__InvalidProof();
+  error IMerkleRewardDistributor__InvalidAmount();
 
   function encodeMetadata(address eolVault, uint256 stage_, uint256 amount, bytes32[] calldata proof)
     external
