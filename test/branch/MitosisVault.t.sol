@@ -14,9 +14,9 @@ import { IMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { StdError } from '../../src/lib/StdError.sol';
 import { MockDelegationRegistry } from '../mock/MockDelegationRegistry.t.sol';
+import { MockEOLStrategyExecutor } from '../mock/MockEOLStrategyExecutor.t.sol';
 import { MockERC20TWABSnapshots } from '../mock/MockERC20TWABSnapshots.t.sol';
 import { MockMitosisVaultEntrypoint } from '../mock/MockMitosisVaultEntrypoint.t.sol';
-import { MockStrategyExecutor } from '../mock/MockStrategyExecutor.t.sol';
 import { Toolkit } from '../util/Toolkit.sol';
 
 contract MitosisVaultTest is Toolkit {
@@ -24,7 +24,7 @@ contract MitosisVaultTest is Toolkit {
   MockMitosisVaultEntrypoint _mitosisVaultEntrypoint;
   ProxyAdmin _proxyAdmin;
   MockERC20TWABSnapshots _token;
-  MockStrategyExecutor _strategyExecutor;
+  MockEOLStrategyExecutor _eolStrategyExecutor;
   MockDelegationRegistry _delegationRegistry;
 
   address immutable owner = makeAddr('owner');
@@ -50,7 +50,7 @@ contract MitosisVaultTest is Toolkit {
     _token = new MockERC20TWABSnapshots();
     _token.initialize(address(_delegationRegistry), 'Token', 'TKN');
 
-    _strategyExecutor = new MockStrategyExecutor(_mitosisVault, _token, hubEOLVault);
+    _eolStrategyExecutor = new MockEOLStrategyExecutor(_mitosisVault, _token, hubEOLVault);
 
     vm.prank(owner);
     _mitosisVault.setEntrypoint(_mitosisVaultEntrypoint);
@@ -442,13 +442,13 @@ contract MitosisVaultTest is Toolkit {
     assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
-    vm.prank(address(_strategyExecutor));
+    vm.prank(address(_eolStrategyExecutor));
     _mitosisVault.deallocateEOL(hubEOLVault, 10 ether);
     assertEq(_mitosisVault.availableEOL(hubEOLVault), 90 ether);
 
-    vm.prank(address(_strategyExecutor));
+    vm.prank(address(_eolStrategyExecutor));
     _mitosisVault.deallocateEOL(hubEOLVault, 90 ether);
     assertEq(_mitosisVault.availableEOL(hubEOLVault), 0 ether);
   }
@@ -458,7 +458,7 @@ contract MitosisVaultTest is Toolkit {
     assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
     vm.expectRevert(StdError.Unauthorized.selector);
     _mitosisVault.deallocateEOL(hubEOLVault, 10 ether);
@@ -469,7 +469,7 @@ contract MitosisVaultTest is Toolkit {
     assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
     vm.expectRevert();
     _mitosisVault.deallocateEOL(hubEOLVault, 101 ether);
@@ -482,14 +482,14 @@ contract MitosisVaultTest is Toolkit {
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
-    vm.startPrank(address(_strategyExecutor));
+    vm.startPrank(address(_eolStrategyExecutor));
     _mitosisVault.fetchEOL(hubEOLVault, 10 ether);
-    assertEq(_token.balanceOf(address(_strategyExecutor)), 10 ether);
+    assertEq(_token.balanceOf(address(_eolStrategyExecutor)), 10 ether);
 
     _mitosisVault.fetchEOL(hubEOLVault, 90 ether);
-    assertEq(_token.balanceOf(address(_strategyExecutor)), 100 ether);
+    assertEq(_token.balanceOf(address(_eolStrategyExecutor)), 100 ether);
 
     vm.stopPrank();
   }
@@ -505,7 +505,7 @@ contract MitosisVaultTest is Toolkit {
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
     vm.expectRevert(StdError.Unauthorized.selector);
     _mitosisVault.fetchEOL(hubEOLVault, 10 ether);
@@ -518,12 +518,12 @@ contract MitosisVaultTest is Toolkit {
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
     vm.prank(owner);
     _mitosisVault.haltEOL(hubEOLVault, EOLAction.FetchEOL);
 
-    vm.startPrank(address(_strategyExecutor));
+    vm.startPrank(address(_eolStrategyExecutor));
 
     vm.expectRevert(StdError.Halted.selector);
     _mitosisVault.fetchEOL(hubEOLVault, 10 ether);
@@ -538,9 +538,9 @@ contract MitosisVaultTest is Toolkit {
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
-    vm.startPrank(address(_strategyExecutor));
+    vm.startPrank(address(_eolStrategyExecutor));
 
     vm.expectRevert();
     _mitosisVault.fetchEOL(hubEOLVault, 101 ether);
@@ -550,11 +550,11 @@ contract MitosisVaultTest is Toolkit {
 
   function test_returnEOL() public {
     test_fetchEOL();
-    assertEq(_token.balanceOf(address(_strategyExecutor)), 100 ether);
+    assertEq(_token.balanceOf(address(_eolStrategyExecutor)), 100 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 0);
     assertEq(_mitosisVault.availableEOL(hubEOLVault), 0);
 
-    vm.startPrank(address(_strategyExecutor));
+    vm.startPrank(address(_eolStrategyExecutor));
 
     _token.approve(address(_mitosisVault), 100 ether);
     _mitosisVault.returnEOL(hubEOLVault, 100 ether);
@@ -571,11 +571,11 @@ contract MitosisVaultTest is Toolkit {
 
   function test_returnEOL_Unauthorized() public {
     test_fetchEOL();
-    assertEq(_token.balanceOf(address(_strategyExecutor)), 100 ether);
+    assertEq(_token.balanceOf(address(_eolStrategyExecutor)), 100 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 0);
     assertEq(_mitosisVault.availableEOL(hubEOLVault), 0);
 
-    vm.prank(address(_strategyExecutor));
+    vm.prank(address(_eolStrategyExecutor));
     _token.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
@@ -587,9 +587,9 @@ contract MitosisVaultTest is Toolkit {
     assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
-    vm.prank(address(_strategyExecutor));
+    vm.prank(address(_eolStrategyExecutor));
     _mitosisVault.settleYield(hubEOLVault, 100 ether);
   }
 
@@ -602,7 +602,7 @@ contract MitosisVaultTest is Toolkit {
     assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
     vm.expectRevert(StdError.Unauthorized.selector);
     _mitosisVault.settleYield(hubEOLVault, 100 ether);
@@ -613,9 +613,9 @@ contract MitosisVaultTest is Toolkit {
     assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
-    vm.prank(address(_strategyExecutor));
+    vm.prank(address(_eolStrategyExecutor));
     _mitosisVault.settleLoss(hubEOLVault, 100 ether);
   }
 
@@ -628,7 +628,7 @@ contract MitosisVaultTest is Toolkit {
     assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
     vm.expectRevert(StdError.Unauthorized.selector);
     _mitosisVault.settleLoss(hubEOLVault, 100 ether);
@@ -639,7 +639,7 @@ contract MitosisVaultTest is Toolkit {
     assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
     MockERC20TWABSnapshots reward = new MockERC20TWABSnapshots();
     reward.initialize(address(_delegationRegistry), 'Reward', 'REWARD');
@@ -647,9 +647,9 @@ contract MitosisVaultTest is Toolkit {
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(reward));
 
-    vm.startPrank(address(_strategyExecutor));
+    vm.startPrank(address(_eolStrategyExecutor));
 
-    reward.mint(address(_strategyExecutor), 100 ether);
+    reward.mint(address(_eolStrategyExecutor), 100 ether);
     reward.approve(address(_mitosisVault), 100 ether);
 
     _mitosisVault.settleExtraRewards(hubEOLVault, address(reward), 100 ether);
@@ -666,7 +666,7 @@ contract MitosisVaultTest is Toolkit {
     assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
     MockERC20TWABSnapshots reward = new MockERC20TWABSnapshots();
     reward.initialize(address(_delegationRegistry), 'Reward', 'REWARD');
@@ -674,9 +674,9 @@ contract MitosisVaultTest is Toolkit {
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(reward));
 
-    reward.mint(address(_strategyExecutor), 100 ether);
+    reward.mint(address(_eolStrategyExecutor), 100 ether);
 
-    vm.prank(address(_strategyExecutor));
+    vm.prank(address(_eolStrategyExecutor));
     reward.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
@@ -688,7 +688,7 @@ contract MitosisVaultTest is Toolkit {
     assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
     MockERC20TWABSnapshots reward = new MockERC20TWABSnapshots();
     reward.initialize(address(_delegationRegistry), 'Reward', 'REWARD');
@@ -696,9 +696,9 @@ contract MitosisVaultTest is Toolkit {
     // vm.prank(address(_mitosisVaultEntrypoint));
     // _mitosisVault.initializeAsset(address(reward));
 
-    vm.startPrank(address(_strategyExecutor));
+    vm.startPrank(address(_eolStrategyExecutor));
 
-    reward.mint(address(_strategyExecutor), 100 ether);
+    reward.mint(address(_eolStrategyExecutor), 100 ether);
     reward.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(_errAssetNotInitialized(address(reward)));
@@ -712,11 +712,11 @@ contract MitosisVaultTest is Toolkit {
     assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
-    vm.startPrank(address(_strategyExecutor));
+    vm.startPrank(address(_eolStrategyExecutor));
 
-    _token.mint(address(_strategyExecutor), 100 ether);
+    _token.mint(address(_eolStrategyExecutor), 100 ether);
     _token.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(_errInvalidAddress('reward'));
@@ -730,97 +730,99 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.setEntrypoint(IMitosisVaultEntrypoint(address(0)));
   }
 
-  function test_setStrategyExecutor() public {
+  function test_setEOLStrategyExecutor() public {
     test_initializeEOL();
     assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
   }
 
-  function test_setStrategyExecutor_EOLNotInitialized() public {
+  function test_setEOLStrategyExecutor_EOLNotInitialized() public {
     vm.startPrank(owner);
 
     vm.expectRevert(_errEOLNotInitiailized(hubEOLVault));
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
     vm.stopPrank();
   }
 
-  function test_setStrategyExecutor_StrategyExecutorNotDrained() public {
+  function test_setEOLStrategyExecutor_EOLStrategyExecutorNotDrained() public {
     test_initializeEOL();
     assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(_strategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
 
-    _token.mint(address(_strategyExecutor), 100 ether);
-    assertTrue(_strategyExecutor.totalBalance() > 0);
+    _token.mint(address(_eolStrategyExecutor), 100 ether);
+    assertTrue(_eolStrategyExecutor.totalBalance() > 0);
 
-    MockStrategyExecutor newStrategyExecutor = new MockStrategyExecutor(_mitosisVault, _token, hubEOLVault);
+    MockEOLStrategyExecutor newEOLStrategyExecutor = new MockEOLStrategyExecutor(_mitosisVault, _token, hubEOLVault);
 
     vm.startPrank(owner);
 
-    vm.expectRevert(_errStrategyExecutorNotDraind(hubEOLVault, address(_strategyExecutor)));
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(newStrategyExecutor));
+    vm.expectRevert(_errEOLStrategyExecutorNotDraind(hubEOLVault, address(_eolStrategyExecutor)));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(newEOLStrategyExecutor));
 
     vm.stopPrank();
 
-    vm.prank(address(_strategyExecutor));
+    vm.prank(address(_eolStrategyExecutor));
     _token.transfer(address(1), 100 ether);
 
-    assertEq(_strategyExecutor.totalBalance(), 0);
+    assertEq(_eolStrategyExecutor.totalBalance(), 0);
 
     vm.prank(owner);
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(newStrategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(newEOLStrategyExecutor));
 
-    assertEq(_mitosisVault.strategyExecutor(hubEOLVault), address(newStrategyExecutor));
+    assertEq(_mitosisVault.eolStrategyExecutor(hubEOLVault), address(newEOLStrategyExecutor));
   }
 
-  function test_setStrategyExecutor_InvalidVaultAddress() public {
+  function test_setEOLStrategyExecutor_InvalidVaultAddress() public {
     test_initializeEOL();
     assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
-    MockStrategyExecutor newStrategyExecutor = new MockStrategyExecutor(IMitosisVault(address(0)), _token, hubEOLVault);
+    MockEOLStrategyExecutor newEOLStrategyExecutor =
+      new MockEOLStrategyExecutor(IMitosisVault(address(0)), _token, hubEOLVault);
 
     vm.startPrank(owner);
 
-    vm.expectRevert(_errInvalidAddress('strategyExecutor.vault'));
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(newStrategyExecutor));
+    vm.expectRevert(_errInvalidAddress('eolStrategyExecutor.vault'));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(newEOLStrategyExecutor));
 
     vm.stopPrank();
   }
 
-  function test_setStrategyExecutor_InvalidAssetAddress() public {
+  function test_setEOLStrategyExecutor_InvalidAssetAddress() public {
     test_initializeEOL();
     assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
-    MockStrategyExecutor newStrategyExecutor = new MockStrategyExecutor(_mitosisVault, IERC20(address(0)), hubEOLVault);
+    MockEOLStrategyExecutor newEOLStrategyExecutor =
+      new MockEOLStrategyExecutor(_mitosisVault, IERC20(address(0)), hubEOLVault);
 
     vm.startPrank(owner);
 
-    vm.expectRevert(_errInvalidAddress('strategyExecutor.asset'));
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(newStrategyExecutor));
+    vm.expectRevert(_errInvalidAddress('eolStrategyExecutor.asset'));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(newEOLStrategyExecutor));
 
     vm.stopPrank();
   }
 
-  function test_setStrategyExecutor_InvalidHubEOLVault() public {
+  function test_setEOLStrategyExecutor_InvalidHubEOLVault() public {
     test_initializeEOL();
     assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
 
-    MockStrategyExecutor newStrategyExecutor;
-    newStrategyExecutor = new MockStrategyExecutor(_mitosisVault, _token, address(0));
+    MockEOLStrategyExecutor newEOLStrategyExecutor;
+    newEOLStrategyExecutor = new MockEOLStrategyExecutor(_mitosisVault, _token, address(0));
 
     vm.startPrank(owner);
 
     vm.expectRevert();
-    _mitosisVault.setStrategyExecutor(hubEOLVault, address(newStrategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(newEOLStrategyExecutor));
 
-    newStrategyExecutor = new MockStrategyExecutor(_mitosisVault, _token, hubEOLVault);
+    newEOLStrategyExecutor = new MockEOLStrategyExecutor(_mitosisVault, _token, hubEOLVault);
 
     vm.expectRevert();
-    _mitosisVault.setStrategyExecutor(address(0), address(newStrategyExecutor));
+    _mitosisVault.setEOLStrategyExecutor(address(0), address(newEOLStrategyExecutor));
 
     vm.stopPrank();
   }
@@ -841,13 +843,13 @@ contract MitosisVaultTest is Toolkit {
     return abi.encodeWithSelector(IMitosisVault.IMitosisVault__EOLNotInitialized.selector, _hubEOLVault);
   }
 
-  function _errStrategyExecutorNotDraind(address _hubEOLVault, address strategyExecutor_)
+  function _errEOLStrategyExecutorNotDraind(address _hubEOLVault, address eolStrategyExecutor_)
     internal
     pure
     returns (bytes memory)
   {
     return abi.encodeWithSelector(
-      IMitosisVault.IMitosisVault__StrategyExecutorNotDrained.selector, _hubEOLVault, strategyExecutor_
+      IMitosisVault.IMitosisVault__EOLStrategyExecutorNotDrained.selector, _hubEOLVault, eolStrategyExecutor_
     );
   }
 }

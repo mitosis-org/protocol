@@ -4,9 +4,9 @@ pragma solidity ^0.8.27;
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 
 import { IMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
-import { IStrategyExecutor } from '../../src/interfaces/branch/strategy/IStrategyExecutor.sol';
+import { IEOLStrategyExecutor } from '../../src/interfaces/branch/strategy/IEOLStrategyExecutor.sol';
 
-contract MockStrategyExecutor is IStrategyExecutor {
+contract MockEOLStrategyExecutor is IEOLStrategyExecutor {
   IMitosisVault _vault;
   IERC20 _asset;
   address _hubEOLVault;
