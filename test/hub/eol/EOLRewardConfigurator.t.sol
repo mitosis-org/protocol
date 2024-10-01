@@ -255,37 +255,6 @@ contract EOLRewardConfiguratorTest is Test, Toolkit {
     vm.stopPrank();
   }
 
-  function test_setEOLAssetHolderRewardRatio() public {
-    uint256 rewardRatioPrecision = rewardConfigurator.rewardRatioPrecision();
-    assertEq(rewardConfigurator.eolAssetHolderRewardRatio(), rewardRatioPrecision);
-
-    vm.prank(owner);
-    rewardConfigurator.setEOLAssetHolderRewardRatio(50 * rewardRatioPrecision / 100);
-
-    assertEq(rewardConfigurator.eolAssetHolderRewardRatio(), 50 * rewardRatioPrecision / 100);
-  }
-
-  function test_setEOLAssetHolderRewardRatio_Unauthorized() public {
-    uint256 rewardRatioPrecision = rewardConfigurator.rewardRatioPrecision();
-    vm.expectRevert();
-    rewardConfigurator.setEOLAssetHolderRewardRatio(50 * rewardRatioPrecision / 100);
-  }
-
-  function test_setEOLAssetHolderRewardRatio_InvalidParamter() public {
-    uint256 rewardRatioPrecision = rewardConfigurator.rewardRatioPrecision();
-    assertEq(rewardConfigurator.eolAssetHolderRewardRatio(), rewardRatioPrecision);
-
-    vm.startPrank(owner);
-
-    rewardConfigurator.setEOLAssetHolderRewardRatio(rewardRatioPrecision);
-    assertEq(rewardConfigurator.eolAssetHolderRewardRatio(), rewardRatioPrecision);
-
-    vm.expectRevert(_errInvalidParameter('ratio'));
-    rewardConfigurator.setEOLAssetHolderRewardRatio(rewardRatioPrecision + 1);
-
-    vm.stopPrank();
-  }
-
   function _errRewardDistributorAlreadyRegistered() internal pure returns (bytes memory) {
     return
       abi.encodeWithSelector(IEOLRewardConfigurator.IEOLRewardConfigurator__RewardDistributorAlreadyRegistered.selector);

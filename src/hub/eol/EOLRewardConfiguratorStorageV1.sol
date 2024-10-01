@@ -10,8 +10,6 @@ contract EOLRewardConfiguratorStorageV1 {
   using ERC7201Utils for string;
 
   struct StorageV1 {
-    // note: Zero means 100% allocation.
-    uint256 eolAssetHolderRewardRatio;
     mapping(address eolVault => mapping(address asset => DistributionType distributionType)) distributionTypes;
     mapping(DistributionType distributionType => EnumerableSet.AddressSet distributors) distributorLists;
     // note: We strictly manage the DefaultDistributor. DistributionTypes without a set

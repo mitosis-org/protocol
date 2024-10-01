@@ -39,22 +39,11 @@ contract EOLRewardConfigurator is IEOLRewardConfigurator, Ownable2StepUpgradeabl
     return REWARD_RATIO_PRECISION;
   }
 
-  function eolAssetHolderRewardRatio() external view returns (uint256) {
-    uint256 _eolAssetHolderRewardRatio = _getStorageV1().eolAssetHolderRewardRatio;
-    return _eolAssetHolderRewardRatio == 0 ? REWARD_RATIO_PRECISION : _eolAssetHolderRewardRatio;
-  }
-
   function isDistributorRegistered(IRewardDistributor distributor) external view returns (bool) {
     return _isDistributorRegistered(_getStorageV1(), distributor);
   }
 
   // Mutative functions
-
-  function setEOLAssetHolderRewardRatio(uint256 ratio) external onlyOwner {
-    require(ratio <= REWARD_RATIO_PRECISION, StdError.InvalidParameter('ratio'));
-    _getStorageV1().eolAssetHolderRewardRatio = ratio;
-    emit EOLAssetHolderRewardRatioSet(ratio);
-  }
 
   function setRewardDistributionType(address eolVault, address asset, DistributionType distributionType_)
     external

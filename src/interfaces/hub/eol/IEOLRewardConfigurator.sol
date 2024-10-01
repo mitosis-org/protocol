@@ -5,7 +5,6 @@ import { IRewardConfigurator } from '../reward/IRewardConfigurator.sol';
 import { IRewardDistributor, DistributionType } from '../reward/IRewardDistributor.sol';
 
 interface IEOLRewardConfigurator is IRewardConfigurator {
-  event EOLAssetHolderRewardRatioSet(uint256 indexed ratio);
   event RewardDistributionTypeSet(
     address indexed eolVault, address indexed asset, DistributionType indexed distributionType
   );
@@ -23,8 +22,6 @@ interface IEOLRewardConfigurator is IRewardConfigurator {
   function distributionType(address eolVault, address asset) external view returns (DistributionType);
 
   function defaultDistributor(DistributionType distributionType) external view returns (IRewardDistributor);
-
-  function eolAssetHolderRewardRatio() external view returns (uint256);
 
   function isDistributorRegistered(IRewardDistributor distributor) external view returns (bool);
 
