@@ -91,11 +91,6 @@ contract EOLRewardManagerTest is Toolkit {
   }
 
   function test_routeYield_case_Unspecified() public {
-    // ratio = eolAssetHolder: 80, hubAssetHolder: 20
-    uint256 rewardRatioPrecision = _eolRewardConfigurator.rewardRatioPrecision();
-    vm.prank(owner);
-    _eolRewardConfigurator.setEOLAssetHolderRewardRatio(80 * rewardRatioPrecision / 100);
-
     _token.mint(address(_assetManager), 100 ether);
 
     vm.startPrank(address(_assetManager));
@@ -105,22 +100,16 @@ contract EOLRewardManagerTest is Toolkit {
 
     vm.stopPrank();
 
-    assertEq(_token.balanceOf(address(_eolVault)), 80 ether);
+    assertEq(_token.balanceOf(address(_eolVault)), 100 ether);
 
     (uint256[] memory rewards,) =
       _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
-    assertEq(rewards.length, 1);
-    assertEq(rewards[0], 20 ether);
+    assertEq(rewards.length, 0);
   }
 
   function test_routeYield_case_TWAB() public {
-    // ratio = eolAssetHolder: 80, hubAssetHolder: 20
-    uint256 rewardRatioPrecision = _eolRewardConfigurator.rewardRatioPrecision();
-
     vm.startPrank(owner);
-
-    _eolRewardConfigurator.setEOLAssetHolderRewardRatio(80 * rewardRatioPrecision / 100);
 
     MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
     _eolRewardConfigurator.registerDistributor(distributor);
@@ -138,21 +127,16 @@ contract EOLRewardManagerTest is Toolkit {
 
     vm.stopPrank();
 
-    assertEq(_token.balanceOf(address(_eolVault)), 80 ether);
-    assertEq(_token.balanceOf(address(distributor)), 20 ether);
+    assertEq(_token.balanceOf(address(_eolVault)), 100 ether);
 
     (uint256[] memory rewards,) =
       _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+
     assertEq(rewards.length, 0);
   }
 
   function test_routeYield_case_MerkleProof() public {
-    // ratio = eolAssetHolder: 80, hubAssetHolder: 20
-    uint256 rewardRatioPrecision = _eolRewardConfigurator.rewardRatioPrecision();
-
     vm.startPrank(owner);
-
-    _eolRewardConfigurator.setEOLAssetHolderRewardRatio(80 * rewardRatioPrecision / 100);
 
     MockDistributor distributor = new MockDistributor(DistributionType.MerkleProof, address(_eolRewardConfigurator));
     _eolRewardConfigurator.registerDistributor(distributor);
@@ -170,8 +154,7 @@ contract EOLRewardManagerTest is Toolkit {
 
     vm.stopPrank();
 
-    assertEq(_token.balanceOf(address(_eolVault)), 80 ether);
-    assertEq(_token.balanceOf(address(distributor)), 20 ether);
+    assertEq(_token.balanceOf(address(_eolVault)), 100 ether);
 
     (uint256[] memory rewards,) =
       _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
@@ -189,11 +172,6 @@ contract EOLRewardManagerTest is Toolkit {
   }
 
   function test_routeExtraRewards_case_Unspecified() public {
-    // ratio = eolAssetHolder: 80, hubAssetHolder: 20
-    uint256 rewardRatioPrecision = _eolRewardConfigurator.rewardRatioPrecision();
-    vm.prank(owner);
-    _eolRewardConfigurator.setEOLAssetHolderRewardRatio(80 * rewardRatioPrecision / 100);
-
     _token.mint(address(_assetManager), 100 ether);
 
     vm.startPrank(address(_assetManager));
@@ -208,17 +186,11 @@ contract EOLRewardManagerTest is Toolkit {
     (uint256[] memory rewards,) =
       _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
-    assertEq(rewards.length, 2);
-    assertEq(rewards[0], 80 ether);
-    assertEq(rewards[1], 20 ether);
+    assertEq(rewards.length, 1);
+    assertEq(rewards[0], 100 ether);
   }
 
   function test_routeExtraRewards_case_Unspecified_DiffReward() public {
-    // ratio = eolAssetHolder: 80, hubAssetHolder: 20
-    uint256 rewardRatioPrecision = _eolRewardConfigurator.rewardRatioPrecision();
-    vm.prank(owner);
-    _eolRewardConfigurator.setEOLAssetHolderRewardRatio(80 * rewardRatioPrecision / 100);
-
     MockERC20TWABSnapshots rewardToken = new MockERC20TWABSnapshots();
     rewardToken.initialize(address(_delegationRegistry), 'Reward', 'REWARD');
 
@@ -236,18 +208,12 @@ contract EOLRewardManagerTest is Toolkit {
     (uint256[] memory rewards,) =
       _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(rewardToken), uint48(block.timestamp));
 
-    assertEq(rewards.length, 2);
-    assertEq(rewards[0], 80 ether);
-    assertEq(rewards[1], 20 ether);
+    assertEq(rewards.length, 1);
+    assertEq(rewards[0], 100 ether);
   }
 
   function test_routeExtraRewards_case_TWAB() public {
-    // ratio = eolAssetHolder: 80, hubAssetHolder: 20
-    uint256 rewardRatioPrecision = _eolRewardConfigurator.rewardRatioPrecision();
-
     vm.startPrank(owner);
-
-    _eolRewardConfigurator.setEOLAssetHolderRewardRatio(80 * rewardRatioPrecision / 100);
 
     MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
     _eolRewardConfigurator.registerDistributor(distributor);
@@ -273,12 +239,7 @@ contract EOLRewardManagerTest is Toolkit {
   }
 
   function test_routeExtraRewards_case_MerkleProof() public {
-    // ratio = eolAssetHolder: 80, hubAssetHolder: 20
-    uint256 rewardRatioPrecision = _eolRewardConfigurator.rewardRatioPrecision();
-
     vm.startPrank(owner);
-
-    _eolRewardConfigurator.setEOLAssetHolderRewardRatio(80 * rewardRatioPrecision / 100);
 
     MockDistributor distributor = new MockDistributor(DistributionType.MerkleProof, address(_eolRewardConfigurator));
     _eolRewardConfigurator.registerDistributor(distributor);
@@ -314,14 +275,14 @@ contract EOLRewardManagerTest is Toolkit {
   }
 
   function test_dispatchTo() public {
-    test_routeYield_case_Unspecified();
-    assertEq(_token.balanceOf(address(_eolVault)), 80 ether);
+    test_routeExtraRewards_case_Unspecified();
+    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
 
     (uint256[] memory rewards,) =
       _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
     assertEq(rewards.length, 1);
-    assertEq(rewards[0], 20 ether);
+    assertEq(rewards[0], 100 ether);
 
     MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
 
@@ -331,18 +292,18 @@ contract EOLRewardManagerTest is Toolkit {
     _eolRewardManager.dispatchTo(distributor, address(_eolVault), address(_token), uint48(block.timestamp), 0, '');
     vm.stopPrank();
 
-    assertEq(_token.balanceOf(address(distributor)), 20 ether);
+    assertEq(_token.balanceOf(address(distributor)), 100 ether);
   }
 
   function test_dispatchTo_Unauthorized() public {
-    test_routeYield_case_Unspecified();
-    assertEq(_token.balanceOf(address(_eolVault)), 80 ether);
+    test_routeExtraRewards_case_Unspecified();
+    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
 
     (uint256[] memory rewards,) =
       _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
     assertEq(rewards.length, 1);
-    assertEq(rewards[0], 20 ether);
+    assertEq(rewards[0], 100 ether);
 
     MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
 
@@ -354,14 +315,14 @@ contract EOLRewardManagerTest is Toolkit {
   }
 
   function test_dispatchTo_RewardDistributorNotRegistered() public {
-    test_routeYield_case_Unspecified();
-    assertEq(_token.balanceOf(address(_eolVault)), 80 ether);
+    test_routeExtraRewards_case_Unspecified();
+    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
 
     (uint256[] memory rewards,) =
       _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
     assertEq(rewards.length, 1);
-    assertEq(rewards[0], 20 ether);
+    assertEq(rewards[0], 100 ether);
 
     MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
 
@@ -382,9 +343,8 @@ contract EOLRewardManagerTest is Toolkit {
     (uint256[] memory rewards,) =
       _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
-    assertEq(rewards.length, 2);
-    assertEq(rewards[0], 80 ether);
-    assertEq(rewards[1], 20 ether);
+    assertEq(rewards.length, 1);
+    assertEq(rewards[0], 100 ether);
 
     MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
 
@@ -393,13 +353,11 @@ contract EOLRewardManagerTest is Toolkit {
     _eolRewardManager.setRewardManager(owner);
     vm.stopPrank();
 
-    uint256[] memory indexes = new uint256[](2);
-    bytes[] memory metadata = new bytes[](2);
+    uint256[] memory indexes = new uint256[](1);
+    bytes[] memory metadata = new bytes[](1);
 
     indexes[0] = 0;
-    indexes[1] = 1;
     metadata[0] = '';
-    metadata[1] = '';
 
     vm.prank(owner);
     _eolRewardManager.dispatchTo(
@@ -416,9 +374,8 @@ contract EOLRewardManagerTest is Toolkit {
     (uint256[] memory rewards,) =
       _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
-    assertEq(rewards.length, 2);
-    assertEq(rewards[0], 80 ether);
-    assertEq(rewards[1], 20 ether);
+    assertEq(rewards.length, 1);
+    assertEq(rewards[0], 100 ether);
 
     MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
 
@@ -427,13 +384,11 @@ contract EOLRewardManagerTest is Toolkit {
     _eolRewardManager.setRewardManager(owner);
     vm.stopPrank();
 
-    uint256[] memory indexes = new uint256[](2);
-    bytes[] memory metadata = new bytes[](2);
+    uint256[] memory indexes = new uint256[](1);
+    bytes[] memory metadata = new bytes[](1);
 
     indexes[0] = 0;
-    indexes[1] = 1;
     metadata[0] = '';
-    metadata[1] = '';
 
     vm.expectRevert(StdError.Unauthorized.selector);
     _eolRewardManager.dispatchTo(
@@ -448,9 +403,8 @@ contract EOLRewardManagerTest is Toolkit {
     (uint256[] memory rewards,) =
       _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
-    assertEq(rewards.length, 2);
-    assertEq(rewards[0], 80 ether);
-    assertEq(rewards[1], 20 ether);
+    assertEq(rewards.length, 1);
+    assertEq(rewards[0], 100 ether);
 
     MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
 
@@ -459,13 +413,11 @@ contract EOLRewardManagerTest is Toolkit {
     _eolRewardManager.setRewardManager(owner);
     vm.stopPrank();
 
-    uint256[] memory indexes = new uint256[](2);
-    bytes[] memory metadata = new bytes[](2);
+    uint256[] memory indexes = new uint256[](1);
+    bytes[] memory metadata = new bytes[](1);
 
     indexes[0] = 0;
-    indexes[1] = 1;
     metadata[0] = '';
-    metadata[1] = '';
 
     vm.startPrank(owner);
 
@@ -484,9 +436,8 @@ contract EOLRewardManagerTest is Toolkit {
     (uint256[] memory rewards,) =
       _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
-    assertEq(rewards.length, 2);
-    assertEq(rewards[0], 80 ether);
-    assertEq(rewards[1], 20 ether);
+    assertEq(rewards.length, 1);
+    assertEq(rewards[0], 100 ether);
 
     MockDistributor distributor = new MockDistributor(DistributionType.TWAB, address(_eolRewardConfigurator));
 
