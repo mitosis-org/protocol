@@ -17,11 +17,6 @@ contract MockEOLRewardManager is IEOLRewardManager {
 
   function setRewardManager(address account) external { }
 
-  function routeYield(address eolVault, uint256 amount) external {
-    address asset = IERC4626(eolVault).asset();
-    IERC20(asset).transferFrom(msg.sender, address(this), amount);
-  }
-
   function routeExtraRewards(address, address reward, uint256 amount) external {
     IERC20(reward).transferFrom(msg.sender, address(this), amount);
   }

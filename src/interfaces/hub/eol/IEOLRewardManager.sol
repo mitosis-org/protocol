@@ -33,8 +33,6 @@ interface IEOLRewardManager {
 
   function setRewardManager(address account) external;
 
-  function routeYield(address eolVault, uint256 amount) external;
-
   function routeExtraRewards(address eolVault, address reward, uint256 amount) external;
 
   function dispatchTo(

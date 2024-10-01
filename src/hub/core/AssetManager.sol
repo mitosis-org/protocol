@@ -128,13 +128,11 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _assertOnlyEntrypoint($);
     _assertEOLRewardManagerSet($);
 
+    // Increase EOLVault's shares value.
     address asset = IEOLVault(eolVault).asset();
+    _mint($, chainId, asset, address(eolVault), amount);
 
-    _mint($, chainId, asset, address(this), amount);
     emit RewardSettled(chainId, eolVault, asset, amount);
-
-    IHubAsset(asset).approve(address($.rewardManager), amount);
-    $.rewardManager.routeYield(eolVault, amount);
   }
 
   /// @dev only entrypoint

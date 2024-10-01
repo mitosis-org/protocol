@@ -80,12 +80,6 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     emit RewardManagerSet(account);
   }
 
-  function routeYield(address eolVault, uint256 amount) external onlyAssetManager {
-    address reward = IEOLVault(eolVault).asset();
-    IHubAsset(reward).transferFrom(_msgSender(), address(this), amount);
-    _increaseEOLShareValue(eolVault, amount);
-  }
-
   function routeExtraRewards(address eolVault, address reward, uint256 amount) external onlyAssetManager {
     IHubAsset(reward).transferFrom(_msgSender(), address(this), amount);
     _routeEOLClaimableReward(_getStorageV1(), eolVault, reward, amount);
@@ -132,12 +126,6 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     }
 
     _routeClaimableReward($, eolVault, reward, amount, metadata);
-  }
-
-  function _increaseEOLShareValue(address eolVault, uint256 assets) internal {
-    address reward = IEOLVault(eolVault).asset();
-    IHubAsset(reward).transfer(eolVault, assets);
-    emit EOLShareValueIncreased(eolVault, assets);
   }
 
   function _routeClaimableReward(
