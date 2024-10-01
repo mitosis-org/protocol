@@ -10,6 +10,7 @@ enum DistributionType {
 }
 
 interface IRewardDistributorStorage {
+  event RewardManagerSet(address indexed rewardManger);
   event RewardConfiguratorSet(address indexed rewardConfigurator);
 
   /// @dev Returns the DistributionType.
