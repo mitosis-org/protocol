@@ -128,7 +128,7 @@ abstract contract TWABSnapshots is
   }
 
   function delegateBySig(address delegatee, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) external {
-    require(block.timestamp <= expiry, VotesExpiredSignature(expiry));
+    require(clock() <= expiry, VotesExpiredSignature(expiry));
 
     address signer =
       ECDSA.recover(_hashTypedDataV4(keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry))), v, r, s);
@@ -181,7 +181,9 @@ abstract contract TWABSnapshots is
     $.delegates[account] = delegatee;
 
     emit DelegateChanged(account, oldDelegatee, delegatee);
-    _snapshotDelegateInner($, oldDelegatee, delegatee, _getBalance(account));
+
+    (uint208 balance,,) = _delegationSnapshot($, account, clock());
+    _snapshotDelegateInner($, oldDelegatee, delegatee, balance);
   }
 
   function _snapshotDelegate(TWABSnapshotsStorageV1_ storage $, address from, address to, uint256 amount) internal {
