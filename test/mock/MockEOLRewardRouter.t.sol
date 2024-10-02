@@ -8,14 +8,14 @@ import { IEOLRewardRouter } from '../../src/interfaces/hub/eol/IEOLRewardRouter.
 import { IRewardDistributor } from '../../src/interfaces/hub/reward/IRewardDistributor.sol';
 
 contract MockEOLRewardRouter is IEOLRewardRouter {
-  function isRouterManager(address account) external view returns (bool) { }
+  function isRewardManager(address account) external view returns (bool) { }
   function getRewardTreasuryRewardInfos(address eolVault, address reward_, uint48 timestamp)
     external
     view
     returns (uint256[] memory amounts, bool[] memory dispatched)
   { }
 
-  function setRouterManager(address account) external { }
+  function setRewardManager(address account) external { }
 
   function routeExtraRewards(address, address reward, uint256 amount) external {
     IERC20(reward).transferFrom(msg.sender, address(this), amount);

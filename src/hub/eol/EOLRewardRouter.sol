@@ -34,8 +34,8 @@ contract EOLRewardRouter is IEOLRewardRouter, Ownable2StepUpgradeable, EOLReward
     $.rewardConfigurator = IEOLRewardConfigurator(eolRewardConfigurator);
   }
 
-  modifier onlyRouterManager() {
-    require(_getStorageV1().isRouterManager[_msgSender()], StdError.Unauthorized());
+  modifier onlyRewardManager() {
+    require(_getStorageV1().isRewardManager[_msgSender()], StdError.Unauthorized());
     _;
   }
 
@@ -46,8 +46,8 @@ contract EOLRewardRouter is IEOLRewardRouter, Ownable2StepUpgradeable, EOLReward
 
   // View functions
 
-  function isRouterManager(address account) external view returns (bool) {
-    return _getStorageV1().isRouterManager[account];
+  function isRewardManager(address account) external view returns (bool) {
+    return _getStorageV1().isRewardManager[account];
   }
 
   function getRewardTreasuryRewardInfos(address eolVault, address reward_, uint48 timestamp)
@@ -74,9 +74,9 @@ contract EOLRewardRouter is IEOLRewardRouter, Ownable2StepUpgradeable, EOLReward
 
   // Mutative functions
 
-  function setRouterManager(address account) external onlyOwner {
-    _getStorageV1().isRouterManager[account] = true;
-    emit RouterManagerSet(account);
+  function setRewardManager(address account) external onlyOwner {
+    _getStorageV1().isRewardManager[account] = true;
+    emit RewardManagerSet(account);
   }
 
   function routeExtraRewards(address eolVault, address reward, uint256 amount) external onlyAssetManager {
@@ -91,7 +91,7 @@ contract EOLRewardRouter is IEOLRewardRouter, Ownable2StepUpgradeable, EOLReward
     uint48 timestamp,
     uint256[] calldata indexes,
     bytes[] calldata metadata
-  ) external onlyRouterManager {
+  ) external onlyRewardManager {
     require(indexes.length == metadata.length, StdError.InvalidParameter('metadata'));
 
     StorageV1 storage $ = _getStorageV1();
@@ -110,7 +110,7 @@ contract EOLRewardRouter is IEOLRewardRouter, Ownable2StepUpgradeable, EOLReward
     uint48 timestamp,
     uint256 index,
     bytes memory metadata
-  ) external onlyRouterManager {
+  ) external onlyRewardManager {
     StorageV1 storage $ = _getStorageV1();
 
     _assertDistributorRegistered($, distributor);

@@ -16,7 +16,7 @@ contract EOLRewardRouterStorageV1 {
   struct StorageV1 {
     address assetManager;
     IEOLRewardConfigurator rewardConfigurator;
-    mapping(address account => bool granted) isRouterManager;
+    mapping(address account => bool granted) isRewardManager;
     mapping(address eolVault => mapping(uint48 timestamp => RewardInfo[] rewardInfos)) rewardTreasury;
   }
 

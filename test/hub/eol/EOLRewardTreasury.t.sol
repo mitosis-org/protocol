@@ -207,7 +207,7 @@ contract EOLRewardRouterTest is Toolkit {
 
     vm.startPrank(owner);
     _eolRewardConfigurator.registerDistributor(distributor);
-    _eolRewardRouter.setRouterManager(owner);
+    _eolRewardRouter.setRewardManager(owner);
     _eolRewardRouter.dispatchTo(distributor, address(_eolVault), address(_token), uint48(block.timestamp), 0, '');
     vm.stopPrank();
 
@@ -247,7 +247,7 @@ contract EOLRewardRouterTest is Toolkit {
 
     vm.startPrank(owner);
     // _eolRewardConfigurator.registerDistributor(distributor);
-    _eolRewardRouter.setRouterManager(owner);
+    _eolRewardRouter.setRewardManager(owner);
 
     vm.expectRevert(_errRewardDistributorNotRegistered());
     _eolRewardRouter.dispatchTo(distributor, address(_eolVault), address(_token), uint48(block.timestamp), 0, '');
@@ -269,7 +269,7 @@ contract EOLRewardRouterTest is Toolkit {
 
     vm.startPrank(owner);
     _eolRewardConfigurator.registerDistributor(distributor);
-    _eolRewardRouter.setRouterManager(owner);
+    _eolRewardRouter.setRewardManager(owner);
     vm.stopPrank();
 
     uint256[] memory indexes = new uint256[](1);
@@ -300,7 +300,7 @@ contract EOLRewardRouterTest is Toolkit {
 
     vm.startPrank(owner);
     _eolRewardConfigurator.registerDistributor(distributor);
-    _eolRewardRouter.setRouterManager(owner);
+    _eolRewardRouter.setRewardManager(owner);
     vm.stopPrank();
 
     uint256[] memory indexes = new uint256[](1);
@@ -329,7 +329,7 @@ contract EOLRewardRouterTest is Toolkit {
 
     vm.startPrank(owner);
     // _eolRewardConfigurator.registerDistributor(distributor);
-    _eolRewardRouter.setRouterManager(owner);
+    _eolRewardRouter.setRewardManager(owner);
     vm.stopPrank();
 
     uint256[] memory indexes = new uint256[](1);
@@ -362,7 +362,7 @@ contract EOLRewardRouterTest is Toolkit {
 
     vm.startPrank(owner);
     _eolRewardConfigurator.registerDistributor(distributor);
-    _eolRewardRouter.setRouterManager(owner);
+    _eolRewardRouter.setRewardManager(owner);
     vm.stopPrank();
 
     uint256[] memory indexes = new uint256[](1);
@@ -383,18 +383,18 @@ contract EOLRewardRouterTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_setRouterManager() public {
-    assertFalse(_eolRewardRouter.isRouterManager(address(1)));
+  function test_setRewardManager() public {
+    assertFalse(_eolRewardRouter.isRewardManager(address(1)));
 
     vm.prank(owner);
-    _eolRewardRouter.setRouterManager(address(1));
+    _eolRewardRouter.setRewardManager(address(1));
 
-    assertTrue(_eolRewardRouter.isRouterManager(address(1)));
+    assertTrue(_eolRewardRouter.isRewardManager(address(1)));
   }
 
-  function test_setRouterManager_Unauthorized() public {
+  function test_setRewardManager_Unauthorized() public {
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
-    _eolRewardRouter.setRouterManager(address(1));
+    _eolRewardRouter.setRewardManager(address(1));
   }
 
   function _errRewardDistributorNotRegistered() internal pure returns (bytes memory) {
