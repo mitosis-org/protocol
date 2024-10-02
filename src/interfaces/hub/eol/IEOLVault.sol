@@ -11,15 +11,15 @@ import { IERC4626TWABSnapshots } from '../../twab/IERC4626TWABSnapshots.sol';
 interface IEOLVaultStorageV1 {
   /**
    * @notice Emitted when the asset manager is set.
-   * @param assetManager The address of the new asset manager.
+   * @param assetManager_ The address of the new asset manager.
    */
-  event AssetManagerSet(address assetManager);
+  event AssetManagerSet(address assetManager_);
 
   /**
    * @notice Returns the address of the current asset manager.
-   * @return The address of the asset manager.
+   * @return assetManager_ The address of the asset manager.
    */
-  function assetManager() external view returns (address);
+  function assetManager() external view returns (address assetManager_);
 }
 
 /**
