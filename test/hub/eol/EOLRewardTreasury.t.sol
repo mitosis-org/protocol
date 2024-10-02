@@ -10,7 +10,7 @@ import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
 import { EOLRewardConfigurator } from '../../../src/hub/eol/EOLRewardConfigurator.sol';
-import { EOLRewardManager } from '../../../src/hub/eol/EOLRewardManager.sol';
+import { EOLRewardTreasury } from '../../../src/hub/eol/EOLRewardTreasury.sol';
 import { EOLVault } from '../../../src/hub/eol/EOLVault.sol';
 import { IEOLRewardConfigurator } from '../../../src/interfaces/hub/eol/IEOLRewardConfigurator.sol';
 import { IRewardDistributor, DistributionType } from '../../../src/interfaces/hub/reward/IRewardDistributor.sol';
@@ -22,10 +22,10 @@ import { MockDistributor } from '../../mock/MockDistributor.t.sol';
 import { MockERC20TWABSnapshots } from '../../mock/MockERC20TWABSnapshots.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
-contract EOLRewardManagerTest is Toolkit {
+contract EOLRewardTreasuryTest is Toolkit {
   MockAssetManager _assetManager;
   EOLRewardConfigurator _eolRewardConfigurator;
-  EOLRewardManager _eolRewardManager;
+  EOLRewardTreasury _eolRewardTreasury;
 
   MockDelegationRegistry _delegationRegistry;
   MockERC20TWABSnapshots _token;
@@ -53,15 +53,15 @@ contract EOLRewardManagerTest is Toolkit {
       )
     );
 
-    EOLRewardManager eolRewardManagerImpl = new EOLRewardManager();
-    _eolRewardManager = EOLRewardManager(
+    EOLRewardTreasury eolRewardTreasuryImpl = new EOLRewardTreasury();
+    _eolRewardTreasury = EOLRewardTreasury(
       payable(
         address(
           new TransparentUpgradeableProxy(
-            address(eolRewardManagerImpl),
+            address(eolRewardTreasuryImpl),
             address(_proxyAdmin),
             abi.encodeCall(
-              _eolRewardManager.initialize, (owner, address(_assetManager), address(_eolRewardConfigurator))
+              _eolRewardTreasury.initialize, (owner, address(_assetManager), address(_eolRewardConfigurator))
             )
           )
         )
@@ -95,15 +95,15 @@ contract EOLRewardManagerTest is Toolkit {
 
     vm.startPrank(address(_assetManager));
 
-    _token.approve(address(_eolRewardManager), 100 ether);
-    _eolRewardManager.routeExtraRewards(address(_eolVault), address(_token), 100 ether);
+    _token.approve(address(_eolRewardTreasury), 100 ether);
+    _eolRewardTreasury.routeExtraRewards(address(_eolVault), address(_token), 100 ether);
 
     vm.stopPrank();
 
-    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
+    assertEq(_token.balanceOf(address(_eolRewardTreasury)), 100 ether);
 
     (uint256[] memory rewards,) =
-      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+      _eolRewardTreasury.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
     assertEq(rewards.length, 1);
     assertEq(rewards[0], 100 ether);
@@ -117,15 +117,15 @@ contract EOLRewardManagerTest is Toolkit {
 
     vm.startPrank(address(_assetManager));
 
-    rewardToken.approve(address(_eolRewardManager), 100 ether);
-    _eolRewardManager.routeExtraRewards(address(_eolVault), address(rewardToken), 100 ether);
+    rewardToken.approve(address(_eolRewardTreasury), 100 ether);
+    _eolRewardTreasury.routeExtraRewards(address(_eolVault), address(rewardToken), 100 ether);
 
     vm.stopPrank();
 
-    assertEq(rewardToken.balanceOf(address(_eolRewardManager)), 100 ether);
+    assertEq(rewardToken.balanceOf(address(_eolRewardTreasury)), 100 ether);
 
     (uint256[] memory rewards,) =
-      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(rewardToken), uint48(block.timestamp));
+      _eolRewardTreasury.getRewardTreasuryRewardInfos(address(_eolVault), address(rewardToken), uint48(block.timestamp));
 
     assertEq(rewards.length, 1);
     assertEq(rewards[0], 100 ether);
@@ -145,15 +145,15 @@ contract EOLRewardManagerTest is Toolkit {
 
     vm.startPrank(address(_assetManager));
 
-    _token.approve(address(_eolRewardManager), 100 ether);
-    _eolRewardManager.routeExtraRewards(address(_eolVault), address(_token), 100 ether);
+    _token.approve(address(_eolRewardTreasury), 100 ether);
+    _eolRewardTreasury.routeExtraRewards(address(_eolVault), address(_token), 100 ether);
 
     vm.stopPrank();
 
     assertEq(_token.balanceOf(address(distributor)), 100 ether);
 
     (uint256[] memory rewards,) =
-      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+      _eolRewardTreasury.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
     assertEq(rewards.length, 0);
   }
 
@@ -171,15 +171,15 @@ contract EOLRewardManagerTest is Toolkit {
 
     vm.startPrank(address(_assetManager));
 
-    _token.approve(address(_eolRewardManager), 100 ether);
-    _eolRewardManager.routeExtraRewards(address(_eolVault), address(_token), 100 ether);
+    _token.approve(address(_eolRewardTreasury), 100 ether);
+    _eolRewardTreasury.routeExtraRewards(address(_eolVault), address(_token), 100 ether);
 
     vm.stopPrank();
 
     assertEq(_token.balanceOf(address(distributor)), 100 ether);
 
     (uint256[] memory rewards,) =
-      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+      _eolRewardTreasury.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
     assertEq(rewards.length, 0);
   }
 
@@ -187,18 +187,18 @@ contract EOLRewardManagerTest is Toolkit {
     _token.mint(address(_assetManager), 100 ether);
 
     vm.prank(address(_assetManager));
-    _token.approve(address(_eolRewardManager), 100 ether);
+    _token.approve(address(_eolRewardTreasury), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _eolRewardManager.routeExtraRewards(address(_eolVault), address(_token), 100 ether);
+    _eolRewardTreasury.routeExtraRewards(address(_eolVault), address(_token), 100 ether);
   }
 
   function test_dispatchTo() public {
     test_routeExtraRewards_case_Unspecified();
-    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
+    assertEq(_token.balanceOf(address(_eolRewardTreasury)), 100 ether);
 
     (uint256[] memory rewards,) =
-      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+      _eolRewardTreasury.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
     assertEq(rewards.length, 1);
     assertEq(rewards[0], 100 ether);
@@ -207,8 +207,8 @@ contract EOLRewardManagerTest is Toolkit {
 
     vm.startPrank(owner);
     _eolRewardConfigurator.registerDistributor(distributor);
-    _eolRewardManager.setRewardManager(owner);
-    _eolRewardManager.dispatchTo(distributor, address(_eolVault), address(_token), uint48(block.timestamp), 0, '');
+    _eolRewardTreasury.setTreasuryManager(owner);
+    _eolRewardTreasury.dispatchTo(distributor, address(_eolVault), address(_token), uint48(block.timestamp), 0, '');
     vm.stopPrank();
 
     assertEq(_token.balanceOf(address(distributor)), 100 ether);
@@ -216,10 +216,10 @@ contract EOLRewardManagerTest is Toolkit {
 
   function test_dispatchTo_Unauthorized() public {
     test_routeExtraRewards_case_Unspecified();
-    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
+    assertEq(_token.balanceOf(address(_eolRewardTreasury)), 100 ether);
 
     (uint256[] memory rewards,) =
-      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+      _eolRewardTreasury.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
     assertEq(rewards.length, 1);
     assertEq(rewards[0], 100 ether);
@@ -230,15 +230,15 @@ contract EOLRewardManagerTest is Toolkit {
     _eolRewardConfigurator.registerDistributor(distributor);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _eolRewardManager.dispatchTo(distributor, address(_eolVault), address(_token), uint48(block.timestamp), 0, '');
+    _eolRewardTreasury.dispatchTo(distributor, address(_eolVault), address(_token), uint48(block.timestamp), 0, '');
   }
 
   function test_dispatchTo_RewardDistributorNotRegistered() public {
     test_routeExtraRewards_case_Unspecified();
-    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
+    assertEq(_token.balanceOf(address(_eolRewardTreasury)), 100 ether);
 
     (uint256[] memory rewards,) =
-      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+      _eolRewardTreasury.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
     assertEq(rewards.length, 1);
     assertEq(rewards[0], 100 ether);
@@ -247,20 +247,20 @@ contract EOLRewardManagerTest is Toolkit {
 
     vm.startPrank(owner);
     // _eolRewardConfigurator.registerDistributor(distributor);
-    _eolRewardManager.setRewardManager(owner);
+    _eolRewardTreasury.setTreasuryManager(owner);
 
     vm.expectRevert(_errRewardDistributorNotRegistered());
-    _eolRewardManager.dispatchTo(distributor, address(_eolVault), address(_token), uint48(block.timestamp), 0, '');
+    _eolRewardTreasury.dispatchTo(distributor, address(_eolVault), address(_token), uint48(block.timestamp), 0, '');
 
     vm.stopPrank();
   }
 
   function test_dispatchTo_batch() public {
     test_routeExtraRewards_case_Unspecified();
-    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
+    assertEq(_token.balanceOf(address(_eolRewardTreasury)), 100 ether);
 
     (uint256[] memory rewards,) =
-      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+      _eolRewardTreasury.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
     assertEq(rewards.length, 1);
     assertEq(rewards[0], 100 ether);
@@ -269,7 +269,7 @@ contract EOLRewardManagerTest is Toolkit {
 
     vm.startPrank(owner);
     _eolRewardConfigurator.registerDistributor(distributor);
-    _eolRewardManager.setRewardManager(owner);
+    _eolRewardTreasury.setTreasuryManager(owner);
     vm.stopPrank();
 
     uint256[] memory indexes = new uint256[](1);
@@ -279,7 +279,7 @@ contract EOLRewardManagerTest is Toolkit {
     metadata[0] = '';
 
     vm.prank(owner);
-    _eolRewardManager.dispatchTo(
+    _eolRewardTreasury.dispatchTo(
       distributor, address(_eolVault), address(_token), uint48(block.timestamp), indexes, metadata
     );
 
@@ -288,10 +288,10 @@ contract EOLRewardManagerTest is Toolkit {
 
   function test_dispatchTo_batch_Unauthorized() public {
     test_routeExtraRewards_case_Unspecified();
-    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
+    assertEq(_token.balanceOf(address(_eolRewardTreasury)), 100 ether);
 
     (uint256[] memory rewards,) =
-      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+      _eolRewardTreasury.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
     assertEq(rewards.length, 1);
     assertEq(rewards[0], 100 ether);
@@ -300,7 +300,7 @@ contract EOLRewardManagerTest is Toolkit {
 
     vm.startPrank(owner);
     _eolRewardConfigurator.registerDistributor(distributor);
-    _eolRewardManager.setRewardManager(owner);
+    _eolRewardTreasury.setTreasuryManager(owner);
     vm.stopPrank();
 
     uint256[] memory indexes = new uint256[](1);
@@ -310,17 +310,17 @@ contract EOLRewardManagerTest is Toolkit {
     metadata[0] = '';
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _eolRewardManager.dispatchTo(
+    _eolRewardTreasury.dispatchTo(
       distributor, address(_eolVault), address(_token), uint48(block.timestamp), indexes, metadata
     );
   }
 
   function test_dispatchTo_batch_DistributorNotRegistered() public {
     test_routeExtraRewards_case_Unspecified();
-    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
+    assertEq(_token.balanceOf(address(_eolRewardTreasury)), 100 ether);
 
     (uint256[] memory rewards,) =
-      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+      _eolRewardTreasury.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
     assertEq(rewards.length, 1);
     assertEq(rewards[0], 100 ether);
@@ -329,7 +329,7 @@ contract EOLRewardManagerTest is Toolkit {
 
     vm.startPrank(owner);
     // _eolRewardConfigurator.registerDistributor(distributor);
-    _eolRewardManager.setRewardManager(owner);
+    _eolRewardTreasury.setTreasuryManager(owner);
     vm.stopPrank();
 
     uint256[] memory indexes = new uint256[](1);
@@ -341,7 +341,7 @@ contract EOLRewardManagerTest is Toolkit {
     vm.startPrank(owner);
 
     vm.expectRevert(_errRewardDistributorNotRegistered());
-    _eolRewardManager.dispatchTo(
+    _eolRewardTreasury.dispatchTo(
       distributor, address(_eolVault), address(_token), uint48(block.timestamp), indexes, metadata
     );
 
@@ -350,10 +350,10 @@ contract EOLRewardManagerTest is Toolkit {
 
   function test_dispatchTo_batch_InvalidParameter() public {
     test_routeExtraRewards_case_Unspecified();
-    assertEq(_token.balanceOf(address(_eolRewardManager)), 100 ether);
+    assertEq(_token.balanceOf(address(_eolRewardTreasury)), 100 ether);
 
     (uint256[] memory rewards,) =
-      _eolRewardManager.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
+      _eolRewardTreasury.getRewardTreasuryRewardInfos(address(_eolVault), address(_token), uint48(block.timestamp));
 
     assertEq(rewards.length, 1);
     assertEq(rewards[0], 100 ether);
@@ -362,7 +362,7 @@ contract EOLRewardManagerTest is Toolkit {
 
     vm.startPrank(owner);
     _eolRewardConfigurator.registerDistributor(distributor);
-    _eolRewardManager.setRewardManager(owner);
+    _eolRewardTreasury.setTreasuryManager(owner);
     vm.stopPrank();
 
     uint256[] memory indexes = new uint256[](1);
@@ -376,25 +376,25 @@ contract EOLRewardManagerTest is Toolkit {
     vm.startPrank(owner);
 
     vm.expectRevert(_errInvalidParameter('metadata'));
-    _eolRewardManager.dispatchTo(
+    _eolRewardTreasury.dispatchTo(
       distributor, address(_eolVault), address(_token), uint48(block.timestamp), indexes, metadata
     );
 
     vm.stopPrank();
   }
 
-  function test_setRewardManager() public {
-    assertFalse(_eolRewardManager.isRewardManager(address(1)));
+  function test_setTreasuryManager() public {
+    assertFalse(_eolRewardTreasury.isTreasuryManager(address(1)));
 
     vm.prank(owner);
-    _eolRewardManager.setRewardManager(address(1));
+    _eolRewardTreasury.setTreasuryManager(address(1));
 
-    assertTrue(_eolRewardManager.isRewardManager(address(1)));
+    assertTrue(_eolRewardTreasury.isTreasuryManager(address(1)));
   }
 
   function test_setRewardManager_Unauthorized() public {
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
-    _eolRewardManager.setRewardManager(address(1));
+    _eolRewardTreasury.setTreasuryManager(address(1));
   }
 
   function _errRewardDistributorNotRegistered() internal pure returns (bytes memory) {

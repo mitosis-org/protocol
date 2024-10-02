@@ -3,8 +3,8 @@ pragma solidity ^0.8.27;
 
 import { IRewardDistributor, DistributionType } from '../reward/IRewardDistributor.sol';
 
-interface IEOLRewardManager {
-  event RewardManagerSet(address indexed account);
+interface IEOLRewardTreasury {
+  event TreasuryManagerSet(address indexed account);
   event Dispatched(address indexed rewardDistributor, address indexed eolVault, address indexed reward, uint256 amount);
   event EOLShareValueIncreased(address indexed eolVault, uint256 indexed amount);
   event RouteClaimableReward(
@@ -22,7 +22,7 @@ interface IEOLRewardManager {
 
   // View functions
 
-  function isRewardManager(address account) external view returns (bool);
+  function isTreasuryManager(address account) external view returns (bool);
 
   function getRewardTreasuryRewardInfos(address eolVault, address reward_, uint48 timestamp)
     external
@@ -31,7 +31,7 @@ interface IEOLRewardManager {
 
   // Mutative function
 
-  function setRewardManager(address account) external;
+  function setTreasuryManager(address account) external;
 
   function routeExtraRewards(address eolVault, address reward, uint256 amount) external;
 

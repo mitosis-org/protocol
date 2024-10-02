@@ -6,7 +6,7 @@ interface IAssetManagerStorageV1 {
 
   event EntrypointSet(address indexed entrypoint);
   event OptOutQueueSet(address indexed optOutQueue);
-  event RewardManagerSet(address indexed rewardManager);
+  event RewardTreasurySet(address indexed rewardTreasury);
   event StrategistSet(address indexed eolVault, address indexed strategist);
 
   //=========== NOTE: STATE GETTERS ===========//
@@ -15,7 +15,7 @@ interface IAssetManagerStorageV1 {
 
   function optOutQueue() external view returns (address optOutQueue_);
 
-  function rewardManager() external view returns (address rewardManager_);
+  function rewardTreasury() external view returns (address rewardTreasury_);
 
   function branchAsset(address hubAsset_, uint256 chainId) external view returns (address branchAsset_);
 
@@ -86,7 +86,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
 
   function setOptOutQueue(address optOutQueue_) external;
 
-  function setRewardManager(address rewardManager_) external;
+  function setRewardTreasury(address rewardTreasury_) external;
 
   function setStrategist(address eolVault, address strategist) external;
 }

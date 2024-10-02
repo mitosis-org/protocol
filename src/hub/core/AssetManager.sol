@@ -9,7 +9,7 @@ import { Time } from '@oz-v5/utils/types/Time.sol';
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
-import { IEOLRewardManager } from '../../interfaces/hub/eol/IEOLRewardManager.sol';
+import { IEOLRewardTreasury } from '../../interfaces/hub/eol/IEOLRewardTreasury.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { AssetManagerStorageV1 } from './AssetManagerStorageV1.sol';
@@ -126,7 +126,6 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
-    _assertEOLRewardManagerSet($);
 
     // Increase EOLVault's shares value.
     address asset = IEOLVault(eolVault).asset();
@@ -140,7 +139,6 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
-    _assertEOLRewardManagerSet($);
 
     // Decrease EOLVault's shares value.
     address asset = IEOLVault(eolVault).asset();
@@ -155,14 +153,14 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
     _assertOnlyEntrypoint($);
     _assertBranchAssetPairExist($, chainId, branchReward);
-    _assertEOLRewardManagerSet($);
+    _assertEOLRewardTreasurySet($);
 
     address hubReward = $.hubAssets[chainId][branchReward];
     _mint($, chainId, hubReward, address(this), amount);
     emit RewardSettled(chainId, eolVault, hubReward, amount);
 
-    IHubAsset(hubReward).approve(address($.rewardManager), amount);
-    $.rewardManager.routeExtraRewards(eolVault, hubReward, amount);
+    IHubAsset(hubReward).approve(address($.rewardTreasury), amount);
+    $.rewardTreasury.routeExtraRewards(eolVault, hubReward, amount);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
@@ -215,8 +213,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _setOptOutQueue(_getStorageV1(), optOutQueue_);
   }
 
-  function setRewardManager(address rewardManager_) external onlyOwner {
-    _setRewardManager(_getStorageV1(), rewardManager_);
+  function setRewardTreasury(address rewardTreasury_) external onlyOwner {
+    _setRewardTreasury(_getStorageV1(), rewardTreasury_);
   }
 
   function setStrategist(address eolVault, address strategist) external onlyOwner {
