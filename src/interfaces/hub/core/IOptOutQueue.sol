@@ -140,24 +140,24 @@ interface IOptOutQueueStorageV1 {
    * @notice Retrieves the number of shares for a specific request
    * @param eolVault Address of the EOL vault to query
    * @param reqId ID of the request to query
-   * @return Number of shares for the specified request
+   * @return shares Number of shares for the specified request
    */
-  function requestShares(address eolVault, uint256 reqId) external view returns (uint256);
+  function requestShares(address eolVault, uint256 reqId) external view returns (uint256 shares);
 
   /**
    * @notice Gets the amount of assets for a specific request
    * @param eolVault Address of the EOL vault to query
    * @param reqId ID of the request to query
-   * @return Amount of assets for the specified request
+   * @return assets Amount of assets for the specified request
    */
-  function requestAssets(address eolVault, uint256 reqId) external view returns (uint256);
+  function requestAssets(address eolVault, uint256 reqId) external view returns (uint256 assets);
 
   /**
    * @notice Retrieves the current size of the queue for a specific EOL vault
    * @param eolVault Address of the EOL vault to query
    * @return size Current size of the queue
    */
-  function queueSize(address eolVault) external view returns (uint256);
+  function queueSize(address eolVault) external view returns (uint256 size);
 
   /**
    * @notice Gets the size of the queue index for a specific recipient in an EOL vault
@@ -165,7 +165,7 @@ interface IOptOutQueueStorageV1 {
    * @param recipient Address of the recipient to query
    * @return size Current size of the queue index for the specified recipient
    */
-  function queueIndexSize(address eolVault, address recipient) external view returns (uint256);
+  function queueIndexSize(address eolVault, address recipient) external view returns (uint256 size);
 
   /**
    * @notice Retrieves the current or simulated offset of the queue for an EOL vault
@@ -211,21 +211,24 @@ interface IOptOutQueueStorageV1 {
    * @param index Index of the reserve history entry to retrieve
    * @return resp GetReserveHistoryResponse struct containing the reserve history data
    */
-  function reserveHistory(address eolVault, uint256 index) external view returns (GetReserveHistoryResponse memory);
+  function reserveHistory(address eolVault, uint256 index)
+    external
+    view
+    returns (GetReserveHistoryResponse memory resp);
 
   /**
    * @notice Retrieves the number of entries in the reserve history for an EOL vault
    * @param eolVault Address of the EOL vault to query
    * @return length Number of entries in the reserve history
    */
-  function reserveHistoryLength(address eolVault) external view returns (uint256);
+  function reserveHistoryLength(address eolVault) external view returns (uint256 length);
 
   /**
    * @notice Checks if the opt-out queue is enabled for a specific EOL vault
    * @param eolVault Address of the EOL vault to query
    * @return enabled Boolean indicating whether the queue is enabled
    */
-  function isEnabled(address eolVault) external view returns (bool);
+  function isEnabled(address eolVault) external view returns (bool enabled);
 }
 
 /**
@@ -256,17 +259,19 @@ interface IOptOutQueue is IOptOutQueueStorageV1 {
   }
 
   /**
-   * @notice Types of financial impact on a claim
-   * @dev Used to categorize the outcome of a claim
+   * @notice Types of value effect on an opt-out request before and after claiming
    */
   enum ImpactType {
     None,
-    /// No financial impact
+    /// loss settled during the opt-out process.
+    /// receiver will get the assets with the loss.
+    /// other assets will be sent to the vault.
     Loss,
-    /// Claim value decreased
+    /// yield generated during the opt-out process
+    /// but we decided to send it to the vault. not to the receiver.
+    /// receiver will get the assets that determined at the time of request.
     Yield
   }
-  /// Claim value increased
 
   /**
    * @notice Emitted when a new opt-out request is added to the queue
