@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 /**
  * @title IEOLGovernor
- * @author Manythings Pte. Ltd.
  * @dev Interface for the EOL Governor, which manages proposal creation and governance functionality for EOL protocols.
  */
 interface IEOLGovernor {

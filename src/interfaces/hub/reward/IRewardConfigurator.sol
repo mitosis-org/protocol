@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 /**
  * @title IRewardConfigurator
- * @author Manythings Pte. Ltd.
  * @dev Interface for configuring reward distribution parameters.
  */
 interface IRewardConfigurator {

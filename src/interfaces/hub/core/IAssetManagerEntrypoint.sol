@@ -5,7 +5,6 @@ import { IAssetManager } from './IAssetManager.sol';
 
 /**
  * @title IAssetManagerEntrypoint
- * @author Manythings Pte. Ltd.
  * @notice Interface for the Asset Manager Entrypoint, which serves as a bridge between the Asset Manager and branch chains
  * @dev This interface defines the methods for cross-chain asset management operations
  */

@@ -7,7 +7,6 @@ import './ITWABSnapshots.sol';
 
 /**
  * @title IERC4626TWABSnapshots
- * @author Manythings Pte. Ltd.
  * @dev Interface for ERC4626 vaults with Time-Weighted Average Balance (TWAB) snapshots functionality.
  */
 interface IERC4626TWABSnapshots is IERC4626, ITWABSnapshots {

@@ -5,7 +5,6 @@ import { IRewardDistributor, IRewardDistributorStorage, DistributionType } from 
 
 /**
  * @title IMerkleRewardDistributorStorageV1
- * @author Manythings Pte. Ltd.
  * @dev Interface for the storage of Merkle-based reward distributors (version 1).
  */
 interface IMerkleRewardDistributorStorageV1 is IRewardDistributorStorage {
@@ -31,7 +30,6 @@ interface IMerkleRewardDistributorStorageV1 is IRewardDistributorStorage {
 
 /**
  * @title IMerkleRewardDistributor
- * @author Manythings Pte. Ltd.
  * @dev Interface for Merkle-based reward distributors, extending IRewardDistributor and IMerkleRewardDistributorStorageV1.
  */
 interface IMerkleRewardDistributor is IRewardDistributor, IMerkleRewardDistributorStorageV1 {

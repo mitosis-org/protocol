@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 /**
  * @title IAssetManagerStorageV1
- * @author Manythings Pte. Ltd.
  * @notice Interface for the storage component of the Asset Manager
  */
 interface IAssetManagerStorageV1 {
@@ -106,7 +105,6 @@ interface IAssetManagerStorageV1 {
 
 /**
  * @title IAssetManager
- * @author Manythings Pte. Ltd.
  * @notice Interface for the main Asset Manager contract
  */
 interface IAssetManager is IAssetManagerStorageV1 {

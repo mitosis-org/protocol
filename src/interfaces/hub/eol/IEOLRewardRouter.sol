@@ -5,7 +5,6 @@ import { IRewardDistributor, DistributionType } from '../reward/IRewardDistribut
 
 /**
  * @title IEOLRewardRouter
- * @author Manythings Pte. Ltd.
  * @dev Interface for routing and managing EOL rewards.
  */
 interface IEOLRewardRouter {

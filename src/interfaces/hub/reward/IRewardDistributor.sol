@@ -5,7 +5,6 @@ import { IRewardConfigurator } from './IRewardConfigurator.sol';
 
 /**
  * @title DistributionType
- * @author Manythings Pte. Ltd.
  * @dev Enum representing different types of reward distributions.
  */
 enum DistributionType {
@@ -16,7 +15,6 @@ enum DistributionType {
 
 /**
  * @title IRewardDistributorStorage
- * @author Manythings Pte. Ltd.
  * @dev Interface for the storage of reward distributors.
  */
 interface IRewardDistributorStorage {
@@ -59,7 +57,6 @@ interface IRewardDistributorStorage {
 
 /**
  * @title IRewardDistributor
- * @author Manythings Pte. Ltd.
  * @dev Interface for reward distributors, extending IRewardDistributorStorage.
  */
 interface IRewardDistributor is IRewardDistributorStorage {

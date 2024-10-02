@@ -5,7 +5,6 @@ import { IRewardDistributor, IRewardDistributorStorage, DistributionType } from 
 
 /**
  * @title ITWABRewardDistributorStorageV1
- * @author Manythings Pte. Ltd.
  * @dev Interface for the storage of TWAB-based reward distributors (version 1).
  */
 interface ITWABRewardDistributorStorageV1 is IRewardDistributorStorage {
@@ -29,7 +28,6 @@ interface ITWABRewardDistributorStorageV1 is IRewardDistributorStorage {
 
 /**
  * @title ITWABRewardDistributor
- * @author Manythings Pte. Ltd.
  * @dev Interface for TWAB-based reward distributors, extending IRewardDistributor and ITWABRewardDistributorStorageV1.
  */
 interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorStorageV1 {

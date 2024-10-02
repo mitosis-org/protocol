@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 /**
  * @title IEOLGaugeGovernor
- * @author Manythings Pte. Ltd.
  * @dev Interface for the EOL Gauge Governor, which manages voting and gauge allocation for EOL protocols.
  */
 interface IEOLGaugeGovernor {

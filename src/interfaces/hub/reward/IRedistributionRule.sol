@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 /**
  * @title IRedistributionRule
- * @author Manythings Pte. Ltd.
  * @dev Interface for defining redistribution rules for rewards.
  */
 interface IRedistributionRule {

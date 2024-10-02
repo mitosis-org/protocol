@@ -21,7 +21,6 @@ struct ProtocolInfo {
 
 /**
  * @title IEOLProtocolRegistry
- * @author Manythings Pte. Ltd.
  * @dev Interface for the EOL Protocol Registry, which manages the registration of EOL protocols.
  */
 interface IEOLProtocolRegistry {

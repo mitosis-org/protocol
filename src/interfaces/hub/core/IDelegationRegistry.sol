@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 /**
  * @title IDelegationRegistry
- * @author Manythings Pte. Ltd.
  * @dev Common interface for {DelegationRegistry}.
  */
 interface IDelegationRegistry {

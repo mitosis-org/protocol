@@ -6,7 +6,6 @@ import { IRewardDistributor, DistributionType } from '../reward/IRewardDistribut
 
 /**
  * @title IEOLRewardConfigurator
- * @author Manythings Pte. Ltd.
  * @dev Interface for configuring EOL reward distribution settings.
  */
 interface IEOLRewardConfigurator is IRewardConfigurator {
