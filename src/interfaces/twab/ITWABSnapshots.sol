@@ -24,6 +24,10 @@ interface ITWABSnapshots is IERC5805 {
     view
     returns (uint208 balance, uint256 twab, uint48 position);
 
+  function delegates(address account) external view returns (address);
+
+  function delegate(address delegatee) external;
+
   /**
    * @dev Delegates from account to `delegatee` by manager.
    */
