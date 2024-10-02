@@ -148,6 +148,39 @@ contract ERC20SnapshotsTest is Test {
     token.delegate(bob);
   }
 
+  function test_delegate_duplicated() public {
+    address alice = makeAddr('alice');
+    address bob = makeAddr('bob');
+
+    token.mint(alice, 100 ether);
+    token.mint(bob, 100 ether);
+
+    vm.warp(block.timestamp + 1);
+    vm.prank(alice);
+    token.delegate(bob);
+
+    _assertBalanceSnapshot(alice, 100 ether);
+    _assertDelegateSnapshot(alice, 0 ether, 100 ether, _time());
+
+    _assertBalanceSnapshot(bob, 100 ether);
+    _assertDelegateSnapshot(bob, 200 ether, 100 ether, _time());
+
+    address carol = makeAddr('carol');
+    vm.prank(alice);
+    token.delegate(carol);
+
+    _assertBalanceSnapshot(carol, 0 ether);
+    _assertDelegateSnapshot(carol, 0, 0, 0);
+
+    vm.prank(bob);
+    token.delegate(carol);
+
+    _assertDelegateSnapshot(bob, 0, 100 ether, _time());
+
+    _assertBalanceSnapshot(carol, 0 ether);
+    _assertDelegateSnapshot(carol, 200 ether, 0, _time());
+  }
+
   function test_AddSnapshots() public {
     address alice = makeAddr('alice');
 

@@ -181,7 +181,9 @@ abstract contract TWABSnapshots is
     $.delegates[account] = delegatee;
 
     emit DelegateChanged(account, oldDelegatee, delegatee);
-    _snapshotDelegateInner($, oldDelegatee, delegatee, _getBalance(account));
+
+    (uint208 balance,,) = _delegationSnapshot($, account, block.timestamp);
+    _snapshotDelegateInner($, oldDelegatee, delegatee, balance);
   }
 
   function _snapshotDelegate(TWABSnapshotsStorageV1_ storage $, address from, address to, uint256 amount) internal {
