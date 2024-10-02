@@ -1,20 +1,34 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { LibRedeemQueue } from '../../../lib/LibRedeemQueue.sol';
 import { IEOLVault } from '../eol/IEOLVault.sol';
 import { IHubAsset } from './IHubAsset.sol';
 
 interface IOptOutQueueStorageV1 {
   struct GetRequestResponse {
     uint256 id;
-    LibRedeemQueue.Request request;
+    uint256 accumulatedShares;
+    uint256 accumulatedAssets;
+    address recipient;
+    uint48 createdAt;
+    uint48 claimedAt;
   }
 
   struct GetRequestByIndexResponse {
     uint256 id;
     uint256 indexId;
-    LibRedeemQueue.Request request;
+    uint256 accumulatedShares;
+    uint256 accumulatedAssets;
+    address recipient;
+    uint48 createdAt;
+    uint48 claimedAt;
+  }
+
+  struct GetReserveHistoryResponse {
+    uint256 accumulated;
+    uint48 reservedAt;
+    uint208 totalShares;
+    uint208 totalAssets;
   }
 
   event QueueEnabled(address indexed eolVault);
@@ -50,7 +64,7 @@ interface IOptOutQueueStorageV1 {
   function totalClaimed(address eolVault) external view returns (uint256);
   function totalPending(address eolVault) external view returns (uint256);
 
-  function reserveHistory(address eolVault, uint256 index) external view returns (LibRedeemQueue.ReserveLog memory);
+  function reserveHistory(address eolVault, uint256 index) external view returns (GetReserveHistoryResponse memory);
   function reserveHistoryLength(address eolVault) external view returns (uint256);
 
   function isEnabled(address eolVault) external view returns (bool);
