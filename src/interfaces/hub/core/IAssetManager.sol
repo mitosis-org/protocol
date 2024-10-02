@@ -8,21 +8,21 @@ pragma solidity ^0.8.27;
 interface IAssetManagerStorageV1 {
   /**
    * @notice Emitted when a new entrypoint is set
-   * @param entrypoint The address of the new entrypoint
+   * @param entrypoint_ The address of the new entrypoint
    */
-  event EntrypointSet(address indexed entrypoint);
+  event EntrypointSet(address indexed entrypoint_);
 
   /**
    * @notice Emitted when a new opt-out queue is set
-   * @param optOutQueue The address of the new opt-out queue
+   * @param optOutQueue_ The address of the new opt-out queue
    */
-  event OptOutQueueSet(address indexed optOutQueue);
+  event OptOutQueueSet(address indexed optOutQueue_);
 
   /**
    * @notice Emitted when a new reward router is set
-   * @param rewardRouter The address of the new reward router
+   * @param rewardRouter_ The address of the new reward router
    */
-  event RewardRouterSet(address indexed rewardRouter);
+  event RewardRouterSet(address indexed rewardRouter_);
 
   /**
    * @notice Emitted when a new strategist is set for an EOL vault
@@ -69,17 +69,17 @@ interface IAssetManagerStorageV1 {
    * @notice Get the collateral amount for a given chain ID and hub asset
    * @param chainId The ID of the chain
    * @param hubAsset_ The address of the hub asset
-   * @return The amount of collateral
+   * @return collateral_ The amount of collateral
    */
-  function collateral(uint256 chainId, address hubAsset_) external view returns (uint256);
+  function collateral(uint256 chainId, address hubAsset_) external view returns (uint256 collateral_);
 
   /**
    * @notice Check if an EOL vault is initialized for a given chain
    * @param chainId The ID of the chain
    * @param eolVault The address of the EOL vault
-   * @return A boolean indicating whether the EOL vault is initialized
+   * @return  eolInitialized_ A boolean indicating whether the EOL vault is initialized
    */
-  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool);
+  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool eolInitialized_);
 
   /**
    * @notice Get the idle balance of an EOL vault
@@ -98,9 +98,9 @@ interface IAssetManagerStorageV1 {
   /**
    * @notice Get the strategist address for an EOL vault
    * @param eolVault The address of the EOL vault
-   * @return The address of the strategist
+   * @return strategist_ The address of the strategist
    */
-  function strategist(address eolVault) external view returns (address);
+  function strategist(address eolVault) external view returns (address strategist_);
 }
 
 /**
