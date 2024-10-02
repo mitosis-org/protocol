@@ -6,4 +6,12 @@ import '@oz-v5/interfaces/IERC20Metadata.sol';
 
 import './ITWABSnapshots.sol';
 
-interface IERC20TWABSnapshots is IERC20, IERC20Metadata, ITWABSnapshots { }
+/**
+ * @title IERC20TWABSnapshots
+ * @author Manythings Pte. Ltd.
+ * @dev Interface for ERC20 tokens with Time-Weighted Average Balance (TWAB) snapshots functionality.
+ */
+interface IERC20TWABSnapshots is IERC20, IERC20Metadata, ITWABSnapshots {
+// This interface combines IERC20, IERC20Metadata, and ITWABSnapshots
+// No additional functions are defined here
+}
