@@ -25,7 +25,4 @@ interface IEOLVaultStorageV1 {
  * @title IEOLVault
  * @dev Interface for the EOL Vault, combining ERC4626 functionality with TWAB snapshots.
  */
-interface IEOLVault is IERC4626TWABSnapshots, IEOLVaultStorageV1 {
-// This interface combines IERC4626TWABSnapshots and IEOLVaultStorageV1
-// No additional functions are defined here
-}
+interface IEOLVault is IERC4626TWABSnapshots, IEOLVaultStorageV1 { }

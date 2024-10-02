@@ -9,7 +9,4 @@ import './ITWABSnapshots.sol';
  * @title IERC4626TWABSnapshots
  * @dev Interface for ERC4626 vaults with Time-Weighted Average Balance (TWAB) snapshots functionality.
  */
-interface IERC4626TWABSnapshots is IERC4626, ITWABSnapshots {
-// This interface combines IERC4626 and ITWABSnapshots
-// No additional functions are defined here
-}
+interface IERC4626TWABSnapshots is IERC4626, ITWABSnapshots { }
