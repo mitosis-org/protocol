@@ -72,3 +72,5 @@ node_modules
 script/foundry/Test.s.sol
 
 dependencies
+
+**/.DS_Store
