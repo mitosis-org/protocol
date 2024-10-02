@@ -68,8 +68,16 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
 
     resp = new IOptOutQueueStorageV1.GetRequestResponse[](reqIds.length);
     for (uint256 i = 0; i < reqIds.length; i++) {
-      resp[i].id = reqIds[i];
-      resp[i].request = queue.get(reqIds[i]);
+      LibRedeemQueue.Request memory req = queue.get(reqIds[i]);
+
+      resp[i] = GetRequestResponse({
+        id: reqIds[i],
+        accumulatedShares: req.accumulatedShares,
+        accumulatedAssets: req.accumulatedAssets,
+        recipient: req.recipient,
+        createdAt: req.createdAt,
+        claimedAt: req.claimedAt
+      });
     }
     return resp;
   }
@@ -84,9 +92,18 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
 
     resp = new IOptOutQueueStorageV1.GetRequestByIndexResponse[](idxItemIds.length);
     for (uint256 i = 0; i < idxItemIds.length; i++) {
-      resp[i].id = idxItemIds[i];
-      resp[i].indexId = queue.index(receiver).get(idxItemIds[i]);
-      resp[i].request = queue.get(resp[i].indexId);
+      uint256 indexId = queue.index(receiver).get(idxItemIds[i]);
+      LibRedeemQueue.Request memory req = queue.get(indexId);
+
+      resp[i] = GetRequestByIndexResponse({
+        id: idxItemIds[i],
+        indexId: indexId,
+        accumulatedShares: req.accumulatedShares,
+        accumulatedAssets: req.accumulatedAssets,
+        recipient: req.recipient,
+        createdAt: req.createdAt,
+        claimedAt: req.claimedAt
+      });
     }
     return resp;
   }
@@ -141,8 +158,14 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
     return _queue(_getStorageV1(), eolVault).pending();
   }
 
-  function reserveHistory(address eolVault, uint256 index) external view returns (LibRedeemQueue.ReserveLog memory) {
-    return _queue(_getStorageV1(), eolVault).reserveHistory[index];
+  function reserveHistory(address eolVault, uint256 index) external view returns (GetReserveHistoryResponse memory) {
+    LibRedeemQueue.ReserveLog memory log = _queue(_getStorageV1(), eolVault).reserveHistory[index];
+    return GetReserveHistoryResponse({
+      accumulated: log.accumulated,
+      reservedAt: log.reservedAt,
+      totalShares: log.totalShares,
+      totalAssets: log.totalAssets
+    });
   }
 
   function reserveHistoryLength(address eolVault) external view returns (uint256) {
