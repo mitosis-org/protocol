@@ -10,15 +10,15 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { IEOLRewardTreasury } from '../../interfaces/hub/eol/IEOLRewardTreasury.sol';
+import { IEOLRewardRouter } from '../../interfaces/hub/eol/IEOLRewardRouter.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { IRewardDistributor, DistributionType } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { LibDistributorRewardMetadata, RewardTWABMetadata } from '../reward/LibDistributorRewardMetadata.sol';
-import { EOLRewardTreasuryStorageV1 } from './EOLRewardTreasuryStorageV1.sol';
+import { EOLRewardRouterStorageV1 } from './EOLRewardRouterStorageV1.sol';
 
-contract EOLRewardTreasury is IEOLRewardTreasury, Ownable2StepUpgradeable, EOLRewardTreasuryStorageV1 {
+contract EOLRewardRouter is IEOLRewardRouter, Ownable2StepUpgradeable, EOLRewardRouterStorageV1 {
   using LibDistributorRewardMetadata for RewardTWABMetadata;
 
   constructor() {
@@ -34,8 +34,8 @@ contract EOLRewardTreasury is IEOLRewardTreasury, Ownable2StepUpgradeable, EOLRe
     $.rewardConfigurator = IEOLRewardConfigurator(eolRewardConfigurator);
   }
 
-  modifier onlyTreasuryManager() {
-    require(_getStorageV1().isTreasuryManager[_msgSender()], StdError.Unauthorized());
+  modifier onlyRouterManager() {
+    require(_getStorageV1().isRouterManager[_msgSender()], StdError.Unauthorized());
     _;
   }
 
@@ -46,8 +46,8 @@ contract EOLRewardTreasury is IEOLRewardTreasury, Ownable2StepUpgradeable, EOLRe
 
   // View functions
 
-  function isTreasuryManager(address account) external view returns (bool) {
-    return _getStorageV1().isTreasuryManager[account];
+  function isRouterManager(address account) external view returns (bool) {
+    return _getStorageV1().isRouterManager[account];
   }
 
   function getRewardTreasuryRewardInfos(address eolVault, address reward_, uint48 timestamp)
@@ -55,7 +55,7 @@ contract EOLRewardTreasury is IEOLRewardTreasury, Ownable2StepUpgradeable, EOLRe
     view
     returns (uint256[] memory amounts, bool[] memory dispatched)
   {
-    RewardInfo[] storage rewardInfos = _getStorageV1().rewards[eolVault][timestamp];
+    RewardInfo[] storage rewardInfos = _getStorageV1().rewardTreasury[eolVault][timestamp];
 
     uint256 counts;
     for (uint256 i = 0; i < rewardInfos.length; i++) {
@@ -74,9 +74,9 @@ contract EOLRewardTreasury is IEOLRewardTreasury, Ownable2StepUpgradeable, EOLRe
 
   // Mutative functions
 
-  function setTreasuryManager(address account) external onlyOwner {
-    _getStorageV1().isTreasuryManager[account] = true;
-    emit TreasuryManagerSet(account);
+  function setRouterManager(address account) external onlyOwner {
+    _getStorageV1().isRouterManager[account] = true;
+    emit RouterManagerSet(account);
   }
 
   function routeExtraRewards(address eolVault, address reward, uint256 amount) external onlyAssetManager {
@@ -91,7 +91,7 @@ contract EOLRewardTreasury is IEOLRewardTreasury, Ownable2StepUpgradeable, EOLRe
     uint48 timestamp,
     uint256[] calldata indexes,
     bytes[] calldata metadata
-  ) external onlyTreasuryManager {
+  ) external onlyRouterManager {
     require(indexes.length == metadata.length, StdError.InvalidParameter('metadata'));
 
     StorageV1 storage $ = _getStorageV1();
@@ -110,7 +110,7 @@ contract EOLRewardTreasury is IEOLRewardTreasury, Ownable2StepUpgradeable, EOLRe
     uint48 timestamp,
     uint256 index,
     bytes memory metadata
-  ) external onlyTreasuryManager {
+  ) external onlyRouterManager {
     StorageV1 storage $ = _getStorageV1();
 
     _assertDistributorRegistered($, distributor);
@@ -137,7 +137,7 @@ contract EOLRewardTreasury is IEOLRewardTreasury, Ownable2StepUpgradeable, EOLRe
     DistributionType distributionType = $.rewardConfigurator.distributionType(eolVault, reward);
 
     if (distributionType == DistributionType.Unspecified) {
-      _storeToTreasury($, eolVault, reward, amount, Time.timestamp());
+      _stashRewards($, eolVault, reward, amount, Time.timestamp());
       return;
     }
 
@@ -157,7 +157,7 @@ contract EOLRewardTreasury is IEOLRewardTreasury, Ownable2StepUpgradeable, EOLRe
     uint256 index,
     bytes memory metadata
   ) internal {
-    RewardInfo storage rewardInfo = $.rewards[eolVault][timestamp][index];
+    RewardInfo storage rewardInfo = $.rewardTreasury[eolVault][timestamp][index];
 
     require(_isDispatchableRequest(rewardInfo, reward), IEOLRewardManager__InvalidDispatchRequest(reward, index));
 
@@ -181,10 +181,10 @@ contract EOLRewardTreasury is IEOLRewardTreasury, Ownable2StepUpgradeable, EOLRe
     emit Dispatched(address(distributor), eolVault, reward, amount);
   }
 
-  function _storeToTreasury(StorageV1 storage $, address eolVault, address reward, uint256 amount, uint48 timestamp)
+  function _stashRewards(StorageV1 storage $, address eolVault, address reward, uint256 amount, uint48 timestamp)
     internal
   {
-    RewardInfo[] storage rewardInfos = $.rewards[eolVault][timestamp];
+    RewardInfo[] storage rewardInfos = $.rewardTreasury[eolVault][timestamp];
     rewardInfos.push(RewardInfo(reward, amount, false));
     emit UnspecifiedReward(eolVault, reward, timestamp, rewardInfos.length, amount);
   }

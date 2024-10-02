@@ -19,7 +19,7 @@ import { IERC20TWABSnapshots } from '../../../src/interfaces/twab/IERC20TWABSnap
 import { StdError } from '../../../src/lib/StdError.sol';
 import { MockAssetManagerEntrypoint } from '../../mock/MockAssetManagerEntrypoint.t.sol';
 import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol';
-import { MockEOLRewardTreasury } from '../../mock/MockEOLRewardTreasury.t.sol';
+import { MockEOLRewardRouter } from '../../mock/MockEOLRewardRouter.t.sol';
 import { MockERC20TWABSnapshots } from '../../mock/MockERC20TWABSnapshots.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
@@ -28,7 +28,7 @@ contract MockOptOutqueue { }
 contract AssetManagerTest is Toolkit {
   OptOutQueue _optOutQueue;
   AssetManager _assetManager;
-  MockEOLRewardTreasury _eolRewardTreasury;
+  MockEOLRewardRouter _eolRewardRouter;
   MockAssetManagerEntrypoint _assetManagerEntrypoint;
   MockDelegationRegistry _delegationRegistry;
   EOLVault _eolVault;
@@ -73,7 +73,7 @@ contract AssetManagerTest is Toolkit {
       )
     );
 
-    _eolRewardTreasury = new MockEOLRewardTreasury();
+    _eolRewardRouter = new MockEOLRewardRouter();
     _assetManagerEntrypoint = new MockAssetManagerEntrypoint(_assetManager, address(0));
     _delegationRegistry = new MockDelegationRegistry();
 
@@ -470,7 +470,7 @@ contract AssetManagerTest is Toolkit {
     rewardToken.initialize(address(_delegationRegistry), 'Reward', '$REWARD');
 
     vm.startPrank(owner);
-    _assetManager.setRewardTreasury(address(_eolRewardTreasury));
+    _assetManager.setRewardRouter(address(_eolRewardRouter));
     _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
     vm.stopPrank();
 
@@ -487,7 +487,7 @@ contract AssetManagerTest is Toolkit {
     rewardToken.initialize(address(_delegationRegistry), 'Reward', '$REWARD');
 
     vm.startPrank(owner);
-    _assetManager.setRewardTreasury(address(_eolRewardTreasury));
+    _assetManager.setRewardRouter(address(_eolRewardRouter));
     _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
     vm.stopPrank();
 
@@ -497,7 +497,7 @@ contract AssetManagerTest is Toolkit {
 
   function test_settleExtraRewards_BranchAssetPairNotExist() public {
     vm.startPrank(owner);
-    _assetManager.setRewardTreasury(address(_eolRewardTreasury));
+    _assetManager.setRewardRouter(address(_eolRewardRouter));
     // _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
     vm.stopPrank();
 
@@ -509,18 +509,18 @@ contract AssetManagerTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_settleExtraRewards_EOLRewardTreasuryNotSet() public {
+  function test_settleExtraRewards_EOLRewardRouterNotSet() public {
     MockERC20TWABSnapshots rewardToken = new MockERC20TWABSnapshots();
     rewardToken.initialize(address(_delegationRegistry), 'Reward', '$REWARD');
 
     vm.startPrank(owner);
-    // _assetManager.setRewardTreasury(address(_eolRewardManager));
+    // _assetManager.setRewardRouter(address(_eolRewardManager));
     _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
     vm.stopPrank();
 
     vm.startPrank(address(_assetManagerEntrypoint));
 
-    vm.expectRevert(_errEOLRewardTreasuryNotSet());
+    vm.expectRevert(_errEOLRewardRouterNotSet());
     _assetManager.settleExtraRewards(branchChainId, address(_eolVault), branchRewardTokenAddress, 100 ether);
 
     vm.stopPrank();
@@ -711,32 +711,32 @@ contract AssetManagerTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_setRewardTreasury() public {
-    assertEq(_assetManager.rewardTreasury(), address(0));
+  function test_setRewardRouter() public {
+    assertEq(_assetManager.rewardRouter(), address(0));
 
     vm.prank(owner);
-    _assetManager.setRewardTreasury(address(_eolRewardTreasury));
+    _assetManager.setRewardRouter(address(_eolRewardRouter));
 
-    assertEq(_assetManager.rewardTreasury(), address(_eolRewardTreasury));
+    assertEq(_assetManager.rewardRouter(), address(_eolRewardRouter));
 
-    MockEOLRewardTreasury newEOLRewardTreasury = new MockEOLRewardTreasury();
+    MockEOLRewardRouter newEOLRewardRouter = new MockEOLRewardRouter();
 
     vm.prank(owner);
-    _assetManager.setRewardTreasury(address(newEOLRewardTreasury));
+    _assetManager.setRewardRouter(address(newEOLRewardRouter));
 
-    assertEq(_assetManager.rewardTreasury(), address(newEOLRewardTreasury));
+    assertEq(_assetManager.rewardRouter(), address(newEOLRewardRouter));
   }
 
-  function test_setRewardTreasury_Unauthorized() public {
+  function test_setRewardRouter_Unauthorized() public {
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
-    _assetManager.setRewardTreasury(address(_eolRewardTreasury));
+    _assetManager.setRewardRouter(address(_eolRewardRouter));
   }
 
-  function test_setRewardTreasury_InvalidParameter() public {
+  function test_setRewardRouter_InvalidParameter() public {
     vm.startPrank(owner);
 
-    vm.expectRevert(_errInvalidParameter('EOLRewardTreasury'));
-    _assetManager.setRewardTreasury(address(0));
+    vm.expectRevert(_errInvalidParameter('EOLRewardRouter'));
+    _assetManager.setRewardRouter(address(0));
 
     vm.stopPrank();
   }
@@ -795,7 +795,7 @@ contract AssetManagerTest is Toolkit {
     return abi.encodeWithSelector(IAssetManager.IAssetManager__EOLInsufficient.selector, eolVault);
   }
 
-  function _errEOLRewardTreasuryNotSet() internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(AssetManagerStorageV1.AssetManagerStorageV1__EOLRewardTreasuryNotSet.selector);
+  function _errEOLRewardRouterNotSet() internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(AssetManagerStorageV1.AssetManagerStorageV1__EOLRewardRouterNotSet.selector);
   }
 }

@@ -4,18 +4,18 @@ pragma solidity ^0.8.27;
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
 
-import { IEOLRewardTreasury } from '../../src/interfaces/hub/eol/IEOLRewardTreasury.sol';
+import { IEOLRewardRouter } from '../../src/interfaces/hub/eol/IEOLRewardRouter.sol';
 import { IRewardDistributor } from '../../src/interfaces/hub/reward/IRewardDistributor.sol';
 
-contract MockEOLRewardTreasury is IEOLRewardTreasury {
-  function isTreasuryManager(address account) external view returns (bool) { }
+contract MockEOLRewardRouter is IEOLRewardRouter {
+  function isRouterManager(address account) external view returns (bool) { }
   function getRewardTreasuryRewardInfos(address eolVault, address reward_, uint48 timestamp)
     external
     view
     returns (uint256[] memory amounts, bool[] memory dispatched)
   { }
 
-  function setTreasuryManager(address account) external { }
+  function setRouterManager(address account) external { }
 
   function routeExtraRewards(address, address reward, uint256 amount) external {
     IERC20(reward).transferFrom(msg.sender, address(this), amount);

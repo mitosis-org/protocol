@@ -9,7 +9,6 @@ import { Time } from '@oz-v5/utils/types/Time.sol';
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
-import { IEOLRewardTreasury } from '../../interfaces/hub/eol/IEOLRewardTreasury.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { AssetManagerStorageV1 } from './AssetManagerStorageV1.sol';
@@ -153,14 +152,14 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
     _assertOnlyEntrypoint($);
     _assertBranchAssetPairExist($, chainId, branchReward);
-    _assertEOLRewardTreasurySet($);
+    _assertEOLRewardRouterSet($);
 
     address hubReward = $.hubAssets[chainId][branchReward];
     _mint($, chainId, hubReward, address(this), amount);
     emit RewardSettled(chainId, eolVault, hubReward, amount);
 
-    IHubAsset(hubReward).approve(address($.rewardTreasury), amount);
-    $.rewardTreasury.routeExtraRewards(eolVault, hubReward, amount);
+    IHubAsset(hubReward).approve(address($.rewardRouter), amount);
+    $.rewardRouter.routeExtraRewards(eolVault, hubReward, amount);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
@@ -213,8 +212,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _setOptOutQueue(_getStorageV1(), optOutQueue_);
   }
 
-  function setRewardTreasury(address rewardTreasury_) external onlyOwner {
-    _setRewardTreasury(_getStorageV1(), rewardTreasury_);
+  function setRewardRouter(address rewardRouter_) external onlyOwner {
+    _setRewardRouter(_getStorageV1(), rewardRouter_);
   }
 
   function setStrategist(address eolVault, address strategist) external onlyOwner {

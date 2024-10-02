@@ -6,7 +6,7 @@ import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 import { IAssetManagerStorageV1 } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IOptOutQueue } from '../../interfaces/hub/core/IOptOutQueue.sol';
-import { IEOLRewardTreasury } from '../../interfaces/hub/eol/IEOLRewardTreasury.sol';
+import { IEOLRewardRouter } from '../../interfaces/hub/eol/IEOLRewardRouter.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
@@ -15,7 +15,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   using ERC7201Utils for string;
 
   error AssetManagerStorageV1__BranchAssetPairNotExist(address branchAsset);
-  error AssetManagerStorageV1__EOLRewardTreasuryNotSet();
+  error AssetManagerStorageV1__EOLRewardRouterNotSet();
 
   error AssetManagerStorageV1__EOLNotInitialized(uint256 chainId, address eolVault);
   error AssetManagerStorageV1__EOLAlreadyInitialized(uint256 chainId, address eolVault);
@@ -28,7 +28,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   struct StorageV1 {
     IAssetManagerEntrypoint entrypoint;
     IOptOutQueue optOutQueue;
-    IEOLRewardTreasury rewardTreasury;
+    IEOLRewardRouter rewardRouter;
     // Asset states
     mapping(address hubAsset => mapping(uint256 chainId => address branchAsset)) branchAssets;
     mapping(uint256 chainId => mapping(address branchAsset => address hubAsset)) hubAssets;
@@ -59,8 +59,8 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return address(_getStorageV1().optOutQueue);
   }
 
-  function rewardTreasury() external view returns (address) {
-    return address(_getStorageV1().rewardTreasury);
+  function rewardRouter() external view returns (address) {
+    return address(_getStorageV1().rewardRouter);
   }
 
   function branchAsset(address hubAsset_, uint256 chainId) external view returns (address) {
@@ -109,12 +109,12 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     emit OptOutQueueSet(optOutQueue_);
   }
 
-  function _setRewardTreasury(StorageV1 storage $, address rewardTreasury_) internal {
-    require(rewardTreasury_.code.length > 0, StdError.InvalidParameter('EOLRewardTreasury'));
+  function _setRewardRouter(StorageV1 storage $, address rewardRouter_) internal {
+    require(rewardRouter_.code.length > 0, StdError.InvalidParameter('EOLRewardRouter'));
 
-    $.rewardTreasury = IEOLRewardTreasury(rewardTreasury_);
+    $.rewardRouter = IEOLRewardRouter(rewardRouter_);
 
-    emit RewardTreasurySet(rewardTreasury_);
+    emit RewardRouterSet(rewardRouter_);
   }
 
   function _setStrategist(StorageV1 storage $, address eolVault, address strategist_) internal {
@@ -155,8 +155,8 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     );
   }
 
-  function _assertEOLRewardTreasurySet(StorageV1 storage $) internal view virtual {
-    require(address($.rewardTreasury) != address(0), AssetManagerStorageV1__EOLRewardTreasuryNotSet());
+  function _assertEOLRewardRouterSet(StorageV1 storage $) internal view virtual {
+    require(address($.rewardRouter) != address(0), AssetManagerStorageV1__EOLRewardRouterNotSet());
   }
 
   function _assertEOLInitialized(StorageV1 storage $, uint256 chainId, address eolVault) internal view virtual {

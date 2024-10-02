@@ -32,12 +32,12 @@ contract MockAssetManager is IAssetManager {
   }
 
   function redeem(uint256 chainId, address branchAsset_, address to, uint256 amount) external { }
-  function rewardTreasury() external view returns (address rewardTreasury_) { }
+  function rewardRouter() external view returns (address rewardRouter_) { }
   function settleExtraRewards(uint256 chainId, address eolVault, address reward, uint256 amount) external { }
   function settleLoss(uint256 chainId, address eolVault, uint256 amount) external { }
   function settleYield(uint256 chainId, address eolVault, uint256 amount) external { }
   function setAssetPair(address hubAsset_, uint256 branchChainId, address branchAsset_) external { }
   function setEntrypoint(address entrypoint_) external { }
-  function setRewardTreasury(address rewardTreasury_) external { }
+  function setRewardRouter(address rewardRouter_) external { }
   function setStrategist(address eolVault, address) external { }
 }
