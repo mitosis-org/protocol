@@ -10,15 +10,15 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IEOLRewardConfigurator } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { IEOLRewardManager } from '../../interfaces/hub/eol/IEOLRewardManager.sol';
+import { IEOLRewardRouter } from '../../interfaces/hub/eol/IEOLRewardRouter.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { IRewardDistributor, DistributionType } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { LibDistributorRewardMetadata, RewardTWABMetadata } from '../reward/LibDistributorRewardMetadata.sol';
-import { EOLRewardManagerStorageV1 } from './EOLRewardManagerStorageV1.sol';
+import { EOLRewardRouterStorageV1 } from './EOLRewardRouterStorageV1.sol';
 
-contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewardManagerStorageV1 {
+contract EOLRewardRouter is IEOLRewardRouter, Ownable2StepUpgradeable, EOLRewardRouterStorageV1 {
   using LibDistributorRewardMetadata for RewardTWABMetadata;
 
   constructor() {
@@ -34,8 +34,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     $.rewardConfigurator = IEOLRewardConfigurator(eolRewardConfigurator);
   }
 
-  // TODO(ray): must be set when introdue RoleManager
-  modifier onlyRewardManagerAdmin() {
+  modifier onlyRewardManager() {
     require(_getStorageV1().isRewardManager[_msgSender()], StdError.Unauthorized());
     _;
   }
@@ -80,27 +79,9 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     emit RewardManagerSet(account);
   }
 
-  function routeYield(address eolVault, uint256 amount) external onlyAssetManager {
-    address reward = IEOLVault(eolVault).asset();
-    IHubAsset(reward).transferFrom(_msgSender(), address(this), amount);
-
-    StorageV1 storage $ = _getStorageV1();
-
-    (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward) = _calcReward($, amount);
-
-    _increaseEOLShareValue(eolVault, eolAssetHolderReward);
-    _routeHubAssetHolderClaimableReward($, eolVault, reward, hubAssetHolderReward);
-  }
-
   function routeExtraRewards(address eolVault, address reward, uint256 amount) external onlyAssetManager {
     IHubAsset(reward).transferFrom(_msgSender(), address(this), amount);
-
-    StorageV1 storage $ = _getStorageV1();
-
-    (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward) = _calcReward($, amount);
-
-    _routeEOLClaimableReward($, eolVault, reward, eolAssetHolderReward);
-    _routeHubAssetHolderClaimableReward($, eolVault, reward, hubAssetHolderReward);
+    _routeEOLClaimableReward(_getStorageV1(), eolVault, reward, amount);
   }
 
   function dispatchTo(
@@ -110,7 +91,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     uint48 timestamp,
     uint256[] calldata indexes,
     bytes[] calldata metadata
-  ) external onlyRewardManagerAdmin {
+  ) external onlyRewardManager {
     require(indexes.length == metadata.length, StdError.InvalidParameter('metadata'));
 
     StorageV1 storage $ = _getStorageV1();
@@ -129,23 +110,12 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     uint48 timestamp,
     uint256 index,
     bytes memory metadata
-  ) external onlyRewardManagerAdmin {
+  ) external onlyRewardManager {
     StorageV1 storage $ = _getStorageV1();
 
     _assertDistributorRegistered($, distributor);
 
     _processDispatch($, distributor, eolVault, reward, timestamp, index, metadata);
-  }
-
-  function _calcReward(StorageV1 storage $, uint256 totalAmount)
-    internal
-    view
-    returns (uint256 eolAssetHolderReward, uint256 hubAssetHolderReward)
-  {
-    uint256 eolAssetHolderRatio = $.rewardConfigurator.eolAssetHolderRewardRatio();
-    uint256 precision = $.rewardConfigurator.rewardRatioPrecision();
-    eolAssetHolderReward = Math.mulDiv(totalAmount, eolAssetHolderRatio, precision);
-    hubAssetHolderReward = totalAmount - eolAssetHolderReward;
   }
 
   function _routeEOLClaimableReward(StorageV1 storage $, address eolVault, address reward, uint256 amount) internal {
@@ -155,24 +125,6 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     }
 
     _routeClaimableReward($, eolVault, reward, amount, metadata);
-  }
-
-  function _routeHubAssetHolderClaimableReward(StorageV1 storage $, address eolVault, address reward, uint256 amount)
-    internal
-  {
-    bytes memory metadata;
-    if ($.rewardConfigurator.distributionType(eolVault, reward) == DistributionType.TWAB) {
-      address underlyingAsset = IEOLVault(eolVault).asset();
-      metadata = RewardTWABMetadata(underlyingAsset, Time.timestamp()).encode();
-    }
-
-    _routeClaimableReward($, eolVault, reward, amount, metadata);
-  }
-
-  function _increaseEOLShareValue(address eolVault, uint256 assets) internal {
-    address reward = IEOLVault(eolVault).asset();
-    IHubAsset(reward).transfer(eolVault, assets);
-    emit EOLShareValueIncreased(eolVault, assets);
   }
 
   function _routeClaimableReward(
@@ -185,7 +137,7 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     DistributionType distributionType = $.rewardConfigurator.distributionType(eolVault, reward);
 
     if (distributionType == DistributionType.Unspecified) {
-      _storeToRewardManager($, eolVault, reward, amount, Time.timestamp());
+      _stashRewards($, eolVault, reward, amount, Time.timestamp());
       return;
     }
 
@@ -229,13 +181,9 @@ contract EOLRewardManager is IEOLRewardManager, Ownable2StepUpgradeable, EOLRewa
     emit Dispatched(address(distributor), eolVault, reward, amount);
   }
 
-  function _storeToRewardManager(
-    StorageV1 storage $,
-    address eolVault,
-    address reward,
-    uint256 amount,
-    uint48 timestamp
-  ) internal {
+  function _stashRewards(StorageV1 storage $, address eolVault, address reward, uint256 amount, uint48 timestamp)
+    internal
+  {
     RewardInfo[] storage rewardInfos = $.rewardTreasury[eolVault][timestamp];
     rewardInfos.push(RewardInfo(reward, amount, false));
     emit UnspecifiedReward(eolVault, reward, timestamp, rewardInfos.length, amount);
