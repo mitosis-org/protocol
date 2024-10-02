@@ -31,8 +31,19 @@ interface IMerkleRewardDistributorStorageV1 {
  * @notice Interface for the Merkle based reward distributor
  */
 interface IMerkleRewardDistributor is IRewardDistributor, IMerkleRewardDistributorStorageV1 {
+  /**
+   * @notice Error thrown when attempting to claim an already claimed reward.
+   */
   error IMerkleRewardDistributor__AlreadyClaimed();
+
+  /**
+   * @notice Error thrown when an invalid Merkle proof is provided.
+   */
   error IMerkleRewardDistributor__InvalidProof();
+
+  /**
+   * @notice Error thrown when an invalid amount is provided for claim.
+   */
   error IMerkleRewardDistributor__InvalidAmount();
 
   /**

@@ -5,4 +5,12 @@ import '@oz-v5/interfaces/IERC4626.sol';
 
 import './ITWABSnapshots.sol';
 
-interface IERC4626TWABSnapshots is IERC4626, ITWABSnapshots { }
+/**
+ * @title IERC4626TWABSnapshots
+ * @author Manythings Pte. Ltd.
+ * @dev Interface for ERC4626 vaults with Time-Weighted Average Balance (TWAB) snapshots functionality.
+ */
+interface IERC4626TWABSnapshots is IERC4626, ITWABSnapshots {
+// This interface combines IERC4626 and ITWABSnapshots
+// No additional functions are defined here
+}

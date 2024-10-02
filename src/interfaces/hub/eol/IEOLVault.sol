@@ -3,10 +3,31 @@ pragma solidity ^0.8.27;
 
 import { IERC4626TWABSnapshots } from '../../twab/IERC4626TWABSnapshots.sol';
 
+/**
+ * @title IEOLVaultStorageV1
+ * @author Manythings Pte. Ltd.
+ * @dev Interface for the storage of EOL Vault version 1.
+ */
 interface IEOLVaultStorageV1 {
+  /**
+   * @notice Emitted when the asset manager is set.
+   * @param assetManager The address of the new asset manager.
+   */
   event AssetManagerSet(address assetManager);
 
+  /**
+   * @notice Returns the address of the current asset manager.
+   * @return The address of the asset manager.
+   */
   function assetManager() external view returns (address);
 }
 
-interface IEOLVault is IERC4626TWABSnapshots, IEOLVaultStorageV1 { }
+/**
+ * @title IEOLVault
+ * @author Manythings Pte. Ltd.
+ * @dev Interface for the EOL Vault, combining ERC4626 functionality with TWAB snapshots.
+ */
+interface IEOLVault is IERC4626TWABSnapshots, IEOLVaultStorageV1 {
+// This interface combines IERC4626TWABSnapshots and IEOLVaultStorageV1
+// No additional functions are defined here
+}

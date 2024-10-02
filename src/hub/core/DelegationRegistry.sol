@@ -31,7 +31,7 @@ contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1,
     _assertSelfOrManager($, account);
 
     $.delegationManagers[account] = delegationManager_;
-    emit DelegationManagerSet(account, delegationManager_);
+    emit DelegationManagerSet(account, _msgSender(), delegationManager_);
   }
 
   function setDefaultDelegatee(address account, address defaultDelegatee_) external override {
@@ -39,7 +39,7 @@ contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1,
     _assertSelfOrManager($, account);
 
     $.defaultDelegatees[account] = defaultDelegatee_;
-    emit DefaultDelegateeSet(account, defaultDelegatee_);
+    emit DefaultDelegateeSet(account, _msgSender(), defaultDelegatee_);
   }
 
   function setRedistributionRule(address account, address redistributionRule_) external override {
@@ -49,7 +49,7 @@ contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1,
     _assertSelfOrManager($, account);
 
     $.redistributionRules[account] = redistributionRule_;
-    emit RedistributionRuleSet(account, redistributionRule_);
+    emit RedistributionRuleSet(account, _msgSender(), redistributionRule_);
   }
 
   function _delegationManager(StorageV1 storage $, address account) internal view returns (address delegationManager_) {

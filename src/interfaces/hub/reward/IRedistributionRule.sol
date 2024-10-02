@@ -7,7 +7,16 @@ pragma solidity ^0.8.27;
  * @dev You might define your own redistribution rule if you have complex redistribution logic or need to apply custom rules
  */
 interface IRedistributionRule {
+  /**
+   * @notice Error thrown when the source address is not a contract.
+   * @param source The address that was expected to be a contract.
+   */
   error IRedistributionRule__SourceIsNotContract(address source);
+
+  /**
+   * @notice Error thrown when the source is not registered.
+   * @param source The address of the unregistered source.
+   */
   error IRedistributionRule__SourceIsNotRegistered(address source);
 
   /**
