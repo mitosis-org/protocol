@@ -21,8 +21,9 @@ contract MockDelegationRegistry is IDelegationRegistry {
     return _redistributionRules[account];
   }
 
-  function setDelegationManager(address delegationManager_) external override {
-    _delegationManagers[msg.sender] = delegationManager_;
+  function setDelegationManager(address account, address delegationManager_) external override {
+    require(msg.sender == account || msg.sender == _delegationManagers[account], StdError.Unauthorized());
+    _delegationManagers[account] = delegationManager_;
   }
 
   function setDefaultDelegatee(address account, address defaultDelegatee_) external override {

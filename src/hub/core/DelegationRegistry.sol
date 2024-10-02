@@ -26,9 +26,12 @@ contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1,
     return _getStorageV1().redistributionRules[account];
   }
 
-  function setDelegationManager(address delegationManager_) external override {
-    _getStorageV1().delegationManagers[_msgSender()] = delegationManager_;
-    emit DelegationManagerSet(_msgSender(), delegationManager_);
+  function setDelegationManager(address account, address delegationManager_) external override {
+    StorageV1 storage $ = _getStorageV1();
+    _assertSelfOrManager($, account);
+
+    $.delegationManagers[account] = delegationManager_;
+    emit DelegationManagerSet(account, delegationManager_);
   }
 
   function setDefaultDelegatee(address account, address defaultDelegatee_) external override {
