@@ -8,7 +8,7 @@ import { IHubAsset } from './IHubAsset.sol';
  * @title IOptOutQueueStorageV1
  * @author Manythings Pte. Ltd.
  * @notice Storage interface for OptOutQueue, defining getter functions and events for storage operations
- * @dev Provides the foundation for managing opt-out requests in EOL (End-of-Life) vaults
+ * @dev Provides the foundation for managing opt-out requests in EOLVaults
  */
 interface IOptOutQueueStorageV1 {
   /**
@@ -232,7 +232,7 @@ interface IOptOutQueueStorageV1 {
 /**
  * @title IOptOutQueue
  * @author Manythings Pte. Ltd.
- * @notice Interface for managing opt-out requests in EOL (End-of-Life) vaults
+ * @notice Interface for managing opt-out requests in EOLVaults
  * @dev Extends IOptOutQueueStorageV1 with queue management and configuration functions
  */
 interface IOptOutQueue is IOptOutQueueStorageV1 {
