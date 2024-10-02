@@ -71,6 +71,17 @@ sepolia-mode = { key = "EMPTY", url = "https://sepolia.explorer.mode.network/api
 sepolia-optimism = { key = "${OPTIMISM_SEPOLIA_ETHERSCAN_KEY}" }
 sepolia-scroll = { key = "${SCROLL_SEPOLIA_ETHERSCAN_KEY}" }
 
+[doc]
+ignore = [
+    "./src/branch/**/*",
+    "./src/external/**/*",
+    "./src/governance/**/*",
+    "./src/hub/**/*",
+    "./src/twab/**/*",
+    "./src/lib/**/*",
+    "./src/message/**/*",
+]
+
 [fmt]
 line_length = 120
 tab_width = 2
