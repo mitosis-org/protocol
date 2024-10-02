@@ -6,18 +6,16 @@ import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
 import { IEOLProtocolRegistry } from '../../interfaces/hub/eol/IEOLProtocolRegistry.sol';
-import { IEOLAllocationGovernor } from '../../interfaces/hub/governance/IEOLAllocationGovernor.sol';
+import { IEOLGaugeGovernor } from '../../interfaces/hub/governance/IEOLGaugeGovernor.sol';
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { Arrays } from '../../lib/Arrays.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
-import {
-  EOLAllocationGovernorStorageV1, Epoch, EpochVoteInfo, TotalVoteInfo
-} from './EOLAllocationGovernorStorageV1.sol';
+import { EOLGaugeGovernorStorageV1, Epoch, EpochVoteInfo, TotalVoteInfo } from './EOLGaugeGovernorStorageV1.sol';
 
 // TODO(thai): add more view and ownable functions
 
-contract EOLAllocationGovernor is IEOLAllocationGovernor, Ownable2StepUpgradeable, EOLAllocationGovernorStorageV1 {
+contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaugeGovernorStorageV1 {
   using TWABSnapshotsUtils for ITWABSnapshots;
   using EnumerableSet for EnumerableSet.AddressSet;
   using Arrays for uint256[];
@@ -28,12 +26,12 @@ contract EOLAllocationGovernor is IEOLAllocationGovernor, Ownable2StepUpgradeabl
 
   event EpochPeriodSet(uint32 epochPeriod);
 
-  error EOLAllocationGovernor__EpochNotFound(uint256 epochId);
-  error EOLAllocationGovernor__EpochNotOngoing(uint256 epochId);
+  error EOLGaugeGovernor__EpochNotFound(uint256 epochId);
+  error EOLGaugeGovernor__EpochNotOngoing(uint256 epochId);
 
-  error EOLAllocationGovernor__ZeroGaugesLength();
-  error EOLAllocationGovernor__InvalidGaugesLength(uint256 actual, uint256 expected);
-  error EOLAllocationGovernor__InvalidGaugesSum();
+  error EOLGaugeGovernor__ZeroGaugesLength();
+  error EOLGaugeGovernor__InvalidGaugesLength(uint256 actual, uint256 expected);
+  error EOLGaugeGovernor__InvalidGaugesSum();
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -127,12 +125,12 @@ contract EOLAllocationGovernor is IEOLAllocationGovernor, Ownable2StepUpgradeabl
     Epoch storage epoch = _ongoingEpoch($);
     EpochVoteInfo storage epochVoteInfo = _getOrInitEpochVoteInfo($, epoch, chainId);
 
-    require(gauges.length > 0, EOLAllocationGovernor__ZeroGaugesLength());
+    require(gauges.length > 0, EOLGaugeGovernor__ZeroGaugesLength());
     require(
       gauges.length == epochVoteInfo.protocolIds.length,
-      EOLAllocationGovernor__InvalidGaugesLength(gauges.length, epochVoteInfo.protocolIds.length)
+      EOLGaugeGovernor__InvalidGaugesLength(gauges.length, epochVoteInfo.protocolIds.length)
     );
-    require(_sum(gauges) == 100, EOLAllocationGovernor__InvalidGaugesSum());
+    require(_sum(gauges) == 100, EOLGaugeGovernor__InvalidGaugesSum());
 
     epochVoteInfo.gaugesByAccount[_msgSender()] = gauges;
 
@@ -163,7 +161,7 @@ contract EOLAllocationGovernor is IEOLAllocationGovernor, Ownable2StepUpgradeabl
 
   function _epoch(StorageV1 storage $, uint256 epochId) internal view returns (Epoch storage) {
     Epoch storage epoch = $.epochs[epochId];
-    require(epoch.id != 0, EOLAllocationGovernor__EpochNotFound(epochId));
+    require(epoch.id != 0, EOLGaugeGovernor__EpochNotFound(epochId));
     return epoch;
   }
 
@@ -171,9 +169,7 @@ contract EOLAllocationGovernor is IEOLAllocationGovernor, Ownable2StepUpgradeabl
     Epoch storage epoch = _epoch($, $.lastEpochId);
     uint48 currentTime = $.eolAsset.clock();
 
-    require(
-      currentTime >= epoch.startsAt && currentTime < epoch.endsAt, EOLAllocationGovernor__EpochNotOngoing(epoch.id)
-    );
+    require(currentTime >= epoch.startsAt && currentTime < epoch.endsAt, EOLGaugeGovernor__EpochNotOngoing(epoch.id));
 
     return epoch;
   }
