@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
+
 import { IAssetManager } from './IAssetManager.sol';
 
 /**
@@ -9,7 +11,7 @@ import { IAssetManager } from './IAssetManager.sol';
  * @notice Interface for the Asset Manager Entrypoint, which serves as a bridge between the Asset Manager and branch chains
  * @dev This interface defines the methods for cross-chain asset management operations
  */
-interface IAssetManagerEntrypoint {
+interface IAssetManagerEntrypoint is IMessageRecipient {
   /**
    * @notice Returns the associated Asset Manager contract
    * @return assetManger_ The address of the Asset Manager contract
