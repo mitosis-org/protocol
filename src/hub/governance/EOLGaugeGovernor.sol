@@ -7,7 +7,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 
 import { IEOLProtocolRegistry } from '../../interfaces/hub/eol/IEOLProtocolRegistry.sol';
 import { IEOLGaugeGovernor } from '../../interfaces/hub/governance/IEOLGaugeGovernor.sol';
-import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
+import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { Arrays } from '../../lib/Arrays.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
@@ -16,22 +16,8 @@ import { EOLGaugeGovernorStorageV1, Epoch, EpochVoteInfo, TotalVoteInfo } from '
 // TODO(thai): add more view and ownable functions
 
 contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaugeGovernorStorageV1 {
-  using TWABSnapshotsUtils for ITWABSnapshots;
   using EnumerableSet for EnumerableSet.AddressSet;
   using Arrays for uint256[];
-
-  event EpochStarted(uint256 indexed epochId, uint48 startsAt, uint48 endsAt);
-  event ProtocolIdsFetched(uint256 indexed epochId, uint256 indexed chainId, uint256[] protocolIds);
-  event VoteCasted(uint256 indexed epochId, uint256 indexed chainId, address indexed account, uint32[] gauges);
-
-  event EpochPeriodSet(uint32 epochPeriod);
-
-  error EOLGaugeGovernor__EpochNotFound(uint256 epochId);
-  error EOLGaugeGovernor__EpochNotOngoing(uint256 epochId);
-
-  error EOLGaugeGovernor__ZeroGaugesLength();
-  error EOLGaugeGovernor__InvalidGaugesLength(uint256 actual, uint256 expected);
-  error EOLGaugeGovernor__InvalidGaugesSum();
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -42,7 +28,7 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
   function initialize(
     address owner,
     IEOLProtocolRegistry protocolRegistry_,
-    ITWABSnapshots eolAsset,
+    IEOLVault eolVault,
     uint32 twabPeriod,
     uint32 epochPeriod,
     uint48 startsAt
@@ -52,7 +38,7 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
 
     StorageV1 storage $ = _getStorageV1();
     $.protocolRegistry = protocolRegistry_;
-    $.eolAsset = eolAsset;
+    $.eolVault = eolVault;
     $.twabPeriod = twabPeriod;
     $.epochPeriod = epochPeriod;
 
@@ -70,12 +56,6 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
     return _getStorageV1().lastEpochId;
   }
 
-  function totalVotingPower(uint256 epochId) external view returns (uint256) {
-    StorageV1 storage $ = _getStorageV1();
-    Epoch storage epoch = _epoch($, epochId);
-    return _getTotalVotingPower($, epoch);
-  }
-
   function protocolIds(uint256 epochId, uint256 chainId) external view returns (uint256[] memory) {
     StorageV1 storage $ = _getStorageV1();
     Epoch storage epoch = _epoch($, epochId);
@@ -85,14 +65,13 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
   function voteResult(uint256 epochId, uint256 chainId, address account)
     external
     view
-    returns (bool hasVoted, uint256 votingPower, uint256 gaugeSum, uint32[] memory gauges)
+    returns (bool hasVoted, uint256 gaugeSum, uint32[] memory gauges)
   {
     StorageV1 storage $ = _getStorageV1();
     Epoch storage epoch = _epoch($, epochId);
-    votingPower = _getVotingPower($, epoch, account);
 
     (bool exists, uint256 latestVotedEpochId) = _latestVotedEpochIdBefore($, epochId, chainId, account);
-    if (!exists) return (false, votingPower, 0, new uint32[](0));
+    if (!exists) return (false, 0, new uint32[](0));
 
     EpochVoteInfo storage latestVotedEpochVoteInfo = $.epochs[latestVotedEpochId].voteInfoByChainId[chainId];
     uint256[] memory latestVotedProtocolIds = latestVotedEpochVoteInfo.protocolIds;
@@ -112,7 +91,7 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
       }
     }
 
-    return (true, votingPower, gaugeSum, gauges);
+    return (true, gaugeSum, gauges);
   }
 
   //=========== NOTE: MUTATION FUNCTIONS ===========//
@@ -125,12 +104,12 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
     Epoch storage epoch = _ongoingEpoch($);
     EpochVoteInfo storage epochVoteInfo = _getOrInitEpochVoteInfo($, epoch, chainId);
 
-    require(gauges.length > 0, EOLGaugeGovernor__ZeroGaugesLength());
+    require(gauges.length > 0, IEOLGaugeGovernor__ZeroGaugesLength());
     require(
       gauges.length == epochVoteInfo.protocolIds.length,
-      EOLGaugeGovernor__InvalidGaugesLength(gauges.length, epochVoteInfo.protocolIds.length)
+      IEOLGaugeGovernor__InvalidGaugesLength(gauges.length, epochVoteInfo.protocolIds.length)
     );
-    require(_sum(gauges) == 100, EOLGaugeGovernor__InvalidGaugesSum());
+    require(_sum(gauges) == 100, IEOLGaugeGovernor__InvalidGaugesSum());
 
     epochVoteInfo.gaugesByAccount[_msgSender()] = gauges;
 
@@ -161,15 +140,15 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
 
   function _epoch(StorageV1 storage $, uint256 epochId) internal view returns (Epoch storage) {
     Epoch storage epoch = $.epochs[epochId];
-    require(epoch.id != 0, EOLGaugeGovernor__EpochNotFound(epochId));
+    require(epoch.id != 0, IEOLGaugeGovernor__EpochNotFound(epochId));
     return epoch;
   }
 
   function _ongoingEpoch(StorageV1 storage $) internal view returns (Epoch storage) {
     Epoch storage epoch = _epoch($, $.lastEpochId);
-    uint48 currentTime = $.eolAsset.clock();
+    uint48 currentTime = $.eolVault.clock();
 
-    require(currentTime >= epoch.startsAt && currentTime < epoch.endsAt, EOLGaugeGovernor__EpochNotOngoing(epoch.id));
+    require(currentTime >= epoch.startsAt && currentTime < epoch.endsAt, IEOLGaugeGovernor__EpochNotOngoing(epoch.id));
 
     return epoch;
   }
@@ -186,7 +165,7 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
   }
 
   function _moveToNextEpochIfNeeded(StorageV1 storage $) internal {
-    uint48 currentTime = $.eolAsset.clock();
+    uint48 currentTime = $.eolVault.clock();
     Epoch storage epoch = _ongoingEpoch($);
     while (currentTime >= epoch.endsAt) {
       epoch = _moveToNextEpoch($, epoch.endsAt);
@@ -212,18 +191,10 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
   {
     EpochVoteInfo storage voteInfo = epoch.voteInfoByChainId[chainId];
     if (voteInfo.protocolIds.length == 0) {
-      voteInfo.protocolIds = $.protocolRegistry.protocolIds(address($.eolAsset), chainId);
+      voteInfo.protocolIds = $.protocolRegistry.protocolIds(address($.eolVault), chainId);
       emit ProtocolIdsFetched(epoch.id, chainId, voteInfo.protocolIds);
     }
     return voteInfo;
-  }
-
-  function _getVotingPower(StorageV1 storage $, Epoch storage epoch, address account) internal view returns (uint256) {
-    return $.eolAsset.getAccountTWABByTimestampRange(account, epoch.startsAt - $.twabPeriod, epoch.startsAt);
-  }
-
-  function _getTotalVotingPower(StorageV1 storage $, Epoch storage epoch) internal view returns (uint256) {
-    return $.eolAsset.getTotalTWABByTimestampRange(epoch.startsAt - $.twabPeriod, epoch.startsAt);
   }
 
   function _sum(uint32[] memory arr) internal pure returns (uint256 sum) {
