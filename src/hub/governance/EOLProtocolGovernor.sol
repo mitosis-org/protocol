@@ -20,6 +20,7 @@ import { EOLProtocolGovernorStorageV1, Proposal } from './EOLProtocolGovernorSto
 // TODO(thai): Consider better design.
 //  - e.g. consider to store proposal state (passed / rejected) on-chain even though the state is calculated off-chain.
 //  - e.g. consider to store quorum and threshold on-chain even though they are only used in off-chain.
+// TODO(thai): consider ERC-1271 (castVoteBySig) for voting.
 
 contract EOLProtocolGovernor is
   IEOLProtocolGovernor,
@@ -54,26 +55,54 @@ contract EOLProtocolGovernor is
     $.twabPeriod = twabPeriod_;
   }
 
+  function proposalId(ProposalType proposalType, bytes memory payload, string memory description)
+    external
+    pure
+    returns (uint256)
+  {
+    return _proposalId(proposalType, payload, description);
+  }
+
+  function proposal(uint256 proposalId_)
+    external
+    view
+    returns (
+      address proposer,
+      ProposalType proposalType,
+      uint48 startsAt,
+      uint48 endsAt,
+      bytes memory payload,
+      bool executed
+    )
+  {
+    StorageV1 storage $ = _getStorageV1();
+
+    Proposal storage p = $.proposals[proposalId_];
+    require(p.proposer != address(0), IEOLProtocolGovernor__ProposalNotExist(proposalId_));
+
+    return (p.proposer, p.proposalType, p.startsAt, p.endsAt, p.payload, p.executed);
+  }
+
   function proposeInitiation(
     uint48 startsAt,
     uint48 endsAt,
     InitiationProposalPayload memory payload,
     string memory description
-  ) external onlyProposer returns (uint256 proposalId) {
+  ) external onlyProposer returns (uint256 proposalId_) {
     StorageV1 storage $ = _getStorageV1();
 
     bytes memory payload_ = abi.encode(payload);
-    proposalId = _proposalId(ProposalType.Initiation, payload_, description);
-    _assertProposalNotExist($, proposalId);
+    proposalId_ = _proposalId(ProposalType.Initiation, payload_, description);
+    _assertProposalNotExist($, proposalId_);
 
-    Proposal storage proposal = $.proposals[proposalId];
-    proposal.proposer = _msgSender();
-    proposal.proposalType = ProposalType.Initiation;
-    proposal.startsAt = startsAt;
-    proposal.endsAt = endsAt;
-    proposal.payload = payload_;
+    Proposal storage p = $.proposals[proposalId_];
+    p.proposer = _msgSender();
+    p.proposalType = ProposalType.Initiation;
+    p.startsAt = startsAt;
+    p.endsAt = endsAt;
+    p.payload = payload_;
 
-    emit ProposalCreated(proposalId, _msgSender(), ProposalType.Initiation, startsAt, endsAt, payload_, description);
+    emit ProposalCreated(proposalId_, _msgSender(), ProposalType.Initiation, startsAt, endsAt, payload_, description);
   }
 
   function proposeDeletion(
@@ -81,61 +110,61 @@ contract EOLProtocolGovernor is
     uint48 endsAt,
     DeletionProposalPayload memory payload,
     string memory description
-  ) external onlyProposer returns (uint256 proposalId) {
+  ) external onlyProposer returns (uint256 proposalId_) {
     StorageV1 storage $ = _getStorageV1();
     bytes memory payload_ = abi.encode(payload);
 
-    proposalId = _proposalId(ProposalType.Deletion, payload_, description);
-    _assertProposalNotExist($, proposalId);
+    proposalId_ = _proposalId(ProposalType.Deletion, payload_, description);
+    _assertProposalNotExist($, proposalId_);
 
-    Proposal storage proposal = $.proposals[proposalId];
-    proposal.proposer = _msgSender();
-    proposal.proposalType = ProposalType.Deletion;
-    proposal.startsAt = startsAt;
-    proposal.endsAt = endsAt;
-    proposal.payload = payload_;
+    Proposal storage p = $.proposals[proposalId_];
+    p.proposer = _msgSender();
+    p.proposalType = ProposalType.Deletion;
+    p.startsAt = startsAt;
+    p.endsAt = endsAt;
+    p.payload = payload_;
 
-    emit ProposalCreated(proposalId, _msgSender(), ProposalType.Deletion, startsAt, endsAt, payload_, description);
+    emit ProposalCreated(proposalId_, _msgSender(), ProposalType.Deletion, startsAt, endsAt, payload_, description);
   }
 
-  function castVote(uint256 proposalId, VoteOption option) external {
+  function castVote(uint256 proposalId_, VoteOption option) external {
     _assertVoteOptionValid(option);
 
     StorageV1 storage $ = _getStorageV1();
-    Proposal storage proposal = $.proposals[proposalId];
+    Proposal storage p = $.proposals[proposalId_];
 
-    require(proposal.proposer != address(0), IEOLProtocolGovernor__ProposalNotExist(proposalId));
-    require(proposal.startsAt <= block.timestamp, IEOLProtocolGovernor__ProposalNotStarted());
-    require(proposal.endsAt > block.timestamp, IEOLProtocolGovernor__ProposalEnded());
+    require(p.proposer != address(0), IEOLProtocolGovernor__ProposalNotExist(proposalId_));
+    require(p.startsAt <= block.timestamp, IEOLProtocolGovernor__ProposalNotStarted());
+    require(p.endsAt > block.timestamp, IEOLProtocolGovernor__ProposalEnded());
 
-    proposal.votes[_msgSender()] = option;
+    p.votes[_msgSender()] = option;
 
-    emit VoteCasted(proposalId, _msgSender(), option);
+    emit VoteCasted(proposalId_, _msgSender(), option);
   }
 
-  function execute(uint256 proposalId) external {
+  function execute(uint256 proposalId_) external {
     StorageV1 storage $ = _getStorageV1();
-    Proposal storage proposal = $.proposals[proposalId];
+    Proposal storage p = $.proposals[proposalId_];
 
-    require(proposal.proposer != address(0), IEOLProtocolGovernor__ProposalNotExist(proposalId));
-    require(proposal.proposer != _msgSender(), IEOLProtocolGovernor__InvalidExecutor(proposal.proposer));
-    require(proposal.endsAt <= block.timestamp, IEOLProtocolGovernor__ProposalNotEnded());
-    require(!proposal.executed, IEOLProtocolGovernor__ProposalAlreadyExecuted());
+    require(p.proposer != address(0), IEOLProtocolGovernor__ProposalNotExist(proposalId_));
+    require(p.proposer != _msgSender(), IEOLProtocolGovernor__InvalidExecutor(p.proposer));
+    require(p.endsAt <= block.timestamp, IEOLProtocolGovernor__ProposalNotEnded());
+    require(!p.executed, IEOLProtocolGovernor__ProposalAlreadyExecuted());
 
-    proposal.executed = true;
+    p.executed = true;
 
-    if (proposal.proposalType == ProposalType.Initiation) {
-      InitiationProposalPayload memory payload = abi.decode(proposal.payload, (InitiationProposalPayload));
+    if (p.proposalType == ProposalType.Initiation) {
+      InitiationProposalPayload memory payload = abi.decode(p.payload, (InitiationProposalPayload));
       $.protocolRegistry.registerProtocol(payload.eolVault, payload.chainId, payload.name, payload.metadata);
-    } else if (proposal.proposalType == ProposalType.Deletion) {
-      DeletionProposalPayload memory payload = abi.decode(proposal.payload, (DeletionProposalPayload));
+    } else if (p.proposalType == ProposalType.Deletion) {
+      DeletionProposalPayload memory payload = abi.decode(p.payload, (DeletionProposalPayload));
       uint256 protocolId = $.protocolRegistry.protocolId(payload.eolVault, payload.chainId, payload.name);
       $.protocolRegistry.unregisterProtocol(protocolId);
     } else {
-      revert IEOLProtocolGovernor__InvalidProposalType(proposal.proposalType);
+      revert IEOLProtocolGovernor__InvalidProposalType(p.proposalType);
     }
 
-    emit ProposalExecuted(proposalId);
+    emit ProposalExecuted(proposalId_);
   }
 
   function _proposalId(ProposalType proposalType, bytes memory payload, string memory description)
@@ -148,12 +177,12 @@ contract EOLProtocolGovernor is
     return uint256(keccak256(abi.encode(proposalType, payloadHash, descriptionHash)));
   }
 
-  function _assertProposalExists(StorageV1 storage $, uint256 proposalId) internal view {
-    require($.proposals[proposalId].proposer != address(0), IEOLProtocolGovernor__ProposalNotExist(proposalId));
+  function _assertProposalExists(StorageV1 storage $, uint256 proposalId_) internal view {
+    require($.proposals[proposalId_].proposer != address(0), IEOLProtocolGovernor__ProposalNotExist(proposalId_));
   }
 
-  function _assertProposalNotExist(StorageV1 storage $, uint256 proposalId) internal view {
-    require($.proposals[proposalId].proposer == address(0), IEOLProtocolGovernor__ProposalAlreadyExists(proposalId));
+  function _assertProposalNotExist(StorageV1 storage $, uint256 proposalId_) internal view {
+    require($.proposals[proposalId_].proposer == address(0), IEOLProtocolGovernor__ProposalAlreadyExists(proposalId_));
   }
 
   function _assertVoteOptionValid(VoteOption option) internal pure {

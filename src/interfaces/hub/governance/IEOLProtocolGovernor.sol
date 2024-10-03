@@ -55,6 +55,25 @@ interface IEOLProtocolGovernor {
   error IEOLProtocolGovernor__ProposalNotEnded();
   error IEOLProtocolGovernor__ProposalAlreadyExecuted();
 
+  //=========== NOTE: VIEW FUNCTIONS ===========//
+
+  function proposalId(ProposalType proposalType, bytes memory payload, string memory description)
+    external
+    pure
+    returns (uint256);
+
+  function proposal(uint256 proposalId_)
+    external
+    view
+    returns (
+      address proposer,
+      ProposalType proposalType,
+      uint48 startsAt,
+      uint48 endsAt,
+      bytes memory payload,
+      bool executed
+    );
+
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
 
   function proposeInitiation(
@@ -62,16 +81,16 @@ interface IEOLProtocolGovernor {
     uint48 endsAt,
     InitiationProposalPayload memory payload,
     string memory description
-  ) external returns (uint256 proposalId);
+  ) external returns (uint256 proposalId_);
 
   function proposeDeletion(
     uint48 startsAt,
     uint48 endsAt,
     DeletionProposalPayload memory payload,
     string memory description
-  ) external returns (uint256 proposalId);
+  ) external returns (uint256 proposalId_);
 
-  function castVote(uint256 proposalId, VoteOption option) external;
+  function castVote(uint256 proposalId_, VoteOption option) external;
 
-  function execute(uint256 proposalId) external;
+  function execute(uint256 proposalId_) external;
 }
