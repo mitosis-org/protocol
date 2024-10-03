@@ -29,7 +29,6 @@ contract EOLProtocolGovernorStorageV1 {
   struct StorageV1 {
     IEOLProtocolRegistry protocolRegistry;
     address eolVault;
-    uint32 twabPeriod;
     mapping(uint256 proposalId => Proposal) proposals;
   }
 

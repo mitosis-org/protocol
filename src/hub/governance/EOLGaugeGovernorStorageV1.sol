@@ -30,7 +30,6 @@ contract EOLGaugeGovernorStorageV1 {
   struct StorageV1 {
     IEOLProtocolRegistry protocolRegistry;
     IEOLVault eolVault;
-    uint32 twabPeriod;
     uint32 epochPeriod;
     uint256 lastEpochId;
     mapping(uint256 epochId => Epoch) epochs;

@@ -74,6 +74,8 @@ interface IEOLProtocolGovernor {
       bool executed
     );
 
+  function voteOption(uint256 proposalId_, address account) external view returns (VoteOption);
+
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
 
   function proposeInitiation(

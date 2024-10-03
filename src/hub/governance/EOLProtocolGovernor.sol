@@ -39,10 +39,7 @@ contract EOLProtocolGovernor is
     _disableInitializers();
   }
 
-  function initialize(address owner, IEOLProtocolRegistry protocolRegistry_, address eolVault_, uint32 twabPeriod_)
-    public
-    initializer
-  {
+  function initialize(address owner, IEOLProtocolRegistry protocolRegistry_, address eolVault_) public initializer {
     __Ownable2Step_init();
     _transferOwnership(owner);
 
@@ -52,7 +49,6 @@ contract EOLProtocolGovernor is
     StorageV1 storage $ = _getStorageV1();
     $.protocolRegistry = protocolRegistry_;
     $.eolVault = eolVault_;
-    $.twabPeriod = twabPeriod_;
   }
 
   function proposalId(ProposalType proposalType, bytes memory payload, string memory description)
@@ -81,6 +77,14 @@ contract EOLProtocolGovernor is
     require(p.proposer != address(0), IEOLProtocolGovernor__ProposalNotExist(proposalId_));
 
     return (p.proposer, p.proposalType, p.startsAt, p.endsAt, p.payload, p.executed);
+  }
+
+  function voteOption(uint256 proposalId_, address account) external view returns (VoteOption) {
+    StorageV1 storage $ = _getStorageV1();
+    Proposal storage p = $.proposals[proposalId_];
+
+    require(p.proposer != address(0), IEOLProtocolGovernor__ProposalNotExist(proposalId_));
+    return p.votes[account];
   }
 
   function proposeInitiation(

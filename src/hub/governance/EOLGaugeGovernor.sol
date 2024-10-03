@@ -29,7 +29,6 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
     address owner,
     IEOLProtocolRegistry protocolRegistry_,
     IEOLVault eolVault,
-    uint32 twabPeriod,
     uint32 epochPeriod,
     uint48 startsAt
   ) external initializer {
@@ -39,7 +38,6 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
     StorageV1 storage $ = _getStorageV1();
     $.protocolRegistry = protocolRegistry_;
     $.eolVault = eolVault;
-    $.twabPeriod = twabPeriod;
     $.epochPeriod = epochPeriod;
 
     _moveToNextEpoch($, startsAt);
