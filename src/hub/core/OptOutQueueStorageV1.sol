@@ -72,6 +72,12 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
 
       resp[i] = GetRequestResponse({
         id: reqIds[i],
+        requestedShares: reqIds[i] > 0
+          ? req.accumulatedShares - queue.get(reqIds[i] - 1).accumulatedShares
+          : req.accumulatedShares,
+        requestedAssets: reqIds[i] > 0
+          ? req.accumulatedAssets - queue.get(reqIds[i] - 1).accumulatedAssets
+          : req.accumulatedAssets,
         accumulatedShares: req.accumulatedShares,
         accumulatedAssets: req.accumulatedAssets,
         recipient: req.recipient,
@@ -98,6 +104,12 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
       resp[i] = GetRequestByIndexResponse({
         id: idxItemIds[i],
         indexId: indexId,
+        requestedShares: indexId > 0
+          ? req.accumulatedShares - queue.get(indexId - 1).accumulatedShares
+          : req.accumulatedShares,
+        requestedAssets: indexId > 0
+          ? req.accumulatedAssets - queue.get(indexId - 1).accumulatedAssets
+          : req.accumulatedAssets,
         accumulatedShares: req.accumulatedShares,
         accumulatedAssets: req.accumulatedAssets,
         recipient: req.recipient,

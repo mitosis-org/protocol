@@ -13,6 +13,8 @@ interface IOptOutQueueStorageV1 {
   /**
    * @notice Detailed information about a specific opt-out request
    * @param id Unique identifier of the request
+   * @param requestedShares Number of shares requested in the opt-out
+   * @param requestedAssets Equivalent asset amount at time of request
    * @param accumulatedShares Total shares accumulated up to this request
    * @param accumulatedAssets Total assets accumulated up to this request
    * @param recipient Address that will receive the assets
@@ -21,6 +23,8 @@ interface IOptOutQueueStorageV1 {
    */
   struct GetRequestResponse {
     uint256 id;
+    uint256 requestedShares;
+    uint256 requestedAssets;
     uint256 accumulatedShares;
     uint256 accumulatedAssets;
     address recipient;
@@ -32,6 +36,8 @@ interface IOptOutQueueStorageV1 {
    * @notice Detailed information about a request, including its index in the queue
    * @param id Unique identifier of the request
    * @param indexId Position of the request in the recipient's index
+   * @param requestedShares Number of shares requested in the opt-out
+   * @param requestedAssets Equivalent asset amount at time of request
    * @param accumulatedShares Total shares accumulated up to this request
    * @param accumulatedAssets Total assets accumulated up to this request
    * @param recipient Address that will receive the assets
@@ -41,6 +47,8 @@ interface IOptOutQueueStorageV1 {
   struct GetRequestByIndexResponse {
     uint256 id;
     uint256 indexId;
+    uint256 requestedShares;
+    uint256 requestedAssets;
     uint256 accumulatedShares;
     uint256 accumulatedAssets;
     address recipient;
