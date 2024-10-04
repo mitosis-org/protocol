@@ -13,6 +13,7 @@ contract MockAssetManager is IAssetManager {
   function depositWithOptIn(uint256 chainId, address branchAsset_, address to, address eolVault, uint256 amount)
     external
   { }
+
   function entrypoint() external view returns (address entrypoint_) { }
   function eolInitialized(uint256 chainId, address eolVault) external view returns (bool) { }
   function eolAlloc(address eolVault) external view returns (uint256 eolVaultAllocation) { }
@@ -32,12 +33,12 @@ contract MockAssetManager is IAssetManager {
   }
 
   function redeem(uint256 chainId, address branchAsset_, address to, uint256 amount) external { }
-  function rewardRouter() external view returns (address rewardRouter_) { }
+  function rewardHandler() external view returns (address rewardHandler_) { }
   function settleExtraRewards(uint256 chainId, address eolVault, address reward, uint256 amount) external { }
   function settleLoss(uint256 chainId, address eolVault, uint256 amount) external { }
   function settleYield(uint256 chainId, address eolVault, uint256 amount) external { }
   function setAssetPair(address hubAsset_, uint256 branchChainId, address branchAsset_) external { }
   function setEntrypoint(address entrypoint_) external { }
-  function setRewardRouter(address rewardRouter_) external { }
+  function setRewardHandler(address rewardHandler_) external { }
   function setStrategist(address eolVault, address) external { }
 }

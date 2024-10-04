@@ -9,15 +9,12 @@ import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/Transparen
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
 import { TWABRewardDistributor } from '../../../src/hub/reward/TWABRewardDistributor.sol';
-import { IRewardConfigurator } from '../../../src/interfaces/hub/reward/IRewardConfigurator.sol';
 import { TWABSnapshotsUtils } from '../../../src/lib/TWABSnapshotsUtils.sol';
 import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol';
 import { MockERC20TWABSnapshots } from '../../mock/MockERC20TWABSnapshots.t.sol';
-import { MockRewardConfigurator } from '../../mock/MockRewardConfigurator.t.sol';
 
 contract TWABRewardDistributortTest is Test {
   TWABRewardDistributor twabRewardDistributor;
-  MockRewardConfigurator rewardConfigurator;
   MockERC20TWABSnapshots token;
   MockDelegationRegistry delegationRegistry;
 
@@ -25,10 +22,10 @@ contract TWABRewardDistributortTest is Test {
   address immutable owner = makeAddr('owner');
 
   uint48 twabPeriod = 100;
+  uint256 rewardPrecision = 10 ** 18;
 
   function setUp() public {
     delegationRegistry = new MockDelegationRegistry();
-    rewardConfigurator = new MockRewardConfigurator(10e8);
 
     _proxyAdmin = new ProxyAdmin(owner);
     TWABRewardDistributor twabRewardDistributorImpl = new TWABRewardDistributor();
@@ -39,11 +36,14 @@ contract TWABRewardDistributortTest is Test {
           new TransparentUpgradeableProxy(
             address(twabRewardDistributorImpl),
             address(_proxyAdmin),
-            abi.encodeCall(twabRewardDistributor.initialize, (owner, owner, address(rewardConfigurator), twabPeriod))
+            abi.encodeCall(twabRewardDistributor.initialize, (owner, twabPeriod, rewardPrecision))
           )
         )
       )
     );
+    vm.startPrank(owner);
+    twabRewardDistributor.grantRole(twabRewardDistributor.DISPATCHER_ROLE(), owner);
+    vm.stopPrank();
 
     token = new MockERC20TWABSnapshots();
     token.initialize(address(delegationRegistry), 'Token', 'TKN');

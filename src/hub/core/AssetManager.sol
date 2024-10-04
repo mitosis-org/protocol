@@ -152,14 +152,14 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
     _assertOnlyEntrypoint($);
     _assertBranchAssetPairExist($, chainId, branchReward);
-    _assertEOLRewardRouterSet($);
+    _assertRewardHandlerSet($);
 
     address hubReward = $.hubAssets[chainId][branchReward];
     _mint($, chainId, hubReward, address(this), amount);
     emit RewardSettled(chainId, eolVault, hubReward, amount);
 
-    IHubAsset(hubReward).approve(address($.rewardRouter), amount);
-    $.rewardRouter.routeExtraRewards(eolVault, hubReward, amount);
+    IHubAsset(hubReward).approve(address($.rewardHandler), amount);
+    $.rewardHandler.handleReward(eolVault, hubReward, amount, bytes(''));
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
@@ -212,8 +212,8 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
     _setOptOutQueue(_getStorageV1(), optOutQueue_);
   }
 
-  function setRewardRouter(address rewardRouter_) external onlyOwner {
-    _setRewardRouter(_getStorageV1(), rewardRouter_);
+  function setRewardHandler(address rewardHandler_) external onlyOwner {
+    _setRewardHandler(_getStorageV1(), rewardHandler_);
   }
 
   function setStrategist(address eolVault, address strategist) external onlyOwner {

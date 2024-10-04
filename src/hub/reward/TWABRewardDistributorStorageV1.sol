@@ -3,8 +3,6 @@ pragma solidity 0.8.27;
 
 import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
-import { IRewardConfigurator } from '../../interfaces/hub/reward/IRewardConfigurator.sol';
-import { IRewardDistributor, DistributionType } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { ITWABRewardDistributorStorageV1 } from '../../interfaces/hub/reward/ITWABRewardDistributor.sol';
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
@@ -26,11 +24,8 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   }
 
   struct StorageV1 {
-    DistributionType distributionType;
-    address rewardConfigurator;
-    address rewardManager;
-    string description;
     uint48 twabPeriod;
+    uint256 rewardPrecision;
     mapping(address twabCriteria => mapping(address reward => AssetRewards assetRewards)) rewards;
   }
 
@@ -47,42 +42,26 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
-  function distributionType() external view returns (DistributionType) {
-    return _getStorageV1().distributionType;
-  }
-
-  function description() external view returns (string memory) {
-    return _getStorageV1().description;
-  }
-
-  function rewardConfigurator() external view returns (address) {
-    return _getStorageV1().rewardConfigurator;
-  }
-
-  function rewardManager() external view returns (address) {
-    return _getStorageV1().rewardManager;
-  }
-
   function twabPeriod() external view returns (uint48) {
     return _getStorageV1().twabPeriod;
   }
 
+  function rewardPrecision() external view returns (uint256) {
+    return _getStorageV1().rewardPrecision;
+  }
+
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
-
-  function _setRewardConfigurator(StorageV1 storage $, address rewardConfigurator_) internal {
-    $.rewardConfigurator = rewardConfigurator_;
-    emit RewardConfiguratorSet(rewardConfigurator_);
-  }
-
-  function _setRewardManager(StorageV1 storage $, address rewardManager_) internal {
-    $.rewardManager = rewardManager_;
-    emit RewardManagerSet(rewardManager_);
-  }
 
   function _setTWABPeriod(StorageV1 storage $, uint48 period) internal {
     require(period > 0, ITWABRewardDistributorStorageV1__ZeroPeriod());
     $.twabPeriod = period;
     emit TWABPeriodSet(period);
+  }
+
+  function _setRewardPrecision(StorageV1 storage $, uint256 precision) internal {
+    require(precision > 0, StdError.InvalidParameter('precision'));
+    $.rewardPrecision = precision;
+    emit RewardPrecisionSet(precision);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
@@ -125,13 +104,5 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
     returns (uint256)
   {
     return $.rewards[twabCriteria][reward].batchRewards[rewardedAt];
-  }
-
-  function _assertOnlyRewardManager(StorageV1 storage $) internal view {
-    require($.rewardManager == _msgSender(), StdError.Unauthorized());
-  }
-
-  function _assertOnlyRewardConfigurator(StorageV1 storage $) internal view {
-    require(address($.rewardConfigurator) == _msgSender(), StdError.Unauthorized());
   }
 }
