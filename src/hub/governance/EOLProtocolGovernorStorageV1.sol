@@ -6,21 +6,16 @@ import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 import { IEOLProtocolRegistry } from '../../interfaces/hub/eol/IEOLProtocolRegistry.sol';
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import {
-  ProposalType,
-  InitiationProposalPayload,
-  DeletionProposalPayload,
-  VoteOption
-} from '../../interfaces/hub/governance/IEOLProtocolGovernor.sol';
+import { IEOLProtocolGovernor } from '../../interfaces/hub/governance/IEOLProtocolGovernor.sol';
 
 struct Proposal {
   address proposer;
-  ProposalType proposalType;
+  IEOLProtocolGovernor.ProposalType proposalType;
   uint48 startsAt;
   uint48 endsAt;
   bytes payload;
   bool executed;
-  mapping(address account => VoteOption) votes;
+  mapping(address account => IEOLProtocolGovernor.VoteOption) votes;
 }
 
 contract EOLProtocolGovernorStorageV1 {

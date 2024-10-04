@@ -1,32 +1,33 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-enum ProposalType {
-  Initiation,
-  Deletion
-}
-
-struct InitiationProposalPayload {
-  address eolVault;
-  uint256 chainId;
-  string name;
-  string metadata;
-}
-
-struct DeletionProposalPayload {
-  address eolVault;
-  uint256 chainId;
-  string name;
-}
-
-enum VoteOption {
-  None,
-  Yes,
-  No,
-  Abstain
-}
-
 interface IEOLProtocolGovernor {
+  //=========== NOTE: TYPE DEFINITIONS ===========//
+  enum ProposalType {
+    Initiation,
+    Deletion
+  }
+
+  struct InitiationProposalPayload {
+    address eolVault;
+    uint256 chainId;
+    string name;
+    string metadata;
+  }
+
+  struct DeletionProposalPayload {
+    address eolVault;
+    uint256 chainId;
+    string name;
+  }
+
+  enum VoteOption {
+    None,
+    Yes,
+    No,
+    Abstain
+  }
+
   //=========== NOTE: EVENT DEFINITIONS ===========//
 
   event ProposalCreated(
@@ -48,7 +49,6 @@ interface IEOLProtocolGovernor {
 
   error IEOLProtocolGovernor__InvalidProposalType(ProposalType proposalType);
   error IEOLProtocolGovernor__InvalidVoteOption(VoteOption option);
-  error IEOLProtocolGovernor__InvalidExecutor(address expected);
 
   error IEOLProtocolGovernor__ProposalNotStarted();
   error IEOLProtocolGovernor__ProposalEnded();

@@ -6,13 +6,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { GovernorSettingsUpgradeable } from '@ozu-v5/governance/extensions/GovernorSettingsUpgradeable.sol';
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
 
-import {
-  IEOLProtocolGovernor,
-  ProposalType,
-  InitiationProposalPayload,
-  DeletionProposalPayload,
-  VoteOption
-} from '../../interfaces/hub/governance/IEOLProtocolGovernor.sol';
+import { IEOLProtocolGovernor } from '../../interfaces/hub/governance/IEOLProtocolGovernor.sol';
 import { IEOLProtocolRegistry } from '../../interfaces/hub/eol/IEOLProtocolRegistry.sol';
 import { EOLProtocolGovernorStorageV1, Proposal } from './EOLProtocolGovernorStorageV1.sol';
 
@@ -29,9 +23,15 @@ contract EOLProtocolGovernor is
   EOLProtocolGovernorStorageV1
 {
   bytes32 public constant PROPOSER_ROLE = keccak256('PROPOSER_ROLE');
+  bytes32 public constant EXECUTOR_ROLE = keccak256('EXECUTOR_ROLE');
 
   modifier onlyProposer() {
     _checkRole(PROPOSER_ROLE);
+    _;
+  }
+
+  modifier onlyExecutor() {
+    _checkRole(EXECUTOR_ROLE);
     _;
   }
 
@@ -45,6 +45,8 @@ contract EOLProtocolGovernor is
 
     __AccessControl_init();
     _grantRole(DEFAULT_ADMIN_ROLE, owner);
+    _setRoleAdmin(PROPOSER_ROLE, DEFAULT_ADMIN_ROLE);
+    _setRoleAdmin(EXECUTOR_ROLE, DEFAULT_ADMIN_ROLE);
 
     StorageV1 storage $ = _getStorageV1();
     $.protocolRegistry = protocolRegistry_;
@@ -146,12 +148,11 @@ contract EOLProtocolGovernor is
     emit VoteCasted(proposalId_, _msgSender(), option);
   }
 
-  function execute(uint256 proposalId_) external {
+  function execute(uint256 proposalId_) external onlyExecutor {
     StorageV1 storage $ = _getStorageV1();
     Proposal storage p = $.proposals[proposalId_];
 
     require(p.proposer != address(0), IEOLProtocolGovernor__ProposalNotExist(proposalId_));
-    require(p.proposer != _msgSender(), IEOLProtocolGovernor__InvalidExecutor(p.proposer));
     require(p.endsAt <= block.timestamp, IEOLProtocolGovernor__ProposalNotEnded());
     require(!p.executed, IEOLProtocolGovernor__ProposalAlreadyExecuted());
 
