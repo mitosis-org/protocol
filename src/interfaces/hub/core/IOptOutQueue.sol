@@ -11,6 +11,16 @@ import { IHubAsset } from './IHubAsset.sol';
  */
 interface IOptOutQueueStorageV1 {
   /**
+   * @notice Opt-out request status enumeration
+   */
+  enum RequestStatus {
+    None,
+    Requested,
+    Claimable,
+    Claimed
+  }
+
+  /**
    * @notice Detailed information about a specific opt-out request
    * @param id Unique identifier of the request
    * @param requestedShares Number of shares requested in the opt-out
@@ -101,6 +111,14 @@ interface IOptOutQueueStorageV1 {
    * @return redeemPeriod_ Duration of the redeem period in seconds
    */
   function redeemPeriod(address eolVault) external view returns (uint256 redeemPeriod_);
+
+  /**
+   * @notice Retrieves the status of a specific opt-out request
+   * @param eolVault Address of the EOL vault to query
+   * @param reqId ID of the request to query
+   * @return status RequestStatus enumeration indicating the request status
+   */
+  function getStatus(address eolVault, uint256 reqId) external view returns (RequestStatus status);
 
   /**
    * @notice Retrieves details for multiple requests from a specific EOL vault
