@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IERC20TWABSnapshots as IHubAsset } from '../twab/IERC20TWABSnapshots.sol';
-import { IERC4626TWABSnapshots as IEOLVault } from '../twab/IERC4626TWABSnapshots.sol';
 import { IAssetManager } from './core/IAssetManager.sol';
 import { IDelegationRegistry } from './core/IDelegationRegistry.sol';
 import { IOptOutQueue } from './core/IOptOutQueue.sol';
@@ -19,40 +17,8 @@ interface IMitosis {
   function optOutQueue() external view returns (IOptOutQueue optOutQueue_);
   function assetManager() external view returns (IAssetManager assetManager_);
   function delegationRegistry() external view returns (IDelegationRegistry delegationRegistry_);
-  function eolGaugeGovernor() external view returns (IEOLGaugeGovernor eolGaugeGovernor_);
-  function eolProtocolGovernor() external view returns (IEOLProtocolGovernor eolProtocolGovernor_);
-
-  //====================== NOTE: ASSET ======================//
-
-  function redeem(uint256 chainId, IHubAsset hubAsset, uint256 amount) external;
-  function redeem(uint256 chainId, IHubAsset hubAsset, address to, uint256 amount) external;
-
-  //====================== NOTE: EOL ======================//
-
-  function optOutPeriod(IEOLVault eolVault) external view returns (uint256 optOutPeriod_);
-
-  function optOutRequestInfo(IEOLVault eolVault, uint256 requestId)
-    external
-    view
-    returns (IOptOutQueue.GetRequestResponse memory resp);
-
-  function optOutStatus(IEOLVault eolVault, uint256 requestId)
-    external
-    view
-    returns (IOptOutQueue.RequestStatus optOutStatus_);
-
-  function optIn(IEOLVault eolVault, uint256 amount) external;
-  function optIn(IEOLVault eolVault, address assetOwner, uint256 amount) external;
-  function optIn(IEOLVault eolVault, address assetOwner, address receiver, uint256 amount) external;
-
-  function optOutRequest(IEOLVault eolVault, uint256 amount) external returns (uint256 requestId);
-  function optOutRequest(IEOLVault eolVault, address assetOwner, uint256 amount) external returns (uint256 requestId);
-  function optOutRequest(IEOLVault eolVault, address assetOwner, address receiver, uint256 amount)
-    external
-    returns (uint256 requestId);
-
-  function optOutClaim(IEOLVault eolVault) external;
-  function optOutClaim(IEOLVault eolVault, address receiver) external;
+  function eolGaugeGovernor(address eolVault) external view returns (IEOLGaugeGovernor eolGaugeGovernor_);
+  function eolProtocolGovernor(address eolVault) external view returns (IEOLProtocolGovernor eolProtocolGovernor_);
 
   //====================== NOTE: DELEGATION ======================//
 
