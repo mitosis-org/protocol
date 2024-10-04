@@ -22,8 +22,8 @@ contract RoutingRewardHandlerStorageV1 is IRoutingRewardHandlerStorageV1 {
   }
 
   struct StorageV1 {
+    EnumerableSet.AddressSet allowedHandlers;
     mapping(address eolVault => mapping(address reward => HandlerConfig handlerConfig)) handlerConfigs;
-    mapping(IRewardHandler.DistributionType distributionType => EnumerableSet.AddressSet handlers) handlers;
     // note: We strictly manage the DefaultDistributor. DistributionTypes without a set
     // DefaultDistributor cannot be configured as the distribution method for assets.
     // And once initialized, the DefaultDistributor cannot be set to a zero address.
@@ -57,29 +57,8 @@ contract RoutingRewardHandlerStorageV1 is IRoutingRewardHandlerStorageV1 {
   /**
    * @inheritdoc IRoutingRewardHandlerStorageV1
    */
-  function handler(address eolVault, address reward) external view returns (IRewardHandler handler_) {
-    return _handler(_getStorageV1(), eolVault, reward);
-  }
-
-  /**
-   * @inheritdoc IRoutingRewardHandlerStorageV1
-   */
-  function handlers(IRewardHandler.DistributionType distributionType_, uint256 offset, uint256 size)
-    external
-    view
-    returns (IRewardHandler[] memory handlers_)
-  {
-    StorageV1 storage $ = _getStorageV1();
-
-    uint256 handlersLength = $.handlers[distributionType_].length();
-    if (offset + size > handlersLength) size = handlersLength - offset;
-
-    handlers_ = new IRewardHandler[](size);
-    for (uint256 i = 0; i < size; i++) {
-      handlers_[i] = IRewardHandler($.handlers[distributionType_].at(offset + i));
-    }
-
-    return handlers_;
+  function route(address eolVault, address reward) external view returns (IRewardHandler handler_) {
+    return _route(_getStorageV1(), eolVault, reward);
   }
 
   /**
@@ -96,8 +75,25 @@ contract RoutingRewardHandlerStorageV1 is IRoutingRewardHandlerStorageV1 {
   /**
    * @inheritdoc IRoutingRewardHandlerStorageV1
    */
-  function isHandlerRegistered(IRewardHandler handler_) external view returns (bool isRegistered_) {
-    return _isHandlerRegistered(_getStorageV1(), handler_);
+  function allowedHandlers(uint256 offset, uint256 size) external view returns (IRewardHandler[] memory handlers_) {
+    StorageV1 storage $ = _getStorageV1();
+
+    uint256 handlersLength = $.allowedHandlers.length();
+    if (offset + size > handlersLength) size = handlersLength - offset;
+
+    handlers_ = new IRewardHandler[](size);
+    for (uint256 i = 0; i < size; i++) {
+      handlers_[i] = IRewardHandler($.allowedHandlers.at(offset + i));
+    }
+
+    return handlers_;
+  }
+
+  /**
+   * @inheritdoc IRoutingRewardHandlerStorageV1
+   */
+  function isHandlerAllowed(IRewardHandler handler_) external view returns (bool isRegistered_) {
+    return _isHandlerAllowed(_getStorageV1(), handler_);
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
@@ -147,7 +143,7 @@ contract RoutingRewardHandlerStorageV1 is IRoutingRewardHandlerStorageV1 {
     _assertHandlerNotRegistered($, handler_);
 
     IRewardHandler.DistributionType distributionType_ = handler_.distributionType();
-    $.handlers[distributionType_].add(address(handler_));
+    $.allowedHandlers.add(address(handler_));
 
     emit HandlerRegistered(distributionType_, handler_);
   }
@@ -156,7 +152,7 @@ contract RoutingRewardHandlerStorageV1 is IRoutingRewardHandlerStorageV1 {
     _assertHandlerRegistered($, handler_);
 
     IRewardHandler.DistributionType distributionType_ = handler_.distributionType();
-    $.handlers[distributionType_].remove(address(handler_));
+    $.allowedHandlers.remove(address(handler_));
 
     emit HandlerUnregistered(distributionType_, handler_);
   }
@@ -172,7 +168,7 @@ contract RoutingRewardHandlerStorageV1 is IRoutingRewardHandlerStorageV1 {
     return address(config.handler) != address(0) ? config.handler.distributionType() : config.distributionType;
   }
 
-  function _handler(StorageV1 storage $, address eolVault, address reward)
+  function _route(StorageV1 storage $, address eolVault, address reward)
     internal
     view
     returns (IRewardHandler handler_)
@@ -181,12 +177,8 @@ contract RoutingRewardHandlerStorageV1 is IRoutingRewardHandlerStorageV1 {
     return address(config.handler) != address(0) ? config.handler : $.defaultHandlers[config.distributionType];
   }
 
-  function _isHandlerRegistered(StorageV1 storage $, IRewardHandler handler_)
-    internal
-    view
-    returns (bool isRegistered_)
-  {
-    return $.handlers[handler_.distributionType()].contains(address(handler_));
+  function _isHandlerAllowed(StorageV1 storage $, IRewardHandler handler_) internal view returns (bool isRegistered_) {
+    return $.allowedHandlers.contains(address(handler_));
   }
 
   // ============================ NOTE: ASSERTIONS ============================ //
@@ -202,10 +194,10 @@ contract RoutingRewardHandlerStorageV1 is IRoutingRewardHandlerStorageV1 {
   }
 
   function _assertHandlerNotRegistered(StorageV1 storage $, IRewardHandler handler_) internal view {
-    require(!_isHandlerRegistered($, handler_), IRoutingRewardHandlerStorageV1__HandlerAlreadyRegistered());
+    require(!_isHandlerAllowed($, handler_), IRoutingRewardHandlerStorageV1__HandlerAlreadyRegistered());
   }
 
   function _assertHandlerRegistered(StorageV1 storage $, IRewardHandler handler_) internal view {
-    require(_isHandlerRegistered($, handler_), IRoutingRewardHandlerStorageV1__HandlerNotRegistered());
+    require(_isHandlerAllowed($, handler_), IRoutingRewardHandlerStorageV1__HandlerNotRegistered());
   }
 }

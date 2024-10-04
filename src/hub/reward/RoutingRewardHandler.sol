@@ -116,7 +116,7 @@ contract RoutingRewardHandler is
 
     if (metadata.length == 0) {
       // If metadata is not provided, use the stored handler
-      handler = _handler($, eolVault, reward);
+      handler = _route($, eolVault, reward);
       metadata_ = '';
     } else {
       uint8 metadataType = uint8(metadata[0]);
