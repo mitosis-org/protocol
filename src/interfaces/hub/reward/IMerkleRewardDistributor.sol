@@ -1,27 +1,62 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IRewardDistributor, IRewardDistributorStorage, DistributionType } from './IRewardDistributor.sol';
+import { IRewardDistributor } from './IRewardDistributor.sol';
 
-interface IMerkleRewardDistributorStorageV1 is IRewardDistributorStorage {
+/**
+ * @title IMerkleRewardDistributorStorageV1
+ * @notice Interface definition for the MerkleRewradDistributorStorageV1
+ */
+interface IMerkleRewardDistributorStorageV1 {
   struct StageResponse {
     uint256 amount;
     bytes32 root;
   }
 
-  function stage(address eolVault, address reward, uint256 stage_) external view returns (StageResponse memory);
+  /**
+   * @notice Returns the stage info of specific distribution for the EOL vault and reward token.
+   * @param eolVault The EOL vault address
+   * @param reward The reward token address
+   * @param stageNum The stage number
+   * @return stage_ The stage info for the distribution
+   */
+  function stage(address eolVault, address reward, uint256 stageNum)
+    external
+    view
+    returns (StageResponse memory stage_);
 }
 
+/**
+ * @title IMerkleRewardDistributor
+ * @notice Interface for the Merkle based reward distributor
+ */
 interface IMerkleRewardDistributor is IRewardDistributor, IMerkleRewardDistributorStorageV1 {
   error IMerkleRewardDistributor__AlreadyClaimed();
   error IMerkleRewardDistributor__InvalidProof();
   error IMerkleRewardDistributor__InvalidAmount();
 
+  /**
+   * @notice Encodes metadata for the specified vault, stage, amount, and proof.
+   * @param eolVault The EOL vault address
+   * @param stage_ The stage number
+   * @param amount The reward amount
+   * @param proof The Merkle proof
+   * @return metadata The encoded metadata
+   */
   function encodeMetadata(address eolVault, uint256 stage_, uint256 amount, bytes32[] calldata proof)
     external
     pure
-    returns (bytes memory);
+    returns (bytes memory metadata);
 
+  /**
+   * @notice Makes a leaf hash that expected to be used in the Merkle tree.
+   * @param eolVault The EOL vault address
+   * @param reward The reward token address
+   * @param stage_ The stage number
+   * @param account The account address
+   * @param amount The reward amount
+   * @return leaf The leaf hash
+   */
   function encodeLeaf(address eolVault, address reward, uint256 stage_, address account, uint256 amount)
     external
     pure

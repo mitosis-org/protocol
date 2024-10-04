@@ -1,42 +1,49 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
 
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
+import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
-import { DistributionType } from '../../interfaces/hub/eol/IEOLRewardConfigurator.sol';
-import { IRewardConfigurator } from '../../interfaces/hub/reward/IRewardConfigurator.sol';
-import { IRewardDistributor } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { ITWABRewardDistributor } from '../../interfaces/hub/reward/ITWABRewardDistributor.sol';
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
+import { BaseHandler } from './BaseHandler.sol';
 import { LibDistributorRewardMetadata, RewardTWABMetadata } from './LibDistributorRewardMetadata.sol';
 import { TWABRewardDistributorStorageV1 } from './TWABRewardDistributorStorageV1.sol';
 
-contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeable, TWABRewardDistributorStorageV1 {
+contract TWABRewardDistributor is
+  BaseHandler,
+  ITWABRewardDistributor,
+  TWABRewardDistributorStorageV1,
+  AccessControlEnumerableUpgradeable
+{
   using LibDistributorRewardMetadata for RewardTWABMetadata;
   using LibDistributorRewardMetadata for bytes;
   using TWABSnapshotsUtils for ITWABSnapshots;
 
+  /// @notice Role for dispatching rewards (keccak256("DISPATCHER_ROLE"))
+  bytes32 public constant DISPATCHER_ROLE = 0xfbd38eecf51668fdbc772b204dc63dd28c3a3cf32e3025f52a80aa807359f50c;
+
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  constructor() {
+  constructor() BaseHandler(HandlerType.Endpoint, DistributionType.TWAB, 'TWAB Reward Distributor') {
     _disableInitializers();
   }
 
-  function initialize(address owner_, address rewardManager_, address rewardConfigurator_, uint48 twabPeriod_)
-    public
-    initializer
-  {
-    __Ownable2Step_init();
-    _transferOwnership(owner_);
+  function initialize(address admin, uint48 twabPeriod_, uint256 rewardPrecision_) public initializer {
+    __BaseHandler_init();
+    __AccessControlEnumerable_init();
+
+    _grantRole(DEFAULT_ADMIN_ROLE, admin);
+    _setRoleAdmin(DISPATCHER_ROLE, DEFAULT_ADMIN_ROLE);
 
     StorageV1 storage $ = _getStorageV1();
-    _setRewardManager($, rewardManager_);
-    _setRewardConfigurator($, rewardConfigurator_);
+
     _setTWABPeriod($, twabPeriod_);
+    _setRewardPrecision($, rewardPrecision_);
   }
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
@@ -72,22 +79,6 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
 
-  function setRewardManager(address rewardManager_) external {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertOnlyRewardConfigurator($);
-
-    _setRewardManager($, rewardManager_);
-  }
-
-  function setRewardConfigurator(address rewardConfigurator_) external {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertOnlyRewardConfigurator($);
-
-    _setRewardConfigurator($, rewardConfigurator_);
-  }
-
   function claim(address reward, bytes calldata metadata) external {
     claim(_msgSender(), reward, metadata);
   }
@@ -106,13 +97,25 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     _claimPartialReward(_msgSender(), receiver, twabMetadata.twabCriteria, reward, twabMetadata.rewardedAt, amount);
   }
 
-  function handleReward(address, address reward, uint256 amount, bytes calldata metadata) external {
+  /**
+   * @inheritdoc BaseHandler
+   */
+  function _isDispatchable(address dispathcer) internal view override returns (bool) {
+    return hasRole(DISPATCHER_ROLE, dispathcer);
+  }
+
+  /**
+   * @inheritdoc BaseHandler
+   * @dev use current timestamp and eolVault if metadata is not provided
+   */
+  function _handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) internal override {
     StorageV1 storage $ = _getStorageV1();
-    _assertOnlyRewardManager($);
 
     IERC20(reward).transferFrom(_msgSender(), address(this), amount);
 
-    RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
+    RewardTWABMetadata memory twabMetadata = metadata.length == 0
+      ? RewardTWABMetadata({ twabCriteria: eolVault, rewardedAt: IERC6372(eolVault).clock() })
+      : metadata.decodeRewardTWABMetadata();
     _assertValidRewardMetadata(twabMetadata);
 
     address twabCriteria = twabMetadata.twabCriteria;
@@ -150,7 +153,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
 
     assetRewards.batchRewards[batchTimestamp] += amount;
 
-    emit RewardHandled(twabCriteria, reward, amount, batchTimestamp, $.distributionType, metadata);
+    emit RewardHandled(twabCriteria, reward, amount, batchTimestamp, distributionType(), metadata);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
@@ -240,8 +243,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
     uint256 userTWAB = criteria.getAccountTWABByTimestampRange(account, startsAt, endsAt);
     if (userTWAB == 0) return 0;
 
-    uint256 precision = IRewardConfigurator($.rewardConfigurator).rewardRatioPrecision();
-
+    uint256 precision = $.rewardPrecision;
     uint256 userRatio = Math.mulDiv(userTWAB, precision, totalTWAB);
     if (userRatio == 0) return 0;
 
@@ -257,7 +259,7 @@ contract TWABRewardDistributor is ITWABRewardDistributor, Ownable2StepUpgradeabl
   ) internal view returns (uint256) {
     uint256 totalReward = _batchRewards($, twabCriteria, reward, rewardedAt);
     uint256 userRatio = _calculateUserRatio($, twabCriteria, account, rewardedAt);
-    uint256 precision = IRewardConfigurator($.rewardConfigurator).rewardRatioPrecision();
+    uint256 precision = $.rewardPrecision;
     return Math.mulDiv(totalReward, userRatio, precision);
   }
 

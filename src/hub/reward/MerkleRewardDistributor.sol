@@ -5,42 +5,48 @@ import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { MerkleProof } from '@oz-v5/utils/cryptography/MerkleProof.sol';
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
 
 import { IMerkleRewardDistributor } from '../../interfaces/hub/reward/IMerkleRewardDistributor.sol';
-import { IRewardDistributor, DistributionType } from '../../interfaces/hub/reward/IRewardDistributor.sol';
+import { IRewardDistributor } from '../../interfaces/hub/reward/IRewardDistributor.sol';
+import { StdError } from '../../lib/StdError.sol';
+import { BaseHandler } from './BaseHandler.sol';
 import { LibDistributorRewardMetadata, RewardMerkleMetadata } from './LibDistributorRewardMetadata.sol';
 import { MerkleRewardDistributorStorageV1 } from './MerkleRewardDistributorStorageV1.sol';
 
 contract MerkleRewardDistributor is
+  BaseHandler,
   IMerkleRewardDistributor,
-  Ownable2StepUpgradeable,
-  MerkleRewardDistributorStorageV1
+  MerkleRewardDistributorStorageV1,
+  AccessControlEnumerableUpgradeable
 {
   using SafeERC20 for IERC20;
   using MerkleProof for bytes32[];
   using LibDistributorRewardMetadata for bytes;
   using LibDistributorRewardMetadata for RewardMerkleMetadata;
 
-  constructor() {
+  /// @notice Role for dispatching rewards (keccak256("DISPATCHER_ROLE"))
+  bytes32 public constant DISPATCHER_ROLE = 0xfbd38eecf51668fdbc772b204dc63dd28c3a3cf32e3025f52a80aa807359f50c;
+
+  //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
+
+  constructor() BaseHandler(HandlerType.Endpoint, DistributionType.Merkle, 'Merkle Reward Distributor') {
     _disableInitializers();
   }
 
-  function initialize(address owner_, address rewardManager_, address rewardConfigurator_) public initializer {
-    __Ownable2Step_init();
-    _transferOwnership(owner_);
+  function initialize(address admin) public initializer {
+    __BaseHandler_init();
+    __AccessControlEnumerable_init();
 
-    StorageV1 storage $ = _getStorageV1();
-
-    $.distributionType = DistributionType.MerkleProof;
-    $.description = 'MerkleRewardDistributor';
-
-    _setRewardManager($, rewardManager_);
-    _setRewardConfigurator($, rewardConfigurator_);
+    _grantRole(DEFAULT_ADMIN_ROLE, admin);
+    _setRoleAdmin(DISPATCHER_ROLE, DEFAULT_ADMIN_ROLE);
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
+  /**
+   * @inheritdoc IMerkleRewardDistributor
+   */
   function encodeMetadata(address eolVault, uint256 stage_, uint256 amount, bytes32[] calldata proof)
     external
     pure
@@ -49,6 +55,9 @@ contract MerkleRewardDistributor is
     return RewardMerkleMetadata({ eolVault: eolVault, stage: stage_, amount: amount, proof: proof }).encode();
   }
 
+  /**
+   * @inheritdoc IMerkleRewardDistributor
+   */
   function encodeLeaf(address eolVault, address reward, uint256 stage_, address account, uint256 amount)
     external
     pure
@@ -57,30 +66,39 @@ contract MerkleRewardDistributor is
     return _leaf(eolVault, reward, stage_, account, amount);
   }
 
-  /// @dev Checks if the account can claim.
+  /**
+   * @inheritdoc IRewardDistributor
+   */
   function claimable(address account, address reward, bytes calldata metadata) external view returns (bool) {
     return _claimable(account, reward, metadata.decodeRewardMerkleMetadata());
   }
 
-  /// @dev Returns the amount of claimable rewards for the account.
+  /**
+   * @inheritdoc IRewardDistributor
+   */
   function claimableAmount(address account, address reward, bytes calldata metadata) external view returns (uint256) {
     return _claimableAmount(account, reward, metadata.decodeRewardMerkleMetadata());
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  /// @dev Claims all of the rewards for the specified vault and reward.
+  /**
+   * @inheritdoc IRewardDistributor
+   */
   function claim(address reward, bytes calldata metadata) external {
     _claim(_msgSender(), reward, metadata.decodeRewardMerkleMetadata());
   }
 
-  /// @dev Claims all of the rewards for the specified vault and reward, sending them to the receiver.
+  /**
+   * @inheritdoc IRewardDistributor
+   */
   function claim(address receiver, address reward, bytes calldata metadata) external {
     _claim(receiver, reward, metadata.decodeRewardMerkleMetadata());
   }
 
-  /// @dev Claims a specific amount of rewards for the specified vault and reward.
-  /// param `amount` will be ignored.
+  /**
+   * @inheritdoc IRewardDistributor
+   */
   function claim(address reward, uint256 amount, bytes calldata metadata) external {
     RewardMerkleMetadata memory metadata_ = metadata.decodeRewardMerkleMetadata();
     require(metadata_.amount == amount, IMerkleRewardDistributor__InvalidAmount());
@@ -88,8 +106,9 @@ contract MerkleRewardDistributor is
     _claim(_msgSender(), reward, metadata_);
   }
 
-  /// @dev Claims a specific amount of rewards for the specified vault and reward, sending them to the receiver.
-  /// param `amount` will be ignored.
+  /**
+   * @inheritdoc IRewardDistributor
+   */
   function claim(address receiver, address reward, uint256 amount, bytes calldata metadata) external {
     RewardMerkleMetadata memory metadata_ = metadata.decodeRewardMerkleMetadata();
     require(metadata_.amount == amount, IMerkleRewardDistributor__InvalidAmount());
@@ -97,11 +116,14 @@ contract MerkleRewardDistributor is
     _claim(receiver, reward, metadata_);
   }
 
-  /// @dev Handles the distribution of rewards for the specified vault and reward.
-  /// This method can only be called by the RewardManager.
-  function handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
+  // ============================ NOTE: OVERRIDE FUNCTIONS ============================ //
+
+  function _isDispatchable(address dispatcher) internal view override returns (bool) {
+    return hasRole(DISPATCHER_ROLE, dispatcher);
+  }
+
+  function _handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) internal override {
     StorageV1 storage $ = _getStorageV1();
-    _assertOnlyRewardManager($);
 
     IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
 
@@ -113,17 +135,7 @@ contract MerkleRewardDistributor is
     // TODO(eddy): find out what is the proper values to input
     // eligibleRewardAsset = eolVault
     // batchTimestamp = nextStage
-    emit RewardHandled(eolVault, reward, amount, stageNum, $.distributionType, metadata);
-  }
-
-  // ============================ NOTE: OWNABLE FUNCTIONS ============================ //
-
-  function setRewardConfigurator(address rewardConfigurator_) external onlyOwner {
-    return _setRewardConfigurator(_getStorageV1(), rewardConfigurator_);
-  }
-
-  function setRewardManager(address rewardManager_) external onlyOwner {
-    return _setRewardManager(_getStorageV1(), rewardManager_);
+    emit RewardHandled(eolVault, reward, amount, stageNum, distributionType(), metadata);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //

@@ -1,39 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IRewardConfigurator } from './IRewardConfigurator.sol';
+import { IRewardHandler } from './IRewardHandler.sol';
 
-enum DistributionType {
-  Unspecified,
-  MerkleProof,
-  TWAB
-}
-
-interface IRewardDistributorStorage {
-  event RewardManagerSet(address indexed rewardManger);
-  event RewardConfiguratorSet(address indexed rewardConfigurator);
-
-  /// @dev Returns the DistributionType.
-  function distributionType() external view returns (DistributionType);
-
-  /// @dev Returns the description.
-  function description() external view returns (string memory);
-
-  /// @dev Returns the set RewardManager.
-  function rewardManager() external view returns (address);
-
-  /// @dev Returns the set RewardConfigurator.
-  function rewardConfigurator() external view returns (address);
-}
-
-interface IRewardDistributor is IRewardDistributorStorage {
-  event Claimed(
-    address indexed account,
-    address indexed receiver,
-    address indexed eligibleRewardAsset,
-    address reward,
-    uint256 amount
-  );
+/**
+ * @title IRewardDistributor
+ * @notice Common interface for distributor of rewards.
+ */
+interface IRewardDistributor is IRewardHandler {
   event RewardHandled(
     address indexed eligibleRewardAsset,
     address indexed reward,
@@ -43,33 +17,66 @@ interface IRewardDistributor is IRewardDistributorStorage {
     bytes metadata
   );
 
-  // metadata: See the `src/hub/eol/LibDistributorRewardMetadata`.RewardTWABMetadata
+  event Claimed(
+    address indexed account,
+    address indexed receiver,
+    address indexed eligibleRewardAsset,
+    address reward,
+    uint256 amount
+  );
 
-  /// @dev Checks if the account can claim.
-  function claimable(address account, address reward, bytes calldata metadata) external view returns (bool);
+  /**
+   * @notice Checks if the account can claim.
+   * @param account The account address
+   * @param reward The reward token address
+   * @param metadata The encoded metadata
+   * @return claimable_ True if the account can claim
+   */
+  function claimable(address account, address reward, bytes calldata metadata) external view returns (bool claimable_);
 
-  /// @dev Returns the amount of claimable rewards for the account.
-  function claimableAmount(address account, address reward, bytes calldata metadata) external view returns (uint256);
+  /**
+   * @notice Returns the amount of claimable rewards for the account.
+   * @param account The account address
+   * @param reward The reward token address
+   * @param metadata The encoded metadata
+   * @return claimableAmount_ The amount of claimable rewards
+   */
+  function claimableAmount(address account, address reward, bytes calldata metadata)
+    external
+    view
+    returns (uint256 claimableAmount_);
 
-  /// @dev Claims all of the rewards for the specified vault and reward.
+  /**
+   * @notice Claims all of the rewards for the specified vault and reward.
+   * @param reward The reward token address
+   * @param metadata The encoded metadata
+   */
   function claim(address reward, bytes calldata metadata) external;
 
-  /// @dev Claims all of the rewards for the specified vault and reward, sending them to the receiver.
+  /**
+   * @notice Claims all of the rewards for the specified vault and reward, sending them to the receiver.
+   * @param receiver The receiver address
+   * @param reward The reward token address
+   * @param metadata The encoded metadata
+   */
   function claim(address receiver, address reward, bytes calldata metadata) external;
 
-  /// @dev Claims a specific amount of rewards for the specified vault and reward.
+  /**
+   * @notice Claims a specific amount of rewards for the specified vault and reward.
+   * @dev param `amount` will be ignored.
+   * @param reward The reward token address
+   * @param amount The reward amount
+   * @param metadata The encoded metadata
+   */
   function claim(address reward, uint256 amount, bytes calldata metadata) external;
 
-  /// @dev Claims a specific amount of rewards for the specified vault and reward, sending them to the receiver.
+  /**
+   * @notice Claims a specific amount of rewards for the specified vault and reward, sending them to the receiver.
+   * @dev param `amount` will be ignored.
+   * @param receiver The receiver address
+   * @param reward The reward token address
+   * @param amount The reward amount
+   * @param metadata The encoded metadata
+   */
   function claim(address receiver, address reward, uint256 amount, bytes calldata metadata) external;
-
-  /// @dev Handles the distribution of rewards for the specified vault and reward.
-  /// This method can only be called by the RewardManager.
-  function handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) external;
-
-  /// @dev Sets the RewardManager address.
-  function setRewardManager(address rewardManager_) external;
-
-  /// @dev Sets the RewardConfigurator address.
-  function setRewardConfigurator(address rewardConfigurator_) external;
 }
