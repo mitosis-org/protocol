@@ -12,6 +12,7 @@ import { EOLProtocolGovernorStorageV1, Proposal } from './EOLProtocolGovernorSto
 
 // TODO(thai): Consider the way all EOL governances for different tokens are managed by only one governor contract.
 // TODO(thai): Consider better design.
+//  - e.g. consider more steps for proposal. (proposed -> ongoing -> result recorded -> executed)
 //  - e.g. consider to store proposal state (passed / rejected) on-chain even though the state is calculated off-chain.
 //  - e.g. consider to store quorum and threshold on-chain even though they are only used in off-chain.
 // TODO(thai): consider ERC-1271 (castVoteBySig) for voting.
