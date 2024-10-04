@@ -7,40 +7,24 @@ import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { Address } from '@oz-v5/utils/Address.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 
 import { EOLStrategyExecutorStorageV1 } from '../../branch/strategy/EOLStrategyExecutorStorageV1.sol';
 import { StdStrategy } from '../../branch/strategy/strategies/StdStrategy.sol';
 import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
 import { IEOLStrategyExecutor } from '../../interfaces/branch/strategy/IEOLStrategyExecutor.sol';
 import { IStrategy, IStrategyDependency } from '../../interfaces/branch/strategy/IStrategy.sol';
+import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 contract EOLStrategyExecutor is
   IStrategyDependency,
   IEOLStrategyExecutor,
-  PausableUpgradeable,
+  Pausable,
   Ownable2StepUpgradeable,
   EOLStrategyExecutorStorageV1
 {
   using SafeERC20 for IERC20;
   using Address for address;
-
-  //=========== NOTE: EVENT DEFINITIONS ===========//
-
-  event StrategyAdded(uint256 indexed strategyId, address indexed implementation, uint256 priority);
-  event StrategyEnabled(uint256 indexed strategyId);
-  event StrategyDisabled(uint256 indexed strategyId);
-
-  event EmergencyManagerSet(address indexed emergencyManager);
-  event StrategistSet(address indexed strategist);
-
-  //=========== NOTE: ERROR DEFINITIONS ===========//
-
-  error StrategistNotSet();
-  error StrategyAlreadySet(address implementation, uint256 strategyId);
-  error StrategyAlreadyEnabled(uint256 strategyId);
-  error StrategyNotEnabled(uint256 strategyId);
 
   //=========== NOTE: IMMUTABLE VARIABLES ===========//
 
@@ -130,34 +114,38 @@ contract EOLStrategyExecutor is
 
   //=========== NOTE: STRATEGIST FUNCTIONS ===========//
 
-  function deallocateEOL(uint256 amount) external whenNotPaused {
+  function deallocateEOL(uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
 
     _vault.deallocateEOL(_hubEOLVault, amount);
   }
 
-  function fetchEOL(uint256 amount) external whenNotPaused {
+  function fetchEOL(uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
 
     _vault.fetchEOL(_hubEOLVault, amount);
   }
 
-  function returnEOL(uint256 amount) external whenNotPaused {
+  function returnEOL(uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
 
     _asset.approve(address(_vault), amount);
     _vault.returnEOL(_hubEOLVault, amount);
   }
 
-  function settle() external whenNotPaused {
+  function settle() external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
 
     uint256 totalBalance_ = _totalBalance($);
@@ -172,9 +160,10 @@ contract EOLStrategyExecutor is
     }
   }
 
-  function settleExtraRewards(address reward, uint256 amount) external whenNotPaused {
+  function settleExtraRewards(address reward, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
     require(reward != address(_asset), StdError.InvalidAddress('reward'));
 
@@ -188,7 +177,7 @@ contract EOLStrategyExecutor is
    *
    * @dev only strategist can call this function
    */
-  function execute(IEOLStrategyExecutor.Call[] calldata calls) external whenNotPaused {
+  function execute(IEOLStrategyExecutor.Call[] calldata calls) external {
     // TODO(thai): check that total balance is almost the same before and after the execution.
 
     // TODO(thai): for now, strategist can move funds to defi positions not tracked by `totalBalance`.
@@ -197,12 +186,13 @@ contract EOLStrategyExecutor is
 
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
 
     for (uint256 i = 0; i < calls.length; i++) {
       uint256 strategyId = calls[i].strategyId;
       Strategy memory strategy = _getStrategy($, strategyId);
-      require(strategy.enabled, StrategyNotEnabled(strategyId));
+      require(strategy.enabled, IEOLStrategyExecutor__StrategyNotEnabled(strategyId));
 
       for (uint256 j = 0; j < calls[i].callData.length; j++) {
         strategy.implementation.functionDelegateCall(calls[i].callData[j]);
@@ -224,7 +214,10 @@ contract EOLStrategyExecutor is
     StorageV1 storage $ = _getStorageV1();
     {
       uint256 id = $.strategies.idxByImpl[implementation];
-      require(implementation != $.strategies.reg[id].implementation, StrategyAlreadySet(implementation, id));
+      require(
+        implementation != $.strategies.reg[id].implementation,
+        IEOLStrategyExecutor__StrategyAlreadySet(implementation, id)
+      );
     }
 
     uint256 nextId = $.strategies.len;
@@ -248,7 +241,7 @@ contract EOLStrategyExecutor is
 
     // toggle
     Strategy storage strategy = _getStrategy($, strategyId);
-    require(!strategy.enabled, StrategyAlreadyEnabled(strategyId));
+    require(!strategy.enabled, IEOLStrategyExecutor__StrategyAlreadyEnabled(strategyId));
     strategy.enabled = true;
 
     // add to enabled list
@@ -262,7 +255,7 @@ contract EOLStrategyExecutor is
 
     // toggle
     Strategy storage strategy = _getStrategy($, strategyId);
-    require(strategy.enabled, StrategyNotEnabled(strategyId));
+    require(strategy.enabled, IEOLStrategyExecutor__StrategyNotEnabled(strategyId));
     strategy.enabled = false;
 
     // remove from enabled list
@@ -313,7 +306,7 @@ contract EOLStrategyExecutor is
 
   function _assertOnlyStrategist(StorageV1 storage $) internal view {
     address strategist_ = $.strategist;
-    require(strategist_ != address(0), StrategistNotSet());
+    require(strategist_ != address(0), IEOLStrategyExecutor__StrategistNotSet());
     require(_msgSender() == strategist_, StdError.Unauthorized());
   }
 

@@ -5,12 +5,23 @@ import { Test } from '@std/Test.sol';
 
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 
+import { Pausable } from '../../src/lib/Pausable.sol';
 import { StdError } from '../../src/lib/StdError.sol';
 
 contract Toolkit is Test {
+  // OwnableUpgradeable
+
   function _errOwnableUnauthorizedAccount(address sender) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, sender);
   }
+
+  // Pausable
+
+  function _errPaused(bytes4 sig) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(Pausable.Pausable__Paused.selector, sig);
+  }
+
+  // StdError
 
   function _errUnauthorized() internal pure returns (bytes memory) {
     return abi.encodeWithSelector(StdError.Unauthorized.selector);
