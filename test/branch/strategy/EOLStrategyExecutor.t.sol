@@ -224,7 +224,9 @@ contract MitosisVaultTest is Toolkit {
 
     assertEq(_eolStrategyExecutor.lastSettledBalance(), 150 ether);
 
-    // losss
+    // Loss
+    // strategy1: 100 ether -> 70 ether
+    // strategy2: 50 ether -> 30 ether
     strategy1.setBalance(70 ether);
     strategy2.setBalance(30 ether);
 
