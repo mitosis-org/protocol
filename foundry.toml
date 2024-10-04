@@ -90,6 +90,8 @@ quote_style = "single"
 ignore = ['./src/external/**/*']
 
 [soldeer]
+remappings_generate = false
+
 remappings_regenerate = false
 
 remappings_location = "config"
