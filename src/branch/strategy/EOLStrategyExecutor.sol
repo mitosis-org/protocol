@@ -7,19 +7,19 @@ import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { Address } from '@oz-v5/utils/Address.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 
 import { EOLStrategyExecutorStorageV1 } from '../../branch/strategy/EOLStrategyExecutorStorageV1.sol';
 import { StdStrategy } from '../../branch/strategy/strategies/StdStrategy.sol';
 import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
 import { IEOLStrategyExecutor } from '../../interfaces/branch/strategy/IEOLStrategyExecutor.sol';
 import { IStrategy, IStrategyDependency } from '../../interfaces/branch/strategy/IStrategy.sol';
+import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 contract EOLStrategyExecutor is
   IStrategyDependency,
   IEOLStrategyExecutor,
-  PausableUpgradeable,
+  Pausable,
   Ownable2StepUpgradeable,
   EOLStrategyExecutorStorageV1
 {
@@ -130,34 +130,38 @@ contract EOLStrategyExecutor is
 
   //=========== NOTE: STRATEGIST FUNCTIONS ===========//
 
-  function deallocateEOL(uint256 amount) external whenNotPaused {
+  function deallocateEOL(uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
 
     _vault.deallocateEOL(_hubEOLVault, amount);
   }
 
-  function fetchEOL(uint256 amount) external whenNotPaused {
+  function fetchEOL(uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
 
     _vault.fetchEOL(_hubEOLVault, amount);
   }
 
-  function returnEOL(uint256 amount) external whenNotPaused {
+  function returnEOL(uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
 
     _asset.approve(address(_vault), amount);
     _vault.returnEOL(_hubEOLVault, amount);
   }
 
-  function settle() external whenNotPaused {
+  function settle() external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
 
     uint256 totalBalance_ = _totalBalance($);
@@ -172,9 +176,10 @@ contract EOLStrategyExecutor is
     }
   }
 
-  function settleExtraRewards(address reward, uint256 amount) external whenNotPaused {
+  function settleExtraRewards(address reward, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
     require(reward != address(_asset), StdError.InvalidAddress('reward'));
 
@@ -188,7 +193,7 @@ contract EOLStrategyExecutor is
    *
    * @dev only strategist can call this function
    */
-  function execute(IEOLStrategyExecutor.Call[] calldata calls) external whenNotPaused {
+  function execute(IEOLStrategyExecutor.Call[] calldata calls) external {
     // TODO(thai): check that total balance is almost the same before and after the execution.
 
     // TODO(thai): for now, strategist can move funds to defi positions not tracked by `totalBalance`.
@@ -197,6 +202,7 @@ contract EOLStrategyExecutor is
 
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
 
     for (uint256 i = 0; i < calls.length; i++) {
