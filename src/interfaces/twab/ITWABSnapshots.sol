@@ -5,7 +5,6 @@ import { IERC5805 } from '@oz-v5/interfaces/IERC5805.sol';
 
 /**
  * @title ITWABSnapshots
- * @author Manythings Pte. Ltd.
  * @dev Interface for Time-Weighted Average Balance (TWAB) snapshots functionality.
  */
 interface ITWABSnapshots is IERC5805 {

@@ -5,7 +5,6 @@ import { IERC20TWABSnapshots } from '../../twab/IERC20TWABSnapshots.sol';
 
 /**
  * @title IHubAsset
- * @author Manythings Pte. Ltd.
  * @dev Common interface for {HubAsset}. Extends IERC20TWABSnapshots with minting and burning capabilities.
  */
 interface IHubAsset is IERC20TWABSnapshots {

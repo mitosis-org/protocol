@@ -29,7 +29,7 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, Router, PausableUpgr
     _;
   }
 
-  modifier onlyDispachable(uint256 chainId) {
+  modifier onlyDispatchable(uint256 chainId) {
     require(_ccRegistry.isRegisteredChain(chainId), ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
     require(_ccRegistry.entrypointEnrolled(chainId), ICrossChainRegistry.ICrossChainRegistry__NotEnrolled());
     _;
@@ -65,7 +65,7 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, Router, PausableUpgr
 
   //=========== NOTE: ASSETMANAGER FUNCTIONS ===========//
 
-  function initializeAsset(uint256 chainId, address branchAsset) external onlyAssetManager onlyDispachable(chainId) {
+  function initializeAsset(uint256 chainId, address branchAsset) external onlyAssetManager onlyDispatchable(chainId) {
     bytes memory enc = MsgInitializeAsset({ asset: branchAsset.toBytes32() }).encode();
     _dispatchToBranch(chainId, enc);
   }
@@ -73,7 +73,7 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, Router, PausableUpgr
   function initializeEOL(uint256 chainId, address eolVault, address branchAsset)
     external
     onlyAssetManager
-    onlyDispachable(chainId)
+    onlyDispatchable(chainId)
   {
     bytes memory enc = MsgInitializeEOL({ eolVault: eolVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
     _dispatchToBranch(chainId, enc);
@@ -82,7 +82,7 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, Router, PausableUpgr
   function redeem(uint256 chainId, address branchAsset, address to, uint256 amount)
     external
     onlyAssetManager
-    onlyDispachable(chainId)
+    onlyDispatchable(chainId)
   {
     bytes memory enc = MsgRedeem({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
     _dispatchToBranch(chainId, enc);
@@ -91,7 +91,7 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, Router, PausableUpgr
   function allocateEOL(uint256 chainId, address eolVault, uint256 amount)
     external
     onlyAssetManager
-    onlyDispachable(chainId)
+    onlyDispatchable(chainId)
   {
     bytes memory enc = MsgAllocateEOL({ eolVault: eolVault.toBytes32(), amount: amount }).encode();
     _dispatchToBranch(chainId, enc);

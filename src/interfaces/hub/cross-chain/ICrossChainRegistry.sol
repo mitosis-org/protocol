@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 /**
  * @title ICrossChainRegistry
- * @author Manythings Pte. Ltd.
  * @dev Interface for the Cross-Chain Registry, which manages chain and vault information across different networks.
  */
 interface ICrossChainRegistry {

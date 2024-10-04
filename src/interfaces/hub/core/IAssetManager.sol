@@ -113,7 +113,6 @@ interface IAssetManagerStorageV1 {
 
 /**
  * @title IAssetManager
- * @author Manythings Pte. Ltd.
  * @notice Interface for the main Asset Manager contract
  */
 interface IAssetManager is IAssetManagerStorageV1 {
