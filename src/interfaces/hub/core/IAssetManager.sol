@@ -19,19 +19,6 @@ interface IAssetManagerStorageV1 {
   event OptOutQueueSet(address indexed optOutQueue_);
 
   /**
-   * @notice Emitted when a new reward router is set
-   * @param rewardRouter_ The address of the new reward router
-   */
-  event RewardRouterSet(address indexed rewardRouter_);
-
-  /**
-   * @notice Emitted when a new strategist is set for an EOLVault
-   * @param eolVault The address of the EOLVault
-   * @param strategist The address of the new strategist
-   */
-  event OptOutQueueSet(address indexed optOutQueue);
-
-  /**
    * @notice Emitted when a new reward handler is set
    * @param rewardHandler The address of the new reward handler
    */

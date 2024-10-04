@@ -11,7 +11,7 @@ import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/Transparen
 
 import { DelegationRegistry } from '../../../src/hub/core/DelegationRegistry.sol';
 
-contract MockRedistributionRule {}
+contract MockRedistributionRule { }
 
 contract DelegationRegistryTest is Test {
   DelegationRegistry internal _delegationRegistry;
@@ -86,7 +86,7 @@ contract DelegationRegistryTest is Test {
     vm.prank(user1);
     _delegationRegistry.setDefaultDelegatee(user1, address(3));
 
-    assertEq(_delegationRegistry.defaultDelegatee(user1), address(3)); 
+    assertEq(_delegationRegistry.defaultDelegatee(user1), address(3));
   }
 
   function test_setRedistributionRule() public {
