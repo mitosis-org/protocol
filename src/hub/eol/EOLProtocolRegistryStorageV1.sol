@@ -15,8 +15,8 @@ contract EOLProtocolRegistryStorageV1 {
 
   struct StorageV1 {
     mapping(uint256 protocolId => ProtocolInfo) protocols;
-    mapping(address eolAsset => mapping(uint256 chainId => IndexData)) indexes;
-    mapping(address eolAsset => mapping(address account => bool)) isAuthorized;
+    mapping(address eolVault => mapping(uint256 chainId => IndexData)) indexes;
+    mapping(address eolVault => mapping(address account => bool)) isAuthorized;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.EOLProtocolRegistryStorage.v1';
