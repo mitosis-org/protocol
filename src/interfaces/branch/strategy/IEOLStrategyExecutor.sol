@@ -6,6 +6,22 @@ import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { IMitosisVault } from '../IMitosisVault.sol';
 
 interface IEOLStrategyExecutor {
+  //=========== NOTE: EVENT DEFINITIONS ===========//
+
+  event StrategyAdded(uint256 indexed strategyId, address indexed implementation, uint256 priority);
+  event StrategyEnabled(uint256 indexed strategyId);
+  event StrategyDisabled(uint256 indexed strategyId);
+
+  event EmergencyManagerSet(address indexed emergencyManager);
+  event StrategistSet(address indexed strategist);
+
+  //=========== NOTE: ERROR DEFINITIONS ===========//
+
+  error IEOLStrategyExecutor__StrategistNotSet();
+  error IEOLStrategyExecutor__StrategyAlreadySet(address implementation, uint256 strategyId);
+  error IEOLStrategyExecutor__StrategyAlreadyEnabled(uint256 strategyId);
+  error IEOLStrategyExecutor__StrategyNotEnabled(uint256 strategyId);
+
   struct Strategy {
     uint256 priority;
     address implementation;

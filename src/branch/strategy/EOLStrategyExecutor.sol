@@ -26,22 +26,6 @@ contract EOLStrategyExecutor is
   using SafeERC20 for IERC20;
   using Address for address;
 
-  //=========== NOTE: EVENT DEFINITIONS ===========//
-
-  event StrategyAdded(uint256 indexed strategyId, address indexed implementation, uint256 priority);
-  event StrategyEnabled(uint256 indexed strategyId);
-  event StrategyDisabled(uint256 indexed strategyId);
-
-  event EmergencyManagerSet(address indexed emergencyManager);
-  event StrategistSet(address indexed strategist);
-
-  //=========== NOTE: ERROR DEFINITIONS ===========//
-
-  error StrategistNotSet();
-  error StrategyAlreadySet(address implementation, uint256 strategyId);
-  error StrategyAlreadyEnabled(uint256 strategyId);
-  error StrategyNotEnabled(uint256 strategyId);
-
   //=========== NOTE: IMMUTABLE VARIABLES ===========//
 
   IMitosisVault internal immutable _vault;
@@ -208,7 +192,7 @@ contract EOLStrategyExecutor is
     for (uint256 i = 0; i < calls.length; i++) {
       uint256 strategyId = calls[i].strategyId;
       Strategy memory strategy = _getStrategy($, strategyId);
-      require(strategy.enabled, StrategyNotEnabled(strategyId));
+      require(strategy.enabled, IEOLStrategyExecutor__StrategyNotEnabled(strategyId));
 
       for (uint256 j = 0; j < calls[i].callData.length; j++) {
         strategy.implementation.functionDelegateCall(calls[i].callData[j]);
@@ -230,7 +214,10 @@ contract EOLStrategyExecutor is
     StorageV1 storage $ = _getStorageV1();
     {
       uint256 id = $.strategies.idxByImpl[implementation];
-      require(implementation != $.strategies.reg[id].implementation, StrategyAlreadySet(implementation, id));
+      require(
+        implementation != $.strategies.reg[id].implementation,
+        IEOLStrategyExecutor__StrategyAlreadySet(implementation, id)
+      );
     }
 
     uint256 nextId = $.strategies.len;
@@ -254,7 +241,7 @@ contract EOLStrategyExecutor is
 
     // toggle
     Strategy storage strategy = _getStrategy($, strategyId);
-    require(!strategy.enabled, StrategyAlreadyEnabled(strategyId));
+    require(!strategy.enabled, IEOLStrategyExecutor__StrategyAlreadyEnabled(strategyId));
     strategy.enabled = true;
 
     // add to enabled list
@@ -268,7 +255,7 @@ contract EOLStrategyExecutor is
 
     // toggle
     Strategy storage strategy = _getStrategy($, strategyId);
-    require(strategy.enabled, StrategyNotEnabled(strategyId));
+    require(strategy.enabled, IEOLStrategyExecutor__StrategyNotEnabled(strategyId));
     strategy.enabled = false;
 
     // remove from enabled list
@@ -319,7 +306,7 @@ contract EOLStrategyExecutor is
 
   function _assertOnlyStrategist(StorageV1 storage $) internal view {
     address strategist_ = $.strategist;
-    require(strategist_ != address(0), StrategistNotSet());
+    require(strategist_ != address(0), IEOLStrategyExecutor__StrategistNotSet());
     require(_msgSender() == strategist_, StdError.Unauthorized());
   }
 
