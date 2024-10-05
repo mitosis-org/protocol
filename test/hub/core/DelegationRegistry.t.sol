@@ -23,6 +23,7 @@ contract DelegationRegistryTest is Test {
   address immutable delegationManager = makeAddr('delegationManager');
   address immutable defaultDelegatee = makeAddr('defaultDelegatee');
   address immutable redistributionRule = makeAddr('redistributionRule');
+  address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
   function setUp() public {
     _proxyAdmin = new ProxyAdmin(owner);
@@ -32,7 +33,9 @@ contract DelegationRegistryTest is Test {
       payable(
         address(
           new TransparentUpgradeableProxy(
-            address(delgationRegistryImpl), address(_proxyAdmin), abi.encodeCall(_delegationRegistry.initialize, ())
+            address(delgationRegistryImpl),
+            address(_proxyAdmin),
+            abi.encodeCall(_delegationRegistry.initialize, (mitosis))
           )
         )
       )

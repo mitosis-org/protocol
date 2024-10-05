@@ -5,9 +5,16 @@ import { IDelegationRegistry } from '../../src/interfaces/hub/core/IDelegationRe
 import { StdError } from '../../src/lib/StdError.sol';
 
 contract MockDelegationRegistry is IDelegationRegistry {
+  address private immutable _mitosis;
   mapping(address account => address delegationManager) private _delegationManagers;
   mapping(address account => address defaultDelegatee) private _defaultDelegatees;
   mapping(address account => address redistributionRule) private _redistributionRules;
+
+  constructor(address mitosis_) { }
+
+  function mitosis() external view override returns (address mitosis_) {
+    return _mitosis;
+  }
 
   function delegationManager(address account) external view override returns (address delegationManager_) {
     return _delegationManagers[account];

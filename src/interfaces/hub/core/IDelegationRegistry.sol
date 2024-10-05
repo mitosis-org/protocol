@@ -31,6 +31,12 @@ interface IDelegationRegistry {
   event RedistributionRuleSet(address indexed account, address indexed manager, address indexed redistributionRule);
 
   /**
+   * @dev Queries the Mitosis contract
+   * @return mitosis_ The Mitosis contract
+   */
+  function mitosis() external view returns (address mitosis_);
+
+  /**
    * @dev Queries the delegation manager for `account`
    * @param account The account to query
    * @return delegationManager_ The delegation manager for `account`

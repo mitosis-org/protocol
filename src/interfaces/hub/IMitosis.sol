@@ -14,19 +14,65 @@ import { IEOLProtocolGovernor } from './governance/IEOLProtocolGovernor.sol';
 interface IMitosis {
   //====================== NOTE: CONTRACTS ======================//
 
+  /**
+   * @notice Returns the address of the OptOutQueue contract.
+   * @return optOutQueue_ The address of the OptOutQueue contract.
+   */
   function optOutQueue() external view returns (IOptOutQueue optOutQueue_);
+
+  /**
+   * @notice Returns the address of the AssetManager contract.
+   * @return assetManager_ The address of the AssetManager contract.
+   */
   function assetManager() external view returns (IAssetManager assetManager_);
+
+  /**
+   * @notice Returns the address of the DelegationRegistry contract.
+   * @return delegationRegistry_ The address of the DelegationRegistry contract.
+   */
   function delegationRegistry() external view returns (IDelegationRegistry delegationRegistry_);
+
+  /**
+   * @notice Returns the address of the EOLGaugeGovernor contract for the specified EOL Vault.
+   * @param eolVault The EOL Vault address
+   * @return eolGaugeGovernor_ The address of the EOLGaugeGovernor contract.
+   */
   function eolGaugeGovernor(address eolVault) external view returns (IEOLGaugeGovernor eolGaugeGovernor_);
+
+  /**
+   * @notice Returns the address of the EOLProtocolGovernor contract for the specified EOL Vault.
+   * @param eolVault The EOL Vault address
+   * @return eolProtocolGovernor_ The address of the EOLProtocolGovernor contract.
+   */
   function eolProtocolGovernor(address eolVault) external view returns (IEOLProtocolGovernor eolProtocolGovernor_);
 
   //====================== NOTE: DELEGATION ======================//
 
+  /**
+   * @notice Returns the address of the delegation manager for the specified account.
+   * @param account The account address
+   * @return delegationManager_ The address of the delegation manager.
+   */
   function delegationManager(address account) external view returns (address delegationManager_);
-  function defaultDelegatee(address account) external view returns (address defaultDelegatee_);
-  function redistributionRule(address account) external view returns (address redistributionRule_);
 
+  /**
+   * @notice Returns the address of the default delegatee for the specified account.
+   * @param account The account address
+   * @return defaultDelegatee_ The address of the default delegatee.
+   */
+  function defaultDelegatee(address account) external view returns (address defaultDelegatee_);
+
+  /**
+   * @notice Sets the delegation manager for the specified account.
+   * @param account The account address
+   * @param delegationManager_ The address of the delegation manager.
+   */
   function setDelegationManager(address account, address delegationManager_) external;
+
+  /**
+   * @notice Sets the default delegatee for the specified account.
+   * @param account The account address
+   * @param defaultDelegatee_ The address of the default delegatee.
+   */
   function setDefaultDelegatee(address account, address defaultDelegatee_) external;
-  function setRedistributionRule(address account, address redistributionRule_) external;
 }
