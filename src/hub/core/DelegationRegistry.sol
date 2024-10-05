@@ -22,10 +22,6 @@ contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1,
     return _getStorageV1().defaultDelegatees[account];
   }
 
-  function redistributionRule(address account) external view returns (address redistributionRule_) {
-    return _getStorageV1().redistributionRules[account];
-  }
-
   function setDelegationManager(address account, address delegationManager_) external override {
     StorageV1 storage $ = _getStorageV1();
     _assertSelfOrManager($, account);
@@ -40,16 +36,6 @@ contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1,
 
     $.defaultDelegatees[account] = defaultDelegatee_;
     emit DefaultDelegateeSet(account, _msgSender(), defaultDelegatee_);
-  }
-
-  function setRedistributionRule(address account, address redistributionRule_) external override {
-    require(redistributionRule_.code.length > 0, StdError.InvalidAddress('redistributionRule'));
-
-    StorageV1 storage $ = _getStorageV1();
-    _assertSelfOrManager($, account);
-
-    $.redistributionRules[account] = redistributionRule_;
-    emit RedistributionRuleSet(account, _msgSender(), redistributionRule_);
   }
 
   function _delegationManager(StorageV1 storage $, address account) internal view returns (address delegationManager_) {

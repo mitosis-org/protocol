@@ -88,33 +88,4 @@ contract DelegationRegistryTest is Test {
 
     assertEq(_delegationRegistry.defaultDelegatee(user1), address(3));
   }
-
-  function test_setRedistributionRule() public {
-    assertEq(_delegationRegistry.redistributionRule(user1), address(0));
-
-    vm.prank(user1);
-    _delegationRegistry.setRedistributionRule(user1, address(_redistributionRule));
-
-    assertEq(_delegationRegistry.redistributionRule(user1), address(_redistributionRule));
-  }
-
-  function test_setRedistributionRule_auth() public {
-    vm.prank(user1);
-    _delegationRegistry.setDelegationManager(user1, delegationManager);
-    assertEq(_delegationRegistry.delegationManager(user1), delegationManager);
-
-    MockRedistributionRule newRedistributionRule1 = new MockRedistributionRule();
-
-    vm.prank(delegationManager);
-    _delegationRegistry.setRedistributionRule(user1, address(newRedistributionRule1));
-
-    assertEq(_delegationRegistry.redistributionRule(user1), address(newRedistributionRule1));
-
-    MockRedistributionRule newRedistributionRule2 = new MockRedistributionRule();
-
-    vm.prank(user1);
-    _delegationRegistry.setRedistributionRule(user1, address(newRedistributionRule2));
-
-    assertEq(_delegationRegistry.redistributionRule(user1), address(newRedistributionRule2));
-  }
 }

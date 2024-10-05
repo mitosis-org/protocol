@@ -45,13 +45,6 @@ interface IDelegationRegistry {
   function defaultDelegatee(address account) external view returns (address defaultDelegatee_);
 
   /**
-   * @dev Queries the redistribution rule for `account`
-   * @param account The account to query
-   * @return redistributionRule_ The redistribution rule for `account`
-   */
-  function redistributionRule(address account) external view returns (address redistributionRule_);
-
-  /**
    * @dev Sets the delegation manager for `account`. Must emit the {DelegationManagerSet} event.
    * @dev If the `caller` is not the manager of `account` or self, it reverts with {StdError.Unauthorized}.
    * @param account The account to set the delegation manager for
@@ -66,12 +59,4 @@ interface IDelegationRegistry {
    * @param defaultDelegatee_ The default delegatee to set
    */
   function setDefaultDelegatee(address account, address defaultDelegatee_) external;
-
-  /**
-   * @dev Sets the redistribution rule for `account`. Must emit the {RedistributionRuleSet} event.
-   * @dev If the `caller` is not the manager of `account` or self, it reverts with {StdError.Unauthorized}.
-   * @param account The account to set the redistribution rule for
-   * @param redistributionRule_ The redistribution rule to set
-   */
-  function setRedistributionRule(address account, address redistributionRule_) external;
 }

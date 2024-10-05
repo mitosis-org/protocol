@@ -17,10 +17,6 @@ contract MockDelegationRegistry is IDelegationRegistry {
     return _defaultDelegatees[account];
   }
 
-  function redistributionRule(address account) external view override returns (address redistributionRule_) {
-    return _redistributionRules[account];
-  }
-
   function setDelegationManager(address account, address delegationManager_) external override {
     require(msg.sender == account || msg.sender == _delegationManagers[account], StdError.Unauthorized());
     _delegationManagers[account] = delegationManager_;
@@ -29,11 +25,5 @@ contract MockDelegationRegistry is IDelegationRegistry {
   function setDefaultDelegatee(address account, address defaultDelegatee_) external override {
     require(msg.sender == account || msg.sender == _delegationManagers[account], StdError.Unauthorized());
     _defaultDelegatees[account] = defaultDelegatee_;
-  }
-
-  function setRedistributionRule(address account, address redistributionRule_) external override {
-    require(redistributionRule_.code.length > 0, StdError.InvalidAddress('redistributionRule'));
-    require(msg.sender == account || msg.sender == _delegationManagers[account], StdError.Unauthorized());
-    _redistributionRules[account] = redistributionRule_;
   }
 }
