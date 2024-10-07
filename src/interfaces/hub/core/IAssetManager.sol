@@ -41,16 +41,20 @@ interface IAssetManagerStorageV1 {
 
   //=========== NOTE: STATE GETTERS ===========//
 
+  /**
+   * @notice Get the current entrypoint address (see IAssetManagerEntrypoint)
+   * @return entrypoint_ The address of the current entrypoint
+   */
   function entrypoint() external view returns (address entrypoint_);
 
   /**
-   * @notice Get the current opt-out queue address
+   * @notice Get the current opt-out queue address (see IOptOutQueue)
    * @return optOutQueue_ The address of the current opt-out queue
    */
   function optOutQueue() external view returns (address optOutQueue_);
 
   /**
-   * @notice Get the current reward handler address
+   * @notice Get the current reward handler address (see IRewardHandler)
    * @return rewardHandler_ The address of the current reward handler
    */
   function rewardHandler() external view returns (address rewardHandler_);
@@ -72,12 +76,13 @@ interface IAssetManagerStorageV1 {
   function hubAsset(uint256 chainId, address branchAsset_) external view returns (address hubAsset_);
 
   /**
-   * @notice Get the total collateral amount of branch asset for a given chain ID and hub asset
+   * @notice Get the total collateral amount of branch asset for a given chain ID and hub asset.
+   * @dev The collateral amount is equals to the total amount of branch asset deposited to the MitosisVault
    * @param chainId The ID of the chain
    * @param hubAsset_ The address of the hub asset
-   * @return The amount of collateral
+   * @return collateral_ The amount of collateral
    */
-  function collateral(uint256 chainId, address hubAsset_) external view returns (uint256);
+  function collateral(uint256 chainId, address hubAsset_) external view returns (uint256 collateral_);
 
   /**
    * @notice Check if an EOLVault is initialized for a given chain and branch asset (EOLVault -> hubAsset -> branchAsset)
@@ -85,7 +90,7 @@ interface IAssetManagerStorageV1 {
    * @param eolVault The address of the EOLVault
    * @return eolInitialized_ A boolean indicating whether the EOLVault is initialized
    */
-  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool);
+  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool eolInitialized_);
 
   /**
    * @notice Get the idle balance of an EOLVault
@@ -108,7 +113,7 @@ interface IAssetManagerStorageV1 {
    * @param eolVault The address of the EOLVault
    * @return strategist_ The address of the strategist
    */
-  function strategist(address eolVault) external view returns (address);
+  function strategist(address eolVault) external view returns (address strategist_);
 }
 
 /**
