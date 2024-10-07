@@ -5,7 +5,8 @@ import { IERC5805 } from '@oz-v5/interfaces/IERC5805.sol';
 
 /**
  * @title ITWABSnapshots
- * @dev Interface for Time-Weighted Average Balance (TWAB) snapshots functionality.
+ * @notice Interface for Time-Weighted Average Balance (TWAB) snapshots functionality
+ * @dev This interface overrides the IERC5805 interface to satisfy the voting power delegation requirements
  */
 interface ITWABSnapshots is IERC5805 {
   /**
