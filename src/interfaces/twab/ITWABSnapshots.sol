@@ -23,7 +23,7 @@ interface ITWABSnapshots is IERC5805 {
   /**
    * @notice Returns the total supply snapshot at the current time.
    * @return balance The current total supply.
-   * @return twab The time-weighted average balance of the total supply.
+   * @return twab Accumulated time-weighted average balance of the total supply.
    * @return position The timestamp of the snapshot.
    */
   function totalSupplySnapshot() external view returns (uint208 balance, uint256 twab, uint48 position);
@@ -32,7 +32,7 @@ interface ITWABSnapshots is IERC5805 {
    * @notice Returns the total supply snapshot at a specific timepoint.
    * @param timepoint The timestamp at which to get the snapshot.
    * @return balance The total supply at the given timepoint.
-   * @return twab The time-weighted average balance of the total supply at the given timepoint.
+   * @return twab Accumulated time-weighted average balance of the total supply at the given timepoint.
    * @return position The timestamp of the snapshot.
    */
   function totalSupplySnapshot(uint256 timepoint)
@@ -52,7 +52,7 @@ interface ITWABSnapshots is IERC5805 {
    * @notice Returns the delegate snapshot for an account at the current time.
    * @param account The address of the account.
    * @return balance The current balance of the account's delegate.
-   * @return twab The time-weighted average balance of the account's delegate.
+   * @return twab Accumulated time-weighted average balance of the account's delegate.
    * @return position The timestamp of the snapshot.
    */
   function delegateSnapshot(address account) external view returns (uint208 balance, uint256 twab, uint48 position);
@@ -62,7 +62,7 @@ interface ITWABSnapshots is IERC5805 {
    * @param account The address of the account.
    * @param timestamp The timestamp at which to get the snapshot.
    * @return balance The balance of the account's delegate at the given timepoint.
-   * @return twab The time-weighted average balance of the account's delegate at the given timepoint.
+   * @return twab Accumulated time-weighted average balance of the account's delegate at the given timepoint.
    * @return position The timestamp of the snapshot.
    */
   function delegateSnapshot(address account, uint256 timestamp)
@@ -71,7 +71,8 @@ interface ITWABSnapshots is IERC5805 {
     returns (uint208 balance, uint256 twab, uint48 position);
 
   /**
-   * @notice Allows a manager to delegate on behalf of an account.
+   * @notice Marks the account's delegatee by the manager account
+   * @dev This function should only be callable by the nominated manager account (see IDelegationRegistry)
    * @param account The address of the account to delegate for.
    * @param delegatee The address to delegate to.
    */
