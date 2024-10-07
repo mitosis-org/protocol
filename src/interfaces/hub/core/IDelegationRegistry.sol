@@ -52,7 +52,7 @@ interface IDelegationRegistry {
 
   /**
    * @dev Sets the delegation manager for `account`. Must emit the {DelegationManagerSet} event.
-   * @dev If the `caller` is not the manager of `account` or self, it reverts with {StdError.Unauthorized}.
+   * @dev If the `caller` is not the manager of `account` or self and Mitosis, it reverts with {StdError.Unauthorized}.
    * @param account The account to set the delegation manager for
    * @param delegationManager_ The delegation manager to set
    */
@@ -60,7 +60,7 @@ interface IDelegationRegistry {
 
   /**
    * @dev Sets the default delegatee for `account`. Must emit the {DefaultDelegateeSet} event.
-   * @dev If the `caller` is not the manager of `account` or self, it reverts with {StdError.Unauthorized}.
+   * @dev If the `caller` is not the manager of `account` or self and Mitosis, it reverts with {StdError.Unauthorized}.
    * @param account The account to set the default delegatee for
    * @param defaultDelegatee_ The default delegatee to set
    */
