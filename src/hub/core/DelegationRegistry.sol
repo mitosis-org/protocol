@@ -7,6 +7,10 @@ import { IDelegationRegistry } from '../../interfaces/hub/core/IDelegationRegist
 import { StdError } from '../../lib/StdError.sol';
 import { DelegationRegistryStorageV1 } from './DelegationRegistryStorageV1.sol';
 
+/**
+ * @title DelegationRegistry
+ * @notice Manages delegation relationships between accounts.
+ */
 contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1, ContextUpgradeable {
   constructor() {
     _disableInitializers();
