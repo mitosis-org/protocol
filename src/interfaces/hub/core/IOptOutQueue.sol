@@ -68,7 +68,7 @@ interface IOptOutQueueStorageV1 {
 
   /**
    * @notice Historical data about reserves at a specific point in time
-   * @param accumulated Total accumulated assets at this point
+   * @param accumulated Total accumulated reserve assets at this point
    * @param reservedAt Timestamp when this reserve entry was created
    * @param totalShares Total shares in the EOL vault at this point
    * @param totalAssets Total assets in the EOL vault at this point
@@ -180,15 +180,15 @@ interface IOptOutQueueStorageV1 {
 
   /**
    * @notice Retrieves the current size of the queue for a specific EOL vault
-   * @param eolVault Address of the EOL vault to query
-   * @return size Current size of the queue
+   * @param eolVault Address of the EOLVault to query the queue
+   * @return size Total request count in the queue
    */
   function queueSize(address eolVault) external view returns (uint256 size);
 
   /**
    * @notice Gets the size of the queue index for a specific recipient in an EOL vault
-   * @param eolVault Address of the EOL vault to query
-   * @param recipient Address of the recipient to query
+   * @param eolVault Address of the EOL vault to query the queue
+   * @param recipient Address of the recipient to query the index for
    * @return size Current size of the queue index for the specified recipient
    */
   function queueIndexSize(address eolVault, address recipient) external view returns (uint256 size);
