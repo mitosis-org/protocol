@@ -33,15 +33,15 @@ interface IMitosis {
   function delegationRegistry() external view returns (IDelegationRegistry delegationRegistry_);
 
   /**
-   * @notice Returns the address of the EOLGaugeGovernor contract for the specified EOL Vault.
-   * @param eolVault The EOL Vault address
+   * @notice Returns the address of the EOLGaugeGovernor contract for the specified EOLVault.
+   * @param eolVault The EOLVault address
    * @return eolGaugeGovernor_ The address of the EOLGaugeGovernor contract.
    */
   function eolGaugeGovernor(address eolVault) external view returns (IEOLGaugeGovernor eolGaugeGovernor_);
 
   /**
-   * @notice Returns the address of the EOLProtocolGovernor contract for the specified EOL Vault.
-   * @param eolVault The EOL Vault address
+   * @notice Returns the address of the EOLProtocolGovernor contract for the specified EOLVault.
+   * @param eolVault The EOLVault address
    * @return eolProtocolGovernor_ The address of the EOLProtocolGovernor contract.
    */
   function eolProtocolGovernor(address eolVault) external view returns (IEOLProtocolGovernor eolProtocolGovernor_);

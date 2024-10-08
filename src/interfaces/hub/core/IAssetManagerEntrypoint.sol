@@ -46,9 +46,9 @@ interface IAssetManagerEntrypoint is IMessageRecipient {
   function initializeAsset(uint256 chainId, address branchAsset) external;
 
   /**
-   * @notice Initializes an EOL vault on a specified branch chain
+   * @notice Initializes an EOLVault on a specified branch chain
    * @param chainId The ID of the branch chain
-   * @param eolVault The address of the EOL vault
+   * @param eolVault The address of the EOLVault
    * @param branchAsset The address of the associated asset on the branch chain
    */
   function initializeEOL(uint256 chainId, address eolVault, address branchAsset) external;
@@ -63,9 +63,9 @@ interface IAssetManagerEntrypoint is IMessageRecipient {
   function redeem(uint256 chainId, address branchAsset, address to, uint256 amount) external;
 
   /**
-   * @notice Allocates assets to an EOL vault on a branch chain
+   * @notice Allocates assets to an EOLVault on a branch chain
    * @param chainId The ID of the branch chain
-   * @param eolVault The address of the EOL vault
+   * @param eolVault The address of the EOLVault
    * @param amount The amount of assets to allocate
    */
   function allocateEOL(uint256 chainId, address eolVault, uint256 amount) external;

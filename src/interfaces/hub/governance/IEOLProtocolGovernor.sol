@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 /**
  * @title IEOLProtocolGovernor
- * @notice Interface for the contract that governs the protocol for EOL vaults (EOLProtocolGovernor)
+ * @notice Interface for the contract that governs the protocol for EOLVaults (EOLProtocolGovernor)
  */
 interface IEOLProtocolGovernor {
   //=========== NOTE: TYPE DEFINITIONS ===========//

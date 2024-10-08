@@ -5,7 +5,7 @@ import { IERC4626TWABSnapshots } from '../../twab/IERC4626TWABSnapshots.sol';
 
 /**
  * @title IEOLVaultStorageV1
- * @dev Interface for the storage of EOL Vault version 1.
+ * @dev Interface for the storage of EOLVault version 1.
  */
 interface IEOLVaultStorageV1 {
   /**
@@ -23,6 +23,6 @@ interface IEOLVaultStorageV1 {
 
 /**
  * @title IEOLVault
- * @dev Interface for the EOL Vault, combining ERC4626 functionality with TWAB snapshots.
+ * @dev Interface for the EOLVault, combining ERC4626 functionality with TWAB snapshots.
  */
 interface IEOLVault is IERC4626TWABSnapshots, IEOLVaultStorageV1 { }

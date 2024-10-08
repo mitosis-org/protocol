@@ -70,8 +70,8 @@ interface IOptOutQueueStorageV1 {
    * @notice Historical data about reserves at a specific point in time
    * @param accumulated Total accumulated reserve assets at this point
    * @param reservedAt Timestamp when this reserve entry was created
-   * @param totalShares Total shares in the EOL vault at this point
-   * @param totalAssets Total assets in the EOL vault at this point
+   * @param totalShares Total shares in the EOLVault at this point
+   * @param totalAssets Total assets in the EOLVault at this point
    */
   struct GetReserveHistoryResponse {
     uint256 accumulated;
@@ -81,8 +81,8 @@ interface IOptOutQueueStorageV1 {
   }
 
   /**
-   * @notice Emitted when an opt-out queue is activated for an EOL vault
-   * @param eolVault Address of the EOL vault for which the queue is enabled
+   * @notice Emitted when an opt-out queue is activated for an EOLVault
+   * @param eolVault Address of the EOLVault for which the queue is enabled
    */
   event QueueEnabled(address indexed eolVault);
 
@@ -93,8 +93,8 @@ interface IOptOutQueueStorageV1 {
   event AssetManagerSet(address indexed assetManager);
 
   /**
-   * @notice Emitted when the redeem period is updated for an EOL vault
-   * @param eolVault Address of the EOL vault for which the redeem period is set
+   * @notice Emitted when the redeem period is updated for an EOLVault
+   * @param eolVault Address of the EOLVault for which the redeem period is set
    * @param redeemPeriod Duration of the new redeem period in seconds
    */
   event RedeemPeriodSet(address indexed eolVault, uint256 redeemPeriod);
@@ -106,23 +106,23 @@ interface IOptOutQueueStorageV1 {
   function assetManager() external view returns (address assetManager_);
 
   /**
-   * @notice Gets the redeem period duration for a specific EOL vault
-   * @param eolVault Address of the EOL vault to query
+   * @notice Gets the redeem period duration for a specific EOLVault
+   * @param eolVault Address of the EOLVault to query
    * @return redeemPeriod_ Duration of the redeem period in seconds
    */
   function redeemPeriod(address eolVault) external view returns (uint256 redeemPeriod_);
 
   /**
    * @notice Retrieves the status of a specific opt-out request
-   * @param eolVault Address of the EOL vault to query
+   * @param eolVault Address of the EOLVault to query
    * @param reqId ID of the request to query
    * @return status RequestStatus enumeration indicating the request status
    */
   function getStatus(address eolVault, uint256 reqId) external view returns (RequestStatus status);
 
   /**
-   * @notice Retrieves details for multiple requests from a specific EOL vault
-   * @param eolVault Address of the EOL vault to query
+   * @notice Retrieves details for multiple requests from a specific EOLVault
+   * @param eolVault Address of the EOLVault to query
    * @param reqIds Array of request IDs to retrieve
    * @return resp Array of GetRequestResponse structs containing request details
    */
@@ -132,9 +132,9 @@ interface IOptOutQueueStorageV1 {
     returns (GetRequestResponse[] memory resp);
 
   /**
-   * @notice Gets details for multiple requests for a specific receiver from an EOL vault
+   * @notice Gets details for multiple requests for a specific receiver from an EOLVault
    * @dev Use queueIndexOffset to get the starting index for retrieval
-   * @param eolVault Address of the EOL vault to query
+   * @param eolVault Address of the EOLVault to query
    * @param receiver Address of the receiver to query
    * @param idxItemIds Array of index item IDs to retrieve
    * @return resp Array of GetRequestByIndexResponse structs containing request details
@@ -146,7 +146,7 @@ interface IOptOutQueueStorageV1 {
 
   /**
    * @notice Retrieves the timestamp when a specific request was reserved
-   * @param eolVault Address of the EOL vault to query
+   * @param eolVault Address of the EOLVault to query
    * @param reqId ID of the request to query
    * @return reservedAt_ Timestamp when the request was reserved
    * @return isReserved Boolean indicating if the request is reserved
@@ -155,7 +155,7 @@ interface IOptOutQueueStorageV1 {
 
   /**
    * @notice Gets the timestamp when a specific request was resolved
-   * @param eolVault Address of the EOL vault to query
+   * @param eolVault Address of the EOLVault to query
    * @param reqId ID of the request to query
    * @return resolvedAt_ Timestamp when the request was resolved
    * @return isResolved Boolean indicating if the request is resolved
@@ -164,7 +164,7 @@ interface IOptOutQueueStorageV1 {
 
   /**
    * @notice Retrieves the number of shares for a specific request
-   * @param eolVault Address of the EOL vault to query
+   * @param eolVault Address of the EOLVault to query
    * @param reqId ID of the request to query
    * @return shares Number of shares for the specified request
    */
@@ -172,38 +172,38 @@ interface IOptOutQueueStorageV1 {
 
   /**
    * @notice Gets the amount of assets for a specific request
-   * @param eolVault Address of the EOL vault to query
+   * @param eolVault Address of the EOLVault to query
    * @param reqId ID of the request to query
    * @return assets Amount of assets for the specified request
    */
   function requestAssets(address eolVault, uint256 reqId) external view returns (uint256 assets);
 
   /**
-   * @notice Retrieves the current size of the queue for a specific EOL vault
+   * @notice Retrieves the current size of the queue for a specific EOLVault
    * @param eolVault Address of the EOLVault to query the queue
    * @return size Total request count in the queue
    */
   function queueSize(address eolVault) external view returns (uint256 size);
 
   /**
-   * @notice Gets the size of the queue index for a specific recipient in an EOL vault
-   * @param eolVault Address of the EOL vault to query the queue
+   * @notice Gets the size of the queue index for a specific recipient in an EOLVault
+   * @param eolVault Address of the EOLVault to query the queue
    * @param recipient Address of the recipient to query the index for
    * @return size Current size of the queue index for the specified recipient
    */
   function queueIndexSize(address eolVault, address recipient) external view returns (uint256 size);
 
   /**
-   * @notice Retrieves the current or simulated offset of the queue for an EOL vault
-   * @param eolVault Address of the EOL vault to query
+   * @notice Retrieves the current or simulated offset of the queue for an EOLVault
+   * @param eolVault Address of the EOLVault to query
    * @param simulate If true, returns the simulated offset based on current timestamp
    * @return offset Current or simulated queue offset
    */
   function queueOffset(address eolVault, bool simulate) external view returns (uint256 offset);
 
   /**
-   * @notice Gets the current or simulated offset of the queue index for a recipient in an EOL vault
-   * @param eolVault Address of the EOL vault to query
+   * @notice Gets the current or simulated offset of the queue index for a recipient in an EOLVault
+   * @param eolVault Address of the EOLVault to query
    * @param recipient Address of the recipient to query
    * @param simulate If true, returns the simulated offset based on current timestamp
    * @return offset Current or simulated queue index offset
@@ -211,29 +211,29 @@ interface IOptOutQueueStorageV1 {
   function queueIndexOffset(address eolVault, address recipient, bool simulate) external view returns (uint256 offset);
 
   /**
-   * @notice Retrieves the total amount of reserved assets for an EOL vault's queue
-   * @param eolVault Address of the EOL vault to query
+   * @notice Retrieves the total amount of reserved assets for an EOLVault's queue
+   * @param eolVault Address of the EOLVault to query
    * @return totalReserved_ Total amount of reserved assets
    */
   function totalReserved(address eolVault) external view returns (uint256 totalReserved_);
 
   /**
-   * @notice Gets the total amount of claimed assets for an EOL vault's queue
-   * @param eolVault Address of the EOL vault to query
+   * @notice Gets the total amount of claimed assets for an EOLVault's queue
+   * @param eolVault Address of the EOLVault to query
    * @return totalClaimed_ Total amount of claimed assets
    */
   function totalClaimed(address eolVault) external view returns (uint256 totalClaimed_);
 
   /**
-   * @notice Retrieves the total amount of pending assets for an EOL vault's queue
-   * @param eolVault Address of the EOL vault to query
+   * @notice Retrieves the total amount of pending assets for an EOLVault's queue
+   * @param eolVault Address of the EOLVault to query
    * @return totalPending_ Total amount of pending assets
    */
   function totalPending(address eolVault) external view returns (uint256 totalPending_);
 
   /**
-   * @notice Gets the reserve history entry for a specific index in an EOL vault
-   * @param eolVault Address of the EOL vault to query
+   * @notice Gets the reserve history entry for a specific index in an EOLVault
+   * @param eolVault Address of the EOLVault to query
    * @param index Index of the reserve history entry to retrieve
    * @return resp GetReserveHistoryResponse struct containing the reserve history data
    */
@@ -243,15 +243,15 @@ interface IOptOutQueueStorageV1 {
     returns (GetReserveHistoryResponse memory resp);
 
   /**
-   * @notice Retrieves the number of entries in the reserve history for an EOL vault
-   * @param eolVault Address of the EOL vault to query
+   * @notice Retrieves the number of entries in the reserve history for an EOLVault
+   * @param eolVault Address of the EOLVault to query
    * @return length Number of entries in the reserve history
    */
   function reserveHistoryLength(address eolVault) external view returns (uint256 length);
 
   /**
-   * @notice Checks if the opt-out queue is enabled for a specific EOL vault
-   * @param eolVault Address of the EOL vault to query
+   * @notice Checks if the opt-out queue is enabled for a specific EOLVault
+   * @param eolVault Address of the EOLVault to query
    * @return enabled Boolean indicating whether the queue is enabled
    */
   function isEnabled(address eolVault) external view returns (bool enabled);
@@ -268,9 +268,9 @@ interface IOptOutQueue is IOptOutQueueStorageV1 {
    * @dev Used internally to pass data during claim processing
    * @param timestamp Current timestamp for the claim
    * @param receiver Address receiving the claim
-   * @param eolVault EOL vault contract interface
+   * @param eolVault EOLVault contract interface
    * @param hubAsset Hub asset contract interface
-   * @param decimalsOffset Difference in decimals between EOL vault and hub asset
+   * @param decimalsOffset Difference in decimals between EOLVault and hub asset
    * @param queueOffset Current offset in the main queue
    * @param idxOffset Current offset in the receiver's index
    */
@@ -302,7 +302,7 @@ interface IOptOutQueue is IOptOutQueueStorageV1 {
   /**
    * @notice Emitted when a new opt-out request is added to the queue
    * @param receiver Address that will receive the assets
-   * @param eolVault Address of the EOL vault
+   * @param eolVault Address of the EOLVault
    * @param shares Number of shares being opted out
    * @param assets Equivalent asset amount at time of request
    */
@@ -311,7 +311,7 @@ interface IOptOutQueue is IOptOutQueueStorageV1 {
   /**
    * @notice Emitted when a yield is generated during the opt-out process
    * @param receiver Address receiving the claim
-   * @param eolVault Address of the EOL vault
+   * @param eolVault Address of the EOLVault
    * @param yield Amount of yield generated
    */
   event OptOutYieldReported(address indexed receiver, address indexed eolVault, uint256 yield);
@@ -319,7 +319,7 @@ interface IOptOutQueue is IOptOutQueueStorageV1 {
   /**
    * @notice Emitted when an opt-out request is successfully claimed
    * @param receiver Address receiving the claim
-   * @param eolVault Address of the EOL vault
+   * @param eolVault Address of the EOLVault
    * @param claimed Amount of assets claimed
    * @param impact Difference between requested and claimed amounts
    * @param impactType Type of financial impact (None, Loss, or Yield)
@@ -330,7 +330,7 @@ interface IOptOutQueue is IOptOutQueueStorageV1 {
 
   /**
    * @notice Error thrown when trying to interact with a disabled queue
-   * @param eolVault Address of the EOL vault with the disabled queue
+   * @param eolVault Address of the EOLVault with the disabled queue
    */
   error IOptOutQueue__QueueNotEnabled(address eolVault);
 
@@ -343,7 +343,7 @@ interface IOptOutQueue is IOptOutQueueStorageV1 {
    * @notice Submits a new opt-out request
    * @param shares Number of shares to opt out
    * @param receiver Address that will receive the assets
-   * @param eolVault Address of the EOL vault to opt out from
+   * @param eolVault Address of the EOLVault to opt out from
    * @return reqId Unique identifier for the queued request
    */
   function request(uint256 shares, address receiver, address eolVault) external returns (uint256 reqId);
@@ -351,7 +351,7 @@ interface IOptOutQueue is IOptOutQueueStorageV1 {
   /**
    * @notice Processes and fulfills eligible opt-out requests for a receiver
    * @param receiver Address of the receiver claiming their requests
-   * @param eolVault Address of the EOL vault to claim from
+   * @param eolVault Address of the EOLVault to claim from
    * @return totalClaimed_ Total amount of assets claimed
    */
   function claim(address receiver, address eolVault) external returns (uint256 totalClaimed_);
@@ -359,22 +359,22 @@ interface IOptOutQueue is IOptOutQueueStorageV1 {
   /**
    * @notice Updates the queue with available idle balance
    * @dev Can only be called by the asset manager
-   * @param eolVault Address of the EOL vault to update
+   * @param eolVault Address of the EOLVault to update
    * @param assets Amount of idle assets to allocate to pending requests
    */
   function sync(address eolVault, uint256 assets) external;
 
   /**
-   * @notice Activates the opt-out queue for an EOL vault
+   * @notice Activates the opt-out queue for an EOLVault
    * @dev Can only be called by the contract owner
-   * @param eolVault Address of the EOL vault to enable the queue for
+   * @param eolVault Address of the EOLVault to enable the queue for
    */
   function enable(address eolVault) external;
 
   /**
-   * @notice Sets the duration of the redeem period for an EOL vault
+   * @notice Sets the duration of the redeem period for an EOLVault
    * @dev Can only be called by the contract owner
-   * @param eolVault Address of the EOL vault to set the redeem period for
+   * @param eolVault Address of the EOLVault to set the redeem period for
    * @param redeemPeriod_ Duration of the redeem period in seconds
    */
   function setRedeemPeriod(address eolVault, uint256 redeemPeriod_) external;
