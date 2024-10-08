@@ -98,7 +98,7 @@ interface ICrossChainRegistry {
   function isRegisteredChain(uint256 chainId) external view returns (bool);
 
   /**
-   * @notice Sets or updates the information for a chain.
+   * @notice Set the information for a chain
    * @param chainId_ The ID of the chain.
    * @param name The name of the chain.
    * @param hplDomain The Hyperlane domain associated with the chain.
