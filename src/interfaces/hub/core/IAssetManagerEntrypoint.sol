@@ -63,7 +63,7 @@ interface IAssetManagerEntrypoint is IMessageRecipient {
   function redeem(uint256 chainId, address branchAsset, address to, uint256 amount) external;
 
   /**
-   * @notice Allocates assets to an EOLVault on a branch chain
+   * @notice Allocates assets to the StrategyExecutor for MitosisVault on branch chain that corresponed to the EOLVault on hub chain
    * @param chainId The ID of the branch chain
    * @param eolVault The address of the EOLVault
    * @param amount The amount of assets to allocate
