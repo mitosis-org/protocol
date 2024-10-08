@@ -80,7 +80,7 @@ interface IEOLProtocolGovernor {
    * @return proposalType The type of proposal
    * @return startsAt The start time of the proposal
    * @return endsAt The end time of the proposal
-   * @return payload The proposal payload
+   * @return payload The proposal payload necessary for executing the proposal if accepted.
    * @return executed Boolean indicating if the proposal has been executed
    */
   function proposal(uint256 proposalId_)
