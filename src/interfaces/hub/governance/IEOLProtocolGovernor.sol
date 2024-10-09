@@ -37,7 +37,7 @@ interface IEOLProtocolGovernor {
   event ProposalCreated(
     uint256 indexed proposalId,
     address indexed proposer,
-    ProposalType indexed proposalType,
+    ProposalType proposalType,
     uint48 startsAt,
     uint48 endsAt,
     bytes payload,

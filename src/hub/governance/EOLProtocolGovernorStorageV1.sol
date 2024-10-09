@@ -8,22 +8,21 @@ import { IEOLProtocolGovernor } from '../../interfaces/hub/governance/IEOLProtoc
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 
-struct Proposal {
-  address proposer;
-  IEOLProtocolGovernor.ProposalType proposalType;
-  uint48 startsAt;
-  uint48 endsAt;
-  bytes payload;
-  bool executed;
-  mapping(address account => IEOLProtocolGovernor.VoteOption) votes;
-}
-
 contract EOLProtocolGovernorStorageV1 {
   using ERC7201Utils for string;
 
+  struct Proposal {
+    address proposer;
+    IEOLProtocolGovernor.ProposalType proposalType;
+    uint48 startsAt;
+    uint48 endsAt;
+    bytes payload;
+    bool executed;
+    mapping(address account => IEOLProtocolGovernor.VoteOption) votes;
+  }
+
   struct StorageV1 {
     IEOLProtocolRegistry protocolRegistry;
-    address eolVault;
     mapping(uint256 proposalId => Proposal) proposals;
   }
 
