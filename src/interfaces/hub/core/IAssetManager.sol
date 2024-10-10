@@ -167,7 +167,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event Redeemed(uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount);
 
   /**
-   * @notice Emitted when a reward is settled from branch chain to hub chain
+   * @notice Emitted when a reward is settled from the branch chain to the hub chain for a specific EOLVault
    * @param chainId The ID of the chain where the reward is reported
    * @param eolVault The address of the EOLVault receiving the reward
    * @param asset The address of the reward asset
@@ -176,7 +176,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event RewardSettled(uint256 indexed chainId, address indexed eolVault, address indexed asset, uint256 amount);
 
   /**
-   * @notice Emitted when a loss is settled from the StrategyExecutor for MitosisVault on branch chain that corresponed to the EOLVault on hub chain
+   * @notice Emitted when a loss is settled from the branch chain to the hub chain for a specific EOLVault
    * @param chainId The ID of the chain where the loss is reported
    * @param eolVault The address of the EOLVault incurring the loss
    * @param asset The address of the asset lost
@@ -185,7 +185,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event LossSettled(uint256 indexed chainId, address indexed eolVault, address indexed asset, uint256 amount);
 
   /**
-   * @notice Emitted when assets are allocated to the StrategyExecutor for MitosisVault on branch chain that corresponed to the EOLVault on hub chain
+   * @notice Emitted when assets are allocated to the branch chain for a specific EOLVault
    * @param chainId The ID of the chain where the allocation occurs
    * @param eolVault The address of the EOLVault to be reported the allocation
    * @param amount The amount allocated
@@ -193,7 +193,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event EOLAllocated(uint256 indexed chainId, address indexed eolVault, uint256 amount);
 
   /**
-   * @notice Emitted when assets are deallocated from the StrategyExecutor for MitosisVault on branch chain that corresponed to the EOLVault on hub chain
+   * @notice Emitted when assets are deallocated from the branch chain for a specific EOLVault
    * @param chainId The ID of the chain where the deallocation occurs
    * @param eolVault The address of the EOLVault to be reported the deallocation
    * @param amount The amount deallocated
@@ -254,7 +254,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external;
 
   /**
-   * @notice Allocate the assets to the EOLStrategyExecutor on branch chain
+   * @notice Allocate the assets to the branch chain for a specific EOLVault
    * @dev Only the strategist of the EOLVault can allocate assets
    * @dev Dispatches the cross-chain message to branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the allocation occurs
@@ -264,7 +264,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function allocateEOL(uint256 chainId, address eolVault, uint256 amount) external;
 
   /**
-   * @notice Deallocate the assets from the EOLStrategyExecutor on branch chain
+   * @notice Deallocate the assets from the branch chain for a specific EOLVault
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the deallocation occurs
    * @param eolVault The address of the EOLVault to be affected
