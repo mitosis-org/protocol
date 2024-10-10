@@ -167,7 +167,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event Redeemed(uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount);
 
   /**
-   * @notice Emitted when a reward is settled from the StrategyExecutor for MitosisVault on branch chain that corresponed to the EOLVault on hub chain
+   * @notice Emitted when a reward is settled from branch chain to hub chain
    * @param chainId The ID of the chain where the reward is reported
    * @param eolVault The address of the EOLVault receiving the reward
    * @param asset The address of the reward asset
