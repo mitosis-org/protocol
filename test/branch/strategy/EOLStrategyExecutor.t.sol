@@ -33,12 +33,13 @@ contract MitosisVaultTest is Toolkit {
   MockDelegationRegistry _delegationRegistry;
 
   address immutable owner = makeAddr('owner');
+  address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
   address immutable emergencyManager = makeAddr('emergencyManager');
   address immutable strategist = makeAddr('strategist');
   address immutable hubEOLVault = makeAddr('hubEOLVault');
 
   function setUp() public {
-    _delegationRegistry = new MockDelegationRegistry();
+    _delegationRegistry = new MockDelegationRegistry(mitosis);
     _proxyAdmin = new ProxyAdmin(owner);
 
     MitosisVault mitosisVaultImpl = new MitosisVault();
