@@ -15,6 +15,8 @@ contract ERC20SnapshotsTest is Test {
   MockDelegationRegistry public delegationRegistry;
   MockERC20TWABSnapshots public token;
 
+  address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
+
   modifier trackGas(string memory op, string memory msg_) {
     uint256 startGas = gasleft();
 
@@ -24,7 +26,7 @@ contract ERC20SnapshotsTest is Test {
   }
 
   function setUp() public {
-    delegationRegistry = new MockDelegationRegistry();
+    delegationRegistry = new MockDelegationRegistry(mitosis);
     token = new MockERC20TWABSnapshots();
     token.initialize(address(delegationRegistry), 'Token', 'TKN');
   }

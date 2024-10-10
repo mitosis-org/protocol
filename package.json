@@ -13,6 +13,7 @@
     "lint:check": "forge fmt --check && yarn prettier:check && yarn format-json:check && yarn sort-imports:check",
     "prettier": "prettier . --write",
     "prettier:check": "prettier . --check",
+    "minify": "ts-node ./tools/minify.ts",
     "format-json": "ts-node ./tools/format-json.ts -i './{script,src,test,addresses}/**/*.json'",
     "format-json:check": "ts-node ./tools/format-json.ts -i './{script,src,test,addresses}/**/*.json' -c",
     "sort-imports": "ts-node ./tools/sort-imports.ts -i './{script,src,test}/**/*.sol'",

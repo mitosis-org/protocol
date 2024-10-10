@@ -5,9 +5,16 @@ import { IDelegationRegistry } from '../../src/interfaces/hub/core/IDelegationRe
 import { StdError } from '../../src/lib/StdError.sol';
 
 contract MockDelegationRegistry is IDelegationRegistry {
+  address private immutable _mitosis;
   mapping(address account => address delegationManager) private _delegationManagers;
   mapping(address account => address defaultDelegatee) private _defaultDelegatees;
   mapping(address account => address redistributionRule) private _redistributionRules;
+
+  constructor(address mitosis_) { }
+
+  function mitosis() external view override returns (address mitosis_) {
+    return _mitosis;
+  }
 
   function delegationManager(address account) external view override returns (address delegationManager_) {
     return _delegationManagers[account];
@@ -15,10 +22,6 @@ contract MockDelegationRegistry is IDelegationRegistry {
 
   function defaultDelegatee(address account) external view override returns (address defaultDelegatee_) {
     return _defaultDelegatees[account];
-  }
-
-  function redistributionRule(address account) external view override returns (address redistributionRule_) {
-    return _redistributionRules[account];
   }
 
   function setDelegationManager(address account, address delegationManager_) external override {
@@ -29,11 +32,5 @@ contract MockDelegationRegistry is IDelegationRegistry {
   function setDefaultDelegatee(address account, address defaultDelegatee_) external override {
     require(msg.sender == account || msg.sender == _delegationManagers[account], StdError.Unauthorized());
     _defaultDelegatees[account] = defaultDelegatee_;
-  }
-
-  function setRedistributionRule(address account, address redistributionRule_) external override {
-    require(redistributionRule_.code.length > 0, StdError.InvalidAddress('redistributionRule'));
-    require(msg.sender == account || msg.sender == _delegationManagers[account], StdError.Unauthorized());
-    _redistributionRules[account] = redistributionRule_;
   }
 }

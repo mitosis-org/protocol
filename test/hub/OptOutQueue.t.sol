@@ -18,6 +18,7 @@ contract OptOutQueueTest is Test {
   address internal _admin = makeAddr('admin');
   address internal _owner = makeAddr('owner');
   address internal _user = makeAddr('user');
+  address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
   MockAssetManager internal _assetManager;
   MockDelegationRegistry internal _delegationRegistry;
@@ -38,7 +39,7 @@ contract OptOutQueueTest is Test {
     _factory = new ERC1967Factory();
 
     _assetManager = new MockAssetManager();
-    _delegationRegistry = new MockDelegationRegistry();
+    _delegationRegistry = new MockDelegationRegistry(mitosis);
 
     _hubAsset = HubAsset(
       _proxy(

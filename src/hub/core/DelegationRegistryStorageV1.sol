@@ -7,9 +7,9 @@ abstract contract DelegationRegistryStorageV1 {
   using ERC7201Utils for string;
 
   struct StorageV1 {
+    address mitosis;
     mapping(address account => address delegationManager) delegationManagers;
     mapping(address account => address defaultDelegatee) defaultDelegatees;
-    mapping(address account => address redistributionRule) redistributionRules;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.DelegationRegistryStorage.v1';

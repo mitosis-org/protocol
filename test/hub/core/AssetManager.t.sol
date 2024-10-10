@@ -37,6 +37,7 @@ contract AssetManagerTest is Toolkit {
 
   address owner = makeAddr('owner');
   address user1 = makeAddr('user1');
+  address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
   uint48 branchChainId = 10;
   address branchAsset1 = makeAddr('branchAsset1');
@@ -75,7 +76,7 @@ contract AssetManagerTest is Toolkit {
 
     _rewardHandler = new MockRewardHandler();
     _assetManagerEntrypoint = new MockAssetManagerEntrypoint(_assetManager, address(0));
-    _delegationRegistry = new MockDelegationRegistry();
+    _delegationRegistry = new MockDelegationRegistry(mitosis);
 
     HubAsset tokenImpl = new HubAsset();
     _token = HubAsset(

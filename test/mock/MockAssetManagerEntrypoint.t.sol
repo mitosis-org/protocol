@@ -73,4 +73,8 @@ contract MockAssetManagerEntrypoint is Context, IAssetManagerEntrypoint {
   function settleExtraRewards(uint256 chainId, address eolVault, address reward, uint256 amount) external onlyMailbox {
     _assetManager.settleExtraRewards(chainId, eolVault, reward, amount);
   }
+
+  // ============================= NOTE: HANDLER ============================= //
+
+  function handle(uint32 _origin, bytes32 _sender, bytes calldata _message) external payable override { }
 }

@@ -38,6 +38,12 @@ Mitosis is an Ecosystem-Owned Liquidity (EOL) layer1 blockchain that empowers ne
    forge build
    ```
 
+### Documentation
+
+```bash
+forge doc --build --serve
+```
+
 ### Account Setup
 
 We recommend using `cast`'s keystore feature for secure key management. Store your key in the keystore with:

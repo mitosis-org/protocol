@@ -6,8 +6,8 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { GovernorSettingsUpgradeable } from '@ozu-v5/governance/extensions/GovernorSettingsUpgradeable.sol';
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
 
-import { IEOLProtocolGovernor } from '../../interfaces/hub/governance/IEOLProtocolGovernor.sol';
 import { IEOLProtocolRegistry } from '../../interfaces/hub/eol/IEOLProtocolRegistry.sol';
+import { IEOLProtocolGovernor } from '../../interfaces/hub/governance/IEOLProtocolGovernor.sol';
 import { EOLProtocolGovernorStorageV1, Proposal } from './EOLProtocolGovernorStorageV1.sol';
 
 // TODO(thai): Consider the way all EOL governances for different tokens are managed by only one governor contract.
