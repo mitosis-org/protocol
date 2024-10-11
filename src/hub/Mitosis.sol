@@ -23,8 +23,8 @@ contract Mitosis is IMitosis, Ownable2StepUpgradeable {
     IAssetManager assetManager;
     IOptOutQueue optOutQueue;
     IDelegationRegistry delegationRegistry;
-    mapping(address eolVault => IEOLGaugeGovernor) eolGaugeGovernors;
-    mapping(address eolVault => IEOLProtocolGovernor) eolProtocolGovernors;
+    IEOLProtocolGovernor eolProtocolGovernor;
+    IEOLGaugeGovernor eolGaugeGovernor;
   }
 
   // =========================== NOTE: STORAGE DEFINITIONS =========================== //
@@ -77,15 +77,15 @@ contract Mitosis is IMitosis, Ownable2StepUpgradeable {
   /**
    * @inheritdoc IMitosis
    */
-  function eolGaugeGovernor(address eolVault) external view returns (IEOLGaugeGovernor eolGaugeGovernor_) {
-    return _getMitosisStorage().eolGaugeGovernors[eolVault];
+  function eolProtocolGovernor() external view returns (IEOLProtocolGovernor eolProtocolGovernor_) {
+    return _getMitosisStorage().eolProtocolGovernor;
   }
 
   /**
    * @inheritdoc IMitosis
    */
-  function eolProtocolGovernor(address eolVault) external view returns (IEOLProtocolGovernor eolProtocolGovernor_) {
-    return _getMitosisStorage().eolProtocolGovernors[eolVault];
+  function eolGaugeGovernor() external view returns (IEOLGaugeGovernor eolGaugeGovernor_) {
+    return _getMitosisStorage().eolGaugeGovernor;
   }
 
   /**
@@ -128,11 +128,11 @@ contract Mitosis is IMitosis, Ownable2StepUpgradeable {
     _getMitosisStorage().delegationRegistry = delegationRegistry_;
   }
 
-  function setEOLGaugeGovernor(address eolVault, IEOLGaugeGovernor eolGaugeGovernor_) external onlyOwner {
-    _getMitosisStorage().eolGaugeGovernors[eolVault] = eolGaugeGovernor_;
+  function setEOLProtocolGovernor(IEOLProtocolGovernor eolProtocolGovernor_) external onlyOwner {
+    _getMitosisStorage().eolProtocolGovernor = eolProtocolGovernor_;
   }
 
-  function setEOLProtocolGovernor(address eolVault, IEOLProtocolGovernor eolProtocolGovernor_) external onlyOwner {
-    _getMitosisStorage().eolProtocolGovernors[eolVault] = eolProtocolGovernor_;
+  function setEOLGaugeGovernor(IEOLGaugeGovernor eolGaugeGovernor_) external onlyOwner {
+    _getMitosisStorage().eolGaugeGovernor = eolGaugeGovernor_;
   }
 }

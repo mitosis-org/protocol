@@ -11,9 +11,7 @@ import { IEOLGaugeGovernor } from '../../interfaces/hub/governance/IEOLGaugeGove
 import { Arrays } from '../../lib/Arrays.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
-import { EOLGaugeGovernorStorageV1, Epoch, EpochVoteInfo, TotalVoteInfo } from './EOLGaugeGovernorStorageV1.sol';
-
-// TODO(thai): add more view and ownable functions
+import { EOLGaugeGovernorStorageV1 } from './EOLGaugeGovernorStorageV1.sol';
 
 contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaugeGovernorStorageV1 {
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -25,57 +23,60 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
     _disableInitializers();
   }
 
-  function initialize(
-    address owner,
-    IEOLProtocolRegistry protocolRegistry_,
-    IEOLVault eolVault,
-    uint32 epochPeriod,
-    uint48 startsAt
-  ) external initializer {
+  function initialize(address owner, IEOLProtocolRegistry protocolRegistry_) external initializer {
     __Ownable2Step_init();
     _transferOwnership(owner);
 
     StorageV1 storage $ = _getStorageV1();
     $.protocolRegistry = protocolRegistry_;
-    $.eolVault = eolVault;
-    $.epochPeriod = epochPeriod;
-
-    _moveToNextEpoch($, startsAt);
   }
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
 
-  function voters(uint256 chainId) external view returns (address[] memory) {
-    StorageV1 storage $ = _getStorageV1();
-    return $.totalVoteInfoByChainId[chainId].voters.values();
+  function isGovernanceInitialized(address eolVault) external view returns (bool) {
+    return _governance(_getStorageV1(), eolVault).eolVault != IEOLVault(address(0));
   }
 
-  function lastEpochId() external view returns (uint256) {
-    return _getStorageV1().lastEpochId;
+  function epochPeriod(address eolVault) external view returns (uint32) {
+    return _governance(_getStorageV1(), eolVault).epochPeriod;
   }
 
-  function protocolIds(uint256 epochId, uint256 chainId) external view returns (uint256[] memory) {
-    StorageV1 storage $ = _getStorageV1();
-    Epoch storage epoch = _epoch($, epochId);
-    return epoch.voteInfoByChainId[chainId].protocolIds;
+  function lastEpochId(address eolVault) external view returns (uint256) {
+    return _governance(_getStorageV1(), eolVault).lastEpochId;
   }
 
-  function voteResult(uint256 epochId, uint256 chainId, address account)
+  function epoch(address eolVault, uint256 epochId) external view returns (uint48 startsAt, uint48 endsAt) {
+    Epoch storage epoch_ = _epoch(_governance(_getStorageV1(), eolVault), epochId);
+    return (epoch_.startsAt, epoch_.endsAt);
+  }
+
+  function protocolIds(address eolVault, uint256 epochId, uint256 chainId) external view returns (uint256[] memory) {
+    Governance storage gov = _governance(_getStorageV1(), eolVault);
+    Epoch storage epoch_ = _epoch(gov, epochId);
+    return epoch_.voteInfoByChainId[chainId].protocolIds;
+  }
+
+  function voters(address eolVault, uint256 chainId) external view returns (address[] memory) {
+    Governance storage gov = _governance(_getStorageV1(), eolVault);
+    return gov.totalVoteInfoByChainId[chainId].voters.values();
+  }
+
+  function voteResult(address eolVault, uint256 epochId, uint256 chainId, address account)
     external
     view
     returns (bool hasVoted, uint256 gaugeSum, uint32[] memory gauges)
   {
-    StorageV1 storage $ = _getStorageV1();
-    Epoch storage epoch = _epoch($, epochId);
+    Governance storage gov = _governance(_getStorageV1(), eolVault);
+    Epoch storage epoch_ = _epoch(gov, epochId);
 
-    (bool exists, uint256 latestVotedEpochId) = _latestVotedEpochIdBefore($, epochId, chainId, account);
+    (bool exists, uint256 latestVotedEpochId) = _latestVotedEpochIdBefore(gov, epochId, chainId, account);
     if (!exists) return (false, 0, new uint32[](0));
 
-    EpochVoteInfo storage latestVotedEpochVoteInfo = $.epochs[latestVotedEpochId].voteInfoByChainId[chainId];
+    EpochVoteInfo storage latestVotedEpochVoteInfo = gov.epochs[latestVotedEpochId].voteInfoByChainId[chainId];
     uint256[] memory latestVotedProtocolIds = latestVotedEpochVoteInfo.protocolIds;
     uint32[] memory latestVotedGauges = latestVotedEpochVoteInfo.gaugesByAccount[account];
 
-    uint256[] memory protocolIds_ = epoch.voteInfoByChainId[chainId].protocolIds;
+    uint256[] memory protocolIds_ = epoch_.voteInfoByChainId[chainId].protocolIds;
     gauges = new uint32[](protocolIds_.length);
     gaugeSum = 0;
 
@@ -94,13 +95,14 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
 
   //=========== NOTE: MUTATION FUNCTIONS ===========//
 
-  function castVote(uint256 chainId, uint32[] memory gauges) external {
+  function castVote(address eolVault, uint256 chainId, uint32[] memory gauges) external {
     StorageV1 storage $ = _getStorageV1();
+    Governance storage gov = _governance($, eolVault);
 
-    _moveToNextEpochIfNeeded($);
+    _moveToLatestEpoch(gov);
 
-    Epoch storage epoch = _ongoingEpoch($);
-    EpochVoteInfo storage epochVoteInfo = _getOrInitEpochVoteInfo($, epoch, chainId);
+    Epoch storage epoch_ = _ongoingEpoch(gov);
+    EpochVoteInfo storage epochVoteInfo = _getOrInitEpochVoteInfo($, gov, epoch_, chainId);
 
     require(gauges.length > 0, IEOLGaugeGovernor__ZeroGaugesLength());
     require(
@@ -111,86 +113,123 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
 
     epochVoteInfo.gaugesByAccount[_msgSender()] = gauges;
 
-    TotalVoteInfo storage totalVoteInfo = $.totalVoteInfoByChainId[chainId];
+    TotalVoteInfo storage totalVoteInfo = gov.totalVoteInfoByChainId[chainId];
     totalVoteInfo.voters.add(_msgSender());
 
     uint256[] storage votedEpochIds = totalVoteInfo.votedEpochIdsByAccount[_msgSender()];
     uint256 votedEpochIdsLen = votedEpochIds.length;
-    if (votedEpochIdsLen == 0 || votedEpochIds[votedEpochIdsLen - 1] < epoch.id) {
-      votedEpochIds.push(epoch.id);
+    if (votedEpochIdsLen == 0 || votedEpochIds[votedEpochIdsLen - 1] < epoch_.id) {
+      votedEpochIds.push(epoch_.id);
     }
 
-    emit VoteCasted(epoch.id, chainId, _msgSender(), gauges);
+    emit VoteCasted(eolVault, epoch_.id, chainId, _msgSender(), gauges);
+  }
+
+  function moveToLatestEpoch(address eolVault) external {
+    Governance storage gov = _governance(_getStorageV1(), eolVault);
+    _moveToLatestEpoch(gov);
+  }
+
+  function moveToNextEpochIfNeeded(address eolVault) external {
+    Governance storage gov = _governance(_getStorageV1(), eolVault);
+    _moveToNextEpochIfNeeded(gov);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
-  function setEpochPeriod(uint32 epochPeriod) external onlyOwner {
+  function initGovernance(address eolVault, uint32 epochPeriod_, uint48 startsAt) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
+    Governance storage gov = $.governances[eolVault];
+    require(address(gov.eolVault) == address(0), IEOLGaugeGovernor__GovernanceAlreadyInitialized(eolVault));
 
-    _moveToNextEpochIfNeeded($);
-    $.epochPeriod = epochPeriod;
+    gov.eolVault = IEOLVault(eolVault);
+    gov.epochPeriod = epochPeriod_;
+    _moveToNextEpoch(gov, startsAt);
+  }
 
-    emit EpochPeriodSet(epochPeriod);
+  function setEpochPeriod(address eolVault, uint32 epochPeriod_) external onlyOwner {
+    Governance storage gov = _governance(_getStorageV1(), eolVault);
+
+    _moveToLatestEpoch(gov);
+    gov.epochPeriod = epochPeriod_;
+
+    emit EpochPeriodSet(epochPeriod_);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _epoch(StorageV1 storage $, uint256 epochId) internal view returns (Epoch storage) {
-    Epoch storage epoch = $.epochs[epochId];
-    require(epoch.id != 0, IEOLGaugeGovernor__EpochNotFound(epochId));
-    return epoch;
+  function _governance(StorageV1 storage $, address eolVault) internal view returns (Governance storage) {
+    Governance storage gov = $.governances[eolVault];
+    require(address(gov.eolVault) != address(0), IEOLGaugeGovernor__GovernanceNotFound(eolVault));
+    return gov;
   }
 
-  function _ongoingEpoch(StorageV1 storage $) internal view returns (Epoch storage) {
-    Epoch storage epoch = _epoch($, $.lastEpochId);
-    uint48 currentTime = $.eolVault.clock();
-
-    require(currentTime >= epoch.startsAt && currentTime < epoch.endsAt, IEOLGaugeGovernor__EpochNotOngoing(epoch.id));
-
-    return epoch;
+  function _epoch(Governance storage gov, uint256 epochId) internal view returns (Epoch storage) {
+    Epoch storage epoch_ = gov.epochs[epochId];
+    require(epoch_.id != 0, IEOLGaugeGovernor__EpochNotFound(address(gov.eolVault), epochId));
+    return epoch_;
   }
 
-  function _latestVotedEpochIdBefore(StorageV1 storage $, uint256 epochIdBefore, uint256 chainId, address account)
+  function _ongoingEpoch(Governance storage gov) internal view returns (Epoch storage) {
+    Epoch storage epoch_ = _epoch(gov, gov.lastEpochId);
+    uint48 currentTime = gov.eolVault.clock();
+
+    require(
+      currentTime >= epoch_.startsAt && currentTime < epoch_.endsAt,
+      IEOLGaugeGovernor__EpochNotOngoing(address(gov.eolVault), epoch_.id)
+    );
+
+    return epoch_;
+  }
+
+  function _latestVotedEpochIdBefore(Governance storage gov, uint256 epochIdBefore, uint256 chainId, address account)
     internal
     view
     returns (bool exists, uint256 latestVotedEpochId)
   {
-    uint256[] memory votedEpochIds = $.totalVoteInfoByChainId[chainId].votedEpochIdsByAccount[account];
+    uint256[] memory votedEpochIds = gov.totalVoteInfoByChainId[chainId].votedEpochIdsByAccount[account];
     uint256 upperBoundIdx = votedEpochIds.upperBoundMemory(epochIdBefore);
     if (upperBoundIdx == 0) return (false, 0);
     else return (true, votedEpochIds[upperBoundIdx - 1]);
   }
 
-  function _moveToNextEpochIfNeeded(StorageV1 storage $) internal {
-    uint48 currentTime = $.eolVault.clock();
-    Epoch storage epoch = _ongoingEpoch($);
-    while (currentTime >= epoch.endsAt) {
-      epoch = _moveToNextEpoch($, epoch.endsAt);
+  function _moveToLatestEpoch(Governance storage gov) internal {
+    uint48 currentTime = gov.eolVault.clock();
+    Epoch storage epoch_ = _ongoingEpoch(gov);
+    while (currentTime >= epoch_.endsAt) {
+      epoch_ = _moveToNextEpoch(gov, epoch_.endsAt);
     }
   }
 
-  function _moveToNextEpoch(StorageV1 storage $, uint48 startsAt) internal returns (Epoch storage) {
-    uint256 epochId = ++$.lastEpochId;
-
-    Epoch storage epoch = $.epochs[epochId];
-    epoch.id = epochId;
-    epoch.startsAt = startsAt;
-    epoch.endsAt = startsAt + $.epochPeriod;
-
-    emit EpochStarted(epoch.id, epoch.startsAt, epoch.endsAt);
-
-    return epoch;
+  function _moveToNextEpochIfNeeded(Governance storage gov) internal {
+    uint48 currentTime = gov.eolVault.clock();
+    Epoch storage epoch_ = _ongoingEpoch(gov);
+    if (currentTime >= epoch_.endsAt) {
+      _moveToNextEpoch(gov, epoch_.endsAt);
+    }
   }
 
-  function _getOrInitEpochVoteInfo(StorageV1 storage $, Epoch storage epoch, uint256 chainId)
+  function _moveToNextEpoch(Governance storage gov, uint48 startsAt) internal returns (Epoch storage) {
+    uint256 epochId = ++gov.lastEpochId;
+
+    Epoch storage epoch_ = gov.epochs[epochId];
+    epoch_.id = epochId;
+    epoch_.startsAt = startsAt;
+    epoch_.endsAt = startsAt + gov.epochPeriod;
+
+    emit EpochStarted(address(gov.eolVault), epoch_.id, epoch_.startsAt, epoch_.endsAt);
+
+    return epoch_;
+  }
+
+  function _getOrInitEpochVoteInfo(StorageV1 storage $, Governance storage gov, Epoch storage epoch_, uint256 chainId)
     internal
     returns (EpochVoteInfo storage)
   {
-    EpochVoteInfo storage voteInfo = epoch.voteInfoByChainId[chainId];
+    EpochVoteInfo storage voteInfo = epoch_.voteInfoByChainId[chainId];
     if (voteInfo.protocolIds.length == 0) {
-      voteInfo.protocolIds = $.protocolRegistry.protocolIds(address($.eolVault), chainId);
-      emit ProtocolIdsFetched(epoch.id, chainId, voteInfo.protocolIds);
+      voteInfo.protocolIds = $.protocolRegistry.protocolIds(address(gov.eolVault), chainId);
+      emit ProtocolIdsFetched(address(gov.eolVault), epoch_.id, chainId, voteInfo.protocolIds);
     }
     return voteInfo;
   }
