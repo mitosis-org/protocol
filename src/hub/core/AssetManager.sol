@@ -2,7 +2,6 @@
 pragma solidity ^0.8.27;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
@@ -10,10 +9,11 @@ import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
+import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { AssetManagerStorageV1 } from './AssetManagerStorageV1.sol';
 
-contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgradeable, AssetManagerStorageV1 {
+contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, AssetManagerStorageV1 {
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
   constructor() {
@@ -218,6 +218,14 @@ contract AssetManager is IAssetManager, PausableUpgradeable, Ownable2StepUpgrade
 
   function setStrategist(address eolVault, address strategist) external onlyOwner {
     _setStrategist(_getStorageV1(), eolVault, strategist);
+  }
+
+  function pause() external onlyOwner {
+    _pause();
+  }
+
+  function unpause() external onlyOwner {
+    _unpause();
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
