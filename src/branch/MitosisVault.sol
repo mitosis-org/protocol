@@ -6,17 +6,17 @@ import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { Address } from '@oz-v5/utils/Address.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 
 import { MitosisVaultStorageV1 } from '../branch/MitosisVaultStorageV1.sol';
 import { AssetAction, EOLAction, IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IEOLStrategyExecutor } from '../interfaces/branch/strategy/IEOLStrategyExecutor.sol';
+import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
 
 // TODO(thai): add some view functions in MitosisVault
 
-contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgradeable, MitosisVaultStorageV1 {
+contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, MitosisVaultStorageV1 {
   using SafeERC20 for IERC20;
   using Address for address;
 
@@ -276,6 +276,14 @@ contract MitosisVault is IMitosisVault, PausableUpgradeable, Ownable2StepUpgrade
     StorageV1 storage $ = _getStorageV1();
     _assertEOLInitialized($, hubEOLVault);
     return _resumeEOL($, hubEOLVault, action);
+  }
+
+  function pause() external onlyOwner {
+    _pause();
+  }
+
+  function unpause() external onlyOwner {
+    _unpause();
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//

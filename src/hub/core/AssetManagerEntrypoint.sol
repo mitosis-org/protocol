@@ -6,7 +6,6 @@ import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
-import { PausableUpgradeable } from '@ozu-v5/utils/PausableUpgradeable.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
@@ -18,13 +17,7 @@ import { AssetManager } from './AssetManager.sol';
 
 // TODO(thai): consider to make our own contract (`HyperlaneConnector`) instead of using `Router`.
 
-contract AssetManagerEntrypoint is
-  IAssetManagerEntrypoint,
-  IMessageRecipient,
-  Router,
-  PausableUpgradeable,
-  Ownable2StepUpgradeable
-{
+contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, Router, Ownable2StepUpgradeable {
   using Message for *;
   using Conv for *;
 
@@ -49,7 +42,6 @@ contract AssetManagerEntrypoint is
 
   function initialize(address owner_, address hook, address ism) public initializer {
     _MailboxClient_initialize(hook, ism, owner_);
-    __Pausable_init();
     __Ownable2Step_init();
     _transferOwnership(owner_);
   }
