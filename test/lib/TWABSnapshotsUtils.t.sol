@@ -13,12 +13,13 @@ contract TWABSnapshotsUtilsTest is Test {
 
   address immutable accA = makeAddr('A');
   address immutable accB = makeAddr('B');
+  address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
   MockERC20TWABSnapshots public token;
   MockDelegationRegistry public delegationRegistry;
 
   function setUp() public {
-    delegationRegistry = new MockDelegationRegistry();
+    delegationRegistry = new MockDelegationRegistry(mitosis);
     token = new MockERC20TWABSnapshots();
     token.initialize(address(delegationRegistry), 'Token', 'TKN');
   }

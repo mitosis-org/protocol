@@ -9,6 +9,7 @@ contract MockAssetManager is IAssetManager {
   function allocateEOL(uint256 chainId, address eolVault, uint256 amount) external { }
   function branchAsset(address hubAsset_, uint256 chainId) external view returns (address branchAsset_) { }
   function deallocateEOL(uint256 chainId, address eolVault, uint256 amount) external { }
+  function reserveEOL(address eolVault, uint256 amount) external { }
   function deposit(uint256 chainId, address branchAsset_, address to, uint256 amount) external { }
   function depositWithOptIn(uint256 chainId, address branchAsset_, address to, address eolVault, uint256 amount)
     external
@@ -21,6 +22,7 @@ contract MockAssetManager is IAssetManager {
   function strategist(address eolVault) external view returns (address) { }
 
   function hubAsset(uint256 chainId, address branchAsset_) external view returns (address hubAsset_) { }
+  function collateral(uint256 chainId, address hubAsset_) external view returns (uint256 collateral_) { }
   function initializeAsset(uint256 chainId, address hubAsset_) external { }
   function initializeEOL(uint256 chainId, address eolVault) external { }
 

@@ -17,16 +17,16 @@ interface ITreasuryStorageV1 {
   }
 
   /**
-   * @notice Returns the current holdings of the reward token for the EOL vault
-   * @param eolVault The EOL vault address
+   * @notice Returns the current holdings of the reward token for the EOLVault
+   * @param eolVault The EOLVault address
    * @param reward The reward token address
    * @return balance The current holdings of the reward token
    */
   function balances(address eolVault, address reward) external view returns (uint256 balance);
 
   /**
-   * @notice Returns the management log history of the reward token for the EOL vault
-   * @param eolVault The EOL vault address
+   * @notice Returns the management log history of the reward token for the EOLVault
+   * @param eolVault The EOLVault address
    * @param reward The reward token address
    * @param offset The offset to start from
    * @param size The number of logs to return
@@ -50,7 +50,7 @@ interface ITreasury is IRewardHandler, IAccessControlEnumerable, ITreasuryStorag
 
   /**
    * @notice Dispatches reward distribution with stacked rewards
-   * @param eolVault The EOL vault address
+   * @param eolVault The EOLVault address
    * @param reward The reward token address
    * @param amount The reward amount
    * @param handler The reward handler address

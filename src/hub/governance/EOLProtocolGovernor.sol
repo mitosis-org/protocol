@@ -6,11 +6,10 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { GovernorSettingsUpgradeable } from '@ozu-v5/governance/extensions/GovernorSettingsUpgradeable.sol';
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
 
-import { IEOLProtocolGovernor } from '../../interfaces/hub/governance/IEOLProtocolGovernor.sol';
 import { IEOLProtocolRegistry } from '../../interfaces/hub/eol/IEOLProtocolRegistry.sol';
-import { EOLProtocolGovernorStorageV1, Proposal } from './EOLProtocolGovernorStorageV1.sol';
+import { IEOLProtocolGovernor } from '../../interfaces/hub/governance/IEOLProtocolGovernor.sol';
+import { EOLProtocolGovernorStorageV1 } from './EOLProtocolGovernorStorageV1.sol';
 
-// TODO(thai): Consider the way all EOL governances for different tokens are managed by only one governor contract.
 // TODO(thai): Consider better design.
 //  - e.g. consider more steps for proposal. (proposed -> ongoing -> result recorded -> executed)
 //  - e.g. consider to store proposal state (passed / rejected) on-chain even though the state is calculated off-chain.
@@ -40,7 +39,7 @@ contract EOLProtocolGovernor is
     _disableInitializers();
   }
 
-  function initialize(address owner, IEOLProtocolRegistry protocolRegistry_, address eolVault_) public initializer {
+  function initialize(address owner, IEOLProtocolRegistry protocolRegistry_) public initializer {
     __Ownable2Step_init();
     _transferOwnership(owner);
 
@@ -51,7 +50,6 @@ contract EOLProtocolGovernor is
 
     StorageV1 storage $ = _getStorageV1();
     $.protocolRegistry = protocolRegistry_;
-    $.eolVault = eolVault_;
   }
 
   function proposalId(ProposalType proposalType, bytes memory payload, string memory description)

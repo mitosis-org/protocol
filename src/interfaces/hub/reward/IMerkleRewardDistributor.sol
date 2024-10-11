@@ -14,8 +14,8 @@ interface IMerkleRewardDistributorStorageV1 {
   }
 
   /**
-   * @notice Returns the stage info of specific distribution for the EOL vault and reward token.
-   * @param eolVault The EOL vault address
+   * @notice Returns the stage info of specific distribution for the EOLVault and reward token.
+   * @param eolVault The EOLVault address
    * @param reward The reward token address
    * @param stageNum The stage number
    * @return stage_ The stage info for the distribution
@@ -31,13 +31,24 @@ interface IMerkleRewardDistributorStorageV1 {
  * @notice Interface for the Merkle based reward distributor
  */
 interface IMerkleRewardDistributor is IRewardDistributor, IMerkleRewardDistributorStorageV1 {
+  /**
+   * @notice Error thrown when attempting to claim an already claimed reward.
+   */
   error IMerkleRewardDistributor__AlreadyClaimed();
+
+  /**
+   * @notice Error thrown when an invalid Merkle proof is provided.
+   */
   error IMerkleRewardDistributor__InvalidProof();
+
+  /**
+   * @notice Error thrown when an invalid amount is provided for claim.
+   */
   error IMerkleRewardDistributor__InvalidAmount();
 
   /**
    * @notice Encodes metadata for the specified vault, stage, amount, and proof.
-   * @param eolVault The EOL vault address
+   * @param eolVault The EOLVault address
    * @param stage_ The stage number
    * @param amount The reward amount
    * @param proof The Merkle proof
@@ -50,7 +61,7 @@ interface IMerkleRewardDistributor is IRewardDistributor, IMerkleRewardDistribut
 
   /**
    * @notice Makes a leaf hash that expected to be used in the Merkle tree.
-   * @param eolVault The EOL vault address
+   * @param eolVault The EOLVault address
    * @param reward The reward token address
    * @param stage_ The stage number
    * @param account The account address

@@ -27,8 +27,8 @@ interface IRoutingRewardHandlerStorageV1 {
   error IRoutingRewardHandlerStorageV1__DefaultHandlerNotSet(IRewardHandler.DistributionType distributionType);
 
   /**
-   * @notice Returns the distribution type of the reward handler for the given EOL vault and reward
-   * @param eolVault The EOL vault address
+   * @notice Returns the distribution type of the reward handler for the given EOLVault and reward
+   * @param eolVault The EOLVault address
    * @param reward The reward token address
    * @return distributionType_ The distribution type of the reward handler
    */
@@ -38,8 +38,8 @@ interface IRoutingRewardHandlerStorageV1 {
     returns (IRewardHandler.DistributionType distributionType_);
 
   /**
-   * @notice Returns the reward handler for the given EOL vault and reward
-   * @param eolVault The EOL vault address
+   * @notice Returns the reward handler for the given EOLVault and reward
+   * @param eolVault The EOLVault address
    * @param reward The reward token address
    * @return handler_ Routed reward handler
    */
@@ -78,22 +78,22 @@ interface IRoutingRewardHandlerStorageV1 {
  */
 interface IRoutingRewardHandler is IAccessControlEnumerable, IRoutingRewardHandlerStorageV1 {
   /**
-   * @notice Sets the handler for the given EOL vault and reward, so that the reward can be dispatched via the specified handler
+   * @notice Sets the handler for the given EOLVault and reward, so that the reward can be dispatched via the specified handler
    * @dev Emits HandlerConfigSet event
    * @dev The handler must be registered before setting it
    * @dev The distribution type must not be set before setting the handler
-   * @param eolVault The EOL vault address
+   * @param eolVault The EOLVault address
    * @param reward The reward token address
    * @param handler The reward handler address
    */
   function setHandlerConfig(address eolVault, address reward, IRewardHandler handler) external;
 
   /**
-   * @notice Sets the distribution type for the given EOL vault and reward, so that the reward can be dispatched via default handler
+   * @notice Sets the distribution type for the given EOLVault and reward, so that the reward can be dispatched via default handler
    * @dev Emits HandlerConfigSet event
    * @dev The default handler must be set before setting the distribution type
    * @dev The handler must not be set before setting the distribution type
-   * @param eolVault The EOL vault address
+   * @param eolVault The EOLVault address
    * @param reward The reward token address
    * @param distributionType_ The distribution type
    */

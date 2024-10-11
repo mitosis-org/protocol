@@ -21,9 +21,10 @@ contract HubAssetTest is Test {
   address immutable owner = makeAddr('owner');
   address immutable user1 = makeAddr('user1');
   address immutable user2 = makeAddr('user2');
+  address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
   function setUp() public {
-    _delegationRegistry = new MockDelegationRegistry();
+    _delegationRegistry = new MockDelegationRegistry(mitosis);
     _proxyAdmin = new ProxyAdmin(owner);
     HubAsset hubAssetImpl = new HubAsset();
 

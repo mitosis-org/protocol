@@ -58,6 +58,19 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
     return _queue(_getStorageV1(), eolVault).redeemPeriod;
   }
 
+  function getStatus(address eolVault, uint256 reqId) external view returns (RequestStatus status) {
+    StorageV1 storage $ = _getStorageV1();
+    LibRedeemQueue.Queue storage queue = _queue($, eolVault);
+
+    LibRedeemQueue.Request memory req = queue.get(reqId);
+    (, bool isResolved) = queue.resolvedAt(reqId, block.timestamp);
+
+    if (req.claimedAt > 0) return RequestStatus.Claimed;
+    if (isResolved) return RequestStatus.Claimable;
+    if (reqId == queue.offset) return RequestStatus.Requested;
+    return RequestStatus.None;
+  }
+
   function getRequest(address eolVault, uint256[] calldata reqIds)
     external
     view
@@ -72,6 +85,12 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
 
       resp[i] = GetRequestResponse({
         id: reqIds[i],
+        requestedShares: reqIds[i] > 0
+          ? req.accumulatedShares - queue.get(reqIds[i] - 1).accumulatedShares
+          : req.accumulatedShares,
+        requestedAssets: reqIds[i] > 0
+          ? req.accumulatedAssets - queue.get(reqIds[i] - 1).accumulatedAssets
+          : req.accumulatedAssets,
         accumulatedShares: req.accumulatedShares,
         accumulatedAssets: req.accumulatedAssets,
         recipient: req.recipient,
@@ -98,6 +117,12 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
       resp[i] = GetRequestByIndexResponse({
         id: idxItemIds[i],
         indexId: indexId,
+        requestedShares: indexId > 0
+          ? req.accumulatedShares - queue.get(indexId - 1).accumulatedShares
+          : req.accumulatedShares,
+        requestedAssets: indexId > 0
+          ? req.accumulatedAssets - queue.get(indexId - 1).accumulatedAssets
+          : req.accumulatedAssets,
         accumulatedShares: req.accumulatedShares,
         accumulatedAssets: req.accumulatedAssets,
         recipient: req.recipient,

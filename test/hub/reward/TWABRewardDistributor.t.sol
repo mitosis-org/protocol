@@ -20,12 +20,13 @@ contract TWABRewardDistributortTest is Test {
 
   ProxyAdmin internal _proxyAdmin;
   address immutable owner = makeAddr('owner');
+  address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
   uint48 twabPeriod = 100;
   uint256 rewardPrecision = 10 ** 18;
 
   function setUp() public {
-    delegationRegistry = new MockDelegationRegistry();
+    delegationRegistry = new MockDelegationRegistry(mitosis);
 
     _proxyAdmin = new ProxyAdmin(owner);
     TWABRewardDistributor twabRewardDistributorImpl = new TWABRewardDistributor();
