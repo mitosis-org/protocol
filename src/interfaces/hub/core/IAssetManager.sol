@@ -43,77 +43,67 @@ interface IAssetManagerStorageV1 {
 
   /**
    * @notice Get the current entrypoint address (see IAssetManagerEntrypoint)
-   * @return entrypoint_ The address of the current entrypoint
    */
-  function entrypoint() external view returns (address entrypoint_);
+  function entrypoint() external view returns (address);
 
   /**
    * @notice Get the current opt-out queue address (see IOptOutQueue)
-   * @return optOutQueue_ The address of the current opt-out queue
    */
-  function optOutQueue() external view returns (address optOutQueue_);
+  function optOutQueue() external view returns (address);
 
   /**
    * @notice Get the current reward handler address (see IRewardHandler)
-   * @return rewardHandler_ The address of the current reward handler
    */
-  function rewardHandler() external view returns (address rewardHandler_);
+  function rewardHandler() external view returns (address);
 
   /**
    * @notice Get the branch asset address for a given hub asset and chain ID
    * @param hubAsset_ The address of the hub asset
    * @param chainId The ID of the chain
-   * @return branchAsset_ The address of the corresponding branch asset
    */
-  function branchAsset(address hubAsset_, uint256 chainId) external view returns (address branchAsset_);
+  function branchAsset(address hubAsset_, uint256 chainId) external view returns (address);
 
   /**
    * @notice Get the hub asset address for a given chain ID and branch asset
    * @param chainId The ID of the chain
    * @param branchAsset_ The address of the branch asset
-   * @return hubAsset_ The address of the corresponding hub asset
    */
-  function hubAsset(uint256 chainId, address branchAsset_) external view returns (address hubAsset_);
+  function hubAsset(uint256 chainId, address branchAsset_) external view returns (address);
 
   /**
    * @notice Get the total collateral amount of branch asset for a given chain ID and hub asset.
    * @dev The collateral amount is equals to the total amount of branch asset deposited to the MitosisVault
    * @param chainId The ID of the chain
    * @param hubAsset_ The address of the hub asset
-   * @return collateral_ The amount of collateral
    */
-  function collateral(uint256 chainId, address hubAsset_) external view returns (uint256 collateral_);
+  function collateral(uint256 chainId, address hubAsset_) external view returns (uint256);
 
   /**
    * @notice Check if an EOLVault is initialized for a given chain and branch asset (EOLVault -> hubAsset -> branchAsset)
    * @param chainId The ID of the chain
    * @param eolVault The address of the EOLVault
-   * @return eolInitialized_ A boolean indicating whether the EOLVault is initialized
    */
-  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool eolInitialized_);
+  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool);
 
   /**
    * @notice Get the idle balance of an EOLVault
    * @dev The idle balance will be calculated like this:
    * @dev (total opt-in amount - total utilized amount - total pending opt-out amount)
    * @param eolVault The address of the EOLVault
-   * @return eolVaultIdleBalance The idle balance of the EOLVault
    */
-  function eolIdle(address eolVault) external view returns (uint256 eolVaultIdleBalance);
+  function eolIdle(address eolVault) external view returns (uint256);
 
   /**
    * @notice Get the total utilized balance (hubAsset/branchAsset) of an EOLVault
    * @param eolVault The address of the EOLVault
-   * @return eolVaultAllocation Total allocated token amount
    */
-  function eolAlloc(address eolVault) external view returns (uint256 eolVaultAllocation);
+  function eolAlloc(address eolVault) external view returns (uint256);
 
   /**
    * @notice Get the strategist address for an EOLVault
    * @param eolVault The address of the EOLVault
-   * @return strategist_ The address of the strategist
    */
-  function strategist(address eolVault) external view returns (address strategist_);
+  function strategist(address eolVault) external view returns (address);
 }
 
 /**

@@ -58,7 +58,7 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
     return _queue(_getStorageV1(), eolVault).redeemPeriod;
   }
 
-  function getStatus(address eolVault, uint256 reqId) external view returns (RequestStatus status) {
+  function getStatus(address eolVault, uint256 reqId) external view returns (RequestStatus) {
     StorageV1 storage $ = _getStorageV1();
     LibRedeemQueue.Queue storage queue = _queue($, eolVault);
 
@@ -74,12 +74,13 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
   function getRequest(address eolVault, uint256[] calldata reqIds)
     external
     view
-    returns (IOptOutQueueStorageV1.GetRequestResponse[] memory resp)
+    returns (IOptOutQueueStorageV1.GetRequestResponse[] memory)
   {
     StorageV1 storage $ = _getStorageV1();
     LibRedeemQueue.Queue storage queue = _queue($, eolVault);
 
-    resp = new IOptOutQueueStorageV1.GetRequestResponse[](reqIds.length);
+    IOptOutQueueStorageV1.GetRequestResponse[] memory resp =
+      new IOptOutQueueStorageV1.GetRequestResponse[](reqIds.length);
     for (uint256 i = 0; i < reqIds.length; i++) {
       LibRedeemQueue.Request memory req = queue.get(reqIds[i]);
 
@@ -104,12 +105,13 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
   function getRequestByReceiver(address eolVault, address receiver, uint256[] calldata idxItemIds)
     external
     view
-    returns (IOptOutQueueStorageV1.GetRequestByIndexResponse[] memory resp)
+    returns (IOptOutQueueStorageV1.GetRequestByIndexResponse[] memory)
   {
     StorageV1 storage $ = _getStorageV1();
     LibRedeemQueue.Queue storage queue = _queue($, eolVault);
 
-    resp = new IOptOutQueueStorageV1.GetRequestByIndexResponse[](idxItemIds.length);
+    IOptOutQueueStorageV1.GetRequestByIndexResponse[] memory resp =
+      new IOptOutQueueStorageV1.GetRequestByIndexResponse[](idxItemIds.length);
     for (uint256 i = 0; i < idxItemIds.length; i++) {
       uint256 indexId = queue.index(receiver).get(idxItemIds[i]);
       LibRedeemQueue.Request memory req = queue.get(indexId);
@@ -157,15 +159,17 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
     return _queue(_getStorageV1(), eolVault).index(recipient).size;
   }
 
-  function queueOffset(address eolVault, bool simulate) external view returns (uint256 offset) {
+  function queueOffset(address eolVault, bool simulate) external view returns (uint256) {
     LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), eolVault);
+    uint256 offset;
     if (simulate) (offset,) = queue.searchQueueOffset(queue.totalReservedAssets, block.timestamp);
     else offset = queue.offset;
     return offset;
   }
 
-  function queueIndexOffset(address eolVault, address recipient, bool simulate) external view returns (uint256 offset) {
+  function queueIndexOffset(address eolVault, address recipient, bool simulate) external view returns (uint256) {
     LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), eolVault);
+    uint256 offset;
     if (simulate) (offset,) = queue.searchIndexOffset(recipient, queue.totalReservedAssets, block.timestamp);
     else offset = queue.index(recipient).offset;
     return offset;

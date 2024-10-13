@@ -42,15 +42,15 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, R
     _enrollRemoteRouter(_mitosisDomain, _mitosisAddr);
   }
 
-  function vault() external view returns (IMitosisVault vault_) {
+  function vault() external view returns (IMitosisVault) {
     return _vault;
   }
 
-  function mitosisDomain() external view returns (uint32 mitosisDomain_) {
+  function mitosisDomain() external view returns (uint32) {
     return _mitosisDomain;
   }
 
-  function mitosisAddr() external view returns (bytes32 mitosisAddr_) {
+  function mitosisAddr() external view returns (bytes32) {
     return _mitosisAddr;
   }
 

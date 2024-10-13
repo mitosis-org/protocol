@@ -30,46 +30,35 @@ interface IRoutingRewardHandlerStorageV1 {
    * @notice Returns the distribution type of the reward handler for the given EOLVault and reward
    * @param eolVault The EOLVault address
    * @param reward The reward token address
-   * @return distributionType_ The distribution type of the reward handler
    */
-  function distributionType(address eolVault, address reward)
-    external
-    view
-    returns (IRewardHandler.DistributionType distributionType_);
+  function distributionType(address eolVault, address reward) external view returns (IRewardHandler.DistributionType);
 
   /**
    * @notice Returns the reward handler for the given EOLVault and reward
    * @param eolVault The EOLVault address
    * @param reward The reward token address
-   * @return handler_ Routed reward handler
    */
-  function route(address eolVault, address reward) external view returns (IRewardHandler handler_);
+  function route(address eolVault, address reward) external view returns (IRewardHandler);
 
   /**
    * @notice Returns the default reward handler for the given distribution type
    * @param distributionType_ The distribution type
-   * @return defaultHandler_ The default reward handler
    */
-  function defaultHandler(IRewardHandler.DistributionType distributionType_)
-    external
-    view
-    returns (IRewardHandler defaultHandler_);
+  function defaultHandler(IRewardHandler.DistributionType distributionType_) external view returns (IRewardHandler);
 
   /**
    * @notice Iterates over the registered reward handlers for the given distribution type
    * @dev It will returns the entire list of handlers if the offset + size is greater than the number of handlers
    * @param offset The offset to start from
    * @param size The number of handlers to return
-   * @return handlers_ The reward handlers
    */
-  function allowedHandlers(uint256 offset, uint256 size) external view returns (IRewardHandler[] memory handlers_);
+  function allowedHandlers(uint256 offset, uint256 size) external view returns (IRewardHandler[] memory);
 
   /**
    * @notice Checks if the reward handler is allowed
    * @param handler_ The reward handler
-   * @return isRegistered_ A boolean indicating whether the handler is registered
    */
-  function isHandlerAllowed(IRewardHandler handler_) external view returns (bool isRegistered_);
+  function isHandlerAllowed(IRewardHandler handler_) external view returns (bool);
 }
 
 /**

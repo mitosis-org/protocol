@@ -18,12 +18,8 @@ interface IMerkleRewardDistributorStorageV1 {
    * @param eolVault The EOLVault address
    * @param reward The reward token address
    * @param stageNum The stage number
-   * @return stage_ The stage info for the distribution
    */
-  function stage(address eolVault, address reward, uint256 stageNum)
-    external
-    view
-    returns (StageResponse memory stage_);
+  function stage(address eolVault, address reward, uint256 stageNum) external view returns (StageResponse memory);
 }
 
 /**

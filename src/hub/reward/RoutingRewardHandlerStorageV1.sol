@@ -46,42 +46,34 @@ contract RoutingRewardHandlerStorageV1 is IRoutingRewardHandlerStorageV1 {
   /**
    * @inheritdoc IRoutingRewardHandlerStorageV1
    */
-  function distributionType(address eolVault, address reward)
-    external
-    view
-    returns (IRewardHandler.DistributionType distributionType_)
-  {
+  function distributionType(address eolVault, address reward) external view returns (IRewardHandler.DistributionType) {
     return _distributionType(_getStorageV1(), eolVault, reward);
   }
 
   /**
    * @inheritdoc IRoutingRewardHandlerStorageV1
    */
-  function route(address eolVault, address reward) external view returns (IRewardHandler handler_) {
+  function route(address eolVault, address reward) external view returns (IRewardHandler) {
     return _route(_getStorageV1(), eolVault, reward);
   }
 
   /**
    * @inheritdoc IRoutingRewardHandlerStorageV1
    */
-  function defaultHandler(IRewardHandler.DistributionType distributionType_)
-    external
-    view
-    returns (IRewardHandler defaultHandler_)
-  {
+  function defaultHandler(IRewardHandler.DistributionType distributionType_) external view returns (IRewardHandler) {
     return _getStorageV1().defaultHandlers[distributionType_];
   }
 
   /**
    * @inheritdoc IRoutingRewardHandlerStorageV1
    */
-  function allowedHandlers(uint256 offset, uint256 size) external view returns (IRewardHandler[] memory handlers_) {
+  function allowedHandlers(uint256 offset, uint256 size) external view returns (IRewardHandler[] memory) {
     StorageV1 storage $ = _getStorageV1();
 
     uint256 handlersLength = $.allowedHandlers.length();
     if (offset + size > handlersLength) size = handlersLength - offset;
 
-    handlers_ = new IRewardHandler[](size);
+    IRewardHandler[] memory handlers_ = new IRewardHandler[](size);
     for (uint256 i = 0; i < size; i++) {
       handlers_[i] = IRewardHandler($.allowedHandlers.at(offset + i));
     }
@@ -92,7 +84,7 @@ contract RoutingRewardHandlerStorageV1 is IRoutingRewardHandlerStorageV1 {
   /**
    * @inheritdoc IRoutingRewardHandlerStorageV1
    */
-  function isHandlerAllowed(IRewardHandler handler_) external view returns (bool isRegistered_) {
+  function isHandlerAllowed(IRewardHandler handler_) external view returns (bool) {
     return _isHandlerAllowed(_getStorageV1(), handler_);
   }
 
@@ -162,22 +154,18 @@ contract RoutingRewardHandlerStorageV1 is IRoutingRewardHandlerStorageV1 {
   function _distributionType(StorageV1 storage $, address eolVault, address reward)
     internal
     view
-    returns (IRewardHandler.DistributionType distributionType_)
+    returns (IRewardHandler.DistributionType)
   {
     HandlerConfig memory config = $.handlerConfigs[eolVault][reward];
     return address(config.handler) != address(0) ? config.handler.distributionType() : config.distributionType;
   }
 
-  function _route(StorageV1 storage $, address eolVault, address reward)
-    internal
-    view
-    returns (IRewardHandler handler_)
-  {
+  function _route(StorageV1 storage $, address eolVault, address reward) internal view returns (IRewardHandler) {
     HandlerConfig memory config = $.handlerConfigs[eolVault][reward];
     return address(config.handler) != address(0) ? config.handler : $.defaultHandlers[config.distributionType];
   }
 
-  function _isHandlerAllowed(StorageV1 storage $, IRewardHandler handler_) internal view returns (bool isRegistered_) {
+  function _isHandlerAllowed(StorageV1 storage $, IRewardHandler handler_) internal view returns (bool) {
     return $.allowedHandlers.contains(address(handler_));
   }
 

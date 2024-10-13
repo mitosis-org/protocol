@@ -42,14 +42,14 @@ interface IEOLStrategyExecutor {
   // storage v1
   function strategist() external view returns (address strategist_);
 
-  function getStrategy(uint256 strategyId) external view returns (Strategy memory strategy);
-  function getStrategy(address implementation) external view returns (Strategy memory strategy);
-  function getEnabledStrategyIds() external view returns (uint256[] memory strategyIds);
-  function isStrategyEnabled(uint256 strategyId) external view returns (bool enabled);
-  function isStrategyEnabled(address implementation) external view returns (bool enabled);
+  function getStrategy(uint256 strategyId) external view returns (Strategy memory);
+  function getStrategy(address implementation) external view returns (Strategy memory);
+  function getEnabledStrategyIds() external view returns (uint256[] memory);
+  function isStrategyEnabled(uint256 strategyId) external view returns (bool);
+  function isStrategyEnabled(address implementation) external view returns (bool);
 
-  function totalBalance() external view returns (uint256 totalBalance_);
-  function lastSettledBalance() external view returns (uint256 lastSettledBalance_);
+  function totalBalance() external view returns (uint256);
+  function lastSettledBalance() external view returns (uint256);
 
   function fetchEOL(uint256 amount) external;
   function returnEOL(uint256 amount) external;

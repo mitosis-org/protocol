@@ -101,35 +101,28 @@ interface IOptOutQueueStorageV1 {
 
   /**
    * @notice Retrieves the current asset manager address
-   * @return assetManager_ Address of the current asset manager
    */
-  function assetManager() external view returns (address assetManager_);
+  function assetManager() external view returns (address);
 
   /**
-   * @notice Gets the redeem period duration for a specific EOLVault
+   * @notice Gets the redeem period duration in seconds for a specific EOLVault
    * @param eolVault Address of the EOLVault to query
-   * @return redeemPeriod_ Duration of the redeem period in seconds
    */
-  function redeemPeriod(address eolVault) external view returns (uint256 redeemPeriod_);
+  function redeemPeriod(address eolVault) external view returns (uint256);
 
   /**
    * @notice Retrieves the status of a specific opt-out request
    * @param eolVault Address of the EOLVault to query
    * @param reqId ID of the request to query
-   * @return status RequestStatus enumeration indicating the request status
    */
-  function getStatus(address eolVault, uint256 reqId) external view returns (RequestStatus status);
+  function getStatus(address eolVault, uint256 reqId) external view returns (RequestStatus);
 
   /**
    * @notice Retrieves details for multiple requests from a specific EOLVault
    * @param eolVault Address of the EOLVault to query
    * @param reqIds Array of request IDs to retrieve
-   * @return resp Array of GetRequestResponse structs containing request details
    */
-  function getRequest(address eolVault, uint256[] calldata reqIds)
-    external
-    view
-    returns (GetRequestResponse[] memory resp);
+  function getRequest(address eolVault, uint256[] calldata reqIds) external view returns (GetRequestResponse[] memory);
 
   /**
    * @notice Gets details for multiple requests for a specific receiver from an EOLVault
@@ -137,12 +130,11 @@ interface IOptOutQueueStorageV1 {
    * @param eolVault Address of the EOLVault to query
    * @param receiver Address of the receiver to query
    * @param idxItemIds Array of index item IDs to retrieve
-   * @return resp Array of GetRequestByIndexResponse structs containing request details
    */
   function getRequestByReceiver(address eolVault, address receiver, uint256[] calldata idxItemIds)
     external
     view
-    returns (GetRequestByIndexResponse[] memory resp);
+    returns (GetRequestByIndexResponse[] memory);
 
   /**
    * @notice Retrieves the timestamp when a specific request was reserved
@@ -166,70 +158,62 @@ interface IOptOutQueueStorageV1 {
    * @notice Retrieves the number of shares for a specific request
    * @param eolVault Address of the EOLVault to query
    * @param reqId ID of the request to query
-   * @return shares Number of shares for the specified request
    */
-  function requestShares(address eolVault, uint256 reqId) external view returns (uint256 shares);
+  function requestShares(address eolVault, uint256 reqId) external view returns (uint256);
 
   /**
    * @notice Gets the amount of assets for a specific request
    * @param eolVault Address of the EOLVault to query
    * @param reqId ID of the request to query
-   * @return assets Amount of assets for the specified request
    */
-  function requestAssets(address eolVault, uint256 reqId) external view returns (uint256 assets);
+  function requestAssets(address eolVault, uint256 reqId) external view returns (uint256);
 
   /**
    * @notice Retrieves the current size of the queue for a specific EOLVault
+   * @dev The queue size is the total number of requests in the queue
    * @param eolVault Address of the EOLVault to query the queue
-   * @return size Total request count in the queue
    */
-  function queueSize(address eolVault) external view returns (uint256 size);
+  function queueSize(address eolVault) external view returns (uint256);
 
   /**
    * @notice Gets the size of the queue index for a specific recipient in an EOLVault
    * @param eolVault Address of the EOLVault to query the queue
    * @param recipient Address of the recipient to query the index for
-   * @return size Current size of the queue index for the specified recipient
    */
-  function queueIndexSize(address eolVault, address recipient) external view returns (uint256 size);
+  function queueIndexSize(address eolVault, address recipient) external view returns (uint256);
 
   /**
    * @notice Retrieves the current or simulated offset of the queue for an EOLVault
    * @param eolVault Address of the EOLVault to query
    * @param simulate If true, returns the simulated offset based on current timestamp
-   * @return offset Current or simulated queue offset
    */
-  function queueOffset(address eolVault, bool simulate) external view returns (uint256 offset);
+  function queueOffset(address eolVault, bool simulate) external view returns (uint256);
 
   /**
    * @notice Gets the current or simulated offset of the queue index for a recipient in an EOLVault
    * @param eolVault Address of the EOLVault to query
    * @param recipient Address of the recipient to query
    * @param simulate If true, returns the simulated offset based on current timestamp
-   * @return offset Current or simulated queue index offset
    */
-  function queueIndexOffset(address eolVault, address recipient, bool simulate) external view returns (uint256 offset);
+  function queueIndexOffset(address eolVault, address recipient, bool simulate) external view returns (uint256);
 
   /**
    * @notice Retrieves the total amount of reserved assets for an EOLVault's queue
    * @param eolVault Address of the EOLVault to query
-   * @return totalReserved_ Total amount of reserved assets
    */
-  function totalReserved(address eolVault) external view returns (uint256 totalReserved_);
+  function totalReserved(address eolVault) external view returns (uint256);
 
   /**
    * @notice Gets the total amount of claimed assets for an EOLVault's queue
    * @param eolVault Address of the EOLVault to query
-   * @return totalClaimed_ Total amount of claimed assets
    */
-  function totalClaimed(address eolVault) external view returns (uint256 totalClaimed_);
+  function totalClaimed(address eolVault) external view returns (uint256);
 
   /**
    * @notice Retrieves the total amount of pending assets for an EOLVault's queue
    * @param eolVault Address of the EOLVault to query
-   * @return totalPending_ Total amount of pending assets
    */
-  function totalPending(address eolVault) external view returns (uint256 totalPending_);
+  function totalPending(address eolVault) external view returns (uint256);
 
   /**
    * @notice Gets the reserve history entry for a specific index in an EOLVault
@@ -245,16 +229,14 @@ interface IOptOutQueueStorageV1 {
   /**
    * @notice Retrieves the number of entries in the reserve history for an EOLVault
    * @param eolVault Address of the EOLVault to query
-   * @return length Number of entries in the reserve history
    */
-  function reserveHistoryLength(address eolVault) external view returns (uint256 length);
+  function reserveHistoryLength(address eolVault) external view returns (uint256);
 
   /**
    * @notice Checks if the opt-out queue is enabled for a specific EOLVault
    * @param eolVault Address of the EOLVault to query
-   * @return enabled Boolean indicating whether the queue is enabled
    */
-  function isEnabled(address eolVault) external view returns (bool enabled);
+  function isEnabled(address eolVault) external view returns (bool);
 }
 
 /**

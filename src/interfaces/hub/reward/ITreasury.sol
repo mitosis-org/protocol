@@ -20,22 +20,20 @@ interface ITreasuryStorageV1 {
    * @notice Returns the current holdings of the reward token for the EOLVault
    * @param eolVault The EOLVault address
    * @param reward The reward token address
-   * @return balance The current holdings of the reward token
    */
-  function balances(address eolVault, address reward) external view returns (uint256 balance);
+  function balances(address eolVault, address reward) external view returns (uint256);
 
   /**
-   * @notice Returns the management log history of the reward token for the EOLVault
+   * @notice Returns the management log histories of the reward token for the EOLVault
    * @param eolVault The EOLVault address
    * @param reward The reward token address
    * @param offset The offset to start from
    * @param size The number of logs to return
-   * @return history_ The management log history of the reward token
    */
   function history(address eolVault, address reward, uint256 offset, uint256 size)
     external
     view
-    returns (HistoryResponse[] memory history_);
+    returns (HistoryResponse[] memory);
 }
 
 /**

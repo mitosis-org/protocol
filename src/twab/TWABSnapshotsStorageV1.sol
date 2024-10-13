@@ -47,7 +47,7 @@ abstract contract TWABSnapshotsStorageV1 {
   function _balanceSnapshot(TWABSnapshotsStorageV1_ storage $, address account, uint256 timestamp)
     internal
     view
-    returns (uint208 balance)
+    returns (uint208)
   {
     uint48 currentTimestamp = clock();
     require(timestamp <= currentTimestamp, ITWABSnapshots.ERC5805FutureLookup(timestamp, currentTimestamp));

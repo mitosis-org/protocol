@@ -15,10 +15,11 @@ abstract contract DelegationRegistryStorageV1 {
   string private constant _NAMESPACE = 'mitosis.storage.DelegationRegistryStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
-  function _getStorageV1() internal view returns (StorageV1 storage store) {
+  function _getStorageV1() internal view returns (StorageV1 storage $) {
     bytes32 slot = _slot;
+    // slither-disable-next-line assembly
     assembly {
-      store.slot := slot
+      $.slot := slot
     }
   }
 }

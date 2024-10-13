@@ -16,49 +16,42 @@ interface IMitosis {
 
   /**
    * @notice Returns the address of the OptOutQueue contract.
-   * @return optOutQueue_ The address of the OptOutQueue contract.
    */
-  function optOutQueue() external view returns (IOptOutQueue optOutQueue_);
+  function optOutQueue() external view returns (IOptOutQueue);
 
   /**
    * @notice Returns the address of the AssetManager contract.
-   * @return assetManager_ The address of the AssetManager contract.
    */
-  function assetManager() external view returns (IAssetManager assetManager_);
+  function assetManager() external view returns (IAssetManager);
 
   /**
    * @notice Returns the address of the DelegationRegistry contract.
-   * @return delegationRegistry_ The address of the DelegationRegistry contract.
    */
-  function delegationRegistry() external view returns (IDelegationRegistry delegationRegistry_);
+  function delegationRegistry() external view returns (IDelegationRegistry);
 
   /**
    * @notice Returns the address of the EOLProtocolGovernor contract.
-   * @return eolProtocolGovernor_ The address of the EOLProtocolGovernor contract.
    */
-  function eolProtocolGovernor() external view returns (IEOLProtocolGovernor eolProtocolGovernor_);
+  function eolProtocolGovernor() external view returns (IEOLProtocolGovernor);
 
   /**
    * @notice Returns the address of the EOLGaugeGovernor contract.
-   * @return eolGaugeGovernor_ The address of the EOLGaugeGovernor contract.
    */
-  function eolGaugeGovernor() external view returns (IEOLGaugeGovernor eolGaugeGovernor_);
+  function eolGaugeGovernor() external view returns (IEOLGaugeGovernor);
 
   //====================== NOTE: DELEGATION ======================//
 
   /**
    * @notice Returns the address of the delegation manager for the specified account.
    * @param account The account address
-   * @return delegationManager_ The address of the delegation manager.
    */
-  function delegationManager(address account) external view returns (address delegationManager_);
+  function delegationManager(address account) external view returns (address);
 
   /**
    * @notice Returns the address of the default delegatee for the specified account.
    * @param account The account address
-   * @return defaultDelegatee_ The address of the default delegatee.
    */
-  function defaultDelegatee(address account) external view returns (address defaultDelegatee_);
+  function defaultDelegatee(address account) external view returns (address);
 
   /**
    * @notice Sets the delegation manager for the specified account.

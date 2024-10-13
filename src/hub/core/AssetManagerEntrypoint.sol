@@ -45,7 +45,7 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, R
     _transferOwnership(owner_);
   }
 
-  function assetManager() external view returns (IAssetManager assetManger_) {
+  function assetManager() external view returns (IAssetManager) {
     return _assetManager;
   }
 
