@@ -72,7 +72,7 @@ abstract contract TWABSnapshots is
     return uint256(amount);
   }
 
-  function getPastTotalSupply(uint256 timepoint) external view virtual returns (uint256 balance) {
+  function getPastTotalSupply(uint256 timepoint) external view virtual returns (uint256) {
     (uint208 amount,,) = _totalSupplySnapshot(_getTWABSnapshotsStorageV1(), timepoint);
     return uint256(amount);
   }
@@ -96,7 +96,7 @@ abstract contract TWABSnapshots is
     return _totalSupplySnapshot(_getTWABSnapshotsStorageV1(), timepoint);
   }
 
-  function balanceSnapshot(address account, uint256 timepoint) external view virtual returns (uint208 balance) {
+  function balanceSnapshot(address account, uint256 timepoint) external view virtual returns (uint208) {
     return _balanceSnapshot(_getTWABSnapshotsStorageV1(), account, timepoint);
   }
 

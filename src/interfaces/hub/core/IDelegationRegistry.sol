@@ -32,23 +32,20 @@ interface IDelegationRegistry {
 
   /**
    * @dev Queries the Mitosis contract
-   * @return mitosis_ The Mitosis contract
    */
-  function mitosis() external view returns (address mitosis_);
+  function mitosis() external view returns (address);
 
   /**
    * @dev Queries the delegation manager for `account`
    * @param account The account to query
-   * @return delegationManager_ The delegation manager for `account`
    */
-  function delegationManager(address account) external view returns (address delegationManager_);
+  function delegationManager(address account) external view returns (address);
 
   /**
    * @dev Queries the default delegatee for `account`
    * @param account The account to query
-   * @return defaultDelegatee_ The default delegatee for `account`
    */
-  function defaultDelegatee(address account) external view returns (address defaultDelegatee_);
+  function defaultDelegatee(address account) external view returns (address);
 
   /**
    * @dev Sets the delegation manager for `account`. Must emit the {DelegationManagerSet} event.

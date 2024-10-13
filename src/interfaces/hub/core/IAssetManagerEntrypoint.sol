@@ -12,10 +12,9 @@ import { IAssetManager } from './IAssetManager.sol';
  */
 interface IAssetManagerEntrypoint is IMessageRecipient {
   /**
-   * @notice Returns the associated Asset Manager contract
-   * @return assetManger_ The address of the Asset Manager contract
+   * @notice Returns the address of the associated Asset Manager contract
    */
-  function assetManager() external view returns (IAssetManager assetManger_);
+  function assetManager() external view returns (IAssetManager);
 
   /**
    * @notice Retrieves the Hyperlane domain for a given chain ID

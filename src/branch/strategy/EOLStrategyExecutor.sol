@@ -60,55 +60,55 @@ contract EOLStrategyExecutor is
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
 
-  function vault() public view returns (IMitosisVault vault_) {
+  function vault() public view returns (IMitosisVault) {
     return _vault;
   }
 
-  function asset() public view override(IEOLStrategyExecutor, IStrategyDependency) returns (IERC20 asset_) {
+  function asset() public view override(IEOLStrategyExecutor, IStrategyDependency) returns (IERC20) {
     return _asset;
   }
 
-  function hubEOLVault() public view returns (address hubEOLVault_) {
+  function hubEOLVault() public view returns (address) {
     return _hubEOLVault;
   }
 
-  function strategist() external view returns (address strategist_) {
+  function strategist() external view returns (address) {
     return _getStorageV1().strategist;
   }
 
-  function emergencyManager() external view returns (address emergencyManager_) {
+  function emergencyManager() external view returns (address) {
     return _getStorageV1().emergencyManager;
   }
 
-  function getStrategy(uint256 strategyId) external view override returns (Strategy memory strategy) {
+  function getStrategy(uint256 strategyId) external view override returns (Strategy memory) {
     return _getStrategy(_getStorageV1(), strategyId);
   }
 
-  function getStrategy(address implementation) external view override returns (Strategy memory strategy) {
+  function getStrategy(address implementation) external view override returns (Strategy memory) {
     return _getStrategy(_getStorageV1(), implementation);
   }
 
   /**
    * @dev you must need to careful when using this function. If the enabled list is too long, it may cause out of gas
    */
-  function getEnabledStrategyIds() external view override returns (uint256[] memory enabledStrategyIds) {
+  function getEnabledStrategyIds() external view override returns (uint256[] memory) {
     return _getStorageV1().strategies.enabled;
   }
 
-  function isStrategyEnabled(uint256 strategyId) external view returns (bool enabled) {
+  function isStrategyEnabled(uint256 strategyId) external view returns (bool) {
     return _isStrategyEnabled(_getStorageV1(), strategyId);
   }
 
-  function isStrategyEnabled(address implementation) external view returns (bool enabled) {
+  function isStrategyEnabled(address implementation) external view returns (bool) {
     StorageV1 storage $ = _getStorageV1();
     return _isStrategyEnabled($, $.strategies.idxByImpl[implementation]);
   }
 
-  function totalBalance() external view returns (uint256 totalBalance_) {
+  function totalBalance() external view returns (uint256) {
     return _totalBalance(_getStorageV1());
   }
 
-  function lastSettledBalance() external view returns (uint256 lastSettledBalance_) {
+  function lastSettledBalance() external view returns (uint256) {
     return _getStorageV1().lastSettledBalance;
   }
 

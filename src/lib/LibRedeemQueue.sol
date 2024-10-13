@@ -88,7 +88,7 @@ library LibRedeemQueue {
     return x.accumulatedAssets <= q.totalReservedAssets;
   }
 
-  function get(Queue storage q, uint256 itemIndex) internal view returns (Request memory req) {
+  function get(Queue storage q, uint256 itemIndex) internal view returns (Request memory) {
     require(itemIndex < q.size, LibRedeemQueue__IndexOutOfRange(itemIndex, 0, q.size - 1));
     return q.data[itemIndex];
   }
@@ -98,7 +98,7 @@ library LibRedeemQueue {
     return idx.data[i];
   }
 
-  function get(Queue storage q, Index storage idx, uint256 i) internal view returns (Request memory req) {
+  function get(Queue storage q, Index storage idx, uint256 i) internal view returns (Request memory) {
     return get(q, get(idx, i));
   }
 
@@ -149,8 +149,8 @@ library LibRedeemQueue {
     return totalRequested > totalReserved ? totalRequested - totalReserved : 0;
   }
 
-  function index(Queue storage q, address recipient) internal view returns (Index storage idx) {
-    idx = q.indexes[recipient];
+  function index(Queue storage q, address recipient) internal view returns (Index storage) {
+    Index storage idx = q.indexes[recipient];
     require(idx.size != 0, LibRedeemQueue__EmptyIndex(recipient));
     return idx;
   }

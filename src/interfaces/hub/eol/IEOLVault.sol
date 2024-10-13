@@ -16,9 +16,8 @@ interface IEOLVaultStorageV1 {
 
   /**
    * @notice Returns the address of the current asset manager.
-   * @return assetManager_ The address of the asset manager.
    */
-  function assetManager() external view returns (address assetManager_);
+  function assetManager() external view returns (address);
 }
 
 /**

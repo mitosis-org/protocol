@@ -20,27 +20,23 @@ interface IRewardHandler {
 
   /**
    * @notice Returns the type of the reward handler
-   * @return handlerType_ The type of the reward handler
    */
-  function handlerType() external view returns (HandlerType handlerType_);
+  function handlerType() external view returns (HandlerType);
 
   /**
    * @notice Returns the distribution type of the reward handler
-   * @return distributionType_ The distribution type of the reward handler
    */
-  function distributionType() external view returns (DistributionType distributionType_);
+  function distributionType() external view returns (DistributionType);
 
   /**
    * @notice Returns the description of the reward handler
-   * @return description_ The description of the reward handler
    */
-  function description() external view returns (string memory description_);
+  function description() external view returns (string memory);
 
   /**
    * @notice Checks if the specified dispatcher is allowed to call `handleReward`
-   * @return isDispatchable_ True if the dispatcher is allowed to call `handleReward`
    */
-  function isDispatchable(address dispatcher) external view returns (bool isDispatchable_);
+  function isDispatchable(address dispatcher) external view returns (bool);
 
   /**
    * @notice Handles the distribution of rewards for the specified vault and reward

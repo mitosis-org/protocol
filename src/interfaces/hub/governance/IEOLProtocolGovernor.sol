@@ -99,9 +99,8 @@ interface IEOLProtocolGovernor {
    * @notice Returns the vote option casted by an account for a given proposal ID
    * @param proposalId_ The proposal ID
    * @param account Voter account
-   * @return option The vote option casted by the account
    */
-  function voteOption(uint256 proposalId_, address account) external view returns (VoteOption option);
+  function voteOption(uint256 proposalId_, address account) external view returns (VoteOption);
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
 

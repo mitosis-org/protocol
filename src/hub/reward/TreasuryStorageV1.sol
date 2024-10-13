@@ -38,7 +38,7 @@ contract TreasuryStorageV1 is ITreasuryStorageV1 {
   /**
    * @inheritdoc ITreasuryStorageV1
    */
-  function balances(address eolVault, address reward) external view returns (uint256 balance) {
+  function balances(address eolVault, address reward) external view returns (uint256) {
     return _balances(_getStorageV1(), eolVault, reward);
   }
 
@@ -48,14 +48,14 @@ contract TreasuryStorageV1 is ITreasuryStorageV1 {
   function history(address eolVault, address reward, uint256 offset, uint256 size)
     external
     view
-    returns (HistoryResponse[] memory history_)
+    returns (HistoryResponse[] memory)
   {
     StorageV1 storage $ = _getStorageV1();
 
     uint256 historyLength = $.history[eolVault][reward].length;
     if (offset + size > historyLength) size = historyLength - offset;
 
-    history_ = new HistoryResponse[](size);
+    HistoryResponse[] memory history_ = new HistoryResponse[](size);
     for (uint256 i = 0; i < size; i++) {
       Log memory log = $.history[eolVault][reward][offset + i];
       history_[i] = HistoryResponse(log.timestamp, log.amount, log.sign);
@@ -66,7 +66,7 @@ contract TreasuryStorageV1 is ITreasuryStorageV1 {
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _balances(StorageV1 storage $, address eolVault, address reward) internal view returns (uint256 balance) {
+  function _balances(StorageV1 storage $, address eolVault, address reward) internal view returns (uint256) {
     return $.balances[eolVault][reward];
   }
 }

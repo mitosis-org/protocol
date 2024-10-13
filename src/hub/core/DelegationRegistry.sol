@@ -25,21 +25,21 @@ contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1,
   /**
    * @inheritdoc IDelegationRegistry
    */
-  function mitosis() external view override returns (address mitosis_) {
+  function mitosis() external view override returns (address) {
     return _getStorageV1().mitosis;
   }
 
   /**
    * @inheritdoc IDelegationRegistry
    */
-  function delegationManager(address account) external view override returns (address delegationManager_) {
+  function delegationManager(address account) external view override returns (address) {
     return _delegationManager(_getStorageV1(), account);
   }
 
   /**
    * @inheritdoc IDelegationRegistry
    */
-  function defaultDelegatee(address account) external view override returns (address defaultDelegatee_) {
+  function defaultDelegatee(address account) external view override returns (address) {
     return _getStorageV1().defaultDelegatees[account];
   }
 
@@ -67,8 +67,8 @@ contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1,
 
   //========================== NOTE: INTERNAL FUNCTIONS ==========================//
 
-  function _delegationManager(StorageV1 storage $, address account) internal view returns (address delegationManager_) {
-    delegationManager_ = $.delegationManagers[account];
+  function _delegationManager(StorageV1 storage $, address account) internal view returns (address) {
+    address delegationManager_ = $.delegationManagers[account];
     return delegationManager_ == address(0) ? account : delegationManager_; // default to account
   }
 

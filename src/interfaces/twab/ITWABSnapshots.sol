@@ -47,7 +47,7 @@ interface ITWABSnapshots is IERC5805 {
    * @param timepoint The timestamp at which to get the snapshot.
    * @return balance The balance of the account at the given timepoint.
    */
-  function balanceSnapshot(address account, uint256 timepoint) external view returns (uint208 balance);
+  function balanceSnapshot(address account, uint256 timepoint) external view returns (uint208);
 
   /**
    * @notice Returns the delegate snapshot for an account at the current time.

@@ -30,21 +30,16 @@ interface IRewardDistributor is IRewardHandler {
    * @param account The account address
    * @param reward The reward token address
    * @param metadata The encoded metadata
-   * @return claimable_ True if the account can claim
    */
-  function claimable(address account, address reward, bytes calldata metadata) external view returns (bool claimable_);
+  function claimable(address account, address reward, bytes calldata metadata) external view returns (bool);
 
   /**
    * @notice Returns the amount of claimable rewards for the account.
    * @param account The account address
    * @param reward The reward token address
    * @param metadata The encoded metadata
-   * @return claimableAmount_ The amount of claimable rewards
    */
-  function claimableAmount(address account, address reward, bytes calldata metadata)
-    external
-    view
-    returns (uint256 claimableAmount_);
+  function claimableAmount(address account, address reward, bytes calldata metadata) external view returns (uint256);
 
   /**
    * @notice Claims all of the rewards for the specified vault and reward.

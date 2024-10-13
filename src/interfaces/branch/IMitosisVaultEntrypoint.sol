@@ -4,11 +4,11 @@ pragma solidity ^0.8.27;
 import { IMitosisVault } from './IMitosisVault.sol';
 
 interface IMitosisVaultEntrypoint {
-  function vault() external view returns (IMitosisVault vault_);
+  function vault() external view returns (IMitosisVault);
 
-  function mitosisDomain() external view returns (uint32 mitosisDomain_);
+  function mitosisDomain() external view returns (uint32);
 
-  function mitosisAddr() external view returns (bytes32 mitosisAddr_);
+  function mitosisAddr() external view returns (bytes32);
 
   function deposit(address asset, address to, uint256 amount) external;
 

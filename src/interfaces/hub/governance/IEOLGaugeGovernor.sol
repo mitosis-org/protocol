@@ -67,7 +67,7 @@ interface IEOLGaugeGovernor {
   function protocolIds(address eolVault, uint256 epochId, uint256 chainId) external view returns (uint256[] memory);
 
   /**
-   * @notice Returns the total number of voters for a specific EOLVault and chain.
+   * @notice Returns the addresses of voters for a specific EOLVault and chain.
    * @param eolVault The address of the EOLVault.
    * @param chainId The ID of the chain.
    */

@@ -56,49 +56,49 @@ contract Mitosis is IMitosis, Ownable2StepUpgradeable {
   /**
    * @inheritdoc IMitosis
    */
-  function optOutQueue() external view returns (IOptOutQueue optOutQueue_) {
+  function optOutQueue() external view returns (IOptOutQueue) {
     return _getMitosisStorage().optOutQueue;
   }
 
   /**
    * @inheritdoc IMitosis
    */
-  function assetManager() external view returns (IAssetManager assetManager_) {
+  function assetManager() external view returns (IAssetManager) {
     return _getMitosisStorage().assetManager;
   }
 
   /**
    * @inheritdoc IMitosis
    */
-  function delegationRegistry() external view returns (IDelegationRegistry delegationRegistry_) {
+  function delegationRegistry() external view returns (IDelegationRegistry) {
     return _getMitosisStorage().delegationRegistry;
   }
 
   /**
    * @inheritdoc IMitosis
    */
-  function eolProtocolGovernor() external view returns (IEOLProtocolGovernor eolProtocolGovernor_) {
+  function eolProtocolGovernor() external view returns (IEOLProtocolGovernor) {
     return _getMitosisStorage().eolProtocolGovernor;
   }
 
   /**
    * @inheritdoc IMitosis
    */
-  function eolGaugeGovernor() external view returns (IEOLGaugeGovernor eolGaugeGovernor_) {
+  function eolGaugeGovernor() external view returns (IEOLGaugeGovernor) {
     return _getMitosisStorage().eolGaugeGovernor;
   }
 
   /**
    * @inheritdoc IMitosis
    */
-  function delegationManager(address account) external view returns (address delegationManager_) {
+  function delegationManager(address account) external view returns (address) {
     return _getMitosisStorage().delegationRegistry.delegationManager(account);
   }
 
   /**
    * @inheritdoc IMitosis
    */
-  function defaultDelegatee(address account) external view returns (address defaultDelegatee_) {
+  function defaultDelegatee(address account) external view returns (address) {
     return _getMitosisStorage().delegationRegistry.defaultDelegatee(account);
   }
 
