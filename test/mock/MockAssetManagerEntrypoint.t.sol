@@ -76,5 +76,5 @@ contract MockAssetManagerEntrypoint is Context, IAssetManagerEntrypoint {
 
   // ============================= NOTE: HANDLER ============================= //
 
-  function handle(uint32 _origin, bytes32 _sender, bytes calldata _message) external payable override { }
+  function handle(uint32 _origin, bytes32 _sender, bytes calldata _message) external payable { }
 }
