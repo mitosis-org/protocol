@@ -5,7 +5,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 
 import { IAssetManager } from '../interfaces/hub/core/IAssetManager.sol';
 import { IDelegationRegistry } from '../interfaces/hub/core/IDelegationRegistry.sol';
-import { IOptOutQueue } from '../interfaces/hub/core/IOptOutQueue.sol';
+import { IOptOutQueue } from '../interfaces/hub/eol/IOptOutQueue.sol';
 import { IEOLGaugeGovernor } from '../interfaces/hub/eol/governance/IEOLGaugeGovernor.sol';
 import { IEOLProtocolGovernor } from '../interfaces/hub/eol/governance/IEOLProtocolGovernor.sol';
 import { IMitosis } from '../interfaces/hub/IMitosis.sol';

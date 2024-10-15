@@ -11,7 +11,7 @@ import { ERC20 } from '@oz-v5/token/ERC20/ERC20.sol';
 import { AssetManager } from '../../../src/hub/core/AssetManager.sol';
 import { AssetManagerStorageV1 } from '../../../src/hub/core/AssetManagerStorageV1.sol';
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
-import { OptOutQueue } from '../../../src/hub/core/OptOutQueue.sol';
+import { OptOutQueue } from '../../../src/hub/eol/OptOutQueue.sol';
 import { EOLVault } from '../../../src/hub/eol/EOLVault.sol';
 import { IAssetManager, IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';

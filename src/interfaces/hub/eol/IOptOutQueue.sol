@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { IEOLVault } from '../eol/IEOLVault.sol';
-import { IHubAsset } from './IHubAsset.sol';
+import { IHubAsset } from '../core/IHubAsset.sol';
 
 /**
  * @title IOptOutQueueStorageV1
