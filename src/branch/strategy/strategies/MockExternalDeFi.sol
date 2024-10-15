@@ -51,6 +51,8 @@ contract MockExternalDeFi is IMockExternalDeFi {
     IERC20(asset_).transferFrom(msg.sender, address(this), amount);
   }
 
+  // deposit: Just transfer token to MockExternalDeFi
+
   function withdraw(uint256 amount) external onlyStrategyExecutor {
     _asset.transfer(msg.sender, amount);
   }
