@@ -5,9 +5,9 @@ import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
+import { IEOLGaugeGovernor } from '../../interfaces/hub/eol/IEOLGaugeGovernor.sol';
 import { IEOLProtocolRegistry } from '../../interfaces/hub/eol/IEOLProtocolRegistry.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
-import { IEOLGaugeGovernor } from '../../interfaces/hub/eol/IEOLGaugeGovernor.sol';
 import { Arrays } from '../../lib/Arrays.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
