@@ -4,8 +4,8 @@ pragma solidity ^0.8.27;
 import { IAssetManager } from './core/IAssetManager.sol';
 import { IDelegationRegistry } from './core/IDelegationRegistry.sol';
 import { IOptOutQueue } from './core/IOptOutQueue.sol';
-import { IEOLGaugeGovernor } from './eol/IEOLGaugeGovernor.sol';
-import { IEOLProtocolGovernor } from './eol/IEOLProtocolGovernor.sol';
+import { IEOLGaugeGovernor } from './eol/governance/IEOLGaugeGovernor.sol';
+import { IEOLProtocolGovernor } from './eol/governance/IEOLProtocolGovernor.sol';
 
 /**
  * @title IMitosis
