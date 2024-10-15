@@ -7,7 +7,7 @@ import { GovernorSettingsUpgradeable } from '@ozu-v5/governance/extensions/Gover
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
 
 import { IEOLProtocolRegistry } from '../../interfaces/hub/eol/IEOLProtocolRegistry.sol';
-import { IEOLProtocolGovernor } from '../../interfaces/hub/governance/IEOLProtocolGovernor.sol';
+import { IEOLProtocolGovernor } from '../../interfaces/hub/eol/IEOLProtocolGovernor.sol';
 import { EOLProtocolGovernorStorageV1 } from './EOLProtocolGovernorStorageV1.sol';
 
 // TODO(thai): Consider better design.

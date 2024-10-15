@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
 import { IEOLProtocolRegistry } from '../../interfaces/hub/eol/IEOLProtocolRegistry.sol';
-import { IEOLProtocolGovernor } from '../../interfaces/hub/governance/IEOLProtocolGovernor.sol';
+import { IEOLProtocolGovernor } from '../../interfaces/hub/eol/IEOLProtocolGovernor.sol';
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 

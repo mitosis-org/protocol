@@ -7,7 +7,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 
 import { IEOLProtocolRegistry } from '../../interfaces/hub/eol/IEOLProtocolRegistry.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
-import { IEOLGaugeGovernor } from '../../interfaces/hub/governance/IEOLGaugeGovernor.sol';
+import { IEOLGaugeGovernor } from '../../interfaces/hub/eol/IEOLGaugeGovernor.sol';
 import { Arrays } from '../../lib/Arrays.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
