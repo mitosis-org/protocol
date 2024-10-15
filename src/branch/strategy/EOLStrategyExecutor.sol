@@ -149,7 +149,7 @@ contract EOLStrategyExecutor is
     _assertOnlyStrategist($);
 
     uint256 totalBalance_ = _totalBalance($);
-    uint256 prevSettledBalance = $.lastSettledBalance;
+    uint256 prevSettledBalance = $.lastSettledBalance; // TODO(ray): NEED TO DISCUSSION (Do we have to update this value when deposit or withdraw via StrategyExecutor.execute?)
 
     $.lastSettledBalance = totalBalance_;
 
