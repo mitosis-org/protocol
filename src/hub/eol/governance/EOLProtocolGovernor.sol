@@ -147,7 +147,7 @@ contract EOLProtocolGovernor is
     emit VoteCasted(proposalId_, _msgSender(), option);
   }
 
-  function execute(uint256 proposalId_) external onlyExecutor {
+  function execute(uint256 proposalId_, bytes memory executionPayload) external onlyExecutor {
     StorageV1 storage $ = _getStorageV1();
     Proposal storage p = $.proposals[proposalId_];
 
@@ -158,8 +158,16 @@ contract EOLProtocolGovernor is
     p.executed = true;
 
     if (p.proposalType == ProposalType.Initiation) {
+      require(executionPayload.length == 20, '');
+      address implementaion;
+      assembly {
+        implementaion := mload(add(executionPayload, 20))
+      }
+
       InitiationProposalPayload memory payload = abi.decode(p.payload, (InitiationProposalPayload));
-      $.protocolRegistry.registerProtocol(payload.eolVault, payload.chainId, payload.name, payload.metadata);
+      $.protocolRegistry.registerProtocol(
+        payload.eolVault, payload.chainId, payload.name, implementaion, payload.metadata
+      );
     } else if (p.proposalType == ProposalType.Deletion) {
       DeletionProposalPayload memory payload = abi.decode(p.payload, (DeletionProposalPayload));
       uint256 protocolId = $.protocolRegistry.protocolId(payload.eolVault, payload.chainId, payload.name);
