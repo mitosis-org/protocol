@@ -108,8 +108,8 @@ contract EOLStrategyExecutor is
     return _totalBalance(_getStorageV1());
   }
 
-  function lastSettledBalance() external view returns (uint256) {
-    return _getStorageV1().lastSettledBalance;
+  function storedTotalBalance() external view returns (uint256) {
+    return _getStorageV1().storedTotalBalance;
   }
 
   //=========== NOTE: STRATEGIST FUNCTIONS ===========//
@@ -130,6 +130,7 @@ contract EOLStrategyExecutor is
     _assertOnlyStrategist($);
 
     _vault.fetchEOL(_hubEOLVault, amount);
+    $.storedTotalBalance += amount;
   }
 
   function returnEOL(uint256 amount) external {
@@ -140,6 +141,7 @@ contract EOLStrategyExecutor is
 
     _asset.approve(address(_vault), amount);
     _vault.returnEOL(_hubEOLVault, amount);
+    $.storedTotalBalance -= amount;
   }
 
   function settle() external {
@@ -149,14 +151,14 @@ contract EOLStrategyExecutor is
     _assertOnlyStrategist($);
 
     uint256 totalBalance_ = _totalBalance($);
-    uint256 prevSettledBalance = $.lastSettledBalance; // TODO(ray): NEED TO DISCUSSION (Do we have to update this value when deposit or withdraw via StrategyExecutor.execute?)
+    uint256 storedTotalBalance_ = $.storedTotalBalance;
 
-    $.lastSettledBalance = totalBalance_;
+    $.storedTotalBalance = totalBalance_;
 
-    if (totalBalance_ >= prevSettledBalance) {
-      _vault.settleYield(_hubEOLVault, totalBalance_ - prevSettledBalance);
+    if (totalBalance_ >= storedTotalBalance_) {
+      _vault.settleYield(_hubEOLVault, totalBalance_ - storedTotalBalance_);
     } else {
-      _vault.settleLoss(_hubEOLVault, prevSettledBalance - totalBalance_);
+      _vault.settleLoss(_hubEOLVault, storedTotalBalance_ - totalBalance_);
     }
   }
 

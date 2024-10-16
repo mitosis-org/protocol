@@ -6,7 +6,7 @@ import { Test } from '@std/Test.sol';
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
-import { EOLVault } from '../../../src/hub/eol/EOLVault.sol';
+import { EOLVaultBasic } from '../../../src/hub/eol/EOLVaultBasic.sol';
 import { OptOutQueue } from '../../../src/hub/eol/OptOutQueue.sol';
 import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IOptOutQueue } from '../../../src/interfaces/hub/eol/IOptOutQueue.sol';
@@ -24,7 +24,7 @@ contract OptOutQueueTest is Test {
   MockDelegationRegistry internal _delegationRegistry;
   ERC1967Factory internal _factory;
   HubAsset internal _hubAsset;
-  EOLVault internal _eolVault;
+  EOLVaultBasic internal _eolVault;
   OptOutQueue internal _optOutQueue;
 
   modifier withAccount(address account) {
@@ -47,11 +47,11 @@ contract OptOutQueueTest is Test {
         abi.encodeCall(HubAsset.initialize, (address(_delegationRegistry), 'Test', 'TT')) //
       )
     );
-    _eolVault = EOLVault(
+    _eolVault = EOLVaultBasic(
       _proxy(
-        address(new EOLVault()),
+        address(new EOLVaultBasic()),
         abi.encodeCall(
-          EOLVault.initialize,
+          EOLVaultBasic.initialize,
           (
             address(_delegationRegistry),
             address(_assetManager),

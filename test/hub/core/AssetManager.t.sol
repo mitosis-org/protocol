@@ -11,7 +11,7 @@ import { ERC20 } from '@oz-v5/token/ERC20/ERC20.sol';
 import { AssetManager } from '../../../src/hub/core/AssetManager.sol';
 import { AssetManagerStorageV1 } from '../../../src/hub/core/AssetManagerStorageV1.sol';
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
-import { EOLVault } from '../../../src/hub/eol/EOLVault.sol';
+import { EOLVaultBasic } from '../../../src/hub/eol/EOLVaultBasic.sol';
 import { OptOutQueue } from '../../../src/hub/eol/OptOutQueue.sol';
 import { IAssetManager, IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
@@ -31,7 +31,7 @@ contract AssetManagerTest is Toolkit {
   MockRewardHandler _rewardHandler;
   MockAssetManagerEntrypoint _assetManagerEntrypoint;
   MockDelegationRegistry _delegationRegistry;
-  EOLVault _eolVault;
+  EOLVaultBasic _eolVault;
   HubAsset _token;
   ProxyAdmin internal _proxyAdmin;
 
@@ -91,8 +91,8 @@ contract AssetManagerTest is Toolkit {
       )
     );
 
-    EOLVault eolVaultImpl = new EOLVault();
-    _eolVault = EOLVault(
+    EOLVaultBasic eolVaultImpl = new EOLVaultBasic();
+    _eolVault = EOLVaultBasic(
       payable(
         address(
           new TransparentUpgradeableProxy(
@@ -185,8 +185,8 @@ contract AssetManagerTest is Toolkit {
     MockERC20TWABSnapshots myToken = new MockERC20TWABSnapshots();
     myToken.initialize(address(_delegationRegistry), 'Token', 'TKN');
 
-    EOLVault eolVaultImpl = new EOLVault();
-    EOLVault incorrectEOLVault = EOLVault(
+    EOLVaultBasic eolVaultImpl = new EOLVaultBasic();
+    EOLVaultBasic incorrectEOLVault = EOLVaultBasic(
       payable(
         address(
           new TransparentUpgradeableProxy(
