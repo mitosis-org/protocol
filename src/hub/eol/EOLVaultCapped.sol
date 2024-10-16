@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import { Ownable } from '@oz-v5/access/Ownable.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
 import { IERC20TWABSnapshots } from '../../interfaces/twab/IERC20TWABSnapshots.sol';
@@ -78,7 +79,7 @@ contract EOLVaultCapped is EOLVault {
     StorageV1 storage $ = _getStorageV1();
     EOLVaultCappedStorage storage capped = _getEOLVaultCappedStorage();
 
-    _assertOnlyAssetManager($);
+    require(Ownable(address($.assetManager)).owner() == _msgSender(), StdError.Unauthorized());
 
     _setCap(capped, newCap);
   }
