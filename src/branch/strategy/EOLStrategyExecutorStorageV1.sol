@@ -22,7 +22,7 @@ abstract contract EOLStrategyExecutorStorageV1 {
     address strategist;
     address emergencyManager;
     StrategyRegistry strategies;
-    uint256 expectedTotalBalance;
+    uint256 storedTotalBalance;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.EOLStrategyExecutorStorage.v1';

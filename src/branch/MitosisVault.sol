@@ -232,7 +232,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     if (eolInfo.eolStrategyExecutor != address(0)) {
       // NOTE: no way to check if every extra rewards are settled.
       bool drained = IEOLStrategyExecutor(eolInfo.eolStrategyExecutor).totalBalance() == 0
-        && IEOLStrategyExecutor(eolInfo.eolStrategyExecutor).expectedTotalBalance() == 0;
+        && IEOLStrategyExecutor(eolInfo.eolStrategyExecutor).storedTotalBalance() == 0;
 
       require(drained, IMitosisVault__EOLStrategyExecutorNotDrained(hubEOLVault, eolInfo.eolStrategyExecutor));
     }

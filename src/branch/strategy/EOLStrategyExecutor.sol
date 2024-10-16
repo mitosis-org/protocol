@@ -108,8 +108,8 @@ contract EOLStrategyExecutor is
     return _totalBalance(_getStorageV1());
   }
 
-  function expectedTotalBalance() external view returns (uint256) {
-    return _getStorageV1().expectedTotalBalance;
+  function storedTotalBalance() external view returns (uint256) {
+    return _getStorageV1().storedTotalBalance;
   }
 
   //=========== NOTE: STRATEGIST FUNCTIONS ===========//
@@ -130,7 +130,7 @@ contract EOLStrategyExecutor is
     _assertOnlyStrategist($);
 
     _vault.fetchEOL(_hubEOLVault, amount);
-    $.expectedTotalBalance += amount;
+    $.storedTotalBalance += amount;
   }
 
   function returnEOL(uint256 amount) external {
@@ -141,7 +141,7 @@ contract EOLStrategyExecutor is
 
     _asset.approve(address(_vault), amount);
     _vault.returnEOL(_hubEOLVault, amount);
-    $.expectedTotalBalance -= amount;
+    $.storedTotalBalance -= amount;
   }
 
   function settle() external {
@@ -151,14 +151,14 @@ contract EOLStrategyExecutor is
     _assertOnlyStrategist($);
 
     uint256 totalBalance_ = _totalBalance($);
-    uint256 expectedTotalBalance_ = $.expectedTotalBalance;
+    uint256 storedTotalBalance_ = $.storedTotalBalance;
 
-    $.expectedTotalBalance = totalBalance_;
+    $.storedTotalBalance = totalBalance_;
 
-    if (totalBalance_ >= expectedTotalBalance_) {
-      _vault.settleYield(_hubEOLVault, totalBalance_ - expectedTotalBalance_);
+    if (totalBalance_ >= storedTotalBalance_) {
+      _vault.settleYield(_hubEOLVault, totalBalance_ - storedTotalBalance_);
     } else {
-      _vault.settleLoss(_hubEOLVault, expectedTotalBalance_ - totalBalance_);
+      _vault.settleLoss(_hubEOLVault, storedTotalBalance_ - totalBalance_);
     }
   }
 

@@ -221,7 +221,7 @@ contract MitosisVaultTest is Toolkit {
 
     vm.stopPrank();
 
-    assertEq(_eolStrategyExecutor.expectedTotalBalance(), 10 ether + 150 ether);
+    assertEq(_eolStrategyExecutor.storedTotalBalance(), 10 ether + 150 ether);
   }
 
   function test_settle_loss() public {
@@ -241,7 +241,7 @@ contract MitosisVaultTest is Toolkit {
     vm.prank(strategist);
     _eolStrategyExecutor.settle();
 
-    assertEq(_eolStrategyExecutor.expectedTotalBalance(), 10 ether + 150 ether);
+    assertEq(_eolStrategyExecutor.storedTotalBalance(), 10 ether + 150 ether);
 
     // Loss
     // strategy1: 100 ether -> 70 ether
@@ -259,7 +259,7 @@ contract MitosisVaultTest is Toolkit {
 
     vm.stopPrank();
 
-    assertEq(_eolStrategyExecutor.expectedTotalBalance(), 10 ether + 100 ether);
+    assertEq(_eolStrategyExecutor.storedTotalBalance(), 10 ether + 100 ether);
   }
 
   function test_settle_Paused() public {
@@ -766,7 +766,7 @@ contract MitosisVaultTest is Toolkit {
   }
 
   function _fetchEOL(uint256 amount) internal {
-    uint256 prevExpectedTotalBalance = _eolStrategyExecutor.expectedTotalBalance();
+    uint256 prevstoredTotalBalance = _eolStrategyExecutor.storedTotalBalance();
     uint256 prevBalance = _token.balanceOf(address(_eolStrategyExecutor));
     uint256 prevAvailableEOL = _mitosisVault.availableEOL(hubEOLVault);
 
@@ -774,12 +774,12 @@ contract MitosisVaultTest is Toolkit {
     _eolStrategyExecutor.fetchEOL(amount);
 
     assertEq(_token.balanceOf(address(_eolStrategyExecutor)), prevBalance + amount);
-    assertEq(_eolStrategyExecutor.expectedTotalBalance(), prevExpectedTotalBalance + amount);
+    assertEq(_eolStrategyExecutor.storedTotalBalance(), prevstoredTotalBalance + amount);
     assertEq(_mitosisVault.availableEOL(hubEOLVault), prevAvailableEOL - amount);
   }
 
   function _returnEOL(uint256 amount) internal {
-    uint256 prevExpectedTotalBalance = _eolStrategyExecutor.expectedTotalBalance();
+    uint256 prevstoredTotalBalance = _eolStrategyExecutor.storedTotalBalance();
     uint256 prevBalance = _token.balanceOf(address(_eolStrategyExecutor));
     uint256 prevAvailableEOL = _mitosisVault.availableEOL(hubEOLVault);
 
@@ -787,7 +787,7 @@ contract MitosisVaultTest is Toolkit {
     _eolStrategyExecutor.returnEOL(amount);
 
     assertEq(_token.balanceOf(address(_eolStrategyExecutor)), prevBalance - amount);
-    assertEq(_eolStrategyExecutor.expectedTotalBalance(), prevExpectedTotalBalance - amount);
+    assertEq(_eolStrategyExecutor.storedTotalBalance(), prevstoredTotalBalance - amount);
     assertEq(_mitosisVault.availableEOL(hubEOLVault), prevAvailableEOL + amount);
   }
 

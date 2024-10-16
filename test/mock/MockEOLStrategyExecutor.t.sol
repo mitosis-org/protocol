@@ -41,7 +41,7 @@ contract MockEOLStrategyExecutor is IEOLStrategyExecutor {
     return _asset.balanceOf(address(this));
   }
 
-  function expectedTotalBalance() external view returns (uint256) { }
+  function storedTotalBalance() external view returns (uint256) { }
 
   function fetchEOL(uint256 amount) external { }
 
