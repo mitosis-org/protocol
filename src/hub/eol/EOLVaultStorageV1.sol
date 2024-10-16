@@ -44,6 +44,10 @@ contract EOLVaultStorageV1 is IEOLVaultStorageV1, ContextUpgradeable {
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
+  function _assertOnlyAssetManager(StorageV1 storage $) internal view {
+    require(_msgSender() == address($.assetManager), StdError.Unauthorized());
+  }
+
   function _assertOnlyOptOutQueue(StorageV1 storage $) internal view {
     require(_msgSender() == $.assetManager.optOutQueue(), StdError.Unauthorized());
   }
