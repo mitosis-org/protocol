@@ -7,17 +7,17 @@ import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { StdError } from '../../../lib/StdError.sol';
 import { StdStrategy } from './StdStrategy.sol';
 
-interface IMockExternalDeFi {
-  error IMockExternalDeFi__InsufficientDepositAmount();
+interface ITestnetDeFi {
+  error ITestnetDeFi__InsufficientDepositAmount();
 
   function name() external view returns (string memory);
   function asset() external view returns (IERC20);
-  function claimAmount(address asset) external view returns (uint256);
+  function claimableAmount(address asset) external view returns (uint256);
   function claim(address asset_, uint256 amount) external;
   function withdraw(uint256 amount) external;
 }
 
-contract MockExternalDeFi is IMockExternalDeFi {
+contract TestnetDeFi is ITestnetDeFi {
   using SafeERC20 for IERC20;
 
   IERC20 internal immutable _asset;
@@ -43,21 +43,21 @@ contract MockExternalDeFi is IMockExternalDeFi {
     return _asset;
   }
 
-  function claimAmount(address asset) external view returns (uint256) {
-    return IERC20(asset).balanceOf(address(this));
+  function claimableAmount(address asset_) external view returns (uint256) {
+    return IERC20(asset_).balanceOf(address(this));
   }
 
   function claim(address asset_, uint256 amount) external onlyStrategyExecutor {
     IERC20(asset_).transferFrom(msg.sender, address(this), amount);
   }
 
-  // deposit: Just transfer token to MockExternalDeFi
+  // deposit: Just transfer token to TestnetDeFi
 
   function withdraw(uint256 amount) external onlyStrategyExecutor {
     _asset.transfer(msg.sender, amount);
   }
 
-  // triggerYield: Just transfer token to MockExternalDeFi
+  // triggerYield: Just transfer token to TestnetDeFi
 
   function triggerLoss(uint256 amount) external onlyStrategyExecutor {
     _asset.transfer(0x000000000000000000000000000000000000dEaD, amount);
