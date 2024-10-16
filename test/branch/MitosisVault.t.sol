@@ -54,7 +54,7 @@ contract MitosisVaultTest is Toolkit {
     _eolStrategyExecutor = new MockEOLStrategyExecutor(_mitosisVault, _token, hubEOLVault);
 
     vm.prank(owner);
-    _mitosisVault.setEntrypoint(_mitosisVaultEntrypoint);
+    _mitosisVault.setEntrypoint(address(_mitosisVaultEntrypoint));
   }
 
   function test_initializeAsset() public {
@@ -728,7 +728,7 @@ contract MitosisVaultTest is Toolkit {
 
   function test_setEntrypoint_Unauthorized() public {
     vm.expectRevert();
-    _mitosisVault.setEntrypoint(IMitosisVaultEntrypoint(address(0)));
+    _mitosisVault.setEntrypoint(address(0));
   }
 
   function test_setEOLStrategyExecutor() public {
