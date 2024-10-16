@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-library ITestnetOracleConstants {
+library TestnetOracleConstants {
   uint8 internal constant PRICE_DECIMALS = 8;
 }
 

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { AggregatorV3Interface } from '../../interfaces/hub/oracle/AggregatorV3Interface.sol';
-import { ITestnetOracle, ITestnetOracleConstants } from '../../interfaces/hub/oracle/ITestnetOracle.sol';
+import { ITestnetOracle, TestnetOracleConstants } from '../../interfaces/hub/oracle/ITestnetOracle.sol';
 
 contract TestnetOracleAggregatorV3 is AggregatorV3Interface {
   ITestnetOracle private _oracle;
@@ -22,7 +22,7 @@ contract TestnetOracleAggregatorV3 is AggregatorV3Interface {
   }
 
   function decimals() external view virtual returns (uint8) {
-    return ITestnetOracleConstants.PRICE_DECIMALS;
+    return TestnetOracleConstants.PRICE_DECIMALS;
   }
 
   function description() external pure returns (string memory) {
