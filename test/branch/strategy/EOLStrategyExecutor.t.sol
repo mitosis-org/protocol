@@ -119,21 +119,12 @@ contract MitosisVaultTest is Toolkit {
   }
 
   function test_fetchEOL() public {
-    vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.allocateEOL(hubEOLVault, 100 ether);
-    _token.mint(address(_mitosisVault), 100 ether);
-
-    vm.prank(strategist);
-    _eolStrategyExecutor.fetchEOL(100 ether);
-
-    assertEq(_token.balanceOf(address(_eolStrategyExecutor)), 100 ether);
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 0);
+    _allocateEOL(100 ether);
+    _fetchEOL(80 ether);
   }
 
   function test_fetchEOL_Paused() public {
-    vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.allocateEOL(hubEOLVault, 100 ether);
-    _token.mint(address(_mitosisVault), 100 ether);
+    _allocateEOL(100 ether);
 
     vm.prank(owner);
     _eolStrategyExecutor.pause();
@@ -141,32 +132,38 @@ contract MitosisVaultTest is Toolkit {
     vm.startPrank(strategist);
 
     vm.expectRevert(_errPaused(EOLStrategyExecutor.fetchEOL.selector));
-    _eolStrategyExecutor.fetchEOL(100 ether);
+    _eolStrategyExecutor.fetchEOL(80 ether);
 
     vm.stopPrank();
   }
 
   function test_fetchEOL_Unauthorized() public {
-    vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.allocateEOL(hubEOLVault, 100 ether);
-    _token.mint(address(_mitosisVault), 100 ether);
+    _allocateEOL(100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
     _eolStrategyExecutor.fetchEOL(100 ether);
   }
 
+  function test_fetchEOL_AmountExceeded() public {
+    _allocateEOL(100 ether);
+
+    vm.startPrank(strategist);
+
+    vm.expectRevert();
+    _eolStrategyExecutor.fetchEOL(101 ether);
+
+    vm.stopPrank();
+  }
+
   function test_returnEOL() public {
-    _token.mint(address(_eolStrategyExecutor), 100 ether);
-
-    vm.prank(strategist);
-    _eolStrategyExecutor.returnEOL(100 ether);
-
-    assertEq(_token.balanceOf(address(_eolStrategyExecutor)), 0);
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+    _allocateEOL(100 ether);
+    _fetchEOL(100 ether);
+    _returnEOL(30 ether);
   }
 
   function test_returnEOL_Paused() public {
-    _token.mint(address(_eolStrategyExecutor), 100 ether);
+    _allocateEOL(100 ether);
+    _fetchEOL(100 ether);
 
     vm.prank(owner);
     _eolStrategyExecutor.pause();
@@ -174,19 +171,37 @@ contract MitosisVaultTest is Toolkit {
     vm.startPrank(strategist);
 
     vm.expectRevert(_errPaused(EOLStrategyExecutor.returnEOL.selector));
-    _eolStrategyExecutor.returnEOL(100 ether);
+    _eolStrategyExecutor.returnEOL(30 ether);
 
     vm.stopPrank();
   }
 
   function test_returnEOL_Unauthorized() public {
-    _token.mint(address(_eolStrategyExecutor), 100 ether);
+    _allocateEOL(100 ether);
+    _fetchEOL(100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _eolStrategyExecutor.returnEOL(100 ether);
+    _eolStrategyExecutor.returnEOL(30 ether);
+  }
+
+  function test_returnEOL_AmountExceeded() public {
+    _allocateEOL(100 ether);
+    _fetchEOL(100 ether);
+    _token.mint(address(_eolStrategyExecutor), 30 ether);
+
+    vm.startPrank(strategist);
+
+    // Note that the strategy executor can't return EOL amount not settled yet even though it has the amount enough.
+    vm.expectRevert();
+    _eolStrategyExecutor.returnEOL(101 ether);
+
+    vm.stopPrank();
   }
 
   function test_settle_yield() public {
+    _allocateEOL(100 ether);
+    _fetchEOL(10 ether);
+
     MockStrategy strategy1 = new MockStrategy(address(_token));
     MockStrategy strategy2 = new MockStrategy(address(_token));
     strategy1.setBalance(100 ether);
@@ -200,16 +215,19 @@ contract MitosisVaultTest is Toolkit {
     vm.startPrank(strategist);
 
     vm.expectCall(
-      address(_mitosisVault), abi.encodeWithSelector(MitosisVault.settleYield.selector, hubEOLVault, 150 ether - 0)
+      address(_mitosisVault), abi.encodeWithSelector(MitosisVault.settleYield.selector, hubEOLVault, 150 ether)
     );
     _eolStrategyExecutor.settle();
 
     vm.stopPrank();
 
-    assertEq(_eolStrategyExecutor.lastSettledBalance(), 150 ether);
+    assertEq(_eolStrategyExecutor.expectedTotalBalance(), 10 ether + 150 ether);
   }
 
   function test_settle_loss() public {
+    _allocateEOL(100 ether);
+    _fetchEOL(10 ether);
+
     MockStrategy strategy1 = new MockStrategy(address(_token));
     MockStrategy strategy2 = new MockStrategy(address(_token));
     strategy1.setBalance(100 ether);
@@ -223,7 +241,7 @@ contract MitosisVaultTest is Toolkit {
     vm.prank(strategist);
     _eolStrategyExecutor.settle();
 
-    assertEq(_eolStrategyExecutor.lastSettledBalance(), 150 ether);
+    assertEq(_eolStrategyExecutor.expectedTotalBalance(), 10 ether + 150 ether);
 
     // Loss
     // strategy1: 100 ether -> 70 ether
@@ -241,7 +259,7 @@ contract MitosisVaultTest is Toolkit {
 
     vm.stopPrank();
 
-    assertEq(_eolStrategyExecutor.lastSettledBalance(), 100 ether);
+    assertEq(_eolStrategyExecutor.expectedTotalBalance(), 10 ether + 100 ether);
   }
 
   function test_settle_Paused() public {
@@ -734,6 +752,43 @@ contract MitosisVaultTest is Toolkit {
   function test_unpause_Unauthorized() public {
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
     _eolStrategyExecutor.unpause();
+  }
+
+  function _allocateEOL(uint256 amount) internal {
+    _token.mint(address(_mitosisVault), amount);
+
+    uint256 prevAvailableEOL = _mitosisVault.availableEOL(hubEOLVault);
+
+    vm.prank(address(_mitosisVaultEntrypoint));
+    _mitosisVault.allocateEOL(hubEOLVault, amount);
+
+    assertEq(_mitosisVault.availableEOL(hubEOLVault), prevAvailableEOL + amount);
+  }
+
+  function _fetchEOL(uint256 amount) internal {
+    uint256 prevExpectedTotalBalance = _eolStrategyExecutor.expectedTotalBalance();
+    uint256 prevBalance = _token.balanceOf(address(_eolStrategyExecutor));
+    uint256 prevAvailableEOL = _mitosisVault.availableEOL(hubEOLVault);
+
+    vm.prank(strategist);
+    _eolStrategyExecutor.fetchEOL(amount);
+
+    assertEq(_token.balanceOf(address(_eolStrategyExecutor)), prevBalance + amount);
+    assertEq(_eolStrategyExecutor.expectedTotalBalance(), prevExpectedTotalBalance + amount);
+    assertEq(_mitosisVault.availableEOL(hubEOLVault), prevAvailableEOL - amount);
+  }
+
+  function _returnEOL(uint256 amount) internal {
+    uint256 prevExpectedTotalBalance = _eolStrategyExecutor.expectedTotalBalance();
+    uint256 prevBalance = _token.balanceOf(address(_eolStrategyExecutor));
+    uint256 prevAvailableEOL = _mitosisVault.availableEOL(hubEOLVault);
+
+    vm.prank(strategist);
+    _eolStrategyExecutor.returnEOL(amount);
+
+    assertEq(_token.balanceOf(address(_eolStrategyExecutor)), prevBalance - amount);
+    assertEq(_eolStrategyExecutor.expectedTotalBalance(), prevExpectedTotalBalance - amount);
+    assertEq(_mitosisVault.availableEOL(hubEOLVault), prevAvailableEOL + amount);
   }
 
   function _errStrategyNotEnabled(uint256 strategyId) internal pure returns (bytes memory) {

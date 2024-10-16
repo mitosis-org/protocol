@@ -49,7 +49,7 @@ interface IEOLStrategyExecutor {
   function isStrategyEnabled(address implementation) external view returns (bool);
 
   function totalBalance() external view returns (uint256);
-  function lastSettledBalance() external view returns (uint256);
+  function expectedTotalBalance() external view returns (uint256);
 
   function fetchEOL(uint256 amount) external;
   function returnEOL(uint256 amount) external;

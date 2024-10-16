@@ -17,31 +17,31 @@ contract MockEOLStrategyExecutor is IEOLStrategyExecutor {
     _hubEOLVault = hubEOLVault_;
   }
 
-  function vault() external view returns (IMitosisVault vault_) {
+  function vault() external view returns (IMitosisVault) {
     return _vault;
   }
 
-  function asset() external view returns (IERC20 asset_) {
+  function asset() external view returns (IERC20) {
     return _asset;
   }
 
-  function hubEOLVault() external view returns (address hubEOLVault_) {
+  function hubEOLVault() external view returns (address) {
     return _hubEOLVault;
   }
 
-  function strategist() external view returns (address strategist_) { }
+  function strategist() external view returns (address) { }
 
-  function getStrategy(uint256 strategyId) external view returns (Strategy memory strategy) { }
-  function getStrategy(address implementation) external view returns (Strategy memory strategy) { }
-  function getEnabledStrategyIds() external view returns (uint256[] memory strategyIds) { }
-  function isStrategyEnabled(uint256 strategyId) external view returns (bool enabled) { }
-  function isStrategyEnabled(address implementation) external view returns (bool enabled) { }
+  function getStrategy(uint256 strategyId) external view returns (Strategy memory) { }
+  function getStrategy(address implementation) external view returns (Strategy memory) { }
+  function getEnabledStrategyIds() external view returns (uint256[] memory) { }
+  function isStrategyEnabled(uint256 strategyId) external view returns (bool) { }
+  function isStrategyEnabled(address implementation) external view returns (bool) { }
 
-  function totalBalance() external view returns (uint256 totalBalance_) {
+  function totalBalance() external view returns (uint256) {
     return _asset.balanceOf(address(this));
   }
 
-  function lastSettledBalance() external view returns (uint256 lastSettledBalance_) { }
+  function expectedTotalBalance() external view returns (uint256) { }
 
   function fetchEOL(uint256 amount) external { }
 
