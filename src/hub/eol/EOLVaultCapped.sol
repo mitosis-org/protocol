@@ -52,9 +52,6 @@ contract EOLVaultCapped is EOLVault {
     string memory symbol
   ) external initializer {
     __EOLVault_init(delegationRegistry_, assetManager_, asset_, name, symbol);
-
-    EOLVaultCappedStorage storage $ = _getEOLVaultCappedStorage();
-    $.cap = 0;
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
