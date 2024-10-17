@@ -66,7 +66,7 @@ contract EOLProtocolRegistry is
     address eolVault,
     uint256 chainId,
     string memory name,
-    address implementation,
+    address branchStrategy,
     string memory metadata
   ) external {
     StorageV1 storage $ = _getStorageV1();
@@ -81,14 +81,14 @@ contract EOLProtocolRegistry is
       eolVault: eolVault,
       chainId: chainId,
       name: name,
-      implementation: implementation,
+      branchStrategy: branchStrategy,
       metadata: metadata,
       registeredAt: Time.timestamp()
     });
 
     $.indexes[eolVault][chainId].protocolIds.add(id);
 
-    emit ProtocolRegistered(id, eolVault, chainId, name, implementation, metadata);
+    emit ProtocolRegistered(id, eolVault, chainId, name, branchStrategy, metadata);
   }
 
   function unregisterProtocol(uint256 protocolId_) external {

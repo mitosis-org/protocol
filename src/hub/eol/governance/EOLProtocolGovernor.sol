@@ -159,14 +159,14 @@ contract EOLProtocolGovernor is
 
     if (p.proposalType == ProposalType.Initiation) {
       require(executionPayload.length == 20, '');
-      address implementaion;
+      address branchStrategy;
       assembly {
-        implementaion := mload(add(executionPayload, 20))
+        branchStrategy := mload(add(executionPayload, 20))
       }
 
       InitiationProposalPayload memory payload = abi.decode(p.payload, (InitiationProposalPayload));
       $.protocolRegistry.registerProtocol(
-        payload.eolVault, payload.chainId, payload.name, implementaion, payload.metadata
+        payload.eolVault, payload.chainId, payload.name, branchStrategy, payload.metadata
       );
     } else if (p.proposalType == ProposalType.Deletion) {
       DeletionProposalPayload memory payload = abi.decode(p.payload, (DeletionProposalPayload));
