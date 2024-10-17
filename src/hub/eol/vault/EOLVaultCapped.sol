@@ -4,9 +4,9 @@ pragma solidity ^0.8.27;
 import { Ownable } from '@oz-v5/access/Ownable.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
-import { IERC20TWABSnapshots } from '../../interfaces/twab/IERC20TWABSnapshots.sol';
-import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import { StdError } from '../../lib/StdError.sol';
+import { IERC20TWABSnapshots } from '../../../interfaces/twab/IERC20TWABSnapshots.sol';
+import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
+import { StdError } from '../../../lib/StdError.sol';
 import { EOLVault } from './EOLVault.sol';
 
 /**
