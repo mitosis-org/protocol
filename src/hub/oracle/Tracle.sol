@@ -12,6 +12,10 @@ import { ITracle } from '../../interfaces/hub/oracle/ITracle.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
+/**
+ * @title Tracle
+ * @notice A temporary oracle contract only for testnet.
+ */
 contract Tracle is ITracle, Ownable2StepUpgradeable, AccessControlUpgradeable {
   using ERC7201Utils for string;
 

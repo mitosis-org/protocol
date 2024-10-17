@@ -5,6 +5,10 @@ library TracleConstants {
   uint8 internal constant PRICE_DECIMALS = 8;
 }
 
+/**
+ * @title ITracle
+ * @notice An interface for a temporary oracle contract only for testnet.
+ */
 interface ITracle {
   struct Price {
     uint208 price;

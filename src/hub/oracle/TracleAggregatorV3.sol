@@ -4,6 +4,10 @@ pragma solidity ^0.8.27;
 import { AggregatorV3Interface } from '../../interfaces/hub/oracle/AggregatorV3Interface.sol';
 import { ITracle, TracleConstants } from '../../interfaces/hub/oracle/ITracle.sol';
 
+/**
+ * @title TracleAggregatorV3
+ * @notice A chainlink-compatible aggregator contract powered by mitosis testnet oracle feeds.
+ */
 contract TracleAggregatorV3 is AggregatorV3Interface {
   ITracle private immutable _tracle;
   bytes32 private immutable _priceId;
