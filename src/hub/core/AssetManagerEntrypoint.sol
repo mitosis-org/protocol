@@ -116,21 +116,25 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, R
     if (msgType == MsgType.MsgDeposit) {
       MsgDeposit memory decoded = msg_.decodeDeposit();
       _assetManager.deposit(chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.amount);
+      return;
     }
 
     if (msgType == MsgType.MsgDeallocateEOL) {
       MsgDeallocateEOL memory decoded = msg_.decodeDeallocateEOL();
       _assetManager.deallocateEOL(chainId, decoded.eolVault.toAddress(), decoded.amount);
+      return;
     }
 
     if (msgType == MsgType.MsgSettleYield) {
       MsgSettleYield memory decoded = msg_.decodeSettleYield();
       _assetManager.settleYield(chainId, decoded.eolVault.toAddress(), decoded.amount);
+      return;
     }
 
     if (msgType == MsgType.MsgSettleLoss) {
       MsgSettleLoss memory decoded = msg_.decodeSettleLoss();
       _assetManager.settleLoss(chainId, decoded.eolVault.toAddress(), decoded.amount);
+      return;
     }
 
     if (msgType == MsgType.MsgSettleExtraRewards) {
@@ -138,6 +142,7 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, R
       _assetManager.settleExtraRewards(
         chainId, decoded.eolVault.toAddress(), decoded.reward.toAddress(), decoded.amount
       );
+      return;
     }
   }
 

@@ -5,7 +5,6 @@ import { IRouter } from '@hpl-v5/interfaces/IRouter.sol';
 
 import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 import { Conv } from '../../lib/Conv.sol';

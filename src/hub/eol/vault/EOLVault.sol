@@ -6,26 +6,26 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 
-import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
-import { IERC20TWABSnapshots } from '../../interfaces/twab/IERC20TWABSnapshots.sol';
-import { StdError } from '../../lib/StdError.sol';
-import { ERC4626TWABSnapshots } from '../../twab/ERC4626TWABSnapshots.sol';
+import { IEOLVault } from '../../../interfaces/hub/eol/IEOLVault.sol';
+import { IERC20TWABSnapshots } from '../../../interfaces/twab/IERC20TWABSnapshots.sol';
+import { StdError } from '../../../lib/StdError.sol';
+import { ERC4626TWABSnapshots } from '../../../twab/ERC4626TWABSnapshots.sol';
 import { EOLVaultStorageV1 } from './EOLVaultStorageV1.sol';
 
-contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
+/**
+ * @title EOLVault
+ * @notice Base implementation of an EOLVault
+ */
+abstract contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
   using Math for uint256;
 
-  constructor() {
-    _disableInitializers();
-  }
-
-  function initialize(
+  function __EOLVault_init(
     address delegationRegistry_,
     address assetManager_,
     IERC20TWABSnapshots asset_,
     string memory name,
     string memory symbol
-  ) external initializer {
+  ) internal {
     if (bytes(name).length == 0 || bytes(symbol).length == 0) {
       name = string.concat('Mitosis', asset_.name());
       symbol = string.concat('mi', asset_.symbol());
@@ -41,7 +41,7 @@ contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
 
   // Mutative functions
 
-  function deposit(uint256 assets, address receiver) public override returns (uint256) {
+  function deposit(uint256 assets, address receiver) public virtual override returns (uint256) {
     uint256 maxAssets = maxDeposit(receiver);
     require(assets <= maxAssets, ERC4626ExceededMaxDeposit(receiver, assets, maxAssets));
 
@@ -51,7 +51,7 @@ contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
     return shares;
   }
 
-  function mint(uint256 shares, address receiver) public override returns (uint256) {
+  function mint(uint256 shares, address receiver) public virtual override returns (uint256) {
     uint256 maxShares = maxMint(receiver);
     require(shares <= maxShares, ERC4626ExceededMaxMint(receiver, shares, maxShares));
 

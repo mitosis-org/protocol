@@ -147,6 +147,7 @@ interface IEOLProtocolGovernor {
    * @notice Executes a proposal if it has met the requirements
    * @dev This function can only be called by the authorized executor
    * @param proposalId_ The proposal ID
+   * @param executionPayload The proposal execution payload
    */
-  function execute(uint256 proposalId_) external;
+  function execute(uint256 proposalId_, bytes memory executionPayload) external;
 }

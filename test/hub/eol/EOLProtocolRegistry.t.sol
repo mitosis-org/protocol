@@ -47,7 +47,7 @@ contract EOLProtocolRegistryTest is Toolkit {
     assertFalse(_eolProtocolRegistry.isProtocolRegistered(protocolId));
 
     vm.prank(owner);
-    _eolProtocolRegistry.registerProtocol(eolAsset, chainId, 'Test', 'For testing');
+    _eolProtocolRegistry.registerProtocol(eolAsset, chainId, 'Test', makeAddr('branchStrategy'), 'For testing');
 
     assertTrue(_eolProtocolRegistry.isProtocolRegistered(protocolId));
     assertTrue(_eolProtocolRegistry.isProtocolRegistered(eolAsset, chainId, 'Test'));
@@ -68,8 +68,8 @@ contract EOLProtocolRegistryTest is Toolkit {
     assertFalse(_eolProtocolRegistry.isProtocolRegistered(protocolId2));
 
     vm.startPrank(owner);
-    _eolProtocolRegistry.registerProtocol(eolAsset, chainId, 'Test_1', 'For testing');
-    _eolProtocolRegistry.registerProtocol(eolAsset, chainId, 'Test_2', 'For testing');
+    _eolProtocolRegistry.registerProtocol(eolAsset, chainId, 'Test_1', makeAddr('branchStrategy'), 'For testing');
+    _eolProtocolRegistry.registerProtocol(eolAsset, chainId, 'Test_2', makeAddr('branchStrategy'), 'For testing');
     vm.stopPrank();
 
     assertTrue(_eolProtocolRegistry.isProtocolRegistered(protocolId1));
@@ -91,7 +91,7 @@ contract EOLProtocolRegistryTest is Toolkit {
     assertFalse(_eolProtocolRegistry.isProtocolRegistered(protocolId));
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _eolProtocolRegistry.registerProtocol(eolAsset, chainId, 'Test', 'For testing');
+    _eolProtocolRegistry.registerProtocol(eolAsset, chainId, 'Test', makeAddr('branchStrategy'), 'For testing');
   }
 
   function test_registerProtocol_InvalidParameter() public {
@@ -104,7 +104,7 @@ contract EOLProtocolRegistryTest is Toolkit {
     vm.startPrank(owner);
 
     vm.expectRevert(_errInvalidParameter('name'));
-    _eolProtocolRegistry.registerProtocol(eolAsset, chainId, '', 'For testing');
+    _eolProtocolRegistry.registerProtocol(eolAsset, chainId, '', makeAddr('branchStrategy'), 'For testing');
 
     vm.stopPrank();
   }
@@ -118,7 +118,7 @@ contract EOLProtocolRegistryTest is Toolkit {
     vm.expectRevert(
       _errAlreadyRegistered(_eolProtocolRegistry.protocolId(eolAsset, chainId, 'Test'), eolAsset, chainId, 'Test')
     );
-    _eolProtocolRegistry.registerProtocol(eolAsset, chainId, 'Test', 'For testing');
+    _eolProtocolRegistry.registerProtocol(eolAsset, chainId, 'Test', makeAddr('branchStrategy'), 'For testing');
 
     vm.stopPrank();
   }
