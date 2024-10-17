@@ -73,7 +73,7 @@ contract MitosisVaultTest is Toolkit {
     );
 
     vm.prank(owner);
-    _mitosisVault.setEntrypoint(_mitosisVaultEntrypoint);
+    _mitosisVault.setEntrypoint(address(_mitosisVaultEntrypoint));
 
     vm.startPrank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(_token));

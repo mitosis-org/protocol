@@ -54,8 +54,8 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     return _getStorageV1().eols[hubEOLVault].availableEOL;
   }
 
-  function entrypoint() external view returns (IMitosisVaultEntrypoint) {
-    return _getStorageV1().entrypoint;
+  function entrypoint() external view returns (address) {
+    return address(_getStorageV1().entrypoint);
   }
 
   function eolStrategyExecutor(address hubEOLVault) external view returns (address) {
@@ -218,8 +218,8 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
-  function setEntrypoint(IMitosisVaultEntrypoint entrypoint_) external onlyOwner {
-    _getStorageV1().entrypoint = entrypoint_;
+  function setEntrypoint(address entrypoint_) external onlyOwner {
+    _getStorageV1().entrypoint = IMitosisVaultEntrypoint(entrypoint_);
     emit EntrypointSet(address(entrypoint_));
   }
 

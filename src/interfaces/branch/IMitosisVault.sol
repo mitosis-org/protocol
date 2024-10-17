@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import { IMitosisVaultEntrypoint } from './IMitosisVaultEntrypoint.sol';
-
 enum AssetAction {
   Deposit
 }
@@ -57,7 +55,7 @@ interface IMitosisVault {
   function isAssetInitialized(address asset) external view returns (bool);
   function isEOLInitialized(address hubEOLVault) external view returns (bool);
   function availableEOL(address hubEOLVault) external view returns (uint256);
-  function entrypoint() external view returns (IMitosisVaultEntrypoint);
+  function entrypoint() external view returns (address);
   function eolStrategyExecutor(address hubEOLVault) external view returns (address);
 
   //=========== NOTE: Asset ===========//
@@ -84,6 +82,6 @@ interface IMitosisVault {
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
-  function setEntrypoint(IMitosisVaultEntrypoint entrypoint) external;
+  function setEntrypoint(address entrypoint) external;
   function setEOLStrategyExecutor(address hubEOLVault, address eolStrategyExecutor) external;
 }

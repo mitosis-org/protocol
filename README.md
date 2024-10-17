@@ -1,6 +1,6 @@
 # Mitosis
 
-Mitosis is an Ecosystem-Owned Liquidity (EOL) layer1 blockchain that empowers newly created modular blockchains to capture Total Value Locked (TVL) and attract users through its governance process.
+Mitosis is an Ecosystem-Owned Liquidity (EOL) blockchain that empowers newly created modular blockchains to capture Total Value Locked (TVL) and attract users through its governance process.
 
 ## Getting Started
 
