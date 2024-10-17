@@ -7,8 +7,8 @@ import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { StdError } from '../../../lib/StdError.sol';
 import { StdStrategy } from './StdStrategy.sol';
 
-interface ITestnetDeFi {
-  error ITestnetDeFi__InsufficientDepositAmount();
+interface ITeFi {
+  error ITeFi__InsufficientDepositAmount();
 
   function name() external view returns (string memory);
   function asset() external view returns (IERC20);
@@ -17,7 +17,11 @@ interface ITestnetDeFi {
   function withdraw(uint256 amount) external;
 }
 
-contract TestnetDeFi is ITestnetDeFi {
+/**
+ * @title TeFi
+ * @notice Simple DeFi contract for testnet
+ */
+contract TeFi is ITeFi {
   using SafeERC20 for IERC20;
 
   IERC20 internal immutable _asset;

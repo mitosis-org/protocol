@@ -5,8 +5,8 @@ import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 
 import { IStrategy } from './IStrategy.sol';
 
-interface ITestnetDeFiStrategy is IStrategy {
-  error ITestnetDeFiStrategy__InsufficientDeposit();
+interface ITeFiStrategy is IStrategy {
+  error ITeFiStrategy__InsufficientDeposit();
 
   /**
    * @notice query the name of the DeFi
