@@ -4,7 +4,7 @@ pragma solidity 0.8.27;
 import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
 import { IAssetManager } from '../../../interfaces/hub/core/IAssetManager.sol';
-import { IEOLVaultStorageV1 } from '../../../interfaces/hub/eol/IEOLVault.sol';
+import { IEOLVaultStorageV1 } from '../../../interfaces/hub/eol/vault/IEOLVault.sol';
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 import { StdError } from '../../../lib/StdError.sol';
 
