@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IERC4626TWABSnapshots } from '../../twab/IERC4626TWABSnapshots.sol';
+import { IERC4626TWABSnapshots } from '../../../twab/IERC4626TWABSnapshots.sol';
 
 /**
  * @title IEOLVaultStorageV1
