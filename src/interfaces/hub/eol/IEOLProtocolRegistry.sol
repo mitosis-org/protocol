@@ -7,6 +7,7 @@ pragma solidity ^0.8.27;
  * @param eolVault Address of the EOLVault associated with the protocol
  * @param chainId ID of the chain where the protocol is deployed
  * @param name Name of the protocol
+ * @param branchStrategy Address of the Strategy on branch chain
  * @param metadata Additional metadata about the protocol
  * @param registeredAt Timestamp when the protocol was registered
  */
@@ -15,6 +16,7 @@ struct ProtocolInfo {
   address eolVault;
   uint256 chainId;
   string name;
+  address branchStrategy;
   string metadata;
   uint48 registeredAt;
 }
@@ -30,10 +32,16 @@ interface IEOLProtocolRegistry {
    * @param eolVault Address of the EOLVault associated with the protocol
    * @param chainId ID of the chain where the protocol is deployed
    * @param name Name of the protocol
+   * @param branchStrategy Address of the Strategy on branch chain
    * @param metadata Additional metadata about the protocol
    */
   event ProtocolRegistered(
-    uint256 indexed protocolId, address indexed eolVault, uint256 indexed chainId, string name, string metadata
+    uint256 indexed protocolId,
+    address indexed eolVault,
+    uint256 indexed chainId,
+    string name,
+    address branchStrategy,
+    string metadata
   );
 
   /**
@@ -73,7 +81,13 @@ interface IEOLProtocolRegistry {
 
   function isProtocolRegistered(address eolVault, uint256 chainId, string memory name) external view returns (bool);
 
-  function registerProtocol(address eolVault, uint256 chainId, string memory name, string memory metadata) external;
+  function registerProtocol(
+    address eolVault,
+    uint256 chainId,
+    string memory name,
+    address implementation,
+    string memory metadata
+  ) external;
 
   /**
    * @notice Unregisters a protocol
