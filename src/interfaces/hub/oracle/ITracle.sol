@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-library TestnetOracleConstants {
+library TracleConstants {
   uint8 internal constant PRICE_DECIMALS = 8;
 }
 
-interface ITestnetOracle {
+interface ITracle {
   struct Price {
     uint208 price;
     uint48 updatedAt;
@@ -20,7 +20,7 @@ interface ITestnetOracle {
   event EOLVaultPriceConfigSet(bytes32 indexed id, address eolVault, bytes32 underlyingPriceId);
   event EOLVaultPriceConfigUnset(bytes32 indexed id);
 
-  error ITestnetOracle__InvalidPriceId(bytes32 id);
+  error ITracle__InvalidPriceId(bytes32 id);
 
   function getPrice(bytes32 id) external view returns (Price memory);
 }

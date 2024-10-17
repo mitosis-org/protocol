@@ -2,19 +2,19 @@
 pragma solidity ^0.8.27;
 
 import { AggregatorV3Interface } from '../../interfaces/hub/oracle/AggregatorV3Interface.sol';
-import { ITestnetOracle, TestnetOracleConstants } from '../../interfaces/hub/oracle/ITestnetOracle.sol';
+import { ITracle, TracleConstants } from '../../interfaces/hub/oracle/ITracle.sol';
 
-contract TestnetOracleAggregatorV3 is AggregatorV3Interface {
-  ITestnetOracle private _oracle;
-  bytes32 private _priceId;
+contract TracleAggregatorV3 is AggregatorV3Interface {
+  ITracle private immutable _tracle;
+  bytes32 private immutable _priceId;
 
-  constructor(ITestnetOracle oracle_, bytes32 priceId_) {
-    _oracle = oracle_;
+  constructor(ITracle tracle_, bytes32 priceId_) {
+    _tracle = tracle_;
     _priceId = priceId_;
   }
 
-  function oracle() external view returns (ITestnetOracle) {
-    return _oracle;
+  function tracle() external view returns (ITracle) {
+    return _tracle;
   }
 
   function priceId() external view returns (bytes32) {
@@ -22,7 +22,7 @@ contract TestnetOracleAggregatorV3 is AggregatorV3Interface {
   }
 
   function decimals() external view virtual returns (uint8) {
-    return TestnetOracleConstants.PRICE_DECIMALS;
+    return TracleConstants.PRICE_DECIMALS;
   }
 
   function description() external pure returns (string memory) {
@@ -34,12 +34,12 @@ contract TestnetOracleAggregatorV3 is AggregatorV3Interface {
   }
 
   function latestAnswer() public view virtual returns (int256) {
-    ITestnetOracle.Price memory price = _oracle.getPrice(_priceId);
+    ITracle.Price memory price = _tracle.getPrice(_priceId);
     return int256(uint256(price.price));
   }
 
   function latestTimestamp() public view returns (uint256) {
-    ITestnetOracle.Price memory price = _oracle.getPrice(_priceId);
+    ITracle.Price memory price = _tracle.getPrice(_priceId);
     return price.updatedAt;
   }
 
@@ -61,7 +61,7 @@ contract TestnetOracleAggregatorV3 is AggregatorV3Interface {
     view
     returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
   {
-    ITestnetOracle.Price memory price = _oracle.getPrice(_priceId);
+    ITracle.Price memory price = _tracle.getPrice(_priceId);
     return (_roundId, int256(uint256(price.price)), price.updatedAt, price.updatedAt, _roundId);
   }
 
@@ -70,7 +70,7 @@ contract TestnetOracleAggregatorV3 is AggregatorV3Interface {
     view
     returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
   {
-    ITestnetOracle.Price memory price = _oracle.getPrice(_priceId);
+    ITracle.Price memory price = _tracle.getPrice(_priceId);
     roundId = uint80(price.updatedAt);
     return (roundId, int256(uint256(price.price)), price.updatedAt, price.updatedAt, roundId);
   }
