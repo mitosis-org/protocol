@@ -9,8 +9,8 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
-import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { IOptOutQueue } from '../../interfaces/hub/eol/IOptOutQueue.sol';
+import { IEOLVault } from '../../interfaces/hub/eol/vault/IEOLVault.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';

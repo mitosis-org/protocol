@@ -7,7 +7,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
-import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
+import { IEOLVault } from '../../interfaces/hub/eol/vault/IEOLVault.sol';
 import { ITracle } from '../../interfaces/hub/oracle/ITracle.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';

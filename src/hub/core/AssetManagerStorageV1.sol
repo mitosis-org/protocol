@@ -5,8 +5,8 @@ import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
 import { IAssetManagerStorageV1 } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
-import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
 import { IOptOutQueue } from '../../interfaces/hub/eol/IOptOutQueue.sol';
+import { IEOLVault } from '../../interfaces/hub/eol/vault/IEOLVault.sol';
 import { IRewardHandler } from '../../interfaces/hub/reward/IRewardHandler.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';

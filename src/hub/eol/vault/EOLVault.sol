@@ -6,7 +6,7 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 
-import { IEOLVault } from '../../../interfaces/hub/eol/IEOLVault.sol';
+import { IEOLVault } from '../../../interfaces/hub/eol/vault/IEOLVault.sol';
 import { IERC20TWABSnapshots } from '../../../interfaces/twab/IERC20TWABSnapshots.sol';
 import { StdError } from '../../../lib/StdError.sol';
 import { ERC4626TWABSnapshots } from '../../../twab/ERC4626TWABSnapshots.sol';
