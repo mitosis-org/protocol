@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IERC20TWABSnapshots } from '../../interfaces/twab/IERC20TWABSnapshots.sol';
+import { IERC20TWABSnapshots } from '../../../interfaces/twab/IERC20TWABSnapshots.sol';
 import { EOLVault } from './EOLVault.sol';
 
 /**
