@@ -3,5 +3,5 @@
 for FILE in $(cat ./public-files.txt)
 do
     echo "Copying ${FILE}"
-    cp "../protocol-public/${FILE}" "${FILE}"
+    mkdir -p $(dirname "${FILE}") && cp -rf "../protocol-public/${FILE}" "${FILE}"
 done

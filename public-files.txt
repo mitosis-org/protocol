@@ -8,10 +8,12 @@
 ./src/interfaces/hub/core/IDelegationRegistry.sol
 ./src/interfaces/hub/core/IHubAsset.sol
 ./src/interfaces/hub/eol/IEOLProtocolRegistry.sol
-./src/interfaces/hub/eol/IEOLVault.sol
 ./src/interfaces/hub/eol/IOptOutQueue.sol
 ./src/interfaces/hub/eol/governance/IEOLGaugeGovernor.sol
 ./src/interfaces/hub/eol/governance/IEOLProtocolGovernor.sol
+./src/interfaces/hub/eol/vault/IEOLVault.sol
+./src/interfaces/hub/eol/vault/IEOLVaultCapped.sol
+./src/interfaces/hub/oracle/AggregatorV3Interface.sol
 ./src/interfaces/hub/reward/IMerkleRewardDistributor.sol
 ./src/interfaces/hub/reward/IRewardDistributor.sol
 ./src/interfaces/hub/reward/IRewardHandler.sol

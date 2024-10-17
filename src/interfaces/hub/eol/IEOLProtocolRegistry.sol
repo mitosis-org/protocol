@@ -85,7 +85,7 @@ interface IEOLProtocolRegistry {
     address eolVault,
     uint256 chainId,
     string memory name,
-    address implementation,
+    address branchStrategy,
     string memory metadata
   ) external;
 
