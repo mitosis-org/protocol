@@ -4,9 +4,15 @@ pragma solidity 0.8.27;
 import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 
 import { IStrategy } from './IStrategy.sol';
+import { ITeFi } from './ITeFi.sol';
 
 interface ITeFiStrategy is IStrategy {
   error ITeFiStrategy__InsufficientDeposit();
+
+  /**
+   * @notice query the TeFi contract
+   */
+  function tefi() external view returns (ITeFi);
 
   /**
    * @notice query the name of the DeFi

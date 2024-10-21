@@ -5,22 +5,26 @@ import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 
 import { IStrategy } from '../../../interfaces/branch/strategy/IStrategy.sol';
+import { ITeFi } from '../../../interfaces/branch/strategy/ITeFi.sol';
 import { ITeFiStrategy } from '../../../interfaces/branch/strategy/ITeFiStrategy.sol';
 import { StdError } from '../../../lib/StdError.sol';
 import { StdStrategy } from './StdStrategy.sol';
-import { TeFi } from './TeFi.sol';
 
 contract TeFiStrategy is ITeFiStrategy, StdStrategy {
   using SafeERC20 for IERC20;
 
-  TeFi internal immutable _tefi;
+  ITeFi internal immutable _tefi;
 
-  constructor(TeFi tefi_) StdStrategy() {
+  constructor(ITeFi tefi_) StdStrategy() {
     _tefi = tefi_;
   }
 
   function strategyName() public pure override(StdStrategy, IStrategy) returns (string memory) {
     return 'TeFi';
+  }
+
+  function tefi() external view returns (ITeFi) {
+    return _tefi;
   }
 
   function defiName() external view returns (string memory) {
