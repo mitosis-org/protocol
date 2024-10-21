@@ -10,7 +10,7 @@ interface ITeFiStrategy is IStrategy {
   error ITeFiStrategy__InsufficientDeposit();
 
   /**
-   * @notice query the TeFi contract
+   * @notice query the ITeFi contract
    */
   function tefi() external view returns (ITeFi);
 
