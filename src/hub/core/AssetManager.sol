@@ -173,7 +173,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
     $.entrypoint.initializeAsset(chainId, branchAsset);
-    emit AssetInitialized(chainId, branchAsset);
+    emit AssetInitialized(hubAsset, chainId, branchAsset);
   }
 
   function initializeEOL(uint256 chainId, address eolVault) external onlyOwner {
@@ -189,7 +189,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     $.eolInitialized[chainId][eolVault] = true;
 
     $.entrypoint.initializeEOL(chainId, eolVault, branchAsset);
-    emit EOLInitialized(chainId, eolVault, branchAsset);
+    emit EOLInitialized(hubAsset, chainId, eolVault, branchAsset);
   }
 
   function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external onlyOwner {

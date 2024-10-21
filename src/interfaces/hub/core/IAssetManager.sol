@@ -113,18 +113,20 @@ interface IAssetManagerStorageV1 {
 interface IAssetManager is IAssetManagerStorageV1 {
   /**
    * @notice Emitted when an asset is initialized
+   * @param hubAsset The address of the hub asset
    * @param chainId The ID of the chain where the asset is initialized
    * @param asset The address of the initialized asset
    */
-  event AssetInitialized(uint256 indexed chainId, address asset);
+  event AssetInitialized(address indexed hubAsset, uint256 indexed chainId, address asset);
 
   /**
    * @notice Emitted when an EOLVault is initialized
+   * @param hubAsset The address of the hub asset
    * @param chainId The ID of the chain where the EOLVault is initialized
    * @param eolVault The address of the initialized EOLVault
    * @param asset The address of the asset associated with the EOLVault
    */
-  event EOLInitialized(uint256 indexed chainId, address eolVault, address asset);
+  event EOLInitialized(address indexed hubAsset, uint256 indexed chainId, address eolVault, address asset);
 
   /**
    * @notice Emitted when a deposit is made
