@@ -119,6 +119,14 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, R
       return;
     }
 
+    if (msgType == MsgType.MsgDepositWithOptIn) {
+      MsgDepositWithOptIn memory decoded = msg_.decodeDepositWithOptIn();
+      _assetManager.depositWithOptIn(
+        chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.eolVault.toAddress(), decoded.amount
+      );
+      return;
+    }
+
     if (msgType == MsgType.MsgDeallocateEOL) {
       MsgDeallocateEOL memory decoded = msg_.decodeDeallocateEOL();
       _assetManager.deallocateEOL(chainId, decoded.eolVault.toAddress(), decoded.amount);
