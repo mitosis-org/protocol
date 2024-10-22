@@ -66,13 +66,13 @@ contract AssetManagerTest is Toolkit {
       payable(
         address(
           new TransparentUpgradeableProxy(
-            address(assetManagerImpl),
-            address(_proxyAdmin),
-            abi.encodeCall(_assetManager.initialize, (owner, address(_optOutQueue)))
+            address(assetManagerImpl), address(_proxyAdmin), abi.encodeCall(_assetManager.initialize, (owner))
           )
         )
       )
     );
+    vm.prank(owner);
+    _assetManager.setOptOutQueue(address(_optOutQueue));
 
     _rewardHandler = new MockRewardHandler();
     _assetManagerEntrypoint = new MockAssetManagerEntrypoint(_assetManager, address(0));

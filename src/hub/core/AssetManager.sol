@@ -20,14 +20,10 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _disableInitializers();
   }
 
-  function initialize(address owner_, address optOutQueue_) public initializer {
+  function initialize(address owner_) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
     _transferOwnership(owner_);
-
-    StorageV1 storage $ = _getStorageV1();
-
-    _setOptOutQueue($, optOutQueue_);
   }
 
   //=========== NOTE: ASSET FUNCTIONS ===========//
