@@ -84,7 +84,7 @@ contract TWABRewardDistributor is
     AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
 
     uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
-    until = until > lastFinalizedBatchTimestamp ? lastFinalizedBatchTimestamp : until;
+    until = until > lastFinalizedBatchTimestamp ? lastFinalizedBatchTimestamp + 1 : until;
 
     uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[account];
     if (batchTimestamp >= until) return 0;
@@ -142,7 +142,7 @@ contract TWABRewardDistributor is
     AssetRewards storage assetRewards = _assetRewards(eolVault, reward);
 
     uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
-    until = until > lastFinalizedBatchTimestamp ? lastFinalizedBatchTimestamp : until;
+    until = until > lastFinalizedBatchTimestamp ? lastFinalizedBatchTimestamp + 1 : until;
 
     uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[_msgSender()];
     if (batchTimestamp >= until) return batchTimestamp;

@@ -69,7 +69,7 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
    * @param eolVault The address of the EOL Vault contract.
    * @param account The address of the account.
    * @param reward The address of the reward token.
-   * @param until The timestamp until which to check claimable amount.
+   * @param until The timestamp until which to check claimable amount. (exclusive range)
    */
   function claimableAmountUntil(address eolVault, address account, address reward, uint48 until)
     external
@@ -81,7 +81,7 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
    * @param eolVault The address of the EOL Vault contract.
    * @param receiver The address of the receiver.
    * @param reward The address of the reward token.
-   * @param until The timestamp until which to claim rewards.
+   * @param until The timestamp until which to claim rewards. (exclusive range)
    * @return lastClaimedBatchTimestamp The last claimed batch timestamp.
    */
   function claimUntil(address eolVault, address receiver, address reward, uint48 until)
