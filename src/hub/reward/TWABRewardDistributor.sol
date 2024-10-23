@@ -87,7 +87,40 @@ contract TWABRewardDistributor is
     return assetRewards.batchTimestamps.length == 0 ? 0 : assetRewards.batchTimestamps[0];
   }
 
+  function getLastClaimedBatchTimestamp(address eolVault, address account, address reward)
+    external
+    view
+    returns (uint48)
+  {
+    return _assetRewards(eolVault, reward).lastClaimedBatchTimestamps[account];
+  }
+
+  function getLastFinalizedBatchTimestamp(address eolVault) external view returns (uint48) {
+    return _lastFinalizedBatchTimestamp(eolVault);
+  }
+
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
+
+  function claimUntil(address eolVault, address receiver, address reward, uint48 until)
+    external
+    returns (uint48 lastClaimedBatchTimestamp)
+  {
+    AssetRewards storage assetRewards = _assetRewards(eolVault, reward);
+
+    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
+    until = until > lastFinalizedBatchTimestamp ? lastFinalizedBatchTimestamp : until;
+
+    uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[_msgSender()];
+    if (batchTimestamp >= until) return batchTimestamp;
+
+    do {
+      _claimAllReward(eolVault, _msgSender(), receiver, reward, batchTimestamp);
+      batchTimestamp = batchTimestamp + batchPeriod;
+    } while (batchTimestamp < until);
+
+    assetRewards.lastClaimedBatchTimestamps[_msgSender()] = batchTimestamp - batchPeriod;
+    return assetRewards.lastClaimedBatchTimestamps[_msgSender()];
+  }
 
   function claim(address eolVault, address reward, bytes calldata metadata) external {
     claim(eolVault, _msgSender(), reward, metadata);

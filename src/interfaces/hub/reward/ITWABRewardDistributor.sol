@@ -44,7 +44,35 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
    * @notice Gets the first batch timestamp for a given EOL Vault and reward.
    * @param eolVault The address of the EOL Vault contract.
    * @param reward The address of the reward token.
-   * @return The first batch timestamp as a uint48.
    */
   function getFirstBatchTimestamp(address eolVault, address reward) external view returns (uint48);
+
+  /**
+   * @notice Gets the last claimed batch timestamp for a given EOL Vault, reward and account.
+   * @param eolVault The address of the EOL Vault contract.
+   * @param account The address of the account.
+   * @param reward The address of the reward token.
+   */
+  function getLastClaimedBatchTimestamp(address eolVault, address account, address reward)
+    external
+    view
+    returns (uint48);
+
+  /**
+   * @notice Gets the last finalized batch timestamp for a given EOL Vault.
+   * @param eolVault The address of the EOL Vault contract.
+   */
+  function getLastFinalizedBatchTimestamp(address eolVault) external view returns (uint48);
+
+  /**
+   * @notice Claims rewards for all batch timestamps until the specified timestamp.
+   * @param eolVault The address of the EOL Vault contract.
+   * @param receiver The address of the receiver.
+   * @param reward The address of the reward token.
+   * @param until The timestamp until which to claim rewards.
+   * @return lastClaimedBatchTimestamp The last claimed batch timestamp.
+   */
+  function claimUntil(address eolVault, address receiver, address reward, uint48 until)
+    external
+    returns (uint48 lastClaimedBatchTimestamp);
 }
