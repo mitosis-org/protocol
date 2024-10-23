@@ -13,6 +13,7 @@ import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
 import { BaseHandler } from './BaseHandler.sol';
 import { LibDistributorRewardMetadata, RewardTWABMetadata } from './LibDistributorRewardMetadata.sol';
 import { TWABRewardDistributorStorageV1 } from './TWABRewardDistributorStorageV1.sol';
+import { StdError } from '../../lib/StdError.sol';
 
 contract TWABRewardDistributor is
   BaseHandler,
@@ -27,10 +28,13 @@ contract TWABRewardDistributor is
   /// @notice Role for dispatching rewards (keccak256("DISPATCHER_ROLE"))
   bytes32 public constant DISPATCHER_ROLE = 0xfbd38eecf51668fdbc772b204dc63dd28c3a3cf32e3025f52a80aa807359f50c;
 
+  uint48 public immutable batchPeriod;
+
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  constructor() BaseHandler(HandlerType.Endpoint, DistributionType.TWAB, 'TWAB Reward Distributor') {
+  constructor(uint48 batchPeriod_) BaseHandler(HandlerType.Endpoint, DistributionType.TWAB, 'TWAB Reward Distributor') {
     _disableInitializers();
+    batchPeriod = batchPeriod_;
   }
 
   function initialize(address admin, uint48 twabPeriod_, uint256 rewardPrecision_) public initializer {
@@ -115,40 +119,28 @@ contract TWABRewardDistributor is
    * @dev use current timestamp and eolVault if metadata is not provided
    */
   function _handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) internal override {
+    require(metadata.length == 0, StdError.InvalidParameter('metadata'));
+
     StorageV1 storage $ = _getStorageV1();
 
     IERC20(reward).transferFrom(_msgSender(), address(this), amount);
 
-    uint48 rewardedAt = metadata.length == 0 ? IERC6372(eolVault).clock() : abi.decode(metadata, (uint48));
-    _assertValidRewardMetadata(rewardedAt);
-
     AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
     uint48[] storage batchTimestamps = assetRewards.batchTimestamps;
 
-    uint48 batchTimestamp;
+    uint48 batchTimestamp = _roundUpToMidnight(IERC6372(eolVault).clock());
 
     if (batchTimestamps.length == 0) {
-      // note(ray): We round `batchTimestamp` up to midnight because it's
-      // convenient for future calls. It ensures that the batch reward for
-      // all `eolVault` has the same `batchTimestamp` range.
-      batchTimestamp = _roundUpToMidnight(rewardedAt + $.twabPeriod);
       assetRewards.batchTimestamps.push(batchTimestamp);
       assetRewards.lastBatchTimestamp = batchTimestamp;
     } else {
-      uint48 prevBatchTimestamp = assetRewards.lastBatchTimestamp - $.twabPeriod;
-      uint48 nextBatchTimestamp = assetRewards.lastBatchTimestamp + $.twabPeriod;
+      require(
+        batchTimestamp >= assetRewards.lastBatchTimestamp, ITWABRewardDistributor__BatchTimestampAlreadyFinalized()
+      );
 
-      // Case 1: Move to next batch
-      if (nextBatchTimestamp <= rewardedAt + $.twabPeriod) {
-        batchTimestamp = nextBatchTimestamp;
+      if (batchTimestamp > assetRewards.lastBatchTimestamp) {
         assetRewards.batchTimestamps.push(batchTimestamp);
         assetRewards.lastBatchTimestamp = batchTimestamp;
-      } else if (prevBatchTimestamp < rewardedAt + $.twabPeriod) {
-        // Case 2: Handle previous rewardedAt
-        batchTimestamp = _findBatchTimestamp(assetRewards.batchTimestamps[0], rewardedAt, $.twabPeriod);
-      } else {
-        // Case 3: In current batch
-        batchTimestamp = assetRewards.lastBatchTimestamp;
       }
     }
 
@@ -159,24 +151,14 @@ contract TWABRewardDistributor is
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _roundUpToMidnight(uint48 timestamp) internal pure returns (uint48) {
-    uint48 currentMidnight = timestamp - (timestamp % 1 days);
-    uint48 nextMidnight = currentMidnight + 1 days;
+  function _roundUpToMidnight(uint48 timestamp) internal view returns (uint48) {
+    uint48 currentMidnight = timestamp - (timestamp % batchPeriod);
+    uint48 nextMidnight = currentMidnight + batchPeriod;
     return nextMidnight;
   }
 
-  function _findBatchTimestamp(uint48 startBatchTimestamp, uint48 timestamp, uint48 period)
-    internal
-    pure
-    returns (uint48)
-  {
-    if (timestamp <= startBatchTimestamp) {
-      return startBatchTimestamp;
-    }
-    uint48 timeDifference = timestamp - startBatchTimestamp;
-    uint48 periodsPassed = (timeDifference + period - 1) / period;
-    uint48 batchTimestamp = startBatchTimestamp + (periodsPassed * period);
-    return _roundUpToMidnight(batchTimestamp);
+  function _lastFinalizedBatchTimestamp(address eolVault) internal view returns (uint48) {
+    return _roundUpToMidnight(IERC6372(eolVault).clock()) - batchPeriod;
   }
 
   function _claimAllReward(address eolVault, address account, address receiver, address reward, uint48 batchTimestamp)
@@ -186,11 +168,18 @@ contract TWABRewardDistributor is
     AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
     Receipt storage receipt = assetRewards.receipts[batchTimestamp][account];
 
+    uint48 lastClaimedBatchTimestamp = assetRewards.lastClaimedBatchTimestamps[account];
+    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
+    require(batchTimestamp > lastClaimedBatchTimestamp, ITWABRewardDistributor__BatchTimestampAlreadyClaimed());
+    require(batchTimestamp <= lastFinalizedBatchTimestamp, ITWABRewardDistributor__BatchTimestampNotFinalized());
+
     uint256 userReward = _calculateUserReward($, eolVault, account, reward, batchTimestamp);
     uint256 claimableReward = userReward - receipt.claimedAmount;
 
     if (claimableReward > 0) {
       _updateReceipt(receipt, userReward, claimableReward);
+      assetRewards.lastClaimedBatchTimestamps[account] = batchTimestamp;
+
       IERC20(reward).transfer(receiver, claimableReward);
       emit Claimed(eolVault, account, receiver, reward, claimableReward);
     }
@@ -208,22 +197,35 @@ contract TWABRewardDistributor is
     AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
     Receipt storage receipt = assetRewards.receipts[batchTimestamp][account];
 
+    uint48 lastClaimedBatchTimestamp = assetRewards.lastClaimedBatchTimestamps[account];
+    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
+    require(batchTimestamp > lastClaimedBatchTimestamp, ITWABRewardDistributor__BatchTimestampAlreadyClaimed());
+    require(batchTimestamp <= lastFinalizedBatchTimestamp, ITWABRewardDistributor__BatchTimestampNotFinalized());
+
     uint256 userReward = _calculateUserReward($, eolVault, account, reward, batchTimestamp);
     uint256 claimableReward = userReward - receipt.claimedAmount;
 
     require(claimableReward >= amount, ITWABRewardDistributor__InsufficientReward());
 
-    _updateReceipt(receipt, userReward, amount);
-    IERC20(reward).transfer(receiver, amount);
+    bool totalClaimed = _updateReceipt(receipt, userReward, amount);
+    if (totalClaimed) {
+      assetRewards.lastClaimedBatchTimestamps[account] = batchTimestamp;
+    }
 
+    IERC20(reward).transfer(receiver, amount);
     emit Claimed(account, receiver, eolVault, reward, amount);
   }
 
-  function _updateReceipt(Receipt storage receipt, uint256 userReward, uint256 claimedReward) internal {
+  function _updateReceipt(Receipt storage receipt, uint256 userReward, uint256 claimedReward)
+    internal
+    returns (bool totalClaimed)
+  {
     receipt.claimedAmount += claimedReward;
     if (receipt.claimedAmount == userReward) {
       receipt.claimed = true;
+      return true;
     }
+    return false;
   }
 
   function _calculateUserRatio(StorageV1 storage $, address eolVault, address account, uint48 batchTimestamp)
@@ -262,12 +264,5 @@ contract TWABRewardDistributor is
     uint256 userRatio = _calculateUserRatio($, eolVault, account, batchTimestamp);
     uint256 precision = $.rewardPrecision;
     return Math.mulDiv(totalReward, userRatio, precision);
-  }
-
-  function _assertValidRewardMetadata(uint48 rewardedAt) internal view {
-    // TODO(ray): handleReward.Case 2, we should consider removing this
-    // require, which means that the `batchTimestamps` array will no
-    // longer be sorted.
-    require(rewardedAt == block.timestamp, ITWABRewardDistributor__InvalidRewardedAt());
   }
 }

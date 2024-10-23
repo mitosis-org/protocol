@@ -36,10 +36,9 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
    */
   error ITWABRewardDistributor__InsufficientReward();
 
-  /**
-   * @notice Error thrown when an invalid rewarded-at timestamp is provided.
-   */
-  error ITWABRewardDistributor__InvalidRewardedAt();
+  error ITWABRewardDistributor__BatchTimestampAlreadyClaimed();
+  error ITWABRewardDistributor__BatchTimestampAlreadyFinalized();
+  error ITWABRewardDistributor__BatchTimestampNotFinalized();
 
   /**
    * @notice Gets the first batch timestamp for a given EOL Vault and reward.

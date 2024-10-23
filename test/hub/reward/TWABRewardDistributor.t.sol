@@ -30,7 +30,7 @@ contract TWABRewardDistributortTest is Test {
     delegationRegistry = new MockDelegationRegistry(mitosis);
 
     _proxyAdmin = new ProxyAdmin(owner);
-    TWABRewardDistributor twabRewardDistributorImpl = new TWABRewardDistributor();
+    TWABRewardDistributor twabRewardDistributorImpl = new TWABRewardDistributor(1 days);
 
     twabRewardDistributor = TWABRewardDistributor(
       payable(

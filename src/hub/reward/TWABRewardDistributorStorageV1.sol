@@ -21,6 +21,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
     uint48[] batchTimestamps;
     mapping(uint48 batchTimestamp => uint256 total) batchRewards;
     mapping(uint48 batchTimestamp => mapping(address account => Receipt receipt)) receipts;
+    mapping(address account => uint48 lastClaimedBatchTimestamp) lastClaimedBatchTimestamps;
   }
 
   struct StorageV1 {
