@@ -26,7 +26,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   struct StorageV1 {
     uint48 twabPeriod;
     uint256 rewardPrecision;
-    mapping(address twabCriteria => mapping(address reward => AssetRewards assetRewards)) rewards;
+    mapping(address eolVault => mapping(address reward => AssetRewards assetRewards)) rewards;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.TWABRewardDistributorStorage.v1';
@@ -66,43 +66,43 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _assetRewards(address twabCriteria, address reward) internal view returns (AssetRewards storage) {
-    return _getStorageV1().rewards[twabCriteria][reward];
+  function _assetRewards(address eolVault, address reward) internal view returns (AssetRewards storage) {
+    return _getStorageV1().rewards[eolVault][reward];
   }
 
-  function _assetRewards(StorageV1 storage $, address twabCriteria, address reward)
+  function _assetRewards(StorageV1 storage $, address eolVault, address reward)
     internal
     view
     returns (AssetRewards storage)
   {
-    return $.rewards[twabCriteria][reward];
+    return $.rewards[eolVault][reward];
   }
 
-  function _receipt(address account, address twabCriteria, address reward, uint48 rewardedAt)
+  function _receipt(address account, address eolVault, address reward, uint48 batchTimestamp)
     internal
     view
     returns (Receipt storage)
   {
-    return _getStorageV1().rewards[twabCriteria][reward].receipts[rewardedAt][account];
+    return _getStorageV1().rewards[eolVault][reward].receipts[batchTimestamp][account];
   }
 
-  function _receipt(StorageV1 storage $, address account, address twabCriteria, address reward, uint48 rewardedAt)
+  function _receipt(StorageV1 storage $, address account, address eolVault, address reward, uint48 batchTimestamp)
     internal
     view
     returns (Receipt storage)
   {
-    return $.rewards[twabCriteria][reward].receipts[rewardedAt][account];
+    return $.rewards[eolVault][reward].receipts[batchTimestamp][account];
   }
 
-  function _batchRewards(address twabCriteria, address reward, uint48 rewardedAt) internal view returns (uint256) {
-    return _getStorageV1().rewards[twabCriteria][reward].batchRewards[rewardedAt];
+  function _batchRewards(address eolVault, address reward, uint48 batchTimestamp) internal view returns (uint256) {
+    return _getStorageV1().rewards[eolVault][reward].batchRewards[batchTimestamp];
   }
 
-  function _batchRewards(StorageV1 storage $, address twabCriteria, address reward, uint48 rewardedAt)
+  function _batchRewards(StorageV1 storage $, address eolVault, address reward, uint48 batchTimestamp)
     internal
     view
     returns (uint256)
   {
-    return $.rewards[twabCriteria][reward].batchRewards[rewardedAt];
+    return $.rewards[eolVault][reward].batchRewards[batchTimestamp];
   }
 }

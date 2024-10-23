@@ -27,51 +27,61 @@ interface IRewardDistributor is IRewardHandler {
 
   /**
    * @notice Checks if the account can claim.
+   * @param eolVault The EOL Vault address
    * @param account The account address
    * @param reward The reward token address
    * @param metadata The encoded metadata
    */
-  function claimable(address account, address reward, bytes calldata metadata) external view returns (bool);
+  function claimable(address eolVault, address account, address reward, bytes calldata metadata)
+    external
+    view
+    returns (bool);
 
   /**
    * @notice Returns the amount of claimable rewards for the account.
+   * @param eolVault The EOL Vault address
    * @param account The account address
    * @param reward The reward token address
    * @param metadata The encoded metadata
    */
-  function claimableAmount(address account, address reward, bytes calldata metadata) external view returns (uint256);
+  function claimableAmount(address eolVault, address account, address reward, bytes calldata metadata)
+    external
+    view
+    returns (uint256);
 
   /**
    * @notice Claims all of the rewards for the specified vault and reward.
+   * @param eolVault The EOL Vault address
    * @param reward The reward token address
    * @param metadata The encoded metadata
    */
-  function claim(address reward, bytes calldata metadata) external;
+  function claim(address eolVault, address reward, bytes calldata metadata) external;
 
   /**
    * @notice Claims all of the rewards for the specified vault and reward, sending them to the receiver.
+   * @param eolVault The EOL Vault address
    * @param receiver The receiver address
    * @param reward The reward token address
    * @param metadata The encoded metadata
    */
-  function claim(address receiver, address reward, bytes calldata metadata) external;
+  function claim(address eolVault, address receiver, address reward, bytes calldata metadata) external;
 
   /**
    * @notice Claims a specific amount of rewards for the specified vault and reward.
-   * @dev param `amount` will be ignored.
+   * @param eolVault The EOL Vault address
    * @param reward The reward token address
    * @param amount The reward amount
    * @param metadata The encoded metadata
    */
-  function claim(address reward, uint256 amount, bytes calldata metadata) external;
+  function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external;
 
   /**
    * @notice Claims a specific amount of rewards for the specified vault and reward, sending them to the receiver.
-   * @dev param `amount` will be ignored.
+   * @param eolVault The EOL Vault address
    * @param receiver The receiver address
    * @param reward The reward token address
    * @param amount The reward amount
    * @param metadata The encoded metadata
    */
-  function claim(address receiver, address reward, uint256 amount, bytes calldata metadata) external;
+  function claim(address eolVault, address receiver, address reward, uint256 amount, bytes calldata metadata) external;
 }

@@ -47,12 +47,12 @@ contract MerkleRewardDistributor is
   /**
    * @inheritdoc IMerkleRewardDistributor
    */
-  function encodeMetadata(address eolVault, uint256 stage_, uint256 amount, bytes32[] calldata proof)
+  function encodeMetadata(uint256 stage_, uint256 amount, bytes32[] calldata proof)
     external
     pure
     returns (bytes memory)
   {
-    return RewardMerkleMetadata({ eolVault: eolVault, stage: stage_, amount: amount, proof: proof }).encode();
+    return RewardMerkleMetadata({ stage: stage_, amount: amount, proof: proof }).encode();
   }
 
   /**
@@ -69,15 +69,23 @@ contract MerkleRewardDistributor is
   /**
    * @inheritdoc IRewardDistributor
    */
-  function claimable(address account, address reward, bytes calldata metadata) external view returns (bool) {
-    return _claimable(account, reward, metadata.decodeRewardMerkleMetadata());
+  function claimable(address eolVault, address account, address reward, bytes calldata metadata)
+    external
+    view
+    returns (bool)
+  {
+    return _claimable(eolVault, account, reward, metadata.decodeRewardMerkleMetadata());
   }
 
   /**
    * @inheritdoc IRewardDistributor
    */
-  function claimableAmount(address account, address reward, bytes calldata metadata) external view returns (uint256) {
-    return _claimableAmount(account, reward, metadata.decodeRewardMerkleMetadata());
+  function claimableAmount(address eolVault, address account, address reward, bytes calldata metadata)
+    external
+    view
+    returns (uint256)
+  {
+    return _claimableAmount(eolVault, account, reward, metadata.decodeRewardMerkleMetadata());
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
@@ -85,35 +93,35 @@ contract MerkleRewardDistributor is
   /**
    * @inheritdoc IRewardDistributor
    */
-  function claim(address reward, bytes calldata metadata) external {
-    _claim(_msgSender(), reward, metadata.decodeRewardMerkleMetadata());
+  function claim(address eolVault, address reward, bytes calldata metadata) external {
+    _claim(eolVault, _msgSender(), reward, metadata.decodeRewardMerkleMetadata());
   }
 
   /**
    * @inheritdoc IRewardDistributor
    */
-  function claim(address receiver, address reward, bytes calldata metadata) external {
-    _claim(receiver, reward, metadata.decodeRewardMerkleMetadata());
+  function claim(address eolVault, address receiver, address reward, bytes calldata metadata) external {
+    _claim(eolVault, receiver, reward, metadata.decodeRewardMerkleMetadata());
   }
 
   /**
    * @inheritdoc IRewardDistributor
    */
-  function claim(address reward, uint256 amount, bytes calldata metadata) external {
+  function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
     RewardMerkleMetadata memory metadata_ = metadata.decodeRewardMerkleMetadata();
     require(metadata_.amount == amount, IMerkleRewardDistributor__InvalidAmount());
 
-    _claim(_msgSender(), reward, metadata_);
+    _claim(eolVault, _msgSender(), reward, metadata_);
   }
 
   /**
    * @inheritdoc IRewardDistributor
    */
-  function claim(address receiver, address reward, uint256 amount, bytes calldata metadata) external {
+  function claim(address eolVault, address receiver, address reward, uint256 amount, bytes calldata metadata) external {
     RewardMerkleMetadata memory metadata_ = metadata.decodeRewardMerkleMetadata();
     require(metadata_.amount == amount, IMerkleRewardDistributor__InvalidAmount());
 
-    _claim(receiver, reward, metadata_);
+    _claim(eolVault, receiver, reward, metadata_);
   }
 
   // ============================ NOTE: OVERRIDE FUNCTIONS ============================ //
@@ -140,35 +148,35 @@ contract MerkleRewardDistributor is
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _claimable(address account, address reward, RewardMerkleMetadata memory metadata)
+  function _claimable(address eolVault, address account, address reward, RewardMerkleMetadata memory metadata)
     internal
     view
     returns (bool)
   {
     StorageV1 storage $ = _getStorageV1();
-    Stage storage stage = _stage($, metadata.eolVault, reward, metadata.stage);
+    Stage storage stage = _stage($, eolVault, reward, metadata.stage);
 
-    bytes32 leaf = _leaf(metadata.eolVault, reward, metadata.stage, account, metadata.amount);
+    bytes32 leaf = _leaf(eolVault, reward, metadata.stage, account, metadata.amount);
 
     return !stage.claimed[account] && metadata.proof.verify(stage.root, leaf);
   }
 
-  function _claimableAmount(address account, address reward, RewardMerkleMetadata memory metadata)
+  function _claimableAmount(address eolVault, address account, address reward, RewardMerkleMetadata memory metadata)
     internal
     view
     returns (uint256)
   {
-    return _claimable(account, reward, metadata) ? metadata.amount : 0;
+    return _claimable(eolVault, account, reward, metadata) ? metadata.amount : 0;
   }
 
-  function _claim(address account, address reward, RewardMerkleMetadata memory metadata) internal {
+  function _claim(address eolVault, address account, address reward, RewardMerkleMetadata memory metadata) internal {
     StorageV1 storage $ = _getStorageV1();
-    Stage storage stage = _stage($, metadata.eolVault, reward, metadata.stage);
+    Stage storage stage = _stage($, eolVault, reward, metadata.stage);
 
     require(!stage.claimed[account], IMerkleRewardDistributor__AlreadyClaimed());
     stage.claimed[account] = true;
 
-    bytes32 leaf = _leaf(metadata.eolVault, reward, metadata.stage, account, metadata.amount);
+    bytes32 leaf = _leaf(eolVault, reward, metadata.stage, account, metadata.amount);
     require(metadata.proof.verify(stage.root, leaf), IMerkleRewardDistributor__InvalidProof());
 
     IERC20(reward).safeTransfer(account, metadata.amount);

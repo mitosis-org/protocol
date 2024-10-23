@@ -30,8 +30,7 @@ contract LibDistributorRewardMetadataTest is Toolkit {
   }
 
   function test_encode_merkle() public {
-    RewardMerkleMetadata memory metadata =
-      RewardMerkleMetadata({ eolVault: makeAddr('eolVault'), stage: 1, amount: 10 ether, proof: new bytes32[](3) });
+    RewardMerkleMetadata memory metadata = RewardMerkleMetadata({ stage: 1, amount: 10 ether, proof: new bytes32[](3) });
     metadata.proof[0] = keccak256(abi.encode(1));
     metadata.proof[1] = keccak256(abi.encode(2));
     metadata.proof[2] = keccak256(abi.encode(3));
@@ -39,7 +38,6 @@ contract LibDistributorRewardMetadataTest is Toolkit {
     bytes memory enc = metadata.encode();
     RewardMerkleMetadata memory decoded = _dec.decodeRewardMerkleMetadata(enc);
 
-    assertEq(decoded.eolVault, metadata.eolVault);
     assertEq(decoded.stage, metadata.stage);
     assertEq(decoded.amount, metadata.amount);
     assertEq(decoded.proof.length, metadata.proof.length);
@@ -47,8 +45,7 @@ contract LibDistributorRewardMetadataTest is Toolkit {
   }
 
   function test_encode_merkleInvalidLength() public {
-    RewardMerkleMetadata memory metadata =
-      RewardMerkleMetadata({ eolVault: makeAddr('eolVault'), stage: 1, amount: 10 ether, proof: new bytes32[](3) });
+    RewardMerkleMetadata memory metadata = RewardMerkleMetadata({ stage: 1, amount: 10 ether, proof: new bytes32[](3) });
     metadata.proof[0] = keccak256(abi.encode(1));
     metadata.proof[1] = keccak256(abi.encode(2));
     metadata.proof[2] = keccak256(abi.encode(3));
@@ -60,17 +57,16 @@ contract LibDistributorRewardMetadataTest is Toolkit {
   }
 
   function test_encode_twab() public {
-    RewardTWABMetadata memory metadata = RewardTWABMetadata({ twabCriteria: makeAddr('twabCriteria'), rewardedAt: 1 });
+    RewardTWABMetadata memory metadata = RewardTWABMetadata({ batchTimestamp: 1 });
 
     bytes memory enc = metadata.encode();
     RewardTWABMetadata memory decoded = _dec.decodeRewardTWABMetadata(enc);
 
-    assertEq(decoded.twabCriteria, metadata.twabCriteria);
-    assertEq(decoded.rewardedAt, metadata.rewardedAt);
+    assertEq(decoded.batchTimestamp, metadata.batchTimestamp);
   }
 
   function test_encode_twabInvalidLength() public {
-    RewardTWABMetadata memory metadata = RewardTWABMetadata({ twabCriteria: makeAddr('twabCriteria'), rewardedAt: 1 });
+    RewardTWABMetadata memory metadata = RewardTWABMetadata({ batchTimestamp: 1 });
 
     bytes memory enc = metadata.encode();
 

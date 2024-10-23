@@ -43,14 +43,13 @@ interface IMerkleRewardDistributor is IRewardDistributor, IMerkleRewardDistribut
   error IMerkleRewardDistributor__InvalidAmount();
 
   /**
-   * @notice Encodes metadata for the specified vault, stage, amount, and proof.
-   * @param eolVault The EOLVault address
+   * @notice Encodes metadata for the stage, amount, and proof.
    * @param stage_ The stage number
    * @param amount The reward amount
    * @param proof The Merkle proof
    * @return metadata The encoded metadata
    */
-  function encodeMetadata(address eolVault, uint256 stage_, uint256 amount, bytes32[] calldata proof)
+  function encodeMetadata(uint256 stage_, uint256 amount, bytes32[] calldata proof)
     external
     pure
     returns (bytes memory metadata);
