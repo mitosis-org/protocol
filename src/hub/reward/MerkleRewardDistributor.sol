@@ -94,34 +94,31 @@ contract MerkleRewardDistributor is
    * @inheritdoc IRewardDistributor
    */
   function claim(address eolVault, address reward, bytes calldata metadata) external {
-    _claim(eolVault, _msgSender(), reward, metadata.decodeRewardMerkleMetadata());
+    claim(eolVault, _msgSender(), reward, metadata);
   }
 
   /**
    * @inheritdoc IRewardDistributor
    */
-  function claim(address eolVault, address receiver, address reward, bytes calldata metadata) external {
-    _claim(eolVault, receiver, reward, metadata.decodeRewardMerkleMetadata());
+  function claim(address eolVault, address receiver, address reward, bytes calldata metadata) public {
+    _claim(eolVault, _msgSender(), receiver, reward, metadata.decodeRewardMerkleMetadata());
   }
 
   /**
    * @inheritdoc IRewardDistributor
    */
   function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
-    RewardMerkleMetadata memory metadata_ = metadata.decodeRewardMerkleMetadata();
-    require(metadata_.amount == amount, IMerkleRewardDistributor__InvalidAmount());
-
-    _claim(eolVault, _msgSender(), reward, metadata_);
+    claim(eolVault, _msgSender(), reward, amount, metadata);
   }
 
   /**
    * @inheritdoc IRewardDistributor
    */
-  function claim(address eolVault, address receiver, address reward, uint256 amount, bytes calldata metadata) external {
+  function claim(address eolVault, address receiver, address reward, uint256 amount, bytes calldata metadata) public {
     RewardMerkleMetadata memory metadata_ = metadata.decodeRewardMerkleMetadata();
     require(metadata_.amount == amount, IMerkleRewardDistributor__InvalidAmount());
 
-    _claim(eolVault, receiver, reward, metadata_);
+    _claim(eolVault, _msgSender(), receiver, reward, metadata_);
   }
 
   // ============================ NOTE: OVERRIDE FUNCTIONS ============================ //
@@ -140,10 +137,7 @@ contract MerkleRewardDistributor is
     stage.amount = amount;
     stage.root = root;
 
-    // TODO(eddy): find out what is the proper values to input
-    // eligibleRewardAsset = eolVault
-    // batchTimestamp = nextStage
-    emit RewardHandled(eolVault, reward, amount, stageNum, distributionType(), metadata);
+    emit RewardHandled(eolVault, reward, amount, distributionType(), metadata, bytes(''));
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
@@ -169,7 +163,13 @@ contract MerkleRewardDistributor is
     return _claimable(eolVault, account, reward, metadata) ? metadata.amount : 0;
   }
 
-  function _claim(address eolVault, address account, address reward, RewardMerkleMetadata memory metadata) internal {
+  function _claim(
+    address eolVault,
+    address account,
+    address receiver,
+    address reward,
+    RewardMerkleMetadata memory metadata
+  ) internal {
     StorageV1 storage $ = _getStorageV1();
     Stage storage stage = _stage($, eolVault, reward, metadata.stage);
 
@@ -179,7 +179,8 @@ contract MerkleRewardDistributor is
     bytes32 leaf = _leaf(eolVault, reward, metadata.stage, account, metadata.amount);
     require(metadata.proof.verify(stage.root, leaf), IMerkleRewardDistributor__InvalidProof());
 
-    IERC20(reward).safeTransfer(account, metadata.amount);
+    IERC20(reward).safeTransfer(receiver, metadata.amount);
+    emit Claimed(eolVault, account, receiver, reward, metadata.amount);
   }
 
   function _leaf(address eolVault, address reward, uint256 stage_, address account, uint256 amount)

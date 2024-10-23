@@ -14,8 +14,8 @@ interface IRewardHandler {
 
   enum DistributionType {
     Unspecified,
-    Merkle,
-    TWAB
+    TWAB,
+    Merkle
   }
 
   /**

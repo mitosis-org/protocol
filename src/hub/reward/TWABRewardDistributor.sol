@@ -154,7 +154,7 @@ contract TWABRewardDistributor is
 
     assetRewards.batchRewards[batchTimestamp] += amount;
 
-    emit RewardHandled(eolVault, reward, amount, batchTimestamp, distributionType(), metadata);
+    emit RewardHandled(eolVault, reward, amount, distributionType(), metadata, abi.encode(batchTimestamp));
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
@@ -192,7 +192,7 @@ contract TWABRewardDistributor is
     if (claimableReward > 0) {
       _updateReceipt(receipt, userReward, claimableReward);
       IERC20(reward).transfer(receiver, claimableReward);
-      emit Claimed(account, receiver, eolVault, reward, claimableReward);
+      emit Claimed(eolVault, account, receiver, reward, claimableReward);
     }
   }
 

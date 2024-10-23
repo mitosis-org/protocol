@@ -9,20 +9,16 @@ import { IRewardHandler } from './IRewardHandler.sol';
  */
 interface IRewardDistributor is IRewardHandler {
   event RewardHandled(
-    address indexed eligibleRewardAsset,
+    address indexed eolVault,
     address indexed reward,
     uint256 indexed amount,
-    uint256 batchTimestamp,
     DistributionType distributionType,
-    bytes metadata
+    bytes metadata,
+    bytes extraData
   );
 
   event Claimed(
-    address indexed account,
-    address indexed receiver,
-    address indexed eligibleRewardAsset,
-    address reward,
-    uint256 amount
+    address indexed eolVault, address indexed account, address indexed receiver, address reward, uint256 amount
   );
 
   /**
