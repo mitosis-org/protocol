@@ -65,6 +65,18 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
   function getLastFinalizedBatchTimestamp(address eolVault) external view returns (uint48);
 
   /**
+   * @notice Gets the total claimable amount for all batch timestamps until the specified timestamp.
+   * @param eolVault The address of the EOL Vault contract.
+   * @param account The address of the account.
+   * @param reward The address of the reward token.
+   * @param until The timestamp until which to check claimable amount.
+   */
+  function claimableAmountUntil(address eolVault, address account, address reward, uint48 until)
+    external
+    view
+    returns (uint256);
+
+  /**
    * @notice Claims rewards for all batch timestamps until the specified timestamp.
    * @param eolVault The address of the EOL Vault contract.
    * @param receiver The address of the receiver.

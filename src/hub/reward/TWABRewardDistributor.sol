@@ -72,14 +72,30 @@ contract TWABRewardDistributor is
     RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
     uint48 batchTimestamp = twabMetadata.batchTimestamp;
 
+    return _claimableAmount(eolVault, account, reward, batchTimestamp);
+  }
+
+  function claimableAmountUntil(address eolVault, address account, address reward, uint48 until)
+    external
+    view
+    returns (uint256)
+  {
     StorageV1 storage $ = _getStorageV1();
-    Receipt storage receipt = _receipt($, account, eolVault, reward, batchTimestamp);
+    AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
 
-    if (receipt.claimed) return 0;
+    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
+    until = until > lastFinalizedBatchTimestamp ? lastFinalizedBatchTimestamp : until;
 
-    uint256 userReward = _calculateUserReward($, eolVault, account, reward, batchTimestamp);
+    uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[account];
+    if (batchTimestamp >= until) return 0;
 
-    return userReward - receipt.claimedAmount;
+    uint256 totalClaimableAmount = 0;
+    do {
+      totalClaimableAmount += _claimableAmount(eolVault, account, reward, batchTimestamp);
+      batchTimestamp = batchTimestamp + batchPeriod;
+    } while (batchTimestamp < until);
+
+    return totalClaimableAmount;
   }
 
   function getFirstBatchTimestamp(address eolVault, address reward) external view returns (uint48) {
@@ -101,6 +117,24 @@ contract TWABRewardDistributor is
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
 
+  function claim(address eolVault, address reward, bytes calldata metadata) external {
+    claim(eolVault, _msgSender(), reward, metadata);
+  }
+
+  function claim(address eolVault, address receiver, address reward, bytes calldata metadata) public {
+    RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
+    _claimAllReward(eolVault, _msgSender(), receiver, reward, twabMetadata.batchTimestamp);
+  }
+
+  function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
+    claim(eolVault, _msgSender(), reward, amount, metadata);
+  }
+
+  function claim(address eolVault, address receiver, address reward, uint256 amount, bytes calldata metadata) public {
+    RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
+    _claimPartialReward(eolVault, _msgSender(), receiver, reward, twabMetadata.batchTimestamp, amount);
+  }
+
   function claimUntil(address eolVault, address receiver, address reward, uint48 until)
     external
     returns (uint48 lastClaimedBatchTimestamp)
@@ -120,24 +154,6 @@ contract TWABRewardDistributor is
 
     assetRewards.lastClaimedBatchTimestamps[_msgSender()] = batchTimestamp - batchPeriod;
     return assetRewards.lastClaimedBatchTimestamps[_msgSender()];
-  }
-
-  function claim(address eolVault, address reward, bytes calldata metadata) external {
-    claim(eolVault, _msgSender(), reward, metadata);
-  }
-
-  function claim(address eolVault, address receiver, address reward, bytes calldata metadata) public {
-    RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-    _claimAllReward(eolVault, _msgSender(), receiver, reward, twabMetadata.batchTimestamp);
-  }
-
-  function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
-    claim(eolVault, _msgSender(), reward, amount, metadata);
-  }
-
-  function claim(address eolVault, address receiver, address reward, uint256 amount, bytes calldata metadata) public {
-    RewardTWABMetadata memory twabMetadata = metadata.decodeRewardTWABMetadata();
-    _claimPartialReward(eolVault, _msgSender(), receiver, reward, twabMetadata.batchTimestamp, amount);
   }
 
   /**
@@ -195,6 +211,23 @@ contract TWABRewardDistributor is
 
   function _lastFinalizedBatchTimestamp(address eolVault) internal view returns (uint48) {
     return _roundUpToMidnight(IERC6372(eolVault).clock()) - batchPeriod;
+  }
+
+  function _claimableAmount(address eolVault, address account, address reward, uint48 batchTimestamp)
+    public
+    view
+    returns (uint256)
+  {
+    StorageV1 storage $ = _getStorageV1();
+
+    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
+    if (batchTimestamp > lastFinalizedBatchTimestamp) return 0;
+
+    Receipt storage receipt = _receipt($, account, eolVault, reward, batchTimestamp);
+    if (receipt.claimed) return 0;
+
+    uint256 userReward = _calculateUserReward($, eolVault, account, reward, batchTimestamp);
+    return userReward - receipt.claimedAmount;
   }
 
   function _claimAllReward(address eolVault, address account, address receiver, address reward, uint48 batchTimestamp)
