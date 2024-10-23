@@ -60,7 +60,6 @@ contract EOLVaultCapped is EOLVault {
 
   function maxDeposit(address) public view override returns (uint256) {
     uint256 totalShares = totalSupply();
-
     uint256 cap = _getEOLVaultCappedStorage().cap;
 
     if (totalShares >= cap) {
@@ -72,7 +71,6 @@ contract EOLVaultCapped is EOLVault {
 
   function maxMint(address) public view override returns (uint256) {
     uint256 totalShares = totalSupply();
-
     uint256 cap = _getEOLVaultCappedStorage().cap;
 
     if (totalShares >= cap) {
