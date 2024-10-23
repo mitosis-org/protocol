@@ -144,9 +144,15 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param to The address receiving the miAsset
    * @param eolVault The address of the EOLVault opted into
    * @param amount The amount deposited
+   * @param optInAmount The amount opted into the EOLVault
    */
   event DepositedWithOptIn(
-    uint256 indexed chainId, address indexed hubAsset, address indexed to, address eolVault, uint256 amount
+    uint256 indexed chainId,
+    address indexed hubAsset,
+    address indexed to,
+    address eolVault,
+    uint256 amount,
+    uint256 optInAmount
   );
 
   /**

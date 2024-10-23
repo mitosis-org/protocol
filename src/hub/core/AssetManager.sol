@@ -54,16 +54,18 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
 
     _mint($, chainId, hubAsset, address(this), amount);
 
-    IHubAsset(hubAsset).approve(eolVault, amount);
-    IEOLVault(eolVault).deposit(amount, to);
+    uint256 maxAssets = IEOLVault(eolVault).maxDeposit(to);
+    uint256 optInAmount = amount < maxAssets ? amount : maxAssets;
+
+    IHubAsset(hubAsset).approve(eolVault, optInAmount);
+    IEOLVault(eolVault).deposit(optInAmount, to);
 
     // transfer remaining hub assets to `to` because there could be remaining hub assets due to the cap of EOL Vault.
-    uint256 remainingAssets = IHubAsset(hubAsset).balanceOf(address(this));
-    if (remainingAssets > 0) {
-      IHubAsset(hubAsset).transfer(to, remainingAssets);
+    if (optInAmount < amount) {
+      IHubAsset(hubAsset).transfer(to, amount - optInAmount);
     }
 
-    emit DepositedWithOptIn(chainId, hubAsset, to, eolVault, amount);
+    emit DepositedWithOptIn(chainId, hubAsset, to, eolVault, amount, optInAmount);
   }
 
   function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external {

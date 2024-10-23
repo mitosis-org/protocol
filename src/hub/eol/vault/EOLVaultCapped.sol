@@ -23,8 +23,6 @@ contract EOLVaultCapped is EOLVault {
 
   event CapSet(address indexed setter, uint256 prevCap, uint256 newCap);
 
-  error CapFulfilled();
-
   // =========================== NOTE: STORAGE DEFINITIONS =========================== //
 
   string private constant _NAMESPACE = 'mitosis.storage.EOLVaultCapped';
@@ -60,14 +58,28 @@ contract EOLVaultCapped is EOLVault {
     return _getEOLVaultCappedStorage().cap;
   }
 
-  function previewDeposit(uint256 assets) public view override returns (uint256) {
-    uint256 shares = super.previewDeposit(assets);
-    return _simulateMint(shares); // in shares
+  function maxDeposit(address) public view override returns (uint256) {
+    uint256 totalShares = totalSupply();
+
+    uint256 cap = _getEOLVaultCappedStorage().cap;
+
+    if (totalShares >= cap) {
+      return 0;
+    }
+
+    return convertToAssets(cap - totalShares);
   }
 
-  function previewMint(uint256 shares) public view override returns (uint256) {
-    uint256 simulatedShares = _simulateMint(shares);
-    return super.previewMint(simulatedShares); // in assets
+  function maxMint(address) public view override returns (uint256) {
+    uint256 totalShares = totalSupply();
+
+    uint256 cap = _getEOLVaultCappedStorage().cap;
+
+    if (totalShares >= cap) {
+      return 0;
+    }
+
+    return cap - totalShares;
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
@@ -81,27 +93,7 @@ contract EOLVaultCapped is EOLVault {
     _setCap(capped, newCap);
   }
 
-  function deposit(uint256 assets, address receiver) public override returns (uint256) {
-    uint256 shares = previewDeposit(assets);
-    return super.deposit(shares, receiver);
-  }
-
-  function mint(uint256 shares, address receiver) public override returns (uint256) {
-    uint256 simulatedShares = _simulateMint(shares);
-    return super.mint(simulatedShares, receiver);
-  }
-
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
-
-  function _simulateMint(uint256 shares) internal view returns (uint256) {
-    uint256 totalShares = totalSupply();
-
-    uint256 cap = _getEOLVaultCappedStorage().cap;
-
-    require(totalShares > cap, CapFulfilled());
-
-    return Math.min(shares, cap - totalShares);
-  }
 
   function _setCap(EOLVaultCappedStorage storage $, uint256 newCap) internal {
     uint256 prevCap = $.cap;
