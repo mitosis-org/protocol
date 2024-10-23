@@ -128,6 +128,9 @@ contract TWABRewardDistributor is
     AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
     uint48[] storage batchTimestamps = assetRewards.batchTimestamps;
 
+    // NOTE: We round `batchTimestamp` up to midnight because it's
+    // convenient for future calls. It ensures that the batch reward for
+    // all `eolVault` has the same `batchTimestamp` range.
     uint48 batchTimestamp = _roundUpToMidnight(IERC6372(eolVault).clock());
 
     if (batchTimestamps.length == 0) {
