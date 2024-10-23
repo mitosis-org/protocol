@@ -86,7 +86,7 @@ contract TWABRewardDistributor is
     uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
     until = until > lastFinalizedBatchTimestamp ? lastFinalizedBatchTimestamp + 1 : until;
 
-    uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[account];
+    uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[account] + batchPeriod;
     if (batchTimestamp >= until) return 0;
 
     uint256 totalClaimableAmount = 0;
@@ -144,7 +144,7 @@ contract TWABRewardDistributor is
     uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
     until = until > lastFinalizedBatchTimestamp ? lastFinalizedBatchTimestamp + 1 : until;
 
-    uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[_msgSender()];
+    uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[_msgSender()] + batchPeriod;
     if (batchTimestamp >= until) return batchTimestamp;
 
     do {
