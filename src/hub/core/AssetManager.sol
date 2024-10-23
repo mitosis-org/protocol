@@ -58,7 +58,10 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     IEOLVault(eolVault).deposit(amount, to);
 
     // transfer remaining hub assets to `to` because there could be remaining hub assets due to the cap of EOL Vault.
-    IHubAsset(hubAsset).transfer(to, IHubAsset(hubAsset).balanceOf(address(this)));
+    uint256 remainingAssets = IHubAsset(hubAsset).balanceOf(address(this));
+    if (remainingAssets > 0) {
+      IHubAsset(hubAsset).transfer(to, remainingAssets);
+    }
 
     emit DepositedWithOptIn(chainId, hubAsset, to, eolVault, amount);
   }
