@@ -85,7 +85,9 @@ contract AssetManagerTest is Toolkit {
           new TransparentUpgradeableProxy(
             address(tokenImpl),
             address(_proxyAdmin),
-            abi.encodeCall(_token.initialize, (owner, address(_assetManager), address(_delegationRegistry), 'Token', 'TKN'))
+            abi.encodeCall(
+              _token.initialize, (owner, address(_assetManager), address(_delegationRegistry), 'Token', 'TKN')
+            )
           )
         )
       )
