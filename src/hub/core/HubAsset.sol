@@ -1,37 +1,48 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+
 import { StdError } from '../../lib/StdError.sol';
 import { ERC20TWABSnapshots } from '../../twab/ERC20TWABSnapshots.sol';
+import { HubAssetStorageV1 } from './HubAssetStorageV1.sol';
 
-contract HubAsset is ERC20TWABSnapshots {
+contract HubAsset is Ownable2StepUpgradeable, ERC20TWABSnapshots, HubAssetStorageV1 {
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(address delegationRegistry_, string memory name_, string memory symbol_) external initializer {
+  function initialize(
+    address owner_,
+    address supplyManager_,
+    address delegationRegistry_,
+    string memory name_,
+    string memory symbol_
+  ) external initializer {
+    __Ownable2Step_init();
+    _transferOwnership(owner_);
     __ERC20TWABSnapshots_init(delegationRegistry_, name_, symbol_);
+    _getStorageV1().supplyManager = supplyManager_;
   }
 
-  modifier onlyHubAssetMintable() {
-    // TODO(ray): When introduce RoleManagerContract, fill it.
-    //
-    // HubAssetMintable address: AssetManager
+  modifier onlySupplyManager() {
+    require(_msgSender() == _getStorageV1().supplyManager, StdError.Unauthorized());
     _;
   }
 
-  modifier onlyHubAssetBurnable() {
-    // TODO(ray): When introduce RoleManagerContract, fill it.
-    //
-    // HubAssetBurnable address: AssetManager
-    _;
+  function supplyManager() external view returns (address) {
+    return _getStorageV1().supplyManager;
   }
 
-  function mint(address account, uint256 value) external onlyHubAssetMintable {
+  function mint(address account, uint256 value) external onlySupplyManager {
     _mint(account, value);
   }
 
-  function burn(address account, uint256 value) external onlyHubAssetBurnable {
+  function burn(address account, uint256 value) external onlySupplyManager {
     _burn(account, value);
+  }
+
+  function setSupplyManager(address supplyManager_) external onlyOwner {
+    _getStorageV1().supplyManager = supplyManager_;
   }
 }

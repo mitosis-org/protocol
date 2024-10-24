@@ -85,7 +85,7 @@ contract AssetManagerTest is Toolkit {
           new TransparentUpgradeableProxy(
             address(tokenImpl),
             address(_proxyAdmin),
-            abi.encodeCall(_token.initialize, (address(_delegationRegistry), 'Token', 'TKN'))
+            abi.encodeCall(_token.initialize, (owner, address(_assetManager), address(_delegationRegistry), 'Token', 'TKN'))
           )
         )
       )
@@ -276,6 +276,7 @@ contract AssetManagerTest is Toolkit {
     _assetManager.setStrategist(address(_eolVault), strategist);
     vm.stopPrank();
 
+    vm.prank(address(_assetManager));
     _token.mint(user1, 100 ether);
 
     vm.startPrank(user1);
@@ -301,6 +302,7 @@ contract AssetManagerTest is Toolkit {
     _assetManager.setStrategist(address(_eolVault), strategist);
     vm.stopPrank();
 
+    vm.prank(address(_assetManager));
     _token.mint(user1, 100 ether);
 
     vm.startPrank(user1);
@@ -323,6 +325,7 @@ contract AssetManagerTest is Toolkit {
     _assetManager.setStrategist(address(_eolVault), strategist);
     vm.stopPrank();
 
+    vm.prank(address(_assetManager));
     _token.mint(user1, 100 ether);
 
     vm.startPrank(user1);
@@ -349,6 +352,7 @@ contract AssetManagerTest is Toolkit {
     _assetManager.setStrategist(address(_eolVault), strategist);
     vm.stopPrank();
 
+    vm.prank(address(_assetManager));
     _token.mint(user1, 100 ether);
 
     vm.startPrank(user1);
