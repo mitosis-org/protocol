@@ -44,7 +44,9 @@ contract OptOutQueueTest is Test {
     _hubAsset = HubAsset(
       _proxy(
         address(new HubAsset()),
-        abi.encodeCall(HubAsset.initialize, (address(_delegationRegistry), 'Test', 'TT')) //
+        abi.encodeCall(
+          HubAsset.initialize, (_owner, address(_assetManager), address(_delegationRegistry), 'Test', 'TT')
+        ) //
       )
     );
     _eolVault = EOLVaultBasic(

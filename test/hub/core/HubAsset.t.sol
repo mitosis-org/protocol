@@ -34,7 +34,7 @@ contract HubAssetTest is Test {
           new TransparentUpgradeableProxy(
             address(hubAssetImpl),
             address(_proxyAdmin),
-            abi.encodeCall(hubAsset.initialize, (address(_delegationRegistry), 'Token', 'TKN'))
+            abi.encodeCall(hubAsset.initialize, (owner, address(this), address(_delegationRegistry), 'Token', 'TKN'))
           )
         )
       )
