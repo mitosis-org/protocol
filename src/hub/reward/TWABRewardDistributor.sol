@@ -9,10 +9,10 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 
 import { ITWABRewardDistributor } from '../../interfaces/hub/reward/ITWABRewardDistributor.sol';
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
+import { StdError } from '../../lib/StdError.sol';
 import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
 import { BaseHandler } from './BaseHandler.sol';
 import { TWABRewardDistributorStorageV1 } from './TWABRewardDistributorStorageV1.sol';
-import { StdError } from '../../lib/StdError.sol';
 
 contract TWABRewardDistributor is
   BaseHandler,
