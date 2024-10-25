@@ -15,7 +15,8 @@ import { MockERC20TWABSnapshots } from '../../mock/MockERC20TWABSnapshots.t.sol'
 
 contract TWABRewardDistributortTest is Test {
   TWABRewardDistributor twabRewardDistributor;
-  MockERC20TWABSnapshots token;
+  MockERC20TWABSnapshots eolVault;
+  MockERC20TWABSnapshots reward;
   MockDelegationRegistry delegationRegistry;
 
   ProxyAdmin internal _proxyAdmin;
@@ -46,56 +47,55 @@ contract TWABRewardDistributortTest is Test {
     twabRewardDistributor.grantRole(twabRewardDistributor.DISPATCHER_ROLE(), owner);
     vm.stopPrank();
 
-    token = new MockERC20TWABSnapshots();
-    token.initialize(address(delegationRegistry), 'Token', 'TKN');
+    eolVault = new MockERC20TWABSnapshots();
+    eolVault.initialize(address(delegationRegistry), 'EOL Vault', 'miAsset');
+
+    reward = new MockERC20TWABSnapshots();
+    reward.initialize(address(delegationRegistry), 'Reward Token', 'RTKN');
   }
 
   function test_simple_claim() public {
-    address eolVault = makeAddr('eolVault');
-
     vm.warp(100);
 
     vm.startPrank(owner);
 
-    uint256 ownerAmount = 10 ether;
+    uint256 ownerAmount = 20 ether;
     uint256 rewardAmount = 10 ether;
     uint256 userAmount = 80 ether;
 
-    token.mint(owner, ownerAmount);
-    token.mint(owner, rewardAmount);
-    token.mint(address(1), userAmount);
-    token.approve(address(twabRewardDistributor), ownerAmount);
+    eolVault.mint(owner, ownerAmount);
+    eolVault.mint(address(1), userAmount);
 
     vm.warp(200);
 
-    bytes memory metadata = twabRewardDistributor.encodeMetadata(address(token), 200);
-
-    twabRewardDistributor.handleReward(eolVault, address(token), rewardAmount, metadata);
+    reward.mint(owner, rewardAmount);
+    reward.approve(address(twabRewardDistributor), rewardAmount);
+    twabRewardDistributor.handleReward(address(eolVault), address(reward), rewardAmount, bytes(''));
 
     // TODO(ray): add midnight roundup examples
-    assertEq(twabRewardDistributor.getFirstBatchTimestamp(address(token), address(token)), 1 days);
+    assertEq(twabRewardDistributor.getFirstBatchTimestamp(address(eolVault), address(reward)), 1 days);
 
     vm.warp(200 + 1 days);
 
-    metadata = twabRewardDistributor.encodeMetadata(address(token), 1 days);
+    bytes memory metadata = twabRewardDistributor.encodeMetadata(1 days);
 
     uint256 prevBalance;
     uint256 expectReward;
 
-    prevBalance = token.balanceOf(owner);
-    expectReward = 10 ether / 100 * 10;
-    twabRewardDistributor.claim(address(token), metadata);
-    assertTrue(token.balanceOf(owner) == prevBalance + expectReward);
+    prevBalance = reward.balanceOf(owner);
+    expectReward = 10 ether / 100 * 20;
+    twabRewardDistributor.claim(address(eolVault), address(reward), metadata);
+    assertTrue(reward.balanceOf(owner) == prevBalance + expectReward);
 
     vm.stopPrank();
 
     vm.startPrank(address(1));
 
-    prevBalance = token.balanceOf(address(1));
+    prevBalance = reward.balanceOf(address(1));
     expectReward = 10 ether / 100 * 80;
 
-    twabRewardDistributor.claim(address(token), metadata);
-    assertTrue(token.balanceOf(address(1)) == prevBalance + expectReward);
+    twabRewardDistributor.claim(address(eolVault), address(reward), metadata);
+    assertTrue(reward.balanceOf(address(1)) == prevBalance + expectReward);
 
     vm.stopPrank();
   }

@@ -37,20 +37,15 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
   error ITWABRewardDistributor__InsufficientReward();
 
   /**
-   * @notice Error thrown when an invalid TWAB criteria is provided.
-   */
-  error ITWABRewardDistributor__InvalidTWABCriteria();
-
-  /**
    * @notice Error thrown when an invalid rewarded-at timestamp is provided.
    */
   error ITWABRewardDistributor__InvalidRewardedAt();
 
   /**
-   * @notice Gets the first batch timestamp for a given TWAB criteria and asset.
-   * @param twabCriteria The address of the TWAB criteria contract.
-   * @param asset The address of the asset.
+   * @notice Gets the first batch timestamp for a given EOL Vault and reward.
+   * @param eolVault The address of the EOL Vault contract.
+   * @param reward The address of the reward token.
    * @return The first batch timestamp as a uint48.
    */
-  function getFirstBatchTimestamp(address twabCriteria, address asset) external view returns (uint48);
+  function getFirstBatchTimestamp(address eolVault, address reward) external view returns (uint48);
 }
