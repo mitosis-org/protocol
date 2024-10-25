@@ -11,7 +11,6 @@ import { IMerkleRewardDistributor } from '../../interfaces/hub/reward/IMerkleRew
 import { IRewardDistributor } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { BaseHandler } from './BaseHandler.sol';
-import { LibDistributorRewardMetadata, RewardMerkleMetadata } from './LibDistributorRewardMetadata.sol';
 import { MerkleRewardDistributorStorageV1 } from './MerkleRewardDistributorStorageV1.sol';
 
 contract MerkleRewardDistributor is
@@ -22,8 +21,6 @@ contract MerkleRewardDistributor is
 {
   using SafeERC20 for IERC20;
   using MerkleProof for bytes32[];
-  using LibDistributorRewardMetadata for bytes;
-  using LibDistributorRewardMetadata for RewardMerkleMetadata;
 
   /// @notice Role for dispatching rewards (keccak256("DISPATCHER_ROLE"))
   bytes32 public constant DISPATCHER_ROLE = 0xfbd38eecf51668fdbc772b204dc63dd28c3a3cf32e3025f52a80aa807359f50c;
@@ -47,17 +44,6 @@ contract MerkleRewardDistributor is
   /**
    * @inheritdoc IMerkleRewardDistributor
    */
-  function encodeMetadata(uint256 stage_, uint256 amount, bytes32[] calldata proof)
-    external
-    pure
-    returns (bytes memory)
-  {
-    return RewardMerkleMetadata({ stage: stage_, amount: amount, proof: proof }).encode();
-  }
-
-  /**
-   * @inheritdoc IMerkleRewardDistributor
-   */
   function encodeLeaf(address eolVault, address reward, uint256 stage_, address account, uint256 amount)
     external
     pure
@@ -67,58 +53,34 @@ contract MerkleRewardDistributor is
   }
 
   /**
-   * @inheritdoc IRewardDistributor
+   * @inheritdoc IMerkleRewardDistributor
    */
-  function claimable(address eolVault, address account, address reward, bytes calldata metadata)
+  function claimable(address eolVault, address account, address reward, RewardMerkleMetadata memory metadata)
     external
     view
     returns (bool)
   {
-    return _claimable(eolVault, account, reward, metadata.decodeRewardMerkleMetadata());
+    return _claimable(eolVault, account, reward, metadata);
   }
 
   /**
-   * @inheritdoc IRewardDistributor
+   * @inheritdoc IMerkleRewardDistributor
    */
-  function claimableAmount(address eolVault, address account, address reward, bytes calldata metadata)
+  function claimableAmount(address eolVault, address account, address reward, RewardMerkleMetadata memory metadata)
     external
     view
     returns (uint256)
   {
-    return _claimableAmount(eolVault, account, reward, metadata.decodeRewardMerkleMetadata());
+    return _claimableAmount(eolVault, account, reward, metadata);
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   /**
-   * @inheritdoc IRewardDistributor
+   * @inheritdoc IMerkleRewardDistributor
    */
-  function claim(address eolVault, address reward, bytes calldata metadata) external {
-    claim(eolVault, _msgSender(), reward, metadata);
-  }
-
-  /**
-   * @inheritdoc IRewardDistributor
-   */
-  function claim(address eolVault, address receiver, address reward, bytes calldata metadata) public {
-    _claim(eolVault, _msgSender(), receiver, reward, metadata.decodeRewardMerkleMetadata());
-  }
-
-  /**
-   * @inheritdoc IRewardDistributor
-   */
-  function claim(address eolVault, address reward, uint256 amount, bytes calldata metadata) external {
-    claim(eolVault, _msgSender(), reward, amount, metadata);
-  }
-
-  /**
-   * @inheritdoc IRewardDistributor
-   */
-  function claim(address eolVault, address receiver, address reward, uint256 amount, bytes calldata metadata) public {
-    RewardMerkleMetadata memory metadata_ = metadata.decodeRewardMerkleMetadata();
-    require(metadata_.amount == amount, IMerkleRewardDistributor__InvalidAmount());
-
-    _claim(eolVault, _msgSender(), receiver, reward, metadata_);
+  function claim(address eolVault, address receiver, address reward, RewardMerkleMetadata memory metadata) public {
+    _claim(eolVault, _msgSender(), receiver, reward, metadata);
   }
 
   // ============================ NOTE: OVERRIDE FUNCTIONS ============================ //

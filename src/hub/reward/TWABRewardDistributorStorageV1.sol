@@ -11,16 +11,10 @@ import { StdError } from '../../lib/StdError.sol';
 abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorageV1, ContextUpgradeable {
   using ERC7201Utils for string;
 
-  struct Receipt {
-    bool claimed;
-    uint256 claimedAmount;
-  }
-
   struct AssetRewards {
-    uint48 lastBatchTimestamp;
-    uint48[] batchTimestamps;
+    uint48 firstBatchTimestamp;
     mapping(uint48 batchTimestamp => uint256 total) batchRewards;
-    mapping(uint48 batchTimestamp => mapping(address account => Receipt receipt)) receipts;
+    mapping(address account => uint48 lastClaimedBatchTimestamp) lastClaimedBatchTimestamps;
   }
 
   struct StorageV1 {
@@ -66,36 +60,12 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _assetRewards(address eolVault, address reward) internal view returns (AssetRewards storage) {
-    return _getStorageV1().rewards[eolVault][reward];
-  }
-
   function _assetRewards(StorageV1 storage $, address eolVault, address reward)
     internal
     view
     returns (AssetRewards storage)
   {
     return $.rewards[eolVault][reward];
-  }
-
-  function _receipt(address account, address eolVault, address reward, uint48 batchTimestamp)
-    internal
-    view
-    returns (Receipt storage)
-  {
-    return _getStorageV1().rewards[eolVault][reward].receipts[batchTimestamp][account];
-  }
-
-  function _receipt(StorageV1 storage $, address account, address eolVault, address reward, uint48 batchTimestamp)
-    internal
-    view
-    returns (Receipt storage)
-  {
-    return $.rewards[eolVault][reward].receipts[batchTimestamp][account];
-  }
-
-  function _batchRewards(address eolVault, address reward, uint48 batchTimestamp) internal view returns (uint256) {
-    return _getStorageV1().rewards[eolVault][reward].batchRewards[batchTimestamp];
   }
 
   function _batchRewards(StorageV1 storage $, address eolVault, address reward, uint48 batchTimestamp)

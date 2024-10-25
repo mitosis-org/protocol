@@ -23,14 +23,14 @@ contract TWABRewardDistributortTest is Test {
   address immutable owner = makeAddr('owner');
   address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
-  uint48 twabPeriod = 100;
+  uint48 twabPeriod = 7 days;
   uint256 rewardPrecision = 10 ** 18;
 
   function setUp() public {
     delegationRegistry = new MockDelegationRegistry(mitosis);
 
     _proxyAdmin = new ProxyAdmin(owner);
-    TWABRewardDistributor twabRewardDistributorImpl = new TWABRewardDistributor();
+    TWABRewardDistributor twabRewardDistributorImpl = new TWABRewardDistributor(1 days);
 
     twabRewardDistributor = TWABRewardDistributor(
       payable(
@@ -54,48 +54,118 @@ contract TWABRewardDistributortTest is Test {
     reward.initialize(address(delegationRegistry), 'Reward Token', 'RTKN');
   }
 
-  function test_simple_claim() public {
-    vm.warp(100);
-
+  function test_claim_simple() public {
+    vm.warp(0);
     vm.startPrank(owner);
 
     uint256 ownerAmount = 20 ether;
-    uint256 rewardAmount = 10 ether;
     uint256 userAmount = 80 ether;
+    uint256 rewardAmount = 10 ether;
 
     eolVault.mint(owner, ownerAmount);
     eolVault.mint(address(1), userAmount);
 
-    vm.warp(200);
-
     reward.mint(owner, rewardAmount);
     reward.approve(address(twabRewardDistributor), rewardAmount);
+
+    vm.warp(6 days);
     twabRewardDistributor.handleReward(address(eolVault), address(reward), rewardAmount, bytes(''));
+    assertEq(twabRewardDistributor.getFirstBatchTimestamp(address(eolVault), address(reward)), 7 days);
+    assertEq(twabRewardDistributor.getLastFinalizedBatchTimestamp(address(eolVault)), 6 days);
 
-    // TODO(ray): add midnight roundup examples
-    assertEq(twabRewardDistributor.getFirstBatchTimestamp(address(eolVault), address(reward)), 1 days);
+    assertEq(twabRewardDistributor.getLastClaimedBatchTimestamp(address(eolVault), owner, address(reward)), 0);
 
-    vm.warp(200 + 1 days);
+    // not finalized batch timestamp
+    assertFalse(twabRewardDistributor.claimable(address(eolVault), owner, address(reward), 7 days));
+    assertEq(twabRewardDistributor.claimableAmount(address(eolVault), owner, address(reward), 7 days), 0);
+    assertEq(twabRewardDistributor.claim(address(eolVault), address(100), address(reward), 7 days), 0);
+    assertEq(twabRewardDistributor.getLastClaimedBatchTimestamp(address(eolVault), owner, address(reward)), 0);
+    assertTrue(reward.balanceOf(address(100)) == 0);
 
-    bytes memory metadata = twabRewardDistributor.encodeMetadata(1 days);
+    // finalize the batch timestamp
+    vm.warp(7 days);
+    assertEq(twabRewardDistributor.getLastFinalizedBatchTimestamp(address(eolVault)), 7 days);
 
-    uint256 prevBalance;
     uint256 expectReward;
 
-    prevBalance = reward.balanceOf(owner);
     expectReward = 10 ether / 100 * 20;
-    twabRewardDistributor.claim(address(eolVault), address(reward), metadata);
-    assertTrue(reward.balanceOf(owner) == prevBalance + expectReward);
+    assertTrue(twabRewardDistributor.claimable(address(eolVault), owner, address(reward), 7 days));
+    assertEq(twabRewardDistributor.claimableAmount(address(eolVault), owner, address(reward), 7 days), expectReward);
+    assertEq(twabRewardDistributor.claim(address(eolVault), address(100), address(reward), 7 days), expectReward);
+    assertEq(twabRewardDistributor.getLastClaimedBatchTimestamp(address(eolVault), owner, address(reward)), 7 days);
+    assertTrue(reward.balanceOf(address(100)) == expectReward);
 
     vm.stopPrank();
 
     vm.startPrank(address(1));
 
-    prevBalance = reward.balanceOf(address(1));
     expectReward = 10 ether / 100 * 80;
+    assertTrue(twabRewardDistributor.claimable(address(eolVault), address(1), address(reward), 7 days));
+    assertEq(
+      twabRewardDistributor.claimableAmount(address(eolVault), address(1), address(reward), 7 days), expectReward
+    );
+    assertEq(twabRewardDistributor.claim(address(eolVault), address(200), address(reward), 7 days), expectReward);
+    assertEq(twabRewardDistributor.getLastClaimedBatchTimestamp(address(eolVault), owner, address(reward)), 7 days);
+    assertTrue(reward.balanceOf(address(200)) == expectReward);
 
-    twabRewardDistributor.claim(address(eolVault), address(reward), metadata);
-    assertTrue(reward.balanceOf(address(1)) == prevBalance + expectReward);
+    vm.stopPrank();
+  }
+
+  function test_claim_multiple_batches() public {
+    vm.startPrank(owner);
+
+    vm.warp(3 days);
+
+    eolVault.mint(owner, 20 ether);
+    eolVault.mint(address(1), 80 ether);
+
+    reward.mint(owner, 60 ether);
+    reward.approve(address(twabRewardDistributor), 60 ether);
+
+    vm.warp(6 days);
+    twabRewardDistributor.handleReward(address(eolVault), address(reward), 10 ether, bytes('')); // batchTimestamp: 7 days -> reward: 10 ether
+    assertEq(twabRewardDistributor.getFirstBatchTimestamp(address(eolVault), address(reward)), 7 days);
+    assertEq(twabRewardDistributor.getLastFinalizedBatchTimestamp(address(eolVault)), 6 days);
+
+    vm.warp(7 days);
+    twabRewardDistributor.handleReward(address(eolVault), address(reward), 10 ether, bytes('')); // batchTimestamp: 8 days -> reward: 10 ether
+    twabRewardDistributor.handleReward(address(eolVault), address(reward), 20 ether, bytes('')); // batchTimestamp: 8 days -> reward: 30 ether
+
+    vm.warp(10 days - 1);
+    twabRewardDistributor.handleReward(address(eolVault), address(reward), 5 ether, bytes('')); // batchTimestamp: 10 days -> reward: 5 ether
+    twabRewardDistributor.handleReward(address(eolVault), address(reward), 15 ether, bytes('')); // batchTimestamp: 10 days -> reward: 20 ether
+
+    assertFalse(twabRewardDistributor.claimable(address(eolVault), owner, address(reward), 6 days));
+    assertTrue(twabRewardDistributor.claimable(address(eolVault), owner, address(reward), 7 days));
+    assertTrue(twabRewardDistributor.claimable(address(eolVault), owner, address(reward), 8 days));
+    assertFalse(twabRewardDistributor.claimable(address(eolVault), owner, address(reward), 9 days));
+    assertFalse(twabRewardDistributor.claimable(address(eolVault), owner, address(reward), 10 days)); // note that it returns false when not finalized
+
+    uint256 expectReward;
+
+    expectReward = (10 ether + 30 ether) / 100 * 20;
+    assertEq(twabRewardDistributor.getLastFinalizedBatchTimestamp(address(eolVault)), 9 days);
+    assertEq(
+      twabRewardDistributor.claimableAmountUntil(address(eolVault), owner, address(reward), 10 days), expectReward
+    );
+    assertEq(twabRewardDistributor.claim(address(eolVault), address(100), address(reward), 10 days), expectReward);
+    assertEq(twabRewardDistributor.getLastClaimedBatchTimestamp(address(eolVault), owner, address(reward)), 9 days);
+
+    assertEq(twabRewardDistributor.getLastFinalizedBatchTimestamp(address(eolVault)), 9 days);
+    assertEq(twabRewardDistributor.claimableAmountUntil(address(eolVault), owner, address(reward), 10 days), 0);
+    assertEq(twabRewardDistributor.claim(address(eolVault), address(100), address(reward), 10 days), 0);
+    assertEq(twabRewardDistributor.getLastClaimedBatchTimestamp(address(eolVault), owner, address(reward)), 9 days);
+
+    vm.warp(10 days);
+    assertEq(twabRewardDistributor.getLastFinalizedBatchTimestamp(address(eolVault)), 10 days);
+    assertTrue(twabRewardDistributor.claimable(address(eolVault), owner, address(reward), 10 days));
+
+    expectReward = 20 ether / 100 * 20;
+    assertEq(
+      twabRewardDistributor.claimableAmountUntil(address(eolVault), owner, address(reward), 10 days), expectReward
+    );
+    assertEq(twabRewardDistributor.claim(address(eolVault), address(100), address(reward), 10 days), expectReward);
+    assertEq(twabRewardDistributor.getLastClaimedBatchTimestamp(address(eolVault), owner, address(reward)), 10 days);
 
     vm.stopPrank();
   }
