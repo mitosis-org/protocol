@@ -80,8 +80,12 @@ contract EOLStrategyExecutor is
     return _getStorageV1().emergencyManager;
   }
 
-  function getStrategy(uint256 strategyId) external view override returns (Strategy memory) {
-    return _getStrategy(_getStorageV1(), strategyId);
+  function strategyId(address implementation) external view override returns (uint256) {
+    return _getStorageV1().strategies.idxByImpl[implementation];
+  }
+
+  function getStrategy(uint256 strategyId_) external view override returns (Strategy memory) {
+    return _getStrategy(_getStorageV1(), strategyId_);
   }
 
   function getStrategy(address implementation) external view override returns (Strategy memory) {
@@ -95,8 +99,8 @@ contract EOLStrategyExecutor is
     return _getStorageV1().strategies.enabled;
   }
 
-  function isStrategyEnabled(uint256 strategyId) external view returns (bool) {
-    return _isStrategyEnabled(_getStorageV1(), strategyId);
+  function isStrategyEnabled(uint256 strategyId_) external view returns (bool) {
+    return _isStrategyEnabled(_getStorageV1(), strategyId_);
   }
 
   function isStrategyEnabled(address implementation) external view returns (bool) {
@@ -192,9 +196,9 @@ contract EOLStrategyExecutor is
     _assertOnlyStrategist($);
 
     for (uint256 i = 0; i < calls.length; i++) {
-      uint256 strategyId = calls[i].strategyId;
-      Strategy memory strategy = _getStrategy($, strategyId);
-      require(strategy.enabled, IEOLStrategyExecutor__StrategyNotEnabled(strategyId));
+      uint256 _strategyId = calls[i].strategyId;
+      Strategy memory strategy = _getStrategy($, _strategyId);
+      require(strategy.enabled, IEOLStrategyExecutor__StrategyNotEnabled(_strategyId));
 
       for (uint256 j = 0; j < calls[i].callData.length; j++) {
         strategy.implementation.functionDelegateCall(calls[i].callData[j]);
@@ -238,39 +242,39 @@ contract EOLStrategyExecutor is
     return nextId;
   }
 
-  function enableStrategy(uint256 strategyId) external onlyOwner {
+  function enableStrategy(uint256 strategyId_) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
 
     // toggle
-    Strategy storage strategy = _getStrategy($, strategyId);
-    require(!strategy.enabled, IEOLStrategyExecutor__StrategyAlreadyEnabled(strategyId));
+    Strategy storage strategy = _getStrategy($, strategyId_);
+    require(!strategy.enabled, IEOLStrategyExecutor__StrategyAlreadyEnabled(strategyId_));
     strategy.enabled = true;
 
     // add to enabled list
-    $.strategies.enabled.push(strategyId);
+    $.strategies.enabled.push(strategyId_);
 
-    emit StrategyEnabled(strategyId);
+    emit StrategyEnabled(strategyId_);
   }
 
-  function disableStrategy(uint256 strategyId) external onlyOwner {
+  function disableStrategy(uint256 strategyId_) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
 
     // toggle
-    Strategy storage strategy = _getStrategy($, strategyId);
-    require(strategy.enabled, IEOLStrategyExecutor__StrategyNotEnabled(strategyId));
+    Strategy storage strategy = _getStrategy($, strategyId_);
+    require(strategy.enabled, IEOLStrategyExecutor__StrategyNotEnabled(strategyId_));
     strategy.enabled = false;
 
     // remove from enabled list
     uint256[] storage enabled = $.strategies.enabled;
     for (uint256 i = 0; i < enabled.length; i++) {
-      if (enabled[i] == strategyId) {
+      if (enabled[i] == strategyId_) {
         if (enabled.length > 1) enabled[i] = enabled[enabled.length - 1];
         enabled.pop();
         break;
       }
     }
 
-    emit StrategyDisabled(strategyId);
+    emit StrategyDisabled(strategyId_);
   }
 
   // MANAGES ROLES
@@ -312,20 +316,20 @@ contract EOLStrategyExecutor is
     require(_msgSender() == strategist_, StdError.Unauthorized());
   }
 
-  function _getStrategy(StorageV1 storage $, uint256 strategyId) internal view returns (Strategy storage strategy) {
-    return $.strategies.reg[strategyId];
+  function _getStrategy(StorageV1 storage $, uint256 strategyId_) internal view returns (Strategy storage strategy) {
+    return $.strategies.reg[strategyId_];
   }
 
   function _getStrategy(StorageV1 storage $, address implementation) internal view returns (Strategy storage strategy) {
     return $.strategies.reg[$.strategies.idxByImpl[implementation]];
   }
 
-  function _isStrategyEnabled(StorageV1 storage $, uint256 strategyId) internal view returns (bool enabled) {
-    return $.strategies.len > strategyId && _getStrategy($, strategyId).enabled;
+  function _isStrategyEnabled(StorageV1 storage $, uint256 strategyId_) internal view returns (bool enabled) {
+    return $.strategies.len > strategyId_ && _getStrategy($, strategyId_).enabled;
   }
 
-  function _totalBalance(StorageV1 storage $, uint256 strategyId) internal view returns (uint256) {
-    Strategy memory strategy = _getStrategy($, strategyId);
+  function _totalBalance(StorageV1 storage $, uint256 strategyId_) internal view returns (uint256) {
+    Strategy memory strategy = _getStrategy($, strategyId_);
 
     // TODO(thai): is it okay to use `strategy.context` for `pendingWithdrawBalance()`?
     return IStrategy(strategy.implementation).totalBalance(strategy.context)
