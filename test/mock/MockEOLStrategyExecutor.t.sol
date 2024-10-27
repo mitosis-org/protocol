@@ -30,8 +30,8 @@ contract MockEOLStrategyExecutor is IEOLStrategyExecutor {
   }
 
   function strategist() external view returns (address) { }
-  function strategyId(address implementation) external view returns (uint256) { }
 
+  function strategyId(address implementation) external view returns (uint256) { }
   function getStrategy(uint256 strategyId_) external view returns (Strategy memory) { }
   function getStrategy(address implementation) external view returns (Strategy memory) { }
   function getEnabledStrategyIds() external view returns (uint256[] memory) { }
