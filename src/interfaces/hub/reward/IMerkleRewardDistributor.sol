@@ -27,6 +27,16 @@ interface IMerkleRewardDistributorStorageV1 {
  * @notice Interface for the Merkle based reward distributor
  */
 interface IMerkleRewardDistributor is IRewardDistributor, IMerkleRewardDistributorStorageV1 {
+  struct RewardMerkleMetadata {
+    uint256 stage;
+    uint256 amount;
+    bytes32[] proof;
+  }
+
+  event Claimed(
+    address indexed eolVault, address indexed account, address indexed receiver, address reward, uint256 amount
+  );
+
   /**
    * @notice Error thrown when attempting to claim an already claimed reward.
    */
@@ -43,18 +53,6 @@ interface IMerkleRewardDistributor is IRewardDistributor, IMerkleRewardDistribut
   error IMerkleRewardDistributor__InvalidAmount();
 
   /**
-   * @notice Encodes metadata for the stage, amount, and proof.
-   * @param stage_ The stage number
-   * @param amount The reward amount
-   * @param proof The Merkle proof
-   * @return metadata The encoded metadata
-   */
-  function encodeMetadata(uint256 stage_, uint256 amount, bytes32[] calldata proof)
-    external
-    pure
-    returns (bytes memory metadata);
-
-  /**
    * @notice Makes a leaf hash that expected to be used in the Merkle tree.
    * @param eolVault The EOLVault address
    * @param reward The reward token address
@@ -67,4 +65,37 @@ interface IMerkleRewardDistributor is IRewardDistributor, IMerkleRewardDistribut
     external
     pure
     returns (bytes32 leaf);
+
+  /**
+   * @notice Checks if the account can claim.
+   * @param eolVault The EOL Vault address
+   * @param account The account address
+   * @param reward The reward token address
+   * @param metadata The encoded metadata
+   */
+  function claimable(address eolVault, address account, address reward, RewardMerkleMetadata memory metadata)
+    external
+    view
+    returns (bool);
+
+  /**
+   * @notice Returns the amount of claimable rewards for the account.
+   * @param eolVault The EOL Vault address
+   * @param account The account address
+   * @param reward The reward token address
+   * @param metadata The encoded metadata
+   */
+  function claimableAmount(address eolVault, address account, address reward, RewardMerkleMetadata memory metadata)
+    external
+    view
+    returns (uint256);
+
+  /**
+   * @notice Claims all of the rewards for the specified vault and reward, sending them to the receiver.
+   * @param eolVault The EOL Vault address
+   * @param receiver The receiver address
+   * @param reward The reward token address
+   * @param metadata The encoded metadata
+   */
+  function claim(address eolVault, address receiver, address reward, RewardMerkleMetadata memory metadata) external;
 }
