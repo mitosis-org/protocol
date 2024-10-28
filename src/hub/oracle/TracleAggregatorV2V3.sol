@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { AggregatorV3Interface } from '../../interfaces/hub/oracle/AggregatorV3Interface.sol';
+import { AggregatorV2V3Interface } from '../../interfaces/hub/oracle/AggregatorV2V3Interface.sol';
 import { ITracle, TracleConstants } from '../../interfaces/hub/oracle/ITracle.sol';
 
 /**
- * @title TracleAggregatorV3
+ * @title TracleAggregatorV2V3
  * @notice A chainlink-compatible aggregator contract powered by mitosis testnet oracle feeds.
  */
-contract TracleAggregatorV3 is AggregatorV3Interface {
+contract TracleAggregatorV2V3 is AggregatorV2V3Interface {
   ITracle private immutable _tracle;
   bytes32 private immutable _priceId;
 
@@ -25,7 +25,7 @@ contract TracleAggregatorV3 is AggregatorV3Interface {
     return _priceId;
   }
 
-  function decimals() external view virtual returns (uint8) {
+  function decimals() external pure returns (uint8) {
     return TracleConstants.PRICE_DECIMALS;
   }
 
@@ -37,7 +37,7 @@ contract TracleAggregatorV3 is AggregatorV3Interface {
     return 1;
   }
 
-  function latestAnswer() public view virtual returns (int256) {
+  function latestAnswer() public view returns (int256) {
     ITracle.Price memory price = _tracle.getPrice(_priceId);
     return int256(uint256(price.price));
   }
