@@ -1,7 +1,6 @@
 ./.vscode/settings.json
 ./.yarn/install-state.gz
 ./.yarn/releases/yarn-4.4.0.cjs
-./src/hub/reward/LibDistributorRewardMetadata.sol
 ./src/interfaces/branch/IMitosisVault.sol
 ./src/interfaces/hub/IMitosis.sol
 ./src/interfaces/hub/core/IAssetManager.sol
@@ -13,6 +12,8 @@
 ./src/interfaces/hub/eol/governance/IEOLProtocolGovernor.sol
 ./src/interfaces/hub/eol/vault/IEOLVault.sol
 ./src/interfaces/hub/eol/vault/IEOLVaultCapped.sol
+./src/interfaces/hub/oracle/AggregatorInterface.sol
+./src/interfaces/hub/oracle/AggregatorV2V3Interface.sol
 ./src/interfaces/hub/oracle/AggregatorV3Interface.sol
 ./src/interfaces/hub/reward/IMerkleRewardDistributor.sol
 ./src/interfaces/hub/reward/IRewardDistributor.sol
