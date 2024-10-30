@@ -9,6 +9,7 @@
   "scripts": {
     "prepare": "husky",
     "build": "forge build",
+    "abi": "mkdir -p abis && forge build --force --skip script --skip test --extra-output-files abi && find ./out -type f | grep '.abi.json' | xargs -I % cp % abis",
     "lint": "forge fmt && yarn prettier && yarn format-json && yarn sort-imports",
     "lint:check": "forge fmt --check && yarn prettier:check && yarn format-json:check && yarn sort-imports:check",
     "prettier": "prettier . --write",
