@@ -58,14 +58,19 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
   error ITWABRewardDistributor__InsufficientReward();
 
   /**
-   * @notice Gets the first batch timestamp for a given EOL Vault and reward.
+   * @notice Returns the batch period.
+   */
+  function batchPeriod() external view returns (uint48);
+
+  /**
+   * @notice Returns the first batch timestamp for a given EOL Vault and reward.
    * @param eolVault The address of the EOL Vault contract.
    * @param reward The address of the reward token.
    */
   function getFirstBatchTimestamp(address eolVault, address reward) external view returns (uint48);
 
   /**
-   * @notice Gets the last claimed batch timestamp for a given EOL Vault, reward and account.
+   * @notice Returns the last claimed batch timestamp for a given EOL Vault, reward and account.
    * @param eolVault The address of the EOL Vault contract.
    * @param account The address of the account.
    * @param reward The address of the reward token.
@@ -76,43 +81,43 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
     returns (uint48);
 
   /**
-   * @notice Gets the last finalized batch timestamp for a given EOL Vault.
+   * @notice Returns the last finalized batch timestamp for a given EOL Vault.
    * @param eolVault The address of the EOL Vault contract.
    */
   function getLastFinalizedBatchTimestamp(address eolVault) external view returns (uint48);
 
   /**
-   * @notice Checks if the account can claim.
+   * @notice Checks if the account can claim for the given batch timestamp.
    * @param eolVault The EOL Vault address
    * @param account The account address
    * @param reward The reward token address
    * @param batchTimestamp The batch timestamp of the rewards
    */
-  function claimable(address eolVault, address account, address reward, uint48 batchTimestamp)
+  function isClaimableBatch(address eolVault, address account, address reward, uint48 batchTimestamp)
     external
     view
     returns (bool);
 
   /**
-   * @notice Returns the amount of claimable rewards for the account.
+   * @notice Returns the amount of claimable rewards for the given batch timestamp.
    * @param eolVault The EOL Vault address
    * @param account The account address
    * @param reward The reward token address
    * @param batchTimestamp The batch timestamp of the rewards
    */
-  function claimableAmount(address eolVault, address account, address reward, uint48 batchTimestamp)
+  function claimableAmountForBatch(address eolVault, address account, address reward, uint48 batchTimestamp)
     external
     view
     returns (uint256);
 
   /**
-   * @notice Gets the total claimable amount for all batch timestamps until the specified timestamp.
+   * @notice Returns the total claimable amount for all batch timestamps to the specified timestamp.
    * @param eolVault The address of the EOL Vault contract.
    * @param account The address of the account.
    * @param reward The address of the reward token.
-   * @param until The timestamp until which to check claimable amount. (exclusive range)
+   * @param toTimestamp The batch timestamp up to which (inclusive) to claim rewards.
    */
-  function claimableAmountUntil(address eolVault, address account, address reward, uint48 until)
+  function claimableAmount(address eolVault, address account, address reward, uint48 toTimestamp)
     external
     view
     returns (uint256);
