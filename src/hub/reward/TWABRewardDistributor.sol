@@ -49,47 +49,6 @@ contract TWABRewardDistributor is
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
 
-  function claimable(address eolVault, address account, address reward, uint48 batchTimestamp)
-    external
-    view
-    returns (bool)
-  {
-    return claimableAmount(eolVault, account, reward, batchTimestamp) > 0;
-  }
-
-  function claimableAmount(address eolVault, address account, address reward, uint48 batchTimestamp)
-    public
-    view
-    returns (uint256)
-  {
-    return _claimableAmount(_getStorageV1(), eolVault, account, reward, batchTimestamp);
-  }
-
-  function claimableAmountUntil(address eolVault, address account, address reward, uint48 until)
-    external
-    view
-    returns (uint256)
-  {
-    StorageV1 storage $ = _getStorageV1();
-    AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
-
-    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
-    until = until < lastFinalizedBatchTimestamp ? until : lastFinalizedBatchTimestamp;
-
-    uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[account] == 0
-      ? assetRewards.firstBatchTimestamp
-      : assetRewards.lastClaimedBatchTimestamps[account] + batchPeriod;
-    if (batchTimestamp > until) return 0;
-
-    uint256 totalClaimableAmount = 0;
-    do {
-      totalClaimableAmount += _claimableAmount($, eolVault, account, reward, batchTimestamp);
-      batchTimestamp = batchTimestamp + batchPeriod;
-    } while (batchTimestamp <= until);
-
-    return totalClaimableAmount;
-  }
-
   function getFirstBatchTimestamp(address eolVault, address reward) external view returns (uint48) {
     AssetRewards storage assetRewards = _assetRewards(_getStorageV1(), eolVault, reward);
     return assetRewards.firstBatchTimestamp;
@@ -105,6 +64,47 @@ contract TWABRewardDistributor is
 
   function getLastFinalizedBatchTimestamp(address eolVault) external view returns (uint48) {
     return _lastFinalizedBatchTimestamp(eolVault);
+  }
+
+  function isClaimableBatch(address eolVault, address account, address reward, uint48 batchTimestamp)
+    external
+    view
+    returns (bool)
+  {
+    return claimableAmountForBatch(eolVault, account, reward, batchTimestamp) > 0;
+  }
+
+  function claimableAmountForBatch(address eolVault, address account, address reward, uint48 batchTimestamp)
+    public
+    view
+    returns (uint256)
+  {
+    return _claimableAmountForBatch(_getStorageV1(), eolVault, account, reward, batchTimestamp);
+  }
+
+  function claimableAmount(address eolVault, address account, address reward, uint48 toTimestamp)
+    external
+    view
+    returns (uint256)
+  {
+    StorageV1 storage $ = _getStorageV1();
+    AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
+
+    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
+    toTimestamp = toTimestamp < lastFinalizedBatchTimestamp ? toTimestamp : lastFinalizedBatchTimestamp;
+
+    uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[account] == 0
+      ? assetRewards.firstBatchTimestamp
+      : assetRewards.lastClaimedBatchTimestamps[account] + batchPeriod;
+    if (batchTimestamp > toTimestamp) return 0;
+
+    uint256 totalClaimableAmount = 0;
+    do {
+      totalClaimableAmount += _claimableAmountForBatch($, eolVault, account, reward, batchTimestamp);
+      batchTimestamp = batchTimestamp + batchPeriod;
+    } while (batchTimestamp <= toTimestamp);
+
+    return totalClaimableAmount;
   }
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
@@ -195,7 +195,7 @@ contract TWABRewardDistributor is
     return _roundUpToMidnight(IERC6372(eolVault).clock()) - batchPeriod;
   }
 
-  function _claimableAmount(
+  function _claimableAmountForBatch(
     StorageV1 storage $,
     address eolVault,
     address account,
