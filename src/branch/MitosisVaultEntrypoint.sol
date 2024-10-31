@@ -45,6 +45,8 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, G
     _enrollRemoteRouter(_mitosisDomain, _mitosisAddr);
   }
 
+  receive() external payable { }
+
   function vault() external view returns (IMitosisVault) {
     return _vault;
   }
