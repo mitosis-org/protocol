@@ -10,7 +10,6 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 import { ITWABRewardDistributor } from '../../interfaces/hub/reward/ITWABRewardDistributor.sol';
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { TWABSnapshotsUtils } from '../../lib/TWABSnapshotsUtils.sol';
 import { BaseHandler } from './BaseHandler.sol';
 import { TWABRewardDistributorStorageV1 } from './TWABRewardDistributorStorageV1.sol';
 
@@ -20,8 +19,6 @@ contract TWABRewardDistributor is
   TWABRewardDistributorStorageV1,
   AccessControlEnumerableUpgradeable
 {
-  using TWABSnapshotsUtils for ITWABSnapshots;
-
   /// @notice Role for dispatching rewards (keccak256("DISPATCHER_ROLE"))
   bytes32 public constant DISPATCHER_ROLE = 0xfbd38eecf51668fdbc772b204dc63dd28c3a3cf32e3025f52a80aa807359f50c;
 
@@ -226,7 +223,7 @@ contract TWABRewardDistributor is
     uint256 totalTWAB = criteria.getTotalTWABByTimestampRange(startsAt, endsAt);
     if (totalTWAB == 0) return 0;
 
-    uint256 userTWAB = criteria.getAccountTWABByTimestampRange(account, startsAt, endsAt);
+    uint256 userTWAB = criteria.getTWABByTimestampRange(account, startsAt, endsAt);
     if (userTWAB == 0) return 0;
 
     uint256 precision = $.rewardPrecision;

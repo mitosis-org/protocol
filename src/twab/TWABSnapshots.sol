@@ -54,7 +54,7 @@ abstract contract TWABSnapshots is
     return Time.timestamp();
   }
 
-  // ================== NOTE: ERC5805 View Functions ================== //
+  // ================== NOTE: View Functions (ERC5805) ================== //
 
   function delegates(address account) external view returns (address) {
     TWABSnapshotsStorageV1_ storage $ = _getTWABSnapshotsStorageV1();
@@ -77,7 +77,7 @@ abstract contract TWABSnapshots is
     return uint256(amount);
   }
 
-  // ================== NOTE: View Functions ================== //
+  // ================== NOTE: View Functions (Snapshots / Delegation) ================== //
 
   function delegationRegistry() external view returns (IDelegationRegistry) {
     return _getTWABSnapshotsStorageV1().delegationRegistry;
@@ -118,6 +118,32 @@ abstract contract TWABSnapshots is
     returns (uint208 balance, uint256 twab, uint48 position)
   {
     return _delegationSnapshot(_getTWABSnapshotsStorageV1(), account, timestamp);
+  }
+
+  //=========== NOTE: View Functions (TWAB) ===========//
+
+  function getTWABByTimestampRange(address account, uint48 startsAt, uint48 endsAt) external view returns (uint256) {
+    TWABSnapshotsStorageV1_ storage $ = _getTWABSnapshotsStorageV1();
+
+    (uint208 balanceA, uint256 twabA, uint48 positionA) = _delegationSnapshot($, account, startsAt);
+    (uint208 balanceB, uint256 twabB, uint48 positionB) = _delegationSnapshot($, account, endsAt);
+
+    twabA = _calculateTWAB(balanceA, twabA, positionA, startsAt);
+    twabB = _calculateTWAB(balanceB, twabB, positionB, endsAt);
+
+    return twabB - twabA;
+  }
+
+  function getTotalTWABByTimestampRange(uint48 startsAt, uint48 endsAt) external view returns (uint256) {
+    TWABSnapshotsStorageV1_ storage $ = _getTWABSnapshotsStorageV1();
+
+    (uint208 balanceA, uint256 twabA, uint48 positionA) = _totalSupplySnapshot($, startsAt);
+    (uint208 balanceB, uint256 twabB, uint48 positionB) = _totalSupplySnapshot($, endsAt);
+
+    twabA = _calculateTWAB(balanceA, twabA, positionA, startsAt);
+    twabB = _calculateTWAB(balanceB, twabB, positionB, endsAt);
+
+    return twabB - twabA;
   }
 
   // ================== NOTE: Mutative Functions ================== //
@@ -229,6 +255,18 @@ abstract contract TWABSnapshots is
 
   function _calcAccumulatedTWAB(uint256 lastTWAB, uint208 lastBalance, uint48 duration) internal pure returns (uint256) {
     return lastTWAB + (lastBalance * duration);
+  }
+
+  function _calculateTWAB(uint208 balance, uint256 twab, uint48 position, uint48 timestamp)
+    internal
+    pure
+    returns (uint256)
+  {
+    if (position < timestamp) {
+      uint256 diff = timestamp - position;
+      twab += balance * diff;
+    }
+    return twab;
   }
 
   function _replace(uint208, uint208 to) private pure returns (uint208) {

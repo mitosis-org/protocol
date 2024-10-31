@@ -10,7 +10,6 @@ import { IEOLProtocolRegistry } from '../../../interfaces/hub/eol/IEOLProtocolRe
 import { IEOLVault } from '../../../interfaces/hub/eol/vault/IEOLVault.sol';
 import { Arrays } from '../../../lib/Arrays.sol';
 import { StdError } from '../../../lib/StdError.sol';
-import { TWABSnapshotsUtils } from '../../../lib/TWABSnapshotsUtils.sol';
 import { EOLGaugeGovernorStorageV1 } from './EOLGaugeGovernorStorageV1.sol';
 
 contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaugeGovernorStorageV1 {
