@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import { Router } from '@hpl-v5/client/Router.sol';
+import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
 import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
@@ -15,9 +15,9 @@ import { StdError } from '../../lib/StdError.sol';
 import '../../message/Message.sol';
 import { AssetManager } from './AssetManager.sol';
 
-// TODO(thai): consider to make our own contract (`HyperlaneConnector`) instead of using `Router`.
+// TODO(thai): consider to make our own contract (`HyperlaneConnector`) instead of using `GasRouter`.
 
-contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, Router, Ownable2StepUpgradeable {
+contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, GasRouter, Ownable2StepUpgradeable {
   using Message for *;
   using Conv for *;
 
@@ -35,7 +35,7 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, R
     _;
   }
 
-  constructor(address mailbox, address assetManager_, address ccRegistry_) Router(mailbox) initializer {
+  constructor(address mailbox, address assetManager_, address ccRegistry_) GasRouter(mailbox) initializer {
     _assetManager = IAssetManager(assetManager_);
     _ccRegistry = ICrossChainRegistry(ccRegistry_);
   }
@@ -91,6 +91,18 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, R
     }
   }
 
+  function setDestGas(GasRouterConfig[] calldata gasConfigs) external {
+    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
+    for (uint256 i = 0; i < gasConfigs.length; i += 1) {
+      _setDestinationGas(gasConfigs[i].domain, gasConfigs[i].gas);
+    }
+  }
+
+  function setDestGas(uint32 domain, uint256 gas) external {
+    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
+    _setDestinationGas(domain, gas);
+  }
+
   //=========== NOTE: ASSETMANAGER FUNCTIONS ===========//
 
   function initializeAsset(uint256 chainId, address branchAsset) external onlyAssetManager onlyDispatchable(chainId) {
@@ -126,9 +138,10 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, R
   }
 
   function _dispatchToBranch(uint256 chainId, bytes memory enc) internal {
-    // TODO(thai): consider hyperlane fee
     uint32 hplDomain = _ccRegistry.hyperlaneDomain(chainId);
-    _dispatch(hplDomain, enc);
+
+    uint256 fee = _GasRouter_quoteDispatch(hplDomain, enc, address(hook));
+    _GasRouter_dispatch(hplDomain, fee, enc, address(hook));
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//
