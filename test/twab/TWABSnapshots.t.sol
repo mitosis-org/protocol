@@ -4,13 +4,10 @@ pragma solidity ^0.8.27;
 import { console } from '@std/console.sol';
 import { Test } from '@std/Test.sol';
 
-import { TWABSnapshotsUtils } from '../../src/lib/TWABSnapshotsUtils.sol';
 import { MockDelegationRegistry } from '../mock/MockDelegationRegistry.t.sol';
 import { MockERC20TWABSnapshots } from '../mock/MockERC20TWABSnapshots.t.sol';
 
-contract TWABSnapshotsUtilsTest is Test {
-  using TWABSnapshotsUtils for *;
-
+contract TWABSnapshotsTest is Test {
   address immutable accA = makeAddr('A');
   address immutable accB = makeAddr('B');
   address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
@@ -46,9 +43,9 @@ contract TWABSnapshotsUtilsTest is Test {
     uint256 totalTWAB;
 
     // account TWAB should be calculated correctly
-    accATWAB = token.getAccountTWABByTimestampRange(accA, 0, 800);
-    accATWAB -= token.getAccountTWABByTimestampRange(accA, 0, 500);
-    assertEq(accATWAB, token.getAccountTWABByTimestampRange(accA, 500, 800));
+    accATWAB = token.getTWABByTimestampRange(accA, 0, 800);
+    accATWAB -= token.getTWABByTimestampRange(accA, 0, 500);
+    assertEq(accATWAB, token.getTWABByTimestampRange(accA, 500, 800));
 
     // total TWAB should be calculated correctly
     totalTWAB = token.getTotalTWABByTimestampRange(0, 900);
@@ -56,8 +53,8 @@ contract TWABSnapshotsUtilsTest is Test {
     assertEq(totalTWAB, token.getTotalTWABByTimestampRange(300, 900));
 
     // total should be matched to accA + accB
-    accATWAB = token.getAccountTWABByTimestampRange(accA, 300, 900);
-    accBTWAB = token.getAccountTWABByTimestampRange(accB, 300, 900);
+    accATWAB = token.getTWABByTimestampRange(accA, 300, 900);
+    accBTWAB = token.getTWABByTimestampRange(accB, 300, 900);
     totalTWAB = token.getTotalTWABByTimestampRange(300, 900);
     assertEq(accATWAB + accBTWAB, totalTWAB);
 

@@ -9,7 +9,6 @@ import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/Transparen
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
 import { TWABRewardDistributor } from '../../../src/hub/reward/TWABRewardDistributor.sol';
-import { TWABSnapshotsUtils } from '../../../src/lib/TWABSnapshotsUtils.sol';
 import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol';
 import { MockERC20TWABSnapshots } from '../../mock/MockERC20TWABSnapshots.t.sol';
 
