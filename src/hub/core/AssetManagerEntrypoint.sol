@@ -62,6 +62,35 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, R
     return _ccRegistry.entrypoint(chainId);
   }
 
+  //=========== NOTE: ROUTER OVERRIDES ============//
+
+  function enrollRemoteRouter(uint32 domain_, bytes32 router_) external override {
+    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
+    _enrollRemoteRouter(domain_, router_);
+  }
+
+  function enrollRemoteRouters(uint32[] calldata domain_, bytes32[] calldata addresses_) external override {
+    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
+    require(domain_.length == addresses_.length, '!length');
+    uint256 length = domain_.length;
+    for (uint256 i = 0; i < length; i += 1) {
+      _enrollRemoteRouter(domain_[i], addresses_[i]);
+    }
+  }
+
+  function unenrollRemoteRouter(uint32 domain_) external override {
+    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
+    _unenrollRemoteRouter(domain_);
+  }
+
+  function unenrollRemoteRouters(uint32[] calldata domains_) external override {
+    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
+    uint256 length = domains_.length;
+    for (uint256 i = 0; i < length; i += 1) {
+      _unenrollRemoteRouter(domains_[i]);
+    }
+  }
+
   //=========== NOTE: ASSETMANAGER FUNCTIONS ===========//
 
   function initializeAsset(uint256 chainId, address branchAsset) external onlyAssetManager onlyDispatchable(chainId) {
