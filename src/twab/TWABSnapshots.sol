@@ -88,7 +88,7 @@ abstract contract TWABSnapshots is
   }
 
   function totalSupplySnapshot(uint256 timepoint)
-    public
+    external
     view
     virtual
     returns (uint208 balance, uint256 twab, uint48 position)
@@ -111,7 +111,7 @@ abstract contract TWABSnapshots is
   }
 
   function delegateSnapshot(address account, uint256 timestamp)
-    public
+    external
     view
     virtual
     override
@@ -123,8 +123,10 @@ abstract contract TWABSnapshots is
   //=========== NOTE: View Functions (TWAB) ===========//
 
   function getTWABByTimestampRange(address account, uint48 startsAt, uint48 endsAt) external view returns (uint256) {
-    (uint208 balanceA, uint256 twabA, uint48 positionA) = delegateSnapshot(account, startsAt);
-    (uint208 balanceB, uint256 twabB, uint48 positionB) = delegateSnapshot(account, endsAt);
+    TWABSnapshotsStorageV1_ storage $ = _getTWABSnapshotsStorageV1();
+
+    (uint208 balanceA, uint256 twabA, uint48 positionA) = _delegationSnapshot($, account, startsAt);
+    (uint208 balanceB, uint256 twabB, uint48 positionB) = _delegationSnapshot($, account, endsAt);
 
     twabA = _calculateTWAB(balanceA, twabA, positionA, startsAt);
     twabB = _calculateTWAB(balanceB, twabB, positionB, endsAt);
@@ -133,8 +135,10 @@ abstract contract TWABSnapshots is
   }
 
   function getTotalTWABByTimestampRange(uint48 startsAt, uint48 endsAt) external view returns (uint256) {
-    (uint208 balanceA, uint256 twabA, uint48 positionA) = totalSupplySnapshot(startsAt);
-    (uint208 balanceB, uint256 twabB, uint48 positionB) = totalSupplySnapshot(endsAt);
+    TWABSnapshotsStorageV1_ storage $ = _getTWABSnapshotsStorageV1();
+
+    (uint208 balanceA, uint256 twabA, uint48 positionA) = _totalSupplySnapshot($, startsAt);
+    (uint208 balanceB, uint256 twabB, uint48 positionB) = _totalSupplySnapshot($, endsAt);
 
     twabA = _calculateTWAB(balanceA, twabA, positionA, startsAt);
     twabB = _calculateTWAB(balanceB, twabB, positionB, endsAt);
