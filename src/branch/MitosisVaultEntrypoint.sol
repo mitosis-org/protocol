@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import { Router } from '@hpl-v5/client/Router.sol';
+import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
 import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
@@ -13,9 +13,9 @@ import { Conv } from '../lib/Conv.sol';
 import { StdError } from '../lib/StdError.sol';
 import '../message/Message.sol';
 
-// TODO(thai): consider to make our own contract (`HyperlaneConnector`) instead of using `Router`.
+// TODO(thai): consider to make our own contract (`HyperlaneConnector`) instead of using `GasRouter`.
 
-contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, Router, Ownable2StepUpgradeable {
+contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, GasRouter, Ownable2StepUpgradeable {
   using Message for *;
   using Conv for *;
 
@@ -28,7 +28,10 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, R
     _;
   }
 
-  constructor(address mailbox, address vault_, uint32 mitosisDomain_, bytes32 mitosisAddr_) Router(mailbox) initializer {
+  constructor(address mailbox, address vault_, uint32 mitosisDomain_, bytes32 mitosisAddr_)
+    GasRouter(mailbox)
+    initializer
+  {
     _vault = IMitosisVault(vault_);
     _mitosisDomain = mitosisDomain_;
     _mitosisAddr = mitosisAddr_;
@@ -93,8 +96,8 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, R
   }
 
   function _dispatchToMitosis(bytes memory enc) internal {
-    // TODO(thai): consider hyperlane fee
-    _dispatch(_mitosisDomain, enc);
+    uint256 fee = _GasRouter_quoteDispatch(_mitosisDomain, enc, address(hook));
+    _GasRouter_dispatch(_mitosisDomain, fee, enc, address(hook));
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//
