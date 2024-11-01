@@ -161,7 +161,7 @@ contract EOLProtocolGovernor is
       require(executionPayload.length == 20, 'payload length must be 20');
       address branchStrategy;
       assembly {
-        branchStrategy := mload(add(executionPayload, 0x20))
+        branchStrategy := mload(add(executionPayload, 20))
       }
 
       InitiationProposalPayload memory payload = abi.decode(p.payload, (InitiationProposalPayload));
