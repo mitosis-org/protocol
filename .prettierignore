@@ -1,6 +1,7 @@
 lib
 types
 node_modules
+dependencies
 out
 broadcast
 cache

@@ -1,55 +1,55 @@
 [[dependencies]]
 name = "@murky"
 version = "0.0.1"
-source = "https://github.com/mitosis-org/murky/archive/refs/tags/v0.0.1.zip"
+url = "https://github.com/mitosis-org/murky/archive/refs/tags/v0.0.1.zip"
 checksum = "e3951c9278f8d4c68ae2a75d06cfadeb3747daa52812c2dec427f33fd5314c57"
 integrity = "abccdb6010450a52ffca63f06f13f0092b7fcb901f91af9e99c27ba4669cb7d2"
 
 [[dependencies]]
 name = "@openzeppelin-contracts"
 version = "5.0.2"
-source = "https://soldeer-revisions.s3.amazonaws.com/@openzeppelin-contracts/5_0_2_14-03-2024_06:11:59_contracts.zip"
+url = "https://soldeer-revisions.s3.amazonaws.com/@openzeppelin-contracts/5_0_2_14-03-2024_06:11:59_contracts.zip"
 checksum = "8bc4f0acc7c187771b878d46f7de4bfad1acad2eb5d096d9d05d34035853f5c3"
 integrity = "cb78d16b460035868c00fe7b09960ccf8cd35b6078c518cbfb9f354d98315750"
 
 [[dependencies]]
 name = "@openzeppelin-contracts-upgradeable"
 version = "5.0.2"
-source = "https://soldeer-revisions.s3.amazonaws.com/@openzeppelin-contracts-upgradeable/5_0_2_14-03-2024_06:12:07_contracts-upgradeable.zip"
+url = "https://soldeer-revisions.s3.amazonaws.com/@openzeppelin-contracts-upgradeable/5_0_2_14-03-2024_06:12:07_contracts-upgradeable.zip"
 checksum = "fb3f8db8541fc01636f91b0e7d9dd6f450f1bf7e2b4a17e96caf6e779ace8f5b"
 integrity = "4bded842e12902cca59a500494d26586b3baea76b59150fd4e2b1d29078a2e71"
 
 [[dependencies]]
 name = "@openzeppelin-contracts-upgradeable-v4"
 version = "4.9.6"
-source = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/archive/refs/tags/v4.9.6.zip"
+url = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/archive/refs/tags/v4.9.6.zip"
 checksum = "f438c623b1aa398337ec45cd92a4c13b0e0b079d28008f3c3be70f334ab6eba7"
 integrity = "2bec945aeac011713f18f71c373b6d11853d8fb925b83bae8561a52f5ee6f4cb"
 
 [[dependencies]]
 name = "@openzeppelin-contracts-v4"
 version = "4.9.6"
-source = "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/refs/tags/v4.9.6.zip"
+url = "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/refs/tags/v4.9.6.zip"
 checksum = "7af0307b0ad8560aa09405da10bd705fd189b544597695b2c3046b15ce637e47"
 integrity = "a59798013d01d56e07da42ec792cb5491db3f7113848271185dc6513c9ea5b67"
 
 [[dependencies]]
 name = "forge-std"
 version = "1.9.1"
-source = "https://soldeer-revisions.s3.amazonaws.com/forge-std/v1_9_1_03-07-2024_14:44:59_forge-std-v1.9.1.zip"
+url = "https://soldeer-revisions.s3.amazonaws.com/forge-std/v1_9_1_03-07-2024_14:44:59_forge-std-v1.9.1.zip"
 checksum = "110b35ad3604d91a919c521c71206c18cd07b29c750bd90b5cbbaf37288c9636"
-integrity = "389f8bfe6b6aad01915b1e38e6d4839f8189e8d4792b42be4e10d0a96a358e3f"
+integrity = "229fada41d3af5734ba5e8b2715734b99c7d70335f3dd5a103d2a2e1cae831ba"
 
 [[dependencies]]
 name = "openzeppelin-foundry-upgrades"
 version = "0.3.1"
-source = "https://soldeer-revisions.s3.amazonaws.com/openzeppelin-foundry-upgrades/0_3_1_25-06-2024_18:12:33_openzeppelin-foundry-upgrades.zip"
+url = "https://soldeer-revisions.s3.amazonaws.com/openzeppelin-foundry-upgrades/0_3_1_25-06-2024_18:12:33_openzeppelin-foundry-upgrades.zip"
 checksum = "16a43c67b7c62e4a638b669b35f7b19c98a37278811fe910750b62b6e6fdffa7"
 integrity = "c2b01bec9276207f301b62da4e9d3872ae093250392e7f893c715e835a581f13"
 
 [[dependencies]]
 name = "solady"
 version = "0.0.230"
-source = "https://soldeer-revisions.s3.amazonaws.com/solady/0_0_230_05-08-2024_05:33:52_solady.zip"
+url = "https://soldeer-revisions.s3.amazonaws.com/solady/0_0_230_05-08-2024_05:33:52_solady.zip"
 checksum = "fdaca03b82610492117ca5210ece3f75f2a1d7cd1dec9228378f53f68525259d"
 integrity = "bbacdc9438e96233fef31778c8b9afd3e8a7d99a0c1b46b09e86a0c0fc25d282"
