@@ -77,6 +77,10 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     address branchAsset = $.branchAssets[hubAsset][chainId];
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
+    require(
+      $.collateralPerChain[chainId][hubAsset] >= amount,
+      IAssetManager__CollateralInsufficient(chainId, hubAsset, $.collateralPerChain[chainId][hubAsset], amount)
+    );
     _burn($, chainId, hubAsset, _msgSender(), amount);
     $.entrypoint.redeem(chainId, branchAsset, to, amount);
 

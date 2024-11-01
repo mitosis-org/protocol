@@ -40,6 +40,7 @@ contract AssetManagerTest is Toolkit {
   address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
   uint48 branchChainId = 10;
+  uint48 branchChainId2 = 20;
   address branchAsset1 = makeAddr('branchAsset1');
   address branchAsset2 = makeAddr('branchAsset2');
   address branchRewardTokenAddress = makeAddr('branchRewardTokenAddress');
@@ -267,6 +268,36 @@ contract AssetManagerTest is Toolkit {
 
     vm.expectRevert(_errZeroAmount());
     _assetManager.redeem(branchChainId, address(_token), user1, 0);
+
+    vm.stopPrank();
+  }
+
+  function test_redeem_CollateralInsufficient() public {
+    vm.startPrank(owner);
+    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId2, branchAsset1);
+    vm.stopPrank();
+
+    vm.startPrank(address(_assetManagerEntrypoint));
+    _assetManager.deposit(branchChainId, branchAsset1, user1, 100 ether);
+    _assetManager.deposit(branchChainId2, branchAsset1, user1, 50 ether);
+    vm.stopPrank();
+
+    vm.startPrank(user1);
+
+    vm.expectRevert(_errCollateralInsufficient(branchChainId, address(_token), 100 ether, 101 ether));
+    _assetManager.redeem(branchChainId, address(_token), user1, 101 ether);
+
+    vm.expectRevert(_errCollateralInsufficient(branchChainId2, address(_token), 50 ether, 51 ether));
+    _assetManager.redeem(branchChainId2, address(_token), user1, 51 ether);
+
+    assertEq(_assetManager.collateral(branchChainId, address(_token)), 100 ether);
+    _assetManager.redeem(branchChainId, address(_token), user1, 100 ether);
+    assertEq(_assetManager.collateral(branchChainId, address(_token)), 0 ether);
+
+    assertEq(_assetManager.collateral(branchChainId2, address(_token)), 50 ether);
+    _assetManager.redeem(branchChainId2, address(_token), user1, 40 ether);
+    assertEq(_assetManager.collateral(branchChainId2, address(_token)), 10 ether);
 
     vm.stopPrank();
   }
@@ -793,6 +824,16 @@ contract AssetManagerTest is Toolkit {
   function _errEOLAlreadyInitialized(uint256 chainId, address eolVault) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
       IAssetManagerStorageV1.IAssetManagerStorageV1__EOLAlreadyInitialized.selector, chainId, eolVault
+    );
+  }
+
+  function _errCollateralInsufficient(uint256 chainId, address hubAsset, uint256 collateral, uint256 amount)
+    internal
+    pure
+    returns (bytes memory)
+  {
+    return abi.encodeWithSelector(
+      IAssetManager.IAssetManager__CollateralInsufficient.selector, chainId, hubAsset, collateral, amount
     );
   }
 

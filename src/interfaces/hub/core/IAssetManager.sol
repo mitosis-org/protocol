@@ -207,10 +207,13 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event AssetPairSet(address hubAsset, uint256 branchChainId, address branchAsset);
 
   /**
-   * @notice Error thrown when an EOLVault has insufficient funds
-   * @param eolVault The address of the EOLVault with insufficient funds
+   * @notice Error thrown when the total collateral for a given chain ID and hub asset is insufficient
+   * @param chainId The ID of the chain
+   * @param hubAsset The address of the hub asset
+   * @param collateral The total collateral amount for a given chain ID and hub asset
+   * @param amount The required amount for the operation
    */
-  error IAssetManager__EOLInsufficient(address eolVault);
+  error IAssetManager__CollateralInsufficient(uint256 chainId, address hubAsset, uint256 collateral, uint256 amount);
 
   /**
    * @notice Error thrown when an invalid EOLVault address does not match with the hub asset
@@ -218,6 +221,12 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param hubAsset The address of the hub asset
    */
   error IAssetManager__InvalidEOLVault(address eolVault, address hubAsset);
+
+  /**
+   * @notice Error thrown when an EOLVault has insufficient funds
+   * @param eolVault The address of the EOLVault with insufficient funds
+   */
+  error IAssetManager__EOLInsufficient(address eolVault);
 
   /**
    * @notice Deposit branch assets
