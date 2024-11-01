@@ -27,7 +27,7 @@ contract TeFi is ITeFi, Initializable {
     string name;
   }
 
-  string private constant _NAMESPACE = 'mitosis.storage.TracleAggregatorV2V3';
+  string private constant _NAMESPACE = 'mitosis.storage.TeFi';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorage() internal view returns (Storage storage $) {
