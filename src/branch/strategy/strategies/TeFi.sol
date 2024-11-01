@@ -6,6 +6,7 @@ import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 
 import { ITeFi } from '../../../interfaces/branch/strategy/ITeFi.sol';
+import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 import { StdError } from '../../../lib/StdError.sol';
 import { StdStrategy } from './StdStrategy.sol';
 
@@ -16,34 +17,51 @@ import { StdStrategy } from './StdStrategy.sol';
 contract TeFi is ITeFi, Initializable {
   using SafeERC20 for IERC20;
 
-  IERC20 internal immutable _asset;
-  address internal immutable _strategyExecutor;
-  bytes32 internal immutable _name;
+  using ERC7201Utils for string;
+
+  // =========================== NOTE: STORAGE DEFINITIONS =========================== //
+
+  struct Storage {
+    IERC20 asset;
+    address strategyExecutor;
+    string name;
+  }
+
+  string private constant _NAMESPACE = 'mitosis.storage.TracleAggregatorV2V3';
+  bytes32 private immutable _slot = _NAMESPACE.storageSlot();
+
+  function _getStorage() internal view returns (Storage storage $) {
+    bytes32 slot = _slot;
+    // slither-disable-next-line assembly
+    assembly {
+      $.slot := slot
+    }
+  }
+
+  // ============================ NOTE: INITIALIZATION FUNCTIONS ============================ //
 
   modifier onlyStrategyExecutor() {
-    require(msg.sender == _strategyExecutor, StdError.Unauthorized());
+    require(msg.sender == _getStorage().strategyExecutor, StdError.Unauthorized());
     _;
   }
 
-  constructor(address strategyExecutor_, address asset_, string memory name_) {
-    _strategyExecutor = strategyExecutor_;
-    _asset = IERC20(asset_);
-    require(bytes(name_).length < 32, 'TeFi: name too long');
-    _name = bytes32(bytes(name_));
-
+  constructor() {
     _disableInitializers();
   }
 
-  function initialize() external initializer {
-    // to nothing
+  function initialize(address strategyExecutor_, address asset_, string memory name_) external initializer {
+    Storage storage $ = _getStorage();
+    $.strategyExecutor = strategyExecutor_;
+    $.asset = IERC20(asset_);
+    $.name = name_;
   }
 
   function name() external view returns (string memory) {
-    return string(abi.encodePacked(_name));
+    return _getStorage().name;
   }
 
   function asset() external view returns (IERC20) {
-    return _asset;
+    return _getStorage().asset;
   }
 
   function claimableAmount(address asset_) external view returns (uint256) {
@@ -57,12 +75,12 @@ contract TeFi is ITeFi, Initializable {
   // deposit: Just transfer token to TestnetDeFi
 
   function withdraw(uint256 amount) external onlyStrategyExecutor {
-    _asset.transfer(msg.sender, amount);
+    _getStorage().asset.transfer(msg.sender, amount);
   }
 
   // triggerYield: Just transfer token to TestnetDeFi
 
   function triggerLoss(uint256 amount) external onlyStrategyExecutor {
-    _asset.transfer(0x000000000000000000000000000000000000dEaD, amount);
+    _getStorage().asset.transfer(0x000000000000000000000000000000000000dEaD, amount);
   }
 }
