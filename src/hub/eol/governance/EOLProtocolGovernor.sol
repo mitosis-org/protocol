@@ -158,11 +158,8 @@ contract EOLProtocolGovernor is
     p.executed = true;
 
     if (p.proposalType == ProposalType.Initiation) {
-      require(executionPayload.length == 20, '');
-      address branchStrategy;
-      assembly {
-        branchStrategy := mload(add(executionPayload, 20))
-      }
+      require(executionPayload.length == 20, 'payload length must be 20');
+      address branchStrategy = address(uint160(uint256(bytes32(executionPayload))));
 
       InitiationProposalPayload memory payload = abi.decode(p.payload, (InitiationProposalPayload));
       $.protocolRegistry.registerProtocol(
