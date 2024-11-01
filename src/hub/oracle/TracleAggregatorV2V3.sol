@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import { Initializable } from '@oz-v5/proxy/utils/Initializable.sol';
+
 import { AggregatorV2V3Interface } from '../../interfaces/hub/oracle/AggregatorV2V3Interface.sol';
 import { ITracle, TracleConstants } from '../../interfaces/hub/oracle/ITracle.sol';
 
@@ -8,13 +10,19 @@ import { ITracle, TracleConstants } from '../../interfaces/hub/oracle/ITracle.so
  * @title TracleAggregatorV2V3
  * @notice A chainlink-compatible aggregator contract powered by mitosis testnet oracle feeds.
  */
-contract TracleAggregatorV2V3 is AggregatorV2V3Interface {
+contract TracleAggregatorV2V3 is AggregatorV2V3Interface, Initializable {
   ITracle private immutable _tracle;
   bytes32 private immutable _priceId;
 
   constructor(ITracle tracle_, bytes32 priceId_) {
     _tracle = tracle_;
     _priceId = priceId_;
+
+    _disableInitializers();
+  }
+
+  function initialize() external initializer {
+    // to nothing
   }
 
   function tracle() external view returns (ITracle) {
