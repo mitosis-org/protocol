@@ -13,15 +13,15 @@ interface IEOLProtocolGovernor {
   }
 
   struct InitiationProposalPayload {
-    address eolVault;
     uint256 chainId;
+    address eolVault;
     string name;
     string metadata;
   }
 
   struct DeletionProposalPayload {
-    address eolVault;
     uint256 chainId;
+    address eolVault;
     string name;
   }
 
