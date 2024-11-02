@@ -45,7 +45,7 @@ contract OptOutQueueTest is Test {
       _proxy(
         address(new HubAsset()),
         abi.encodeCall(
-          HubAsset.initialize, (_owner, address(_assetManager), address(_delegationRegistry), 'Test', 'TT')
+          HubAsset.initialize, (_owner, address(_assetManager), address(_delegationRegistry), 'Test', 'TT', 18)
         ) //
       )
     );

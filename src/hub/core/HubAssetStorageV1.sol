@@ -7,6 +7,7 @@ abstract contract HubAssetStorageV1 {
   using ERC7201Utils for string;
 
   struct StorageV1 {
+    uint8 decimals;
     address supplyManager;
   }
 
