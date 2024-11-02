@@ -42,6 +42,14 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
 
+  function isAssetActionHalted(address asset, AssetAction action) external view returns (bool) {
+    return _isHalted(_getStorageV1(), asset, action);
+  }
+
+  function isEOLActionHalted(address hubEOLVault, EOLAction action) external view returns (bool) {
+    return _isHalted(_getStorageV1(), hubEOLVault, action);
+  }
+
   function isAssetInitialized(address asset) external view returns (bool) {
     return _isAssetInitialized(_getStorageV1(), asset);
   }
