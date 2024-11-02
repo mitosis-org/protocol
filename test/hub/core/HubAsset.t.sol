@@ -15,6 +15,7 @@ import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol'
 
 contract HubAssetTest is Test {
   HubAsset hubAsset;
+  HubAsset usdc;
 
   MockDelegationRegistry internal _delegationRegistry;
   ProxyAdmin internal _proxyAdmin;
@@ -34,7 +35,23 @@ contract HubAssetTest is Test {
           new TransparentUpgradeableProxy(
             address(hubAssetImpl),
             address(_proxyAdmin),
-            abi.encodeCall(hubAsset.initialize, (owner, address(this), address(_delegationRegistry), 'Token', 'TKN'))
+            abi.encodeCall(
+              hubAsset.initialize, (owner, address(this), address(_delegationRegistry), 'Token', 'TKN', 18)
+            )
+          )
+        )
+      )
+    );
+
+    usdc = HubAsset(
+      payable(
+        address(
+          new TransparentUpgradeableProxy(
+            address(hubAssetImpl),
+            address(_proxyAdmin),
+            abi.encodeCall(
+              hubAsset.initialize, (owner, address(this), address(_delegationRegistry), 'USD Coin', 'USDC', 6)
+            )
           )
         )
       )
@@ -45,6 +62,10 @@ contract HubAssetTest is Test {
     assertEq(hubAsset.name(), 'Token');
     assertEq(hubAsset.symbol(), 'TKN');
     assertEq(hubAsset.decimals(), 18);
+
+    assertEq(usdc.name(), 'USD Coin');
+    assertEq(usdc.symbol(), 'USDC');
+    assertEq(usdc.decimals(), 6);
   }
 
   function test_mint() public {

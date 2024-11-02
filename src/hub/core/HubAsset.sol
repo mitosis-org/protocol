@@ -17,17 +17,25 @@ contract HubAsset is Ownable2StepUpgradeable, ERC20TWABSnapshots, HubAssetStorag
     address supplyManager_,
     address delegationRegistry_,
     string memory name_,
-    string memory symbol_
+    string memory symbol_,
+    uint8 decimals_
   ) external initializer {
     __Ownable2Step_init();
     _transferOwnership(owner_);
     __ERC20TWABSnapshots_init(delegationRegistry_, name_, symbol_);
     _getStorageV1().supplyManager = supplyManager_;
+    StorageV1 storage $ = _getStorageV1();
+    $.supplyManager = supplyManager_;
+    $.decimals = decimals_;
   }
 
   modifier onlySupplyManager() {
     require(_msgSender() == _getStorageV1().supplyManager, StdError.Unauthorized());
     _;
+  }
+
+  function decimals() public view override returns (uint8) {
+    return _getStorageV1().decimals;
   }
 
   function supplyManager() external view returns (address) {

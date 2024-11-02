@@ -87,7 +87,7 @@ contract AssetManagerTest is Toolkit {
             address(tokenImpl),
             address(_proxyAdmin),
             abi.encodeCall(
-              _token.initialize, (owner, address(_assetManager), address(_delegationRegistry), 'Token', 'TKN')
+              _token.initialize, (owner, address(_assetManager), address(_delegationRegistry), 'Token', 'TKN', 18)
             )
           )
         )
