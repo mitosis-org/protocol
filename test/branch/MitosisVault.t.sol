@@ -828,6 +828,30 @@ contract MitosisVaultTest is Toolkit {
     vm.stopPrank();
   }
 
+  function test_isEOLActionHalted() public {
+    test_initializeEOL();
+    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+
+    assertFalse(_mitosisVault.isEOLActionHalted(hubEOLVault, EOLAction.FetchEOL)); // default to not halted
+
+    vm.prank(owner);
+    _mitosisVault.haltEOL(hubEOLVault, EOLAction.FetchEOL);
+
+    assertTrue(_mitosisVault.isEOLActionHalted(hubEOLVault, EOLAction.FetchEOL));
+  }
+
+  function test_isAssetActionHalted() public {
+    test_initializeAsset();
+    assertTrue(_mitosisVault.isAssetInitialized(address(_token)));
+
+    assertTrue(_mitosisVault.isAssetActionHalted(address(_token), AssetAction.Deposit)); // default to halted
+
+    vm.prank(owner);
+    _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
+
+    assertFalse(_mitosisVault.isAssetActionHalted(address(_token), AssetAction.Deposit));
+  }
+
   function _errAssetAlreadyInitialized(address asset) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(IMitosisVault.IMitosisVault__AssetAlreadyInitialized.selector, asset);
   }
