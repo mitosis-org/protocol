@@ -152,8 +152,8 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, G
     uint256 chainId = _ccRegistry.chainId(origin);
     require(chainId != 0, ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
 
-    address vault = _ccRegistry.vault(chainId);
-    require(sender.toAddress() == vault, ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
+    address entrypoint = _ccRegistry.entrypoint(chainId);
+    require(sender.toAddress() == entrypoint, ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
 
     MsgType msgType = msg_.msgType();
 
