@@ -9,25 +9,37 @@ on:
       - main
 
 jobs:
-  push:
-    strategy:
-      fail-fast: true
-
+  file-list:
     name: branch with codes
     runs-on: arc-runner-set
     container: node:20
+
+    outputs:
+      file-list: ${{ steps.file-list.outputs.file-list }}
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: remove all except src
+      - id: file-list
         run: |
-          rm -rf $(ls -a | grep -v src)
+          echo "$(git ls-files | grep -vE 'src/\w+' | jq -R . | jq -s .)" >> "$GITHUB_OUTPUT"
+
+  make-clean:
+    name: branch with codes
+    runs-on: arc-runner-set
+    container: node:20
+    needs: file-list
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: create branch and push
         uses: EndBug/add-and-commit@v9
         with:
+          remove: ${{ needs.file-list.outputs.file-list }}
           new_branch: 'clean'
           message: 'cleaned ${{ github.sha }}'
