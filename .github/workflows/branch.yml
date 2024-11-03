@@ -22,13 +22,12 @@ jobs:
         with:
           submodules: recursive
 
-      - run: |
-          git checkout clean || git checkout -b clean
-
+      - name: remove all except src
+        run: |
           rm -rf $(ls -a | grep -v src)
 
-          git add .
-
-          git commit -m "cleaned $GITHUB_SHA"
-
-          git push origin clean
+      - name: create branch and push
+        uses: EndBug/add-and-commit@v9
+        with:
+          new_branch: 'clean'
+          message: 'cleaned ${{ github.sha }}'
