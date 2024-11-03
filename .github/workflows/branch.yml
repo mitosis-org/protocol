@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      file-list: ${{ steps.file-list.outputs.file-list }}
+      list: ${{ steps.file-list.outputs.list }}
 
     steps:
       - uses: actions/checkout@v4
@@ -24,11 +24,11 @@ jobs:
       - name: Make file list to remove
         id: file-list
         run: |
-          echo "FILE_LIST=$(git ls-files | grep -vE 'src/\w+' | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+          echo "list=$(git ls-files | grep -vE 'src/\w+' | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
 
       - name: Check output var
         run: |
-          echo ${{steps.file-list.outputs.FILE_LIST}}
+          echo ${{steps.file-list.outputs.list}}
 
   make-clean:
     name: make clean branch
@@ -42,11 +42,11 @@ jobs:
 
       - name: Check input var
         run: |
-          echo ${{needs.file-list.outputs.file-list.FILE_LIST}}
+          echo ${{ needs.file-list.outputs.list }}
 
       - name: create branch and push
         uses: EndBug/add-and-commit@v9
         with:
-          remove: '${{ needs.file-list.outputs.file-list.FILE_LIST }}'
+          remove: '${{ needs.file-list.outputs.list }}'
           new_branch: 'clean'
           message: 'cleaned ${{ github.sha }}'
