@@ -23,7 +23,7 @@ jobs:
 
       - id: file-list
         run: |
-          echo "$(git ls-files | grep -vE 'src/\w+' | jq -R . | jq -s .)" >> "$GITHUB_OUTPUT"
+          echo "FILE_LIST=$(git ls-files | grep -vE 'src/\w+' | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
 
   make-clean:
     name: branch with codes
@@ -38,6 +38,6 @@ jobs:
       - name: create branch and push
         uses: EndBug/add-and-commit@v9
         with:
-          remove: ${{ needs.file-list.outputs.file-list }}
+          remove: ${{ needs.file-list.outputs.file-list.FILE_LIST }}
           new_branch: 'clean'
           message: 'cleaned ${{ github.sha }}'
