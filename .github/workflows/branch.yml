@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  push:
+    strategy:
+      fail-fast: true
+
+    name: branch with codes
+    runs-on: arc-runner-set
+    container: node:20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - run: |
+          git checkout clean || git checkout -b clean
+
+          rm -rf $(ls -a | grep -v src)
+
+          git add .
+
+          git commit -m "cleaned $GITHUB_SHA"
+
+          git push origin clean
