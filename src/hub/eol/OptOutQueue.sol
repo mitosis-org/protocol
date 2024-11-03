@@ -221,6 +221,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
   function _sync(StorageV1 storage $, IEOLVault eolVault, uint256 assets) internal {
     EOLVaultState storage eolVaultState = $.states[address(eolVault)];
 
+    eolVault.approve(address(eolVault), assets);
     eolVault.withdraw(assets, address(this), address(this));
 
     eolVaultState.queue.reserve(assets, eolVault.totalSupply(), eolVault.totalAssets(), eolVault.clock());
