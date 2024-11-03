@@ -123,10 +123,9 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
 
   function _eolIdle(StorageV1 storage $, address eolVault) internal view returns (uint256) {
     uint256 total = IEOLVault(eolVault).totalAssets();
-    uint256 pending = $.optOutQueue.totalPending(eolVault);
     uint256 allocated = $.eolStates[eolVault].allocation;
 
-    return total - pending - allocated;
+    return total - allocated;
   }
 
   // ============================ NOTE: VIRTUAL FUNCTIONS ============================ //
