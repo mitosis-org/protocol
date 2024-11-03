@@ -40,9 +40,13 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Check input var
+        run: |
+          echo ${{needs.file-list.outputs.file-list.FILE_LIST}}
+
       - name: create branch and push
         uses: EndBug/add-and-commit@v9
         with:
-          remove: ${{ needs.file-list.outputs.file-list.FILE_LIST }}
+          remove: '${{ needs.file-list.outputs.file-list.FILE_LIST }}'
           new_branch: 'clean'
           message: 'cleaned ${{ github.sha }}'
