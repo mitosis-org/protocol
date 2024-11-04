@@ -156,11 +156,8 @@ contract TWABRewardDistributor is
 
   /**
    * @inheritdoc BaseHandler
-   * @dev use current timestamp and eolVault if metadata is not provided
    */
-  function _handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) internal override {
-    require(metadata.length == 0, StdError.InvalidParameter('metadata'));
-
+  function _handleReward(address eolVault, address reward, uint256 amount, bytes calldata) internal override {
     StorageV1 storage $ = _getStorageV1();
 
     IERC20(reward).transferFrom(_msgSender(), address(this), amount);
@@ -177,7 +174,7 @@ contract TWABRewardDistributor is
       assetRewards.firstBatchTimestamp = batchTimestamp;
     }
 
-    emit RewardHandled(eolVault, reward, amount, distributionType(), metadata, abi.encode(batchTimestamp));
+    emit RewardHandled(eolVault, reward, amount, distributionType(), '', abi.encode(batchTimestamp));
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
