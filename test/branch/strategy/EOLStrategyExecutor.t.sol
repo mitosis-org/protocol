@@ -58,15 +58,17 @@ contract MitosisVaultTest is Toolkit {
     _token = new MockERC20TWABSnapshots();
     _token.initialize(address(_delegationRegistry), 'Token', 'TKN');
 
-    EOLStrategyExecutor eolStrategyExecutorImpl =
-      new EOLStrategyExecutor(_mitosisVault, IERC20(address(_token)), hubEOLVault);
+    EOLStrategyExecutor eolStrategyExecutorImpl = new EOLStrategyExecutor();
     _eolStrategyExecutor = EOLStrategyExecutor(
       payable(
         address(
           new TransparentUpgradeableProxy(
             address(eolStrategyExecutorImpl),
             address(_proxyAdmin),
-            abi.encodeCall(eolStrategyExecutorImpl.initialize, (owner, emergencyManager))
+            abi.encodeCall(
+              eolStrategyExecutorImpl.initialize,
+              (_mitosisVault, IERC20(address(_token)), hubEOLVault, owner, emergencyManager)
+            )
           )
         )
       )

@@ -26,18 +26,10 @@ contract EOLStrategyExecutor is
   using SafeERC20 for IERC20;
   using Address for address;
 
-  //=========== NOTE: IMMUTABLE VARIABLES ===========//
-
-  IMitosisVault internal immutable _vault;
-  IERC20 internal immutable _asset;
-  address internal immutable _hubEOLVault;
-
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  constructor(IMitosisVault vault_, IERC20 asset_, address hubEOLVault_) initializer {
-    _vault = vault_;
-    _asset = asset_;
-    _hubEOLVault = hubEOLVault_;
+  constructor() {
+    _disableInitializers();
   }
 
   fallback() external payable {
@@ -48,28 +40,37 @@ contract EOLStrategyExecutor is
     revert StdError.Unauthorized();
   }
 
-  function initialize(address owner_, address emergencyManager_) public initializer {
+  function initialize(
+    IMitosisVault vault_,
+    IERC20 asset_,
+    address hubEOLVault_,
+    address owner_,
+    address emergencyManager_
+  ) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
     _transferOwnership(owner_);
 
     StorageV1 storage $ = _getStorageV1();
 
+    $.vault = vault_;
+    $.asset = asset_;
+    $.hubEOLVault = hubEOLVault_;
     $.emergencyManager = emergencyManager_;
   }
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
 
   function vault() public view returns (IMitosisVault) {
-    return _vault;
+    return _getStorageV1().vault;
   }
 
   function asset() public view override(IEOLStrategyExecutor, IStrategyDependency) returns (IERC20) {
-    return _asset;
+    return _getStorageV1().asset;
   }
 
   function hubEOLVault() public view returns (address) {
-    return _hubEOLVault;
+    return _getStorageV1().hubEOLVault;
   }
 
   function strategist() external view returns (address) {
@@ -124,7 +125,7 @@ contract EOLStrategyExecutor is
     _assertNotPaused();
     _assertOnlyStrategist($);
 
-    _vault.deallocateEOL(_hubEOLVault, amount);
+    $.vault.deallocateEOL($.hubEOLVault, amount);
   }
 
   function fetchEOL(uint256 amount) external {
@@ -133,7 +134,7 @@ contract EOLStrategyExecutor is
     _assertNotPaused();
     _assertOnlyStrategist($);
 
-    _vault.fetchEOL(_hubEOLVault, amount);
+    $.vault.fetchEOL($.hubEOLVault, amount);
     $.storedTotalBalance += amount;
   }
 
@@ -143,8 +144,8 @@ contract EOLStrategyExecutor is
     _assertNotPaused();
     _assertOnlyStrategist($);
 
-    _asset.approve(address(_vault), amount);
-    _vault.returnEOL(_hubEOLVault, amount);
+    $.asset.approve(address($.vault), amount);
+    $.vault.returnEOL($.hubEOLVault, amount);
     $.storedTotalBalance -= amount;
   }
 
@@ -160,9 +161,9 @@ contract EOLStrategyExecutor is
     $.storedTotalBalance = totalBalance_;
 
     if (totalBalance_ >= storedTotalBalance_) {
-      _vault.settleYield(_hubEOLVault, totalBalance_ - storedTotalBalance_);
+      $.vault.settleYield($.hubEOLVault, totalBalance_ - storedTotalBalance_);
     } else {
-      _vault.settleLoss(_hubEOLVault, storedTotalBalance_ - totalBalance_);
+      $.vault.settleLoss($.hubEOLVault, storedTotalBalance_ - totalBalance_);
     }
   }
 
@@ -171,10 +172,10 @@ contract EOLStrategyExecutor is
 
     _assertNotPaused();
     _assertOnlyStrategist($);
-    require(reward != address(_asset), StdError.InvalidAddress('reward'));
+    require(reward != address($.asset), StdError.InvalidAddress('reward'));
 
-    IERC20(reward).approve(address(_vault), amount);
-    _vault.settleExtraRewards(_hubEOLVault, reward, amount);
+    IERC20(reward).approve(address($.vault), amount);
+    $.vault.settleExtraRewards($.hubEOLVault, reward, amount);
   }
 
   /**
@@ -337,7 +338,7 @@ contract EOLStrategyExecutor is
   }
 
   function _totalBalance(StorageV1 storage $) internal view returns (uint256) {
-    uint256 total = _asset.balanceOf(address(this));
+    uint256 total = $.asset.balanceOf(address(this));
 
     for (uint256 i = 0; i < $.strategies.len; i++) {
       total += _totalBalance($, i);

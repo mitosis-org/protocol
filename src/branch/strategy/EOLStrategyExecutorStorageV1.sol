@@ -3,6 +3,7 @@ pragma solidity 0.8.27;
 
 import { IERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 
+import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
 import { IEOLStrategyExecutor } from '../../interfaces/branch/strategy/IEOLStrategyExecutor.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 
@@ -19,6 +20,9 @@ abstract contract EOLStrategyExecutorStorageV1 {
   }
 
   struct StorageV1 {
+    IMitosisVault vault;
+    IERC20 asset;
+    address hubEOLVault;
     address strategist;
     address emergencyManager;
     StrategyRegistry strategies;
