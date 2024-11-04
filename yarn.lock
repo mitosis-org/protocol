@@ -875,7 +875,6 @@ __metadata:
     eslint-plugin-prettier: "npm:^5.2.1"
     glob: "npm:^11.0.0"
     hpl-v5: "https://github.com/mitosis-org/hyperlane-core#568df242092a8e12ef525b176bf50fab1f19316f"
-    husky: "npm:^9.1.5"
     prettier: "npm:^3.3.3"
     prettier-plugin-sort-json: "npm:^4.0.0"
     solc: "npm:^0.8.27"
@@ -2604,15 +2603,6 @@ __metadata:
   dependencies:
     ms: "npm:^2.0.0"
   checksum: 10c0/f34a2c20161d02303c2807badec2f3b49cbfbbb409abd4f95a07377ae01cfe6b59e3d15ac609cffcd8f2521f0eb37b7e1091acf65da99aa2a4f1ad63c21e7e7a
-  languageName: node
-  linkType: hard
-
-"husky@npm:^9.1.5":
-  version: 9.1.5
-  resolution: "husky@npm:9.1.5"
-  bin:
-    husky: bin.js
-  checksum: 10c0/f42efb95a026303eb880898760f802d88409780dd72f17781d2dfc302177d4f80b641cf1f1694f53f6d97c536c7397684133d8c8fe4a4426f7460186a7d1c6b8
   languageName: node
   linkType: hard
 
