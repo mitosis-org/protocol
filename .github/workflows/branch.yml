@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   file-list:
@@ -48,5 +51,6 @@ jobs:
         uses: EndBug/add-and-commit@v9
         with:
           remove: '${{ needs.file-list.outputs.list }}'
+          push: 'origin clean --force'
           new_branch: 'clean'
           message: 'cleaned ${{ github.sha }}'
