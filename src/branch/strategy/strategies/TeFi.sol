@@ -69,7 +69,7 @@ contract TeFi is ITeFi, Initializable {
   }
 
   function claim(address asset_, uint256 amount) external onlyStrategyExecutor {
-    IERC20(asset_).transferFrom(msg.sender, address(this), amount);
+    IERC20(asset_).transfer(address(msg.sender), amount);
   }
 
   // deposit: Just transfer token to TestnetDeFi
