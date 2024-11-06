@@ -32,7 +32,7 @@ abstract contract StdStrategy is IStrategy, Context, StdStrategyStorageV1 {
 
   //================= NOTE: VIEW FUNCTIONS =================//
 
-  function asset() external view override onlyDelegateCall returns (IERC20) {
+  function asset() external view override returns (IERC20) {
     return _asset();
   }
 
