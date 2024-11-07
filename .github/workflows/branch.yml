@@ -6,31 +6,9 @@ on:
       - main
 
 jobs:
-  file-list:
-    name: make file list to remove
-    runs-on: ubuntu-latest
-
-    outputs:
-      list: ${{ steps.file-list.outputs.list }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Make file list to remove
-        id: file-list
-        run: |
-          echo "list=$(git ls-files | grep -vE 'src/\w+' | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
-
-      - name: Check output var
-        run: |
-          echo ${{steps.file-list.outputs.list}}
-
-  make-clean:
+  clean-branch:
     name: make clean branch
     runs-on: ubuntu-latest
-    needs: file-list
 
     permissions:
       contents: write
@@ -38,15 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          ref: clean
 
-      - name: Check input var
-        run: |
-          echo ${{ needs.file-list.outputs.list }}
-
-      - name: create branch and push
-        uses: EndBug/add-and-commit@v9
-        with:
-          remove: '${{ needs.file-list.outputs.list }}'
-          new_branch: 'clean'
-          message: 'cleaned ${{ github.sha }}'
+      - run: |
+          git fetch
+          git checkout origin/main src
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "cleaned $GITHUB_SHA"
+          git push
