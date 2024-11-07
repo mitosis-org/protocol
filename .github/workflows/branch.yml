@@ -21,8 +21,12 @@ jobs:
         with:
           ref: clean
 
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            src
+
       - run: |
-          git checkout origin main ./src
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .
