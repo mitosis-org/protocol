@@ -34,6 +34,7 @@ jobs:
         uses: EndBug/add-and-commit@v9
         with:
           remove: '${{ steps.file-list.outputs.list }}'
+          pull: '-f origin main'
           push: 'origin clean --force'
           new_branch: 'clean'
           message: 'cleaned ${{ github.sha }}'
