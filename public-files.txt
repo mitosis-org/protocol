@@ -1,6 +1,7 @@
 ./.vscode/settings.json
 ./.yarn/install-state.gz
 ./.yarn/releases/yarn-4.4.0.cjs
+./src/hub/WMITO.sol
 ./src/interfaces/branch/IMitosisVault.sol
 ./src/interfaces/hub/IMitosis.sol
 ./src/interfaces/hub/core/IAssetManager.sol
