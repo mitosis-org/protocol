@@ -19,21 +19,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          ref: clean
 
-      - name: Make file list to remove
-        id: file-list
-        run: |
-          echo "list=$(git ls-files | grep -vE 'src/\w+' | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
-
-      - name: Check file list
-        run: |
-          echo ${{steps.file-list.outputs.list}}
-
-      - name: create branch and push
-        uses: EndBug/add-and-commit@v9
-        with:
-          remove: '${{ steps.file-list.outputs.list }}'
-          push: 'origin clean --set-upstream --force'
-          new_branch: 'clean'
-          message: 'cleaned ${{ github.sha }}'
+      - run: |
+          git checkout origin main ./src
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "cleaned $GITHUB_SHA"
+          git push origin clean
