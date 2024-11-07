@@ -27,7 +27,7 @@ abstract contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
     string memory symbol
   ) internal {
     if (bytes(name).length == 0 || bytes(symbol).length == 0) {
-      name = string.concat('Mitosis', asset_.name());
+      name = string.concat('Mitosis ', asset_.name());
       symbol = string.concat('mi', asset_.symbol());
     }
 
