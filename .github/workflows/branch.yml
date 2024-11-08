@@ -7,7 +7,7 @@ on:
 
 jobs:
   clean-branch:
-    name: make clean branch
+    name: update clean branch
     runs-on: arc-runner-set
     container: node:20
 
@@ -19,7 +19,9 @@ jobs:
         with:
           ref: clean
 
-      - run: |
+      - name: run update
+        run: |
+          git config --global --add safe.directory /__w/protocol/protocol
           git fetch
           git checkout origin/main src
           git config user.name "github-actions[bot]"
