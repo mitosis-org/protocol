@@ -8,7 +8,8 @@ on:
 jobs:
   clean-branch:
     name: make clean branch
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-set
+    container: node:20
 
     permissions:
       contents: write
