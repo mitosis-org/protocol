@@ -11,12 +11,7 @@ import { IEOLProtocolRegistry } from '../../interfaces/hub/eol/IEOLProtocolRegis
 import { StdError } from '../../lib/StdError.sol';
 import { EOLProtocolRegistryStorageV1, ProtocolInfo } from './EOLProtocolRegistryStorageV1.sol';
 
-contract EOLProtocolRegistry is
-  IEOLProtocolRegistry,
-  Ownable2StepUpgradeable,
-  AccessControlUpgradeable,
-  EOLProtocolRegistryStorageV1
-{
+contract EOLProtocolRegistry is IEOLProtocolRegistry, Ownable2StepUpgradeable, EOLProtocolRegistryStorageV1 {
   using EnumerableSet for EnumerableSet.UintSet;
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
@@ -28,9 +23,6 @@ contract EOLProtocolRegistry is
   function initialize(address owner) external initializer {
     __Ownable2Step_init();
     _transferOwnership(owner);
-
-    __AccessControl_init();
-    _grantRole(DEFAULT_ADMIN_ROLE, owner);
   }
 
   //=========== NOTE: VIEW FUNCTIONS ===========//

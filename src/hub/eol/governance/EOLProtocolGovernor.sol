@@ -16,12 +16,7 @@ import { EOLProtocolGovernorStorageV1 } from './EOLProtocolGovernorStorageV1.sol
 //  - e.g. consider to store quorum and threshold on-chain even though they are only used in off-chain.
 // TODO(thai): consider ERC-1271 (castVoteBySig) for voting.
 
-contract EOLProtocolGovernor is
-  IEOLProtocolGovernor,
-  Ownable2StepUpgradeable,
-  AccessControlUpgradeable,
-  EOLProtocolGovernorStorageV1
-{
+contract EOLProtocolGovernor is IEOLProtocolGovernor, AccessControlUpgradeable, EOLProtocolGovernorStorageV1 {
   bytes32 public constant PROPOSER_ROLE = keccak256('PROPOSER_ROLE');
   bytes32 public constant EXECUTOR_ROLE = keccak256('EXECUTOR_ROLE');
 
@@ -40,9 +35,6 @@ contract EOLProtocolGovernor is
   }
 
   function initialize(address owner, IEOLProtocolRegistry protocolRegistry_) public initializer {
-    __Ownable2Step_init();
-    _transferOwnership(owner);
-
     __AccessControl_init();
     _grantRole(DEFAULT_ADMIN_ROLE, owner);
     _setRoleAdmin(PROPOSER_ROLE, DEFAULT_ADMIN_ROLE);

@@ -11,12 +11,7 @@ import { Conv } from '../../lib/Conv.sol';
 import { CrossChainRegistryStorageV1 } from './CrossChainRegistryStorageV1.sol';
 
 /// Note: This contract stores data that needs to be shared across chains.
-contract CrossChainRegistry is
-  ICrossChainRegistry,
-  Ownable2StepUpgradeable,
-  AccessControlUpgradeable,
-  CrossChainRegistryStorageV1
-{
+contract CrossChainRegistry is ICrossChainRegistry, AccessControlUpgradeable, CrossChainRegistryStorageV1 {
   using Conv for *;
 
   bytes32 public constant REGISTERER_ROLE = keccak256('REGISTERER_ROLE');
@@ -33,10 +28,7 @@ contract CrossChainRegistry is
   }
 
   function initialize(address owner) external initializer {
-    __Ownable2Step_init();
     __AccessControl_init();
-
-    _transferOwnership(owner);
     _grantRole(DEFAULT_ADMIN_ROLE, owner);
     _setRoleAdmin(REGISTERER_ROLE, DEFAULT_ADMIN_ROLE);
   }
