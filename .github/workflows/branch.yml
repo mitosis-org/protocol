@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   clean-branch:
@@ -20,6 +23,7 @@ jobs:
           ref: clean
 
       - run: |
+          git config --global --add safe.directory /__w/protocol/protocol
           git fetch
           git checkout origin/main src
           git config user.name "github-actions[bot]"
