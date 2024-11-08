@@ -2,7 +2,6 @@
 pragma solidity ^0.8.27;
 
 import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
@@ -16,7 +15,7 @@ import { StdError } from '../../lib/StdError.sol';
  * @title Tracle
  * @notice A temporary oracle contract only for testnet.
  */
-contract Tracle is ITracle, Ownable2StepUpgradeable, AccessControlUpgradeable {
+contract Tracle is ITracle, AccessControlUpgradeable {
   using ERC7201Utils for string;
 
   bytes32 public constant MANAGER_ROLE = keccak256('MANAGER_ROLE');
@@ -52,10 +51,7 @@ contract Tracle is ITracle, Ownable2StepUpgradeable, AccessControlUpgradeable {
   }
 
   function initialize(address owner) external initializer {
-    __Ownable2Step_init();
     __AccessControl_init();
-
-    _transferOwnership(owner);
     _grantRole(DEFAULT_ADMIN_ROLE, owner);
     _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
   }
