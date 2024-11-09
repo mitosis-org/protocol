@@ -164,4 +164,33 @@ contract TWABRewardDistributortTest is Test {
 
     vm.stopPrank();
   }
+
+  function test_claim_notHandledReward() public {
+    vm.warp(0);
+    vm.startPrank(owner);
+
+    uint256 ownerAmount = 20 ether;
+    uint256 userAmount = 80 ether;
+    uint256 rewardAmount = 10 ether;
+
+    eolVault.mint(owner, ownerAmount);
+    eolVault.mint(address(1), userAmount);
+
+    reward.mint(owner, rewardAmount);
+
+    vm.warp(6 days);
+    assertEq(twabRewardDistributor.getFirstBatchTimestamp(address(eolVault), address(reward)), 0);
+    assertEq(twabRewardDistributor.getLastFinalizedBatchTimestamp(address(eolVault)), 6 days);
+
+    assertEq(twabRewardDistributor.getLastClaimedBatchTimestamp(address(eolVault), owner, address(reward)), 0);
+
+    // not finalized batch timestamp
+    assertFalse(twabRewardDistributor.isClaimableBatch(address(eolVault), owner, address(reward), 7 days));
+    assertEq(twabRewardDistributor.claimableAmount(address(eolVault), owner, address(reward), 7 days), 0);
+    assertEq(twabRewardDistributor.claim(address(eolVault), address(100), address(reward), 7 days), 0);
+    assertEq(twabRewardDistributor.getLastClaimedBatchTimestamp(address(eolVault), owner, address(reward)), 0);
+    assertEq(reward.balanceOf(address(100)), 0);
+
+    vm.stopPrank();
+  }
 }

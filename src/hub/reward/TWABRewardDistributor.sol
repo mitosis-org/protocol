@@ -93,7 +93,7 @@ contract TWABRewardDistributor is
     uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[account] == 0
       ? assetRewards.firstBatchTimestamp
       : assetRewards.lastClaimedBatchTimestamps[account] + batchPeriod;
-    if (batchTimestamp > toTimestamp) return 0;
+    if (batchTimestamp == 0 || batchTimestamp > toTimestamp) return 0;
 
     uint256 totalClaimableAmount = 0;
     do {
@@ -121,7 +121,7 @@ contract TWABRewardDistributor is
       ? assetRewards.firstBatchTimestamp
       : assetRewards.lastClaimedBatchTimestamps[account] + batchPeriod;
     uint48 batchTimestamp = startBatchTimestamp;
-    if (batchTimestamp > toTimestamp) return 0;
+    if (batchTimestamp == 0 || batchTimestamp > toTimestamp) return 0;
 
     uint256 totalRewards = 0;
     do {
