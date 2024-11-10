@@ -100,7 +100,7 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
 
     _moveToLatestEpoch(gov);
 
-    Epoch storage epoch_ = _ongoingEpoch(gov);
+    Epoch storage epoch_ = _lastEpoch(gov);
     EpochVoteInfo storage epochVoteInfo = _getOrInitEpochVoteInfo($, gov, epoch_, chainId);
 
     require(gauges.length > 0, IEOLGaugeGovernor__ZeroGaugesLength());
@@ -169,16 +169,8 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
     return epoch_;
   }
 
-  function _ongoingEpoch(Governance storage gov) internal view returns (Epoch storage) {
-    Epoch storage epoch_ = _epoch(gov, gov.lastEpochId);
-    uint48 currentTime = gov.eolVault.clock();
-
-    require(
-      currentTime >= epoch_.startsAt && currentTime < epoch_.endsAt,
-      IEOLGaugeGovernor__EpochNotOngoing(address(gov.eolVault), epoch_.id)
-    );
-
-    return epoch_;
+  function _lastEpoch(Governance storage gov) internal view returns (Epoch storage) {
+    return _epoch(gov, gov.lastEpochId);
   }
 
   function _latestVotedEpochIdBefore(Governance storage gov, uint256 epochIdBefore, uint256 chainId, address account)
@@ -194,7 +186,7 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
 
   function _moveToLatestEpoch(Governance storage gov) internal {
     uint48 currentTime = gov.eolVault.clock();
-    Epoch storage epoch_ = _ongoingEpoch(gov);
+    Epoch storage epoch_ = _lastEpoch(gov);
     while (currentTime >= epoch_.endsAt) {
       epoch_ = _moveToNextEpoch(gov, epoch_.endsAt);
     }
@@ -202,7 +194,7 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
 
   function _moveToNextEpochIfNeeded(Governance storage gov) internal {
     uint48 currentTime = gov.eolVault.clock();
-    Epoch storage epoch_ = _ongoingEpoch(gov);
+    Epoch storage epoch_ = _lastEpoch(gov);
     if (currentTime >= epoch_.endsAt) {
       _moveToNextEpoch(gov, epoch_.endsAt);
     }
