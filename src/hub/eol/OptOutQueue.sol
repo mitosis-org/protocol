@@ -48,7 +48,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     IEOLVault(eolVault).safeTransferFrom(_msgSender(), address(this), shares);
     uint256 assets = IEOLVault(eolVault).previewRedeem(shares) - 1; // FIXME: tricky way to avoid rounding error
     LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
-    reqId = queue.enqueue(receiver, assets, shares, IEOLVault(eolVault).clock());
+    reqId = queue.enqueue(receiver, shares, assets, IEOLVault(eolVault).clock());
 
     emit OptOutRequested(receiver, eolVault, shares, assets);
 
