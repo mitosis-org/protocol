@@ -108,7 +108,7 @@ contract EOLGaugeGovernor is IEOLGaugeGovernor, Ownable2StepUpgradeable, EOLGaug
       gauges.length == epochVoteInfo.protocolIds.length,
       IEOLGaugeGovernor__InvalidGaugesLength(gauges.length, epochVoteInfo.protocolIds.length)
     );
-    require(_sum(gauges) == 100, IEOLGaugeGovernor__InvalidGaugesSum());
+    require(_sum(gauges) == 10_000, IEOLGaugeGovernor__InvalidGaugesSum());
 
     epochVoteInfo.gaugesByAccount[_msgSender()] = gauges;
 
