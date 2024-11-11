@@ -10,11 +10,9 @@ import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/Ac
 import { IMerkleRewardDistributor } from '../../interfaces/hub/reward/IMerkleRewardDistributor.sol';
 import { IRewardDistributor } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { BaseHandler } from './BaseHandler.sol';
 import { MerkleRewardDistributorStorageV1 } from './MerkleRewardDistributorStorageV1.sol';
 
 contract MerkleRewardDistributor is
-  BaseHandler,
   IMerkleRewardDistributor,
   MerkleRewardDistributorStorageV1,
   AccessControlEnumerableUpgradeable
@@ -22,21 +20,19 @@ contract MerkleRewardDistributor is
   using SafeERC20 for IERC20;
   using MerkleProof for bytes32[];
 
-  /// @notice Role for dispatching rewards (keccak256("DISPATCHER_ROLE"))
-  bytes32 public constant DISPATCHER_ROLE = 0xfbd38eecf51668fdbc772b204dc63dd28c3a3cf32e3025f52a80aa807359f50c;
+  bytes32 public constant MANAGER_ROLE = keccak256('MANAGER_ROLE');
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  constructor() BaseHandler(HandlerType.Endpoint, DistributionType.Merkle, 'Merkle Reward Distributor') {
+  constructor() {
     _disableInitializers();
   }
 
   function initialize(address admin) public initializer {
-    __BaseHandler_init();
     __AccessControlEnumerable_init();
 
     _grantRole(DEFAULT_ADMIN_ROLE, admin);
-    _setRoleAdmin(DISPATCHER_ROLE, DEFAULT_ADMIN_ROLE);
+    _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
@@ -44,34 +40,42 @@ contract MerkleRewardDistributor is
   /**
    * @inheritdoc IMerkleRewardDistributor
    */
-  function encodeLeaf(address eolVault, address reward, uint256 stage_, address account, uint256 amount)
-    external
-    pure
-    returns (bytes32 leaf)
-  {
-    return _leaf(eolVault, reward, stage_, account, amount);
+  function lastStage() external view returns (uint256) {
+    return _getStorageV1().lastStage;
   }
 
   /**
    * @inheritdoc IMerkleRewardDistributor
    */
-  function claimable(address eolVault, address account, address reward, RewardMerkleMetadata memory metadata)
-    external
-    view
-    returns (bool)
-  {
-    return _claimable(eolVault, account, reward, metadata);
+  function root(uint256 stage_) external view returns (bytes32) {
+    return _stage(_getStorageV1(), stage_).root;
   }
 
   /**
    * @inheritdoc IMerkleRewardDistributor
    */
-  function claimableAmount(address eolVault, address account, address reward, RewardMerkleMetadata memory metadata)
-    external
-    view
-    returns (uint256)
-  {
-    return _claimableAmount(eolVault, account, reward, metadata);
+  function encodeLeaf(
+    address account,
+    uint256 stage,
+    address eolVault,
+    address[] calldata rewards,
+    uint256[] calldata amounts
+  ) external pure returns (bytes32 leaf) {
+    return _leaf(account, stage, eolVault, rewards, amounts);
+  }
+
+  /**
+   * @inheritdoc IMerkleRewardDistributor
+   */
+  function claimable(
+    address account,
+    uint256 stage,
+    address eolVault,
+    address[] calldata rewards,
+    uint256[] calldata amounts,
+    bytes32[] calldata proof
+  ) external view returns (bool) {
+    return _claimable(account, stage, eolVault, rewards, amounts, proof);
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
@@ -79,77 +83,132 @@ contract MerkleRewardDistributor is
   /**
    * @inheritdoc IMerkleRewardDistributor
    */
-  function claim(address eolVault, address receiver, address reward, RewardMerkleMetadata memory metadata) public {
-    _claim(eolVault, _msgSender(), receiver, reward, metadata);
+  function claim(
+    address receiver,
+    uint256 stage,
+    address eolVault,
+    address[] calldata rewards,
+    uint256[] calldata amounts,
+    bytes32[] calldata proof
+  ) public {
+    _claim(_msgSender(), receiver, stage, eolVault, rewards, amounts, proof);
   }
 
-  // ============================ NOTE: OVERRIDE FUNCTIONS ============================ //
+  /**
+   * @inheritdoc IMerkleRewardDistributor
+   */
+  function claimMultiple(
+    address receiver,
+    uint256 stage,
+    address[] calldata eolVaults,
+    address[][] calldata rewards,
+    uint256[][] calldata amounts,
+    bytes32[][] calldata proofs
+  ) public {
+    require(eolVaults.length == rewards.length, StdError.InvalidParameter('rewards.length'));
+    require(eolVaults.length == amounts.length, StdError.InvalidParameter('amounts.length'));
+    require(eolVaults.length == proofs.length, StdError.InvalidParameter('proofs.length'));
 
-  function _isDispatchable(address dispatcher) internal view override returns (bool) {
-    return hasRole(DISPATCHER_ROLE, dispatcher);
+    for (uint256 i = 0; i < eolVaults.length; i++) {
+      claim(receiver, stage, eolVaults[i], rewards[i], amounts[i], proofs[i]);
+    }
   }
 
-  function _handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) internal override {
+  /**
+   * @inheritdoc IMerkleRewardDistributor
+   */
+  function claimBatch(
+    address receiver,
+    uint256[] calldata stages,
+    address[][] calldata eolVaults,
+    address[][][] calldata rewards,
+    uint256[][][] calldata amounts,
+    bytes32[][][] calldata proofs
+  ) public {
+    require(stages.length == eolVaults.length, StdError.InvalidParameter('eolVaults.length'));
+    require(stages.length == rewards.length, StdError.InvalidParameter('rewards.length'));
+    require(stages.length == amounts.length, StdError.InvalidParameter('amounts.length'));
+    require(stages.length == proofs.length, StdError.InvalidParameter('proofs.length'));
+
+    for (uint256 i = 0; i < stages.length; i++) {
+      claimMultiple(receiver, stages[i], eolVaults[i], rewards[i], amounts[i], proofs[i]);
+    }
+  }
+
+  // ============================ NOTE: MANAGER FUNCTIONS ============================ //
+
+  /**
+   * @inheritdoc IMerkleRewardDistributor
+   */
+  function addStage(bytes32 root_) external onlyRole(MANAGER_ROLE) returns (uint256 stage) {
     StorageV1 storage $ = _getStorageV1();
 
-    IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
+    $.lastStage += 1;
+    Stage storage s = $.stages[$.lastStage];
+    s.root = root_;
 
-    (uint256 stageNum, bytes32 root) = abi.decode(metadata, (uint256, bytes32));
-    Stage storage stage = $.stages[eolVault][reward][stageNum];
-    stage.amount = amount;
-    stage.root = root;
+    emit StageAdded($.lastStage, root_);
 
-    emit RewardHandled(eolVault, reward, amount, distributionType(), metadata, bytes(''));
+    return $.lastStage;
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _claimable(address eolVault, address account, address reward, RewardMerkleMetadata memory metadata)
-    internal
-    view
-    returns (bool)
-  {
-    StorageV1 storage $ = _getStorageV1();
-    Stage storage stage = _stage($, eolVault, reward, metadata.stage);
-
-    bytes32 leaf = _leaf(eolVault, reward, metadata.stage, account, metadata.amount);
-
-    return !stage.claimed[account] && metadata.proof.verify(stage.root, leaf);
+  function _stage(StorageV1 storage $, uint256 stage) internal view returns (Stage storage) {
+    return $.stages[stage];
   }
 
-  function _claimableAmount(address eolVault, address account, address reward, RewardMerkleMetadata memory metadata)
-    internal
-    view
-    returns (uint256)
-  {
-    return _claimable(eolVault, account, reward, metadata) ? metadata.amount : 0;
+  function _claimable(
+    address account,
+    uint256 stage,
+    address eolVault,
+    address[] calldata rewards,
+    uint256[] calldata amounts,
+    bytes32[] calldata proof
+  ) internal view returns (bool) {
+    StorageV1 storage $ = _getStorageV1();
+    Stage storage s = _stage($, stage);
+
+    bytes32 leaf = _leaf(account, stage, eolVault, rewards, amounts);
+
+    return !s.claimed[account][eolVault] && proof.verify(s.root, leaf);
   }
 
   function _claim(
-    address eolVault,
     address account,
     address receiver,
-    address reward,
-    RewardMerkleMetadata memory metadata
+    uint256 stage,
+    address eolVault,
+    address[] calldata rewards,
+    uint256[] calldata amounts,
+    bytes32[] calldata proof
   ) internal {
     StorageV1 storage $ = _getStorageV1();
-    Stage storage stage = _stage($, eolVault, reward, metadata.stage);
+    Stage storage s = _stage($, stage);
 
-    require(!stage.claimed[account], IMerkleRewardDistributor__AlreadyClaimed());
-    stage.claimed[account] = true;
+    require(!s.claimed[account][eolVault], IMerkleRewardDistributor__AlreadyClaimed());
+    s.claimed[account][eolVault] = true;
 
-    bytes32 leaf = _leaf(eolVault, reward, metadata.stage, account, metadata.amount);
-    require(metadata.proof.verify(stage.root, leaf), IMerkleRewardDistributor__InvalidProof());
+    bytes32 leaf = _leaf(account, stage, eolVault, rewards, amounts);
+    require(proof.verify(s.root, leaf), IMerkleRewardDistributor__InvalidProof());
 
-    IERC20(reward).safeTransfer(receiver, metadata.amount);
-    emit Claimed(eolVault, account, receiver, reward, metadata.amount);
+    require(rewards.length == amounts.length, StdError.InvalidParameter('amounts.length'));
+    for (uint256 i = 0; i < rewards.length; i++) {
+      IERC20(rewards[i]).safeTransfer(receiver, amounts[i]);
+    }
+
+    emit Claimed(account, receiver, stage, eolVault, rewards, amounts);
   }
 
-  function _leaf(address eolVault, address reward, uint256 stage_, address account, uint256 amount)
-    internal
-    pure
-    returns (bytes32 leaf)
-  {
-    return keccak256(abi.encodePacked(eolVault, reward, stage_, account, amount));
+  function _leaf(
+    address account,
+    uint256 stage,
+    address eolVault,
+    address[] calldata rewards,
+    uint256[] calldata amounts
+  ) internal pure returns (bytes32 leaf) {
+    // double-hashing to prevent second preimage attacks:
+    // https://flawed.net.nz/2018/02/21/attacking-merkle-trees-with-a-second-preimage-attack/
+    return keccak256(bytes.concat(keccak256(abi.encode(account, stage, eolVault, rewards, amounts))));
   }
 }
