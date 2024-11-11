@@ -22,6 +22,7 @@ contract TWABRewardDistributortTest is Test {
   address immutable owner = makeAddr('owner');
   address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
+  uint48 batchPeriod = 1 days;
   uint48 twabPeriod = 7 days;
   uint256 rewardPrecision = 10 ** 18;
 
@@ -29,7 +30,7 @@ contract TWABRewardDistributortTest is Test {
     delegationRegistry = new MockDelegationRegistry(mitosis);
 
     _proxyAdmin = new ProxyAdmin(owner);
-    TWABRewardDistributor twabRewardDistributorImpl = new TWABRewardDistributor(1 days);
+    TWABRewardDistributor twabRewardDistributorImpl = new TWABRewardDistributor();
 
     twabRewardDistributor = TWABRewardDistributor(
       payable(
@@ -37,7 +38,7 @@ contract TWABRewardDistributortTest is Test {
           new TransparentUpgradeableProxy(
             address(twabRewardDistributorImpl),
             address(_proxyAdmin),
-            abi.encodeCall(twabRewardDistributor.initialize, (owner, twabPeriod, rewardPrecision))
+            abi.encodeCall(twabRewardDistributor.initialize, (owner, batchPeriod, twabPeriod, rewardPrecision))
           )
         )
       )

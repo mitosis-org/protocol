@@ -10,11 +10,17 @@ import { IRewardDistributor } from './IRewardDistributor.sol';
 interface ITWABRewardDistributorStorageV1 {
   event TWABPeriodSet(uint48 indexed period);
   event RewardPrecisionSet(uint256 indexed precision);
+  event BatchPeriodSetUnsafe(uint48 indexed batchPeriod);
 
   /**
    * @notice Error thrown when attempting to set a zero TWAB period.
    */
   error ITWABRewardDistributorStorageV1__ZeroPeriod();
+
+  /**
+   * @notice Returns the batch period.
+   */
+  function batchPeriod() external view returns (uint48);
 
   /**
    * @notice Returns the current TWAB period.
@@ -56,11 +62,6 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
    * @notice Error thrown when there's insufficient reward for distribution.
    */
   error ITWABRewardDistributor__InsufficientReward();
-
-  /**
-   * @notice Returns the batch period.
-   */
-  function batchPeriod() external view returns (uint48);
 
   /**
    * @notice Returns the first batch timestamp for a given EOL Vault and reward.

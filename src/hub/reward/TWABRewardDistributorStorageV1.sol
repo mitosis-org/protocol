@@ -18,6 +18,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   }
 
   struct StorageV1 {
+    uint48 batchPeriod;
     uint48 twabPeriod;
     uint256 rewardPrecision;
     mapping(address eolVault => mapping(address reward => AssetRewards assetRewards)) rewards;
@@ -35,6 +36,10 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
+
+  function batchPeriod() external view returns (uint48) {
+    return _getStorageV1().batchPeriod;
+  }
 
   function twabPeriod() external view returns (uint48) {
     return _getStorageV1().twabPeriod;
@@ -56,6 +61,11 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
     require(precision > 0, StdError.InvalidParameter('precision'));
     $.rewardPrecision = precision;
     emit RewardPrecisionSet(precision);
+  }
+
+  function _setBatchPeriodUnsafe(StorageV1 storage $, uint48 period) internal {
+    $.batchPeriod = period;
+    emit BatchPeriodSetUnsafe(period);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
