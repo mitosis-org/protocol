@@ -97,7 +97,7 @@ contract TWABRewardDistributor is
 
     // NOTE: If we change the batch period, the batchTimestamp could not align with the new batch period.
     //  So, we should round it up to the new batch period.
-    batchTimestamp = _roundUpToBatchPeriod($, batchTimestamp);
+    batchTimestamp = _alignToBatchPeriod($, batchTimestamp);
 
     if (batchTimestamp == 0 || batchTimestamp > toTimestamp) return 0;
 
@@ -129,7 +129,7 @@ contract TWABRewardDistributor is
 
     // NOTE: If we change the batch period, the startBatchTimestamp could not align with the new batch period.
     //  So, we should round it up to the new batch period.
-    startBatchTimestamp = _roundUpToBatchPeriod($, startBatchTimestamp);
+    startBatchTimestamp = _alignToBatchPeriod($, startBatchTimestamp);
 
     uint48 batchTimestamp = startBatchTimestamp;
     if (batchTimestamp == 0 || batchTimestamp > toTimestamp) return 0;
@@ -195,7 +195,7 @@ contract TWABRewardDistributor is
     // NOTE: We round `batchTimestamp` up to batch period because it's
     // convenient for future calls. It ensures that the batch reward for
     // all `eolVault` has the same `batchTimestamp` range.
-    uint48 batchTimestamp = _roundUpToBatchPeriod($, IERC6372(eolVault).clock());
+    uint48 batchTimestamp = _getNextBatchTimestamp($, IERC6372(eolVault).clock());
 
     assetRewards.batchRewards[batchTimestamp] += amount;
 
@@ -210,14 +210,24 @@ contract TWABRewardDistributor is
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _roundUpToBatchPeriod(StorageV1 storage $, uint48 timestamp) internal view returns (uint48) {
-    uint48 currentMidnight = timestamp - (timestamp % $.batchPeriod);
-    uint48 nextMidnight = currentMidnight + $.batchPeriod;
-    return nextMidnight;
+  /**
+   * @notice Returns the minumum timestamp that is aligned with the batch period and greater than the given timestamp.
+   */
+  function _getNextBatchTimestamp(StorageV1 storage $, uint48 timestamp) internal view returns (uint48) {
+    uint48 beforeOrEqual = timestamp - (timestamp % $.batchPeriod);
+    return beforeOrEqual + $.batchPeriod;
+  }
+
+  /**
+   * @notice Returns the minumum timestamp that is aligned with the batch period and greater than or equal to the given timestamp.
+   */
+  function _alignToBatchPeriod(StorageV1 storage $, uint48 timestamp) internal view returns (uint48) {
+    if (timestamp % $.batchPeriod == 0) return timestamp;
+    return _getNextBatchTimestamp($, timestamp);
   }
 
   function _lastFinalizedBatchTimestamp(StorageV1 storage $, address eolVault) internal view returns (uint48) {
-    return _roundUpToBatchPeriod($, IERC6372(eolVault).clock()) - $.batchPeriod;
+    return _getNextBatchTimestamp($, IERC6372(eolVault).clock()) - $.batchPeriod;
   }
 
   function _claimableAmountForBatch(
