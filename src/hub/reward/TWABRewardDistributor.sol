@@ -94,6 +94,7 @@ contract TWABRewardDistributor is
     uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
     toTimestamp = toTimestamp < lastFinalizedBatchTimestamp ? toTimestamp : lastFinalizedBatchTimestamp;
 
+    // TODO(thai): it should be aligned with batch period
     uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[account] == 0
       ? assetRewards.firstBatchTimestamp
       : assetRewards.lastClaimedBatchTimestamps[account] + TEST_BATCH_PERIOD;
@@ -121,6 +122,7 @@ contract TWABRewardDistributor is
     uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
     toTimestamp = toTimestamp < lastFinalizedBatchTimestamp ? toTimestamp : lastFinalizedBatchTimestamp;
 
+    // TODO(thai): it should be aligned with batch period
     uint48 startBatchTimestamp = assetRewards.lastClaimedBatchTimestamps[account] == 0
       ? assetRewards.firstBatchTimestamp
       : assetRewards.lastClaimedBatchTimestamps[account] + TEST_BATCH_PERIOD;
@@ -174,7 +176,7 @@ contract TWABRewardDistributor is
     uint48 batchTimestamp = _roundUpToMidnight(IERC6372(eolVault).clock());
 
     assetRewards.batchRewards[batchTimestamp] += amount;
-    if (assetRewards.firstBatchTimestamp == 0) {
+    if (assetRewards.firstBatchTimestamp == 0 || assetRewards.firstBatchTimestamp > batchTimestamp) {
       assetRewards.firstBatchTimestamp = batchTimestamp;
     }
 
