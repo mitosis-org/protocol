@@ -10,7 +10,9 @@ contract MockDelegationRegistry is IDelegationRegistry {
   mapping(address account => address defaultDelegatee) private _defaultDelegatees;
   mapping(address account => address redistributionRule) private _redistributionRules;
 
-  constructor(address mitosis_) { }
+  constructor(address mitosis_) {
+    _mitosis = mitosis_;
+  }
 
   function mitosis() external view returns (address mitosis_) {
     return _mitosis;

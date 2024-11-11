@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import { IAssetManager } from './core/IAssetManager.sol';
 import { IDelegationRegistry } from './core/IDelegationRegistry.sol';
+import { IRedistributionRegistry } from './core/IRedistributionRegistry.sol';
 import { IEOLGaugeGovernor } from './eol/governance/IEOLGaugeGovernor.sol';
 import { IEOLProtocolGovernor } from './eol/governance/IEOLProtocolGovernor.sol';
 import { IOptOutQueue } from './eol/IOptOutQueue.sol';
@@ -39,6 +40,11 @@ interface IMitosis {
    */
   function eolGaugeGovernor() external view returns (IEOLGaugeGovernor);
 
+  /**
+   * @notice Returns the address of the RedistributionRegistry contract.
+   */
+  function redistributionRegistry() external view returns (IRedistributionRegistry);
+
   //====================== NOTE: DELEGATION ======================//
 
   /**
@@ -66,4 +72,17 @@ interface IMitosis {
    * @param defaultDelegatee_ The address of the default delegatee.
    */
   function setDefaultDelegatee(address account, address defaultDelegatee_) external;
+
+  //====================== NOTE: REDISTRIBUTION ======================//
+
+  /**
+   * @notice Returns if a redistribution is enabled for `account`
+   * @param account The account address
+   */
+  function isRedistributionEnabled(address account) external view returns (bool);
+
+  /**
+   * @notice Enables redistribution for the `msg.sender`
+   */
+  function enableRedistribution() external;
 }

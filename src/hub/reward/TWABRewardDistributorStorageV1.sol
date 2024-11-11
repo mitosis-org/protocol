@@ -3,6 +3,7 @@ pragma solidity 0.8.27;
 
 import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
+import { IRedistributionRegistry } from '../../interfaces/hub/core/IRedistributionRegistry.sol';
 import { ITWABRewardDistributorStorageV1 } from '../../interfaces/hub/reward/ITWABRewardDistributor.sol';
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
@@ -22,6 +23,7 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
     uint48 twabPeriod;
     uint256 rewardPrecision;
     mapping(address eolVault => mapping(address reward => AssetRewards assetRewards)) rewards;
+    IRedistributionRegistry redistributionRegistry;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.TWABRewardDistributorStorage.v1';
@@ -49,6 +51,10 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
     return _getStorageV1().rewardPrecision;
   }
 
+  function redistributionRegistry() external view returns (IRedistributionRegistry) {
+    return _getStorageV1().redistributionRegistry;
+  }
+
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   function _setTWABPeriod(StorageV1 storage $, uint48 period) internal {
@@ -66,6 +72,11 @@ abstract contract TWABRewardDistributorStorageV1 is ITWABRewardDistributorStorag
   function _setBatchPeriodUnsafe(StorageV1 storage $, uint48 period) internal {
     $.batchPeriod = period;
     emit BatchPeriodSetUnsafe(period);
+  }
+
+  function _setRedistributionRegistry(StorageV1 storage $, IRedistributionRegistry registry) internal {
+    $.redistributionRegistry = registry;
+    emit RedistributionRegistrySet(address(registry));
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //

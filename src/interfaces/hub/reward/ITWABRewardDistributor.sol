@@ -11,6 +11,7 @@ interface ITWABRewardDistributorStorageV1 {
   event TWABPeriodSet(uint48 indexed period);
   event RewardPrecisionSet(uint256 indexed precision);
   event BatchPeriodSetUnsafe(uint48 indexed batchPeriod);
+  event RedistributionRegistrySet(address indexed registry);
 
   /**
    * @notice Error thrown when attempting to set a zero TWAB period.
@@ -62,6 +63,16 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
    * @notice Error thrown when there's insufficient reward for distribution.
    */
   error ITWABRewardDistributor__InsufficientReward();
+
+  /**
+   * @notice Error thrown when a redistribution is enabled.
+   */
+  error ITWABRewardDistributor__RedistributionEnabled();
+
+  /**
+   * @notice Error thrown when a redistribution is disabled.
+   */
+  error ITWABRewardDistributor__RedistributionDisabled();
 
   /**
    * @notice Returns the first batch timestamp for a given EOL Vault and reward.
@@ -148,4 +159,16 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
   function claimBatch(address[] calldata eolVaults, address receiver, address[][] calldata rewards, uint48 toTimestamp)
     external
     returns (uint256[][] memory claimedAmounts);
+
+  /**
+   * @notice Claims rewards for all batch timestamps to the specified timestamp for a redistribution.
+   * @param account The address of the account.
+   * @param eolVault The address of the EOL Vault contract.
+   * @param reward The address of the reward token.
+   * @param toTimestamp The batch timestamp up to which (inclusive) to claim rewards.
+   * @return claimedAmount The total amount of rewards claimed.
+   */
+  function claimForRedistribution(address account, address eolVault, address reward, uint48 toTimestamp)
+    external
+    returns (uint256 claimedAmount);
 }
