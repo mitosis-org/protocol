@@ -4,37 +4,14 @@ pragma solidity ^0.8.27;
 import { IRewardDistributor } from './IRewardDistributor.sol';
 
 /**
- * @title IMerkleRewardDistributorStorageV1
- * @notice Interface definition for the MerkleRewradDistributorStorageV1
- */
-interface IMerkleRewardDistributorStorageV1 {
-  struct StageResponse {
-    uint256 amount;
-    bytes32 root;
-  }
-
-  /**
-   * @notice Returns the stage info of specific distribution for the EOLVault and reward token.
-   * @param eolVault The EOLVault address
-   * @param reward The reward token address
-   * @param stageNum The stage number
-   */
-  function stage(address eolVault, address reward, uint256 stageNum) external view returns (StageResponse memory);
-}
-
-/**
  * @title IMerkleRewardDistributor
  * @notice Interface for the Merkle based reward distributor
  */
-interface IMerkleRewardDistributor is IRewardDistributor, IMerkleRewardDistributorStorageV1 {
-  struct RewardMerkleMetadata {
-    uint256 stage;
-    uint256 amount;
-    bytes32[] proof;
-  }
+interface IMerkleRewardDistributor {
+  event StageAdded(uint256 indexed stage, bytes32 root);
 
   event Claimed(
-    address indexed eolVault, address indexed account, address indexed receiver, address reward, uint256 amount
+    address indexed receiver, uint256 indexed stage, address indexed eolVault, address[] rewards, uint256[] amounts
   );
 
   /**
@@ -52,50 +29,96 @@ interface IMerkleRewardDistributor is IRewardDistributor, IMerkleRewardDistribut
    */
   error IMerkleRewardDistributor__InvalidAmount();
 
-  /**
-   * @notice Makes a leaf hash that expected to be used in the Merkle tree.
-   * @param eolVault The EOLVault address
-   * @param reward The reward token address
-   * @param stage_ The stage number
-   * @param account The account address
-   * @param amount The reward amount
-   * @return leaf The leaf hash
-   */
-  function encodeLeaf(address eolVault, address reward, uint256 stage_, address account, uint256 amount)
-    external
-    pure
-    returns (bytes32 leaf);
+  // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
   /**
-   * @notice Checks if the account can claim.
-   * @param eolVault The EOL Vault address
-   * @param account The account address
-   * @param reward The reward token address
-   * @param metadata The encoded metadata
+   * @notice Returns the last stage. If no stage exists, it returns 0.
    */
-  function claimable(address eolVault, address account, address reward, RewardMerkleMetadata memory metadata)
-    external
-    view
-    returns (bool);
+  function lastStage() external view returns (uint256);
 
   /**
-   * @notice Returns the amount of claimable rewards for the account.
-   * @param eolVault The EOL Vault address
-   * @param account The account address
-   * @param reward The reward token address
-   * @param metadata The encoded metadata
+   * @notice Returns the root hash of the specified stage. If the stage does not exist, it returns 0.
    */
-  function claimableAmount(address eolVault, address account, address reward, RewardMerkleMetadata memory metadata)
-    external
-    view
-    returns (uint256);
+  function root(uint256 stage_) external view returns (bytes32);
 
   /**
-   * @notice Claims all of the rewards for the specified vault and reward, sending them to the receiver.
-   * @param eolVault The EOL Vault address
-   * @param receiver The receiver address
-   * @param reward The reward token address
-   * @param metadata The encoded metadata
+   * @notice Makes a leaf hash that expected to be used in the merkle tree.
+   * @param stage The stage number.
+   * @param receiver The receiver address.
+   * @param eolVault The EOL Vault address.
+   * @param rewards The reward token addresses.
+   * @param amounts The reward amounts.
    */
-  function claim(address eolVault, address receiver, address reward, RewardMerkleMetadata memory metadata) external;
+  function encodeLeaf(
+    address receiver,
+    uint256 stage,
+    address eolVault,
+    address[] calldata rewards,
+    uint256[] calldata amounts
+  ) external pure returns (bytes32 leaf);
+
+  /**
+   * @notice Checks if the account can claim the rewards for the specified eolVault in the specified stage.
+   * @param receiver The receiver address.
+   * @param stage The stage number.
+   * @param eolVault The EOL Vault address.
+   * @param rewards The reward token addresses.
+   * @param amounts The reward amounts.
+   * @param proof The merkle proof.
+   */
+  function claimable(
+    address receiver,
+    uint256 stage,
+    address eolVault,
+    address[] calldata rewards,
+    uint256[] calldata amounts,
+    bytes32[] calldata proof
+  ) external view returns (bool);
+
+  // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
+
+  /**
+   * @notice Claims rewards for the specified eolVault in the specified stage.
+   */
+  function claim(
+    address receiver,
+    uint256 stage,
+    address eolVault,
+    address[] calldata rewards,
+    uint256[] calldata amounts,
+    bytes32[] calldata proof
+  ) external;
+
+  /**
+   * @notice Claims rewards for the multiple eolVaults in the specified stage.
+   */
+  function claimMultiple(
+    address receiver,
+    uint256 stage,
+    address[] calldata eolVaults,
+    address[][] calldata rewards,
+    uint256[][] calldata amounts,
+    bytes32[][] calldata proofs
+  ) external;
+
+  /**
+   * @notice Claims rewards for the multiple eolVaults in the multiple stages.
+   */
+  function claimBatch(
+    address receiver,
+    uint256[] calldata stages,
+    address[][] calldata eolVaults,
+    address[][][] calldata rewards,
+    uint256[][][] calldata amounts,
+    bytes32[][][] calldata proofs
+  ) external;
+
+  // ============================ NOTE: MANAGER FUNCTIONS ============================ //
+
+  /**
+   * @notice Adds a new stage with the specified root hash.
+   * @param root_ The root hash of the merkle tree.
+   * @return stage The stage number of the added root hash.
+   */
+  function addStage(bytes32 root_) external returns (uint256 stage);
 }
