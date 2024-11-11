@@ -24,6 +24,10 @@ contract TWABRewardDistributor is
 
   uint48 public immutable batchPeriod;
 
+  // TODO(thai): it is only for testing during development in our team.
+  //   It should be removed before exposing our app to senseis
+  uint48 public constant TEST_BATCH_PERIOD = 30 minutes;
+
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
   constructor(uint48 batchPeriod_) BaseHandler(HandlerType.Endpoint, DistributionType.TWAB, 'TWAB Reward Distributor') {
@@ -90,15 +94,16 @@ contract TWABRewardDistributor is
     uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
     toTimestamp = toTimestamp < lastFinalizedBatchTimestamp ? toTimestamp : lastFinalizedBatchTimestamp;
 
+    // TODO(thai): it should be aligned with batch period
     uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[account] == 0
       ? assetRewards.firstBatchTimestamp
-      : assetRewards.lastClaimedBatchTimestamps[account] + batchPeriod;
+      : assetRewards.lastClaimedBatchTimestamps[account] + TEST_BATCH_PERIOD;
     if (batchTimestamp == 0 || batchTimestamp > toTimestamp) return 0;
 
     uint256 totalClaimableAmount = 0;
     do {
       totalClaimableAmount += _claimableAmountForBatch($, eolVault, account, reward, batchTimestamp);
-      batchTimestamp = batchTimestamp + batchPeriod;
+      batchTimestamp = batchTimestamp + TEST_BATCH_PERIOD;
     } while (batchTimestamp <= toTimestamp);
 
     return totalClaimableAmount;
@@ -117,19 +122,20 @@ contract TWABRewardDistributor is
     uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
     toTimestamp = toTimestamp < lastFinalizedBatchTimestamp ? toTimestamp : lastFinalizedBatchTimestamp;
 
+    // TODO(thai): it should be aligned with batch period
     uint48 startBatchTimestamp = assetRewards.lastClaimedBatchTimestamps[account] == 0
       ? assetRewards.firstBatchTimestamp
-      : assetRewards.lastClaimedBatchTimestamps[account] + batchPeriod;
+      : assetRewards.lastClaimedBatchTimestamps[account] + TEST_BATCH_PERIOD;
     uint48 batchTimestamp = startBatchTimestamp;
     if (batchTimestamp == 0 || batchTimestamp > toTimestamp) return 0;
 
     uint256 totalRewards = 0;
     do {
       totalRewards += _calculateUserReward($, eolVault, account, reward, batchTimestamp);
-      batchTimestamp = batchTimestamp + batchPeriod;
+      batchTimestamp = batchTimestamp + TEST_BATCH_PERIOD;
     } while (batchTimestamp <= toTimestamp);
 
-    assetRewards.lastClaimedBatchTimestamps[account] = batchTimestamp - batchPeriod;
+    assetRewards.lastClaimedBatchTimestamps[account] = batchTimestamp - TEST_BATCH_PERIOD;
     if (totalRewards > 0) {
       IERC20(reward).transfer(receiver, totalRewards);
     }
@@ -170,7 +176,7 @@ contract TWABRewardDistributor is
     uint48 batchTimestamp = _roundUpToMidnight(IERC6372(eolVault).clock());
 
     assetRewards.batchRewards[batchTimestamp] += amount;
-    if (assetRewards.firstBatchTimestamp == 0) {
+    if (assetRewards.firstBatchTimestamp == 0 || assetRewards.firstBatchTimestamp > batchTimestamp) {
       assetRewards.firstBatchTimestamp = batchTimestamp;
     }
 
@@ -180,13 +186,13 @@ contract TWABRewardDistributor is
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
   function _roundUpToMidnight(uint48 timestamp) internal view returns (uint48) {
-    uint48 currentMidnight = timestamp - (timestamp % batchPeriod);
-    uint48 nextMidnight = currentMidnight + batchPeriod;
+    uint48 currentMidnight = timestamp - (timestamp % TEST_BATCH_PERIOD);
+    uint48 nextMidnight = currentMidnight + TEST_BATCH_PERIOD;
     return nextMidnight;
   }
 
   function _lastFinalizedBatchTimestamp(address eolVault) internal view returns (uint48) {
-    return _roundUpToMidnight(IERC6372(eolVault).clock()) - batchPeriod;
+    return _roundUpToMidnight(IERC6372(eolVault).clock()) - TEST_BATCH_PERIOD;
   }
 
   function _claimableAmountForBatch(
