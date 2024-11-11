@@ -22,20 +22,16 @@ contract TWABRewardDistributor is
   /// @notice Role for dispatching rewards (keccak256("DISPATCHER_ROLE"))
   bytes32 public constant DISPATCHER_ROLE = 0xfbd38eecf51668fdbc772b204dc63dd28c3a3cf32e3025f52a80aa807359f50c;
 
-  uint48 public immutable batchPeriod;
-
-  // TODO(thai): it is only for testing during development in our team.
-  //   It should be removed before exposing our app to senseis
-  uint48 public constant TEST_BATCH_PERIOD = 30 minutes;
-
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  constructor(uint48 batchPeriod_) BaseHandler(HandlerType.Endpoint, DistributionType.TWAB, 'TWAB Reward Distributor') {
+  constructor() BaseHandler(HandlerType.Endpoint, DistributionType.TWAB, 'TWAB Reward Distributor') {
     _disableInitializers();
-    batchPeriod = batchPeriod_;
   }
 
-  function initialize(address admin, uint48 twabPeriod_, uint256 rewardPrecision_) public initializer {
+  function initialize(address admin, uint48 batchPeriod_, uint48 twabPeriod_, uint256 rewardPrecision_)
+    public
+    initializer
+  {
     __BaseHandler_init();
     __AccessControlEnumerable_init();
 
@@ -44,6 +40,7 @@ contract TWABRewardDistributor is
 
     StorageV1 storage $ = _getStorageV1();
 
+    _setBatchPeriodUnsafe($, batchPeriod_);
     _setTWABPeriod($, twabPeriod_);
     _setRewardPrecision($, rewardPrecision_);
   }
@@ -64,7 +61,7 @@ contract TWABRewardDistributor is
   }
 
   function getLastFinalizedBatchTimestamp(address eolVault) external view returns (uint48) {
-    return _lastFinalizedBatchTimestamp(eolVault);
+    return _lastFinalizedBatchTimestamp(_getStorageV1(), eolVault);
   }
 
   function isClaimableBatch(address eolVault, address account, address reward, uint48 batchTimestamp)
@@ -91,19 +88,23 @@ contract TWABRewardDistributor is
     StorageV1 storage $ = _getStorageV1();
     AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
 
-    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
+    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp($, eolVault);
     toTimestamp = toTimestamp < lastFinalizedBatchTimestamp ? toTimestamp : lastFinalizedBatchTimestamp;
 
-    // TODO(thai): it should be aligned with batch period
     uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[account] == 0
       ? assetRewards.firstBatchTimestamp
-      : assetRewards.lastClaimedBatchTimestamps[account] + TEST_BATCH_PERIOD;
+      : assetRewards.lastClaimedBatchTimestamps[account] + $.batchPeriod;
+
+    // NOTE: If we change the batch period, the batchTimestamp could not align with the new batch period.
+    //  So, we should round it up to the new batch period.
+    batchTimestamp = _alignToBatchPeriod($, batchTimestamp);
+
     if (batchTimestamp == 0 || batchTimestamp > toTimestamp) return 0;
 
     uint256 totalClaimableAmount = 0;
     do {
       totalClaimableAmount += _claimableAmountForBatch($, eolVault, account, reward, batchTimestamp);
-      batchTimestamp = batchTimestamp + TEST_BATCH_PERIOD;
+      batchTimestamp = batchTimestamp + $.batchPeriod;
     } while (batchTimestamp <= toTimestamp);
 
     return totalClaimableAmount;
@@ -119,23 +120,27 @@ contract TWABRewardDistributor is
     AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
     address account = _msgSender();
 
-    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
+    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp($, eolVault);
     toTimestamp = toTimestamp < lastFinalizedBatchTimestamp ? toTimestamp : lastFinalizedBatchTimestamp;
 
-    // TODO(thai): it should be aligned with batch period
     uint48 startBatchTimestamp = assetRewards.lastClaimedBatchTimestamps[account] == 0
       ? assetRewards.firstBatchTimestamp
-      : assetRewards.lastClaimedBatchTimestamps[account] + TEST_BATCH_PERIOD;
+      : assetRewards.lastClaimedBatchTimestamps[account] + $.batchPeriod;
+
+    // NOTE: If we change the batch period, the startBatchTimestamp could not align with the new batch period.
+    //  So, we should round it up to the new batch period.
+    startBatchTimestamp = _alignToBatchPeriod($, startBatchTimestamp);
+
     uint48 batchTimestamp = startBatchTimestamp;
     if (batchTimestamp == 0 || batchTimestamp > toTimestamp) return 0;
 
     uint256 totalRewards = 0;
     do {
       totalRewards += _calculateUserReward($, eolVault, account, reward, batchTimestamp);
-      batchTimestamp = batchTimestamp + TEST_BATCH_PERIOD;
+      batchTimestamp = batchTimestamp + $.batchPeriod;
     } while (batchTimestamp <= toTimestamp);
 
-    assetRewards.lastClaimedBatchTimestamps[account] = batchTimestamp - TEST_BATCH_PERIOD;
+    assetRewards.lastClaimedBatchTimestamps[account] = batchTimestamp - $.batchPeriod;
     if (totalRewards > 0) {
       IERC20(reward).transfer(receiver, totalRewards);
     }
@@ -151,6 +156,23 @@ contract TWABRewardDistributor is
     );
 
     return totalRewards;
+  }
+
+  //=========== NOTE: OWNABLE FUNCTIONS ===========//
+
+  function setTWABPeriod(uint48 period) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    _setTWABPeriod(_getStorageV1(), period);
+  }
+
+  function setRewardPrecision(uint256 precision) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    _setRewardPrecision(_getStorageV1(), precision);
+  }
+
+  /**
+   * @dev Don't use this function in production. It's only for testing purposes.
+   */
+  function setBatchPeriodUnsafe(uint48 period) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    _setBatchPeriodUnsafe(_getStorageV1(), period);
   }
 
   /**
@@ -170,12 +192,15 @@ contract TWABRewardDistributor is
 
     AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
 
-    // NOTE: We round `batchTimestamp` up to midnight because it's
+    // NOTE: We round `batchTimestamp` up to batch period because it's
     // convenient for future calls. It ensures that the batch reward for
     // all `eolVault` has the same `batchTimestamp` range.
-    uint48 batchTimestamp = _roundUpToMidnight(IERC6372(eolVault).clock());
+    uint48 batchTimestamp = _getNextBatchTimestamp($, IERC6372(eolVault).clock());
 
     assetRewards.batchRewards[batchTimestamp] += amount;
+
+    // NOTE: If we decrease the batch period, the first batch timestamp might be in the future.
+    //   So, we should update it to fit with new batch period.
     if (assetRewards.firstBatchTimestamp == 0 || assetRewards.firstBatchTimestamp > batchTimestamp) {
       assetRewards.firstBatchTimestamp = batchTimestamp;
     }
@@ -185,14 +210,24 @@ contract TWABRewardDistributor is
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _roundUpToMidnight(uint48 timestamp) internal view returns (uint48) {
-    uint48 currentMidnight = timestamp - (timestamp % TEST_BATCH_PERIOD);
-    uint48 nextMidnight = currentMidnight + TEST_BATCH_PERIOD;
-    return nextMidnight;
+  /**
+   * @notice Returns the minumum timestamp that is aligned with the batch period and greater than the given timestamp.
+   */
+  function _getNextBatchTimestamp(StorageV1 storage $, uint48 timestamp) internal view returns (uint48) {
+    uint48 beforeOrEqual = timestamp - (timestamp % $.batchPeriod);
+    return beforeOrEqual + $.batchPeriod;
   }
 
-  function _lastFinalizedBatchTimestamp(address eolVault) internal view returns (uint48) {
-    return _roundUpToMidnight(IERC6372(eolVault).clock()) - TEST_BATCH_PERIOD;
+  /**
+   * @notice Returns the minumum timestamp that is aligned with the batch period and greater than or equal to the given timestamp.
+   */
+  function _alignToBatchPeriod(StorageV1 storage $, uint48 timestamp) internal view returns (uint48) {
+    if (timestamp % $.batchPeriod == 0) return timestamp;
+    return _getNextBatchTimestamp($, timestamp);
+  }
+
+  function _lastFinalizedBatchTimestamp(StorageV1 storage $, address eolVault) internal view returns (uint48) {
+    return _getNextBatchTimestamp($, IERC6372(eolVault).clock()) - $.batchPeriod;
   }
 
   function _claimableAmountForBatch(
@@ -202,7 +237,7 @@ contract TWABRewardDistributor is
     address reward,
     uint48 batchTimestamp
   ) internal view returns (uint256) {
-    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp(eolVault);
+    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp($, eolVault);
     if (batchTimestamp > lastFinalizedBatchTimestamp) return 0; // not finalized yet
 
     uint48 lastClaimedBatchTimestamp = _assetRewards($, eolVault, reward).lastClaimedBatchTimestamps[account];
