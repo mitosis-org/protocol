@@ -11,12 +11,7 @@ interface IMerkleRewardDistributor {
   event StageAdded(uint256 indexed stage, bytes32 root);
 
   event Claimed(
-    address indexed account,
-    address receiver,
-    uint256 indexed stage,
-    address indexed eolVault,
-    address[] rewards,
-    uint256[] amounts
+    address indexed receiver, uint256 indexed stage, address indexed eolVault, address[] rewards, uint256[] amounts
   );
 
   /**
@@ -49,13 +44,13 @@ interface IMerkleRewardDistributor {
   /**
    * @notice Makes a leaf hash that expected to be used in the merkle tree.
    * @param stage The stage number.
-   * @param account The account address.
+   * @param receiver The receiver address.
    * @param eolVault The EOL Vault address.
    * @param rewards The reward token addresses.
    * @param amounts The reward amounts.
    */
   function encodeLeaf(
-    address account,
+    address receiver,
     uint256 stage,
     address eolVault,
     address[] calldata rewards,
@@ -64,7 +59,7 @@ interface IMerkleRewardDistributor {
 
   /**
    * @notice Checks if the account can claim the rewards for the specified eolVault in the specified stage.
-   * @param account The account address.
+   * @param receiver The receiver address.
    * @param stage The stage number.
    * @param eolVault The EOL Vault address.
    * @param rewards The reward token addresses.
@@ -72,7 +67,7 @@ interface IMerkleRewardDistributor {
    * @param proof The merkle proof.
    */
   function claimable(
-    address account,
+    address receiver,
     uint256 stage,
     address eolVault,
     address[] calldata rewards,

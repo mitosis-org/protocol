@@ -9,7 +9,7 @@ abstract contract MerkleRewardDistributorStorageV1 {
 
   struct Stage {
     bytes32 root;
-    mapping(address account => mapping(address eolVault => bool)) claimed;
+    mapping(address receiver => mapping(address eolVault => bool)) claimed;
   }
 
   struct StorageV1 {

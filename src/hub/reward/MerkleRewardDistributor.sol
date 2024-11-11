@@ -55,27 +55,27 @@ contract MerkleRewardDistributor is
    * @inheritdoc IMerkleRewardDistributor
    */
   function encodeLeaf(
-    address account,
+    address receiver,
     uint256 stage,
     address eolVault,
     address[] calldata rewards,
     uint256[] calldata amounts
   ) external pure returns (bytes32 leaf) {
-    return _leaf(account, stage, eolVault, rewards, amounts);
+    return _leaf(receiver, stage, eolVault, rewards, amounts);
   }
 
   /**
    * @inheritdoc IMerkleRewardDistributor
    */
   function claimable(
-    address account,
+    address receiver,
     uint256 stage,
     address eolVault,
     address[] calldata rewards,
     uint256[] calldata amounts,
     bytes32[] calldata proof
   ) external view returns (bool) {
-    return _claimable(account, stage, eolVault, rewards, amounts, proof);
+    return _claimable(receiver, stage, eolVault, rewards, amounts, proof);
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
@@ -91,7 +91,7 @@ contract MerkleRewardDistributor is
     uint256[] calldata amounts,
     bytes32[] calldata proof
   ) public {
-    _claim(_msgSender(), receiver, stage, eolVault, rewards, amounts, proof);
+    _claim(receiver, stage, eolVault, rewards, amounts, proof);
   }
 
   /**
@@ -159,7 +159,7 @@ contract MerkleRewardDistributor is
   }
 
   function _claimable(
-    address account,
+    address receiver,
     uint256 stage,
     address eolVault,
     address[] calldata rewards,
@@ -169,13 +169,12 @@ contract MerkleRewardDistributor is
     StorageV1 storage $ = _getStorageV1();
     Stage storage s = _stage($, stage);
 
-    bytes32 leaf = _leaf(account, stage, eolVault, rewards, amounts);
+    bytes32 leaf = _leaf(receiver, stage, eolVault, rewards, amounts);
 
-    return !s.claimed[account][eolVault] && proof.verify(s.root, leaf);
+    return !s.claimed[receiver][eolVault] && proof.verify(s.root, leaf);
   }
 
   function _claim(
-    address account,
     address receiver,
     uint256 stage,
     address eolVault,
@@ -186,10 +185,10 @@ contract MerkleRewardDistributor is
     StorageV1 storage $ = _getStorageV1();
     Stage storage s = _stage($, stage);
 
-    require(!s.claimed[account][eolVault], IMerkleRewardDistributor__AlreadyClaimed());
-    s.claimed[account][eolVault] = true;
+    require(!s.claimed[receiver][eolVault], IMerkleRewardDistributor__AlreadyClaimed());
+    s.claimed[receiver][eolVault] = true;
 
-    bytes32 leaf = _leaf(account, stage, eolVault, rewards, amounts);
+    bytes32 leaf = _leaf(receiver, stage, eolVault, rewards, amounts);
     require(proof.verify(s.root, leaf), IMerkleRewardDistributor__InvalidProof());
 
     require(rewards.length == amounts.length, StdError.InvalidParameter('amounts.length'));
@@ -197,11 +196,11 @@ contract MerkleRewardDistributor is
       IERC20(rewards[i]).safeTransfer(receiver, amounts[i]);
     }
 
-    emit Claimed(account, receiver, stage, eolVault, rewards, amounts);
+    emit Claimed(receiver, stage, eolVault, rewards, amounts);
   }
 
   function _leaf(
-    address account,
+    address receiver,
     uint256 stage,
     address eolVault,
     address[] calldata rewards,
@@ -209,6 +208,6 @@ contract MerkleRewardDistributor is
   ) internal pure returns (bytes32 leaf) {
     // double-hashing to prevent second preimage attacks:
     // https://flawed.net.nz/2018/02/21/attacking-merkle-trees-with-a-second-preimage-attack/
-    return keccak256(bytes.concat(keccak256(abi.encode(account, stage, eolVault, rewards, amounts))));
+    return keccak256(bytes.concat(keccak256(abi.encodePacked(receiver, stage, eolVault, rewards, amounts))));
   }
 }
