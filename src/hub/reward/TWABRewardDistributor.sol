@@ -94,7 +94,11 @@ contract TWABRewardDistributor is
     uint48 batchTimestamp = assetRewards.lastClaimedBatchTimestamps[account] == 0
       ? assetRewards.firstBatchTimestamp
       : assetRewards.lastClaimedBatchTimestamps[account] + $.batchPeriod;
+
+    // NOTE: If we change the batch period, the batchTimestamp could not align with the new batch period.
+    //  So, we should round it up to the new batch period.
     batchTimestamp = _roundUpToBatchPeriod($, batchTimestamp);
+
     if (batchTimestamp == 0 || batchTimestamp > toTimestamp) return 0;
 
     uint256 totalClaimableAmount = 0;
@@ -122,7 +126,11 @@ contract TWABRewardDistributor is
     uint48 startBatchTimestamp = assetRewards.lastClaimedBatchTimestamps[account] == 0
       ? assetRewards.firstBatchTimestamp
       : assetRewards.lastClaimedBatchTimestamps[account] + $.batchPeriod;
+
+    // NOTE: If we change the batch period, the startBatchTimestamp could not align with the new batch period.
+    //  So, we should round it up to the new batch period.
     startBatchTimestamp = _roundUpToBatchPeriod($, startBatchTimestamp);
+
     uint48 batchTimestamp = startBatchTimestamp;
     if (batchTimestamp == 0 || batchTimestamp > toTimestamp) return 0;
 
@@ -190,6 +198,9 @@ contract TWABRewardDistributor is
     uint48 batchTimestamp = _roundUpToBatchPeriod($, IERC6372(eolVault).clock());
 
     assetRewards.batchRewards[batchTimestamp] += amount;
+
+    // NOTE: If we decrease the batch period, the first batch timestamp might be in the future.
+    //   So, we should update it to fit with new batch period.
     if (assetRewards.firstBatchTimestamp == 0 || assetRewards.firstBatchTimestamp > batchTimestamp) {
       assetRewards.firstBatchTimestamp = batchTimestamp;
     }
