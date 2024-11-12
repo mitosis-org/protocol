@@ -9,26 +9,18 @@ interface IDelegationRegistry {
   /**
    * @dev Emitted when the delegation manager is set for an account.
    * @param account The account that nominated the delegation manager
-   * @param manager The delegation manager who tries to set the next delegation manager
+   * @param requester The requester who tries to set the delegation manager
    * @param delegationManager The delegation manager set
    */
-  event DelegationManagerSet(address indexed account, address indexed manager, address indexed delegationManager);
+  event DelegationManagerSet(address indexed account, address indexed requester, address indexed delegationManager);
 
   /**
    * @dev Emitted when the default delegatee is set for an account.
    * @param account The account that nominated the default delegatee
-   * @param manager The delegation manager who tries to set the default delegatee
+   * @param requester The requester who tries to set the default delegatee
    * @param delegatee The default delegatee set
    */
-  event DefaultDelegateeSet(address indexed account, address indexed manager, address indexed delegatee);
-
-  /**
-   * @dev Emitted when the redistribution rule is set for an account.
-   * @param account The account that nominated the redistribution rule
-   * @param manager The delegation manager who tries to set the redistribution rule
-   * @param redistributionRule The redistribution rule set
-   */
-  event RedistributionRuleSet(address indexed account, address indexed manager, address indexed redistributionRule);
+  event DefaultDelegateeSet(address indexed account, address indexed requester, address indexed delegatee);
 
   /**
    * @dev Queries the Mitosis contract
@@ -63,7 +55,7 @@ interface IDelegationRegistry {
    */
   function setDefaultDelegatee(address account, address defaultDelegatee_) external;
 
-  function setDelegationManagerByMitosis(address caller, address account, address delegationManager_) external;
+  function setDelegationManagerByMitosis(address requester, address account, address delegationManager_) external;
 
-  function setDefaultDelegateeByMitosis(address caller, address account, address defaultDelegatee_) external;
+  function setDefaultDelegateeByMitosis(address requester, address account, address defaultDelegatee_) external;
 }

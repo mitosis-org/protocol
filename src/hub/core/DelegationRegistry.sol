@@ -59,18 +59,18 @@ contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1,
     return _setDefaultDelegatee($, _msgSender(), account, defaultDelegatee_);
   }
 
-  function setDelegationManagerByMitosis(address caller, address account, address delegationManager_) external {
+  function setDelegationManagerByMitosis(address requester, address account, address delegationManager_) external {
     StorageV1 storage $ = _getStorageV1();
     require(_msgSender() == $.mitosis, StdError.Unauthorized());
 
-    return _setDelegationManager($, caller, account, delegationManager_);
+    return _setDelegationManager($, requester, account, delegationManager_);
   }
 
-  function setDefaultDelegateeByMitosis(address caller, address account, address defaultDelegatee_) external {
+  function setDefaultDelegateeByMitosis(address requester, address account, address defaultDelegatee_) external {
     StorageV1 storage $ = _getStorageV1();
     require(_msgSender() == $.mitosis, StdError.Unauthorized());
 
-    return _setDefaultDelegatee($, caller, account, defaultDelegatee_);
+    return _setDefaultDelegatee($, requester, account, defaultDelegatee_);
   }
 
   //========================== NOTE: INTERNAL FUNCTIONS ==========================//
@@ -80,25 +80,25 @@ contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1,
     return delegationManager_ == address(0) ? account : delegationManager_; // default to account
   }
 
-  function _setDelegationManager(StorageV1 storage $, address caller, address account, address delegationManager_)
+  function _setDelegationManager(StorageV1 storage $, address requester, address account, address delegationManager_)
     internal
   {
-    _assertSelfOrManager($, caller, account);
+    _assertSelfOrManager($, requester, account);
 
     $.delegationManagers[account] = delegationManager_;
-    emit DelegationManagerSet(account, caller, delegationManager_);
+    emit DelegationManagerSet(account, requester, delegationManager_);
   }
 
-  function _setDefaultDelegatee(StorageV1 storage $, address caller, address account, address defaultDelegatee_)
+  function _setDefaultDelegatee(StorageV1 storage $, address requester, address account, address defaultDelegatee_)
     private
   {
-    _assertSelfOrManager($, caller, account);
+    _assertSelfOrManager($, requester, account);
 
     $.defaultDelegatees[account] = defaultDelegatee_;
-    emit DefaultDelegateeSet(account, caller, defaultDelegatee_);
+    emit DefaultDelegateeSet(account, requester, defaultDelegatee_);
   }
 
-  function _assertSelfOrManager(StorageV1 storage $, address caller, address account) private view {
-    require(caller == account || caller == _delegationManager($, account), StdError.Unauthorized());
+  function _assertSelfOrManager(StorageV1 storage $, address requester, address account) private view {
+    require(requester == account || requester == _delegationManager($, requester), StdError.Unauthorized());
   }
 }

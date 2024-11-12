@@ -34,15 +34,15 @@ contract MockDelegationRegistry is IDelegationRegistry {
     _defaultDelegatees[account] = defaultDelegatee_;
   }
 
-  function setDelegationManagerByMitosis(address caller, address account, address delegationManager_) external {
-    require(caller == _mitosis, StdError.Unauthorized());
-    require(caller == account || caller == _delegationManagers[account], StdError.Unauthorized());
+  function setDelegationManagerByMitosis(address requester, address account, address delegationManager_) external {
+    require(requester == _mitosis, StdError.Unauthorized());
+    require(requester == account || requester == _delegationManagers[account], StdError.Unauthorized());
     _delegationManagers[account] = delegationManager_;
   }
 
-  function setDefaultDelegateeByMitosis(address caller, address account, address defaultDelegatee_) external {
-    require(caller == _mitosis, StdError.Unauthorized());
-    require(caller == account || caller == _delegationManagers[account], StdError.Unauthorized());
+  function setDefaultDelegateeByMitosis(address requester, address account, address defaultDelegatee_) external {
+    require(requester == _mitosis, StdError.Unauthorized());
+    require(requester == account || requester == _delegationManagers[account], StdError.Unauthorized());
     _defaultDelegatees[account] = defaultDelegatee_;
   }
 }
