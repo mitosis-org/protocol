@@ -106,14 +106,14 @@ contract Mitosis is IMitosis, Ownable2StepUpgradeable {
    * @inheritdoc IMitosis
    */
   function setDelegationManager(address account, address delegationManager_) external {
-    _getMitosisStorage().delegationRegistry.setDelegationManager(account, delegationManager_);
+    _getMitosisStorage().delegationRegistry.setDelegationManagerByMitosis(_msgSender(), account, delegationManager_);
   }
 
   /**
    * @inheritdoc IMitosis
    */
   function setDefaultDelegatee(address account, address defaultDelegatee_) external {
-    _getMitosisStorage().delegationRegistry.setDefaultDelegatee(account, defaultDelegatee_);
+    _getMitosisStorage().delegationRegistry.setDefaultDelegateeByMitosis(_msgSender(), account, defaultDelegatee_);
   }
 
   // =========================== NOTE: State Setter  =========================== //
