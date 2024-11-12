@@ -117,45 +117,37 @@ contract TWABRewardDistributor is
     returns (uint256 claimedAmount)
   {
     StorageV1 storage $ = _getStorageV1();
-    AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
-    address account = _msgSender();
+    return _claim($, eolVault, _msgSender(), receiver, reward, toTimestamp);
+  }
 
-    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp($, eolVault);
-    toTimestamp = toTimestamp < lastFinalizedBatchTimestamp ? toTimestamp : lastFinalizedBatchTimestamp;
-
-    uint48 startBatchTimestamp = assetRewards.lastClaimedBatchTimestamps[account] == 0
-      ? assetRewards.firstBatchTimestamp
-      : assetRewards.lastClaimedBatchTimestamps[account] + $.batchPeriod;
-
-    // NOTE: If we change the batch period, the startBatchTimestamp could not align with the new batch period.
-    //  So, we should round it up to the new batch period.
-    startBatchTimestamp = _alignToBatchPeriod($, startBatchTimestamp);
-
-    uint48 batchTimestamp = startBatchTimestamp;
-    if (batchTimestamp == 0 || batchTimestamp > toTimestamp) return 0;
-
-    uint256 totalRewards = 0;
-    do {
-      totalRewards += _calculateUserReward($, eolVault, account, reward, batchTimestamp);
-      batchTimestamp = batchTimestamp + $.batchPeriod;
-    } while (batchTimestamp <= toTimestamp);
-
-    assetRewards.lastClaimedBatchTimestamps[account] = batchTimestamp - $.batchPeriod;
-    if (totalRewards > 0) {
-      IERC20(reward).transfer(receiver, totalRewards);
+  function claimMultiple(address eolVault, address receiver, address[] calldata rewards, uint48 toTimestamp)
+    external
+    returns (uint256[] memory claimedAmounts)
+  {
+    StorageV1 storage $ = _getStorageV1();
+    claimedAmounts = new uint256[](rewards.length);
+    for (uint256 i = 0; i < rewards.length; i++) {
+      claimedAmounts[i] = _claim($, eolVault, _msgSender(), receiver, rewards[i], toTimestamp);
     }
+    return claimedAmounts;
+  }
 
-    emit Claimed(
-      eolVault,
-      account,
-      receiver,
-      reward,
-      totalRewards,
-      startBatchTimestamp,
-      assetRewards.lastClaimedBatchTimestamps[account]
-    );
+  function claimBatch(address[] calldata eolVaults, address receiver, address[][] calldata rewards, uint48 toTimestamp)
+    external
+    returns (uint256[][] memory claimedAmounts)
+  {
+    StorageV1 storage $ = _getStorageV1();
 
-    return totalRewards;
+    require(eolVaults.length == rewards.length, StdError.InvalidParameter('rewards.length'));
+
+    claimedAmounts = new uint256[][](eolVaults.length);
+    for (uint256 i = 0; i < eolVaults.length; i++) {
+      claimedAmounts[i] = new uint256[](rewards[i].length);
+      for (uint256 j = 0; j < rewards[i].length; j++) {
+        claimedAmounts[i][j] = _claim($, eolVaults[i], _msgSender(), receiver, rewards[i][j], toTimestamp);
+      }
+    }
+    return claimedAmounts;
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
@@ -244,6 +236,47 @@ contract TWABRewardDistributor is
     if (batchTimestamp <= lastClaimedBatchTimestamp) return 0; // already claimed
 
     return _calculateUserReward($, eolVault, account, reward, batchTimestamp);
+  }
+
+  function _claim(
+    StorageV1 storage $,
+    address eolVault,
+    address account,
+    address receiver,
+    address reward,
+    uint48 toTimestamp
+  ) internal returns (uint256 claimedAmount) {
+    AssetRewards storage assetRewards = _assetRewards($, eolVault, reward);
+
+    uint48 lastFinalizedBatchTimestamp = _lastFinalizedBatchTimestamp($, eolVault);
+    toTimestamp = toTimestamp < lastFinalizedBatchTimestamp ? toTimestamp : lastFinalizedBatchTimestamp;
+
+    uint48 startBatchTimestamp = assetRewards.lastClaimedBatchTimestamps[account] == 0
+      ? assetRewards.firstBatchTimestamp
+      : assetRewards.lastClaimedBatchTimestamps[account] + $.batchPeriod;
+
+    // NOTE: If we change the batch period, the startBatchTimestamp could not align with the new batch period.
+    //  So, we should round it up to the new batch period.
+    startBatchTimestamp = _alignToBatchPeriod($, startBatchTimestamp);
+
+    uint48 batchTimestamp = startBatchTimestamp;
+    if (batchTimestamp == 0 || batchTimestamp > toTimestamp) return 0;
+
+    uint256 totalRewards = 0;
+    do {
+      totalRewards += _calculateUserReward($, eolVault, account, reward, batchTimestamp);
+      batchTimestamp = batchTimestamp + $.batchPeriod;
+    } while (batchTimestamp <= toTimestamp);
+
+    assetRewards.lastClaimedBatchTimestamps[account] = batchTimestamp - $.batchPeriod;
+    if (totalRewards > 0) {
+      IERC20(reward).transfer(receiver, totalRewards);
+    }
+
+    uint48 endBatchTimestamp = assetRewards.lastClaimedBatchTimestamps[account];
+    emit Claimed(eolVault, account, receiver, reward, totalRewards, startBatchTimestamp, endBatchTimestamp);
+
+    return totalRewards;
   }
 
   function _calculateUserRatio(StorageV1 storage $, address eolVault, address account, uint48 batchTimestamp)
