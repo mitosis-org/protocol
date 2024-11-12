@@ -134,4 +134,18 @@ interface ITWABRewardDistributor is IRewardDistributor, ITWABRewardDistributorSt
   function claim(address eolVault, address receiver, address reward, uint48 toTimestamp)
     external
     returns (uint256 claimedAmount);
+
+  /**
+   * @notice Similar to `claim` but for multiple rewards.
+   */
+  function claimMultiple(address eolVault, address receiver, address[] calldata rewards, uint48 toTimestamp)
+    external
+    returns (uint256[] memory claimedAmounts);
+
+  /**
+   * @notice Similar to `claimMultiple` but for multiple EOL Vaults.
+   */
+  function claimBatch(address[] calldata eolVaults, address receiver, address[][] calldata rewards, uint48 toTimestamp)
+    external
+    returns (uint256[][] memory claimedAmounts);
 }
