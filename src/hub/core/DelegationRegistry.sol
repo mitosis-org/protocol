@@ -25,44 +25,52 @@ contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1,
   /**
    * @inheritdoc IDelegationRegistry
    */
-  function mitosis() external view override returns (address) {
+  function mitosis() external view returns (address) {
     return _getStorageV1().mitosis;
   }
 
   /**
    * @inheritdoc IDelegationRegistry
    */
-  function delegationManager(address account) external view override returns (address) {
+  function delegationManager(address account) external view returns (address) {
     return _delegationManager(_getStorageV1(), account);
   }
 
   /**
    * @inheritdoc IDelegationRegistry
    */
-  function defaultDelegatee(address account) external view override returns (address) {
+  function defaultDelegatee(address account) external view returns (address) {
     return _getStorageV1().defaultDelegatees[account];
   }
 
   /**
    * @inheritdoc IDelegationRegistry
    */
-  function setDelegationManager(address account, address delegationManager_) external override {
+  function setDelegationManager(address account, address delegationManager_) external {
     StorageV1 storage $ = _getStorageV1();
-    if (_msgSender() != $.mitosis) _assertSelfOrManager($, account);
-
-    $.delegationManagers[account] = delegationManager_;
-    emit DelegationManagerSet(account, _msgSender(), delegationManager_);
+    return _setDelegationManager($, _msgSender(), account, delegationManager_);
   }
 
   /**
    * @inheritdoc IDelegationRegistry
    */
-  function setDefaultDelegatee(address account, address defaultDelegatee_) external override {
+  function setDefaultDelegatee(address account, address defaultDelegatee_) external {
     StorageV1 storage $ = _getStorageV1();
-    if (_msgSender() != $.mitosis) _assertSelfOrManager($, account);
+    return _setDefaultDelegatee($, _msgSender(), account, defaultDelegatee_);
+  }
 
-    $.defaultDelegatees[account] = defaultDelegatee_;
-    emit DefaultDelegateeSet(account, _msgSender(), defaultDelegatee_);
+  function setDelegationManagerByMitosis(address requester, address account, address delegationManager_) external {
+    StorageV1 storage $ = _getStorageV1();
+    require(_msgSender() == $.mitosis, StdError.Unauthorized());
+
+    return _setDelegationManager($, requester, account, delegationManager_);
+  }
+
+  function setDefaultDelegateeByMitosis(address requester, address account, address defaultDelegatee_) external {
+    StorageV1 storage $ = _getStorageV1();
+    require(_msgSender() == $.mitosis, StdError.Unauthorized());
+
+    return _setDefaultDelegatee($, requester, account, defaultDelegatee_);
   }
 
   //========================== NOTE: INTERNAL FUNCTIONS ==========================//
@@ -72,8 +80,25 @@ contract DelegationRegistry is IDelegationRegistry, DelegationRegistryStorageV1,
     return delegationManager_ == address(0) ? account : delegationManager_; // default to account
   }
 
-  function _assertSelfOrManager(StorageV1 storage $, address account) private view {
-    address sender = _msgSender();
-    require(sender == account || sender == _delegationManager($, account), StdError.Unauthorized());
+  function _setDelegationManager(StorageV1 storage $, address requester, address account, address delegationManager_)
+    internal
+  {
+    _assertSelfOrManager($, requester, account);
+
+    $.delegationManagers[account] = delegationManager_;
+    emit DelegationManagerSet(account, requester, delegationManager_);
+  }
+
+  function _setDefaultDelegatee(StorageV1 storage $, address requester, address account, address defaultDelegatee_)
+    private
+  {
+    _assertSelfOrManager($, requester, account);
+
+    $.defaultDelegatees[account] = defaultDelegatee_;
+    emit DefaultDelegateeSet(account, requester, defaultDelegatee_);
+  }
+
+  function _assertSelfOrManager(StorageV1 storage $, address requester, address account) private view {
+    require(requester == account || requester == _delegationManager($, requester), StdError.Unauthorized());
   }
 }

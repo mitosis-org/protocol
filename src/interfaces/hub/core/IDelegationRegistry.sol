@@ -9,26 +9,18 @@ interface IDelegationRegistry {
   /**
    * @dev Emitted when the delegation manager is set for an account.
    * @param account The account that nominated the delegation manager
-   * @param manager The delegation manager who tries to set the next delegation manager
+   * @param requester The requester who tries to set the delegation manager
    * @param delegationManager The delegation manager set
    */
-  event DelegationManagerSet(address indexed account, address indexed manager, address indexed delegationManager);
+  event DelegationManagerSet(address indexed account, address indexed requester, address indexed delegationManager);
 
   /**
    * @dev Emitted when the default delegatee is set for an account.
    * @param account The account that nominated the default delegatee
-   * @param manager The delegation manager who tries to set the default delegatee
+   * @param requester The requester who tries to set the default delegatee
    * @param delegatee The default delegatee set
    */
-  event DefaultDelegateeSet(address indexed account, address indexed manager, address indexed delegatee);
-
-  /**
-   * @dev Emitted when the redistribution rule is set for an account.
-   * @param account The account that nominated the redistribution rule
-   * @param manager The delegation manager who tries to set the redistribution rule
-   * @param redistributionRule The redistribution rule set
-   */
-  event RedistributionRuleSet(address indexed account, address indexed manager, address indexed redistributionRule);
+  event DefaultDelegateeSet(address indexed account, address indexed requester, address indexed delegatee);
 
   /**
    * @dev Queries the Mitosis contract
@@ -49,7 +41,7 @@ interface IDelegationRegistry {
 
   /**
    * @dev Sets the delegation manager for `account`. Must emit the {DelegationManagerSet} event.
-   * @dev If the `caller` is not the manager of `account` or self and Mitosis, it reverts with {StdError.Unauthorized}.
+   * @dev If the `msg.sender` is not the manager of `account` or self, it reverts with {StdError.Unauthorized}.
    * @param account The account to set the delegation manager for
    * @param delegationManager_ The delegation manager to set
    */
@@ -57,9 +49,13 @@ interface IDelegationRegistry {
 
   /**
    * @dev Sets the default delegatee for `account`. Must emit the {DefaultDelegateeSet} event.
-   * @dev If the `caller` is not the manager of `account` or self and Mitosis, it reverts with {StdError.Unauthorized}.
+   * @dev If the `msg.sender` is not the manager of `account` or self, it reverts with {StdError.Unauthorized}.
    * @param account The account to set the default delegatee for
    * @param defaultDelegatee_ The default delegatee to set
    */
   function setDefaultDelegatee(address account, address defaultDelegatee_) external;
+
+  function setDelegationManagerByMitosis(address requester, address account, address delegationManager_) external;
+
+  function setDefaultDelegateeByMitosis(address requester, address account, address defaultDelegatee_) external;
 }

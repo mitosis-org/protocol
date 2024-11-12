@@ -12,25 +12,37 @@ contract MockDelegationRegistry is IDelegationRegistry {
 
   constructor(address mitosis_) { }
 
-  function mitosis() external view override returns (address mitosis_) {
+  function mitosis() external view returns (address mitosis_) {
     return _mitosis;
   }
 
-  function delegationManager(address account) external view override returns (address delegationManager_) {
+  function delegationManager(address account) external view returns (address delegationManager_) {
     return _delegationManagers[account];
   }
 
-  function defaultDelegatee(address account) external view override returns (address defaultDelegatee_) {
+  function defaultDelegatee(address account) external view returns (address defaultDelegatee_) {
     return _defaultDelegatees[account];
   }
 
-  function setDelegationManager(address account, address delegationManager_) external override {
+  function setDelegationManager(address account, address delegationManager_) external {
     require(msg.sender == account || msg.sender == _delegationManagers[account], StdError.Unauthorized());
     _delegationManagers[account] = delegationManager_;
   }
 
-  function setDefaultDelegatee(address account, address defaultDelegatee_) external override {
+  function setDefaultDelegatee(address account, address defaultDelegatee_) external {
     require(msg.sender == account || msg.sender == _delegationManagers[account], StdError.Unauthorized());
+    _defaultDelegatees[account] = defaultDelegatee_;
+  }
+
+  function setDelegationManagerByMitosis(address requester, address account, address delegationManager_) external {
+    require(requester == _mitosis, StdError.Unauthorized());
+    require(requester == account || requester == _delegationManagers[account], StdError.Unauthorized());
+    _delegationManagers[account] = delegationManager_;
+  }
+
+  function setDefaultDelegateeByMitosis(address requester, address account, address defaultDelegatee_) external {
+    require(requester == _mitosis, StdError.Unauthorized());
+    require(requester == account || requester == _delegationManagers[account], StdError.Unauthorized());
     _defaultDelegatees[account] = defaultDelegatee_;
   }
 }
