@@ -189,6 +189,12 @@ contract TWABRewardDistributor is
     _setBatchPeriodUnsafe(_getStorageV1(), period);
   }
 
+  function setRedistributionRegistry(IRedistributionRegistry registry) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    _setRedistributionRegistry(_getStorageV1(), registry);
+  }
+
+  //=========== NOTE: BaseHandler Functions ===========//
+
   /**
    * @inheritdoc BaseHandler
    */

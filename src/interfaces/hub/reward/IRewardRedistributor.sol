@@ -2,23 +2,38 @@
 pragma solidity 0.8.27;
 
 interface IRewardRedistributor {
+  struct Redistribution {
+    uint256 id;
+    uint256 nonce;
+    uint256 merkleStage;
+    bytes32 merkleRoot;
+    address[] rewards;
+    uint256[] amounts;
+  }
+
   event RedistributionCreated(uint256 indexed id);
-  event RewardsReserved(
+
+  event RewardsFetched(
     uint256 indexed id,
+    uint256 nonce,
     address indexed account,
     address indexed eolVault,
     address reward,
-    uint48 toTimestamp,
-    uint256 claimedAmount
+    uint256 amount,
+    uint48 toTimestamp
   );
-  event RedistributionExecuted(uint256 indexed id, uint256 indexed merkleStage, bytes32 merkleRoot);
 
-  function redistribution(uint256 id)
-    external
-    view
-    returns (bool exists, address[] memory rewards, uint256[] memory amounts, uint256 merkleStage, bytes32 merkleRoot);
+  event RedistributionExecuted(
+    uint256 indexed id, uint256 indexed merkleStage, bytes32 merkleRoot, address[] rewards, uint256[] amounts
+  );
 
-  function reserveRewards(uint256 id, address account, address eolVault, address reward, uint48 toTimestamp) external;
+  error IRewardRedistributor__NotCurrentRedistributionId(uint256 id);
+  error IRewardRedistributor__RedistributionNotFound(uint256 id);
+  error IRewardRedistributor__RedistributionInvalidNonce(uint256 id, uint256 nonce);
 
-  function executeRedistribution(uint256 id, bytes32 merkleRoot) external returns (uint256 merkleStage);
+  // ================= VIEW FUNCTIONS ================= //
+
+  function currentId() external view returns (uint256);
+
+  function redistribution(uint256 id) external view returns (Redistribution memory redist);
 }
