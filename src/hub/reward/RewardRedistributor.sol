@@ -136,6 +136,71 @@ contract RewardRedistributor is IRewardRedistributor, AccessControlEnumerableUpg
     }
   }
 
+  function fetchRewardsFromSender(
+    uint256 id,
+    uint256 nonce,
+    address account,
+    address eolVault,
+    address reward,
+    uint256 amount,
+    uint48 toTimestamp
+  ) external onlyRole(MANAGER_ROLE) {
+    RewardRedistributorStorage storage $ = _getRewardRedistributorStorage();
+    Redistribution storage redist = $.redistributions[id];
+
+    require(id == $.currentId, IRewardRedistributor__NotCurrentRedistributionId(id));
+    require(nonce == redist.nonce, IRewardRedistributor__RedistributionInvalidNonce(id, nonce));
+
+    _fetchRewardsFromSender(redist, account, eolVault, reward, amount, toTimestamp);
+  }
+
+  function fetchRewardsFromSenderMultiple(
+    uint256 id,
+    uint256 nonce,
+    address account,
+    address eolVault,
+    address[] calldata rewards,
+    uint256[] calldata amounts,
+    uint48 toTimestamp
+  ) external onlyRole(MANAGER_ROLE) {
+    RewardRedistributorStorage storage $ = _getRewardRedistributorStorage();
+    Redistribution storage redist = $.redistributions[id];
+
+    require(id == $.currentId, IRewardRedistributor__NotCurrentRedistributionId(id));
+    require(nonce == redist.nonce, IRewardRedistributor__RedistributionInvalidNonce(id, nonce));
+    require(rewards.length == amounts.length, StdError.InvalidParameter('amounts.length'));
+
+    for (uint256 i = 0; i < rewards.length; i++) {
+      _fetchRewardsFromSender(redist, account, eolVault, rewards[i], amounts[i], toTimestamp);
+    }
+  }
+
+  function fetchRewardsFromSenderBatch(
+    uint256 id,
+    uint256 nonce,
+    address account,
+    address[] calldata eolVaults,
+    address[][] calldata rewards,
+    uint256[][] calldata amounts,
+    uint48 toTimestamp
+  ) external onlyRole(MANAGER_ROLE) {
+    RewardRedistributorStorage storage $ = _getRewardRedistributorStorage();
+    Redistribution storage redist = $.redistributions[id];
+
+    require(id == $.currentId, IRewardRedistributor__NotCurrentRedistributionId(id));
+    require(nonce == redist.nonce, IRewardRedistributor__RedistributionInvalidNonce(id, nonce));
+    require(eolVaults.length == rewards.length, StdError.InvalidParameter('rewards.length'));
+    require(eolVaults.length == amounts.length, StdError.InvalidParameter('amounts.length'));
+
+    for (uint256 i = 0; i < eolVaults.length; i++) {
+      require(rewards[i].length == amounts[i].length, StdError.InvalidParameter('amounts[i].length'));
+
+      for (uint256 j = 0; j < rewards[i].length; j++) {
+        _fetchRewardsFromSender(redist, account, eolVaults[i], rewards[i][j], amounts[i][j], toTimestamp);
+      }
+    }
+  }
+
   function executeRedistribution(
     uint256 id,
     uint256 nonce,
@@ -186,6 +251,19 @@ contract RewardRedistributor is IRewardRedistributor, AccessControlEnumerableUpg
   ) internal {
     uint256 claimedAmount = $.twabRewardDistributor.claimForRedistribution(account, eolVault, reward, toTimestamp);
     emit RewardsFetched(redist.id, redist.nonce, account, eolVault, reward, claimedAmount, toTimestamp);
+    redist.nonce++;
+  }
+
+  function _fetchRewardsFromSender(
+    Redistribution storage redist,
+    address account,
+    address eolVault,
+    address reward,
+    uint256 amount,
+    uint48 toTimestamp
+  ) internal {
+    IERC20(reward).transferFrom(_msgSender(), address(this), amount);
+    emit RewardsFetched(redist.id, redist.nonce, account, eolVault, reward, amount, toTimestamp);
     redist.nonce++;
   }
 }
