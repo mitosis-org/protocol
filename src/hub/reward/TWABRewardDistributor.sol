@@ -7,6 +7,7 @@ import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
+import { IRedistributionRegistry } from '../../interfaces/hub/core/IRedistributionRegistry.sol';
 import { ITWABRewardDistributor } from '../../interfaces/hub/reward/ITWABRewardDistributor.sol';
 import { ITWABSnapshots } from '../../interfaces/twab/ITWABSnapshots.sol';
 import { StdError } from '../../lib/StdError.sol';
@@ -21,6 +22,7 @@ contract TWABRewardDistributor is
 {
   /// @notice Role for dispatching rewards (keccak256("DISPATCHER_ROLE"))
   bytes32 public constant DISPATCHER_ROLE = 0xfbd38eecf51668fdbc772b204dc63dd28c3a3cf32e3025f52a80aa807359f50c;
+  bytes32 public constant REDISTRIBUTOR_ROLE = keccak256('REDISTRIBUTOR_ROLE');
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -28,10 +30,13 @@ contract TWABRewardDistributor is
     _disableInitializers();
   }
 
-  function initialize(address admin, uint48 batchPeriod_, uint48 twabPeriod_, uint256 rewardPrecision_)
-    public
-    initializer
-  {
+  function initialize(
+    address admin,
+    uint48 batchPeriod_,
+    uint48 twabPeriod_,
+    uint256 rewardPrecision_,
+    IRedistributionRegistry redistributionRegistry_
+  ) public initializer {
     __BaseHandler_init();
     __AccessControlEnumerable_init();
 
@@ -43,6 +48,7 @@ contract TWABRewardDistributor is
     _setBatchPeriodUnsafe($, batchPeriod_);
     _setTWABPeriod($, twabPeriod_);
     _setRewardPrecision($, rewardPrecision_);
+    _setRedistributionRegistry($, redistributionRegistry_);
   }
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
@@ -117,6 +123,8 @@ contract TWABRewardDistributor is
     returns (uint256 claimedAmount)
   {
     StorageV1 storage $ = _getStorageV1();
+    _assertRedistributionDisabled($, _msgSender());
+
     return _claim($, eolVault, _msgSender(), receiver, reward, toTimestamp);
   }
 
@@ -125,6 +133,8 @@ contract TWABRewardDistributor is
     returns (uint256[] memory claimedAmounts)
   {
     StorageV1 storage $ = _getStorageV1();
+    _assertRedistributionDisabled($, _msgSender());
+
     claimedAmounts = new uint256[](rewards.length);
     for (uint256 i = 0; i < rewards.length; i++) {
       claimedAmounts[i] = _claim($, eolVault, _msgSender(), receiver, rewards[i], toTimestamp);
@@ -138,6 +148,7 @@ contract TWABRewardDistributor is
   {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertRedistributionDisabled($, _msgSender());
     require(eolVaults.length == rewards.length, StdError.InvalidParameter('rewards.length'));
 
     claimedAmounts = new uint256[][](eolVaults.length);
@@ -148,6 +159,17 @@ contract TWABRewardDistributor is
       }
     }
     return claimedAmounts;
+  }
+
+  function claimForRedistribution(address account, address eolVault, address reward, uint48 toTimestamp)
+    external
+    onlyRole(REDISTRIBUTOR_ROLE)
+    returns (uint256 claimedAmount)
+  {
+    StorageV1 storage $ = _getStorageV1();
+    _assertRedistributionEnabled($, account);
+
+    return _claim($, eolVault, account, _msgSender(), reward, toTimestamp);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
@@ -166,6 +188,12 @@ contract TWABRewardDistributor is
   function setBatchPeriodUnsafe(uint48 period) external onlyRole(DEFAULT_ADMIN_ROLE) {
     _setBatchPeriodUnsafe(_getStorageV1(), period);
   }
+
+  function setRedistributionRegistry(IRedistributionRegistry registry) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    _setRedistributionRegistry(_getStorageV1(), registry);
+  }
+
+  //=========== NOTE: BaseHandler Functions ===========//
 
   /**
    * @inheritdoc BaseHandler
@@ -315,5 +343,19 @@ contract TWABRewardDistributor is
     uint256 userRatio = _calculateUserRatio($, eolVault, account, batchTimestamp);
     uint256 precision = $.rewardPrecision;
     return Math.mulDiv(totalReward, userRatio, precision);
+  }
+
+  function _assertRedistributionEnabled(StorageV1 storage $, address account) private view {
+    require(
+      IRedistributionRegistry($.redistributionRegistry).isRedistributionEnabled(account),
+      ITWABRewardDistributor__RedistributionDisabled()
+    );
+  }
+
+  function _assertRedistributionDisabled(StorageV1 storage $, address account) private view {
+    require(
+      !IRedistributionRegistry($.redistributionRegistry).isRedistributionEnabled(account),
+      ITWABRewardDistributor__RedistributionEnabled()
+    );
   }
 }

@@ -5,6 +5,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 
 import { IAssetManager } from '../interfaces/hub/core/IAssetManager.sol';
 import { IDelegationRegistry } from '../interfaces/hub/core/IDelegationRegistry.sol';
+import { IRedistributionRegistry } from '../interfaces/hub/core/IRedistributionRegistry.sol';
 import { IEOLGaugeGovernor } from '../interfaces/hub/eol/governance/IEOLGaugeGovernor.sol';
 import { IEOLProtocolGovernor } from '../interfaces/hub/eol/governance/IEOLProtocolGovernor.sol';
 import { IOptOutQueue } from '../interfaces/hub/eol/IOptOutQueue.sol';
@@ -25,6 +26,7 @@ contract Mitosis is IMitosis, Ownable2StepUpgradeable {
     IDelegationRegistry delegationRegistry;
     IEOLProtocolGovernor eolProtocolGovernor;
     IEOLGaugeGovernor eolGaugeGovernor;
+    IRedistributionRegistry redistributionRegistry;
   }
 
   // =========================== NOTE: STORAGE DEFINITIONS =========================== //
@@ -51,7 +53,7 @@ contract Mitosis is IMitosis, Ownable2StepUpgradeable {
     _transferOwnership(owner_);
   }
 
-  // =========================== NOTE: IMitosis  =========================== //
+  //====================== NOTE: CONTRACTS ======================//
 
   /**
    * @inheritdoc IMitosis
@@ -91,6 +93,15 @@ contract Mitosis is IMitosis, Ownable2StepUpgradeable {
   /**
    * @inheritdoc IMitosis
    */
+  function redistributionRegistry() external view returns (IRedistributionRegistry) {
+    return _getMitosisStorage().redistributionRegistry;
+  }
+
+  //====================== NOTE: DELEGATION ======================//
+
+  /**
+   * @inheritdoc IMitosis
+   */
   function delegationManager(address account) external view returns (address) {
     return _getMitosisStorage().delegationRegistry.delegationManager(account);
   }
@@ -116,6 +127,22 @@ contract Mitosis is IMitosis, Ownable2StepUpgradeable {
     _getMitosisStorage().delegationRegistry.setDefaultDelegateeByMitosis(_msgSender(), account, defaultDelegatee_);
   }
 
+  //====================== NOTE: REDISTRIBUTION ======================//
+
+  /**
+   * @inheritdoc IMitosis
+   */
+  function isRedistributionEnabled(address account) external view returns (bool) {
+    return _getMitosisStorage().redistributionRegistry.isRedistributionEnabled(account);
+  }
+
+  /**
+   * @inheritdoc IMitosis
+   */
+  function enableRedistribution() external {
+    _getMitosisStorage().redistributionRegistry.enableRedistributionByMitosis(_msgSender());
+  }
+
   // =========================== NOTE: State Setter  =========================== //
 
   function setAssetManager(IAssetManager assetManager_) external onlyOwner {
@@ -134,5 +161,9 @@ contract Mitosis is IMitosis, Ownable2StepUpgradeable {
 
   function setEOLGaugeGovernor(IEOLGaugeGovernor eolGaugeGovernor_) external onlyOwner {
     _getMitosisStorage().eolGaugeGovernor = eolGaugeGovernor_;
+  }
+
+  function setRedistributionRegistry(IRedistributionRegistry redistributionRegistry_) external onlyOwner {
+    _getMitosisStorage().redistributionRegistry = redistributionRegistry_;
   }
 }

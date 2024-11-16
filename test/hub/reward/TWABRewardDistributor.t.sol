@@ -8,6 +8,7 @@ import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
+import { RedistributionRegistry } from '../../../src/hub/core/RedistributionRegistry.sol';
 import { TWABRewardDistributor } from '../../../src/hub/reward/TWABRewardDistributor.sol';
 import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol';
 import { MockERC20TWABSnapshots } from '../../mock/MockERC20TWABSnapshots.t.sol';
@@ -17,6 +18,7 @@ contract TWABRewardDistributortTest is Test {
   MockERC20TWABSnapshots eolVault;
   MockERC20TWABSnapshots reward;
   MockDelegationRegistry delegationRegistry;
+  RedistributionRegistry redistributionRegistry;
 
   ProxyAdmin internal _proxyAdmin;
   address immutable owner = makeAddr('owner');
@@ -30,19 +32,34 @@ contract TWABRewardDistributortTest is Test {
     delegationRegistry = new MockDelegationRegistry(mitosis);
 
     _proxyAdmin = new ProxyAdmin(owner);
-    TWABRewardDistributor twabRewardDistributorImpl = new TWABRewardDistributor();
 
+    RedistributionRegistry redistributionRegistryImpl = new RedistributionRegistry();
+    redistributionRegistry = RedistributionRegistry(
+      address(
+        new TransparentUpgradeableProxy(
+          address(redistributionRegistryImpl),
+          address(_proxyAdmin),
+          abi.encodeCall(redistributionRegistryImpl.initialize, (mitosis))
+        )
+      )
+    );
+
+    TWABRewardDistributor twabRewardDistributorImpl = new TWABRewardDistributor();
     twabRewardDistributor = TWABRewardDistributor(
       payable(
         address(
           new TransparentUpgradeableProxy(
             address(twabRewardDistributorImpl),
             address(_proxyAdmin),
-            abi.encodeCall(twabRewardDistributor.initialize, (owner, batchPeriod, twabPeriod, rewardPrecision))
+            abi.encodeCall(
+              twabRewardDistributor.initialize,
+              (owner, batchPeriod, twabPeriod, rewardPrecision, redistributionRegistry)
+            )
           )
         )
       )
     );
+
     vm.startPrank(owner);
     twabRewardDistributor.grantRole(twabRewardDistributor.DISPATCHER_ROLE(), owner);
     vm.stopPrank();
