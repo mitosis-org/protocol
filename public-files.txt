@@ -7,6 +7,7 @@
 ./src/interfaces/hub/core/IAssetManager.sol
 ./src/interfaces/hub/core/IDelegationRegistry.sol
 ./src/interfaces/hub/core/IHubAsset.sol
+./src/interfaces/hub/core/IRedistributionRegistry.sol
 ./src/interfaces/hub/eol/IEOLProtocolRegistry.sol
 ./src/interfaces/hub/eol/IOptOutQueue.sol
 ./src/interfaces/hub/eol/governance/IEOLGaugeGovernor.sol
