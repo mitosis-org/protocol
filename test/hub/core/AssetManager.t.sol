@@ -478,6 +478,14 @@ contract AssetManagerTest is Toolkit {
     _eolVault.deposit(100 ether, user1);
     vm.stopPrank();
 
+    vm.startPrank(owner);
+    _assetManager.setStrategist(address(_eolVault), strategist);
+    _assetManager.initializeEOL(branchChainId, address(_eolVault));
+    vm.stopPrank();
+
+    vm.prank(strategist);
+    _assetManager.allocateEOL(branchChainId, address(_eolVault), 100 ether);
+
     assertEq(_token.balanceOf(user1), 0);
     assertEq(_token.balanceOf(address(_eolVault)), 100 ether);
 
