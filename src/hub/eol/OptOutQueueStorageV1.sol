@@ -67,7 +67,7 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
 
     if (req.claimedAt > 0) return RequestStatus.Claimed;
     if (isResolved) return RequestStatus.Claimable;
-    if (reqId == queue.offset) return RequestStatus.Requested;
+    if (reqId >= queue.offset) return RequestStatus.Requested;
     return RequestStatus.None;
   }
 
