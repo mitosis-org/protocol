@@ -12,13 +12,13 @@ interface IMitosisVaultEntrypoint {
 
   function deposit(address asset, address to, uint256 amount) external;
 
-  function depositWithOptIn(address asset, address to, address hubEOLVault, uint256 amount) external;
+  function depositWithMatrixSupply(address asset, address to, address hubMatrixBasketAsset, uint256 amount) external;
 
-  function deallocateEOL(address hubEOLVault, uint256 amount) external;
+  function deallocateMatrixLiquidity(address hubMatrixBasketAsset, uint256 amount) external;
 
-  function settleYield(address hubEOLVault, uint256 amount) external;
+  function settleMatrixYield(address hubMatrixBasketAsset, uint256 amount) external;
 
-  function settleLoss(address hubEOLVault, uint256 amount) external;
+  function settleMatrixLoss(address hubMatrixBasketAsset, uint256 amount) external;
 
-  function settleExtraRewards(address hubEOLVault, address reward, uint256 amount) external;
+  function settleMatrixExtraRewards(address hubMatrixBasketAsset, address reward, uint256 amount) external;
 }

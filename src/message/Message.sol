@@ -5,15 +5,15 @@ enum MsgType {
   //=========== NOTE: Asset ===========//
   MsgInitializeAsset,
   MsgDeposit,
-  MsgDepositWithOptIn,
+  MsgDepositWithMatrixSupply,
   MsgRedeem,
-  //=========== NOTE: EOL ===========//
-  MsgInitializeEOL,
-  MsgAllocateEOL,
-  MsgDeallocateEOL,
-  MsgSettleYield,
-  MsgSettleLoss,
-  MsgSettleExtraRewards
+  //=========== NOTE: Matrix ===========//
+  MsgInitializeMatrix,
+  MsgAllocateMatrixLiquidity,
+  MsgDeallocateMatrixLiquidity,
+  MsgSettleMatrixYield,
+  MsgSettleMatrixLoss,
+  MsgSettleMatrixExtraRewards
 }
 
 // hub -> branch
@@ -29,10 +29,10 @@ struct MsgDeposit {
 }
 
 // branch -> hub
-struct MsgDepositWithOptIn {
+struct MsgDepositWithMatrixSupply {
   bytes32 asset;
   bytes32 to;
-  bytes32 eolVault;
+  bytes32 matrixBasketAsset;
   uint256 amount;
 }
 
@@ -44,38 +44,38 @@ struct MsgRedeem {
 }
 
 // hub -> branch
-struct MsgInitializeEOL {
-  bytes32 eolVault;
+struct MsgInitializeMatrix {
+  bytes32 matrixBasketAsset;
   bytes32 asset;
 }
 
 // hub -> branch
-struct MsgAllocateEOL {
-  bytes32 eolVault;
+struct MsgAllocateMatrixLiquidity {
+  bytes32 matrixBasketAsset;
   uint256 amount;
 }
 
 // branch -> hub
-struct MsgDeallocateEOL {
-  bytes32 eolVault;
+struct MsgDeallocateMatrixLiquidity {
+  bytes32 matrixBasketAsset;
   uint256 amount;
 }
 
 // branch -> hub
-struct MsgSettleYield {
-  bytes32 eolVault;
+struct MsgSettleMatrixYield {
+  bytes32 matrixBasketAsset;
   uint256 amount;
 }
 
 // branch -> hub
-struct MsgSettleLoss {
-  bytes32 eolVault;
+struct MsgSettleMatrixLoss {
+  bytes32 matrixBasketAsset;
   uint256 amount;
 }
 
 // branch -> hub
-struct MsgSettleExtraRewards {
-  bytes32 eolVault;
+struct MsgSettleMatrixExtraRewards {
+  bytes32 matrixBasketAsset;
   bytes32 reward;
   uint256 amount;
 }
@@ -86,14 +86,14 @@ library Message {
 
   uint256 public constant LEN_MSG_INITIALIZE_ASSET = 33;
   uint256 public constant LEN_MSG_DEPOSIT = 97;
-  uint256 public constant LEN_MSG_DEPOSIT_WITH_OPT_IN = 129;
+  uint256 public constant LEN_MSG_DEPOSIT_WITH_MATRIX_SUPPLY = 129;
   uint256 public constant LEN_MSG_REDEEM = 97;
-  uint256 public constant LEN_MSG_INITIALIZE_EOL = 65;
-  uint256 public constant LEN_MSG_ALLOCATE_EOL = 65;
-  uint256 public constant LEN_MSG_DEALLOCATE_EOL = 65;
-  uint256 public constant LEN_MSG_SETTLE_YIELD = 65;
-  uint256 public constant LEN_MSG_SETTLE_LOSS = 65;
-  uint256 public constant LEN_MSG_SETTLE_EXTRA_REWARDS = 97;
+  uint256 public constant LEN_MSG_INITIALIZE_MATRIX = 65;
+  uint256 public constant LEN_MSG_ALLOCATE_MATRIX_LIQUIDITY = 65;
+  uint256 public constant LEN_MSG_DEALLOCATE_MATRIX_LIQUIDITY = 65;
+  uint256 public constant LEN_MSG_SETTLE_MATRIX_YIELD = 65;
+  uint256 public constant LEN_MSG_SETTLE_MATRIX_LOSS = 65;
+  uint256 public constant LEN_MSG_SETTLE_MATRIX_EXTRA_REWARDS = 97;
 
   function msgType(bytes calldata msg_) internal pure returns (MsgType) {
     return MsgType(uint8(msg_[0]));
@@ -126,16 +126,22 @@ library Message {
     decoded.amount = uint256(bytes32(msg_[65:]));
   }
 
-  function encode(MsgDepositWithOptIn memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgDepositWithOptIn), msg_.asset, msg_.to, msg_.eolVault, msg_.amount);
+  function encode(MsgDepositWithMatrixSupply memory msg_) internal pure returns (bytes memory) {
+    return abi.encodePacked(
+      uint8(MsgType.MsgDepositWithMatrixSupply), msg_.asset, msg_.to, msg_.matrixBasketAsset, msg_.amount
+    );
   }
 
-  function decodeDepositWithOptIn(bytes calldata msg_) internal pure returns (MsgDepositWithOptIn memory decoded) {
-    assertMsg(msg_, MsgType.MsgDepositWithOptIn, LEN_MSG_DEPOSIT_WITH_OPT_IN);
+  function decodeDepositWithMatrixSupply(bytes calldata msg_)
+    internal
+    pure
+    returns (MsgDepositWithMatrixSupply memory decoded)
+  {
+    assertMsg(msg_, MsgType.MsgDepositWithMatrixSupply, LEN_MSG_DEPOSIT_WITH_MATRIX_SUPPLY);
 
     decoded.asset = bytes32(msg_[1:33]);
     decoded.to = bytes32(msg_[33:65]);
-    decoded.eolVault = bytes32(msg_[65:97]);
+    decoded.matrixBasketAsset = bytes32(msg_[65:97]);
     decoded.amount = uint256(bytes32(msg_[97:]));
   }
 
@@ -151,69 +157,82 @@ library Message {
     decoded.amount = uint256(bytes32(msg_[65:]));
   }
 
-  function encode(MsgInitializeEOL memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgInitializeEOL), msg_.eolVault, msg_.asset);
+  function encode(MsgInitializeMatrix memory msg_) internal pure returns (bytes memory) {
+    return abi.encodePacked(uint8(MsgType.MsgInitializeMatrix), msg_.matrixBasketAsset, msg_.asset);
   }
 
-  function decodeInitializeEOL(bytes calldata msg_) internal pure returns (MsgInitializeEOL memory decoded) {
-    assertMsg(msg_, MsgType.MsgInitializeEOL, LEN_MSG_INITIALIZE_EOL);
+  function decodeInitializeMatrix(bytes calldata msg_) internal pure returns (MsgInitializeMatrix memory decoded) {
+    assertMsg(msg_, MsgType.MsgInitializeMatrix, LEN_MSG_INITIALIZE_MATRIX);
 
-    decoded.eolVault = bytes32(msg_[1:33]);
+    decoded.matrixBasketAsset = bytes32(msg_[1:33]);
     decoded.asset = bytes32(msg_[33:]);
   }
 
-  function encode(MsgAllocateEOL memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgAllocateEOL), msg_.eolVault, msg_.amount);
+  function encode(MsgAllocateMatrixLiquidity memory msg_) internal pure returns (bytes memory) {
+    return abi.encodePacked(uint8(MsgType.MsgAllocateMatrixLiquidity), msg_.matrixBasketAsset, msg_.amount);
   }
 
-  function decodeAllocateEOL(bytes calldata msg_) internal pure returns (MsgAllocateEOL memory decoded) {
-    assertMsg(msg_, MsgType.MsgAllocateEOL, LEN_MSG_ALLOCATE_EOL);
+  function decodeAllocateMatrixLiquidity(bytes calldata msg_)
+    internal
+    pure
+    returns (MsgAllocateMatrixLiquidity memory decoded)
+  {
+    assertMsg(msg_, MsgType.MsgAllocateMatrixLiquidity, LEN_MSG_ALLOCATE_MATRIX_LIQUIDITY);
 
-    decoded.eolVault = bytes32(msg_[1:33]);
+    decoded.matrixBasketAsset = bytes32(msg_[1:33]);
     decoded.amount = uint256(bytes32(msg_[33:]));
   }
 
-  function encode(MsgDeallocateEOL memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgDeallocateEOL), msg_.eolVault, msg_.amount);
+  function encode(MsgDeallocateMatrixLiquidity memory msg_) internal pure returns (bytes memory) {
+    return abi.encodePacked(uint8(MsgType.MsgDeallocateMatrixLiquidity), msg_.matrixBasketAsset, msg_.amount);
   }
 
-  function decodeDeallocateEOL(bytes calldata msg_) internal pure returns (MsgDeallocateEOL memory decoded) {
-    assertMsg(msg_, MsgType.MsgDeallocateEOL, LEN_MSG_DEALLOCATE_EOL);
+  function decodeDeallocateMatrixLiquidity(bytes calldata msg_)
+    internal
+    pure
+    returns (MsgDeallocateMatrixLiquidity memory decoded)
+  {
+    assertMsg(msg_, MsgType.MsgDeallocateMatrixLiquidity, LEN_MSG_DEALLOCATE_MATRIX_LIQUIDITY);
 
-    decoded.eolVault = bytes32(msg_[1:33]);
+    decoded.matrixBasketAsset = bytes32(msg_[1:33]);
     decoded.amount = uint256(bytes32(msg_[33:]));
   }
 
-  function encode(MsgSettleYield memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgSettleYield), msg_.eolVault, msg_.amount);
+  function encode(MsgSettleMatrixYield memory msg_) internal pure returns (bytes memory) {
+    return abi.encodePacked(uint8(MsgType.MsgSettleMatrixYield), msg_.matrixBasketAsset, msg_.amount);
   }
 
-  function decodeSettleYield(bytes calldata msg_) internal pure returns (MsgSettleYield memory decoded) {
-    assertMsg(msg_, MsgType.MsgSettleYield, LEN_MSG_SETTLE_YIELD);
+  function decodeSettleYield(bytes calldata msg_) internal pure returns (MsgSettleMatrixYield memory decoded) {
+    assertMsg(msg_, MsgType.MsgSettleMatrixYield, LEN_MSG_SETTLE_MATRIX_YIELD);
 
-    decoded.eolVault = bytes32(msg_[1:33]);
+    decoded.matrixBasketAsset = bytes32(msg_[1:33]);
     decoded.amount = uint256(bytes32(msg_[33:]));
   }
 
-  function encode(MsgSettleLoss memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgSettleLoss), msg_.eolVault, msg_.amount);
+  function encode(MsgSettleMatrixLoss memory msg_) internal pure returns (bytes memory) {
+    return abi.encodePacked(uint8(MsgType.MsgSettleMatrixLoss), msg_.matrixBasketAsset, msg_.amount);
   }
 
-  function decodeSettleLoss(bytes calldata msg_) internal pure returns (MsgSettleLoss memory decoded) {
-    assertMsg(msg_, MsgType.MsgSettleLoss, LEN_MSG_SETTLE_LOSS);
+  function decodeSettleLoss(bytes calldata msg_) internal pure returns (MsgSettleMatrixLoss memory decoded) {
+    assertMsg(msg_, MsgType.MsgSettleMatrixLoss, LEN_MSG_SETTLE_MATRIX_LOSS);
 
-    decoded.eolVault = bytes32(msg_[1:33]);
+    decoded.matrixBasketAsset = bytes32(msg_[1:33]);
     decoded.amount = uint256(bytes32(msg_[33:]));
   }
 
-  function encode(MsgSettleExtraRewards memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgSettleExtraRewards), msg_.eolVault, msg_.reward, msg_.amount);
+  function encode(MsgSettleMatrixExtraRewards memory msg_) internal pure returns (bytes memory) {
+    return
+      abi.encodePacked(uint8(MsgType.MsgSettleMatrixExtraRewards), msg_.matrixBasketAsset, msg_.reward, msg_.amount);
   }
 
-  function decodeSettleExtraRewards(bytes calldata msg_) internal pure returns (MsgSettleExtraRewards memory decoded) {
-    assertMsg(msg_, MsgType.MsgSettleExtraRewards, LEN_MSG_SETTLE_EXTRA_REWARDS);
+  function decodeSettleExtraRewards(bytes calldata msg_)
+    internal
+    pure
+    returns (MsgSettleMatrixExtraRewards memory decoded)
+  {
+    assertMsg(msg_, MsgType.MsgSettleMatrixExtraRewards, LEN_MSG_SETTLE_MATRIX_EXTRA_REWARDS);
 
-    decoded.eolVault = bytes32(msg_[1:33]);
+    decoded.matrixBasketAsset = bytes32(msg_[1:33]);
     decoded.reward = bytes32(msg_[33:65]);
     decoded.amount = uint256(bytes32(msg_[65:]));
   }

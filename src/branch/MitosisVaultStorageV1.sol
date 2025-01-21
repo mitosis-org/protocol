@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import { AssetAction, EOLAction } from '../interfaces/branch/IMitosisVault.sol';
+import { AssetAction, MatrixAction } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 
@@ -13,18 +13,18 @@ abstract contract MitosisVaultStorageV1 {
     mapping(AssetAction => bool) isHalted;
   }
 
-  struct EOLInfo {
+  struct MatrixInfo {
     bool initialized;
     address asset;
-    address eolStrategyExecutor;
-    uint256 availableEOL;
-    mapping(EOLAction => bool) isHalted;
+    address strategyExecutor;
+    uint256 availableLiquidity;
+    mapping(MatrixAction => bool) isHalted;
   }
 
   struct StorageV1 {
     IMitosisVaultEntrypoint entrypoint;
     mapping(address asset => AssetInfo) assets;
-    mapping(address hubEOLVault => EOLInfo) eols;
+    mapping(address hubMatrixBasketAsset => MatrixInfo) matrices;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.MitosisVaultStorage.v1';
