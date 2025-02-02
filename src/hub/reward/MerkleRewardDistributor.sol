@@ -57,11 +57,11 @@ contract MerkleRewardDistributor is
   function encodeLeaf(
     address receiver,
     uint256 stage,
-    address eolVault,
+    address matrixBasketAsset,
     address[] calldata rewards,
     uint256[] calldata amounts
   ) external pure returns (bytes32 leaf) {
-    return _leaf(receiver, stage, eolVault, rewards, amounts);
+    return _leaf(receiver, stage, matrixBasketAsset, rewards, amounts);
   }
 
   /**
@@ -70,12 +70,12 @@ contract MerkleRewardDistributor is
   function claimable(
     address receiver,
     uint256 stage,
-    address eolVault,
+    address matrixBasketAsset,
     address[] calldata rewards,
     uint256[] calldata amounts,
     bytes32[] calldata proof
   ) external view returns (bool) {
-    return _claimable(receiver, stage, eolVault, rewards, amounts, proof);
+    return _claimable(receiver, stage, matrixBasketAsset, rewards, amounts, proof);
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
@@ -86,12 +86,12 @@ contract MerkleRewardDistributor is
   function claim(
     address receiver,
     uint256 stage,
-    address eolVault,
+    address matrixBasketAsset,
     address[] calldata rewards,
     uint256[] calldata amounts,
     bytes32[] calldata proof
   ) public {
-    _claim(receiver, stage, eolVault, rewards, amounts, proof);
+    _claim(receiver, stage, matrixBasketAsset, rewards, amounts, proof);
   }
 
   /**
@@ -100,17 +100,17 @@ contract MerkleRewardDistributor is
   function claimMultiple(
     address receiver,
     uint256 stage,
-    address[] calldata eolVaults,
+    address[] calldata matrixBasketAssets,
     address[][] calldata rewards,
     uint256[][] calldata amounts,
     bytes32[][] calldata proofs
   ) public {
-    require(eolVaults.length == rewards.length, StdError.InvalidParameter('rewards.length'));
-    require(eolVaults.length == amounts.length, StdError.InvalidParameter('amounts.length'));
-    require(eolVaults.length == proofs.length, StdError.InvalidParameter('proofs.length'));
+    require(matrixBasketAssets.length == rewards.length, StdError.InvalidParameter('rewards.length'));
+    require(matrixBasketAssets.length == amounts.length, StdError.InvalidParameter('amounts.length'));
+    require(matrixBasketAssets.length == proofs.length, StdError.InvalidParameter('proofs.length'));
 
-    for (uint256 i = 0; i < eolVaults.length; i++) {
-      claim(receiver, stage, eolVaults[i], rewards[i], amounts[i], proofs[i]);
+    for (uint256 i = 0; i < matrixBasketAssets.length; i++) {
+      claim(receiver, stage, matrixBasketAssets[i], rewards[i], amounts[i], proofs[i]);
     }
   }
 
@@ -120,18 +120,18 @@ contract MerkleRewardDistributor is
   function claimBatch(
     address receiver,
     uint256[] calldata stages,
-    address[][] calldata eolVaults,
+    address[][] calldata matrixBasketAssets,
     address[][][] calldata rewards,
     uint256[][][] calldata amounts,
     bytes32[][][] calldata proofs
   ) public {
-    require(stages.length == eolVaults.length, StdError.InvalidParameter('eolVaults.length'));
+    require(stages.length == matrixBasketAssets.length, StdError.InvalidParameter('matrixBasketAssets.length'));
     require(stages.length == rewards.length, StdError.InvalidParameter('rewards.length'));
     require(stages.length == amounts.length, StdError.InvalidParameter('amounts.length'));
     require(stages.length == proofs.length, StdError.InvalidParameter('proofs.length'));
 
     for (uint256 i = 0; i < stages.length; i++) {
-      claimMultiple(receiver, stages[i], eolVaults[i], rewards[i], amounts[i], proofs[i]);
+      claimMultiple(receiver, stages[i], matrixBasketAssets[i], rewards[i], amounts[i], proofs[i]);
     }
   }
 
@@ -161,7 +161,7 @@ contract MerkleRewardDistributor is
   function _claimable(
     address receiver,
     uint256 stage,
-    address eolVault,
+    address matrixBasketAsset,
     address[] calldata rewards,
     uint256[] calldata amounts,
     bytes32[] calldata proof
@@ -169,15 +169,15 @@ contract MerkleRewardDistributor is
     StorageV1 storage $ = _getStorageV1();
     Stage storage s = _stage($, stage);
 
-    bytes32 leaf = _leaf(receiver, stage, eolVault, rewards, amounts);
+    bytes32 leaf = _leaf(receiver, stage, matrixBasketAsset, rewards, amounts);
 
-    return !s.claimed[receiver][eolVault] && proof.verify(s.root, leaf);
+    return !s.claimed[receiver][matrixBasketAsset] && proof.verify(s.root, leaf);
   }
 
   function _claim(
     address receiver,
     uint256 stage,
-    address eolVault,
+    address matrixBasketAsset,
     address[] calldata rewards,
     uint256[] calldata amounts,
     bytes32[] calldata proof
@@ -185,10 +185,10 @@ contract MerkleRewardDistributor is
     StorageV1 storage $ = _getStorageV1();
     Stage storage s = _stage($, stage);
 
-    require(!s.claimed[receiver][eolVault], IMerkleRewardDistributor__AlreadyClaimed());
-    s.claimed[receiver][eolVault] = true;
+    require(!s.claimed[receiver][matrixBasketAsset], IMerkleRewardDistributor__AlreadyClaimed());
+    s.claimed[receiver][matrixBasketAsset] = true;
 
-    bytes32 leaf = _leaf(receiver, stage, eolVault, rewards, amounts);
+    bytes32 leaf = _leaf(receiver, stage, matrixBasketAsset, rewards, amounts);
     require(proof.verify(s.root, leaf), IMerkleRewardDistributor__InvalidProof());
 
     require(rewards.length == amounts.length, StdError.InvalidParameter('amounts.length'));
@@ -196,18 +196,18 @@ contract MerkleRewardDistributor is
       IERC20(rewards[i]).safeTransfer(receiver, amounts[i]);
     }
 
-    emit Claimed(receiver, stage, eolVault, rewards, amounts);
+    emit Claimed(receiver, stage, matrixBasketAsset, rewards, amounts);
   }
 
   function _leaf(
     address receiver,
     uint256 stage,
-    address eolVault,
+    address matrixBasketAsset,
     address[] calldata rewards,
     uint256[] calldata amounts
   ) internal pure returns (bytes32 leaf) {
     // double-hashing to prevent second preimage attacks:
     // https://flawed.net.nz/2018/02/21/attacking-merkle-trees-with-a-second-preimage-attack/
-    return keccak256(bytes.concat(keccak256(abi.encodePacked(receiver, stage, eolVault, rewards, amounts))));
+    return keccak256(bytes.concat(keccak256(abi.encodePacked(receiver, stage, matrixBasketAsset, rewards, amounts))));
   }
 }
