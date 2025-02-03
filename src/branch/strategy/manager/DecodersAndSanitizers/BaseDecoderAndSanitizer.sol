@@ -12,14 +12,6 @@ contract BaseDecoderAndSanitizer {
     _strategyExecutor = strategyExecutor_;
   }
 
-  function approve(address spender, uint256) external pure returns (bytes memory addressesFound) {
-    addressesFound = abi.encodePacked(spender);
-  }
-
-  function transfer(address _to, uint256) external pure returns (bytes memory addressesFound) {
-    addressesFound = abi.encodePacked(_to);
-  }
-
   //============================== FALLBACK ===============================
   /**
    * @notice The purpose of this function is to revert with a known error,
