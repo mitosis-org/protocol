@@ -2,13 +2,16 @@
 pragma solidity ^0.8.27;
 
 import { IRewardDistributor } from './IRewardDistributor.sol';
+import { ITreasury } from './ITreasury.sol';
 
 /**
  * @title IMerkleRewardDistributor
  * @notice Interface for the Merkle based reward distributor
  */
-interface IMerkleRewardDistributor {
-  event StageAdded(uint256 indexed stage, bytes32 root);
+interface IMerkleRewardDistributor is IRewardDistributor {
+  event RewardsFetched(uint256 indexed id, uint256 nonce, address indexed matrixVault, address reward, uint256 amount);
+
+  event StageAdded(uint256 indexed stage, bytes32 root, address[] rewards, uint256[] amounts);
 
   event Claimed(
     address indexed receiver, uint256 indexed stage, address indexed eolVault, address[] rewards, uint256[] amounts
@@ -25,9 +28,13 @@ interface IMerkleRewardDistributor {
   error IMerkleRewardDistributor__InvalidProof();
 
   /**
-   * @notice Error thrown when an invalid amount is provided for claim.
+   * @notice Error thrown when an invalid amount is provided for claim or adding stage.
    */
   error IMerkleRewardDistributor__InvalidAmount();
+
+  error IMerkleRewardDistributor__NotCurrentStage(uint256 stage);
+
+  error IMerkleRewardDistributor__InvalidStageNonce(uint256 stage, uint256 nonce);
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
@@ -40,6 +47,14 @@ interface IMerkleRewardDistributor {
    * @notice Returns the root hash of the specified stage. If the stage does not exist, it returns 0.
    */
   function root(uint256 stage_) external view returns (bytes32);
+
+  /**
+   * @notice Returns the reward information of the specified stage. If the stage does not exist, it returns empty array.
+   */
+  function rewardInfo(uint256 stage_) external view returns (address[] memory rewards, uint256[] memory amounts);
+
+  // TODO(ray)
+  function treasury() external view returns (ITreasury);
 
   /**
    * @notice Makes a leaf hash that expected to be used in the merkle tree.
@@ -118,7 +133,15 @@ interface IMerkleRewardDistributor {
   /**
    * @notice Adds a new stage with the specified root hash.
    * @param root_ The root hash of the merkle tree.
+   *  TODO(ray)
    * @return stage The stage number of the added root hash.
    */
-  function addStage(bytes32 root_) external returns (uint256 stage);
+  function addStage(
+    bytes32 root_,
+    uint256 stage_,
+    uint256 nonce,
+    bytes32 merkleRoot,
+    address[] calldata rewards,
+    uint256[] calldata amounts
+  ) external returns (uint256 stage);
 }
