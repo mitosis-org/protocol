@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
+import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
@@ -8,12 +9,16 @@ abstract contract MerkleRewardDistributorStorageV1 {
   using ERC7201Utils for string;
 
   struct Stage {
+    uint256 nonce;
     bytes32 root;
-    mapping(address receiver => mapping(address matrixBasketAsset => bool)) claimed;
+    address[] rewards;
+    uint256[] amounts;
+    mapping(address receiver => mapping(address matrixVault => bool)) claimed;
   }
 
   struct StorageV1 {
     uint256 lastStage;
+    ITreasury treasury;
     mapping(uint256 stage => Stage) stages;
   }
 
