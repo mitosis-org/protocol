@@ -26,8 +26,6 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     __Ownable2Step_init();
     _transferOwnership(owner_);
 
-    require(treasury_.code.length > 0, 'Treasury');
-
     _setTreasury(_getStorageV1(), treasury_);
   }
 

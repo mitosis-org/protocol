@@ -130,6 +130,24 @@ interface IMerkleRewardDistributor is IRewardDistributor {
 
   // ============================ NOTE: MANAGER FUNCTIONS ============================ //
 
+  function fetchRewards(uint256 stage, uint256 nonce, address matrixVault, address reward, uint256 amount) external;
+
+  function fetchRewardsMultiple(
+    uint256 stage,
+    uint256 nonce,
+    address matrixVault,
+    address[] calldata rewards,
+    uint256[] calldata amounts
+  ) external;
+
+  function fetchRewardsBatch(
+    uint256 stage,
+    uint256 nonce,
+    address[] calldata matrixVaults,
+    address[][] calldata rewards,
+    uint256[][] calldata amounts
+  ) external;
+
   /**
    * @notice Adds a new stage with the specified root hash.
    * @param root_ The root hash of the merkle tree.
@@ -140,7 +158,6 @@ interface IMerkleRewardDistributor is IRewardDistributor {
     bytes32 root_,
     uint256 stage_,
     uint256 nonce,
-    bytes32 merkleRoot,
     address[] calldata rewards,
     uint256[] calldata amounts
   ) external returns (uint256 stage);
