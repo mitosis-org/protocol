@@ -19,10 +19,10 @@ interface IAssetManagerStorageV1 {
   event OptOutQueueSet(address indexed optOutQueue_);
 
   /**
-   * @notice Emitted when a new reward handler is set
-   * @param rewardHandler The address of the new reward handler
+   * @notice Emitted when a new reward treasury is set
+   * @param treasury The address of the new treasury
    */
-  event RewardHandlerSet(address indexed rewardHandler);
+  event TreasurySet(address indexed treasury);
 
   /**
    * @notice Emitted when a new strategist is set for an EOLVault
@@ -34,7 +34,7 @@ interface IAssetManagerStorageV1 {
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
   error IAssetManagerStorageV1__BranchAssetPairNotExist(address branchAsset);
-  error IAssetManagerStorageV1__RewardHandlerNotSet();
+  error IAssetManagerStorageV1__TreasuryNotSet();
 
   error IAssetManagerStorageV1__EOLNotInitialized(uint256 chainId, address eolVault);
   error IAssetManagerStorageV1__EOLAlreadyInitialized(uint256 chainId, address eolVault);
@@ -52,9 +52,9 @@ interface IAssetManagerStorageV1 {
   function optOutQueue() external view returns (address);
 
   /**
-   * @notice Get the current reward handler address (see IRewardHandler)
+   * @notice Get the current reward treasury address (see ITreasury)
    */
-  function rewardHandler() external view returns (address);
+  function treasury() external view returns (address);
 
   /**
    * @notice Get the branch asset address for a given hub asset and chain ID
@@ -349,10 +349,10 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function setOptOutQueue(address optOutQueue_) external;
 
   /**
-   * @notice Set the reward handler address
-   * @param rewardHandler_ The new reward handler address
+   * @notice Set the reward treasury address
+   * @param treasury_ The new treasury address
    */
-  function setRewardHandler(address rewardHandler_) external;
+  function setTreasury(address treasury_) external;
 
   /**
    * @notice Set the strategist for an EOLVault
