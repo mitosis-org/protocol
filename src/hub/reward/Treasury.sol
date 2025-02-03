@@ -12,12 +12,13 @@ import { IRewardHandler } from '../../interfaces/hub/reward/IRewardHandler.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { BaseHandler } from './BaseHandler.sol';
 import { TreasuryStorageV1 } from './TreasuryStorageV1.sol';
+import { StdError } from '../../lib/StdError.sol';
 
 /**
  * @title Treasury
  * @notice A reward handler that stores rewards for later dispatch
  */
-contract Treasury is BaseHandler, ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgradeable {
+contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgradeable {
   using SafeERC20 for IERC20;
   using SafeCast for uint256;
 
@@ -29,12 +30,11 @@ contract Treasury is BaseHandler, ITreasury, TreasuryStorageV1, AccessControlEnu
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  constructor() BaseHandler(HandlerType.Endpoint, DistributionType.Unspecified, 'Treasury Reward Handler') {
+  constructor() {
     _disableInitializers();
   }
 
   function initialize(address admin) external initializer {
-    __BaseHandler_init();
     __AccessControlEnumerable_init();
 
     _grantRole(DEFAULT_ADMIN_ROLE, admin);
@@ -47,56 +47,67 @@ contract Treasury is BaseHandler, ITreasury, TreasuryStorageV1, AccessControlEnu
   /**
    * @inheritdoc ITreasury
    */
-  function dispatch(address eolVault, address reward, uint256 amount, address handler, bytes calldata metadata)
+  function handleReward(address matrixVault, address reward, uint256 amount) external {
+    require(_isDispatchable(_msgSender()), StdError.Unauthorized());
+    _handleReward(matrixVault, reward, amount);
+  }
+
+  /**
+   * @inheritdoc ITreasury
+   */
+  function dispatch(address matrixVault, address reward, uint256 amount, address handler, bytes calldata metadata)
     external
     onlyRole(TREASURY_MANAGER_ROLE)
   {
     StorageV1 storage $ = _getStorageV1();
 
-    uint256 balance = _balances($, eolVault, reward);
+    uint256 balance = _balances($, matrixVault, reward);
     require(balance >= amount, ITreasury__InsufficientBalance()); // TODO(eddy): custom error
 
-    $.balances[eolVault][reward] = balance - amount;
-    $.history[eolVault][reward].push(
+    $.balances[matrixVault][reward] = balance - amount;
+    $.history[matrixVault][reward].push(
       Log({
-        timestamp: IERC6372(eolVault).clock(),
+        timestamp: IERC6372(matrixVault).clock(),
         amount: amount.toUint208(),
         sign: false // withdrawal
        })
     );
 
     IERC20(reward).forceApprove(handler, amount);
-    IRewardHandler(handler).handleReward(eolVault, reward, amount, metadata);
+    IRewardHandler(handler).handleReward(matrixVault, reward, amount, metadata);
 
-    emit RewardDispatched(eolVault, reward, handler, amount);
+    emit RewardDispatched(matrixVault, reward, handler, amount);
+  }
+
+  //=========== NOTE: VIEW FUNCTIONS ===========//
+
+  /**
+   * @inheritdoc ITreasury
+   */
+  function isDispatchable(address dispatcher) external view override returns (bool) {
+    return _isDispatchable(dispatcher);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  /**
-   * @inheritdoc BaseHandler
-   */
-  function _isDispatchable(address dispatcher) internal view override returns (bool) {
+  function _isDispatchable(address dispatcher) internal view returns (bool) {
     return hasRole(DISPATCHER_ROLE, dispatcher);
   }
 
-  /**
-   * @inheritdoc BaseHandler
-   */
-  function _handleReward(address eolVault, address reward, uint256 amount, bytes calldata) internal override {
+  function _handleReward(address matrixVault, address reward, uint256 amount) internal {
     IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
 
     StorageV1 storage $ = _getStorageV1();
 
-    $.balances[eolVault][reward] += amount;
-    $.history[eolVault][reward].push(
+    $.balances[matrixVault][reward] += amount;
+    $.history[matrixVault][reward].push(
       Log({
-        timestamp: IERC6372(eolVault).clock(),
+        timestamp: IERC6372(matrixVault).clock(),
         amount: amount.toUint208(),
         sign: true // deposit
        })
     );
 
-    emit RewardHandled(eolVault, reward, _msgSender(), amount);
+    emit RewardHandled(matrixVault, reward, _msgSender(), amount);
   }
 }
