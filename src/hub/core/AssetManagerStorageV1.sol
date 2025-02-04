@@ -7,7 +7,6 @@ import { IAssetManagerStorageV1 } from '../../interfaces/hub/core/IAssetManager.
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IOptOutQueue } from '../../interfaces/hub/eol/IOptOutQueue.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/vault/IEOLVault.sol';
-import { IRewardHandler } from '../../interfaces/hub/reward/IRewardHandler.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';

@@ -172,7 +172,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     emit RewardSettled(chainId, eolVault, hubReward, amount);
 
     IHubAsset(hubReward).approve(address($.treasury), amount);
-    $.treasury.handleReward(eolVault, hubReward, amount);
+    $.treasury.storeRewards(eolVault, hubReward, amount);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
