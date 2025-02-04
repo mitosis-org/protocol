@@ -4,20 +4,20 @@ pragma solidity ^0.8.27;
 import { Ownable } from '@oz-v5/access/Ownable.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
-import { IERC20TWABSnapshots } from '../../../interfaces/twab/IERC20TWABSnapshots.sol';
-import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
-import { StdError } from '../../../lib/StdError.sol';
-import { EOLVault } from './EOLVault.sol';
+import { IERC20TWABSnapshots } from '../../interfaces/twab/IERC20TWABSnapshots.sol';
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { StdError } from '../../lib/StdError.sol';
+import { MatrixVault } from './MatrixVault.sol';
 
 /**
- * @title EOLVaultCapped
- * @notice Adds a cap to the EOLVault's deposit / mint function
+ * @title MatrixVaultCapped
+ * @notice Adds a cap to the MatrixVault's deposit / mint function
  */
-contract EOLVaultCapped is EOLVault {
+contract MatrixVaultCapped is MatrixVault {
   using ERC7201Utils for string;
 
-  /// @custom:storage-location mitosis.storage.EOLVaultCapped
-  struct EOLVaultCappedStorage {
+  /// @custom:storage-location mitosis.storage.MatrixVaultCapped
+  struct MatrixVaultCappedStorage {
     uint256 cap;
   }
 
@@ -25,10 +25,10 @@ contract EOLVaultCapped is EOLVault {
 
   // =========================== NOTE: STORAGE DEFINITIONS =========================== //
 
-  string private constant _NAMESPACE = 'mitosis.storage.EOLVaultCapped';
+  string private constant _NAMESPACE = 'mitosis.storage.MatrixVaultCapped';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
-  function _getEOLVaultCappedStorage() private view returns (EOLVaultCappedStorage storage $) {
+  function _getMatrixVaultCappedStorage() private view returns (MatrixVaultCappedStorage storage $) {
     bytes32 slot = _slot;
     // slither-disable-next-line assembly
     assembly {
@@ -49,18 +49,18 @@ contract EOLVaultCapped is EOLVault {
     string memory name,
     string memory symbol
   ) external initializer {
-    __EOLVault_init(delegationRegistry_, assetManager_, asset_, name, symbol);
+    __MatrixVault_init(delegationRegistry_, assetManager_, asset_, name, symbol);
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
   function loadCap() external view returns (uint256) {
-    return _getEOLVaultCappedStorage().cap;
+    return _getMatrixVaultCappedStorage().cap;
   }
 
   function maxDeposit(address) public view override returns (uint256) {
     uint256 totalShares = totalSupply();
-    uint256 cap = _getEOLVaultCappedStorage().cap;
+    uint256 cap = _getMatrixVaultCappedStorage().cap;
 
     if (totalShares >= cap) {
       return 0;
@@ -71,7 +71,7 @@ contract EOLVaultCapped is EOLVault {
 
   function maxMint(address) public view override returns (uint256) {
     uint256 totalShares = totalSupply();
-    uint256 cap = _getEOLVaultCappedStorage().cap;
+    uint256 cap = _getMatrixVaultCappedStorage().cap;
 
     if (totalShares >= cap) {
       return 0;
@@ -84,7 +84,7 @@ contract EOLVaultCapped is EOLVault {
 
   function setCap(uint256 newCap) external {
     StorageV1 storage $ = _getStorageV1();
-    EOLVaultCappedStorage storage capped = _getEOLVaultCappedStorage();
+    MatrixVaultCappedStorage storage capped = _getMatrixVaultCappedStorage();
 
     require(Ownable(address($.assetManager)).owner() == _msgSender(), StdError.Unauthorized());
 
@@ -93,7 +93,7 @@ contract EOLVaultCapped is EOLVault {
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _setCap(EOLVaultCappedStorage storage $, uint256 newCap) internal {
+  function _setCap(MatrixVaultCappedStorage storage $, uint256 newCap) internal {
     uint256 prevCap = $.cap;
     $.cap = newCap;
     emit CapSet(_msgSender(), prevCap, newCap);

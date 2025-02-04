@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IHubAsset } from '../core/IHubAsset.sol';
-import { IEOLVault } from '../eol/vault/IEOLVault.sol';
+import { IHubAsset } from '../../core/IHubAsset.sol';
+import { IMatrixVault } from './IMatrixVault.sol';
 
 /**
  * @title IOptOutQueueStorageV1
