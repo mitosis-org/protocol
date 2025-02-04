@@ -66,40 +66,40 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, G
     _dispatchToMitosis(enc);
   }
 
-  function depositWithMatrixSupply(address asset, address to, address hubMatrixBasketAsset, uint256 amount)
+  function depositWithMatrixSupply(address asset, address to, address hubMatrixVault, uint256 amount)
     external
     onlyVault
   {
     bytes memory enc = MsgDepositWithMatrixSupply({
       asset: asset.toBytes32(),
       to: to.toBytes32(),
-      matrixBasketAsset: hubMatrixBasketAsset.toBytes32(),
+      matrixVault: hubMatrixVault.toBytes32(),
       amount: amount
     }).encode();
     _dispatchToMitosis(enc);
   }
 
-  function deallocateMatrixLiquidity(address hubMatrixBasketAsset, uint256 amount) external onlyVault {
+  function deallocateMatrixLiquidity(address hubMatrixVault, uint256 amount) external onlyVault {
     bytes memory enc =
-      MsgDeallocateMatrixLiquidity({ matrixBasketAsset: hubMatrixBasketAsset.toBytes32(), amount: amount }).encode();
+      MsgDeallocateMatrixLiquidity({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 
-  function settleMatrixYield(address hubMatrixBasketAsset, uint256 amount) external onlyVault {
+  function settleMatrixYield(address hubMatrixVault, uint256 amount) external onlyVault {
     bytes memory enc =
-      MsgSettleMatrixYield({ matrixBasketAsset: hubMatrixBasketAsset.toBytes32(), amount: amount }).encode();
+      MsgSettleMatrixYield({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 
-  function settleMatrixLoss(address hubMatrixBasketAsset, uint256 amount) external onlyVault {
+  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external onlyVault {
     bytes memory enc =
-      MsgSettleMatrixLoss({ matrixBasketAsset: hubMatrixBasketAsset.toBytes32(), amount: amount }).encode();
+      MsgSettleMatrixLoss({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 
-  function settleMatrixExtraRewards(address hubMatrixBasketAsset, address reward, uint256 amount) external onlyVault {
+  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external onlyVault {
     bytes memory enc = MsgSettleMatrixExtraRewards({
-      matrixBasketAsset: hubMatrixBasketAsset.toBytes32(),
+      matrixVault: hubMatrixVault.toBytes32(),
       reward: reward.toBytes32(),
       amount: amount
     }).encode();
@@ -130,12 +130,12 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, G
 
     if (msgType == MsgType.MsgInitializeMatrix) {
       MsgInitializeMatrix memory decoded = msg_.decodeInitializeMatrix();
-      _vault.initializeMatrix(decoded.matrixBasketAsset.toAddress(), decoded.asset.toAddress());
+      _vault.initializeMatrix(decoded.matrixVault.toAddress(), decoded.asset.toAddress());
     }
 
     if (msgType == MsgType.MsgAllocateMatrixLiquidity) {
       MsgAllocateMatrixLiquidity memory decoded = msg_.decodeAllocateMatrixLiquidity();
-      _vault.allocateMatrixLiquidity(decoded.matrixBasketAsset.toAddress(), decoded.amount);
+      _vault.allocateMatrixLiquidity(decoded.matrixVault.toAddress(), decoded.amount);
     }
   }
 

@@ -12,51 +12,51 @@ enum MatrixAction {
 interface IMatrixMitosisVault {
   //=========== NOTE: EVENT DEFINITIONS ===========//
 
-  event MatrixInitialized(address hubMatrixBasketAsset, address asset);
+  event MatrixInitialized(address hubMatrixVault, address asset);
   event MatrixDepositedWithSupply(
-    address indexed asset, address indexed to, address indexed hubMatrixBasketAsset, uint256 amount
+    address indexed asset, address indexed to, address indexed hubMatrixVault, uint256 amount
   );
-  event MatrixLiquidityAllocated(address indexed hubMatrixBasketAsset, uint256 amount);
-  event MatrixLiquidityDeallocated(address indexed hubMatrixBasketAsset, uint256 amount);
-  event MatrixLiquidityFetched(address indexed hubMatrixBasketAsset, uint256 amount);
-  event MatrixLiquidityReturned(address indexed hubMatrixBasketAsset, uint256 amount);
+  event MatrixLiquidityAllocated(address indexed hubMatrixVault, uint256 amount);
+  event MatrixLiquidityDeallocated(address indexed hubMatrixVault, uint256 amount);
+  event MatrixLiquidityFetched(address indexed hubMatrixVault, uint256 amount);
+  event MatrixLiquidityReturned(address indexed hubMatrixVault, uint256 amount);
 
-  event MatrixYieldSettled(address indexed hubMatrixBasketAsset, uint256 amount);
-  event MatrixLossSettled(address indexed hubMatrixBasketAsset, uint256 amount);
-  event MatrixExtraRewardsSettled(address indexed hubMatrixBasketAsset, address indexed reward, uint256 amount);
+  event MatrixYieldSettled(address indexed hubMatrixVault, uint256 amount);
+  event MatrixLossSettled(address indexed hubMatrixVault, uint256 amount);
+  event MatrixExtraRewardsSettled(address indexed hubMatrixVault, address indexed reward, uint256 amount);
 
-  event MatrixHalted(address indexed hubMatrixBasketAsset, MatrixAction action);
-  event MatrixResumed(address indexed hubMatrixBasketAsset, MatrixAction action);
+  event MatrixHalted(address indexed hubMatrixVault, MatrixAction action);
+  event MatrixResumed(address indexed hubMatrixVault, MatrixAction action);
 
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
-  error MatrixDepositedWithSupply__MatrixNotInitialized(address hubMatrixBasketAsset);
-  error MatrixDepositedWithSupply__MatrixAlreadyInitialized(address hubMatrixBasketAsset);
+  error MatrixDepositedWithSupply__MatrixNotInitialized(address hubMatrixVault);
+  error MatrixDepositedWithSupply__MatrixAlreadyInitialized(address hubMatrixVault);
 
-  error IMitosisVault__InvalidMatrixVault(address hubMatrixBasketAsset, address asset);
+  error IMitosisVault__InvalidMatrixVault(address hubMatrixVault, address asset);
 
   //=========== NOTE: View functions ===========//
 
-  function isMatrixInitialized(address hubMatrixBasketAsset) external view returns (bool);
-  function availableMatrixLiquidity(address hubMatrixBasketAsset) external view returns (uint256);
+  function isMatrixInitialized(address hubMatrixVault) external view returns (bool);
+  function availableMatrixLiquidity(address hubMatrixVault) external view returns (uint256);
 
   //=========== NOTE: Asset ===========//
 
-  function depositWithMatrixSupply(address asset, address to, address hubMatrixBasketAsset, uint256 amount) external;
+  function depositWithMatrixSupply(address asset, address to, address hubMatrixVault, uint256 amount) external;
 
   //=========== NOTE: Matrix ===========//
 
-  function initializeMatrix(address hubMatrixBasketAsset, address asset) external;
+  function initializeMatrix(address hubMatrixVault, address asset) external;
 
-  function allocateMatrixLiquidity(address hubMatrixBasketAsset, uint256 amount) external;
-  function deallocateMatrixLiquidity(address hubMatrixBasketAsset, uint256 amount) external;
+  function allocateMatrixLiquidity(address hubMatrixVault, uint256 amount) external;
+  function deallocateMatrixLiquidity(address hubMatrixVault, uint256 amount) external;
 
-  function fetchMatrixLiquidity(address hubMatrixBasketAsset, uint256 amount) external;
-  function returnMatrixLiquidity(address hubMatrixBasketAsset, uint256 amount) external;
+  function fetchMatrixLiquidity(address hubMatrixVault, uint256 amount) external;
+  function returnMatrixLiquidity(address hubMatrixVault, uint256 amount) external;
 
-  function settleMatrixYield(address hubMatrixBasketAsset, uint256 amount) external;
-  function settleMatrixLoss(address hubMatrixBasketAsset, uint256 amount) external;
-  function settleMatrixExtraRewards(address hubMatrixBasketAsset, address reward, uint256 amount) external;
+  function settleMatrixYield(address hubMatrixVault, uint256 amount) external;
+  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external;
+  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external;
 }
 
 interface IMitosisVault is IMatrixMitosisVault {

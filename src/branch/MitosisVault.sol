@@ -47,28 +47,28 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     return _isHalted(_getStorageV1(), asset, action);
   }
 
-  function isMatrixActionHalted(address hubMatrixBasketAsset, MatrixAction action) external view returns (bool) {
-    return _isHalted(_getStorageV1(), hubMatrixBasketAsset, action);
+  function isMatrixActionHalted(address hubMatrixVault, MatrixAction action) external view returns (bool) {
+    return _isHalted(_getStorageV1(), hubMatrixVault, action);
   }
 
   function isAssetInitialized(address asset) external view returns (bool) {
     return _isAssetInitialized(_getStorageV1(), asset);
   }
 
-  function isMatrixInitialized(address hubMatrixBasketAsset) external view returns (bool) {
-    return _isMatrixInitialized(_getStorageV1(), hubMatrixBasketAsset);
+  function isMatrixInitialized(address hubMatrixVault) external view returns (bool) {
+    return _isMatrixInitialized(_getStorageV1(), hubMatrixVault);
   }
 
-  function availableMatrixLiquidity(address hubMatrixBasketAsset) external view returns (uint256) {
-    return _getStorageV1().matrices[hubMatrixBasketAsset].availableLiquidity;
+  function availableMatrixLiquidity(address hubMatrixVault) external view returns (uint256) {
+    return _getStorageV1().matrices[hubMatrixVault].availableLiquidity;
   }
 
   function entrypoint() external view returns (address) {
     return address(_getStorageV1().entrypoint);
   }
 
-  function matrixStrategyExecutor(address hubMatrixBasketAsset) external view returns (address) {
-    return _getStorageV1().matrices[hubMatrixBasketAsset].strategyExecutor;
+  function matrixStrategyExecutor(address hubMatrixVault) external view returns (address) {
+    return _getStorageV1().matrices[hubMatrixVault].strategyExecutor;
   }
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
@@ -96,17 +96,17 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     emit Deposited(asset, to, amount);
   }
 
-  function depositWithMatrixSupply(address asset, address to, address hubMatrixBasketAsset, uint256 amount) external {
+  function depositWithMatrixSupply(address asset, address to, address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
     _deposit($, asset, to, amount);
 
-    _assertMatrixInitialized($, hubMatrixBasketAsset);
+    _assertMatrixInitialized($, hubMatrixVault);
     require(
-      asset == $.matrices[hubMatrixBasketAsset].asset, IMitosisVault__InvalidMatrixVault(hubMatrixBasketAsset, asset)
+      asset == $.matrices[hubMatrixVault].asset, IMitosisVault__InvalidMatrixVault(hubMatrixVault, asset)
     );
 
-    $.entrypoint.depositWithMatrixSupply(asset, to, hubMatrixBasketAsset, amount);
-    emit MatrixDepositedWithSupply(asset, to, hubMatrixBasketAsset, amount);
+    $.entrypoint.depositWithMatrixSupply(asset, to, hubMatrixVault, amount);
+    emit MatrixDepositedWithSupply(asset, to, hubMatrixVault, amount);
   }
 
   function redeem(address asset, address to, uint256 amount) external {
@@ -122,109 +122,109 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
 
   //=========== NOTE: MUTATIVE - EOL FUNCTIONS ===========//
 
-  function initializeMatrix(address hubMatrixBasketAsset, address asset) external {
+  function initializeMatrix(address hubMatrixVault, address asset) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
-    _assertMatrixNotInitialized($, hubMatrixBasketAsset);
+    _assertMatrixNotInitialized($, hubMatrixVault);
     _assertAssetInitialized($, asset);
 
-    $.matrices[hubMatrixBasketAsset].initialized = true;
-    $.matrices[hubMatrixBasketAsset].asset = asset;
+    $.matrices[hubMatrixVault].initialized = true;
+    $.matrices[hubMatrixVault].asset = asset;
 
-    emit MatrixInitialized(hubMatrixBasketAsset, asset);
+    emit MatrixInitialized(hubMatrixVault, asset);
   }
 
-  function allocateMatrixLiquidity(address hubMatrixBasketAsset, uint256 amount) external {
+  function allocateMatrixLiquidity(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
-    _assertMatrixInitialized($, hubMatrixBasketAsset);
+    _assertMatrixInitialized($, hubMatrixVault);
 
-    MatrixInfo storage matrixInfo = $.matrices[hubMatrixBasketAsset];
+    MatrixInfo storage matrixInfo = $.matrices[hubMatrixVault];
 
     matrixInfo.availableLiquidity += amount;
 
-    emit MatrixLiquidityAllocated(hubMatrixBasketAsset, amount);
+    emit MatrixLiquidityAllocated(hubMatrixVault, amount);
   }
 
-  function deallocateMatrixLiquidity(address hubMatrixBasketAsset, uint256 amount) external {
+  function deallocateMatrixLiquidity(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertMatrixInitialized($, hubMatrixBasketAsset);
-    _assertOnlyStrategyExecutor($, hubMatrixBasketAsset);
+    _assertMatrixInitialized($, hubMatrixVault);
+    _assertOnlyStrategyExecutor($, hubMatrixVault);
 
-    MatrixInfo storage matrixInfo = $.matrices[hubMatrixBasketAsset];
+    MatrixInfo storage matrixInfo = $.matrices[hubMatrixVault];
 
     matrixInfo.availableLiquidity -= amount;
-    $.entrypoint.deallocateMatrixLiquidity(hubMatrixBasketAsset, amount);
+    $.entrypoint.deallocateMatrixLiquidity(hubMatrixVault, amount);
 
-    emit MatrixLiquidityDeallocated(hubMatrixBasketAsset, amount);
+    emit MatrixLiquidityDeallocated(hubMatrixVault, amount);
   }
 
-  function fetchMatrixLiquidity(address hubMatrixBasketAsset, uint256 amount) external {
+  function fetchMatrixLiquidity(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertMatrixInitialized($, hubMatrixBasketAsset);
-    _assertOnlyStrategyExecutor($, hubMatrixBasketAsset);
-    _assertNotHalted($, hubMatrixBasketAsset, MatrixAction.FetchMatrix);
+    _assertMatrixInitialized($, hubMatrixVault);
+    _assertOnlyStrategyExecutor($, hubMatrixVault);
+    _assertNotHalted($, hubMatrixVault, MatrixAction.FetchMatrix);
 
-    MatrixInfo storage matrixInfo = $.matrices[hubMatrixBasketAsset];
+    MatrixInfo storage matrixInfo = $.matrices[hubMatrixVault];
 
     matrixInfo.availableLiquidity -= amount;
     IERC20(matrixInfo.asset).safeTransfer(matrixInfo.strategyExecutor, amount);
 
-    emit MatrixLiquidityFetched(hubMatrixBasketAsset, amount);
+    emit MatrixLiquidityFetched(hubMatrixVault, amount);
   }
 
-  function returnMatrixLiquidity(address hubMatrixBasketAsset, uint256 amount) external {
+  function returnMatrixLiquidity(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertMatrixInitialized($, hubMatrixBasketAsset);
-    _assertOnlyStrategyExecutor($, hubMatrixBasketAsset);
+    _assertMatrixInitialized($, hubMatrixVault);
+    _assertOnlyStrategyExecutor($, hubMatrixVault);
 
-    MatrixInfo storage matrixInfo = $.matrices[hubMatrixBasketAsset];
+    MatrixInfo storage matrixInfo = $.matrices[hubMatrixVault];
 
     IERC20(matrixInfo.asset).safeTransferFrom(matrixInfo.strategyExecutor, address(this), amount);
     matrixInfo.availableLiquidity += amount;
 
-    emit MatrixLiquidityReturned(hubMatrixBasketAsset, amount);
+    emit MatrixLiquidityReturned(hubMatrixVault, amount);
   }
 
-  function settleMatrixYield(address hubMatrixBasketAsset, uint256 amount) external {
+  function settleMatrixYield(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertMatrixInitialized($, hubMatrixBasketAsset);
-    _assertOnlyStrategyExecutor($, hubMatrixBasketAsset);
+    _assertMatrixInitialized($, hubMatrixVault);
+    _assertOnlyStrategyExecutor($, hubMatrixVault);
 
-    $.entrypoint.settleMatrixYield(hubMatrixBasketAsset, amount);
+    $.entrypoint.settleMatrixYield(hubMatrixVault, amount);
 
-    emit MatrixYieldSettled(hubMatrixBasketAsset, amount);
+    emit MatrixYieldSettled(hubMatrixVault, amount);
   }
 
-  function settleMatrixLoss(address hubMatrixBasketAsset, uint256 amount) external {
+  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertMatrixInitialized($, hubMatrixBasketAsset);
-    _assertOnlyStrategyExecutor($, hubMatrixBasketAsset);
+    _assertMatrixInitialized($, hubMatrixVault);
+    _assertOnlyStrategyExecutor($, hubMatrixVault);
 
-    $.entrypoint.settleMatrixLoss(hubMatrixBasketAsset, amount);
+    $.entrypoint.settleMatrixLoss(hubMatrixVault, amount);
 
-    emit MatrixLossSettled(hubMatrixBasketAsset, amount);
+    emit MatrixLossSettled(hubMatrixVault, amount);
   }
 
-  function settleMatrixExtraRewards(address hubMatrixBasketAsset, address reward, uint256 amount) external {
+  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertMatrixInitialized($, hubMatrixBasketAsset);
-    _assertOnlyStrategyExecutor($, hubMatrixBasketAsset);
+    _assertMatrixInitialized($, hubMatrixVault);
+    _assertOnlyStrategyExecutor($, hubMatrixVault);
     _assertAssetInitialized($, reward);
-    require(reward != $.matrices[hubMatrixBasketAsset].asset, StdError.InvalidAddress('reward'));
+    require(reward != $.matrices[hubMatrixVault].asset, StdError.InvalidAddress('reward'));
 
     IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
-    $.entrypoint.settleMatrixExtraRewards(hubMatrixBasketAsset, reward, amount);
+    $.entrypoint.settleMatrixExtraRewards(hubMatrixVault, reward, amount);
 
-    emit MatrixExtraRewardsSettled(hubMatrixBasketAsset, reward, amount);
+    emit MatrixExtraRewardsSettled(hubMatrixVault, reward, amount);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
@@ -234,22 +234,22 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     emit EntrypointSet(address(entrypoint_));
   }
 
-  function setMatrixStrategyExecutor(address hubMatrixBasketAsset, address strategyExecutor_) external onlyOwner {
+  function setMatrixStrategyExecutor(address hubMatrixVault, address strategyExecutor_) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    MatrixInfo storage matrixInfo = $.matrices[hubMatrixBasketAsset];
+    MatrixInfo storage matrixInfo = $.matrices[hubMatrixVault];
 
-    _assertMatrixInitialized($, hubMatrixBasketAsset);
+    _assertMatrixInitialized($, hubMatrixVault);
 
     if (matrixInfo.strategyExecutor != address(0)) {
       // NOTE: no way to check if every extra rewards are settled.
       bool drained = IMatrixStrategyExecutor(matrixInfo.strategyExecutor).totalBalance() == 0
         && IMatrixStrategyExecutor(matrixInfo.strategyExecutor).storedTotalBalance() == 0;
-      require(drained, IMitosisVault__StrategyExecutorNotDrained(hubMatrixBasketAsset, matrixInfo.strategyExecutor));
+      require(drained, IMitosisVault__StrategyExecutorNotDrained(hubMatrixVault, matrixInfo.strategyExecutor));
     }
 
     require(
-      hubMatrixBasketAsset == IMatrixStrategyExecutor(strategyExecutor_).hubMatrixBasketAsset(),
-      StdError.InvalidId('matrixStrategyExecutor.hubMatrixBasketAsset')
+      hubMatrixVault == IMatrixStrategyExecutor(strategyExecutor_).hubMatrixVault(),
+      StdError.InvalidId('matrixStrategyExecutor.hubMatrixVault')
     );
     require(
       address(this) == address(IMatrixStrategyExecutor(strategyExecutor_).vault()),
@@ -261,7 +261,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     );
 
     matrixInfo.strategyExecutor = strategyExecutor_;
-    emit MatrixStrategyExecutorSet(hubMatrixBasketAsset, strategyExecutor_);
+    emit MatrixStrategyExecutorSet(hubMatrixVault, strategyExecutor_);
   }
 
   function haltAsset(address asset, AssetAction action) external onlyOwner {
@@ -276,16 +276,16 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     return _resumeAsset($, asset, action);
   }
 
-  function haltMatrix(address hubMatrixBasketAsset, MatrixAction action) external onlyOwner {
+  function haltMatrix(address hubMatrixVault, MatrixAction action) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    _assertMatrixInitialized($, hubMatrixBasketAsset);
-    return _haltMatrix($, hubMatrixBasketAsset, action);
+    _assertMatrixInitialized($, hubMatrixVault);
+    return _haltMatrix($, hubMatrixVault, action);
   }
 
-  function resumeMatrix(address hubMatrixBasketAsset, MatrixAction action) external onlyOwner {
+  function resumeMatrix(address hubMatrixVault, MatrixAction action) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    _assertMatrixInitialized($, hubMatrixBasketAsset);
-    return _resumeMatrix($, hubMatrixBasketAsset, action);
+    _assertMatrixInitialized($, hubMatrixVault);
+    return _resumeMatrix($, hubMatrixVault, action);
   }
 
   function pause() external onlyOwner {
@@ -314,17 +314,17 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     require(!_isAssetInitialized($, asset), IMitosisVault__AssetAlreadyInitialized(asset));
   }
 
-  function _assertMatrixInitialized(StorageV1 storage $, address hubMatrixBasketAsset) internal view {
+  function _assertMatrixInitialized(StorageV1 storage $, address hubMatrixVault) internal view {
     require(
-      _isMatrixInitialized($, hubMatrixBasketAsset),
-      IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixNotInitialized(hubMatrixBasketAsset)
+      _isMatrixInitialized($, hubMatrixVault),
+      IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixNotInitialized(hubMatrixVault)
     );
   }
 
-  function _assertMatrixNotInitialized(StorageV1 storage $, address hubMatrixBasketAsset) internal view {
+  function _assertMatrixNotInitialized(StorageV1 storage $, address hubMatrixVault) internal view {
     require(
-      !_isMatrixInitialized($, hubMatrixBasketAsset),
-      IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixAlreadyInitialized(hubMatrixBasketAsset)
+      !_isMatrixInitialized($, hubMatrixVault),
+      IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixAlreadyInitialized(hubMatrixVault)
     );
   }
 
@@ -332,28 +332,28 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     require(!_isHalted($, asset, action), StdError.Halted());
   }
 
-  function _assertNotHalted(StorageV1 storage $, address hubMatrixBasketAsset, MatrixAction action) internal view {
-    require(!_isHalted($, hubMatrixBasketAsset, action), StdError.Halted());
+  function _assertNotHalted(StorageV1 storage $, address hubMatrixVault, MatrixAction action) internal view {
+    require(!_isHalted($, hubMatrixVault, action), StdError.Halted());
   }
 
   function _isHalted(StorageV1 storage $, address asset, AssetAction action) internal view returns (bool) {
     return $.assets[asset].isHalted[action];
   }
 
-  function _isHalted(StorageV1 storage $, address hubMatrixBasketAsset, MatrixAction action)
+  function _isHalted(StorageV1 storage $, address hubMatrixVault, MatrixAction action)
     internal
     view
     returns (bool)
   {
-    return $.matrices[hubMatrixBasketAsset].isHalted[action];
+    return $.matrices[hubMatrixVault].isHalted[action];
   }
 
   function _isAssetInitialized(StorageV1 storage $, address asset) internal view returns (bool) {
     return $.assets[asset].initialized;
   }
 
-  function _isMatrixInitialized(StorageV1 storage $, address hubMatrixBasketAsset) internal view returns (bool) {
-    return $.matrices[hubMatrixBasketAsset].initialized;
+  function _isMatrixInitialized(StorageV1 storage $, address hubMatrixVault) internal view returns (bool) {
+    return $.matrices[hubMatrixVault].initialized;
   }
 
   function _haltAsset(StorageV1 storage $, address asset, AssetAction action) internal {
@@ -366,14 +366,14 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     emit AssetResumed(asset, action);
   }
 
-  function _haltMatrix(StorageV1 storage $, address hubMatrixBasketAsset, MatrixAction action) internal {
-    $.matrices[hubMatrixBasketAsset].isHalted[action] = true;
-    emit MatrixHalted(hubMatrixBasketAsset, action);
+  function _haltMatrix(StorageV1 storage $, address hubMatrixVault, MatrixAction action) internal {
+    $.matrices[hubMatrixVault].isHalted[action] = true;
+    emit MatrixHalted(hubMatrixVault, action);
   }
 
-  function _resumeMatrix(StorageV1 storage $, address hubMatrixBasketAsset, MatrixAction action) internal {
-    $.matrices[hubMatrixBasketAsset].isHalted[action] = false;
-    emit MatrixResumed(hubMatrixBasketAsset, action);
+  function _resumeMatrix(StorageV1 storage $, address hubMatrixVault, MatrixAction action) internal {
+    $.matrices[hubMatrixVault].isHalted[action] = false;
+    emit MatrixResumed(hubMatrixVault, action);
   }
 
   function _deposit(StorageV1 storage $, address asset, address to, uint256 amount) internal {

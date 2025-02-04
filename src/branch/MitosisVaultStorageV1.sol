@@ -24,7 +24,7 @@ abstract contract MitosisVaultStorageV1 {
   struct StorageV1 {
     IMitosisVaultEntrypoint entrypoint;
     mapping(address asset => AssetInfo) assets;
-    mapping(address hubMatrixBasketAsset => MatrixInfo) matrices;
+    mapping(address hubMatrixVault => MatrixInfo) matrices;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.MitosisVaultStorage.v1';

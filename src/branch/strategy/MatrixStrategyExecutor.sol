@@ -29,14 +29,14 @@ contract MatrixStrategyExecutor is
 
   IMitosisVault internal immutable _vault;
   IERC20 internal immutable _asset;
-  address internal immutable _hubMatrixBasketAsset;
+  address internal immutable _hubMatrixVault;
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  constructor(IMitosisVault vault_, IERC20 asset_, address hubMatrixBaksetAsset_) initializer {
+  constructor(IMitosisVault vault_, IERC20 asset_, address hubMatrixVault_) initializer {
     _vault = vault_;
     _asset = asset_;
-    _hubMatrixBasketAsset = hubMatrixBaksetAsset_;
+    _hubMatrixVault = hubMatrixVault_;
   }
 
   fallback() external payable {
@@ -67,8 +67,8 @@ contract MatrixStrategyExecutor is
     return _asset;
   }
 
-  function hubMatrixBasketAsset() external view returns (address) {
-    return _hubMatrixBasketAsset;
+  function hubMatrixVault() external view returns (address) {
+    return _hubMatrixVault;
   }
 
   function strategist() external view returns (address) {
@@ -103,7 +103,7 @@ contract MatrixStrategyExecutor is
     _assertNotPaused();
     _assertOnlyStrategist($);
 
-    _vault.deallocateMatrixLiquidity(_hubMatrixBasketAsset, amount);
+    _vault.deallocateMatrixLiquidity(_hubMatrixVault, amount);
   }
 
   function fetchLiquidity(uint256 amount) external {
@@ -112,7 +112,7 @@ contract MatrixStrategyExecutor is
     _assertNotPaused();
     _assertOnlyStrategist($);
 
-    _vault.fetchMatrixLiquidity(_hubMatrixBasketAsset, amount);
+    _vault.fetchMatrixLiquidity(_hubMatrixVault, amount);
     $.storedTotalBalance += amount;
   }
 
@@ -123,7 +123,7 @@ contract MatrixStrategyExecutor is
     _assertOnlyStrategist($);
 
     _asset.approve(address(_vault), amount);
-    _vault.returnMatrixLiquidity(_hubMatrixBasketAsset, amount);
+    _vault.returnMatrixLiquidity(_hubMatrixVault, amount);
     $.storedTotalBalance -= amount;
   }
 
@@ -139,9 +139,9 @@ contract MatrixStrategyExecutor is
     $.storedTotalBalance = totalBalance_;
 
     if (totalBalance_ >= storedTotalBalance_) {
-      _vault.settleMatrixYield(_hubMatrixBasketAsset, totalBalance_ - storedTotalBalance_);
+      _vault.settleMatrixYield(_hubMatrixVault, totalBalance_ - storedTotalBalance_);
     } else {
-      _vault.settleMatrixLoss(_hubMatrixBasketAsset, storedTotalBalance_ - totalBalance_);
+      _vault.settleMatrixLoss(_hubMatrixVault, storedTotalBalance_ - totalBalance_);
     }
   }
 
@@ -153,7 +153,7 @@ contract MatrixStrategyExecutor is
     require(reward != address(_asset), StdError.InvalidAddress('reward'));
 
     IERC20(reward).approve(address(_vault), amount);
-    _vault.settleMatrixExtraRewards(_hubMatrixBasketAsset, reward, amount);
+    _vault.settleMatrixExtraRewards(_hubMatrixVault, reward, amount);
   }
 
   //=========== NOTE: EXECUTOR FUNCTIONS ===========//
