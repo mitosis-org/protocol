@@ -8,9 +8,8 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
 
-import { IRewardHandler } from '../../interfaces/hub/reward/IRewardHandler.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
-import { BaseHandler } from './BaseHandler.sol';
+import { IRewardDistributor } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { TreasuryStorageV1 } from './TreasuryStorageV1.sol';
 import { StdError } from '../../lib/StdError.sol';
 
@@ -25,9 +24,6 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
   /// @notice Role for managing treasury (keccak256("TREASURY_MANAGER_ROLE"))
   bytes32 public constant TREASURY_MANAGER_ROLE = 0xede9dcdb0ce99dc7cec9c7be9246ad08b37853683ad91569c187b647ddf5e21c;
 
-  /// @notice Role for dispatching rewards (keccak256("DISPATCHER_ROLE"))
-  bytes32 public constant DISPATCHER_ROLE = 0xfbd38eecf51668fdbc772b204dc63dd28c3a3cf32e3025f52a80aa807359f50c;
-
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
   constructor() {
@@ -39,7 +35,6 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
 
     _grantRole(DEFAULT_ADMIN_ROLE, admin);
     _setRoleAdmin(TREASURY_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
-    _setRoleAdmin(DISPATCHER_ROLE, DEFAULT_ADMIN_ROLE);
   }
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
@@ -47,15 +42,14 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
   /**
    * @inheritdoc ITreasury
    */
-  function handleReward(address matrixVault, address reward, uint256 amount) external {
-    require(_isDispatchable(_msgSender()), StdError.Unauthorized());
-    _handleReward(matrixVault, reward, amount);
+  function storeRewards(address matrixVault, address reward, uint256 amount) external onlyRole(TREASURY_MANAGER_ROLE) {
+    _storeRewards(matrixVault, reward, amount);
   }
 
   /**
    * @inheritdoc ITreasury
    */
-  function dispatch(address matrixVault, address reward, uint256 amount, address handler, bytes calldata metadata)
+  function dispatch(address matrixVault, address reward, uint256 amount, address distributor, bytes calldata metadata)
     external
     onlyRole(TREASURY_MANAGER_ROLE)
   {
@@ -73,28 +67,15 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
        })
     );
 
-    IERC20(reward).forceApprove(handler, amount);
-    IRewardHandler(handler).handleReward(matrixVault, reward, amount, metadata);
+    IERC20(reward).forceApprove(distributor, amount);
+    IRewardDistributor(distributor).handleReward(matrixVault, reward, amount, metadata);
 
-    emit RewardDispatched(matrixVault, reward, handler, amount);
-  }
-
-  //=========== NOTE: VIEW FUNCTIONS ===========//
-
-  /**
-   * @inheritdoc ITreasury
-   */
-  function isDispatchable(address dispatcher) external view override returns (bool) {
-    return _isDispatchable(dispatcher);
+    emit RewardDispatched(matrixVault, reward, distributor, amount);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _isDispatchable(address dispatcher) internal view returns (bool) {
-    return hasRole(DISPATCHER_ROLE, dispatcher);
-  }
-
-  function _handleReward(address matrixVault, address reward, uint256 amount) internal {
+  function _storeRewards(address matrixVault, address reward, uint256 amount) internal {
     IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
 
     StorageV1 storage $ = _getStorageV1();
@@ -108,6 +89,6 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
        })
     );
 
-    emit RewardHandled(matrixVault, reward, _msgSender(), amount);
+    emit RewardStored(matrixVault, reward, _msgSender(), amount);
   }
 }

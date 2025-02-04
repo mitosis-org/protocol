@@ -40,14 +40,9 @@ interface ITreasuryStorageV1 {
  */
 interface ITreasury is IAccessControlEnumerable, ITreasuryStorageV1 {
   event RewardDispatched(address indexed matrixVault, address indexed reward, address indexed from, uint256 amount);
-  event RewardStored(address indexed matrixVault, address indexed reward, address indexed handler, uint256 amount);
+  event RewardStored(address indexed matrixVault, address indexed reward, address indexed from, uint256 amount);
 
   error ITreasury__InsufficientBalance();
-
-  /**
-   * @notice Checks if the specified dispatcher is allowed to call `handleReward`
-   */
-  function isDispatchable(address dispatcher) external view returns (bool);
 
   /**
    * @notice Stores the distribution of rewards for the specified vault and reward
