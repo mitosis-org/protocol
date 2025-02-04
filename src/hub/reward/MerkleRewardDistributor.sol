@@ -21,7 +21,8 @@ contract MerkleRewardDistributor is
   using SafeERC20 for IERC20;
   using MerkleProof for bytes32[];
 
-  bytes32 public constant MANAGER_ROLE = keccak256('MANAGER_ROLE');
+  /// @notice Role for manager (keccak256("MANAGER_ROLE"))
+  bytes32 public constant MANAGER_ROLE = 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08;
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -35,8 +36,7 @@ contract MerkleRewardDistributor is
     _grantRole(DEFAULT_ADMIN_ROLE, admin);
     _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
 
-    require(treasury_.code.length > 0, StdError.InvalidAddress('Treasury'));
-    _getStorageV1().treasury = ITreasury(treasury_);
+    _setTreasury(_getStorageV1(), treasury_);
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
@@ -228,15 +228,21 @@ contract MerkleRewardDistributor is
     return merkleStage;
   }
 
-  function handleReward(address matrixVault, address reward, uint256 amount, bytes calldata metadata) external {
-    _handleReward(matrixVault, reward, amount, metadata);
+  function handleReward(address matrixVault, address reward, uint256 amount) external {
+    require(_msgSender() == address(_getStorageV1().treasury), StdError.Unauthorized());
+    _handleReward(matrixVault, reward, amount);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _handleReward(address matrixVault, address reward, uint256 amount, bytes calldata) internal {
+  function _setTreasury(StorageV1 storage $, address treasury_) internal {
+    require(treasury_.code.length > 0, StdError.InvalidAddress('Treasury'));
+    $.treasury = ITreasury(treasury_);
+  }
+
+  function _handleReward(address matrixVault, address reward, uint256 amount) internal {
     IERC20(reward).transferFrom(_msgSender(), address(this), amount);
-    emit RewardHandled(matrixVault, reward, amount, '', '');
+    emit RewardHandled(matrixVault, reward, amount);
   }
 
   function _fetchRewards(StorageV1 storage $, uint256 stage, address matrixVault, address reward, uint256 amount)
@@ -244,7 +250,7 @@ contract MerkleRewardDistributor is
   {
     // Do we really need `handleReward`? Why don't we just fetch tokens from the AssetManager here?
 
-    $.treasury.dispatch(matrixVault, reward, amount, address(this), '');
+    $.treasury.dispatch(matrixVault, reward, amount, address(this));
 
     Stage storage s = _stage($, stage);
     emit RewardsFetched(stage, s.nonce, matrixVault, reward, amount);

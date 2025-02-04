@@ -6,13 +6,10 @@ pragma solidity ^0.8.27;
  * @notice Common interface for distributor of rewards.
  */
 interface IRewardDistributor {
-  event RewardHandled(
-    address indexed eolVault, address indexed reward, uint256 indexed amount, bytes metadata, bytes extraData
-  );
+  event RewardHandled(address indexed eolVault, address indexed reward, uint256 indexed amount);
 
   /**
-   * @notice Handles the distribution of rewards for the specified vault and reward
-   * @dev This method can only be called by the account that is allowed to dispatch rewards
+   * @notice Handles the distribution of rewards for the specified vault and reward.
    */
-  function handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) external;
+  function handleReward(address eolVault, address reward, uint256 amount) external;
 }

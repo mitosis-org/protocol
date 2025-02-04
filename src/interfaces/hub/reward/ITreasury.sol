@@ -56,8 +56,6 @@ interface ITreasury is IAccessControlEnumerable, ITreasuryStorageV1 {
    * @param reward The reward token address
    * @param amount The reward amount
    * @param handler The reward handler address
-   * @param metadata The auxiliary data for the reward handler (TODO:ray)
    */
-  function dispatch(address matrixVault, address reward, uint256 amount, address handler, bytes calldata metadata)
-    external;
+  function dispatch(address matrixVault, address reward, uint256 amount, address handler) external;
 }

@@ -23,6 +23,8 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
 
   /// @notice Role for managing treasury (keccak256("TREASURY_MANAGER_ROLE"))
   bytes32 public constant TREASURY_MANAGER_ROLE = 0xede9dcdb0ce99dc7cec9c7be9246ad08b37853683ad91569c187b647ddf5e21c;
+  /// @notice Role for dispatching rewards (keccak256("DISPATCHER_ROLE"))
+  bytes32 public constant DISPATCHER_ROLE = 0xfbd38eecf51668fdbc772b204dc63dd28c3a3cf32e3025f52a80aa807359f50c;
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -35,6 +37,7 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
 
     _grantRole(DEFAULT_ADMIN_ROLE, admin);
     _setRoleAdmin(TREASURY_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+    _setRoleAdmin(DISPATCHER_ROLE, DEFAULT_ADMIN_ROLE);
   }
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
@@ -49,9 +52,9 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
   /**
    * @inheritdoc ITreasury
    */
-  function dispatch(address matrixVault, address reward, uint256 amount, address distributor, bytes calldata metadata)
+  function dispatch(address matrixVault, address reward, uint256 amount, address distributor)
     external
-    onlyRole(TREASURY_MANAGER_ROLE)
+    onlyRole(DISPATCHER_ROLE)
   {
     StorageV1 storage $ = _getStorageV1();
 
@@ -68,7 +71,7 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
     );
 
     IERC20(reward).forceApprove(distributor, amount);
-    IRewardDistributor(distributor).handleReward(matrixVault, reward, amount, metadata);
+    IRewardDistributor(distributor).handleReward(matrixVault, reward, amount);
 
     emit RewardDispatched(matrixVault, reward, distributor, amount);
   }
