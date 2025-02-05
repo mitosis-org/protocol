@@ -87,7 +87,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     $.assets[asset].initialized = true;
     emit AssetInitialized(asset);
 
-    // NOTE: we halt deposit by default.
+    // NOTE: we halt deposit and keep the cap at zero by default.
     _haltAsset($, asset, AssetAction.Deposit);
   }
 
