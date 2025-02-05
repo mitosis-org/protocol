@@ -62,6 +62,8 @@ interface IMatrixMitosisVault {
 interface IMitosisVault is IMatrixMitosisVault {
   //=========== NOTE: EVENT DEFINITIONS ===========//
 
+  event CapSet(address indexed setter, address indexed asset, uint256 prevMaxCap, uint256 newMaxCap);
+
   event AssetInitialized(address asset);
 
   event Deposited(address indexed asset, address indexed to, uint256 amount);
@@ -74,6 +76,8 @@ interface IMitosisVault is IMatrixMitosisVault {
   event AssetResumed(address indexed asset, AssetAction action);
 
   //=========== NOTE: ERROR DEFINITIONS ===========//
+
+  error IMitosisVault__ExceededCap(address asset, uint256 increasedSupply, uint256 availableCap);
 
   error IMitosisVault__AssetNotInitialized(address asset);
   error IMitosisVault__AssetAlreadyInitialized(address asset);

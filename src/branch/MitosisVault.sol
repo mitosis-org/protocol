@@ -43,6 +43,14 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
 
+  function maxCap(address asset) external view returns (uint256) {
+    return _getStorageV1().assets[asset].maxCap;
+  }
+
+  function availableCap(address asset) external view returns (uint256) {
+    return _getStorageV1().assets[asset].availableCap;
+  }
+
   function isAssetActionHalted(address asset, AssetAction action) external view returns (bool) {
     return _isHalted(_getStorageV1(), asset, action);
   }
@@ -84,7 +92,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     $.assets[asset].initialized = true;
     emit AssetInitialized(asset);
 
-    // NOTE: we halt deposit by default.
+    // NOTE: we halt deposit and keep the cap at zero by default.
     _haltAsset($, asset, AssetAction.Deposit);
   }
 
@@ -262,6 +270,13 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     emit MatrixStrategyExecutorSet(hubMatrixVault, strategyExecutor_);
   }
 
+  function setCap(address asset, uint256 newCap) external onlyOwner {
+    StorageV1 storage $ = _getStorageV1();
+    _assertAssetInitialized($, asset);
+
+    _setCap($, asset, newCap);
+  }
+
   function haltAsset(address asset, AssetAction action) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
     _assertAssetInitialized($, asset);
@@ -302,6 +317,11 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
 
   function _assertOnlyStrategyExecutor(StorageV1 storage $, address vault) internal view {
     require(_msgSender() == $.matrices[vault].strategyExecutor, StdError.Unauthorized());
+  }
+
+  function _assertCapNotExceeded(StorageV1 storage $, address asset, uint256 amount) internal view {
+    uint256 available = $.assets[asset].availableCap;
+    require(available >= amount, IMitosisVault__ExceededCap(asset, amount, available));
   }
 
   function _assertAssetInitialized(StorageV1 storage $, address asset) internal view {
@@ -350,6 +370,14 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     return $.matrices[hubMatrixVault].initialized;
   }
 
+  function _setCap(StorageV1 storage $, address asset, uint256 newCap) internal {
+    AssetInfo storage assetInfo = $.assets[asset];
+    uint256 prevCap = assetInfo.maxCap;
+    assetInfo.maxCap = newCap;
+    assetInfo.availableCap = newCap;
+    emit CapSet(_msgSender(), asset, prevCap, newCap);
+  }
+
   function _haltAsset(StorageV1 storage $, address asset, AssetAction action) internal {
     $.assets[asset].isHalted[action] = true;
     emit AssetHalted(asset, action);
@@ -371,11 +399,14 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
   }
 
   function _deposit(StorageV1 storage $, address asset, address to, uint256 amount) internal {
-    _assertAssetInitialized($, asset);
-    _assertNotHalted($, asset, AssetAction.Deposit);
     require(to != address(0), StdError.ZeroAddress('to'));
     require(amount != 0, StdError.ZeroAmount());
 
+    _assertAssetInitialized($, asset);
+    _assertNotHalted($, asset, AssetAction.Deposit);
+    _assertCapNotExceeded($, asset, amount);
+
+    $.assets[asset].availableCap -= amount;
     IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
   }
 }
