@@ -315,6 +315,10 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     require(_msgSender() == $.eols[hubEOLVault].eolStrategyExecutor, StdError.Unauthorized());
   }
 
+  function _assertCapNotExceeded(StorageV1 storage $, address asset, uint256 amount) internal view {
+    require($.assets[asset].cap >= amount, IMitosisVault__ExceededCap(asset, amount, assetInfo.cap));
+  }
+
   function _assertAssetInitialized(StorageV1 storage $, address asset) internal view {
     require(_isAssetInitialized($, asset), IMitosisVault__AssetNotInitialized(asset));
   }
@@ -388,11 +392,9 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
 
     _assertAssetInitialized($, asset);
     _assertNotHalted($, asset, AssetAction.Deposit);
+    _assertCapNotExceeded($, asset, amount);
 
-    AssetInfo storage assetInfo = $.assets[asset];
-    require(assetInfo.cap >= amount, IMitosisVault__ExceededCap(asset, amount, assetInfo.cap));
-    assetInfo.cap -= amount;
-
+    $.assets[asset].cap -= amount;
     IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
   }
 }
