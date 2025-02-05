@@ -13,13 +13,10 @@ contract MatrixVaultBasic is MatrixVault {
     _disableInitializers();
   }
 
-  function initialize(
-    address delegationRegistry_,
-    address assetManager_,
-    IERC20TWABSnapshots asset_,
-    string memory name,
-    string memory symbol
-  ) external initializer {
-    __MatrixVault_init(delegationRegistry_, assetManager_, asset_, name, symbol);
+  function initialize(address assetManager_, IERC20TWABSnapshots asset_, string memory name, string memory symbol)
+    external
+    initializer
+  {
+    __MatrixVault_init(assetManager_, asset_, name, symbol);
   }
 }

@@ -17,9 +17,9 @@ abstract contract ERC20TWABSnapshots is ERC20Upgradeable, TWABSnapshots {
    */
   error ERC20ExceededSafeSupply(uint256 increasedSupply, uint256 cap);
 
-  function __ERC20TWABSnapshots_init(address delegationRegistry_, string memory name_, string memory symbol_) internal {
+  function __ERC20TWABSnapshots_init(string memory name_, string memory symbol_) internal {
     __ERC20_init_unchained(name_, symbol_);
-    __TWABSnapshots_init(delegationRegistry_);
+    __TWABSnapshots_init();
   }
 
   function _maxSupply() internal view virtual returns (uint256) {
@@ -37,7 +37,6 @@ abstract contract ERC20TWABSnapshots is ERC20Upgradeable, TWABSnapshots {
     TWABSnapshotsStorageV1_ storage $ = _getTWABSnapshotsStorageV1();
 
     _snapshotBalance($, from, to);
-    _snapshotDelegate($, from, to, value);
   }
 
   function _getTotalSupply() internal view override returns (uint256) {

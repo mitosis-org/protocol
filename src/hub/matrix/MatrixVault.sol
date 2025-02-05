@@ -20,7 +20,6 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626TWABSnapshots {
   using Math for uint256;
 
   function __MatrixVault_init(
-    address delegationRegistry_,
     address assetManager_,
     IERC20TWABSnapshots asset_,
     string memory name,
@@ -32,7 +31,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626TWABSnapshots {
     }
 
     __ERC4626_init(asset_);
-    __ERC20TWABSnapshots_init(delegationRegistry_, name, symbol);
+    __ERC20TWABSnapshots_init(name, symbol);
 
     StorageV1 storage $ = _getStorageV1();
 
