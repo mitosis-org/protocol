@@ -9,6 +9,7 @@ import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
+import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { AssetManagerStorageV1 } from './AssetManagerStorageV1.sol';
@@ -20,10 +21,12 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _disableInitializers();
   }
 
-  function initialize(address owner_) public initializer {
+  function initialize(address owner_, address treasury_) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
     _transferOwnership(owner_);
+
+    _setTreasury(_getStorageV1(), treasury_);
   }
 
   //=========== NOTE: ASSET FUNCTIONS ===========//
@@ -168,14 +171,14 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
 
     _assertOnlyEntrypoint($);
     _assertBranchAssetPairExist($, chainId, branchReward);
-    _assertRewardHandlerSet($);
+    _assertTreasurySet($);
 
     address hubReward = $.hubAssets[chainId][branchReward];
     _mint($, chainId, hubReward, address(this), amount);
     emit MatrixRewardSettled(chainId, matrixVault, hubReward, amount);
 
-    IHubAsset(hubReward).approve(address($.rewardHandler), amount);
-    $.rewardHandler.handleReward(matrixVault, hubReward, amount, bytes(''));
+    IHubAsset(hubReward).approve(address($.treasury), amount);
+    $.treasury.storeRewards(matrixVault, hubReward, amount);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
@@ -228,8 +231,8 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _setReclaimQueue(_getStorageV1(), reclaimQueue_);
   }
 
-  function setRewardHandler(address rewardHandler_) external onlyOwner {
-    _setRewardHandler(_getStorageV1(), rewardHandler_);
+  function setTreasury(address treasury_) external onlyOwner {
+    _setTreasury(_getStorageV1(), treasury_);
   }
 
   function setStrategist(address matrixVault, address strategist) external onlyOwner {
