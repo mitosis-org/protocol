@@ -12,7 +12,7 @@ enum EOLAction {
 interface IMitosisVault {
   //=========== NOTE: EVENT DEFINITIONS ===========//
 
-  event CapSet(address indexed setter, address indexed asset, uint256 prevCap, uint256 newCap);
+  event CapSet(address indexed setter, address indexed asset, uint256 prevMaxCap, uint256 newMaxCap);
 
   event AssetInitialized(address asset);
 
