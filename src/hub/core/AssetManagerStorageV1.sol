@@ -7,7 +7,7 @@ import { IAssetManagerStorageV1 } from '../../interfaces/hub/core/IAssetManager.
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IReclaimQueue } from '../../interfaces/hub/matrix/IReclaimQueue.sol';
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
-import { IRewardHandler } from '../../interfaces/hub/reward/IRewardHandler.sol';
+import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
@@ -22,7 +22,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   struct StorageV1 {
     IAssetManagerEntrypoint entrypoint;
     IReclaimQueue reclaimQueue;
-    IRewardHandler rewardHandler;
+    ITreasury treasury;
     // Asset states
     mapping(address hubAsset => mapping(uint256 chainId => address branchAsset)) branchAssets;
     mapping(uint256 chainId => mapping(address branchAsset => address hubAsset)) hubAssets;
@@ -53,8 +53,8 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return address(_getStorageV1().reclaimQueue);
   }
 
-  function rewardHandler() external view returns (address) {
-    return address(_getStorageV1().rewardHandler);
+  function treasury() external view returns (address) {
+    return address(_getStorageV1().treasury);
   }
 
   function branchAsset(address hubAsset_, uint256 chainId) external view returns (address) {
@@ -103,12 +103,12 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     emit ReclaimQueueSet(reclaimQueue_);
   }
 
-  function _setRewardHandler(StorageV1 storage $, address rewardHandler_) internal {
-    require(rewardHandler_.code.length > 0, StdError.InvalidParameter('RewardHandler'));
+  function _setTreasury(StorageV1 storage $, address treasury_) internal {
+    require(treasury_.code.length > 0, StdError.InvalidParameter('Treasury'));
 
-    $.rewardHandler = IRewardHandler(rewardHandler_);
+    $.treasury = ITreasury(treasury_);
 
-    emit RewardHandlerSet(rewardHandler_);
+    emit TreasurySet(treasury_);
   }
 
   function _setStrategist(StorageV1 storage $, address matrixVault, address strategist_) internal {
@@ -148,8 +148,8 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     );
   }
 
-  function _assertRewardHandlerSet(StorageV1 storage $) internal view virtual {
-    require(address($.rewardHandler) != address(0), IAssetManagerStorageV1__RewardHandlerNotSet());
+  function _assertTreasurySet(StorageV1 storage $) internal view virtual {
+    require(address($.treasury) != address(0), IAssetManagerStorageV1__TreasuryNotSet());
   }
 
   function _assertMatrixInitialized(StorageV1 storage $, uint256 chainId, address matrixVault) internal view virtual {
