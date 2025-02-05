@@ -7,31 +7,28 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
-import { IERC20TWABSnapshots } from '../../interfaces/twab/IERC20TWABSnapshots.sol';
+import { IERC20Snapshots } from '../../interfaces/twab/IERC20Snapshots.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { ERC4626TWABSnapshots } from '../../twab/ERC4626TWABSnapshots.sol';
+import { ERC4626Snapshots } from '../../twab/ERC4626Snapshots.sol';
 import { MatrixVaultStorageV1 } from './MatrixVaultStorageV1.sol';
 
 /**
  * @title MatrixVault
  * @notice Base implementation of an MatrixVault
  */
-abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626TWABSnapshots {
+abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626Snapshots {
   using Math for uint256;
 
-  function __MatrixVault_init(
-    address assetManager_,
-    IERC20TWABSnapshots asset_,
-    string memory name,
-    string memory symbol
-  ) internal {
+  function __MatrixVault_init(address assetManager_, IERC20Snapshots asset_, string memory name, string memory symbol)
+    internal
+  {
     if (bytes(name).length == 0 || bytes(symbol).length == 0) {
       name = string.concat('Mitosis ', asset_.name());
       symbol = string.concat('mi', asset_.symbol());
     }
 
     __ERC4626_init(asset_);
-    __ERC20TWABSnapshots_init(name, symbol);
+    __ERC20Snapshots_init(name, symbol);
 
     StorageV1 storage $ = _getStorageV1();
 

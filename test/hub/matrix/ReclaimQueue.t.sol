@@ -10,9 +10,8 @@ import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
 import { ReclaimQueue } from '../../../src/hub/matrix/ReclaimQueue.sol';
 import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IReclaimQueue } from '../../../src/interfaces/hub/matrix/IReclaimQueue.sol';
-import { IERC20TWABSnapshots } from '../../../src/interfaces/twab/IERC20TWABSnapshots.sol';
+import { IERC20Snapshots } from '../../../src/interfaces/twab/IERC20Snapshots.sol';
 import { MockAssetManager } from '../../mock/MockAssetManager.t.sol';
-import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol';
 
 contract ReclaimQueueTest is Test {
   address internal _admin = makeAddr('admin');
@@ -21,7 +20,6 @@ contract ReclaimQueueTest is Test {
   address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
   MockAssetManager internal _assetManager;
-  MockDelegationRegistry internal _delegationRegistry;
   ERC1967Factory internal _factory;
   HubAsset internal _hubAsset;
   MatrixVaultBasic internal _matrixVault;
@@ -39,28 +37,18 @@ contract ReclaimQueueTest is Test {
     _factory = new ERC1967Factory();
 
     _assetManager = new MockAssetManager();
-    _delegationRegistry = new MockDelegationRegistry(mitosis);
 
     _hubAsset = HubAsset(
       _proxy(
         address(new HubAsset()),
-        abi.encodeCall(
-          HubAsset.initialize, (_owner, address(_assetManager), address(_delegationRegistry), 'Test', 'TT', 18)
-        ) //
+        abi.encodeCall(HubAsset.initialize, (address(_owner), address(_assetManager), 'Test', 'TT', 18)) //
       )
     );
     _matrixVault = MatrixVaultBasic(
       _proxy(
         address(new MatrixVaultBasic()),
         abi.encodeCall(
-          MatrixVaultBasic.initialize,
-          (
-            address(_delegationRegistry),
-            address(_assetManager),
-            IERC20TWABSnapshots(address(_hubAsset)),
-            'miTest',
-            'miTT'
-          )
+          MatrixVaultBasic.initialize, (address(_assetManager), IERC20Snapshots(address(_hubAsset)), 'miTest', 'miTT')
         ) //
       )
     );

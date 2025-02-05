@@ -22,39 +22,15 @@ contract TheoTally is StdTally {
     return address(_theo);
   }
 
-  function totalBalance(bytes memory context) external view override returns (uint256 totalBalance_) {
-    return _totalBalance(context);
-  }
-
-  function withdrawableBalance(bytes memory context) external view override returns (uint256 withdrawableBalance_) {
-    return _withdrawableBalance(context);
-  }
-
-  function pendingDepositBalance(bytes memory context) public view override returns (uint256 pendingDepositBalance_) {
-    return _pendingDepositBalance(context);
-  }
-
-  function pendingWithdrawBalance(bytes memory context) public view override returns (uint256 pendingWithdrawBalance_) {
-    return _pendingWithdrawBalance(context);
-  }
-
-  function previewDeposit(uint256 amount, bytes memory context) external view override returns (uint256 deposited) {
-    return _previewDeposit(amount, context);
-  }
-
-  function previewWithdraw(uint256 amount, bytes memory context) external view override returns (uint256 withdrawn) {
-    return _previewWithdraw(amount, context);
-  }
-
   function _isWithdrawAsync() internal pure override returns (bool) {
     return true;
   }
 
-  function _totalBalance(bytes memory context) internal view override returns (uint256 totalBalance_) {
+  function _totalBalance(bytes memory) internal view override returns (uint256 totalBalance_) {
     return _theo.accountVaultBalance(msg.sender);
   }
 
-  function _withdrawableBalance(bytes memory context) internal view override returns (uint256 withdrawableBalance_) {
+  function _withdrawableBalance(bytes memory) internal view override returns (uint256 withdrawableBalance_) {
     uint256 decimals = _theo.decimals();
     uint256 assetPerShare = _pricePerShare(_theo.totalSupply(), _theo.totalBalance(), _theo.totalPending(), decimals);
     (, uint256 unredeemedShares) = _theo.shareBalances(msg.sender);
@@ -67,11 +43,11 @@ contract TheoTally is StdTally {
     return _sharesToAsset(_theo.withdrawals(msg.sender).shares, assetPerShare, decimals);
   }
 
-  function _previewDeposit(uint256 amount, bytes memory) internal view override returns (uint256) {
+  function _previewDeposit(uint256 amount, bytes memory) internal pure override returns (uint256) {
     return _isDepositAsync() ? 0 : amount;
   }
 
-  function _previewWithdraw(uint256 amount, bytes memory) internal view override returns (uint256) {
+  function _previewWithdraw(uint256 amount, bytes memory) internal pure override returns (uint256) {
     return _isWithdrawAsync() ? 0 : amount;
   }
 

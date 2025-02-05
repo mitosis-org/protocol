@@ -6,20 +6,18 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 
-import { IDelegationRegistry } from '../interfaces/hub/core/IDelegationRegistry.sol';
 import { StdError } from '../lib/StdError.sol';
-import { TWABCheckpoints } from '../lib/TWABCheckpoints.sol';
-import { TWABSnapshots } from './TWABSnapshots.sol';
+import { Snapshots } from './Snapshots.sol';
 
-abstract contract ERC20TWABSnapshots is ERC20Upgradeable, TWABSnapshots {
+abstract contract ERC20Snapshots is ERC20Upgradeable, Snapshots {
   /**
    * @dev Total supply cap has been exceeded, introducing a risk of votes overflowing.
    */
   error ERC20ExceededSafeSupply(uint256 increasedSupply, uint256 cap);
 
-  function __ERC20TWABSnapshots_init(string memory name_, string memory symbol_) internal {
+  function __ERC20Snapshots_init(string memory name_, string memory symbol_) internal {
     __ERC20_init_unchained(name_, symbol_);
-    __TWABSnapshots_init();
+    __Snapshots_init();
   }
 
   function _maxSupply() internal view virtual returns (uint256) {
@@ -34,7 +32,7 @@ abstract contract ERC20TWABSnapshots is ERC20Upgradeable, TWABSnapshots {
       require(supply <= cap, ERC20ExceededSafeSupply(supply, cap));
     }
 
-    TWABSnapshotsStorageV1_ storage $ = _getTWABSnapshotsStorageV1();
+    SnapshotsStorageV1_ storage $ = _getSnapshotsStorageV1();
 
     _snapshotBalance($, from, to);
   }

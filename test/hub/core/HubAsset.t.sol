@@ -11,13 +11,11 @@ import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/Transparen
 
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
-import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol';
 
 contract HubAssetTest is Test {
   HubAsset hubAsset;
   HubAsset usdc;
 
-  MockDelegationRegistry internal _delegationRegistry;
   ProxyAdmin internal _proxyAdmin;
   address immutable owner = makeAddr('owner');
   address immutable user1 = makeAddr('user1');
@@ -25,7 +23,6 @@ contract HubAssetTest is Test {
   address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
   function setUp() public {
-    _delegationRegistry = new MockDelegationRegistry(mitosis);
     _proxyAdmin = new ProxyAdmin(owner);
     HubAsset hubAssetImpl = new HubAsset();
 
@@ -35,9 +32,7 @@ contract HubAssetTest is Test {
           new TransparentUpgradeableProxy(
             address(hubAssetImpl),
             address(_proxyAdmin),
-            abi.encodeCall(
-              hubAsset.initialize, (owner, address(this), address(_delegationRegistry), 'Token', 'TKN', 18)
-            )
+            abi.encodeCall(hubAsset.initialize, (owner, address(this), 'Token', 'TKN', 18))
           )
         )
       )
@@ -49,9 +44,7 @@ contract HubAssetTest is Test {
           new TransparentUpgradeableProxy(
             address(hubAssetImpl),
             address(_proxyAdmin),
-            abi.encodeCall(
-              hubAsset.initialize, (owner, address(this), address(_delegationRegistry), 'USD Coin', 'USDC', 6)
-            )
+            abi.encodeCall(hubAsset.initialize, (owner, address(this), 'USD Coin', 'USDC', 6))
           )
         )
       )
