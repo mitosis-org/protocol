@@ -2,15 +2,17 @@
 pragma solidity 0.8.27;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { Address } from '@openzeppelin/contracts/utils/Address.sol';
-import { MerkleProofLib } from 'dependencies/solmate-6.8.0/src/utils/MerkleProofLib.sol'; // TODO
 
-import { ManagerWithMerkleVerificationStorageV1 } from './ManagerWithMerkleVerificationStorageV1.sol';
-import { StdError } from '../../../lib/StdError.sol';
-import { Pausable } from '../../../lib/Pausable.sol';
+import { Address } from '@openzeppelin/contracts/utils/Address.sol';
+
+import { IStrategyExecutor } from '../../../interfaces/branch/strategy/IStrategyExecutor.sol';
 import { IManagerWithMerkleVerification } from
   '../../../interfaces/branch/strategy/manager/IManagerWithMerkleVerification.sol';
-import { IStrategyExecutor } from '../../../interfaces/branch/strategy/IStrategyExecutor.sol';
+import { Pausable } from '../../../lib/Pausable.sol';
+import { StdError } from '../../../lib/StdError.sol';
+import { ManagerWithMerkleVerificationStorageV1 } from './ManagerWithMerkleVerificationStorageV1.sol';
+
+import { MerkleProofLib } from 'dependencies/solmate-6.8.0/src/utils/MerkleProofLib.sol'; // TODO
 
 contract ManagerWithMerkleVerification is
   IManagerWithMerkleVerification,

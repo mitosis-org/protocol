@@ -86,14 +86,12 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, G
   }
 
   function settleMatrixYield(address hubMatrixVault, uint256 amount) external onlyVault {
-    bytes memory enc =
-      MsgSettleMatrixYield({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
+    bytes memory enc = MsgSettleMatrixYield({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 
   function settleMatrixLoss(address hubMatrixVault, uint256 amount) external onlyVault {
-    bytes memory enc =
-      MsgSettleMatrixLoss({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
+    bytes memory enc = MsgSettleMatrixLoss({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 

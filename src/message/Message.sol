@@ -127,9 +127,8 @@ library Message {
   }
 
   function encode(MsgDepositWithMatrixSupply memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(
-      uint8(MsgType.MsgDepositWithMatrixSupply), msg_.asset, msg_.to, msg_.matrixVault, msg_.amount
-    );
+    return
+      abi.encodePacked(uint8(MsgType.MsgDepositWithMatrixSupply), msg_.asset, msg_.to, msg_.matrixVault, msg_.amount);
   }
 
   function decodeDepositWithMatrixSupply(bytes calldata msg_)
@@ -221,8 +220,7 @@ library Message {
   }
 
   function encode(MsgSettleMatrixExtraRewards memory msg_) internal pure returns (bytes memory) {
-    return
-      abi.encodePacked(uint8(MsgType.MsgSettleMatrixExtraRewards), msg_.matrixVault, msg_.reward, msg_.amount);
+    return abi.encodePacked(uint8(MsgType.MsgSettleMatrixExtraRewards), msg_.matrixVault, msg_.reward, msg_.amount);
   }
 
   function decodeSettleExtraRewards(bytes calldata msg_)

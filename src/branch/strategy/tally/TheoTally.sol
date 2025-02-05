@@ -5,10 +5,11 @@ import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { SafeERC20, IERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { Address } from '@oz-v5/utils/Address.sol';
+
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
-import { StdTally } from './StdTally.sol';
 import { ITheoDepositVault } from './external/ITheoDepositVault.sol';
+import { StdTally } from './StdTally.sol';
 
 contract TheoTally is StdTally {
   ITheoDepositVault internal immutable _theo;

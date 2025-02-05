@@ -101,9 +101,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     _deposit($, asset, to, amount);
 
     _assertMatrixInitialized($, hubMatrixVault);
-    require(
-      asset == $.matrices[hubMatrixVault].asset, IMitosisVault__InvalidMatrixVault(hubMatrixVault, asset)
-    );
+    require(asset == $.matrices[hubMatrixVault].asset, IMitosisVault__InvalidMatrixVault(hubMatrixVault, asset));
 
     $.entrypoint.depositWithMatrixSupply(asset, to, hubMatrixVault, amount);
     emit MatrixDepositedWithSupply(asset, to, hubMatrixVault, amount);
@@ -340,11 +338,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     return $.assets[asset].isHalted[action];
   }
 
-  function _isHalted(StorageV1 storage $, address hubMatrixVault, MatrixAction action)
-    internal
-    view
-    returns (bool)
-  {
+  function _isHalted(StorageV1 storage $, address hubMatrixVault, MatrixAction action) internal view returns (bool) {
     return $.matrices[hubMatrixVault].isHalted[action];
   }
 
