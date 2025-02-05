@@ -104,7 +104,7 @@ contract MatrixStrategyExecutor is
     _assertNotPaused();
     _assertOnlyStrategist($);
 
-    _vault.deallocateMatrixLiquidity(_hubMatrixVault, amount);
+    _vault.deallocateMatrix(_hubMatrixVault, amount);
   }
 
   function fetchLiquidity(uint256 amount) external {
@@ -113,7 +113,7 @@ contract MatrixStrategyExecutor is
     _assertNotPaused();
     _assertOnlyStrategist($);
 
-    _vault.fetchMatrixLiquidity(_hubMatrixVault, amount);
+    _vault.fetchMatrix(_hubMatrixVault, amount);
     $.storedTotalBalance += amount;
   }
 
@@ -124,7 +124,7 @@ contract MatrixStrategyExecutor is
     _assertOnlyStrategist($);
 
     _asset.approve(address(_vault), amount);
-    _vault.returnMatrixLiquidity(_hubMatrixVault, amount);
+    _vault.returnMatrix(_hubMatrixVault, amount);
     $.storedTotalBalance -= amount;
   }
 

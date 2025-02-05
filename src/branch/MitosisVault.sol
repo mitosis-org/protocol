@@ -59,7 +59,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     return _isMatrixInitialized(_getStorageV1(), hubMatrixVault);
   }
 
-  function availableMatrixLiquidity(address hubMatrixVault) external view returns (uint256) {
+  function availableMatrix(address hubMatrixVault) external view returns (uint256) {
     return _getStorageV1().matrices[hubMatrixVault].availableLiquidity;
   }
 
@@ -133,7 +133,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     emit MatrixInitialized(hubMatrixVault, asset);
   }
 
-  function allocateMatrixLiquidity(address hubMatrixVault, uint256 amount) external {
+  function allocateMatrix(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -143,10 +143,10 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
 
     matrixInfo.availableLiquidity += amount;
 
-    emit MatrixLiquidityAllocated(hubMatrixVault, amount);
+    emit MatrixAllocated(hubMatrixVault, amount);
   }
 
-  function deallocateMatrixLiquidity(address hubMatrixVault, uint256 amount) external {
+  function deallocateMatrix(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertMatrixInitialized($, hubMatrixVault);
@@ -155,12 +155,12 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     MatrixInfo storage matrixInfo = $.matrices[hubMatrixVault];
 
     matrixInfo.availableLiquidity -= amount;
-    $.entrypoint.deallocateMatrixLiquidity(hubMatrixVault, amount);
+    $.entrypoint.deallocateMatrix(hubMatrixVault, amount);
 
-    emit MatrixLiquidityDeallocated(hubMatrixVault, amount);
+    emit MatrixDeallocated(hubMatrixVault, amount);
   }
 
-  function fetchMatrixLiquidity(address hubMatrixVault, uint256 amount) external {
+  function fetchMatrix(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertMatrixInitialized($, hubMatrixVault);
@@ -172,10 +172,10 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     matrixInfo.availableLiquidity -= amount;
     IERC20(matrixInfo.asset).safeTransfer(matrixInfo.strategyExecutor, amount);
 
-    emit MatrixLiquidityFetched(hubMatrixVault, amount);
+    emit MatrixFetched(hubMatrixVault, amount);
   }
 
-  function returnMatrixLiquidity(address hubMatrixVault, uint256 amount) external {
+  function returnMatrix(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertMatrixInitialized($, hubMatrixVault);
@@ -186,7 +186,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     IERC20(matrixInfo.asset).safeTransferFrom(matrixInfo.strategyExecutor, address(this), amount);
     matrixInfo.availableLiquidity += amount;
 
-    emit MatrixLiquidityReturned(hubMatrixVault, amount);
+    emit MatrixReturned(hubMatrixVault, amount);
   }
 
   function settleMatrixYield(address hubMatrixVault, uint256 amount) external {

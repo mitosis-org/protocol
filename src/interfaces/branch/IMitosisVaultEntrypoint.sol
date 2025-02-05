@@ -14,7 +14,7 @@ interface IMitosisVaultEntrypoint {
 
   function depositWithMatrixSupply(address asset, address to, address hubMatrixVault, uint256 amount) external;
 
-  function deallocateMatrixLiquidity(address hubMatrixVault, uint256 amount) external;
+  function deallocateMatrix(address hubMatrixVault, uint256 amount) external;
 
   function settleMatrixYield(address hubMatrixVault, uint256 amount) external;
 

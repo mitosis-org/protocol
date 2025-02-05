@@ -9,8 +9,8 @@ enum MsgType {
   MsgRedeem,
   //=========== NOTE: Matrix ===========//
   MsgInitializeMatrix,
-  MsgAllocateMatrixLiquidity,
-  MsgDeallocateMatrixLiquidity,
+  MsgAllocateMatrix,
+  MsgDeallocateMatrix,
   MsgSettleMatrixYield,
   MsgSettleMatrixLoss,
   MsgSettleMatrixExtraRewards
@@ -50,13 +50,13 @@ struct MsgInitializeMatrix {
 }
 
 // hub -> branch
-struct MsgAllocateMatrixLiquidity {
+struct MsgAllocateMatrix {
   bytes32 matrixVault;
   uint256 amount;
 }
 
 // branch -> hub
-struct MsgDeallocateMatrixLiquidity {
+struct MsgDeallocateMatrix {
   bytes32 matrixVault;
   uint256 amount;
 }
@@ -167,31 +167,31 @@ library Message {
     decoded.asset = bytes32(msg_[33:]);
   }
 
-  function encode(MsgAllocateMatrixLiquidity memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgAllocateMatrixLiquidity), msg_.matrixVault, msg_.amount);
+  function encode(MsgAllocateMatrix memory msg_) internal pure returns (bytes memory) {
+    return abi.encodePacked(uint8(MsgType.MsgAllocateMatrix), msg_.matrixVault, msg_.amount);
   }
 
-  function decodeAllocateMatrixLiquidity(bytes calldata msg_)
+  function decodeAllocateMatrix(bytes calldata msg_)
     internal
     pure
-    returns (MsgAllocateMatrixLiquidity memory decoded)
+    returns (MsgAllocateMatrix memory decoded)
   {
-    assertMsg(msg_, MsgType.MsgAllocateMatrixLiquidity, LEN_MSG_ALLOCATE_MATRIX_LIQUIDITY);
+    assertMsg(msg_, MsgType.MsgAllocateMatrix, LEN_MSG_ALLOCATE_MATRIX_LIQUIDITY);
 
     decoded.matrixVault = bytes32(msg_[1:33]);
     decoded.amount = uint256(bytes32(msg_[33:]));
   }
 
-  function encode(MsgDeallocateMatrixLiquidity memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgDeallocateMatrixLiquidity), msg_.matrixVault, msg_.amount);
+  function encode(MsgDeallocateMatrix memory msg_) internal pure returns (bytes memory) {
+    return abi.encodePacked(uint8(MsgType.MsgDeallocateMatrix), msg_.matrixVault, msg_.amount);
   }
 
-  function decodeDeallocateMatrixLiquidity(bytes calldata msg_)
+  function decodeDeallocateMatrix(bytes calldata msg_)
     internal
     pure
-    returns (MsgDeallocateMatrixLiquidity memory decoded)
+    returns (MsgDeallocateMatrix memory decoded)
   {
-    assertMsg(msg_, MsgType.MsgDeallocateMatrixLiquidity, LEN_MSG_DEALLOCATE_MATRIX_LIQUIDITY);
+    assertMsg(msg_, MsgType.MsgDeallocateMatrix, LEN_MSG_DEALLOCATE_MATRIX_LIQUIDITY);
 
     decoded.matrixVault = bytes32(msg_[1:33]);
     decoded.amount = uint256(bytes32(msg_[33:]));

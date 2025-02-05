@@ -79,9 +79,9 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, G
     _dispatchToMitosis(enc);
   }
 
-  function deallocateMatrixLiquidity(address hubMatrixVault, uint256 amount) external onlyVault {
+  function deallocateMatrix(address hubMatrixVault, uint256 amount) external onlyVault {
     bytes memory enc =
-      MsgDeallocateMatrixLiquidity({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
+      MsgDeallocateMatrix({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 
@@ -131,9 +131,9 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, G
       _vault.initializeMatrix(decoded.matrixVault.toAddress(), decoded.asset.toAddress());
     }
 
-    if (msgType == MsgType.MsgAllocateMatrixLiquidity) {
-      MsgAllocateMatrixLiquidity memory decoded = msg_.decodeAllocateMatrixLiquidity();
-      _vault.allocateMatrixLiquidity(decoded.matrixVault.toAddress(), decoded.amount);
+    if (msgType == MsgType.MsgAllocateMatrix) {
+      MsgAllocateMatrix memory decoded = msg_.decodeAllocateMatrix();
+      _vault.allocateMatrix(decoded.matrixVault.toAddress(), decoded.amount);
     }
   }
 

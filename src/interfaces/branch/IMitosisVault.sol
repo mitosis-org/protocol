@@ -16,10 +16,10 @@ interface IMatrixMitosisVault {
   event MatrixDepositedWithSupply(
     address indexed asset, address indexed to, address indexed hubMatrixVault, uint256 amount
   );
-  event MatrixLiquidityAllocated(address indexed hubMatrixVault, uint256 amount);
-  event MatrixLiquidityDeallocated(address indexed hubMatrixVault, uint256 amount);
-  event MatrixLiquidityFetched(address indexed hubMatrixVault, uint256 amount);
-  event MatrixLiquidityReturned(address indexed hubMatrixVault, uint256 amount);
+  event MatrixAllocated(address indexed hubMatrixVault, uint256 amount);
+  event MatrixDeallocated(address indexed hubMatrixVault, uint256 amount);
+  event MatrixFetched(address indexed hubMatrixVault, uint256 amount);
+  event MatrixReturned(address indexed hubMatrixVault, uint256 amount);
 
   event MatrixYieldSettled(address indexed hubMatrixVault, uint256 amount);
   event MatrixLossSettled(address indexed hubMatrixVault, uint256 amount);
@@ -38,7 +38,7 @@ interface IMatrixMitosisVault {
   //=========== NOTE: View functions ===========//
 
   function isMatrixInitialized(address hubMatrixVault) external view returns (bool);
-  function availableMatrixLiquidity(address hubMatrixVault) external view returns (uint256);
+  function availableMatrix(address hubMatrixVault) external view returns (uint256);
 
   //=========== NOTE: Asset ===========//
 
@@ -48,11 +48,11 @@ interface IMatrixMitosisVault {
 
   function initializeMatrix(address hubMatrixVault, address asset) external;
 
-  function allocateMatrixLiquidity(address hubMatrixVault, uint256 amount) external;
-  function deallocateMatrixLiquidity(address hubMatrixVault, uint256 amount) external;
+  function allocateMatrix(address hubMatrixVault, uint256 amount) external;
+  function deallocateMatrix(address hubMatrixVault, uint256 amount) external;
 
-  function fetchMatrixLiquidity(address hubMatrixVault, uint256 amount) external;
-  function returnMatrixLiquidity(address hubMatrixVault, uint256 amount) external;
+  function fetchMatrix(address hubMatrixVault, uint256 amount) external;
+  function returnMatrix(address hubMatrixVault, uint256 amount) external;
 
   function settleMatrixYield(address hubMatrixVault, uint256 amount) external;
   function settleMatrixLoss(address hubMatrixVault, uint256 amount) external;
