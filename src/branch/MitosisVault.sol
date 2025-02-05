@@ -390,7 +390,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     _assertNotHalted($, asset, AssetAction.Deposit);
 
     AssetInfo storage assetInfo = $.assets[asset];
-    require(assetInfo.cap >= amount, IMitosisVault__ExceededCap(asset, amount, $.cap));
+    require(assetInfo.cap >= amount, IMitosisVault__ExceededCap(asset, amount, assetInfo.cap));
     assetInfo.cap -= amount;
 
     IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
