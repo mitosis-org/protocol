@@ -10,20 +10,20 @@ import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
-import { IOptOutQueueStorageV1 } from '../../interfaces/hub/eol/IOptOutQueue.sol';
-import { IEOLVault } from '../../interfaces/hub/eol/vault/IEOLVault.sol';
+import { IReclaimQueueStorageV1 } from '../../interfaces/hub/matrix/IReclaimQueue.sol';
+import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradeable {
+abstract contract ReclaimQueueStorageV1 is IReclaimQueueStorageV1, ContextUpgradeable {
   using ERC7201Utils for string;
   using SafeCast for uint256;
   using LibString for address;
   using LibRedeemQueue for LibRedeemQueue.Queue;
   using LibRedeemQueue for LibRedeemQueue.Index;
 
-  struct EOLVaultState {
+  struct MatrixVaultState {
     // queue
     bool isEnabled;
     LibRedeemQueue.Queue queue;
@@ -34,10 +34,10 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
 
   struct StorageV1 {
     IAssetManager assetManager;
-    mapping(address eolVault => EOLVaultState state) states;
+    mapping(address matrixVault => MatrixVaultState state) states;
   }
 
-  string private constant _NAMESPACE = 'mitosis.storage.OptOutQueueStorage.v1';
+  string private constant _NAMESPACE = 'mitosis.storage.ReclaimQueueStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
@@ -54,13 +54,13 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
     return address(_getStorageV1().assetManager);
   }
 
-  function redeemPeriod(address eolVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).redeemPeriod;
+  function redeemPeriod(address matrixVault) external view returns (uint256) {
+    return _queue(_getStorageV1(), matrixVault).redeemPeriod;
   }
 
-  function getStatus(address eolVault, uint256 reqId) external view returns (RequestStatus) {
+  function getStatus(address matrixVault, uint256 reqId) external view returns (RequestStatus) {
     StorageV1 storage $ = _getStorageV1();
-    LibRedeemQueue.Queue storage queue = _queue($, eolVault);
+    LibRedeemQueue.Queue storage queue = _queue($, matrixVault);
 
     LibRedeemQueue.Request memory req = queue.get(reqId);
     (, bool isResolved) = queue.resolvedAt(reqId, block.timestamp);
@@ -71,16 +71,16 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
     return RequestStatus.None;
   }
 
-  function getRequest(address eolVault, uint256[] calldata reqIds)
+  function getRequest(address matrixVault, uint256[] calldata reqIds)
     external
     view
-    returns (IOptOutQueueStorageV1.GetRequestResponse[] memory)
+    returns (IReclaimQueueStorageV1.GetRequestResponse[] memory)
   {
     StorageV1 storage $ = _getStorageV1();
-    LibRedeemQueue.Queue storage queue = _queue($, eolVault);
+    LibRedeemQueue.Queue storage queue = _queue($, matrixVault);
 
-    IOptOutQueueStorageV1.GetRequestResponse[] memory resp =
-      new IOptOutQueueStorageV1.GetRequestResponse[](reqIds.length);
+    IReclaimQueueStorageV1.GetRequestResponse[] memory resp =
+      new IReclaimQueueStorageV1.GetRequestResponse[](reqIds.length);
     for (uint256 i = 0; i < reqIds.length; i++) {
       LibRedeemQueue.Request memory req = queue.get(reqIds[i]);
 
@@ -102,16 +102,16 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
     return resp;
   }
 
-  function getRequestByReceiver(address eolVault, address receiver, uint256[] calldata idxItemIds)
+  function getRequestByReceiver(address matrixVault, address receiver, uint256[] calldata idxItemIds)
     external
     view
-    returns (IOptOutQueueStorageV1.GetRequestByIndexResponse[] memory)
+    returns (IReclaimQueueStorageV1.GetRequestByIndexResponse[] memory)
   {
     StorageV1 storage $ = _getStorageV1();
-    LibRedeemQueue.Queue storage queue = _queue($, eolVault);
+    LibRedeemQueue.Queue storage queue = _queue($, matrixVault);
 
-    IOptOutQueueStorageV1.GetRequestByIndexResponse[] memory resp =
-      new IOptOutQueueStorageV1.GetRequestByIndexResponse[](idxItemIds.length);
+    IReclaimQueueStorageV1.GetRequestByIndexResponse[] memory resp =
+      new IReclaimQueueStorageV1.GetRequestByIndexResponse[](idxItemIds.length);
     for (uint256 i = 0; i < idxItemIds.length; i++) {
       uint256 indexId = queue.index(receiver).get(idxItemIds[i]);
       LibRedeemQueue.Request memory req = queue.get(indexId);
@@ -135,60 +135,60 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
     return resp;
   }
 
-  function reservedAt(address eolVault, uint256 reqId) external view returns (uint256 reservedAt_, bool isReserved) {
-    return _queue(_getStorageV1(), eolVault).reservedAt(reqId);
+  function reservedAt(address matrixVault, uint256 reqId) external view returns (uint256 reservedAt_, bool isReserved) {
+    return _queue(_getStorageV1(), matrixVault).reservedAt(reqId);
   }
 
-  function resolvedAt(address eolVault, uint256 reqId) external view returns (uint256 resolvedAt_, bool isResolved) {
-    return _queue(_getStorageV1(), eolVault).resolvedAt(reqId, block.timestamp);
+  function resolvedAt(address matrixVault, uint256 reqId) external view returns (uint256 resolvedAt_, bool isResolved) {
+    return _queue(_getStorageV1(), matrixVault).resolvedAt(reqId, block.timestamp);
   }
 
-  function requestShares(address eolVault, uint256 reqId) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).shares(reqId);
+  function requestShares(address matrixVault, uint256 reqId) external view returns (uint256) {
+    return _queue(_getStorageV1(), matrixVault).shares(reqId);
   }
 
-  function requestAssets(address eolVault, uint256 reqId) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).assets(reqId);
+  function requestAssets(address matrixVault, uint256 reqId) external view returns (uint256) {
+    return _queue(_getStorageV1(), matrixVault).assets(reqId);
   }
 
-  function queueSize(address eolVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).size;
+  function queueSize(address matrixVault) external view returns (uint256) {
+    return _queue(_getStorageV1(), matrixVault).size;
   }
 
-  function queueIndexSize(address eolVault, address recipient) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).index(recipient).size;
+  function queueIndexSize(address matrixVault, address recipient) external view returns (uint256) {
+    return _queue(_getStorageV1(), matrixVault).index(recipient).size;
   }
 
-  function queueOffset(address eolVault, bool simulate) external view returns (uint256) {
-    LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), eolVault);
+  function queueOffset(address matrixVault, bool simulate) external view returns (uint256) {
+    LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), matrixVault);
     uint256 offset;
     if (simulate) (offset,) = queue.searchQueueOffset(queue.totalReservedAssets, block.timestamp);
     else offset = queue.offset;
     return offset;
   }
 
-  function queueIndexOffset(address eolVault, address recipient, bool simulate) external view returns (uint256) {
-    LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), eolVault);
+  function queueIndexOffset(address matrixVault, address recipient, bool simulate) external view returns (uint256) {
+    LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), matrixVault);
     uint256 offset;
     if (simulate) (offset,) = queue.searchIndexOffset(recipient, queue.totalReservedAssets, block.timestamp);
     else offset = queue.index(recipient).offset;
     return offset;
   }
 
-  function totalReserved(address eolVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).totalReservedAssets;
+  function totalReserved(address matrixVault) external view returns (uint256) {
+    return _queue(_getStorageV1(), matrixVault).totalReservedAssets;
   }
 
-  function totalClaimed(address eolVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).totalClaimedAssets;
+  function totalClaimed(address matrixVault) external view returns (uint256) {
+    return _queue(_getStorageV1(), matrixVault).totalClaimedAssets;
   }
 
-  function totalPending(address eolVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).pending();
+  function totalPending(address matrixVault) external view returns (uint256) {
+    return _queue(_getStorageV1(), matrixVault).pending();
   }
 
-  function reserveHistory(address eolVault, uint256 index) external view returns (GetReserveHistoryResponse memory) {
-    LibRedeemQueue.ReserveLog memory log = _queue(_getStorageV1(), eolVault).reserveHistory[index];
+  function reserveHistory(address matrixVault, uint256 index) external view returns (GetReserveHistoryResponse memory) {
+    LibRedeemQueue.ReserveLog memory log = _queue(_getStorageV1(), matrixVault).reserveHistory[index];
     return GetReserveHistoryResponse({
       accumulated: log.accumulated,
       reservedAt: log.reservedAt,
@@ -197,24 +197,24 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
     });
   }
 
-  function reserveHistoryLength(address eolVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), eolVault).reserveHistory.length;
+  function reserveHistoryLength(address matrixVault) external view returns (uint256) {
+    return _queue(_getStorageV1(), matrixVault).reserveHistory.length;
   }
 
-  function isEnabled(address eolVault) external view returns (bool) {
-    return _getStorageV1().states[eolVault].isEnabled;
+  function isEnabled(address matrixVault) external view returns (bool) {
+    return _getStorageV1().states[matrixVault].isEnabled;
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  function _enableQueue(StorageV1 storage $, address eolVault) internal {
-    $.states[eolVault].isEnabled = true;
+  function _enableQueue(StorageV1 storage $, address matrixVault) internal {
+    $.states[matrixVault].isEnabled = true;
 
-    uint8 underlyingDecimals = IHubAsset(IEOLVault(eolVault).asset()).decimals();
-    $.states[eolVault].underlyingDecimals = underlyingDecimals;
-    $.states[eolVault].decimalsOffset = IEOLVault(eolVault).decimals() - underlyingDecimals;
+    uint8 underlyingDecimals = IHubAsset(IMatrixVault(matrixVault).asset()).decimals();
+    $.states[matrixVault].underlyingDecimals = underlyingDecimals;
+    $.states[matrixVault].decimalsOffset = IMatrixVault(matrixVault).decimals() - underlyingDecimals;
 
-    emit QueueEnabled(eolVault);
+    emit QueueEnabled(matrixVault);
   }
 
   function _setAssetManager(StorageV1 storage $, address assetManager_) internal {
@@ -225,18 +225,18 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
     emit AssetManagerSet(assetManager_);
   }
 
-  function _setRedeemPeriod(StorageV1 storage $, address eolVault, uint256 redeemPeriod_) internal {
-    _assertQueueEnabled($, eolVault);
+  function _setRedeemPeriod(StorageV1 storage $, address matrixVault, uint256 redeemPeriod_) internal {
+    _assertQueueEnabled($, matrixVault);
 
-    $.states[eolVault].queue.redeemPeriod = redeemPeriod_;
+    $.states[matrixVault].queue.redeemPeriod = redeemPeriod_;
 
-    emit RedeemPeriodSet(eolVault, redeemPeriod_);
+    emit RedeemPeriodSet(matrixVault, redeemPeriod_);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _queue(StorageV1 storage $, address eolVault) private view returns (LibRedeemQueue.Queue storage) {
-    return $.states[eolVault].queue;
+  function _queue(StorageV1 storage $, address matrixVault) private view returns (LibRedeemQueue.Queue storage) {
+    return $.states[matrixVault].queue;
   }
 
   // ============================ NOTE: VIRTUAL FUNCTIONS ============================== //
@@ -246,10 +246,10 @@ abstract contract OptOutQueueStorageV1 is IOptOutQueueStorageV1, ContextUpgradea
   }
 
   /// @dev leave this function virtual to intend to use custom errors with overriding.
-  function _assertQueueEnabled(StorageV1 storage $, address eolVault) internal view virtual {
+  function _assertQueueEnabled(StorageV1 storage $, address matrixVault) internal view virtual {
     require(
-      $.states[eolVault].isEnabled,
-      string.concat('OptOutQueueStorageV1: queue not enabled for eolVault: ', eolVault.toHexString())
+      $.states[matrixVault].isEnabled,
+      string.concat('OptOutQueueStorageV1: queue not enabled for matrixVault: ', matrixVault.toHexString())
     );
   }
 }

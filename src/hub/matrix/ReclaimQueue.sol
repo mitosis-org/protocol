@@ -9,15 +9,15 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
-import { IOptOutQueue } from '../../interfaces/hub/eol/IOptOutQueue.sol';
-import { IEOLVault } from '../../interfaces/hub/eol/vault/IEOLVault.sol';
+import { IReclaimQueue } from '../../interfaces/hub/matrix/IReclaimQueue.sol';
+import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { OptOutQueueStorageV1 } from './OptOutQueueStorageV1.sol';
+import { ReclaimQueueStorageV1 } from './ReclaimQueueStorageV1.sol';
 
-contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQueueStorageV1 {
-  using SafeERC20 for IEOLVault;
+contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, ReclaimQueueStorageV1 {
+  using SafeERC20 for IMatrixVault;
   using SafeERC20 for IHubAsset;
   using SafeCast for uint256;
   using Math for uint256;
@@ -45,10 +45,10 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     _assertNotPaused();
     _assertQueueEnabled($, eolVault);
 
-    IEOLVault(eolVault).safeTransferFrom(_msgSender(), address(this), shares);
-    uint256 assets = IEOLVault(eolVault).previewRedeem(shares) - 1; // FIXME: tricky way to avoid rounding error
+    IMatrixVault(eolVault).safeTransferFrom(_msgSender(), address(this), shares);
+    uint256 assets = IMatrixVault(eolVault).previewRedeem(shares) - 1; // FIXME: tricky way to avoid rounding error
     LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
-    reqId = queue.enqueue(receiver, shares, assets, IEOLVault(eolVault).clock());
+    reqId = queue.enqueue(receiver, shares, assets, IMatrixVault(eolVault).clock());
 
     emit OptOutRequested(receiver, eolVault, shares, assets);
 
@@ -64,15 +64,15 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
     LibRedeemQueue.Index storage index = queue.index(receiver);
 
-    uint48 timestamp = IEOLVault(eolVault).clock();
+    uint48 timestamp = IMatrixVault(eolVault).clock();
 
     queue.update(timestamp);
 
     ClaimConfig memory cfg = ClaimConfig({
       timestamp: timestamp,
       receiver: receiver,
-      eolVault: IEOLVault(eolVault),
-      hubAsset: IHubAsset(IEOLVault(eolVault).asset()),
+      eolVault: IMatrixVault(eolVault),
+      hubAsset: IHubAsset(IMatrixVault(eolVault).asset()),
       decimalsOffset: $.states[eolVault].decimalsOffset,
       queueOffset: queue.offset,
       idxOffset: index.offset
@@ -81,7 +81,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     // run actual claim logic
     uint256 totalClaimedWithoutImpact;
     (totalClaimed_, totalClaimedWithoutImpact) = _claim(queue, index, cfg);
-    require(totalClaimed_ > 0, IOptOutQueue__NothingToClaim());
+    require(totalClaimed_ > 0, IReclaimQueue__NothingToClaim());
 
     // send total claim amount to receiver
     cfg.hubAsset.safeTransfer(receiver, totalClaimed_);
@@ -111,7 +111,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     _assertOnlyAssetManager($);
     _assertQueueEnabled($, eolVault);
 
-    _sync($, IEOLVault(eolVault), assets);
+    _sync($, IMatrixVault(eolVault), assets);
   }
 
   // =========================== NOTE: CONFIG FUNCTIONS =========================== //
@@ -165,7 +165,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     view
     returns (uint256)
   {
-    return IEOLVault(eolVault).totalAssets() - queue.pending() - assetManager.eolAlloc(eolVault);
+    return IMatrixVault(eolVault).totalAssets() - queue.pending() - assetManager.eolAlloc(eolVault);
   }
 
   function _claim(LibRedeemQueue.Queue storage queue, LibRedeemQueue.Index storage index, ClaimConfig memory cfg)
@@ -218,7 +218,7 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
     return (totalClaimed_, totalClaimedWithoutImpact);
   }
 
-  function _sync(StorageV1 storage $, IEOLVault eolVault, uint256 assets) internal {
+  function _sync(StorageV1 storage $, IMatrixVault eolVault, uint256 assets) internal {
     EOLVaultState storage eolVaultState = $.states[address(eolVault)];
 
     eolVault.withdraw(assets, address(this), address(this));
@@ -229,6 +229,6 @@ contract OptOutQueue is IOptOutQueue, Pausable, Ownable2StepUpgradeable, OptOutQ
   // =========================== NOTE: ASSERTIONS =========================== //
 
   function _assertQueueEnabled(StorageV1 storage $, address eolVault) internal view override {
-    require($.states[eolVault].isEnabled, IOptOutQueue__QueueNotEnabled(eolVault));
+    require($.states[eolVault].isEnabled, IReclaimQueue__QueueNotEnabled(eolVault));
   }
 }

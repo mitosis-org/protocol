@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IHubAsset } from '../../core/IHubAsset.sol';
+import { IHubAsset } from '../core/IHubAsset.sol';
 import { IMatrixVault } from './IMatrixVault.sol';
 
 /**
- * @title IOptOutQueueStorageV1
- * @notice Storage interface for OptOutQueue, defining getter functions and events for storage operations
- * @dev Provides the foundation for managing opt-out requests in EOLVaults
+ * @title IReclaimQueueStorageV1
+ * @notice Storage interface for ReclaimQueue, defining getter functions and events for storage operations
+ * @dev Provides the foundation for managing opt-out requests in MatrixVaults
  */
-interface IOptOutQueueStorageV1 {
+interface IReclaimQueueStorageV1 {
   /**
    * @notice Opt-out request status enumeration
    */
@@ -70,8 +70,8 @@ interface IOptOutQueueStorageV1 {
    * @notice Historical data about reserves at a specific point in time
    * @param accumulated Total accumulated reserve assets at this point
    * @param reservedAt Timestamp when this reserve entry was created
-   * @param totalShares Total shares in the EOLVault at this point
-   * @param totalAssets Total assets in the EOLVault at this point
+   * @param totalShares Total shares in the MatrixVault at this point
+   * @param totalAssets Total assets in the MatrixVault at this point
    */
   struct GetReserveHistoryResponse {
     uint256 accumulated;
@@ -81,10 +81,10 @@ interface IOptOutQueueStorageV1 {
   }
 
   /**
-   * @notice Emitted when an opt-out queue is activated for an EOLVault
-   * @param eolVault Address of the EOLVault for which the queue is enabled
+   * @notice Emitted when an opt-out queue is activated for an MatrixVault
+   * @param matrixVault Address of the MatrixVault for which the queue is enabled
    */
-  event QueueEnabled(address indexed eolVault);
+  event QueueEnabled(address indexed matrixVault);
 
   /**
    * @notice Emitted when a new asset manager is set for the contract
@@ -93,11 +93,11 @@ interface IOptOutQueueStorageV1 {
   event AssetManagerSet(address indexed assetManager);
 
   /**
-   * @notice Emitted when the redeem period is updated for an EOLVault
-   * @param eolVault Address of the EOLVault for which the redeem period is set
+   * @notice Emitted when the redeem period is updated for an MatrixVault
+   * @param matrixVault Address of the MatrixVault for which the redeem period is set
    * @param redeemPeriod Duration of the new redeem period in seconds
    */
-  event RedeemPeriodSet(address indexed eolVault, uint256 redeemPeriod);
+  event RedeemPeriodSet(address indexed matrixVault, uint256 redeemPeriod);
 
   /**
    * @notice Retrieves the current asset manager address
@@ -105,161 +105,164 @@ interface IOptOutQueueStorageV1 {
   function assetManager() external view returns (address);
 
   /**
-   * @notice Gets the redeem period duration in seconds for a specific EOLVault
-   * @param eolVault Address of the EOLVault to query
+   * @notice Gets the redeem period duration in seconds for a specific MatrixVault
+   * @param matrixVault Address of the MatrixVault to query
    */
-  function redeemPeriod(address eolVault) external view returns (uint256);
+  function redeemPeriod(address matrixVault) external view returns (uint256);
 
   /**
    * @notice Retrieves the status of a specific opt-out request
-   * @param eolVault Address of the EOLVault to query
+   * @param matrixVault Address of the MatrixVault to query
    * @param reqId ID of the request to query
    */
-  function getStatus(address eolVault, uint256 reqId) external view returns (RequestStatus);
+  function getStatus(address matrixVault, uint256 reqId) external view returns (RequestStatus);
 
   /**
-   * @notice Retrieves details for multiple requests from a specific EOLVault
-   * @param eolVault Address of the EOLVault to query
+   * @notice Retrieves details for multiple requests from a specific MatrixVault
+   * @param matrixVault Address of the MatrixVault to query
    * @param reqIds Array of request IDs to retrieve
    */
-  function getRequest(address eolVault, uint256[] calldata reqIds) external view returns (GetRequestResponse[] memory);
+  function getRequest(address matrixVault, uint256[] calldata reqIds)
+    external
+    view
+    returns (GetRequestResponse[] memory);
 
   /**
-   * @notice Gets details for multiple requests for a specific receiver from an EOLVault
+   * @notice Gets details for multiple requests for a specific receiver from an MatrixVault
    * @dev Use queueIndexOffset to get the starting index for retrieval
-   * @param eolVault Address of the EOLVault to query
+   * @param matrixVault Address of the MatrixVault to query
    * @param receiver Address of the receiver to query
    * @param idxItemIds Array of index item IDs to retrieve
    */
-  function getRequestByReceiver(address eolVault, address receiver, uint256[] calldata idxItemIds)
+  function getRequestByReceiver(address matrixVault, address receiver, uint256[] calldata idxItemIds)
     external
     view
     returns (GetRequestByIndexResponse[] memory);
 
   /**
    * @notice Retrieves the timestamp when a specific request was reserved
-   * @param eolVault Address of the EOLVault to query
+   * @param matrixVault Address of the MatrixVault to query
    * @param reqId ID of the request to query
    * @return reservedAt_ Timestamp when the request was reserved
    * @return isReserved Boolean indicating if the request is reserved
    */
-  function reservedAt(address eolVault, uint256 reqId) external view returns (uint256 reservedAt_, bool isReserved);
+  function reservedAt(address matrixVault, uint256 reqId) external view returns (uint256 reservedAt_, bool isReserved);
 
   /**
    * @notice Gets the timestamp when a specific request was resolved
-   * @param eolVault Address of the EOLVault to query
+   * @param matrixVault Address of the MatrixVault to query
    * @param reqId ID of the request to query
    * @return resolvedAt_ Timestamp when the request was resolved
    * @return isResolved Boolean indicating if the request is resolved
    */
-  function resolvedAt(address eolVault, uint256 reqId) external view returns (uint256 resolvedAt_, bool isResolved);
+  function resolvedAt(address matrixVault, uint256 reqId) external view returns (uint256 resolvedAt_, bool isResolved);
 
   /**
    * @notice Retrieves the number of shares for a specific request
-   * @param eolVault Address of the EOLVault to query
+   * @param matrixVault Address of the MatrixVault to query
    * @param reqId ID of the request to query
    */
-  function requestShares(address eolVault, uint256 reqId) external view returns (uint256);
+  function requestShares(address matrixVault, uint256 reqId) external view returns (uint256);
 
   /**
    * @notice Gets the amount of assets for a specific request
-   * @param eolVault Address of the EOLVault to query
+   * @param matrixVault Address of the MatrixVault to query
    * @param reqId ID of the request to query
    */
-  function requestAssets(address eolVault, uint256 reqId) external view returns (uint256);
+  function requestAssets(address matrixVault, uint256 reqId) external view returns (uint256);
 
   /**
-   * @notice Retrieves the current size of the queue for a specific EOLVault
+   * @notice Retrieves the current size of the queue for a specific MatrixVault
    * @dev The queue size is the total number of requests in the queue
-   * @param eolVault Address of the EOLVault to query the queue
+   * @param matrixVault Address of the MatrixVault to query the queue
    */
-  function queueSize(address eolVault) external view returns (uint256);
+  function queueSize(address matrixVault) external view returns (uint256);
 
   /**
-   * @notice Gets the size of the queue index for a specific recipient in an EOLVault
-   * @param eolVault Address of the EOLVault to query the queue
+   * @notice Gets the size of the queue index for a specific recipient in an MatrixVault
+   * @param matrixVault Address of the MatrixVault to query the queue
    * @param recipient Address of the recipient to query the index for
    */
-  function queueIndexSize(address eolVault, address recipient) external view returns (uint256);
+  function queueIndexSize(address matrixVault, address recipient) external view returns (uint256);
 
   /**
-   * @notice Retrieves the current or simulated offset of the queue for an EOLVault
-   * @param eolVault Address of the EOLVault to query
+   * @notice Retrieves the current or simulated offset of the queue for an MatrixVault
+   * @param matrixVault Address of the MatrixVault to query
    * @param simulate If true, returns the simulated offset based on current timestamp
    */
-  function queueOffset(address eolVault, bool simulate) external view returns (uint256);
+  function queueOffset(address matrixVault, bool simulate) external view returns (uint256);
 
   /**
-   * @notice Gets the current or simulated offset of the queue index for a recipient in an EOLVault
-   * @param eolVault Address of the EOLVault to query
+   * @notice Gets the current or simulated offset of the queue index for a recipient in an MatrixVault
+   * @param matrixVault Address of the MatrixVault to query
    * @param recipient Address of the recipient to query
    * @param simulate If true, returns the simulated offset based on current timestamp
    */
-  function queueIndexOffset(address eolVault, address recipient, bool simulate) external view returns (uint256);
+  function queueIndexOffset(address matrixVault, address recipient, bool simulate) external view returns (uint256);
 
   /**
-   * @notice Retrieves the total amount of reserved assets for an EOLVault's queue
-   * @param eolVault Address of the EOLVault to query
+   * @notice Retrieves the total amount of reserved assets for an MatrixVault's queue
+   * @param matrixVault Address of the MatrixVault to query
    */
-  function totalReserved(address eolVault) external view returns (uint256);
+  function totalReserved(address matrixVault) external view returns (uint256);
 
   /**
-   * @notice Gets the total amount of claimed assets for an EOLVault's queue
-   * @param eolVault Address of the EOLVault to query
+   * @notice Gets the total amount of claimed assets for an MatrixVault's queue
+   * @param matrixVault Address of the MatrixVault to query
    */
-  function totalClaimed(address eolVault) external view returns (uint256);
+  function totalClaimed(address matrixVault) external view returns (uint256);
 
   /**
-   * @notice Retrieves the total amount of pending assets for an EOLVault's queue
-   * @param eolVault Address of the EOLVault to query
+   * @notice Retrieves the total amount of pending assets for an MatrixVault's queue
+   * @param matrixVault Address of the MatrixVault to query
    */
-  function totalPending(address eolVault) external view returns (uint256);
+  function totalPending(address matrixVault) external view returns (uint256);
 
   /**
-   * @notice Gets the reserve history entry for a specific index in an EOLVault
-   * @param eolVault Address of the EOLVault to query
+   * @notice Gets the reserve history entry for a specific index in an MatrixVault
+   * @param matrixVault Address of the MatrixVault to query
    * @param index Index of the reserve history entry to retrieve
    * @return resp GetReserveHistoryResponse struct containing the reserve history data
    */
-  function reserveHistory(address eolVault, uint256 index)
+  function reserveHistory(address matrixVault, uint256 index)
     external
     view
     returns (GetReserveHistoryResponse memory resp);
 
   /**
-   * @notice Retrieves the number of entries in the reserve history for an EOLVault
-   * @param eolVault Address of the EOLVault to query
+   * @notice Retrieves the number of entries in the reserve history for an MatrixVault
+   * @param matrixVault Address of the MatrixVault to query
    */
-  function reserveHistoryLength(address eolVault) external view returns (uint256);
+  function reserveHistoryLength(address matrixVault) external view returns (uint256);
 
   /**
-   * @notice Checks if the opt-out queue is enabled for a specific EOLVault
-   * @param eolVault Address of the EOLVault to query
+   * @notice Checks if the opt-out queue is enabled for a specific MatrixVault
+   * @param matrixVault Address of the MatrixVault to query
    */
-  function isEnabled(address eolVault) external view returns (bool);
+  function isEnabled(address matrixVault) external view returns (bool);
 }
 
 /**
- * @title IOptOutQueue
- * @notice Interface for managing opt-out requests in EOLVaults
- * @dev Extends IOptOutQueueStorageV1 with queue management and configuration functions
+ * @title IReclaimQueue
+ * @notice Interface for managing opt-out requests in MatrixVaults
+ * @dev Extends IReclaimQueueStorageV1 with queue management and configuration functions
  */
-interface IOptOutQueue is IOptOutQueueStorageV1 {
+interface IReclaimQueue is IReclaimQueueStorageV1 {
   /**
    * @notice Configuration parameters for processing claim requests
    * @dev Used internally to pass data during claim processing
    * @param timestamp Current timestamp for the claim
    * @param receiver Address receiving the claim
-   * @param eolVault EOLVault contract interface
+   * @param matrixVault MatrixVault contract interface
    * @param hubAsset Hub asset contract interface
-   * @param decimalsOffset Difference in decimals between EOLVault and hub asset
+   * @param decimalsOffset Difference in decimals between MatrixVault and hub asset
    * @param queueOffset Current offset in the main queue
    * @param idxOffset Current offset in the receiver's index
    */
   struct ClaimConfig {
     uint256 timestamp;
     address receiver;
-    IEOLVault eolVault;
+    IMatrixVault matrixVault;
     IHubAsset hubAsset;
     uint8 decimalsOffset;
     uint256 queueOffset;
@@ -284,80 +287,80 @@ interface IOptOutQueue is IOptOutQueueStorageV1 {
   /**
    * @notice Emitted when a new opt-out request is added to the queue
    * @param receiver Address that will receive the assets
-   * @param eolVault Address of the EOLVault
+   * @param matrixVault Address of the MatrixVault
    * @param shares Number of shares being opted out
    * @param assets Equivalent asset amount at time of request
    */
-  event OptOutRequested(address indexed receiver, address indexed eolVault, uint256 shares, uint256 assets);
+  event OptOutRequested(address indexed receiver, address indexed matrixVault, uint256 shares, uint256 assets);
 
   /**
    * @notice Emitted when a yield is generated during the opt-out process
    * @param receiver Address receiving the claim
-   * @param eolVault Address of the EOLVault
+   * @param matrixVault Address of the MatrixVault
    * @param yield Amount of yield generated
    */
-  event OptOutYieldReported(address indexed receiver, address indexed eolVault, uint256 yield);
+  event OptOutYieldReported(address indexed receiver, address indexed matrixVault, uint256 yield);
 
   /**
    * @notice Emitted when an opt-out request is successfully claimed
    * @param receiver Address receiving the claim
-   * @param eolVault Address of the EOLVault
+   * @param matrixVault Address of the MatrixVault
    * @param claimed Amount of assets claimed
    * @param impact Difference between requested and claimed amounts
    * @param impactType Type of financial impact (None, Loss, or Yield)
    */
   event OptOutRequestClaimed(
-    address indexed receiver, address indexed eolVault, uint256 claimed, uint256 impact, ImpactType impactType
+    address indexed receiver, address indexed matrixVault, uint256 claimed, uint256 impact, ImpactType impactType
   );
 
   /**
    * @notice Error thrown when trying to interact with a disabled queue
-   * @param eolVault Address of the EOLVault with the disabled queue
+   * @param matrixVault Address of the MatrixVault with the disabled queue
    */
-  error IOptOutQueue__QueueNotEnabled(address eolVault);
+  error IReclaimQueue__QueueNotEnabled(address matrixVault);
 
   /**
    * @notice Error thrown when attempting to claim with no eligible requests
    */
-  error IOptOutQueue__NothingToClaim();
+  error IReclaimQueue__NothingToClaim();
 
   /**
    * @notice Submits a new opt-out request
    * @param shares Number of shares to opt out
    * @param receiver Address that will receive the assets
-   * @param eolVault Address of the EOLVault to opt out from
+   * @param matrixVault Address of the MatrixVault to opt out from
    * @return reqId Unique identifier for the queued request
    */
-  function request(uint256 shares, address receiver, address eolVault) external returns (uint256 reqId);
+  function request(uint256 shares, address receiver, address matrixVault) external returns (uint256 reqId);
 
   /**
    * @notice Processes and fulfills eligible opt-out requests for a receiver
    * @param receiver Address of the receiver claiming their requests
-   * @param eolVault Address of the EOLVault to claim from
+   * @param matrixVault Address of the MatrixVault to claim from
    * @return totalClaimed_ Total amount of assets claimed
    */
-  function claim(address receiver, address eolVault) external returns (uint256 totalClaimed_);
+  function claim(address receiver, address matrixVault) external returns (uint256 totalClaimed_);
 
   /**
    * @notice Updates the queue with available idle balance
    * @dev Can only be called by the asset manager
-   * @param eolVault Address of the EOLVault to update
+   * @param matrixVault Address of the MatrixVault to update
    * @param assets Amount of idle assets to allocate to pending requests
    */
-  function sync(address eolVault, uint256 assets) external;
+  function sync(address matrixVault, uint256 assets) external;
 
   /**
-   * @notice Activates the opt-out queue for an EOLVault
+   * @notice Activates the opt-out queue for an MatrixVault
    * @dev Can only be called by the contract owner
-   * @param eolVault Address of the EOLVault to enable the queue for
+   * @param matrixVault Address of the MatrixVault to enable the queue for
    */
-  function enable(address eolVault) external;
+  function enable(address matrixVault) external;
 
   /**
-   * @notice Sets the duration of the redeem period for an EOLVault
+   * @notice Sets the duration of the redeem period for an MatrixVault
    * @dev Can only be called by the contract owner
-   * @param eolVault Address of the EOLVault to set the redeem period for
+   * @param matrixVault Address of the MatrixVault to set the redeem period for
    * @param redeemPeriod_ Duration of the redeem period in seconds
    */
-  function setRedeemPeriod(address eolVault, uint256 redeemPeriod_) external;
+  function setRedeemPeriod(address matrixVault, uint256 redeemPeriod_) external;
 }
