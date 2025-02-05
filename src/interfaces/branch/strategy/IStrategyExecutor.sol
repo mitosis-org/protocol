@@ -14,8 +14,6 @@ interface IStrategyExecutor {
   event StrategistSet(address indexed strategist);
   event ExecutorSet(address indexed executor);
 
-  //   function totalSupply() external returns (uint256);
-
   function execute(address target, bytes calldata data, uint256 value) external returns (bytes memory result);
 
   function execute(address[] calldata targets, bytes[] calldata data, uint256[] calldata values)

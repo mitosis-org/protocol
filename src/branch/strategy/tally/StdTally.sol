@@ -4,6 +4,10 @@ pragma solidity 0.8.27;
 // TODO(ray):
 //      How to query cases like Uniswap v3 (when there are multiple positions)
 //      How to manage claimId, etc., when a redeem period exists.
+/**
+ * @title StdTally
+ * @notice Tally is query helper to make easy to track balances
+ */
 abstract contract StdTally {
   function protocolAddress() external view virtual returns (address);
 
