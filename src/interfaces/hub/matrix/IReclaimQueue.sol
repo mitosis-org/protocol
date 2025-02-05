@@ -7,11 +7,11 @@ import { IMatrixVault } from './IMatrixVault.sol';
 /**
  * @title IReclaimQueueStorageV1
  * @notice Storage interface for ReclaimQueue, defining getter functions and events for storage operations
- * @dev Provides the foundation for managing opt-out requests in MatrixVaults
+ * @dev Provides the foundation for managing reclaim requests in MatrixVaults
  */
 interface IReclaimQueueStorageV1 {
   /**
-   * @notice Opt-out request status enumeration
+   * @notice Reclaim request status enumeration
    */
   enum RequestStatus {
     None,
@@ -21,9 +21,9 @@ interface IReclaimQueueStorageV1 {
   }
 
   /**
-   * @notice Detailed information about a specific opt-out request
+   * @notice Detailed information about a specific reclaim request
    * @param id Unique identifier of the request
-   * @param requestedShares Number of shares requested in the opt-out
+   * @param requestedShares Number of shares requested in the reclaim
    * @param requestedAssets Equivalent asset amount at time of request
    * @param accumulatedShares Total shares accumulated up to this request
    * @param accumulatedAssets Total assets accumulated up to this request
@@ -46,7 +46,7 @@ interface IReclaimQueueStorageV1 {
    * @notice Detailed information about a request, including its index in the queue
    * @param id Unique identifier of the request
    * @param indexId Position of the request in the recipient's index
-   * @param requestedShares Number of shares requested in the opt-out
+   * @param requestedShares Number of shares requested in the reclaim
    * @param requestedAssets Equivalent asset amount at time of request
    * @param accumulatedShares Total shares accumulated up to this request
    * @param accumulatedAssets Total assets accumulated up to this request
@@ -81,7 +81,7 @@ interface IReclaimQueueStorageV1 {
   }
 
   /**
-   * @notice Emitted when an opt-out queue is activated for an MatrixVault
+   * @notice Emitted when an reclaim queue is activated for an MatrixVault
    * @param matrixVault Address of the MatrixVault for which the queue is enabled
    */
   event QueueEnabled(address indexed matrixVault);
@@ -111,7 +111,7 @@ interface IReclaimQueueStorageV1 {
   function redeemPeriod(address matrixVault) external view returns (uint256);
 
   /**
-   * @notice Retrieves the status of a specific opt-out request
+   * @notice Retrieves the status of a specific reclaim request
    * @param matrixVault Address of the MatrixVault to query
    * @param reqId ID of the request to query
    */
@@ -236,7 +236,7 @@ interface IReclaimQueueStorageV1 {
   function reserveHistoryLength(address matrixVault) external view returns (uint256);
 
   /**
-   * @notice Checks if the opt-out queue is enabled for a specific MatrixVault
+   * @notice Checks if the reclaim queue is enabled for a specific MatrixVault
    * @param matrixVault Address of the MatrixVault to query
    */
   function isEnabled(address matrixVault) external view returns (bool);
@@ -244,7 +244,7 @@ interface IReclaimQueueStorageV1 {
 
 /**
  * @title IReclaimQueue
- * @notice Interface for managing opt-out requests in MatrixVaults
+ * @notice Interface for managing reclaim requests in MatrixVaults
  * @dev Extends IReclaimQueueStorageV1 with queue management and configuration functions
  */
 interface IReclaimQueue is IReclaimQueueStorageV1 {
@@ -270,46 +270,46 @@ interface IReclaimQueue is IReclaimQueueStorageV1 {
   }
 
   /**
-   * @notice Types of value effect on an opt-out request before and after claiming
+   * @notice Types of value effect on an reclaim request before and after claiming
    */
   enum ImpactType {
     None,
-    /// loss settled during the opt-out process.
+    /// loss settled during the reclaim process.
     /// receiver will get the assets with the loss.
     /// other assets will be sent to the vault.
     Loss,
-    /// yield generated during the opt-out process
+    /// yield generated during the reclaim process
     /// but we decided to send it to the vault. not to the receiver.
     /// receiver will get the assets that determined at the time of request.
     Yield
   }
 
   /**
-   * @notice Emitted when a new opt-out request is added to the queue
+   * @notice Emitted when a new reclaim request is added to the queue
    * @param receiver Address that will receive the assets
    * @param matrixVault Address of the MatrixVault
    * @param shares Number of shares being opted out
    * @param assets Equivalent asset amount at time of request
    */
-  event OptOutRequested(address indexed receiver, address indexed matrixVault, uint256 shares, uint256 assets);
+  event ReclaimRequested(address indexed receiver, address indexed matrixVault, uint256 shares, uint256 assets);
 
   /**
-   * @notice Emitted when a yield is generated during the opt-out process
+   * @notice Emitted when a yield is generated during the reclaim process
    * @param receiver Address receiving the claim
    * @param matrixVault Address of the MatrixVault
    * @param yield Amount of yield generated
    */
-  event OptOutYieldReported(address indexed receiver, address indexed matrixVault, uint256 yield);
+  event ReclaimYieldReported(address indexed receiver, address indexed matrixVault, uint256 yield);
 
   /**
-   * @notice Emitted when an opt-out request is successfully claimed
+   * @notice Emitted when an reclaim request is successfully claimed
    * @param receiver Address receiving the claim
    * @param matrixVault Address of the MatrixVault
    * @param claimed Amount of assets claimed
    * @param impact Difference between requested and claimed amounts
    * @param impactType Type of financial impact (None, Loss, or Yield)
    */
-  event OptOutRequestClaimed(
+  event ReclaimRequestClaimed(
     address indexed receiver, address indexed matrixVault, uint256 claimed, uint256 impact, ImpactType impactType
   );
 
@@ -325,7 +325,7 @@ interface IReclaimQueue is IReclaimQueueStorageV1 {
   error IReclaimQueue__NothingToClaim();
 
   /**
-   * @notice Submits a new opt-out request
+   * @notice Submits a new reclaim request
    * @param shares Number of shares to opt out
    * @param receiver Address that will receive the assets
    * @param matrixVault Address of the MatrixVault to opt out from
@@ -334,7 +334,7 @@ interface IReclaimQueue is IReclaimQueueStorageV1 {
   function request(uint256 shares, address receiver, address matrixVault) external returns (uint256 reqId);
 
   /**
-   * @notice Processes and fulfills eligible opt-out requests for a receiver
+   * @notice Processes and fulfills eligible reclaim requests for a receiver
    * @param receiver Address of the receiver claiming their requests
    * @param matrixVault Address of the MatrixVault to claim from
    * @return totalClaimed_ Total amount of assets claimed
@@ -350,7 +350,7 @@ interface IReclaimQueue is IReclaimQueueStorageV1 {
   function sync(address matrixVault, uint256 assets) external;
 
   /**
-   * @notice Activates the opt-out queue for an MatrixVault
+   * @notice Activates the reclaim queue for an MatrixVault
    * @dev Can only be called by the contract owner
    * @param matrixVault Address of the MatrixVault to enable the queue for
    */

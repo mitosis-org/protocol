@@ -64,7 +64,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626TWABSnapshots {
   function withdraw(uint256 assets, address receiver, address owner) public override returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertOnlyOptOutQueue($);
+    _assertOnlyReclaimQueue($);
 
     uint256 maxAssets = maxWithdraw(owner);
     require(assets <= maxAssets, ERC4626ExceededMaxWithdraw(owner, assets, maxAssets));
@@ -78,7 +78,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626TWABSnapshots {
   function redeem(uint256 shares, address receiver, address owner) public override returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertOnlyOptOutQueue($);
+    _assertOnlyReclaimQueue($);
 
     uint256 maxShares = maxRedeem(owner);
     require(shares <= maxShares, ERC4626ExceededMaxRedeem(owner, shares, maxShares));

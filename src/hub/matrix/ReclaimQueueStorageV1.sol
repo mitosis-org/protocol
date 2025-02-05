@@ -249,7 +249,7 @@ abstract contract ReclaimQueueStorageV1 is IReclaimQueueStorageV1, ContextUpgrad
   function _assertQueueEnabled(StorageV1 storage $, address matrixVault) internal view virtual {
     require(
       $.states[matrixVault].isEnabled,
-      string.concat('OptOutQueueStorageV1: queue not enabled for matrixVault: ', matrixVault.toHexString())
+      string.concat('ReclaimQueueStorageV1: queue not enabled for matrixVault: ', matrixVault.toHexString())
     );
   }
 }

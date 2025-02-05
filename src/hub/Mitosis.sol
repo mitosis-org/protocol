@@ -6,9 +6,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { IAssetManager } from '../interfaces/hub/core/IAssetManager.sol';
 import { IDelegationRegistry } from '../interfaces/hub/core/IDelegationRegistry.sol';
 import { IRedistributionRegistry } from '../interfaces/hub/core/IRedistributionRegistry.sol';
-import { IEOLGaugeGovernor } from '../interfaces/hub/eol/governance/IEOLGaugeGovernor.sol';
-import { IEOLProtocolGovernor } from '../interfaces/hub/eol/governance/IEOLProtocolGovernor.sol';
-import { IOptOutQueue } from '../interfaces/hub/eol/IOptOutQueue.sol';
+import { IReclaimQueue } from '../interfaces/hub/matrix/IReclaimQueue.sol';
 import { IMitosis } from '../interfaces/hub/IMitosis.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 
@@ -22,10 +20,8 @@ contract Mitosis is IMitosis, Ownable2StepUpgradeable {
   /// @custom:storage-location mitosis.storage.Mitosis
   struct MitosisStorage {
     IAssetManager assetManager;
-    IOptOutQueue optOutQueue;
+    IReclaimQueue reclaimQueue;
     IDelegationRegistry delegationRegistry;
-    IEOLProtocolGovernor eolProtocolGovernor;
-    IEOLGaugeGovernor eolGaugeGovernor;
     IRedistributionRegistry redistributionRegistry;
   }
 
@@ -58,8 +54,8 @@ contract Mitosis is IMitosis, Ownable2StepUpgradeable {
   /**
    * @inheritdoc IMitosis
    */
-  function optOutQueue() external view returns (IOptOutQueue) {
-    return _getMitosisStorage().optOutQueue;
+  function reclaimQueue() external view returns (IReclaimQueue) {
+    return _getMitosisStorage().reclaimQueue;
   }
 
   /**
@@ -74,20 +70,6 @@ contract Mitosis is IMitosis, Ownable2StepUpgradeable {
    */
   function delegationRegistry() external view returns (IDelegationRegistry) {
     return _getMitosisStorage().delegationRegistry;
-  }
-
-  /**
-   * @inheritdoc IMitosis
-   */
-  function eolProtocolGovernor() external view returns (IEOLProtocolGovernor) {
-    return _getMitosisStorage().eolProtocolGovernor;
-  }
-
-  /**
-   * @inheritdoc IMitosis
-   */
-  function eolGaugeGovernor() external view returns (IEOLGaugeGovernor) {
-    return _getMitosisStorage().eolGaugeGovernor;
   }
 
   /**
@@ -148,19 +130,11 @@ contract Mitosis is IMitosis, Ownable2StepUpgradeable {
   function setAssetManager(IAssetManager assetManager_) external onlyOwner {
     MitosisStorage storage $ = _getMitosisStorage();
     $.assetManager = assetManager_;
-    $.optOutQueue = IOptOutQueue(assetManager_.optOutQueue());
+    $.reclaimQueue = IReclaimQueue(assetManager_.reclaimQueue());
   }
 
   function setDelegationRegistry(IDelegationRegistry delegationRegistry_) external onlyOwner {
     _getMitosisStorage().delegationRegistry = delegationRegistry_;
-  }
-
-  function setEOLProtocolGovernor(IEOLProtocolGovernor eolProtocolGovernor_) external onlyOwner {
-    _getMitosisStorage().eolProtocolGovernor = eolProtocolGovernor_;
-  }
-
-  function setEOLGaugeGovernor(IEOLGaugeGovernor eolGaugeGovernor_) external onlyOwner {
-    _getMitosisStorage().eolGaugeGovernor = eolGaugeGovernor_;
   }
 
   function setRedistributionRegistry(IRedistributionRegistry redistributionRegistry_) external onlyOwner {

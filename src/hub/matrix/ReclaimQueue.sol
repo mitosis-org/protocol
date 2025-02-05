@@ -39,41 +39,41 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
 
   // =========================== NOTE: QUEUE FUNCTIONS =========================== //
 
-  function request(uint256 shares, address receiver, address eolVault) external returns (uint256 reqId) {
+  function request(uint256 shares, address receiver, address matrixVault) external returns (uint256 reqId) {
     StorageV1 storage $ = _getStorageV1();
 
     _assertNotPaused();
-    _assertQueueEnabled($, eolVault);
+    _assertQueueEnabled($, matrixVault);
 
-    IMatrixVault(eolVault).safeTransferFrom(_msgSender(), address(this), shares);
-    uint256 assets = IMatrixVault(eolVault).previewRedeem(shares) - 1; // FIXME: tricky way to avoid rounding error
-    LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
-    reqId = queue.enqueue(receiver, shares, assets, IMatrixVault(eolVault).clock());
+    IMatrixVault(matrixVault).safeTransferFrom(_msgSender(), address(this), shares);
+    uint256 assets = IMatrixVault(matrixVault).previewRedeem(shares) - 1; // FIXME: tricky way to avoid rounding error
+    LibRedeemQueue.Queue storage queue = $.states[matrixVault].queue;
+    reqId = queue.enqueue(receiver, shares, assets, IMatrixVault(matrixVault).clock());
 
-    emit OptOutRequested(receiver, eolVault, shares, assets);
+    emit ReclaimRequested(receiver, matrixVault, shares, assets);
 
     return reqId;
   }
 
-  function claim(address receiver, address eolVault) external returns (uint256 totalClaimed_) {
+  function claim(address receiver, address matrixVault) external returns (uint256 totalClaimed_) {
     StorageV1 storage $ = _getStorageV1();
 
     _assertNotPaused();
-    _assertQueueEnabled($, eolVault);
+    _assertQueueEnabled($, matrixVault);
 
-    LibRedeemQueue.Queue storage queue = $.states[eolVault].queue;
+    LibRedeemQueue.Queue storage queue = $.states[matrixVault].queue;
     LibRedeemQueue.Index storage index = queue.index(receiver);
 
-    uint48 timestamp = IMatrixVault(eolVault).clock();
+    uint48 timestamp = IMatrixVault(matrixVault).clock();
 
     queue.update(timestamp);
 
     ClaimConfig memory cfg = ClaimConfig({
       timestamp: timestamp,
       receiver: receiver,
-      eolVault: IMatrixVault(eolVault),
-      hubAsset: IHubAsset(IMatrixVault(eolVault).asset()),
-      decimalsOffset: $.states[eolVault].decimalsOffset,
+      matrixVault: IMatrixVault(matrixVault),
+      hubAsset: IHubAsset(IMatrixVault(matrixVault).asset()),
+      decimalsOffset: $.states[matrixVault].decimalsOffset,
       queueOffset: queue.offset,
       idxOffset: index.offset
     });
@@ -86,16 +86,16 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
     // send total claim amount to receiver
     cfg.hubAsset.safeTransfer(receiver, totalClaimed_);
 
-    // send diff to eolVault if there's any yield
+    // send diff to matrixVault if there's any yield
     (uint256 impact, bool loss) = _abssub(totalClaimedWithoutImpact, totalClaimed_);
     if (loss) {
-      cfg.hubAsset.safeTransfer(eolVault, impact);
-      emit OptOutYieldReported(receiver, eolVault, impact);
+      cfg.hubAsset.safeTransfer(matrixVault, impact);
+      emit ReclaimYieldReported(receiver, matrixVault, impact);
     }
 
-    emit OptOutRequestClaimed(
+    emit ReclaimRequestClaimed(
       receiver,
-      eolVault,
+      matrixVault,
       totalClaimed_,
       impact,
       impact == 0 ? ImpactType.None : loss ? ImpactType.Loss : ImpactType.Yield
@@ -104,14 +104,14 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
     return totalClaimed_;
   }
 
-  function sync(address eolVault, uint256 assets) external {
+  function sync(address matrixVault, uint256 assets) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertNotPaused();
     _assertOnlyAssetManager($);
-    _assertQueueEnabled($, eolVault);
+    _assertQueueEnabled($, matrixVault);
 
-    _sync($, IMatrixVault(eolVault), assets);
+    _sync($, IMatrixVault(matrixVault), assets);
   }
 
   // =========================== NOTE: CONFIG FUNCTIONS =========================== //
@@ -132,16 +132,16 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
     _unpause(sig);
   }
 
-  function enable(address eolVault) external onlyOwner {
-    _enableQueue(_getStorageV1(), eolVault);
+  function enable(address matrixVault) external onlyOwner {
+    _enableQueue(_getStorageV1(), matrixVault);
   }
 
   function setAssetManager(address assetManager) external onlyOwner {
     _setAssetManager(_getStorageV1(), assetManager);
   }
 
-  function setRedeemPeriod(address eolVault, uint256 redeemPeriod_) external onlyOwner {
-    _setRedeemPeriod(_getStorageV1(), eolVault, redeemPeriod_);
+  function setRedeemPeriod(address matrixVault, uint256 redeemPeriod_) external onlyOwner {
+    _setRedeemPeriod(_getStorageV1(), matrixVault, redeemPeriod_);
   }
 
   // =========================== NOTE: INTERNAL FUNCTIONS =========================== //
@@ -160,12 +160,12 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
     return shares.mulDiv(totalAssets + 1, totalSupply + 10 ** decimalsOffset, rounding);
   }
 
-  function _idle(LibRedeemQueue.Queue storage queue, IAssetManager assetManager, address eolVault)
+  function _idle(LibRedeemQueue.Queue storage queue, IAssetManager assetManager, address matrixVault)
     internal
     view
     returns (uint256)
   {
-    return IMatrixVault(eolVault).totalAssets() - queue.pending() - assetManager.eolAlloc(eolVault);
+    return IMatrixVault(matrixVault).totalAssets() - queue.pending() - assetManager.matrixAlloc(matrixVault);
   }
 
   function _claim(LibRedeemQueue.Queue storage queue, LibRedeemQueue.Index storage index, ClaimConfig memory cfg)
@@ -218,17 +218,17 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
     return (totalClaimed_, totalClaimedWithoutImpact);
   }
 
-  function _sync(StorageV1 storage $, IMatrixVault eolVault, uint256 assets) internal {
-    EOLVaultState storage eolVaultState = $.states[address(eolVault)];
+  function _sync(StorageV1 storage $, IMatrixVault matrixVault, uint256 assets) internal {
+    MatrixVaultState storage matrixVaultState = $.states[address(matrixVault)];
 
-    eolVault.withdraw(assets, address(this), address(this));
+    matrixVault.withdraw(assets, address(this), address(this));
 
-    eolVaultState.queue.reserve(assets, eolVault.totalSupply(), eolVault.totalAssets(), eolVault.clock());
+    matrixVaultState.queue.reserve(assets, matrixVault.totalSupply(), matrixVault.totalAssets(), matrixVault.clock());
   }
 
   // =========================== NOTE: ASSERTIONS =========================== //
 
-  function _assertQueueEnabled(StorageV1 storage $, address eolVault) internal view override {
-    require($.states[eolVault].isEnabled, IReclaimQueue__QueueNotEnabled(eolVault));
+  function _assertQueueEnabled(StorageV1 storage $, address matrixVault) internal view override {
+    require($.states[matrixVault].isEnabled, IReclaimQueue__QueueNotEnabled(matrixVault));
   }
 }

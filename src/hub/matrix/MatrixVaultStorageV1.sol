@@ -48,7 +48,7 @@ contract MatrixVaultStorageV1 is IMatrixVaultStorageV1, ContextUpgradeable {
     require(_msgSender() == address($.assetManager), StdError.Unauthorized());
   }
 
-  function _assertOnlyOptOutQueue(StorageV1 storage $) internal view {
-    require(_msgSender() == $.assetManager.optOutQueue(), StdError.Unauthorized());
+  function _assertOnlyReclaimQueue(StorageV1 storage $) internal view {
+    require(_msgSender() == $.assetManager.reclaimQueue(), StdError.Unauthorized());
   }
 }
