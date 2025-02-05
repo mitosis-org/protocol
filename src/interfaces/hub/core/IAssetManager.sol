@@ -13,10 +13,10 @@ interface IAssetManagerStorageV1 {
   event EntrypointSet(address indexed entrypoint);
 
   /**
-   * @notice Emitted when a new opt-out queue is set
-   * @param optOutQueue_ The address of the new opt-out queue
+   * @notice Emitted when a new reclaim queue is set
+   * @param reclaimQueue_ The address of the new reclaim queue
    */
-  event OptOutQueueSet(address indexed optOutQueue_);
+  event ReclaimQueueSet(address indexed reclaimQueue_);
 
   /**
    * @notice Emitted when a new reward treasury is set
@@ -25,19 +25,19 @@ interface IAssetManagerStorageV1 {
   event TreasurySet(address indexed treasury);
 
   /**
-   * @notice Emitted when a new strategist is set for an EOLVault
-   * @param eolVault The address of the EOLVault
+   * @notice Emitted when a new strategist is set for a MatrixVault
+   * @param matrixVault The address of the MatrixVault
    * @param strategist The address of the new strategist
    */
-  event StrategistSet(address indexed eolVault, address indexed strategist);
+  event StrategistSet(address indexed matrixVault, address indexed strategist);
 
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
   error IAssetManagerStorageV1__BranchAssetPairNotExist(address branchAsset);
   error IAssetManagerStorageV1__TreasuryNotSet();
 
-  error IAssetManagerStorageV1__EOLNotInitialized(uint256 chainId, address eolVault);
-  error IAssetManagerStorageV1__EOLAlreadyInitialized(uint256 chainId, address eolVault);
+  error IAssetManagerStorageV1__MatrixNotInitialized(uint256 chainId, address matrixVault);
+  error IAssetManagerStorageV1__MatrixAlreadyInitialized(uint256 chainId, address matrixVault);
 
   //=========== NOTE: STATE GETTERS ===========//
 
@@ -47,9 +47,9 @@ interface IAssetManagerStorageV1 {
   function entrypoint() external view returns (address);
 
   /**
-   * @notice Get the current opt-out queue address (see IOptOutQueue)
+   * @notice Get the current reclaim queue address (see IReclaimQueue)
    */
-  function optOutQueue() external view returns (address);
+  function reclaimQueue() external view returns (address);
 
   /**
    * @notice Get the current reward treasury address (see ITreasury)
@@ -79,31 +79,31 @@ interface IAssetManagerStorageV1 {
   function collateral(uint256 chainId, address hubAsset_) external view returns (uint256);
 
   /**
-   * @notice Check if an EOLVault is initialized for a given chain and branch asset (EOLVault -> hubAsset -> branchAsset)
+   * @notice Check if a MatrixVault is initialized for a given chain and branch asset (MatrixVault -> hubAsset -> branchAsset)
    * @param chainId The ID of the chain
-   * @param eolVault The address of the EOLVault
+   * @param matrixVault The address of the MatrixVault
    */
-  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool);
+  function matrixInitialized(uint256 chainId, address matrixVault) external view returns (bool);
 
   /**
-   * @notice Get the idle balance of an EOLVault
+   * @notice Get the idle balance of a MatrixVault
    * @dev The idle balance will be calculated like this:
-   * @dev (total opt-in amount - total utilized amount - total pending opt-out amount)
-   * @param eolVault The address of the EOLVault
+   * @dev (total supplied amount - total utilized amount - total pending reclaim amount)
+   * @param matrixVault The address of the MatrixVault
    */
-  function eolIdle(address eolVault) external view returns (uint256);
+  function matrixIdle(address matrixVault) external view returns (uint256);
 
   /**
-   * @notice Get the total utilized balance (hubAsset/branchAsset) of an EOLVault
-   * @param eolVault The address of the EOLVault
+   * @notice Get the total utilized balance (hubAsset/branchAsset) of a MatrixVault
+   * @param matrixVault The address of the MatrixVault
    */
-  function eolAlloc(address eolVault) external view returns (uint256);
+  function matrixAlloc(address matrixVault) external view returns (uint256);
 
   /**
-   * @notice Get the strategist address for an EOLVault
-   * @param eolVault The address of the EOLVault
+   * @notice Get the strategist address for a MatrixVault
+   * @param matrixVault The address of the MatrixVault
    */
-  function strategist(address eolVault) external view returns (address);
+  function strategist(address matrixVault) external view returns (address);
 }
 
 /**
@@ -120,13 +120,13 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event AssetInitialized(address indexed hubAsset, uint256 indexed chainId, address branchAsset);
 
   /**
-   * @notice Emitted when an EOLVault is initialized
+   * @notice Emitted when a MatrixVault is initialized
    * @param hubAsset The address of the hub asset
-   * @param chainId The ID of the chain where the EOLVault is initialized
-   * @param eolVault The address of the initialized EOLVault
-   * @param branchAsset The address of the branch asset associated with the EOLVault
+   * @param chainId The ID of the chain where the MatrixVault is initialized
+   * @param matrixVault The address of the initialized MatrixVault
+   * @param branchAsset The address of the branch asset associated with the MatrixVault
    */
-  event EOLInitialized(address indexed hubAsset, uint256 indexed chainId, address eolVault, address branchAsset);
+  event MatrixInitialized(address indexed hubAsset, uint256 indexed chainId, address matrixVault, address branchAsset);
 
   /**
    * @notice Emitted when a deposit is made
@@ -138,21 +138,21 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event Deposited(uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount);
 
   /**
-   * @notice Emitted when a deposit is made with opt-in
+   * @notice Emitted when a deposit is made with supply to a MatrixVault
    * @param chainId The ID of the chain where the deposit is made
    * @param hubAsset The address of the asset that correspond to the branch asset
    * @param to The address receiving the miAsset
-   * @param eolVault The address of the EOLVault opted into
+   * @param matrixVault The address of the MatrixVault supplied into
    * @param amount The amount deposited
-   * @param optInAmount The amount opted into the EOLVault
+   * @param supplyAmount The amount supplied into the MatrixVault
    */
-  event DepositedWithOptIn(
+  event DepositedWithSupplyMatrix(
     uint256 indexed chainId,
     address indexed hubAsset,
     address indexed to,
-    address eolVault,
+    address matrixVault,
     uint256 amount,
-    uint256 optInAmount
+    uint256 supplyAmount
   );
 
   /**
@@ -165,38 +165,40 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event Redeemed(uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount);
 
   /**
-   * @notice Emitted when a reward is settled from the branch chain to the hub chain for a specific EOLVault
+   * @notice Emitted when a reward is settled from the branch chain to the hub chain for a specific MatrixVault
    * @param chainId The ID of the chain where the reward is reported
-   * @param eolVault The address of the EOLVault receiving the reward
+   * @param matrixVault The address of the MatrixVault receiving the reward
    * @param asset The address of the reward asset
    * @param amount The amount of the reward
    */
-  event RewardSettled(uint256 indexed chainId, address indexed eolVault, address indexed asset, uint256 amount);
+  event MatrixRewardSettled(
+    uint256 indexed chainId, address indexed matrixVault, address indexed asset, uint256 amount
+  );
 
   /**
-   * @notice Emitted when a loss is settled from the branch chain to the hub chain for a specific EOLVault
+   * @notice Emitted when a loss is settled from the branch chain to the hub chain for a specific MatrixVault
    * @param chainId The ID of the chain where the loss is reported
-   * @param eolVault The address of the EOLVault incurring the loss
+   * @param matrixVault The address of the MatrixVault incurring the loss
    * @param asset The address of the asset lost
    * @param amount The amount of the loss
    */
-  event LossSettled(uint256 indexed chainId, address indexed eolVault, address indexed asset, uint256 amount);
+  event MatrixLossSettled(uint256 indexed chainId, address indexed matrixVault, address indexed asset, uint256 amount);
 
   /**
-   * @notice Emitted when assets are allocated to the branch chain for a specific EOLVault
+   * @notice Emitted when assets are allocated to the branch chain for a specific MatrixVault
    * @param chainId The ID of the chain where the allocation occurs
-   * @param eolVault The address of the EOLVault to be reported the allocation
+   * @param matrixVault The address of the MatrixVault to be reported the allocation
    * @param amount The amount allocated
    */
-  event EOLAllocated(uint256 indexed chainId, address indexed eolVault, uint256 amount);
+  event MatrixAllocated(uint256 indexed chainId, address indexed matrixVault, uint256 amount);
 
   /**
-   * @notice Emitted when assets are deallocated from the branch chain for a specific EOLVault
+   * @notice Emitted when assets are deallocated from the branch chain for a specific MatrixVault
    * @param chainId The ID of the chain where the deallocation occurs
-   * @param eolVault The address of the EOLVault to be reported the deallocation
+   * @param matrixVault The address of the MatrixVault to be reported the deallocation
    * @param amount The amount deallocated
    */
-  event EOLDeallocated(uint256 indexed chainId, address indexed eolVault, uint256 amount);
+  event MatrixDeallocated(uint256 indexed chainId, address indexed matrixVault, uint256 amount);
 
   /**
    * @notice Emitted when an asset pair is set
@@ -216,17 +218,17 @@ interface IAssetManager is IAssetManagerStorageV1 {
   error IAssetManager__CollateralInsufficient(uint256 chainId, address hubAsset, uint256 collateral, uint256 amount);
 
   /**
-   * @notice Error thrown when an invalid EOLVault address does not match with the hub asset
-   * @param eolVault The address of the invalid EOLVault
+   * @notice Error thrown when an invalid MatrixVault address does not match with the hub asset
+   * @param matrixVault The address of the invalid MatrixVault
    * @param hubAsset The address of the hub asset
    */
-  error IAssetManager__InvalidEOLVault(address eolVault, address hubAsset);
+  error IAssetManager__InvalidMatrixVault(address matrixVault, address hubAsset);
 
   /**
-   * @notice Error thrown when an EOLVault has insufficient funds
-   * @param eolVault The address of the EOLVault with insufficient funds
+   * @notice Error thrown when a MatrixVault has insufficient funds
+   * @param matrixVault The address of the MatrixVault with insufficient funds
    */
-  error IAssetManager__EOLInsufficient(address eolVault);
+  error IAssetManager__MatrixInsufficient(address matrixVault);
 
   /**
    * @notice Deposit branch assets
@@ -239,16 +241,21 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external;
 
   /**
-   * @notice Deposit branch assets with opt-in to an EOLVault
+   * @notice Deposit branch assets with supply to a MatrixVault
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the deposit is made
    * @param branchAsset The address of the branch asset being deposited
    * @param to The address receiving the deposit
-   * @param eolVault The address of the EOLVault to opt into
+   * @param matrixVault The address of the MatrixVault to supply into
    * @param amount The amount to deposit
    */
-  function depositWithOptIn(uint256 chainId, address branchAsset, address to, address eolVault, uint256 amount)
-    external;
+  function depositWithSupplyMatrix(
+    uint256 chainId,
+    address branchAsset,
+    address to,
+    address matrixVault,
+    uint256 amount
+  ) external;
 
   /**
    * @notice Redeem hub assets and receive the asset on the branch chain
@@ -261,58 +268,59 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external;
 
   /**
-   * @notice Allocate the assets to the branch chain for a specific EOLVault
-   * @dev Only the strategist of the EOLVault can allocate assets
+   * @notice Allocate the assets to the branch chain for a specific MatrixVault
+   * @dev Only the strategist of the MatrixVault can allocate assets
    * @dev Dispatches the cross-chain message to branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the allocation occurs
-   * @param eolVault The address of the EOLVault to be affected
+   * @param matrixVault The address of the MatrixVault to be affected
    * @param amount The amount to allocate
    */
-  function allocateEOL(uint256 chainId, address eolVault, uint256 amount) external;
+  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external;
 
   /**
-   * @notice Deallocate the assets from the branch chain for a specific EOLVault
+   * @notice Deallocate the assets from the branch chain for a specific MatrixVault
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the deallocation occurs
-   * @param eolVault The address of the EOLVault to be affected
+   * @param matrixVault The address of the MatrixVault to be affected
    * @param amount The amount to deallocate
    */
-  function deallocateEOL(uint256 chainId, address eolVault, uint256 amount) external;
+  function deallocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external;
 
   /**
-   * @notice Resolves the pending opt-out request amount from the opt-out queue using the idle balance of an EOLVault
-   * @param eolVault The address of the EOLVault
+   * @notice Resolves the pending reclaim request amount from the reclaim queue using the idle balance of a MatrixVault
+   * @param matrixVault The address of the MatrixVault
    * @param amount The amount to reserve
    */
-  function reserveEOL(address eolVault, uint256 amount) external;
+  function reserveMatrix(address matrixVault, uint256 amount) external;
 
   /**
-   * @notice Settles an yield generated from EOL Protocol
+   * @notice Settles an yield generated from Matrix Protocol
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the yield is settled
-   * @param eolVault The address of the EOLVault to be affected
+   * @param matrixVault The address of the MatrixVault to be affected
    * @param amount The amount of yield to settle
    */
-  function settleYield(uint256 chainId, address eolVault, uint256 amount) external;
+  function settleMatrixYield(uint256 chainId, address matrixVault, uint256 amount) external;
 
   /**
-   * @notice Settles a loss incurred by the EOL Protocol
+   * @notice Settles a loss incurred by the Matrix Protocol
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the loss is settled
-   * @param eolVault The address of the EOLVault to be affected
+   * @param matrixVault The address of the MatrixVault to be affected
    * @param amount The amount of loss to settle
    */
-  function settleLoss(uint256 chainId, address eolVault, uint256 amount) external;
+  function settleMatrixLoss(uint256 chainId, address matrixVault, uint256 amount) external;
 
   /**
-   * @notice Settle extra rewards generated from EOL Protocol
+   * @notice Settle extra rewards generated from Matrix Protocol
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the rewards are settled
-   * @param eolVault The address of the EOLVault
+   * @param matrixVault The address of the MatrixVault
    * @param branchReward The address of the reward asset on the branch chain
    * @param amount The amount of extra rewards to settle
    */
-  function settleExtraRewards(uint256 chainId, address eolVault, address branchReward, uint256 amount) external;
+  function settleMatrixExtraRewards(uint256 chainId, address matrixVault, address branchReward, uint256 amount)
+    external;
 
   /**
    * @notice Initialize an asset for a given chain's MitosisVault
@@ -322,11 +330,11 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function initializeAsset(uint256 chainId, address hubAsset) external;
 
   /**
-   * @notice Initialize an EOL for branch asset (EOLVault) on a given chain
-   * @param chainId The ID of the chain where the EOLVault is initialized
-   * @param eolVault The address of the EOLVault to initialize
+   * @notice Initialize a Matrix for branch asset (MatrixVault) on a given chain
+   * @param chainId The ID of the chain where the MatrixVault is initialized
+   * @param matrixVault The address of the MatrixVault to initialize
    */
-  function initializeEOL(uint256 chainId, address eolVault) external;
+  function initializeMatrix(uint256 chainId, address matrixVault) external;
 
   /**
    * @notice Set an asset pair
@@ -343,10 +351,10 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function setEntrypoint(address entrypoint_) external;
 
   /**
-   * @notice Set the opt-out queue address
-   * @param optOutQueue_ The new opt-out queue address
+   * @notice Set the reclaim queue address
+   * @param reclaimQueue_ The new reclaim queue address
    */
-  function setOptOutQueue(address optOutQueue_) external;
+  function setReclaimQueue(address reclaimQueue_) external;
 
   /**
    * @notice Set the reward treasury address
@@ -355,9 +363,9 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function setTreasury(address treasury_) external;
 
   /**
-   * @notice Set the strategist for an EOLVault
-   * @param eolVault The address of the EOLVault
+   * @notice Set the strategist for a MatrixVault
+   * @param matrixVault The address of the MatrixVault
    * @param strategist The address of the new strategist
    */
-  function setStrategist(address eolVault, address strategist) external;
+  function setStrategist(address matrixVault, address strategist) external;
 }

@@ -5,8 +5,8 @@ import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
 import { IAssetManagerStorageV1 } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
-import { IOptOutQueue } from '../../interfaces/hub/eol/IOptOutQueue.sol';
-import { IEOLVault } from '../../interfaces/hub/eol/vault/IEOLVault.sol';
+import { IReclaimQueue } from '../../interfaces/hub/matrix/IReclaimQueue.sol';
+import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
@@ -14,22 +14,22 @@ import { StdError } from '../../lib/StdError.sol';
 abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgradeable {
   using ERC7201Utils for string;
 
-  struct EOLState {
+  struct MatrixState {
     address strategist;
     uint256 allocation;
   }
 
   struct StorageV1 {
     IAssetManagerEntrypoint entrypoint;
-    IOptOutQueue optOutQueue;
+    IReclaimQueue reclaimQueue;
     ITreasury treasury;
     // Asset states
     mapping(address hubAsset => mapping(uint256 chainId => address branchAsset)) branchAssets;
     mapping(uint256 chainId => mapping(address branchAsset => address hubAsset)) hubAssets;
     mapping(uint256 chainId => mapping(address hubAsset => uint256 amount)) collateralPerChain;
-    // EOL states
-    mapping(address eolVault => EOLState state) eolStates;
-    mapping(uint256 chainId => mapping(address eolVault => bool initialized)) eolInitialized;
+    // Matrix states
+    mapping(address matrixVault => MatrixState state) matrixStates;
+    mapping(uint256 chainId => mapping(address matrixVault => bool initialized)) matrixInitialized;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.AssetManagerStorage.v1';
@@ -49,8 +49,8 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return address(_getStorageV1().entrypoint);
   }
 
-  function optOutQueue() external view returns (address) {
-    return address(_getStorageV1().optOutQueue);
+  function reclaimQueue() external view returns (address) {
+    return address(_getStorageV1().reclaimQueue);
   }
 
   function treasury() external view returns (address) {
@@ -69,20 +69,20 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return _getStorageV1().collateralPerChain[chainId][hubAsset_];
   }
 
-  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool) {
-    return _getStorageV1().eolInitialized[chainId][eolVault];
+  function matrixInitialized(uint256 chainId, address matrixVault) external view returns (bool) {
+    return _getStorageV1().matrixInitialized[chainId][matrixVault];
   }
 
-  function eolIdle(address eolVault) external view returns (uint256) {
-    return _eolIdle(_getStorageV1(), eolVault);
+  function matrixIdle(address matrixVault) external view returns (uint256) {
+    return _matrixIdle(_getStorageV1(), matrixVault);
   }
 
-  function eolAlloc(address eolVault) external view returns (uint256) {
-    return _getStorageV1().eolStates[eolVault].allocation;
+  function matrixAlloc(address matrixVault) external view returns (uint256) {
+    return _getStorageV1().matrixStates[matrixVault].allocation;
   }
 
-  function strategist(address eolVault) external view returns (address) {
-    return _getStorageV1().eolStates[eolVault].strategist;
+  function strategist(address matrixVault) external view returns (address) {
+    return _getStorageV1().matrixStates[matrixVault].strategist;
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
@@ -95,12 +95,12 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     emit EntrypointSet(entrypoint_);
   }
 
-  function _setOptOutQueue(StorageV1 storage $, address optOutQueue_) internal {
-    require(optOutQueue_.code.length > 0, StdError.InvalidParameter('OptOutQueue'));
+  function _setReclaimQueue(StorageV1 storage $, address reclaimQueue_) internal {
+    require(reclaimQueue_.code.length > 0, StdError.InvalidParameter('ReclaimQueue'));
 
-    $.optOutQueue = IOptOutQueue(optOutQueue_);
+    $.reclaimQueue = IReclaimQueue(reclaimQueue_);
 
-    emit OptOutQueueSet(optOutQueue_);
+    emit ReclaimQueueSet(reclaimQueue_);
   }
 
   function _setTreasury(StorageV1 storage $, address treasury_) internal {
@@ -111,19 +111,19 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     emit TreasurySet(treasury_);
   }
 
-  function _setStrategist(StorageV1 storage $, address eolVault, address strategist_) internal {
-    require(eolVault.code.length > 0, StdError.InvalidParameter('EOLVault'));
+  function _setStrategist(StorageV1 storage $, address matrixVault, address strategist_) internal {
+    require(matrixVault.code.length > 0, StdError.InvalidParameter('MatrixVault'));
 
-    $.eolStates[eolVault].strategist = strategist_;
+    $.matrixStates[matrixVault].strategist = strategist_;
 
-    emit StrategistSet(eolVault, strategist_);
+    emit StrategistSet(matrixVault, strategist_);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _eolIdle(StorageV1 storage $, address eolVault) internal view returns (uint256) {
-    uint256 total = IEOLVault(eolVault).totalAssets();
-    uint256 allocated = $.eolStates[eolVault].allocation;
+  function _matrixIdle(StorageV1 storage $, address matrixVault) internal view returns (uint256) {
+    uint256 total = IMatrixVault(matrixVault).totalAssets();
+    uint256 allocated = $.matrixStates[matrixVault].allocation;
 
     return total - allocated;
   }
@@ -134,8 +134,8 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     require(_msgSender() == address($.entrypoint), StdError.Unauthorized());
   }
 
-  function _assertOnlyStrategist(StorageV1 storage $, address eolVault) internal view virtual {
-    require(_msgSender() == $.eolStates[eolVault].strategist, StdError.Unauthorized());
+  function _assertOnlyStrategist(StorageV1 storage $, address matrixVault) internal view virtual {
+    require(_msgSender() == $.matrixStates[matrixVault].strategist, StdError.Unauthorized());
   }
 
   function _assertBranchAssetPairExist(StorageV1 storage $, uint256 chainId, address branchAsset_)
@@ -152,11 +152,15 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     require(address($.treasury) != address(0), IAssetManagerStorageV1__TreasuryNotSet());
   }
 
-  function _assertEOLInitialized(StorageV1 storage $, uint256 chainId, address eolVault) internal view virtual {
-    require($.eolInitialized[chainId][eolVault], IAssetManagerStorageV1__EOLNotInitialized(chainId, eolVault));
+  function _assertMatrixInitialized(StorageV1 storage $, uint256 chainId, address matrixVault) internal view virtual {
+    require(
+      $.matrixInitialized[chainId][matrixVault], IAssetManagerStorageV1__MatrixNotInitialized(chainId, matrixVault)
+    );
   }
 
-  function _assertEOLNotInitialized(StorageV1 storage $, uint256 chainId, address eolVault) internal view virtual {
-    require(!$.eolInitialized[chainId][eolVault], IAssetManagerStorageV1__EOLAlreadyInitialized(chainId, eolVault));
+  function _assertMatrixNotInitialized(StorageV1 storage $, uint256 chainId, address matrixVault) internal view virtual {
+    require(
+      !$.matrixInitialized[chainId][matrixVault], IAssetManagerStorageV1__MatrixAlreadyInitialized(chainId, matrixVault)
+    );
   }
 }

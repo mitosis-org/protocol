@@ -6,15 +6,15 @@ import { Test } from '@std/Test.sol';
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
-import { OptOutQueue } from '../../../src/hub/eol/OptOutQueue.sol';
-import { EOLVaultBasic } from '../../../src/hub/eol/vault/EOLVaultBasic.sol';
+import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
+import { ReclaimQueue } from '../../../src/hub/matrix/ReclaimQueue.sol';
 import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.sol';
-import { IOptOutQueue } from '../../../src/interfaces/hub/eol/IOptOutQueue.sol';
+import { IReclaimQueue } from '../../../src/interfaces/hub/matrix/IReclaimQueue.sol';
 import { IERC20TWABSnapshots } from '../../../src/interfaces/twab/IERC20TWABSnapshots.sol';
 import { MockAssetManager } from '../../mock/MockAssetManager.t.sol';
 import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol';
 
-contract OptOutQueueTest is Test {
+contract ReclaimQueueTest is Test {
   address internal _admin = makeAddr('admin');
   address internal _owner = makeAddr('owner');
   address internal _user = makeAddr('user');
@@ -24,8 +24,8 @@ contract OptOutQueueTest is Test {
   MockDelegationRegistry internal _delegationRegistry;
   ERC1967Factory internal _factory;
   HubAsset internal _hubAsset;
-  EOLVaultBasic internal _eolVault;
-  OptOutQueue internal _optOutQueue;
+  MatrixVaultBasic internal _matrixVault;
+  ReclaimQueue internal _reclaimQueue;
 
   modifier withAccount(address account) {
     vm.startPrank(account);
@@ -49,11 +49,11 @@ contract OptOutQueueTest is Test {
         ) //
       )
     );
-    _eolVault = EOLVaultBasic(
+    _matrixVault = MatrixVaultBasic(
       _proxy(
-        address(new EOLVaultBasic()),
+        address(new MatrixVaultBasic()),
         abi.encodeCall(
-          EOLVaultBasic.initialize,
+          MatrixVaultBasic.initialize,
           (
             address(_delegationRegistry),
             address(_assetManager),
@@ -64,10 +64,10 @@ contract OptOutQueueTest is Test {
         ) //
       )
     );
-    _optOutQueue = OptOutQueue(
+    _reclaimQueue = ReclaimQueue(
       _proxy(
-        address(new OptOutQueue()),
-        abi.encodeCall(OptOutQueue.initialize, (_owner, address(_assetManager))) //
+        address(new ReclaimQueue()),
+        abi.encodeCall(ReclaimQueue.initialize, (_owner, address(_assetManager))) //
       )
     );
 
@@ -75,70 +75,70 @@ contract OptOutQueueTest is Test {
 
     vm.startPrank(_owner);
 
-    _assetManager.setOptOutQueue(address(_optOutQueue));
-    _optOutQueue.enable(address(_eolVault));
-    _optOutQueue.setRedeemPeriod(address(_eolVault), 1 days);
+    _assetManager.setReclaimQueue(address(_reclaimQueue));
+    _reclaimQueue.enable(address(_matrixVault));
+    _reclaimQueue.setRedeemPeriod(address(_matrixVault), 1 days);
 
     vm.stopPrank();
 
     // provide liquidity
 
-    _optIn(_user, 1000 ether, true);
+    _supply(_user, 1000 ether, true);
   }
 
   function test_onNormal() public {
-    _optOutRequest(_user, 100 ether);
+    _reclaimRequest(_user, 100 ether);
 
     vm.expectRevert(_errNothingToClaim());
-    _optOutClaim(_user);
+    _reclaimClaim(_user);
 
-    vm.warp(block.timestamp + _optOutQueue.redeemPeriod(address(_eolVault)));
+    vm.warp(block.timestamp + _reclaimQueue.redeemPeriod(address(_matrixVault)));
 
-    _optOutReserve(100 ether);
-    _optOutClaim(_user);
+    _reclaimReserve(100 ether);
+    _reclaimClaim(_user);
 
     vm.expectRevert(_errNothingToClaim());
-    _optOutClaim(_user);
+    _reclaimClaim(_user);
   }
 
   function test_onLossReported() public {
-    _optOutRequest(_user, 100 ether);
+    _reclaimRequest(_user, 100 ether);
 
     vm.expectRevert(_errNothingToClaim());
-    _optOutClaim(_user);
+    _reclaimClaim(_user);
 
-    vm.warp(block.timestamp + _optOutQueue.redeemPeriod(address(_eolVault)));
+    vm.warp(block.timestamp + _reclaimQueue.redeemPeriod(address(_matrixVault)));
 
-    _burn(address(_eolVault), 100 ether); // report loss
-    _optOutReserve(90 ether);
+    _burn(address(_matrixVault), 100 ether); // report loss
+    _reclaimReserve(90 ether);
 
     // FIXME: declare share burn amount?
     vm.expectRevert(_errNothingToClaim());
-    _optOutClaim(_user);
+    _reclaimClaim(_user);
   }
 
   function test_onYieldReported() public {
-    _optOutRequest(_user, 100 ether);
+    _reclaimRequest(_user, 100 ether);
 
     vm.expectRevert(_errNothingToClaim());
-    _optOutClaim(_user);
+    _reclaimClaim(_user);
 
-    vm.warp(block.timestamp + _optOutQueue.redeemPeriod(address(_eolVault)));
+    vm.warp(block.timestamp + _reclaimQueue.redeemPeriod(address(_matrixVault)));
 
-    _mint(address(_eolVault), 100 ether); // report yield
-    _optOutReserve(100 ether);
-    _optOutClaim(_user);
+    _mint(address(_matrixVault), 100 ether); // report yield
+    _reclaimReserve(100 ether);
+    _reclaimClaim(_user);
 
     vm.expectRevert(_errNothingToClaim());
-    _optOutClaim(_user);
+    _reclaimClaim(_user);
   }
 
-  function _errQueueNotEnabled(address eolVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IOptOutQueue.IOptOutQueue__QueueNotEnabled.selector, address(eolVault));
+  function _errQueueNotEnabled(address matrixVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IReclaimQueue.IReclaimQueue__QueueNotEnabled.selector, address(matrixVault));
   }
 
   function _errNothingToClaim() internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IOptOutQueue.IOptOutQueue__NothingToClaim.selector);
+    return abi.encodeWithSelector(IReclaimQueue.IReclaimQueue__NothingToClaim.selector);
   }
 
   function _proxy(address impl) internal returns (address) {
@@ -159,31 +159,31 @@ contract OptOutQueueTest is Test {
     _hubAsset.burn(from, amount);
   }
 
-  function _optIn(address account, uint256 assets, bool mint) internal returns (uint256 shares) {
+  function _supply(address account, uint256 assets, bool mint) internal returns (uint256 shares) {
     if (mint) _mint(account, assets);
-    shares = _optInInner(account, assets);
+    shares = _supplyInner(account, assets);
 
     return shares;
   }
 
-  function _optInInner(address account, uint256 assets) internal withAccount(account) returns (uint256 shares) {
-    _hubAsset.approve(address(_eolVault), assets);
-    shares = _eolVault.deposit(assets, account);
+  function _supplyInner(address account, uint256 assets) internal withAccount(account) returns (uint256 shares) {
+    _hubAsset.approve(address(_matrixVault), assets);
+    shares = _matrixVault.deposit(assets, account);
     return shares;
   }
 
-  function _optOutRequest(address account, uint256 shares) internal withAccount(account) returns (uint256 reqId) {
-    _eolVault.approve(address(_optOutQueue), shares);
-    reqId = _optOutQueue.request(shares, account, address(_eolVault));
+  function _reclaimRequest(address account, uint256 shares) internal withAccount(account) returns (uint256 reqId) {
+    _matrixVault.approve(address(_reclaimQueue), shares);
+    reqId = _reclaimQueue.request(shares, account, address(_matrixVault));
     return reqId;
   }
 
-  function _optOutClaim(address account) internal withAccount(account) returns (uint256 totalClaimed) {
-    totalClaimed = _optOutQueue.claim(account, address(_eolVault));
+  function _reclaimClaim(address account) internal withAccount(account) returns (uint256 totalClaimed) {
+    totalClaimed = _reclaimQueue.claim(account, address(_matrixVault));
     return totalClaimed;
   }
 
-  function _optOutReserve(uint256 amount) internal withAccount(address(_assetManager)) {
-    _optOutQueue.sync(address(_eolVault), amount);
+  function _reclaimReserve(uint256 amount) internal withAccount(address(_assetManager)) {
+    _reclaimQueue.sync(address(_matrixVault), amount);
   }
 }

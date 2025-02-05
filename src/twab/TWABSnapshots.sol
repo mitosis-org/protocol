@@ -28,18 +28,12 @@ abstract contract TWABSnapshots is
   using Checkpoints for Checkpoints.Trace208;
   using TWABCheckpoints for TWABCheckpoints.Trace;
 
-  bytes32 private constant DELEGATION_TYPEHASH = keccak256('Delegation(address delegatee,uint256 nonce,uint256 expiry)');
-
   // ================== NOTE: Initializer ================== //
 
-  function __TWABSnapshots_init(address delegationRegistry_) internal {
+  function __TWABSnapshots_init() internal {
     __EIP712_init_unchained('TWABSnapshots', '1');
     __Nonces_init_unchained();
     __Context_init_unchained();
-
-    TWABSnapshotsStorageV1_ storage $ = _getTWABSnapshotsStorageV1();
-
-    $.delegationRegistry = IDelegationRegistry(delegationRegistry_);
   }
 
   // ================== NOTE: Clock implementation ================ //
@@ -54,30 +48,7 @@ abstract contract TWABSnapshots is
     return Time.timestamp();
   }
 
-  // ================== NOTE: View Functions (ERC5805) ================== //
-
-  function delegates(address account) external view returns (address) {
-    TWABSnapshotsStorageV1_ storage $ = _getTWABSnapshotsStorageV1();
-    (address delegates_,) = _delegateeOf($, account);
-    return delegates_;
-  }
-
-  function getVotes(address account) external view returns (uint256) {
-    (uint208 amount,,) = _getTWABSnapshotsStorageV1().delegateCheckpoints[account].latest();
-    return uint256(amount);
-  }
-
-  function getPastVotes(address account, uint256 timepoint) external view returns (uint256) {
-    (uint208 amount,,) = _delegationSnapshot(_getTWABSnapshotsStorageV1(), account, timepoint);
-    return uint256(amount);
-  }
-
-  function getPastTotalSupply(uint256 timepoint) external view virtual returns (uint256) {
-    (uint208 amount,,) = _totalSupplySnapshot(_getTWABSnapshotsStorageV1(), timepoint);
-    return uint256(amount);
-  }
-
-  // ================== NOTE: View Functions (Snapshots / Delegation) ================== //
+  // ================== NOTE: View Functions (Snapshots) ================== //
 
   function delegationRegistry() external view returns (IDelegationRegistry) {
     return _getTWABSnapshotsStorageV1().delegationRegistry;
@@ -146,92 +117,12 @@ abstract contract TWABSnapshots is
     return twabB - twabA;
   }
 
-  // ================== NOTE: Mutative Functions ================== //
-
-  function delegate(address delegatee) external {
-    address account = _msgSender();
-    _delegate(_getTWABSnapshotsStorageV1(), account, delegatee);
-  }
-
-  function delegateBySig(address delegatee, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) external {
-    require(clock() <= expiry, VotesExpiredSignature(expiry));
-
-    address signer =
-      ECDSA.recover(_hashTypedDataV4(keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry))), v, r, s);
-    _useCheckedNonce(signer, nonce);
-    _delegate(_getTWABSnapshotsStorageV1(), signer, delegatee);
-  }
-
-  function delegateByManager(address account, address delegatee) external {
-    TWABSnapshotsStorageV1_ storage $ = _getTWABSnapshotsStorageV1();
-
-    address delegationManager = $.delegationRegistry.delegationManager(account);
-    require(delegationManager == _msgSender(), StdError.Unauthorized());
-
-    _delegate($, account, delegatee);
-  }
-
-  // ================== NOTE: Internal Functions ================== //
-
-  enum DelegateeOfResult {
-    None,
-    DefaultDelegatee,
-    NonDefaultDelegatee
-  }
-
-  function _delegateeOf(TWABSnapshotsStorageV1_ storage $, address account)
-    internal
-    view
-    returns (address delegatee_, DelegateeOfResult result)
-  {
-    delegatee_ = $.delegates[account];
-    if (delegatee_ != address(0)) return (delegatee_, DelegateeOfResult.None);
-
-    address defaultDelegatee = $.delegationRegistry.defaultDelegatee(account);
-    if (defaultDelegatee != address(0)) return (defaultDelegatee, DelegateeOfResult.DefaultDelegatee);
-    else return (account, DelegateeOfResult.NonDefaultDelegatee);
-  }
-
   function _snapshotBalance(TWABSnapshotsStorageV1_ storage $, address from, address to) internal {
     if (from == address(0) || to == address(0)) _push($.totalCheckpoints, _replace, _getTotalSupply().toUint208());
 
     uint48 currentTimestamp = clock();
     if (from != address(0)) $.balanceCheckpoints[from].push(currentTimestamp, _getBalance(from).toUint208());
     if (to != address(0)) $.balanceCheckpoints[to].push(currentTimestamp, _getBalance(to).toUint208());
-  }
-
-  function _delegate(TWABSnapshotsStorageV1_ storage $, address account, address delegatee) internal {
-    require(delegatee != address(0), StdError.InvalidAddress('delegatee'));
-
-    (address oldDelegatee,) = _delegateeOf($, account);
-    $.delegates[account] = delegatee;
-
-    emit DelegateChanged(account, oldDelegatee, delegatee);
-
-    (uint208 balance,,) = _delegationSnapshot($, account, clock());
-    _snapshotDelegateInner($, oldDelegatee, delegatee, balance);
-  }
-
-  function _snapshotDelegate(TWABSnapshotsStorageV1_ storage $, address from, address to, uint256 amount) internal {
-    (address toDelegatee, DelegateeOfResult result) = _delegateeOf($, to);
-    if (result == DelegateeOfResult.DefaultDelegatee) _delegate($, to, toDelegatee);
-    if (result == DelegateeOfResult.NonDefaultDelegatee) $.delegates[to] = toDelegatee;
-
-    _snapshotDelegateInner($, $.delegates[from], toDelegatee, amount);
-  }
-
-  function _snapshotDelegateInner(TWABSnapshotsStorageV1_ storage $, address from, address to, uint256 amount) private {
-    if (from != to && amount > 0) {
-      if (from != address(0)) {
-        (uint256 oldValue, uint256 newValue,,) = _push($.delegateCheckpoints[from], _unsafeSub, amount.toUint208());
-        emit DelegateVotesChanged(from, oldValue, newValue);
-      }
-
-      if (to != address(0)) {
-        (uint256 oldValue, uint256 newValue,,) = _push($.delegateCheckpoints[to], _unsafeAdd, amount.toUint208());
-        emit DelegateVotesChanged(to, oldValue, newValue);
-      }
-    }
   }
 
   function _push(
