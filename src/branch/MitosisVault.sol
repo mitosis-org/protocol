@@ -268,7 +268,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
 
   function setCap(address asset, uint256 newCap) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    require($.assets[asset].initialized, 'hi');
+    _assertAssetInitialized($, asset);
 
     _setCap($, asset, newCap);
   }
