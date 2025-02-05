@@ -4,8 +4,8 @@ pragma solidity ^0.8.27;
 import { IAssetManager } from './core/IAssetManager.sol';
 import { IDelegationRegistry } from './core/IDelegationRegistry.sol';
 import { IRedistributionRegistry } from './core/IRedistributionRegistry.sol';
-import { IReclaimQueue } from './matrix/IReclaimQueue.sol';
 import { IMatrixVault } from './matrix/IMatrixVault.sol';
+import { IReclaimQueue } from './matrix/IReclaimQueue.sol';
 
 /**
  * @title IMitosis

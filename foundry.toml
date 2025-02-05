@@ -24,6 +24,7 @@ remappings = [
     "@ozu-v4=dependencies/@openzeppelin-contracts-upgradeable-v4-4.9.6/contracts",
     "@solady=dependencies/solady-0.0.230/src",
     "@std=dependencies/forge-std-1.9.1/src",
+    "@solmate=dependencies/solmate-6.8.0/src",
     "forge-std-1.9.1/=dependencies/forge-std-1.9.1/",
     "openzeppelin-foundry-upgrades-0.3.1/=dependencies/openzeppelin-foundry-upgrades-0.3.1/",
     "solady-0.0.230/=dependencies/solady-0.0.230/",
@@ -102,6 +103,7 @@ remappings_location = "config"
 solady = "0.0.230"
 forge-std = "1.9.1"
 openzeppelin-foundry-upgrades = "0.3.1"
+solmate = "6.8.0"
 "@openzeppelin-contracts" = "5.0.2"
 "@openzeppelin-contracts-upgradeable" = "5.0.2"
 "@openzeppelin-contracts-v4" = { version = "4.9.6", url = "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/refs/tags/v4.9.6.zip" }
