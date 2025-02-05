@@ -4,9 +4,8 @@ pragma solidity ^0.8.27;
 import { IAssetManager } from './core/IAssetManager.sol';
 import { IDelegationRegistry } from './core/IDelegationRegistry.sol';
 import { IRedistributionRegistry } from './core/IRedistributionRegistry.sol';
-import { IEOLGaugeGovernor } from './eol/governance/IEOLGaugeGovernor.sol';
-import { IEOLProtocolGovernor } from './eol/governance/IEOLProtocolGovernor.sol';
-import { IOptOutQueue } from './eol/IOptOutQueue.sol';
+import { IReclaimQueue } from './matrix/IReclaimQueue.sol';
+import { IMatrixVault } from './matrix/IMatrixVault.sol';
 
 /**
  * @title IMitosis
@@ -16,9 +15,9 @@ interface IMitosis {
   //====================== NOTE: CONTRACTS ======================//
 
   /**
-   * @notice Returns the address of the OptOutQueue contract.
+   * @notice Returns the address of the ReclaimQueue contract.
    */
-  function optOutQueue() external view returns (IOptOutQueue);
+  function reclaimQueue() external view returns (IReclaimQueue);
 
   /**
    * @notice Returns the address of the AssetManager contract.
@@ -29,16 +28,6 @@ interface IMitosis {
    * @notice Returns the address of the DelegationRegistry contract.
    */
   function delegationRegistry() external view returns (IDelegationRegistry);
-
-  /**
-   * @notice Returns the address of the EOLProtocolGovernor contract.
-   */
-  function eolProtocolGovernor() external view returns (IEOLProtocolGovernor);
-
-  /**
-   * @notice Returns the address of the EOLGaugeGovernor contract.
-   */
-  function eolGaugeGovernor() external view returns (IEOLGaugeGovernor);
 
   /**
    * @notice Returns the address of the RedistributionRegistry contract.

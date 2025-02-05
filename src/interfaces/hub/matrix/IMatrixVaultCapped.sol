@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IEOLVault } from './IEOLVault.sol';
+import { IMatrixVault } from './IMatrixVault.sol';
 
-interface IEOLVaultCapped is IEOLVault {
+interface IMatrixVaultCapped is IMatrixVault {
   function loadCap() external view returns (uint256);
 
   function setCap(uint256 cap_) external;

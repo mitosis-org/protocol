@@ -6,21 +6,20 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 
-import { IEOLVault } from '../../../interfaces/hub/eol/vault/IEOLVault.sol';
-import { IERC20TWABSnapshots } from '../../../interfaces/twab/IERC20TWABSnapshots.sol';
-import { StdError } from '../../../lib/StdError.sol';
-import { ERC4626TWABSnapshots } from '../../../twab/ERC4626TWABSnapshots.sol';
-import { EOLVaultStorageV1 } from './EOLVaultStorageV1.sol';
+import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
+import { IERC20TWABSnapshots } from '../../interfaces/twab/IERC20TWABSnapshots.sol';
+import { StdError } from '../../lib/StdError.sol';
+import { ERC4626TWABSnapshots } from '../../twab/ERC4626TWABSnapshots.sol';
+import { MatrixVaultStorageV1 } from './MatrixVaultStorageV1.sol';
 
 /**
- * @title EOLVault
- * @notice Base implementation of an EOLVault
+ * @title MatrixVault
+ * @notice Base implementation of an MatrixVault
  */
-abstract contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
+abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626TWABSnapshots {
   using Math for uint256;
 
-  function __EOLVault_init(
-    address delegationRegistry_,
+  function __MatrixVault_init(
     address assetManager_,
     IERC20TWABSnapshots asset_,
     string memory name,
@@ -32,7 +31,7 @@ abstract contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
     }
 
     __ERC4626_init(asset_);
-    __ERC20TWABSnapshots_init(delegationRegistry_, name, symbol);
+    __ERC20TWABSnapshots_init(name, symbol);
 
     StorageV1 storage $ = _getStorageV1();
 
@@ -64,7 +63,7 @@ abstract contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
   function withdraw(uint256 assets, address receiver, address owner) public override returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertOnlyOptOutQueue($);
+    _assertOnlyReclaimQueue($);
 
     uint256 maxAssets = maxWithdraw(owner);
     require(assets <= maxAssets, ERC4626ExceededMaxWithdraw(owner, assets, maxAssets));
@@ -78,7 +77,7 @@ abstract contract EOLVault is EOLVaultStorageV1, ERC4626TWABSnapshots {
   function redeem(uint256 shares, address receiver, address owner) public override returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertOnlyOptOutQueue($);
+    _assertOnlyReclaimQueue($);
 
     uint256 maxShares = maxRedeem(owner);
     require(shares <= maxShares, ERC4626ExceededMaxRedeem(owner, shares, maxShares));

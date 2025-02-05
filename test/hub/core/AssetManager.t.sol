@@ -11,8 +11,8 @@ import { ERC20 } from '@oz-v5/token/ERC20/ERC20.sol';
 import { AssetManager } from '../../../src/hub/core/AssetManager.sol';
 import { AssetManagerStorageV1 } from '../../../src/hub/core/AssetManagerStorageV1.sol';
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
-import { OptOutQueue } from '../../../src/hub/eol/OptOutQueue.sol';
-import { EOLVaultBasic } from '../../../src/hub/eol/vault/EOLVaultBasic.sol';
+import { ReclaimQueue } from '../../../src/hub/matrix/ReclaimQueue.sol';
+import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
 import { IAssetManager, IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
 import { IERC20TWABSnapshots } from '../../../src/interfaces/twab/IERC20TWABSnapshots.sol';
@@ -23,15 +23,15 @@ import { MockERC20TWABSnapshots } from '../../mock/MockERC20TWABSnapshots.t.sol'
 import { MockRewardHandler } from '../../mock/MockRewardHandler.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
-contract MockOptOutqueue { }
+contract MockReclaimQueue { }
 
 contract AssetManagerTest is Toolkit {
-  OptOutQueue _optOutQueue;
+  ReclaimQueue _reclaimQueue;
   AssetManager _assetManager;
   MockRewardHandler _rewardHandler;
   MockAssetManagerEntrypoint _assetManagerEntrypoint;
   MockDelegationRegistry _delegationRegistry;
-  EOLVaultBasic _eolVault;
+  MatrixVaultBasic _matrixVault;
   HubAsset _token;
   ProxyAdmin internal _proxyAdmin;
 
@@ -49,14 +49,14 @@ contract AssetManagerTest is Toolkit {
   function setUp() public {
     _proxyAdmin = new ProxyAdmin(owner);
 
-    OptOutQueue optOutQueueImpl = new OptOutQueue();
-    _optOutQueue = OptOutQueue(
+    ReclaimQueue reclaimQueueImpl = new ReclaimQueue();
+    _reclaimQueue = ReclaimQueue(
       payable(
         address(
           new TransparentUpgradeableProxy(
-            address(optOutQueueImpl),
+            address(reclaimQueueImpl),
             address(_proxyAdmin),
-            abi.encodeCall(_optOutQueue.initialize, (owner, address(_proxyAdmin)))
+            abi.encodeCall(_reclaimQueue.initialize, (owner, address(_proxyAdmin)))
           )
         )
       )
@@ -73,7 +73,7 @@ contract AssetManagerTest is Toolkit {
       )
     );
     vm.prank(owner);
-    _assetManager.setOptOutQueue(address(_optOutQueue));
+    _assetManager.setReclaimQueue(address(_reclaimQueue));
 
     _rewardHandler = new MockRewardHandler();
     _assetManagerEntrypoint = new MockAssetManagerEntrypoint(_assetManager, address(0));
@@ -94,15 +94,15 @@ contract AssetManagerTest is Toolkit {
       )
     );
 
-    EOLVaultBasic eolVaultImpl = new EOLVaultBasic();
-    _eolVault = EOLVaultBasic(
+    MatrixVaultBasic matrixVaultImpl = new MatrixVaultBasic();
+    _matrixVault = MatrixVaultBasic(
       payable(
         address(
           new TransparentUpgradeableProxy(
-            address(eolVaultImpl),
+            address(matrixVaultImpl),
             address(_proxyAdmin),
             abi.encodeCall(
-              _eolVault.initialize,
+              _matrixVault.initialize,
               (address(_delegationRegistry), address(_assetManager), IERC20TWABSnapshots(address(_token)), '', '')
             )
           )
@@ -111,7 +111,7 @@ contract AssetManagerTest is Toolkit {
     );
 
     vm.startPrank(owner);
-    _optOutQueue.setAssetManager(address(_assetManager));
+    _reclaimQueue.setAssetManager(address(_assetManager));
     _assetManager.setEntrypoint(address(_assetManagerEntrypoint));
     vm.stopPrank();
   }
@@ -143,60 +143,60 @@ contract AssetManagerTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_depositWithOptIn() public {
+  function test_depositWithSupply() public {
     vm.startPrank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
-    _assetManager.initializeEOL(branchChainId, address(_eolVault));
+    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
     vm.stopPrank();
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.depositWithOptIn(branchChainId, branchAsset1, user1, address(_eolVault), 100 ether);
+    _assetManager.depositWithSupply(branchChainId, branchAsset1, user1, address(_matrixVault), 100 ether);
 
     assertEq(_token.balanceOf(user1), 0);
-    assertEq(_eolVault.balanceOf(user1), 100 ether);
+    assertEq(_matrixVault.balanceOf(user1), 100 ether);
   }
 
-  function test_depositWithOptIn_Unauthorized() public {
+  function test_depositWithSupply_Unauthorized() public {
     vm.startPrank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
-    _assetManager.initializeEOL(branchChainId, address(_eolVault));
+    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
     vm.stopPrank();
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.depositWithOptIn(branchChainId, branchAsset1, user1, address(_eolVault), 100 ether);
+    _assetManager.depositWithSupply(branchChainId, branchAsset1, user1, address(_matrixVault), 100 ether);
   }
 
-  function test_depositWithOptIn_BranchAssetPairNotExist() public {
+  function test_depositWithSupply_BranchAssetPairNotExist() public {
     // No occurrence case until methods like unsetAssetPair are added.
   }
 
-  function test_depositWithOptIn_EOLNotInitialized() public {
+  function test_depositWithSupply_MatrixNotInitialized() public {
     vm.startPrank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
-    // _assetManager.initializeEOL(branchChainId, address(_eolVault));
+    // _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
     vm.stopPrank();
 
     vm.startPrank(address(_assetManagerEntrypoint));
 
-    vm.expectRevert(_errEOLNotInitialized(branchChainId, address(_eolVault)));
-    _assetManager.depositWithOptIn(branchChainId, branchAsset1, user1, address(_eolVault), 100 ether);
+    vm.expectRevert(_errMatrixNotInitialized(branchChainId, address(_matrixVault)));
+    _assetManager.depositWithSupply(branchChainId, branchAsset1, user1, address(_matrixVault), 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_depositWithOptIn_InvalidEOLVault() public {
+  function test_depositWithSupply_InvalidMatrixVault() public {
     MockERC20TWABSnapshots myToken = new MockERC20TWABSnapshots();
     myToken.initialize(address(_delegationRegistry), 'Token', 'TKN');
 
-    EOLVaultBasic eolVaultImpl = new EOLVaultBasic();
-    EOLVaultBasic incorrectEOLVault = EOLVaultBasic(
+    MatrixVaultBasic matrixVaultImpl = new MatrixVaultBasic();
+    MatrixVaultBasic incorrectMatrixVault = MatrixVaultBasic(
       payable(
         address(
           new TransparentUpgradeableProxy(
-            address(eolVaultImpl),
+            address(matrixVaultImpl),
             address(_proxyAdmin),
             abi.encodeCall(
-              _eolVault.initialize,
+              _matrixVault.initialize,
               (address(_delegationRegistry), address(_assetManager), IERC20TWABSnapshots(address(myToken)), '', '')
             )
           )
@@ -209,13 +209,13 @@ contract AssetManagerTest is Toolkit {
 
     // add incorrect pair
     _assetManager.setAssetPair(address(myToken), branchChainId, branchAsset2);
-    _assetManager.initializeEOL(branchChainId, address(incorrectEOLVault));
+    _assetManager.initializeMatrix(branchChainId, address(incorrectMatrixVault));
     vm.stopPrank();
 
     vm.startPrank(address(_assetManagerEntrypoint));
 
-    vm.expectRevert(_errInvalidEOLVault(address(incorrectEOLVault), address(_token)));
-    _assetManager.depositWithOptIn(branchChainId, branchAsset1, user1, address(incorrectEOLVault), 100 ether);
+    vm.expectRevert(_errInvalidMatrixVault(address(incorrectMatrixVault), address(_token)));
+    _assetManager.depositWithSupply(branchChainId, branchAsset1, user1, address(incorrectMatrixVault), 100 ether);
 
     vm.stopPrank();
   }
@@ -302,11 +302,11 @@ contract AssetManagerTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_allocateEOL() public {
+  function test_allocateMatrix() public {
     vm.startPrank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
-    _assetManager.initializeEOL(branchChainId, address(_eolVault));
-    _assetManager.setStrategist(address(_eolVault), strategist);
+    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.setStrategist(address(_matrixVault), strategist);
     vm.stopPrank();
 
     vm.prank(address(_assetManager));
@@ -314,25 +314,25 @@ contract AssetManagerTest is Toolkit {
 
     vm.startPrank(user1);
 
-    _token.approve(address(_eolVault), 100 ether);
-    _eolVault.deposit(100 ether, user1);
+    _token.approve(address(_matrixVault), 100 ether);
+    _matrixVault.deposit(100 ether, user1);
 
     vm.stopPrank();
 
-    assertEq(_assetManager.eolIdle(address(_eolVault)), 100 ether);
+    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 100 ether);
 
     vm.prank(strategist);
-    _assetManager.allocateEOL(branchChainId, address(_eolVault), 100 ether);
+    _assetManager.allocateMatrix(branchChainId, address(_matrixVault), 100 ether);
 
-    assertEq(_assetManager.eolAlloc(address(_eolVault)), 100 ether);
-    assertEq(_assetManager.eolIdle(address(_eolVault)), 0);
+    assertEq(_assetManager.matrixAlloc(address(_matrixVault)), 100 ether);
+    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 0);
   }
 
-  function test_allocateEOL_Unauthorized() public {
+  function test_allocateMatrix_Unauthorized() public {
     vm.startPrank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
-    _assetManager.initializeEOL(branchChainId, address(_eolVault));
-    _assetManager.setStrategist(address(_eolVault), strategist);
+    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.setStrategist(address(_matrixVault), strategist);
     vm.stopPrank();
 
     vm.prank(address(_assetManager));
@@ -340,22 +340,22 @@ contract AssetManagerTest is Toolkit {
 
     vm.startPrank(user1);
 
-    _token.approve(address(_eolVault), 100 ether);
-    _eolVault.deposit(100 ether, user1);
+    _token.approve(address(_matrixVault), 100 ether);
+    _matrixVault.deposit(100 ether, user1);
 
     vm.stopPrank();
 
-    assertEq(_assetManager.eolIdle(address(_eolVault)), 100 ether);
+    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.allocateEOL(branchChainId, address(_eolVault), 100 ether);
+    _assetManager.allocateMatrix(branchChainId, address(_matrixVault), 100 ether);
   }
 
-  function test_allocateEOL_EOLNotInitialized() public {
+  function test_allocateMatrix_MatrixNotInitialized() public {
     vm.startPrank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
-    // _assetManager.initializeEOL(branchChainId, address(_eolVault));
-    _assetManager.setStrategist(address(_eolVault), strategist);
+    // _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.setStrategist(address(_matrixVault), strategist);
     vm.stopPrank();
 
     vm.prank(address(_assetManager));
@@ -363,26 +363,26 @@ contract AssetManagerTest is Toolkit {
 
     vm.startPrank(user1);
 
-    _token.approve(address(_eolVault), 100 ether);
-    _eolVault.deposit(100 ether, user1);
+    _token.approve(address(_matrixVault), 100 ether);
+    _matrixVault.deposit(100 ether, user1);
 
     vm.stopPrank();
 
-    assertEq(_assetManager.eolIdle(address(_eolVault)), 100 ether);
+    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 100 ether);
 
     vm.startPrank(strategist);
 
-    vm.expectRevert(_errEOLNotInitialized(branchChainId, address(_eolVault)));
-    _assetManager.allocateEOL(branchChainId, address(_eolVault), 100 ether);
+    vm.expectRevert(_errMatrixNotInitialized(branchChainId, address(_matrixVault)));
+    _assetManager.allocateMatrix(branchChainId, address(_matrixVault), 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_allocateEOL_EOLInsufficient() public {
+  function test_allocateMatrix_MatrixInsufficient() public {
     vm.startPrank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
-    _assetManager.initializeEOL(branchChainId, address(_eolVault));
-    _assetManager.setStrategist(address(_eolVault), strategist);
+    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.setStrategist(address(_matrixVault), strategist);
     vm.stopPrank();
 
     vm.prank(address(_assetManager));
@@ -390,83 +390,83 @@ contract AssetManagerTest is Toolkit {
 
     vm.startPrank(user1);
 
-    _token.approve(address(_eolVault), 100 ether);
-    _eolVault.deposit(100 ether, user1);
+    _token.approve(address(_matrixVault), 100 ether);
+    _matrixVault.deposit(100 ether, user1);
 
     vm.stopPrank();
 
-    assertEq(_assetManager.eolIdle(address(_eolVault)), 100 ether);
+    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 100 ether);
 
     vm.startPrank(strategist);
 
-    vm.expectRevert(_errEOLInsufficient(address(_eolVault)));
-    _assetManager.allocateEOL(branchChainId, address(_eolVault), 101 ether);
+    vm.expectRevert(_errMatrixInsufficient(address(_matrixVault)));
+    _assetManager.allocateMatrix(branchChainId, address(_matrixVault), 101 ether);
 
     vm.stopPrank();
   }
 
-  function test_deallocateEOL() public {
-    test_allocateEOL();
-    assertEq(_assetManager.eolIdle(address(_eolVault)), 0);
-    assertEq(_assetManager.eolAlloc(address(_eolVault)), 100 ether);
+  function test_deallocateMatrix() public {
+    test_allocateMatrix();
+    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 0);
+    assertEq(_assetManager.matrixAlloc(address(_matrixVault)), 100 ether);
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.deallocateEOL(branchChainId, address(_eolVault), 100 ether);
+    _assetManager.deallocateMatrix(branchChainId, address(_matrixVault), 100 ether);
 
-    assertEq(_assetManager.eolIdle(address(_eolVault)), 100 ether);
-    assertEq(_assetManager.eolAlloc(address(_eolVault)), 0);
+    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 100 ether);
+    assertEq(_assetManager.matrixAlloc(address(_matrixVault)), 0);
   }
 
-  function test_deallocateEOL_Unauthorized() public {
-    test_allocateEOL();
-    assertEq(_assetManager.eolIdle(address(_eolVault)), 0);
-    assertEq(_assetManager.eolAlloc(address(_eolVault)), 100 ether);
+  function test_deallocateMatrix_Unauthorized() public {
+    test_allocateMatrix();
+    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 0);
+    assertEq(_assetManager.matrixAlloc(address(_matrixVault)), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.deallocateEOL(branchChainId, address(_eolVault), 100 ether);
+    _assetManager.deallocateMatrix(branchChainId, address(_matrixVault), 100 ether);
   }
 
-  function test_reserveEOL() public {
-    test_deallocateEOL();
-    assertEq(_assetManager.eolIdle(address(_eolVault)), 100 ether);
+  function test_reserveMatrix() public {
+    test_deallocateMatrix();
+    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 100 ether);
 
     vm.prank(owner);
-    _optOutQueue.enable(address(_eolVault));
+    _reclaimQueue.enable(address(_matrixVault));
 
     vm.prank(user1); // Resolve
-    _eolVault.transfer(address(_optOutQueue), 10 ether);
+    _matrixVault.transfer(address(_reclaimQueue), 10 ether);
 
     vm.prank(strategist);
-    _assetManager.reserveEOL(address(_eolVault), 10 ether);
+    _assetManager.reserveMatrix(address(_matrixVault), 10 ether);
 
-    assertEq(_eolVault.balanceOf(address(_optOutQueue)), 0);
-    assertEq(_assetManager.eolIdle(address(_eolVault)), 90 ether);
+    assertEq(_matrixVault.balanceOf(address(_reclaimQueue)), 0);
+    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 90 ether);
   }
 
-  function test_reserveEOL_Unauthorized() public {
-    test_deallocateEOL();
-    assertEq(_assetManager.eolIdle(address(_eolVault)), 100 ether);
+  function test_reserveMatrix_Unauthorized() public {
+    test_deallocateMatrix();
+    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 100 ether);
 
     vm.prank(owner);
-    _optOutQueue.enable(address(_eolVault));
+    _reclaimQueue.enable(address(_matrixVault));
 
     vm.prank(user1); // Resolve
-    _eolVault.transfer(address(_optOutQueue), 10 ether);
+    _matrixVault.transfer(address(_reclaimQueue), 10 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.reserveEOL(address(_eolVault), 10 ether);
+    _assetManager.reserveMatrix(address(_matrixVault), 10 ether);
   }
 
   function test_settleYield() public {
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.settleYield(branchChainId, address(_eolVault), 100 ether);
+    _assetManager.settleYield(branchChainId, address(_matrixVault), 100 ether);
 
     assertEq(_token.balanceOf(address(_assetManager)), 0);
   }
 
   function test_settleYield_Unauthorized() public {
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.settleYield(branchChainId, address(_eolVault), 100 ether);
+    _assetManager.settleYield(branchChainId, address(_matrixVault), 100 ether);
   }
 
   function test_settleLoss() public {
@@ -474,25 +474,25 @@ contract AssetManagerTest is Toolkit {
     assertEq(_token.balanceOf(user1), 100 ether);
 
     vm.startPrank(user1);
-    _token.approve(address(_eolVault), 100 ether);
-    _eolVault.deposit(100 ether, user1);
+    _token.approve(address(_matrixVault), 100 ether);
+    _matrixVault.deposit(100 ether, user1);
     vm.stopPrank();
 
     vm.startPrank(owner);
-    _assetManager.setStrategist(address(_eolVault), strategist);
-    _assetManager.initializeEOL(branchChainId, address(_eolVault));
+    _assetManager.setStrategist(address(_matrixVault), strategist);
+    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
     vm.stopPrank();
 
     vm.prank(strategist);
-    _assetManager.allocateEOL(branchChainId, address(_eolVault), 100 ether);
+    _assetManager.allocateMatrix(branchChainId, address(_matrixVault), 100 ether);
 
     assertEq(_token.balanceOf(user1), 0);
-    assertEq(_token.balanceOf(address(_eolVault)), 100 ether);
+    assertEq(_token.balanceOf(address(_matrixVault)), 100 ether);
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.settleLoss(branchChainId, address(_eolVault), 10 ether);
+    _assetManager.settleLoss(branchChainId, address(_matrixVault), 10 ether);
 
-    assertEq(_token.balanceOf(address(_eolVault)), 100 ether - 10 ether);
+    assertEq(_token.balanceOf(address(_matrixVault)), 100 ether - 10 ether);
   }
 
   function test_settleLoss_Unauthorized() public {
@@ -500,15 +500,15 @@ contract AssetManagerTest is Toolkit {
     assertEq(_token.balanceOf(user1), 100 ether);
 
     vm.startPrank(user1);
-    _token.approve(address(_eolVault), 100 ether);
-    _eolVault.deposit(100 ether, user1);
+    _token.approve(address(_matrixVault), 100 ether);
+    _matrixVault.deposit(100 ether, user1);
     vm.stopPrank();
 
     assertEq(_token.balanceOf(user1), 0);
-    assertEq(_token.balanceOf(address(_eolVault)), 100 ether);
+    assertEq(_token.balanceOf(address(_matrixVault)), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.settleLoss(branchChainId, address(_eolVault), 10 ether);
+    _assetManager.settleLoss(branchChainId, address(_matrixVault), 10 ether);
   }
 
   function test_settleExtraRewards() public {
@@ -523,7 +523,7 @@ contract AssetManagerTest is Toolkit {
     assertEq(rewardToken.totalSupply(), 0);
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.settleExtraRewards(branchChainId, address(_eolVault), branchRewardTokenAddress, 100 ether);
+    _assetManager.settleExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
 
     assertEq(rewardToken.totalSupply(), 100 ether);
   }
@@ -538,7 +538,7 @@ contract AssetManagerTest is Toolkit {
     vm.stopPrank();
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.settleExtraRewards(branchChainId, address(_eolVault), branchRewardTokenAddress, 100 ether);
+    _assetManager.settleExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
   }
 
   function test_settleExtraRewards_BranchAssetPairNotExist() public {
@@ -550,24 +550,24 @@ contract AssetManagerTest is Toolkit {
     vm.startPrank(address(_assetManagerEntrypoint));
 
     vm.expectRevert(_errBranchAssetPairNotExist(branchRewardTokenAddress));
-    _assetManager.settleExtraRewards(branchChainId, address(_eolVault), branchRewardTokenAddress, 100 ether);
+    _assetManager.settleExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_settleExtraRewards_EOLRewardRouterNotSet() public {
+  function test_settleExtraRewards_MatrixRewardRouterNotSet() public {
     MockERC20TWABSnapshots rewardToken = new MockERC20TWABSnapshots();
     rewardToken.initialize(address(_delegationRegistry), 'Reward', '$REWARD');
 
     vm.startPrank(owner);
-    // _assetManager.setRewardHandler(address(_eolRewardManager));
+    // _assetManager.setRewardHandler(address(_matrixRewardManager));
     _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
     vm.stopPrank();
 
     vm.startPrank(address(_assetManagerEntrypoint));
 
-    vm.expectRevert(_errEOLRewardHandlerNotSet());
-    _assetManager.settleExtraRewards(branchChainId, address(_eolVault), branchRewardTokenAddress, 100 ether);
+    vm.expectRevert(_errMatrixRewardHandlerNotSet());
+    _assetManager.settleExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
 
     vm.stopPrank();
   }
@@ -608,53 +608,53 @@ contract AssetManagerTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_initializeEOL() public {
+  function test_initializeMatrix() public {
     vm.prank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
 
     vm.prank(owner);
-    _assetManager.initializeEOL(branchChainId, address(_eolVault));
+    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
 
-    assertTrue(_assetManager.eolInitialized(branchChainId, address(_eolVault)));
+    assertTrue(_assetManager.matrixInitialized(branchChainId, address(_matrixVault)));
   }
 
-  function test_initializeEOL_Unauthorized() public {
+  function test_initializeMatrix_Unauthorized() public {
     vm.prank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
 
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
-    _assetManager.initializeEOL(branchChainId, address(_eolVault));
+    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
   }
 
-  function test_initializeEOL_InvalidParameter() public {
+  function test_initializeMatrix_InvalidParameter() public {
     vm.prank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
 
     vm.startPrank(owner);
 
-    vm.expectRevert(_errInvalidParameter('eolVault'));
-    _assetManager.initializeEOL(branchChainId, address(0));
+    vm.expectRevert(_errInvalidParameter('matrixVault'));
+    _assetManager.initializeMatrix(branchChainId, address(0));
 
     vm.stopPrank();
   }
 
-  function test_initializeEOL_BranchAssetPairNotExist() public {
+  function test_initializeMatrix_BranchAssetPairNotExist() public {
     vm.startPrank(owner);
 
     vm.expectRevert(_errBranchAssetPairNotExist(address(0)));
-    _assetManager.initializeEOL(branchChainId, address(_eolVault));
+    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
 
     vm.stopPrank();
   }
 
-  function test_initializeEOL_EOLAlreadyInitialized() public {
-    test_initializeEOL();
-    assertTrue(_assetManager.eolInitialized(branchChainId, address(_eolVault)));
+  function test_initializeMatrix_MatrixAlreadyInitialized() public {
+    test_initializeMatrix();
+    assertTrue(_assetManager.matrixInitialized(branchChainId, address(_matrixVault)));
 
     vm.startPrank(owner);
 
-    vm.expectRevert(_errEOLAlreadyInitialized(branchChainId, address(_eolVault)));
-    _assetManager.initializeEOL(branchChainId, address(_eolVault));
+    vm.expectRevert(_errMatrixAlreadyInitialized(branchChainId, address(_matrixVault)));
+    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
 
     vm.stopPrank();
   }
@@ -709,50 +709,50 @@ contract AssetManagerTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_setOptOutQueue() public {
-    OptOutQueue optOutQueueImpl = new OptOutQueue();
-    OptOutQueue newOptOutQueue = OptOutQueue(
+  function test_setReclaimQueue() public {
+    ReclaimQueue reclaimQueueImpl = new ReclaimQueue();
+    ReclaimQueue newReclaimQueue = ReclaimQueue(
       payable(
         address(
           new TransparentUpgradeableProxy(
-            address(optOutQueueImpl),
+            address(reclaimQueueImpl),
             address(_proxyAdmin),
-            abi.encodeCall(OptOutQueue.initialize, (owner, address(_assetManager)))
+            abi.encodeCall(ReclaimQueue.initialize, (owner, address(_assetManager)))
           )
         )
       )
     );
 
-    assertEq(_assetManager.optOutQueue(), address(_optOutQueue));
+    assertEq(_assetManager.reclaimQueue(), address(_reclaimQueue));
 
     vm.prank(owner);
-    _assetManager.setOptOutQueue(address(newOptOutQueue));
-    assertEq(_assetManager.optOutQueue(), address(newOptOutQueue));
+    _assetManager.setReclaimQueue(address(newReclaimQueue));
+    assertEq(_assetManager.reclaimQueue(), address(newReclaimQueue));
   }
 
-  function test_setOptOutQueue_Unauthorized() public {
-    OptOutQueue optOutQueueImpl = new OptOutQueue();
-    OptOutQueue newOptOutQueue = OptOutQueue(
+  function test_setReclaimQueue_Unauthorized() public {
+    ReclaimQueue reclaimQueueImpl = new ReclaimQueue();
+    ReclaimQueue newReclaimQueue = ReclaimQueue(
       payable(
         address(
           new TransparentUpgradeableProxy(
-            address(optOutQueueImpl),
+            address(reclaimQueueImpl),
             address(_proxyAdmin),
-            abi.encodeCall(OptOutQueue.initialize, (owner, address(_assetManager)))
+            abi.encodeCall(ReclaimQueue.initialize, (owner, address(_assetManager)))
           )
         )
       )
     );
 
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
-    _assetManager.setOptOutQueue(address(newOptOutQueue));
+    _assetManager.setReclaimQueue(address(newReclaimQueue));
   }
 
-  function test_setOptOutQueue_InvalidParameter() public {
+  function test_setReclaimQueue_InvalidParameter() public {
     vm.startPrank(owner);
 
-    vm.expectRevert(_errInvalidParameter('OptOutQueue'));
-    _assetManager.setOptOutQueue(address(0));
+    vm.expectRevert(_errInvalidParameter('ReclaimQueue'));
+    _assetManager.setReclaimQueue(address(0));
 
     vm.stopPrank();
   }
@@ -765,12 +765,12 @@ contract AssetManagerTest is Toolkit {
 
     assertEq(_assetManager.rewardHandler(), address(_rewardHandler));
 
-    MockRewardHandler newEOLRewardRouter = new MockRewardHandler();
+    MockRewardHandler newMatrixRewardRouter = new MockRewardHandler();
 
     vm.prank(owner);
-    _assetManager.setRewardHandler(address(newEOLRewardRouter));
+    _assetManager.setRewardHandler(address(newMatrixRewardRouter));
 
-    assertEq(_assetManager.rewardHandler(), address(newEOLRewardRouter));
+    assertEq(_assetManager.rewardHandler(), address(newMatrixRewardRouter));
   }
 
   function test_setRewardHandler_Unauthorized() public {
@@ -788,30 +788,30 @@ contract AssetManagerTest is Toolkit {
   }
 
   function test_setStrategist() public {
-    assertEq(_assetManager.strategist(address(_eolVault)), address(0));
+    assertEq(_assetManager.strategist(address(_matrixVault)), address(0));
 
     vm.prank(owner);
-    _assetManager.setStrategist(address(_eolVault), strategist);
+    _assetManager.setStrategist(address(_matrixVault), strategist);
 
-    assertEq(_assetManager.strategist(address(_eolVault)), strategist);
+    assertEq(_assetManager.strategist(address(_matrixVault)), strategist);
 
     address newStrategist = makeAddr('newStrategist');
 
     vm.prank(owner);
-    _assetManager.setStrategist(address(_eolVault), newStrategist);
+    _assetManager.setStrategist(address(_matrixVault), newStrategist);
 
-    assertEq(_assetManager.strategist(address(_eolVault)), newStrategist);
+    assertEq(_assetManager.strategist(address(_matrixVault)), newStrategist);
   }
 
   function test_setStrategist_Unauthorized() public {
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
-    _assetManager.setStrategist(address(_eolVault), strategist);
+    _assetManager.setStrategist(address(_matrixVault), strategist);
   }
 
   function test_setStrategist_InvalidParameter() public {
     vm.startPrank(owner);
 
-    vm.expectRevert(_errInvalidParameter('EOLVault'));
+    vm.expectRevert(_errInvalidParameter('MatrixVault'));
     _assetManager.setStrategist(address(0), strategist);
 
     vm.stopPrank();
@@ -823,15 +823,15 @@ contract AssetManagerTest is Toolkit {
     );
   }
 
-  function _errEOLNotInitialized(uint256 chainId, address eolVault) internal pure returns (bytes memory) {
+  function _errMatrixNotInitialized(uint256 chainId, address matrixVault) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
-      IAssetManagerStorageV1.IAssetManagerStorageV1__EOLNotInitialized.selector, chainId, eolVault
+      IAssetManagerStorageV1.IAssetManagerStorageV1__MatrixNotInitialized.selector, chainId, matrixVault
     );
   }
 
-  function _errEOLAlreadyInitialized(uint256 chainId, address eolVault) internal pure returns (bytes memory) {
+  function _errMatrixAlreadyInitialized(uint256 chainId, address matrixVault) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
-      IAssetManagerStorageV1.IAssetManagerStorageV1__EOLAlreadyInitialized.selector, chainId, eolVault
+      IAssetManagerStorageV1.IAssetManagerStorageV1__MatrixAlreadyInitialized.selector, chainId, matrixVault
     );
   }
 
@@ -845,15 +845,15 @@ contract AssetManagerTest is Toolkit {
     );
   }
 
-  function _errInvalidEOLVault(address eolVault, address hubAsset) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IAssetManager.IAssetManager__InvalidEOLVault.selector, eolVault, hubAsset);
+  function _errInvalidMatrixVault(address matrixVault, address hubAsset) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAssetManager.IAssetManager__InvalidMatrixVault.selector, matrixVault, hubAsset);
   }
 
-  function _errEOLInsufficient(address eolVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IAssetManager.IAssetManager__EOLInsufficient.selector, eolVault);
+  function _errMatrixInsufficient(address matrixVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAssetManager.IAssetManager__MatrixInsufficient.selector, matrixVault);
   }
 
-  function _errEOLRewardHandlerNotSet() internal pure returns (bytes memory) {
+  function _errMatrixRewardHandlerNotSet() internal pure returns (bytes memory) {
     return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__RewardHandlerNotSet.selector);
   }
 }
