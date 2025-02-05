@@ -20,7 +20,6 @@ import { IERC20Snapshots } from '../../../src/interfaces/twab/IERC20Snapshots.so
 import { StdError } from '../../../src/lib/StdError.sol';
 import { MockAssetManagerEntrypoint } from '../../mock/MockAssetManagerEntrypoint.t.sol';
 import { MockERC20Snapshots } from '../../mock/MockERC20Snapshots.t.sol';
-
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract MockReclaimQueue { }

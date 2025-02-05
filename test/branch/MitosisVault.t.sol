@@ -13,8 +13,8 @@ import { MitosisVault, AssetAction, MatrixAction } from '../../src/branch/Mitosi
 import { IMitosisVault, IMatrixMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { StdError } from '../../src/lib/StdError.sol';
-import { MockMatrixStrategyExecutor } from '../mock/MockMatrixStrategyExecutor.t.sol';
 import { MockERC20Snapshots } from '../mock/MockERC20Snapshots.t.sol';
+import { MockMatrixStrategyExecutor } from '../mock/MockMatrixStrategyExecutor.t.sol';
 import { MockMitosisVaultEntrypoint } from '../mock/MockMitosisVaultEntrypoint.t.sol';
 import { Toolkit } from '../util/Toolkit.sol';
 
