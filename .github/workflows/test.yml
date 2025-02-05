@@ -19,7 +19,11 @@ jobs:
 
     name: test
     runs-on: arc-runner-set
-    container: node:20
+    container:
+      image: asia-northeast3-docker.pkg.dev/manythings-mitosis/docker-images/arc-runner-alpine
+      credentials:
+        username: _json_key
+        password: ${{ secrets.GOOGLE_CREDENTIAL }}
 
     env:
       ARBITRUM_MAINNET_RPC: ${{ secrets.ARBITRUM_MAINNET_RPC }}
