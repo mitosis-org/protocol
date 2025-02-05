@@ -61,6 +61,17 @@ contract AssetManagerTest is Toolkit {
       )
     );
 
+    Treasury treasuryImpl = new Treasury();
+    _treasury = Treasury(
+      payable(
+        address(
+          new TransparentUpgradeableProxy(
+            address(treasuryImpl), address(_proxyAdmin), abi.encodeCall(_treasury.initialize, (owner))
+          )
+        )
+      )
+    );
+
     AssetManager assetManagerImpl = new AssetManager();
     _assetManager = AssetManager(
       payable(
@@ -73,19 +84,12 @@ contract AssetManagerTest is Toolkit {
         )
       )
     );
-    vm.prank(owner);
-    _assetManager.setReclaimQueue(address(_reclaimQueue));
 
-    Treasury treasuryImpl = new Treasury();
-    _treasury = Treasury(
-      payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(treasuryImpl), address(_proxyAdmin), abi.encodeCall(_treasury.initialize, (owner))
-          )
-        )
-      )
-    );
+    vm.startPrank(owner);
+    _treasury.grantRole(_treasury.TREASURY_MANAGER_ROLE(), address(_assetManager));
+    _assetManager.setReclaimQueue(address(_reclaimQueue));
+    vm.stopPrank();
+
     _assetManagerEntrypoint = new MockAssetManagerEntrypoint(_assetManager, address(0));
 
     HubAsset tokenImpl = new HubAsset();
@@ -556,23 +560,6 @@ contract AssetManagerTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_settleMatrixExtraRewards_TreasuryNotSet() public {
-    MockERC20Snapshots rewardToken = new MockERC20Snapshots();
-    rewardToken.initialize('Reward', '$REWARD');
-
-    vm.startPrank(owner);
-    // _assetManager.setTreasury(address(_treasury));
-    _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
-    vm.stopPrank();
-
-    vm.startPrank(address(_assetManagerEntrypoint));
-
-    vm.expectRevert(_errTreasuryNotSet());
-    _assetManager.settleMatrixExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
-
-    vm.stopPrank();
-  }
-
   function test_initializeAsset() public {
     vm.prank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
@@ -759,11 +746,6 @@ contract AssetManagerTest is Toolkit {
   }
 
   function test_setTreasury() public {
-    assertEq(_assetManager.treasury(), address(0));
-
-    vm.prank(owner);
-    _assetManager.setTreasury(address(_treasury));
-
     assertEq(_assetManager.treasury(), address(_treasury));
 
     Treasury newTreasury = new Treasury();
@@ -782,7 +764,7 @@ contract AssetManagerTest is Toolkit {
   function test_setTreasury_InvalidParameter() public {
     vm.startPrank(owner);
 
-    vm.expectRevert(_errInvalidParameter('treasury'));
+    vm.expectRevert(_errInvalidParameter('Treasury'));
     _assetManager.setTreasury(address(0));
 
     vm.stopPrank();

@@ -93,6 +93,9 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.initializeAsset(address(_token));
 
     vm.prank(owner);
+    _mitosisVault.setCap(address(_token), type(uint128).max); // set cap to infinite (temp)
+
+    vm.prank(owner);
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
 
     vm.startPrank(user1);
@@ -185,6 +188,9 @@ contract MitosisVaultTest is Toolkit {
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(_token));
 
+    vm.prank(owner);
+    _mitosisVault.setCap(address(_token), type(uint128).max); // set cap to infinite (temp)
+
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
 
@@ -244,6 +250,9 @@ contract MitosisVaultTest is Toolkit {
 
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(_token));
+
+    vm.prank(owner);
+    _mitosisVault.setCap(address(_token), type(uint128).max); // set cap to infinite (temp)
 
     // vm.prank(address(_mitosisVaultEntrypoint));
     // _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
