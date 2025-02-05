@@ -42,7 +42,7 @@ interface IMatrixMitosisVault {
 
   //=========== NOTE: Asset ===========//
 
-  function depositWithMatrixSupply(address asset, address to, address hubMatrixVault, uint256 amount) external;
+  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount) external;
 
   //=========== NOTE: Matrix ===========//
 

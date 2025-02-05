@@ -96,14 +96,14 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     emit Deposited(asset, to, amount);
   }
 
-  function depositWithMatrixSupply(address asset, address to, address hubMatrixVault, uint256 amount) external {
+  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
     _deposit($, asset, to, amount);
 
     _assertMatrixInitialized($, hubMatrixVault);
     require(asset == $.matrices[hubMatrixVault].asset, IMitosisVault__InvalidMatrixVault(hubMatrixVault, asset));
 
-    $.entrypoint.depositWithMatrixSupply(asset, to, hubMatrixVault, amount);
+    $.entrypoint.depositWithSupplyMatrix(asset, to, hubMatrixVault, amount);
     emit MatrixDepositedWithSupply(asset, to, hubMatrixVault, amount);
   }
 

@@ -66,7 +66,7 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, G
     _dispatchToMitosis(enc);
   }
 
-  function depositWithMatrixSupply(address asset, address to, address hubMatrixVault, uint256 amount)
+  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount)
     external
     onlyVault
   {
