@@ -12,6 +12,8 @@ enum EOLAction {
 interface IMitosisVault {
   //=========== NOTE: EVENT DEFINITIONS ===========//
 
+  event CapSet(address indexed setter, address indexed asset, uint256 prevCap, uint256 newCap);
+
   event AssetInitialized(address asset);
 
   event Deposited(address indexed asset, address indexed to, uint256 amount);
@@ -39,6 +41,8 @@ interface IMitosisVault {
   event EOLResumed(address indexed hubEOLVault, EOLAction action);
 
   //=========== NOTE: ERROR DEFINITIONS ===========//
+
+  error IMitosisVault__ExceededCap(address asset, uint256 increasedSupply, uint256 cap);
 
   error IMitosisVault__AssetNotInitialized(address asset);
   error IMitosisVault__AssetAlreadyInitialized(address asset);

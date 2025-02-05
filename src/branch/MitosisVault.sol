@@ -42,6 +42,10 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
 
+  function cap(address asset) external view returns (uint256) {
+    return _getStorageV1().assets[asset].cap;
+  }
+
   function isAssetActionHalted(address asset, AssetAction action) external view returns (bool) {
     return _isHalted(_getStorageV1(), asset, action);
   }
@@ -262,6 +266,13 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     emit EOLStrategyExecutorSet(hubEOLVault, eolStrategyExecutor_);
   }
 
+  function setCap(address asset, uint256 newCap) external onlyOwner {
+    StorageV1 storage $ = _getStorageV1();
+    require($.assets[asset].initialized, 'hi');
+
+    _setCap($, asset, newCap);
+  }
+
   function haltAsset(address asset, AssetAction action) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
     _assertAssetInitialized($, asset);
@@ -344,6 +355,13 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     return $.eols[hubEOLVault].initialized;
   }
 
+  function _setCap(StorageV1 storage $, address asset, uint256 newCap) internal {
+    AssetInfo storage assetInfo = $.assets[asset];
+    uint256 prevCap = assetInfo.cap;
+    assetInfo.cap = newCap;
+    emit CapSet(_msgSender(), asset, prevCap, newCap);
+  }
+
   function _haltAsset(StorageV1 storage $, address asset, AssetAction action) internal {
     $.assets[asset].isHalted[action] = true;
     emit AssetHalted(asset, action);
@@ -365,10 +383,15 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
   }
 
   function _deposit(StorageV1 storage $, address asset, address to, uint256 amount) internal {
-    _assertAssetInitialized($, asset);
-    _assertNotHalted($, asset, AssetAction.Deposit);
     require(to != address(0), StdError.ZeroAddress('to'));
     require(amount != 0, StdError.ZeroAmount());
+
+    _assertAssetInitialized($, asset);
+    _assertNotHalted($, asset, AssetAction.Deposit);
+
+    AssetInfo storage assetInfo = $.assets[asset];
+    require(assetInfo.cap >= amount, IMitosisVault__ExceededCap(asset, amount, $.cap));
+    assetInfo.cap -= amount;
 
     IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
   }

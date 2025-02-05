@@ -10,6 +10,7 @@ abstract contract MitosisVaultStorageV1 {
 
   struct AssetInfo {
     bool initialized;
+    uint256 cap;
     mapping(AssetAction => bool) isHalted;
   }
 
