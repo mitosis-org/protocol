@@ -40,9 +40,13 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     emit Deposited(chainId, hubAsset, to, amount);
   }
 
-  function depositWithSupply(uint256 chainId, address branchAsset, address to, address matrixVault, uint256 amount)
-    external
-  {
+  function depositWithSupplyMatrix(
+    uint256 chainId,
+    address branchAsset,
+    address to,
+    address matrixVault,
+    uint256 amount
+  ) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -65,7 +69,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
       IHubAsset(hubAsset).transfer(to, amount - supplyAmount);
     }
 
-    emit DepositedWithSupply(chainId, hubAsset, to, matrixVault, amount, supplyAmount);
+    emit DepositedWithSupplyMatrix(chainId, hubAsset, to, matrixVault, amount, supplyAmount);
   }
 
   function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external {
@@ -129,7 +133,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
   }
 
   /// @dev only entrypoint
-  function settleYield(uint256 chainId, address matrixVault, uint256 amount) external {
+  function settleMatrixYield(uint256 chainId, address matrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -139,11 +143,11 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _mint($, chainId, asset, address(matrixVault), amount);
     $.matrixStates[matrixVault].allocation += amount;
 
-    emit RewardSettled(chainId, matrixVault, asset, amount);
+    emit MatrixRewardSettled(chainId, matrixVault, asset, amount);
   }
 
   /// @dev only entrypoint
-  function settleLoss(uint256 chainId, address matrixVault, uint256 amount) external {
+  function settleMatrixLoss(uint256 chainId, address matrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -153,11 +157,13 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _burn($, chainId, asset, matrixVault, amount);
     $.matrixStates[matrixVault].allocation -= amount;
 
-    emit LossSettled(chainId, matrixVault, asset, amount);
+    emit MatrixLossSettled(chainId, matrixVault, asset, amount);
   }
 
   /// @dev only entrypoint
-  function settleExtraRewards(uint256 chainId, address matrixVault, address branchReward, uint256 amount) external {
+  function settleMatrixExtraRewards(uint256 chainId, address matrixVault, address branchReward, uint256 amount)
+    external
+  {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -166,7 +172,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
 
     address hubReward = $.hubAssets[chainId][branchReward];
     _mint($, chainId, hubReward, address(this), amount);
-    emit RewardSettled(chainId, matrixVault, hubReward, amount);
+    emit MatrixRewardSettled(chainId, matrixVault, hubReward, amount);
 
     IHubAsset(hubReward).approve(address($.rewardHandler), amount);
     $.rewardHandler.handleReward(matrixVault, hubReward, amount, bytes(''));

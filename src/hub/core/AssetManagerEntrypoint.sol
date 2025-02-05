@@ -164,9 +164,9 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, G
       return;
     }
 
-    if (msgType == MsgType.MsgDepositWithSupply) {
-      MsgDepositWithSupply memory decoded = msg_.decodeDepositWithSupply();
-      _assetManager.depositWithSupply(
+    if (msgType == MsgType.MsgDepositWithSupplyMatrix) {
+      MsgDepositWithSupplyMatrix memory decoded = msg_.decodeDepositWithSupplyMatrix();
+      _assetManager.depositWithSupplyMatrix(
         chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.matrixVault.toAddress(), decoded.amount
       );
       return;
@@ -178,21 +178,21 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, G
       return;
     }
 
-    if (msgType == MsgType.MsgSettleYield) {
-      MsgSettleYield memory decoded = msg_.decodeSettleYield();
-      _assetManager.settleYield(chainId, decoded.matrixVault.toAddress(), decoded.amount);
+    if (msgType == MsgType.MsgSettleMatrixYield) {
+      MsgSettleMatrixYield memory decoded = msg_.decodeSettleMatrixYield();
+      _assetManager.settleMatrixYield(chainId, decoded.matrixVault.toAddress(), decoded.amount);
       return;
     }
 
-    if (msgType == MsgType.MsgSettleLoss) {
-      MsgSettleLoss memory decoded = msg_.decodeSettleLoss();
-      _assetManager.settleLoss(chainId, decoded.matrixVault.toAddress(), decoded.amount);
+    if (msgType == MsgType.MsgSettleMatrixLoss) {
+      MsgSettleMatrixLoss memory decoded = msg_.decodeSettleMatrixLoss();
+      _assetManager.settleMatrixLoss(chainId, decoded.matrixVault.toAddress(), decoded.amount);
       return;
     }
 
-    if (msgType == MsgType.MsgSettleExtraRewards) {
-      MsgSettleExtraRewards memory decoded = msg_.decodeSettleExtraRewards();
-      _assetManager.settleExtraRewards(
+    if (msgType == MsgType.MsgSettleMatrixExtraRewards) {
+      MsgSettleMatrixExtraRewards memory decoded = msg_.decodeSettleMatrixExtraRewards();
+      _assetManager.settleMatrixExtraRewards(
         chainId, decoded.matrixVault.toAddress(), decoded.reward.toAddress(), decoded.amount
       );
       return;

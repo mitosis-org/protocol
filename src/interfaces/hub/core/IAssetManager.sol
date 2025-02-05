@@ -138,7 +138,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event Deposited(uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount);
 
   /**
-   * @notice Emitted when a deposit is made with supply
+   * @notice Emitted when a deposit is made with supply to a MatrixVault
    * @param chainId The ID of the chain where the deposit is made
    * @param hubAsset The address of the asset that correspond to the branch asset
    * @param to The address receiving the miAsset
@@ -146,7 +146,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param amount The amount deposited
    * @param supplyAmount The amount supplied into the MatrixVault
    */
-  event DepositedWithSupply(
+  event DepositedWithSupplyMatrix(
     uint256 indexed chainId,
     address indexed hubAsset,
     address indexed to,
@@ -171,7 +171,9 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param asset The address of the reward asset
    * @param amount The amount of the reward
    */
-  event RewardSettled(uint256 indexed chainId, address indexed matrixVault, address indexed asset, uint256 amount);
+  event MatrixRewardSettled(
+    uint256 indexed chainId, address indexed matrixVault, address indexed asset, uint256 amount
+  );
 
   /**
    * @notice Emitted when a loss is settled from the branch chain to the hub chain for a specific MatrixVault
@@ -180,7 +182,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param asset The address of the asset lost
    * @param amount The amount of the loss
    */
-  event LossSettled(uint256 indexed chainId, address indexed matrixVault, address indexed asset, uint256 amount);
+  event MatrixLossSettled(uint256 indexed chainId, address indexed matrixVault, address indexed asset, uint256 amount);
 
   /**
    * @notice Emitted when assets are allocated to the branch chain for a specific MatrixVault
@@ -247,8 +249,13 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param matrixVault The address of the MatrixVault to supply into
    * @param amount The amount to deposit
    */
-  function depositWithSupply(uint256 chainId, address branchAsset, address to, address matrixVault, uint256 amount)
-    external;
+  function depositWithSupplyMatrix(
+    uint256 chainId,
+    address branchAsset,
+    address to,
+    address matrixVault,
+    uint256 amount
+  ) external;
 
   /**
    * @notice Redeem hub assets and receive the asset on the branch chain
@@ -293,7 +300,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param matrixVault The address of the MatrixVault to be affected
    * @param amount The amount of yield to settle
    */
-  function settleYield(uint256 chainId, address matrixVault, uint256 amount) external;
+  function settleMatrixYield(uint256 chainId, address matrixVault, uint256 amount) external;
 
   /**
    * @notice Settles a loss incurred by the Matrix Protocol
@@ -302,7 +309,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param matrixVault The address of the MatrixVault to be affected
    * @param amount The amount of loss to settle
    */
-  function settleLoss(uint256 chainId, address matrixVault, uint256 amount) external;
+  function settleMatrixLoss(uint256 chainId, address matrixVault, uint256 amount) external;
 
   /**
    * @notice Settle extra rewards generated from Matrix Protocol
@@ -312,7 +319,8 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param branchReward The address of the reward asset on the branch chain
    * @param amount The amount of extra rewards to settle
    */
-  function settleExtraRewards(uint256 chainId, address matrixVault, address branchReward, uint256 amount) external;
+  function settleMatrixExtraRewards(uint256 chainId, address matrixVault, address branchReward, uint256 amount)
+    external;
 
   /**
    * @notice Initialize an asset for a given chain's MitosisVault
