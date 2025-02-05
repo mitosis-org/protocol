@@ -7,9 +7,9 @@ import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
-import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IEOLVault } from '../../interfaces/hub/eol/vault/IEOLVault.sol';
+import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { AssetManagerStorageV1 } from './AssetManagerStorageV1.sol';

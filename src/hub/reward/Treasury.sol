@@ -8,10 +8,10 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
 
-import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { IRewardDistributor } from '../../interfaces/hub/reward/IRewardDistributor.sol';
-import { TreasuryStorageV1 } from './TreasuryStorageV1.sol';
+import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { TreasuryStorageV1 } from './TreasuryStorageV1.sol';
 
 /**
  * @title Treasury
