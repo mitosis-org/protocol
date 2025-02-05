@@ -13,14 +13,14 @@ import { AssetManagerStorageV1 } from '../../../src/hub/core/AssetManagerStorage
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
 import { ReclaimQueue } from '../../../src/hub/matrix/ReclaimQueue.sol';
+import { Treasury } from '../../../src/hub/reward/Treasury.sol';
 import { IAssetManager, IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
-import { IERC20TWABSnapshots } from '../../../src/interfaces/twab/IERC20TWABSnapshots.sol';
+import { IERC20Snapshots } from '../../../src/interfaces/twab/IERC20Snapshots.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { MockAssetManagerEntrypoint } from '../../mock/MockAssetManagerEntrypoint.t.sol';
-import { MockDelegationRegistry } from '../../mock/MockDelegationRegistry.t.sol';
-import { MockERC20TWABSnapshots } from '../../mock/MockERC20TWABSnapshots.t.sol';
-import { MockRewardHandler } from '../../mock/MockRewardHandler.t.sol';
+import { MockERC20Snapshots } from '../../mock/MockERC20Snapshots.t.sol';
+
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract MockReclaimQueue { }
@@ -28,9 +28,8 @@ contract MockReclaimQueue { }
 contract AssetManagerTest is Toolkit {
   ReclaimQueue _reclaimQueue;
   AssetManager _assetManager;
-  MockRewardHandler _rewardHandler;
+  Treasury _treasury;
   MockAssetManagerEntrypoint _assetManagerEntrypoint;
-  MockDelegationRegistry _delegationRegistry;
   MatrixVaultBasic _matrixVault;
   HubAsset _token;
   ProxyAdmin internal _proxyAdmin;
@@ -67,7 +66,9 @@ contract AssetManagerTest is Toolkit {
       payable(
         address(
           new TransparentUpgradeableProxy(
-            address(assetManagerImpl), address(_proxyAdmin), abi.encodeCall(_assetManager.initialize, (owner))
+            address(assetManagerImpl),
+            address(_proxyAdmin),
+            abi.encodeCall(_assetManager.initialize, (owner, address(_treasury)))
           )
         )
       )
@@ -75,9 +76,17 @@ contract AssetManagerTest is Toolkit {
     vm.prank(owner);
     _assetManager.setReclaimQueue(address(_reclaimQueue));
 
-    _rewardHandler = new MockRewardHandler();
+    Treasury treasuryImpl = new Treasury();
+    _treasury = Treasury(
+      payable(
+        address(
+          new TransparentUpgradeableProxy(
+            address(treasuryImpl), address(_proxyAdmin), abi.encodeCall(_treasury.initialize, (owner))
+          )
+        )
+      )
+    );
     _assetManagerEntrypoint = new MockAssetManagerEntrypoint(_assetManager, address(0));
-    _delegationRegistry = new MockDelegationRegistry(mitosis);
 
     HubAsset tokenImpl = new HubAsset();
     _token = HubAsset(
@@ -86,9 +95,7 @@ contract AssetManagerTest is Toolkit {
           new TransparentUpgradeableProxy(
             address(tokenImpl),
             address(_proxyAdmin),
-            abi.encodeCall(
-              _token.initialize, (owner, address(_assetManager), address(_delegationRegistry), 'Token', 'TKN', 18)
-            )
+            abi.encodeCall(_token.initialize, (owner, address(_assetManager), 'Token', 'TKN', 18))
           )
         )
       )
@@ -101,10 +108,7 @@ contract AssetManagerTest is Toolkit {
           new TransparentUpgradeableProxy(
             address(matrixVaultImpl),
             address(_proxyAdmin),
-            abi.encodeCall(
-              _matrixVault.initialize,
-              (address(_delegationRegistry), address(_assetManager), IERC20TWABSnapshots(address(_token)), '', '')
-            )
+            abi.encodeCall(_matrixVault.initialize, (address(_assetManager), IERC20Snapshots(address(_token)), '', ''))
           )
         )
       )
@@ -143,34 +147,34 @@ contract AssetManagerTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_depositWithSupply() public {
+  function test_depositWithSupplyMatrix() public {
     vm.startPrank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
     _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
     vm.stopPrank();
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.depositWithSupply(branchChainId, branchAsset1, user1, address(_matrixVault), 100 ether);
+    _assetManager.depositWithSupplyMatrix(branchChainId, branchAsset1, user1, address(_matrixVault), 100 ether);
 
     assertEq(_token.balanceOf(user1), 0);
     assertEq(_matrixVault.balanceOf(user1), 100 ether);
   }
 
-  function test_depositWithSupply_Unauthorized() public {
+  function test_depositWithSupplyMatrix_Unauthorized() public {
     vm.startPrank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
     _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
     vm.stopPrank();
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.depositWithSupply(branchChainId, branchAsset1, user1, address(_matrixVault), 100 ether);
+    _assetManager.depositWithSupplyMatrix(branchChainId, branchAsset1, user1, address(_matrixVault), 100 ether);
   }
 
-  function test_depositWithSupply_BranchAssetPairNotExist() public {
+  function test_depositWithSupplyMatrix_BranchAssetPairNotExist() public {
     // No occurrence case until methods like unsetAssetPair are added.
   }
 
-  function test_depositWithSupply_MatrixNotInitialized() public {
+  function test_depositWithSupplyMatrix_MatrixNotInitialized() public {
     vm.startPrank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
     // _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
@@ -179,14 +183,14 @@ contract AssetManagerTest is Toolkit {
     vm.startPrank(address(_assetManagerEntrypoint));
 
     vm.expectRevert(_errMatrixNotInitialized(branchChainId, address(_matrixVault)));
-    _assetManager.depositWithSupply(branchChainId, branchAsset1, user1, address(_matrixVault), 100 ether);
+    _assetManager.depositWithSupplyMatrix(branchChainId, branchAsset1, user1, address(_matrixVault), 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_depositWithSupply_InvalidMatrixVault() public {
-    MockERC20TWABSnapshots myToken = new MockERC20TWABSnapshots();
-    myToken.initialize(address(_delegationRegistry), 'Token', 'TKN');
+  function test_depositWithSupplyMatrix_InvalidMatrixVault() public {
+    MockERC20Snapshots myToken = new MockERC20Snapshots();
+    myToken.initialize('Token', 'TKN');
 
     MatrixVaultBasic matrixVaultImpl = new MatrixVaultBasic();
     MatrixVaultBasic incorrectMatrixVault = MatrixVaultBasic(
@@ -195,10 +199,7 @@ contract AssetManagerTest is Toolkit {
           new TransparentUpgradeableProxy(
             address(matrixVaultImpl),
             address(_proxyAdmin),
-            abi.encodeCall(
-              _matrixVault.initialize,
-              (address(_delegationRegistry), address(_assetManager), IERC20TWABSnapshots(address(myToken)), '', '')
-            )
+            abi.encodeCall(_matrixVault.initialize, (address(_assetManager), IERC20Snapshots(address(myToken)), '', ''))
           )
         )
       )
@@ -215,7 +216,7 @@ contract AssetManagerTest is Toolkit {
     vm.startPrank(address(_assetManagerEntrypoint));
 
     vm.expectRevert(_errInvalidMatrixVault(address(incorrectMatrixVault), address(_token)));
-    _assetManager.depositWithSupply(branchChainId, branchAsset1, user1, address(incorrectMatrixVault), 100 ether);
+    _assetManager.depositWithSupplyMatrix(branchChainId, branchAsset1, user1, address(incorrectMatrixVault), 100 ether);
 
     vm.stopPrank();
   }
@@ -457,19 +458,19 @@ contract AssetManagerTest is Toolkit {
     _assetManager.reserveMatrix(address(_matrixVault), 10 ether);
   }
 
-  function test_settleYield() public {
+  function test_settleMatrixYield() public {
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.settleYield(branchChainId, address(_matrixVault), 100 ether);
+    _assetManager.settleMatrixYield(branchChainId, address(_matrixVault), 100 ether);
 
     assertEq(_token.balanceOf(address(_assetManager)), 0);
   }
 
-  function test_settleYield_Unauthorized() public {
+  function test_settleMatrixYield_Unauthorized() public {
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.settleYield(branchChainId, address(_matrixVault), 100 ether);
+    _assetManager.settleMatrixYield(branchChainId, address(_matrixVault), 100 ether);
   }
 
-  function test_settleLoss() public {
+  function test_settleMatrixLoss() public {
     test_deposit();
     assertEq(_token.balanceOf(user1), 100 ether);
 
@@ -490,12 +491,12 @@ contract AssetManagerTest is Toolkit {
     assertEq(_token.balanceOf(address(_matrixVault)), 100 ether);
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.settleLoss(branchChainId, address(_matrixVault), 10 ether);
+    _assetManager.settleMatrixLoss(branchChainId, address(_matrixVault), 10 ether);
 
     assertEq(_token.balanceOf(address(_matrixVault)), 100 ether - 10 ether);
   }
 
-  function test_settleLoss_Unauthorized() public {
+  function test_settleMatrixLoss_Unauthorized() public {
     test_deposit();
     assertEq(_token.balanceOf(user1), 100 ether);
 
@@ -508,66 +509,66 @@ contract AssetManagerTest is Toolkit {
     assertEq(_token.balanceOf(address(_matrixVault)), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.settleLoss(branchChainId, address(_matrixVault), 10 ether);
+    _assetManager.settleMatrixLoss(branchChainId, address(_matrixVault), 10 ether);
   }
 
-  function test_settleExtraRewards() public {
-    MockERC20TWABSnapshots rewardToken = new MockERC20TWABSnapshots();
-    rewardToken.initialize(address(_delegationRegistry), 'Reward', '$REWARD');
+  function test_settleMatrixExtraRewards() public {
+    MockERC20Snapshots rewardToken = new MockERC20Snapshots();
+    rewardToken.initialize('Reward', '$REWARD');
 
     vm.startPrank(owner);
-    _assetManager.setRewardHandler(address(_rewardHandler));
+    _assetManager.setTreasury(address(_treasury));
     _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
     vm.stopPrank();
 
     assertEq(rewardToken.totalSupply(), 0);
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.settleExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
+    _assetManager.settleMatrixExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
 
     assertEq(rewardToken.totalSupply(), 100 ether);
   }
 
-  function test_settleExtraRewards_Unauthorized() public {
-    MockERC20TWABSnapshots rewardToken = new MockERC20TWABSnapshots();
-    rewardToken.initialize(address(_delegationRegistry), 'Reward', '$REWARD');
+  function test_settleMatrixExtraRewards_Unauthorized() public {
+    MockERC20Snapshots rewardToken = new MockERC20Snapshots();
+    rewardToken.initialize('Reward', '$REWARD');
 
     vm.startPrank(owner);
-    _assetManager.setRewardHandler(address(_rewardHandler));
+    _assetManager.setTreasury(address(_treasury));
     _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
     vm.stopPrank();
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.settleExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
+    _assetManager.settleMatrixExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
   }
 
-  function test_settleExtraRewards_BranchAssetPairNotExist() public {
+  function test_settleMatrixExtraRewards_BranchAssetPairNotExist() public {
     vm.startPrank(owner);
-    _assetManager.setRewardHandler(address(_rewardHandler));
+    _assetManager.setTreasury(address(_treasury));
     // _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
     vm.stopPrank();
 
     vm.startPrank(address(_assetManagerEntrypoint));
 
     vm.expectRevert(_errBranchAssetPairNotExist(branchRewardTokenAddress));
-    _assetManager.settleExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
+    _assetManager.settleMatrixExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_settleExtraRewards_MatrixRewardRouterNotSet() public {
-    MockERC20TWABSnapshots rewardToken = new MockERC20TWABSnapshots();
-    rewardToken.initialize(address(_delegationRegistry), 'Reward', '$REWARD');
+  function test_settleMatrixExtraRewards_TreasuryNotSet() public {
+    MockERC20Snapshots rewardToken = new MockERC20Snapshots();
+    rewardToken.initialize('Reward', '$REWARD');
 
     vm.startPrank(owner);
-    // _assetManager.setRewardHandler(address(_matrixRewardManager));
+    // _assetManager.setTreasury(address(_treasury));
     _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
     vm.stopPrank();
 
     vm.startPrank(address(_assetManagerEntrypoint));
 
-    vm.expectRevert(_errMatrixRewardHandlerNotSet());
-    _assetManager.settleExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
+    vm.expectRevert(_errTreasuryNotSet());
+    _assetManager.settleMatrixExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
 
     vm.stopPrank();
   }
@@ -757,32 +758,32 @@ contract AssetManagerTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_setRewardHandler() public {
-    assertEq(_assetManager.rewardHandler(), address(0));
+  function test_setTreasury() public {
+    assertEq(_assetManager.treasury(), address(0));
 
     vm.prank(owner);
-    _assetManager.setRewardHandler(address(_rewardHandler));
+    _assetManager.setTreasury(address(_treasury));
 
-    assertEq(_assetManager.rewardHandler(), address(_rewardHandler));
+    assertEq(_assetManager.treasury(), address(_treasury));
 
-    MockRewardHandler newMatrixRewardRouter = new MockRewardHandler();
+    Treasury newTreasury = new Treasury();
 
     vm.prank(owner);
-    _assetManager.setRewardHandler(address(newMatrixRewardRouter));
+    _assetManager.setTreasury(address(newTreasury));
 
-    assertEq(_assetManager.rewardHandler(), address(newMatrixRewardRouter));
+    assertEq(_assetManager.treasury(), address(newTreasury));
   }
 
-  function test_setRewardHandler_Unauthorized() public {
+  function test_setTreasury_Unauthorized() public {
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
-    _assetManager.setRewardHandler(address(_rewardHandler));
+    _assetManager.setTreasury(address(_treasury));
   }
 
-  function test_setRewardHandler_InvalidParameter() public {
+  function test_setTreasury_InvalidParameter() public {
     vm.startPrank(owner);
 
-    vm.expectRevert(_errInvalidParameter('RewardHandler'));
-    _assetManager.setRewardHandler(address(0));
+    vm.expectRevert(_errInvalidParameter('treasury'));
+    _assetManager.setTreasury(address(0));
 
     vm.stopPrank();
   }
@@ -815,6 +816,10 @@ contract AssetManagerTest is Toolkit {
     _assetManager.setStrategist(address(0), strategist);
 
     vm.stopPrank();
+  }
+
+  function _errTreasuryNotSet() internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__TreasuryNotSet.selector);
   }
 
   function _errBranchAssetPairNotExist(address branchAsset) internal pure returns (bytes memory) {
@@ -851,9 +856,5 @@ contract AssetManagerTest is Toolkit {
 
   function _errMatrixInsufficient(address matrixVault) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(IAssetManager.IAssetManager__MatrixInsufficient.selector, matrixVault);
-  }
-
-  function _errMatrixRewardHandlerNotSet() internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__RewardHandlerNotSet.selector);
   }
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IERC4626TWABSnapshots } from '../../twab/IERC4626TWABSnapshots.sol';
+import { IERC4626Snapshots } from '../../twab/IERC4626Snapshots.sol';
 
 /**
  * @title IMatrixVaultStorageV1
@@ -24,4 +24,4 @@ interface IMatrixVaultStorageV1 {
  * @title IMatrixVault
  * @dev Interface for the MatrixVault, combining ERC4626 functionality with TWAB snapshots.
  */
-interface IMatrixVault is IERC4626TWABSnapshots, IMatrixVaultStorageV1 { }
+interface IMatrixVault is IERC4626Snapshots, IMatrixVaultStorageV1 { }

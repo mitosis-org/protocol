@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IERC20TWABSnapshots } from '../../interfaces/twab/IERC20TWABSnapshots.sol';
+import { IERC20Snapshots } from '../../interfaces/twab/IERC20Snapshots.sol';
 import { MatrixVault } from './MatrixVault.sol';
 
 /**
@@ -13,7 +13,7 @@ contract MatrixVaultBasic is MatrixVault {
     _disableInitializers();
   }
 
-  function initialize(address assetManager_, IERC20TWABSnapshots asset_, string memory name, string memory symbol)
+  function initialize(address assetManager_, IERC20Snapshots asset_, string memory name, string memory symbol)
     external
     initializer
   {
