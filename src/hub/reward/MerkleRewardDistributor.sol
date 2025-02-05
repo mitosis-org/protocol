@@ -248,8 +248,6 @@ contract MerkleRewardDistributor is
   function _fetchRewards(StorageV1 storage $, uint256 stage, address matrixVault, address reward, uint256 amount)
     internal
   {
-    // Do we really need `handleReward`? Why don't we just fetch tokens from the AssetManager here?
-
     $.treasury.dispatch(matrixVault, reward, amount, address(this));
 
     Stage storage s = _stage($, stage);
