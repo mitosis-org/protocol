@@ -70,7 +70,7 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, G
     external
     onlyVault
   {
-    bytes memory enc = MsgDepositWithMatrixSupply({
+    bytes memory enc = MsgDepositWithSupplyMatrix({
       asset: asset.toBytes32(),
       to: to.toBytes32(),
       matrixVault: hubMatrixVault.toBytes32(),
@@ -80,8 +80,7 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, G
   }
 
   function deallocateMatrix(address hubMatrixVault, uint256 amount) external onlyVault {
-    bytes memory enc =
-      MsgDeallocateMatrix({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
+    bytes memory enc = MsgDeallocateMatrix({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 
