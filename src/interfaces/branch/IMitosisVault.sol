@@ -42,7 +42,7 @@ interface IMitosisVault {
 
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
-  error IMitosisVault__ExceededCap(address asset, uint256 increasedSupply, uint256 cap);
+  error IMitosisVault__ExceededCap(address asset, uint256 increasedSupply, uint256 availableCap);
 
   error IMitosisVault__AssetNotInitialized(address asset);
   error IMitosisVault__AssetAlreadyInitialized(address asset);
