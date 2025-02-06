@@ -31,6 +31,12 @@ interface IAssetManagerStorageV1 {
    */
   event StrategistSet(address indexed matrixVault, address indexed strategist);
 
+  /**
+   * @notice Emitted when the redeem status of a HubAsset is updated
+   * @param hubAsset The address of the HubAsset
+   * @param chainId The chain ID where the HubAsset status is being updated
+   * @param available The new redeem status of the HubAsset (true if available, false if unavailable)
+   */
   event HubAssetRedeemStatusSet(address indexed hubAsset, uint256 indexed chainId, bool available);
 
   //=========== NOTE: ERROR DEFINITIONS ===========//
@@ -44,13 +50,6 @@ interface IAssetManagerStorageV1 {
   error IAssetManagerStorageV1__MatrixNotInitialized(uint256 chainId, address matrixVault);
   error IAssetManagerStorageV1__MatrixAlreadyInitialized(uint256 chainId, address matrixVault);
 
-  /**
-   * @notice Error thrown when the total collateral for a given chain ID and hub asset is insufficient
-   * @param chainId The ID of the chain
-   * @param hubAsset The address of the hub asset
-   * @param collateral The total collateral amount for a given chain ID and hub asset
-   * @param amount The required amount for the operation
-   */
   error IAssetManagerStorageV1__CollateralInsufficient(
     uint256 chainId, address hubAsset, uint256 collateral, uint256 amount
   );
@@ -336,7 +335,12 @@ interface IAssetManager is IAssetManagerStorageV1 {
    */
   function initializeAsset(uint256 chainId, address hubAsset) external;
 
-  // TODO
+  /**
+   * @notice Set the redeem status for a hub asset on a given chain.
+   * @param chainId The ID of the chain where the redeem status is being set
+   * @param hubAsset The address of the hub asset for which the redeem status is being updated
+   * @param available A boolean indicating whether the hub asset is available for redemption (true) or not (false)
+   */
   function setHubAssetRedeemStatus(uint256 chainId, address hubAsset, bool available) external;
 
   /**

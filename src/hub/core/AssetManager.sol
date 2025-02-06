@@ -191,7 +191,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
     $.entrypoint.initializeAsset(chainId, branchAsset);
-    _hubAssetState($, hubAsset, chainId).redeemable = true;
+    _setHubAssetRedeemStatus(_getStorageV1(), hubAsset, chainId, true);
 
     emit AssetInitialized(hubAsset, chainId, branchAsset);
   }
