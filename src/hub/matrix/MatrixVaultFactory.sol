@@ -5,7 +5,7 @@ import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 
-import { IERC20TWABSnapshots } from '../../interfaces/twab/IERC20TWABSnapshots.sol';
+import { IERC20Snapshots } from '../../interfaces/twab/IERC20Snapshots.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { BeaconProxy, IBeaconProxy } from '../../lib/proxy/BeaconProxy.sol';
 import { MatrixVaultBasic } from './MatrixVaultBasic.sol';
@@ -22,14 +22,14 @@ contract MatrixVaultFactory is OwnableUpgradeable {
 
   struct BasicVaultInitArgs {
     address supplyManager;
-    IERC20TWABSnapshots asset;
+    IERC20Snapshots asset;
     string name;
     string symbol;
   }
 
   struct CappedVaultInitArgs {
     address supplyManager;
-    IERC20TWABSnapshots asset;
+    IERC20Snapshots asset;
     string name;
     string symbol;
   }
