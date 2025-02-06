@@ -54,6 +54,8 @@ contract MockAssetManager is IAssetManager {
 
   function setStrategist(address matrixVault_, address strategist_) external { }
 
+  function setHubAssetRedeemStatus(uint256 chainId, address hubAsset_, bool available) external { }
+
   function entrypoint() external view returns (address) {
     return _entrypoint;
   }
