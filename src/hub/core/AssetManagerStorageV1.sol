@@ -14,6 +14,16 @@ import { StdError } from '../../lib/StdError.sol';
 abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgradeable {
   using ERC7201Utils for string;
 
+  struct HubAssetState {
+    bool redeemable;
+    address branchAsset;
+    uint256 collateral;
+  }
+
+  struct BranchAssetState {
+    address hubAsset;
+  }
+
   struct MatrixState {
     address strategist;
     uint256 allocation;
@@ -24,9 +34,8 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     IReclaimQueue reclaimQueue;
     ITreasury treasury;
     // Asset states
-    mapping(address hubAsset => mapping(uint256 chainId => address branchAsset)) branchAssets;
-    mapping(uint256 chainId => mapping(address branchAsset => address hubAsset)) hubAssets;
-    mapping(uint256 chainId => mapping(address hubAsset => uint256 amount)) collateralPerChain;
+    mapping(address hubAsset => mapping(uint256 chainId => HubAssetState)) hubAssetStates;
+    mapping(uint256 chainId => mapping(address branchAsset => BranchAssetState)) branchAssetStates;
     // Matrix states
     mapping(address matrixVault => MatrixState state) matrixStates;
     mapping(uint256 chainId => mapping(address matrixVault => bool initialized)) matrixInitialized;
@@ -58,15 +67,19 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   }
 
   function branchAsset(address hubAsset_, uint256 chainId) external view returns (address) {
-    return _getStorageV1().branchAssets[hubAsset_][chainId];
+    return _hubAssetState(_getStorageV1(), hubAsset_, chainId).branchAsset;
+  }
+
+  function hubAssetRedeemable(address hubAsset_, uint256 chainId) external view returns (bool) {
+    return _hubAssetState(_getStorageV1(), hubAsset_, chainId).redeemable;
   }
 
   function hubAsset(uint256 chainId, address branchAsset_) external view returns (address) {
-    return _getStorageV1().hubAssets[chainId][branchAsset_];
+    return _branchAssetState(_getStorageV1(), chainId, branchAsset_).hubAsset;
   }
 
   function collateral(uint256 chainId, address hubAsset_) external view returns (uint256) {
-    return _getStorageV1().collateralPerChain[chainId][hubAsset_];
+    return _hubAssetState(_getStorageV1(), hubAsset_, chainId).collateral;
   }
 
   function matrixInitialized(uint256 chainId, address matrixVault) external view returns (bool) {
@@ -119,7 +132,32 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     emit StrategistSet(matrixVault, strategist_);
   }
 
+  function _setHubAssetRedeemStatus(StorageV1 storage $, address hubAsset_, uint256 chainId, bool available) internal {
+    HubAssetState storage hubAssetState = _hubAssetState($, hubAsset_, chainId);
+
+    require(hubAssetState.branchAsset != address(0), IAssetManagerStorageV1__HubAssetPairNotExist(hubAsset_));
+
+    hubAssetState.redeemable = available;
+    emit HubAssetRedeemStatusSet(hubAsset_, chainId, available);
+  }
+
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
+
+  function _hubAssetState(StorageV1 storage $, address hubAsset_, uint256 chainId)
+    internal
+    view
+    returns (HubAssetState storage)
+  {
+    return $.hubAssetStates[hubAsset_][chainId];
+  }
+
+  function _branchAssetState(StorageV1 storage $, uint256 chainId, address branchAsset_)
+    internal
+    view
+    returns (BranchAssetState storage)
+  {
+    return $.branchAssetStates[chainId][branchAsset_];
+  }
 
   function _matrixIdle(StorageV1 storage $, address matrixVault) internal view returns (uint256) {
     uint256 total = IMatrixVault(matrixVault).totalAssets();
@@ -144,12 +182,31 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     virtual
   {
     require(
-      $.hubAssets[chainId][branchAsset_] != address(0), IAssetManagerStorageV1__BranchAssetPairNotExist(branchAsset_)
+      _branchAssetState($, chainId, branchAsset_).hubAsset != address(0),
+      IAssetManagerStorageV1__BranchAssetPairNotExist(branchAsset_)
     );
   }
 
   function _assertTreasurySet(StorageV1 storage $) internal view virtual {
     require(address($.treasury) != address(0), IAssetManagerStorageV1__TreasuryNotSet());
+  }
+
+  function _assertHubAssetRedeemable(StorageV1 storage $, address hubAsset_, uint256 chainId) internal view virtual {
+    require(
+      _hubAssetState($, hubAsset_, chainId).redeemable,
+      IAssetManagerStorageV1__HubAssetRedeemDisabled(hubAsset_, chainId)
+    );
+  }
+
+  function _assertCollateralNotInsufficient(StorageV1 storage $, address hubAsset_, uint256 chainId, uint256 amount)
+    internal
+    view
+    virtual
+  {
+    uint256 collateral_ = _hubAssetState($, hubAsset_, chainId).collateral;
+    require(
+      collateral_ >= amount, IAssetManagerStorageV1__CollateralInsufficient(chainId, hubAsset_, collateral_, amount)
+    );
   }
 
   function _assertMatrixInitialized(StorageV1 storage $, uint256 chainId, address matrixVault) internal view virtual {

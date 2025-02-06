@@ -827,7 +827,11 @@ contract AssetManagerTest is Toolkit {
     returns (bytes memory)
   {
     return abi.encodeWithSelector(
-      IAssetManager.IAssetManager__CollateralInsufficient.selector, chainId, hubAsset, collateral, amount
+      IAssetManagerStorageV1.IAssetManagerStorageV1__CollateralInsufficient.selector,
+      chainId,
+      hubAsset,
+      collateral,
+      amount
     );
   }
 

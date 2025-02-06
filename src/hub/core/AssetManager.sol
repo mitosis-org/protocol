@@ -37,7 +37,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _assertOnlyEntrypoint($);
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    address hubAsset = $.hubAssets[chainId][branchAsset];
+    address hubAsset = _branchAssetState($, chainId, branchAsset).hubAsset;
     _mint($, chainId, hubAsset, to, amount);
 
     emit Deposited(chainId, hubAsset, to, amount);
@@ -56,7 +56,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _assertBranchAssetPairExist($, chainId, branchAsset);
     _assertMatrixInitialized($, chainId, matrixVault);
 
-    address hubAsset = $.hubAssets[chainId][branchAsset];
+    address hubAsset = _branchAssetState($, chainId, branchAsset).hubAsset;
     require(hubAsset == IMatrixVault(matrixVault).asset(), IAssetManager__InvalidMatrixVault(matrixVault, hubAsset));
 
     _mint($, chainId, hubAsset, address(this), amount);
@@ -81,13 +81,12 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     require(to != address(0), StdError.ZeroAddress('to'));
     require(amount != 0, StdError.ZeroAmount());
 
-    address branchAsset = $.branchAssets[hubAsset][chainId];
+    address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    require(
-      $.collateralPerChain[chainId][hubAsset] >= amount,
-      IAssetManager__CollateralInsufficient(chainId, hubAsset, $.collateralPerChain[chainId][hubAsset], amount)
-    );
+    _assertHubAssetRedeemable($, hubAsset, chainId);
+    _assertCollateralNotInsufficient($, hubAsset, chainId, amount);
+
     _burn($, chainId, hubAsset, _msgSender(), amount);
     $.entrypoint.redeem(chainId, branchAsset, to, amount);
 
@@ -173,7 +172,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _assertBranchAssetPairExist($, chainId, branchReward);
     _assertTreasurySet($);
 
-    address hubReward = $.hubAssets[chainId][branchReward];
+    address hubReward = _branchAssetState($, chainId, branchReward).hubAsset;
     _mint($, chainId, hubReward, address(this), amount);
     emit MatrixRewardSettled(chainId, matrixVault, hubReward, amount);
 
@@ -188,11 +187,17 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
 
     StorageV1 storage $ = _getStorageV1();
 
-    address branchAsset = $.branchAssets[hubAsset][chainId];
+    address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
     $.entrypoint.initializeAsset(chainId, branchAsset);
+    _setHubAssetRedeemStatus(_getStorageV1(), hubAsset, chainId, true);
+
     emit AssetInitialized(hubAsset, chainId, branchAsset);
+  }
+
+  function setHubAssetRedeemStatus(uint256 chainId, address hubAsset, bool available) external onlyOwner {
+    _setHubAssetRedeemStatus(_getStorageV1(), hubAsset, chainId, available);
   }
 
   function initializeMatrix(uint256 chainId, address matrixVault) external onlyOwner {
@@ -201,7 +206,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     StorageV1 storage $ = _getStorageV1();
 
     address hubAsset = IMatrixVault(matrixVault).asset();
-    address branchAsset = $.branchAssets[hubAsset][chainId];
+    address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
     _assertMatrixNotInitialized($, chainId, matrixVault);
@@ -218,8 +223,8 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     //
     // https://github.com/mitosis-org/protocol/pull/23#discussion_r1728680943
     StorageV1 storage $ = _getStorageV1();
-    $.branchAssets[hubAsset][branchChainId] = branchAsset;
-    $.hubAssets[branchChainId][branchAsset] = hubAsset;
+    _hubAssetState($, hubAsset, branchChainId).branchAsset = branchAsset;
+    _branchAssetState($, branchChainId, branchAsset).hubAsset = hubAsset;
     emit AssetPairSet(hubAsset, branchChainId, branchAsset);
   }
 
@@ -251,12 +256,12 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
 
   function _mint(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
     IHubAsset(asset).mint(account, amount);
-    $.collateralPerChain[chainId][asset] += amount;
+    _hubAssetState($, asset, chainId).collateral += amount;
   }
 
   function _burn(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
     IHubAsset(asset).burn(account, amount);
-    $.collateralPerChain[chainId][asset] -= amount;
+    _hubAssetState($, asset, chainId).collateral -= amount;
   }
 
   //=========== NOTE: ASSERTIONS ===========//
