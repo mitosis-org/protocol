@@ -79,6 +79,16 @@ interface IAssetManagerStorageV1 {
   function branchAsset(address hubAsset_, uint256 chainId) external view returns (address);
 
   /**
+   * @notice Check if a hub asset is redeemable on a given chain.
+   * @dev This function returns a boolean indicating whether the specified hub asset
+   *      can be redeemed on the given chain.
+   * @param hubAsset_ The address of the hub asset.
+   * @param chainId The ID of the target chain.
+   * @return redeemable A boolean indicating whether the hub asset is redeemable on the given chain.
+   */
+  function hubAssetRedeemable(address hubAsset_, uint256 chainId) external view returns (bool);
+
+  /**
    * @notice Get the hub asset address for a given chain ID and branch asset
    * @param chainId The ID of the chain
    * @param branchAsset_ The address of the branch asset

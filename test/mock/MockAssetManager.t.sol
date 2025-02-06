@@ -70,6 +70,8 @@ contract MockAssetManager is IAssetManager {
 
   function branchAsset(address hubAsset_, uint256 chainId_) external view returns (address) { }
 
+  function hubAssetRedeemable(address hubAsset_, uint256 chainId) external view returns (bool) { }
+
   function hubAsset(uint256 chainId_, address branchAsset_) external view returns (address) { }
 
   function collateral(uint256 chainId_, address hubAsset_) external view returns (uint256) { }

@@ -56,7 +56,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _assertBranchAssetPairExist($, chainId, branchAsset);
     _assertMatrixInitialized($, chainId, matrixVault);
 
-    address hubAsset = _branchAssetState($, chainId, branchReward).hubAsset;
+    address hubAsset = _branchAssetState($, chainId, branchAsset).hubAsset;
     require(hubAsset == IMatrixVault(matrixVault).asset(), IAssetManager__InvalidMatrixVault(matrixVault, hubAsset));
 
     _mint($, chainId, hubAsset, address(this), amount);

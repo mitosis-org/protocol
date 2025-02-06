@@ -70,6 +70,10 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return _hubAssetState(_getStorageV1(), hubAsset_, chainId).branchAsset;
   }
 
+  function hubAssetRedeemable(address hubAsset_, uint256 chainId) external view returns (bool) {
+    return _hubAssetState(_getStorageV1(), hubAsset_, chainId).redeemable;
+  }
+
   function hubAsset(uint256 chainId, address branchAsset_) public view returns (address) {
     return _branchAssetState(_getStorageV1(), chainId, branchAsset_).hubAsset;
   }
