@@ -66,7 +66,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return address(_getStorageV1().treasury);
   }
 
-  function branchAsset(address hubAsset_, uint256 chainId) public view returns (address) {
+  function branchAsset(address hubAsset_, uint256 chainId) external view returns (address) {
     return _hubAssetState(_getStorageV1(), hubAsset_, chainId).branchAsset;
   }
 
@@ -74,11 +74,11 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return _hubAssetState(_getStorageV1(), hubAsset_, chainId).redeemable;
   }
 
-  function hubAsset(uint256 chainId, address branchAsset_) public view returns (address) {
+  function hubAsset(uint256 chainId, address branchAsset_) external view returns (address) {
     return _branchAssetState(_getStorageV1(), chainId, branchAsset_).hubAsset;
   }
 
-  function collateral(uint256 chainId, address hubAsset_) public view returns (uint256) {
+  function collateral(uint256 chainId, address hubAsset_) external view returns (uint256) {
     return _hubAssetState(_getStorageV1(), hubAsset_, chainId).collateral;
   }
 
