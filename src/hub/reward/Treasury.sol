@@ -64,7 +64,7 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
     $.balances[matrixVault][reward] = balance - amount;
     $.history[matrixVault][reward].push(
       Log({
-        timestamp: IERC6372(matrixVault).clock(),
+        timestamp: block.timestamp.toUint48(),
         amount: amount.toUint208(),
         sign: false // withdrawal
        })
@@ -86,7 +86,7 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
     $.balances[matrixVault][reward] += amount;
     $.history[matrixVault][reward].push(
       Log({
-        timestamp: IERC6372(matrixVault).clock(),
+        timestamp: block.timestamp.toUint48(),
         amount: amount.toUint208(),
         sign: true // deposit
        })

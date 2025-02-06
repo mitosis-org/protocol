@@ -1,25 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
+import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
-import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
+import { ERC4626Upgradeable } from '@ozu-v5/token/ERC20/extensions/ERC4626Upgradeable.sol';
 
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
-import { IERC20Snapshots } from '../../interfaces/twab/IERC20Snapshots.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { ERC4626Snapshots } from '../../twab/ERC4626Snapshots.sol';
 import { MatrixVaultStorageV1 } from './MatrixVaultStorageV1.sol';
 
 /**
  * @title MatrixVault
  * @notice Base implementation of an MatrixVault
  */
-abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626Snapshots {
+abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626Upgradeable {
   using Math for uint256;
 
-  function __MatrixVault_init(address assetManager_, IERC20Snapshots asset_, string memory name, string memory symbol)
+  function __MatrixVault_init(address assetManager_, IERC20Metadata asset_, string memory name, string memory symbol)
     internal
   {
     if (bytes(name).length == 0 || bytes(symbol).length == 0) {
@@ -28,7 +26,6 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626Snapshots {
     }
 
     __ERC4626_init(asset_);
-    __ERC20Snapshots_init(name, symbol);
 
     StorageV1 storage $ = _getStorageV1();
 

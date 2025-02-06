@@ -48,7 +48,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
     IMatrixVault(matrixVault).safeTransferFrom(_msgSender(), address(this), shares);
     uint256 assets = IMatrixVault(matrixVault).previewRedeem(shares) - 1; // FIXME: tricky way to avoid rounding error
     LibRedeemQueue.Queue storage queue = $.states[matrixVault].queue;
-    reqId = queue.enqueue(receiver, shares, assets, IMatrixVault(matrixVault).clock());
+    reqId = queue.enqueue(receiver, shares, assets, block.timestamp.toUint48());
 
     emit ReclaimRequested(receiver, matrixVault, shares, assets);
 
@@ -64,7 +64,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
     LibRedeemQueue.Queue storage queue = $.states[matrixVault].queue;
     LibRedeemQueue.Index storage index = queue.index(receiver);
 
-    uint48 timestamp = IMatrixVault(matrixVault).clock();
+    uint48 timestamp = block.timestamp.toUint48();
 
     queue.update(timestamp);
 
@@ -223,7 +223,9 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
 
     matrixVault.withdraw(assets, address(this), address(this));
 
-    matrixVaultState.queue.reserve(assets, matrixVault.totalSupply(), matrixVault.totalAssets(), matrixVault.clock());
+    matrixVaultState.queue.reserve(
+      assets, matrixVault.totalSupply(), matrixVault.totalAssets(), block.timestamp.toUint48()
+    );
   }
 
   // =========================== NOTE: ASSERTIONS =========================== //

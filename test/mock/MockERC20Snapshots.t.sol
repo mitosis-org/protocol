@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { ERC20Snapshots } from '../../src/twab/ERC20Snapshots.sol';
+import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 
-contract MockERC20Snapshots is ERC20Snapshots {
+contract MockERC20Snapshots is ERC20Upgradeable {
   function initialize(string memory name, string memory symbol) external initializer {
-    __ERC20Snapshots_init(name, symbol);
+    __ERC20_init(name, symbol);
   }
 
   function mint(address account, uint256 value) external {
