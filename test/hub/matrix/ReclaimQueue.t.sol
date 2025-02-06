@@ -5,12 +5,13 @@ import { Test } from '@std/Test.sol';
 
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 
+import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
+
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
 import { ReclaimQueue } from '../../../src/hub/matrix/ReclaimQueue.sol';
 import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IReclaimQueue } from '../../../src/interfaces/hub/matrix/IReclaimQueue.sol';
-import { IERC20Snapshots } from '../../../src/interfaces/twab/IERC20Snapshots.sol';
 import { MockAssetManager } from '../../mock/MockAssetManager.t.sol';
 
 contract ReclaimQueueTest is Test {
@@ -48,7 +49,7 @@ contract ReclaimQueueTest is Test {
       _proxy(
         address(new MatrixVaultBasic()),
         abi.encodeCall(
-          MatrixVaultBasic.initialize, (address(_assetManager), IERC20Snapshots(address(_hubAsset)), 'miTest', 'miTT')
+          MatrixVaultBasic.initialize, (address(_assetManager), IERC20Metadata(address(_hubAsset)), 'miTest', 'miTT')
         ) //
       )
     );

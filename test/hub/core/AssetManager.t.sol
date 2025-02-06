@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import { console } from '@std/console.sol';
 import { Vm } from '@std/Vm.sol';
 
+import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
 import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 import { ERC20 } from '@oz-v5/token/ERC20/ERC20.sol';
@@ -16,7 +17,6 @@ import { ReclaimQueue } from '../../../src/hub/matrix/ReclaimQueue.sol';
 import { Treasury } from '../../../src/hub/reward/Treasury.sol';
 import { IAssetManager, IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
-import { IERC20Snapshots } from '../../../src/interfaces/twab/IERC20Snapshots.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { MockAssetManagerEntrypoint } from '../../mock/MockAssetManagerEntrypoint.t.sol';
 import { MockERC20Snapshots } from '../../mock/MockERC20Snapshots.t.sol';
@@ -111,7 +111,7 @@ contract AssetManagerTest is Toolkit {
           new TransparentUpgradeableProxy(
             address(matrixVaultImpl),
             address(_proxyAdmin),
-            abi.encodeCall(_matrixVault.initialize, (address(_assetManager), IERC20Snapshots(address(_token)), '', ''))
+            abi.encodeCall(_matrixVault.initialize, (address(_assetManager), IERC20Metadata(address(_token)), '', ''))
           )
         )
       )
@@ -202,7 +202,7 @@ contract AssetManagerTest is Toolkit {
           new TransparentUpgradeableProxy(
             address(matrixVaultImpl),
             address(_proxyAdmin),
-            abi.encodeCall(_matrixVault.initialize, (address(_assetManager), IERC20Snapshots(address(myToken)), '', ''))
+            abi.encodeCall(_matrixVault.initialize, (address(_assetManager), IERC20Metadata(address(myToken)), '', ''))
           )
         )
       )
