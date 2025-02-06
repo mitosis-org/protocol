@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.23 <0.9.0;
 
-import { HubAsset } from './HubAsset.sol';
-
 import { BeaconProxy } from '@oz-v5/proxy/beacon/BeaconProxy.sol';
 
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
@@ -10,6 +8,7 @@ import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 
 import { BeaconBase } from '../../lib/proxy/BeaconBase.sol';
+import { HubAsset } from './HubAsset.sol';
 
 contract HubAssetFactory is BeaconBase, OwnableUpgradeable {
   constructor() {

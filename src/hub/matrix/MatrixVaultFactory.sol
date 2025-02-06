@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.23 <0.9.0;
 
-import { MatrixVaultBasic } from './MatrixVaultBasic.sol';
-import { MatrixVaultCapped } from './MatrixVaultCapped.sol';
-import { IERC20TWABSnapshots } from '../../interfaces/twab/IERC20TWABSnapshots.sol';
-import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import { BeaconProxy, IBeaconProxy } from '../../lib/proxy/BeaconProxy.sol';
-
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+
+import { IERC20TWABSnapshots } from '../../interfaces/twab/IERC20TWABSnapshots.sol';
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { BeaconProxy, IBeaconProxy } from '../../lib/proxy/BeaconProxy.sol';
+import { MatrixVaultBasic } from './MatrixVaultBasic.sol';
+import { MatrixVaultCapped } from './MatrixVaultCapped.sol';
 
 contract MatrixVaultFactory is OwnableUpgradeable {
   using ERC7201Utils for string;

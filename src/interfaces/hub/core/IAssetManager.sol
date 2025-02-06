@@ -31,13 +31,29 @@ interface IAssetManagerStorageV1 {
    */
   event StrategistSet(address indexed matrixVault, address indexed strategist);
 
+  event HubAssetRedeemStatusSet(address indexed hubAsset, uint256 indexed chainId, bool available);
+
   //=========== NOTE: ERROR DEFINITIONS ===========//
+
+  error IAssetManagerStorageV1__HubAssetPairNotExist(address hubAsset);
+  error IAssetManagerStorageV1__HubAssetRedeemDisabled(address hubAsset, uint256 chainId);
 
   error IAssetManagerStorageV1__BranchAssetPairNotExist(address branchAsset);
   error IAssetManagerStorageV1__TreasuryNotSet();
 
   error IAssetManagerStorageV1__MatrixNotInitialized(uint256 chainId, address matrixVault);
   error IAssetManagerStorageV1__MatrixAlreadyInitialized(uint256 chainId, address matrixVault);
+
+  /**
+   * @notice Error thrown when the total collateral for a given chain ID and hub asset is insufficient
+   * @param chainId The ID of the chain
+   * @param hubAsset The address of the hub asset
+   * @param collateral The total collateral amount for a given chain ID and hub asset
+   * @param amount The required amount for the operation
+   */
+  error IAssetManagerStorageV1__CollateralInsufficient(
+    uint256 chainId, address hubAsset, uint256 collateral, uint256 amount
+  );
 
   //=========== NOTE: STATE GETTERS ===========//
 
@@ -209,15 +225,6 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event AssetPairSet(address hubAsset, uint256 branchChainId, address branchAsset);
 
   /**
-   * @notice Error thrown when the total collateral for a given chain ID and hub asset is insufficient
-   * @param chainId The ID of the chain
-   * @param hubAsset The address of the hub asset
-   * @param collateral The total collateral amount for a given chain ID and hub asset
-   * @param amount The required amount for the operation
-   */
-  error IAssetManager__CollateralInsufficient(uint256 chainId, address hubAsset, uint256 collateral, uint256 amount);
-
-  /**
    * @notice Error thrown when an invalid MatrixVault address does not match with the hub asset
    * @param matrixVault The address of the invalid MatrixVault
    * @param hubAsset The address of the hub asset
@@ -328,6 +335,9 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param hubAsset The address of the hub asset to initialize on the branch chain
    */
   function initializeAsset(uint256 chainId, address hubAsset) external;
+
+  // TODO
+  function setHubAssetRedeemStatus(uint256 chainId, address hubAsset, bool available) external;
 
   /**
    * @notice Initialize a Matrix for branch asset (MatrixVault) on a given chain
