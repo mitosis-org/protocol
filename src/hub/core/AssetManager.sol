@@ -37,7 +37,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _assertOnlyEntrypoint($);
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    address hubAsset = hubAsset(chainId, branchAsset);
+    address hubAsset = _branchAssetState($, chainId, branchAsset).hubAsset;
     _mint($, chainId, hubAsset, to, amount);
 
     emit Deposited(chainId, hubAsset, to, amount);
@@ -56,7 +56,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _assertBranchAssetPairExist($, chainId, branchAsset);
     _assertMatrixInitialized($, chainId, matrixVault);
 
-    address hubAsset = hubAsset(chainId, branchAsset);
+    address hubAsset = _branchAssetState($, chainId, branchReward).hubAsset;
     require(hubAsset == IMatrixVault(matrixVault).asset(), IAssetManager__InvalidMatrixVault(matrixVault, hubAsset));
 
     _mint($, chainId, hubAsset, address(this), amount);
@@ -81,7 +81,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     require(to != address(0), StdError.ZeroAddress('to'));
     require(amount != 0, StdError.ZeroAmount());
 
-    address branchAsset = branchAsset(hubAsset, chainId);
+    address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
     _assertHubAssetRedeemable($, hubAsset, chainId);
@@ -172,7 +172,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _assertBranchAssetPairExist($, chainId, branchReward);
     _assertTreasurySet($);
 
-    address hubReward = hubAsset(chainId, branchReward);
+    address hubReward = _branchAssetState($, chainId, branchReward).hubAsset;
     _mint($, chainId, hubReward, address(this), amount);
     emit MatrixRewardSettled(chainId, matrixVault, hubReward, amount);
 
@@ -187,7 +187,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
 
     StorageV1 storage $ = _getStorageV1();
 
-    address branchAsset = branchAsset(hubAsset, chainId);
+    address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
     $.entrypoint.initializeAsset(chainId, branchAsset);
@@ -206,7 +206,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     StorageV1 storage $ = _getStorageV1();
 
     address hubAsset = IMatrixVault(matrixVault).asset();
-    address branchAsset = branchAsset(hubAsset, chainId);
+    address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
     _assertMatrixNotInitialized($, chainId, matrixVault);
