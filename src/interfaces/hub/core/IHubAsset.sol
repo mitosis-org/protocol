@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import { IERC20Snapshots } from '../../twab/IERC20Snapshots.sol';
+import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
 
 /**
  * @title IHubAsset
- * @dev Common interface for {HubAsset}. Extends IERC20Snapshots with minting and burning capabilities.
+ * @dev Common interface for {HubAsset}. Extends IERC20 with minting and burning capabilities.
  */
-interface IHubAsset is IERC20Snapshots {
+interface IHubAsset is IERC20Metadata {
   /**
    * @notice Mints new tokens to a specified account.
    * @dev This function should only be callable by authorized entities.

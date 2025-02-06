@@ -2,12 +2,12 @@
 pragma solidity ^0.8.27;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 
 import { StdError } from '../../lib/StdError.sol';
-import { ERC20Snapshots } from '../../twab/ERC20Snapshots.sol';
 import { HubAssetStorageV1 } from './HubAssetStorageV1.sol';
 
-contract HubAsset is Ownable2StepUpgradeable, ERC20Snapshots, HubAssetStorageV1 {
+contract HubAsset is Ownable2StepUpgradeable, ERC20Upgradeable, HubAssetStorageV1 {
   constructor() {
     _disableInitializers();
   }
@@ -21,7 +21,7 @@ contract HubAsset is Ownable2StepUpgradeable, ERC20Snapshots, HubAssetStorageV1 
   ) external initializer {
     __Ownable2Step_init();
     _transferOwnership(owner_);
-    __ERC20Snapshots_init(name_, symbol_);
+    __ERC20_init(name_, symbol_);
     _getStorageV1().supplyManager = supplyManager_;
     StorageV1 storage $ = _getStorageV1();
     $.supplyManager = supplyManager_;

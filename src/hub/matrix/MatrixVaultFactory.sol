@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.23 <0.9.0;
 
-import { MatrixVaultBasic } from './MatrixVaultBasic.sol';
-import { MatrixVaultCapped } from './MatrixVaultCapped.sol';
-import { IERC20TWABSnapshots } from '../../interfaces/twab/IERC20TWABSnapshots.sol';
-import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import { BeaconProxy, IBeaconProxy } from '../../lib/proxy/BeaconProxy.sol';
+import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
 
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { BeaconProxy, IBeaconProxy } from '../../lib/proxy/BeaconProxy.sol';
+import { MatrixVaultBasic } from './MatrixVaultBasic.sol';
+import { MatrixVaultCapped } from './MatrixVaultCapped.sol';
 
 contract MatrixVaultFactory is OwnableUpgradeable {
   using ERC7201Utils for string;
@@ -22,14 +23,14 @@ contract MatrixVaultFactory is OwnableUpgradeable {
 
   struct BasicVaultInitArgs {
     address supplyManager;
-    IERC20TWABSnapshots asset;
+    IERC20Metadata asset;
     string name;
     string symbol;
   }
 
   struct CappedVaultInitArgs {
     address supplyManager;
-    IERC20TWABSnapshots asset;
+    IERC20Metadata asset;
     string name;
     string symbol;
   }
@@ -58,6 +59,11 @@ contract MatrixVaultFactory is OwnableUpgradeable {
       $.slot := slot
     }
   }
+
+  event VaultTypeInitialized(VaultType vaultType, address beacon);
+  event MatrixVaultCreated(address indexed creator, VaultType vaultType, address instance);
+  event MatrixVaultMigrated(address indexed migrator, VaultType from, VaultType to, address instance);
+  event BeaconCalled(address indexed caller, VaultType vaultType, bytes data);
 
   error AlreadyInitialized();
   error NotInitialized();
@@ -106,6 +112,8 @@ contract MatrixVaultFactory is OwnableUpgradeable {
     $.types.push(vaultType);
     $.infos[vaultType].initialized = true;
     $.infos[vaultType].beacon = address(new UpgradeableBeacon(address(this), initialImpl));
+
+    emit VaultTypeInitialized(vaultType, address($.infos[vaultType].beacon));
   }
 
   /**
@@ -117,6 +125,9 @@ contract MatrixVaultFactory is OwnableUpgradeable {
 
     (bool success, bytes memory result) = address($.infos[t].beacon).call(data);
     require(success, CallBeaconFailed());
+
+    emit BeaconCalled(_msgSender(), t, data);
+
     return result;
   }
 
@@ -124,9 +135,14 @@ contract MatrixVaultFactory is OwnableUpgradeable {
     Storage storage $ = _getStorage();
     require($.infos[t].initialized, NotInitialized());
 
-    if (t == VaultType.Basic) return _create($, abi.decode(args, (BasicVaultInitArgs)));
-    if (t == VaultType.Capped) return _create($, abi.decode(args, (CappedVaultInitArgs)));
-    revert InvalidVaultType();
+    address instance;
+
+    if (t == VaultType.Basic) instance = _create($, abi.decode(args, (BasicVaultInitArgs)));
+    else if (t == VaultType.Capped) instance = _create($, abi.decode(args, (CappedVaultInitArgs)));
+    else revert InvalidVaultType();
+
+    emit MatrixVaultCreated(_msgSender(), t, instance);
+    return instance;
   }
 
   function migrate(VaultType from, VaultType to, address instance, bytes calldata data) external onlyOwner {
@@ -148,6 +164,8 @@ contract MatrixVaultFactory is OwnableUpgradeable {
 
     IBeaconProxy(instance).upgradeBeaconToAndCall($.infos[to].beacon, data);
     $.infos[to].instances.push(instance);
+
+    emit MatrixVaultMigrated(_msgSender(), from, to, instance);
   }
 
   function _isInstance(Storage storage $, VaultType t, address instance) private view returns (bool) {

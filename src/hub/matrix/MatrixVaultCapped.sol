@@ -2,9 +2,9 @@
 pragma solidity ^0.8.27;
 
 import { Ownable } from '@oz-v5/access/Ownable.sol';
+import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
-import { IERC20Snapshots } from '../../interfaces/twab/IERC20Snapshots.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { MatrixVault } from './MatrixVault.sol';
@@ -42,7 +42,7 @@ contract MatrixVaultCapped is MatrixVault {
     _disableInitializers();
   }
 
-  function initialize(address assetManager_, IERC20Snapshots asset_, string memory name, string memory symbol)
+  function initialize(address assetManager_, IERC20Metadata asset_, string memory name, string memory symbol)
     external
     initializer
   {
