@@ -250,10 +250,14 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     uint256 collateral_ = hubAssetState.collateral;
     uint256 liquidityThresholdRatio = hubAssetState.liquidityThresholdRatio;
 
-    require(
-      (allocated / collateral_ - amount) * LIQUIDITY_THRESHOLD_RATIO_PERCISION > liquidityThresholdRatio,
-      IAssetManagerStorageV1__BranchLiquidityNotInsufficient(chainId, hubAsset_, allocated, collateral_, amount)
-    );
+    if (allocated == 0 && liquidityThresholdRatio == 0) {
+      return;
+    } else {
+      require(
+        (allocated / collateral_ - amount) * LIQUIDITY_THRESHOLD_RATIO_PERCISION > liquidityThresholdRatio,
+        IAssetManagerStorageV1__BranchLiquidityNotInsufficient(chainId, hubAsset_, allocated, collateral_, amount)
+      );
+    }
   }
 
   function _assertMatrixInitialized(StorageV1 storage $, uint256 chainId, address matrixVault) internal view virtual {
