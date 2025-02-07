@@ -155,10 +155,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   ) internal {
     HubAssetState storage hubAssetState = _hubAssetState($, hubAsset_, chainId);
 
-    require(
-      liquidityThresholdRatio >= 0 && liquidityThresholdRatio <= 100,
-      StdError.InvalidParameter('liquidityThresholdRatio')
-    );
+    require(liquidityThresholdRatio <= 100, StdError.InvalidParameter('liquidityThresholdRatio'));
     require(hubAssetState.branchAsset != address(0), IAssetManagerStorageV1__HubAssetPairNotExist(hubAsset_));
 
     hubAssetState.liquidityThresholdRatio = liquidityThresholdRatio;
