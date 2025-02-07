@@ -149,6 +149,8 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     // Increase MatrixVault's shares value.
     address asset = IMatrixVault(matrixVault).asset();
     _mint($, chainId, asset, address(matrixVault), amount);
+
+    _hubAssetState($, asset, chainId).branchAllocated += amount;
     $.matrixStates[matrixVault].allocation += amount;
 
     emit MatrixRewardSettled(chainId, matrixVault, asset, amount);
@@ -163,6 +165,8 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     // Decrease MatrixVault's shares value.
     address asset = IMatrixVault(matrixVault).asset();
     _burn($, chainId, asset, matrixVault, amount);
+
+    _hubAssetState($, asset, chainId).branchAllocated -= amount;
     $.matrixStates[matrixVault].allocation -= amount;
 
     emit MatrixLossSettled(chainId, matrixVault, asset, amount);
