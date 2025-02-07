@@ -56,6 +56,14 @@ contract MockAssetManager is IAssetManager {
 
   function setHubAssetRedeemStatus(uint256 chainId, address hubAsset_, bool available) external { }
 
+  function setHubAssetLiquidityThreshold(uint256 chainId, address hubAsset_, uint256 threshold) external { }
+
+  function setHubAssetLiquidityThreshold(
+    uint256[] calldata chainIds,
+    address[] calldata hubAssets,
+    uint256[] calldata thresholds
+  ) external { }
+
   function entrypoint() external view returns (address) {
     return _entrypoint;
   }
@@ -71,6 +79,8 @@ contract MockAssetManager is IAssetManager {
   function branchAsset(address hubAsset_, uint256 chainId_) external view returns (address) { }
 
   function hubAssetRedeemable(address hubAsset_, uint256 chainId) external view returns (bool) { }
+
+  function hubAssetLiquidityThreshold(address hubAsset_, uint256 chainId) external view returns (uint256) { }
 
   function hubAsset(uint256 chainId_, address branchAsset_) external view returns (address) { }
 

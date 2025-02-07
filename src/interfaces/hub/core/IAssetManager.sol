@@ -39,6 +39,14 @@ interface IAssetManagerStorageV1 {
    */
   event HubAssetRedeemStatusSet(address indexed hubAsset, uint256 indexed chainId, bool available);
 
+  /**
+   * @notice Emitted when the liquidity threshold for a HubAsset is updated.
+   * @param hubAsset The address of the HubAsset.
+   * @param chainId The chain ID where the liquidity threshold is being set.
+   * @param threshold The new liquidity threshold value for the HubAsset.
+   */
+  event HubAssetLiquidityThresholdSet(address indexed hubAsset, uint256 indexed chainId, uint256 threshold);
+
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
   error IAssetManagerStorageV1__HubAssetPairNotExist(address hubAsset);
@@ -52,6 +60,10 @@ interface IAssetManagerStorageV1 {
 
   error IAssetManagerStorageV1__CollateralInsufficient(
     uint256 chainId, address hubAsset, uint256 collateral, uint256 amount
+  );
+
+  error IAssetManagerStorageV1__BranchLiquidityNotInsufficient(
+    uint256 chainId, address hubAsset, uint256 threshold, uint256 amount
   );
 
   //=========== NOTE: STATE GETTERS ===========//
@@ -87,6 +99,14 @@ interface IAssetManagerStorageV1 {
    * @return redeemable A boolean indicating whether the hub asset is redeemable on the given chain.
    */
   function hubAssetRedeemable(address hubAsset_, uint256 chainId) external view returns (bool);
+
+  /**
+   * @notice Get the liquidity threshold for a hub asset on a given chain.
+   * @param hubAsset_ The address of the hub asset.
+   * @param chainId The ID of the target chain.
+   * @return threshold The liquidity threshold for the hub asset on the given chain.
+   */
+  function hubAssetLiquidityThreshold(address hubAsset_, uint256 chainId) external view returns (uint256);
 
   /**
    * @notice Get the hub asset address for a given chain ID and branch asset
@@ -352,6 +372,27 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param available A boolean indicating whether the hub asset is available for redemption (true) or not (false)
    */
   function setHubAssetRedeemStatus(uint256 chainId, address hubAsset, bool available) external;
+
+  /**
+   * @notice Set the liquidity threshold for a hub asset on a given chain.
+   * @param chainId The ID of the chain where the liquidity threshold is being set.
+   * @param hubAsset The address of the hub asset for which the liquidity threshold is being set.
+   * @param threshold The new liquidity threshold for the hub asset on the given chain.
+   */
+  function setHubAssetLiquidityThreshold(uint256 chainId, address hubAsset, uint256 threshold) external;
+
+  /**
+   * @notice Set liquidity thresholds for multiple hub assets on multiple chains.
+   * @dev This function allows the owner or authorized user to set liquidity thresholds for multiple hub assets at once, on multiple chains.
+   * @param chainIds An array of chain IDs where the liquidity thresholds are being set.
+   * @param hubAssets An array of hub asset addresses for which the liquidity thresholds are being set.
+   * @param thresholds An array of new liquidity thresholds corresponding to the hub assets on the given chains.
+   */
+  function setHubAssetLiquidityThreshold(
+    uint256[] calldata chainIds,
+    address[] calldata hubAssets,
+    uint256[] calldata thresholds
+  ) external;
 
   /**
    * @notice Initialize a Matrix for branch asset (MatrixVault) on a given chain
