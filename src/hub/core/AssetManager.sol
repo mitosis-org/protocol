@@ -86,6 +86,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
 
     _assertHubAssetRedeemable($, hubAsset, chainId);
     _assertCollateralNotInsufficient($, hubAsset, chainId, amount);
+    _assertBranchLiquidityNotInsufficient($, hubAsset, chainId, amount);
 
     _burn($, chainId, hubAsset, _msgSender(), amount);
     $.entrypoint.redeem(chainId, branchAsset, to, amount);
@@ -106,6 +107,9 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     require(amount <= idle, IAssetManager__MatrixInsufficient(matrixVault));
 
     $.entrypoint.allocateMatrix(chainId, matrixVault, amount);
+
+    address hubAsset = IMatrixVault(matrixVault).asset();
+    _hubAssetState($, hubAsset, chainId).branchAllocated += amount;
     $.matrixStates[matrixVault].allocation += amount;
 
     emit MatrixAllocated(chainId, matrixVault, amount);
@@ -117,6 +121,8 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
 
     _assertOnlyEntrypoint($);
 
+    address hubAsset = IMatrixVault(matrixVault).asset();
+    _hubAssetState($, hubAsset, chainId).branchAllocated -= amount;
     $.matrixStates[matrixVault].allocation -= amount;
 
     emit MatrixDeallocated(chainId, matrixVault, amount);
@@ -143,6 +149,8 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     // Increase MatrixVault's shares value.
     address asset = IMatrixVault(matrixVault).asset();
     _mint($, chainId, asset, address(matrixVault), amount);
+
+    _hubAssetState($, asset, chainId).branchAllocated += amount;
     $.matrixStates[matrixVault].allocation += amount;
 
     emit MatrixRewardSettled(chainId, matrixVault, asset, amount);
@@ -157,6 +165,8 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     // Decrease MatrixVault's shares value.
     address asset = IMatrixVault(matrixVault).asset();
     _burn($, chainId, asset, matrixVault, amount);
+
+    _hubAssetState($, asset, chainId).branchAllocated -= amount;
     $.matrixStates[matrixVault].allocation -= amount;
 
     emit MatrixLossSettled(chainId, matrixVault, asset, amount);
@@ -198,6 +208,27 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
 
   function setHubAssetRedeemStatus(uint256 chainId, address hubAsset, bool available) external onlyOwner {
     _setHubAssetRedeemStatus(_getStorageV1(), hubAsset, chainId, available);
+  }
+
+  function setHubAssetLiquidityThresholdRatio(uint256 chainId, address hubAsset, uint256 thresholdRatio)
+    external
+    onlyOwner
+  {
+    _setHubAssetLiquidityThresholdRatio(_getStorageV1(), hubAsset, chainId, thresholdRatio);
+  }
+
+  function setHubAssetLiquidityThresholdRatio(
+    uint256[] calldata chainIds,
+    address[] calldata hubAssets,
+    uint256[] calldata thresholdRatios
+  ) external onlyOwner {
+    require(chainIds.length == hubAssets.length, StdError.InvalidParameter('hubAssets'));
+    require(chainIds.length == thresholdRatios.length, StdError.InvalidParameter('thresholdRatios'));
+
+    StorageV1 storage $ = _getStorageV1();
+    for (uint256 i = 0; i < chainIds.length; i++) {
+      _setHubAssetLiquidityThresholdRatio($, hubAssets[i], chainIds[i], thresholdRatios[i]);
+    }
   }
 
   function initializeMatrix(uint256 chainId, address matrixVault) external onlyOwner {
