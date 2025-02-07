@@ -104,7 +104,7 @@ interface IAssetManagerStorageV1 {
    * @notice Get the liquidity threshold ratio for a hub asset on a given chain.
    * @param hubAsset_ The address of the hub asset.
    * @param chainId The ID of the target chain.
-   * @return thresholdRatio The liquidity threshold ratio for the hub asset on the given chain (0 ~ 100).
+   * @return thresholdRatio The liquidity threshold ratio for the hub asset on the given chain (0 ~ 10000).
    */
   function hubAssetLiquidityThresholdRatio(address hubAsset_, uint256 chainId) external view returns (uint256);
 
@@ -377,7 +377,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @notice Set the liquidity threshold ratio for a hub asset on a given chain.
    * @param chainId The ID of the chain where the liquidity threshold ratio is being set.
    * @param hubAsset The address of the hub asset for which the liquidity threshold ratio is being set.
-   * @param thresholdRatio The new liquidity threshold ratio for the hub asset on the given chain (0 ~ 100).
+   * @param thresholdRatio The new liquidity threshold ratio for the hub asset on the given chain (0 ~ 10000).
    */
   function setHubAssetLiquidityThresholdRatio(uint256 chainId, address hubAsset, uint256 thresholdRatio) external;
 
