@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.27;
+pragma solidity ^0.8.27;
 
 import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
 import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';

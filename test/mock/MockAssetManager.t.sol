@@ -62,6 +62,10 @@ contract MockAssetManager is IAssetManager {
 
   function hubAssetLiquidityThresholdRatio(address hubAsset_, uint256 chainId) external view returns (uint256) { }
 
+  function hubAssetLiquidityThresholdRatioPrecision() external pure returns (uint256) {
+    return 10_000;
+  }
+
   function setHubAssetLiquidityThresholdRatio(
     uint256[] calldata chainIds,
     address[] calldata hubAssets,
