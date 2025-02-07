@@ -63,9 +63,7 @@ interface IAssetManagerStorageV1 {
   );
 
   error IAssetManagerStorageV1__BranchLiquidityNotInsufficient(
-    uint256 chainId,
-    address hubAsset,
-    uint256 amount // TODO
+    uint256 chainId, address hubAsset, uint256 allocated, uint256 collateral, uint256 amount
   );
 
   //=========== NOTE: STATE GETTERS ===========//

@@ -243,7 +243,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
 
     require(
       (allocated / collateral_ - amount) * 100 > liquidityThresholdRatio,
-      IAssetManagerStorageV1__BranchLiquidityNotInsufficient(chainId, hubAsset_, amount)
+      IAssetManagerStorageV1__BranchLiquidityNotInsufficient(chainId, hubAsset_, allocated, collateral_, amount)
     );
   }
 
