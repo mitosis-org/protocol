@@ -101,10 +101,18 @@ interface IAssetManagerStorageV1 {
   function hubAssetRedeemable(address hubAsset_, uint256 chainId) external view returns (bool);
 
   /**
+   * @notice Get the precision used for the hub asset liquidity threshold ratio.
+   * @dev This function returns the precision value used for representing the liquidity
+   *      threshold ratio of hub assets. It ensures consistency in calculations.
+   * @return The precision value for the liquidity threshold ratio.
+   */
+  function hubAssetLiquidityThresholdRatioPrecision() external view returns (uint256);
+
+  /**
    * @notice Get the liquidity threshold ratio for a hub asset on a given chain.
    * @param hubAsset_ The address of the hub asset.
    * @param chainId The ID of the target chain.
-   * @return thresholdRatio The liquidity threshold ratio for the hub asset on the given chain (0 ~ 10000).
+   * @return thresholdRatio The liquidity threshold ratio for the hub asset on the given chain (0 ~ LIQUIDITY_THRESHOLD_RATIO_PERCISION).
    */
   function hubAssetLiquidityThresholdRatio(address hubAsset_, uint256 chainId) external view returns (uint256);
 
@@ -377,7 +385,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @notice Set the liquidity threshold ratio for a hub asset on a given chain.
    * @param chainId The ID of the chain where the liquidity threshold ratio is being set.
    * @param hubAsset The address of the hub asset for which the liquidity threshold ratio is being set.
-   * @param thresholdRatio The new liquidity threshold ratio for the hub asset on the given chain (0 ~ 10000).
+   * @param thresholdRatio The new liquidity threshold ratio for the hub asset on the given chain (0 ~ LIQUIDITY_THRESHOLD_RATIO_PERCISION).
    */
   function setHubAssetLiquidityThresholdRatio(uint256 chainId, address hubAsset, uint256 thresholdRatio) external;
 

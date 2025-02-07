@@ -14,14 +14,14 @@ import { StdError } from '../../lib/StdError.sol';
 abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgradeable {
   using ERC7201Utils for string;
 
-  uint256 LIQUIDITY_THRESHOLD_PERCISION = 10000;
+  uint256 LIQUIDITY_THRESHOLD_RATIO_PERCISION = 10000;
 
   struct HubAssetState {
     bool redeemable;
     address branchAsset;
     uint256 collateral;
     uint256 branchAllocated;
-    uint256 liquidityThresholdRatio; // The number must be between 0 and 10000, It means 0 ~ 100.00.
+    uint256 liquidityThresholdRatio; // The number must be between 0 and LIQUIDITY_THRESHOLD_RATIO_PERCISION.
   }
 
   struct BranchAssetState {
@@ -76,6 +76,10 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
 
   function hubAssetRedeemable(address hubAsset_, uint256 chainId) external view returns (bool) {
     return _hubAssetState(_getStorageV1(), hubAsset_, chainId).redeemable;
+  }
+
+  function hubAssetLiquidityThresholdRatioPrecision() external view returns (uint256) {
+    return LIQUIDITY_THRESHOLD_RATIO_PERCISION;
   }
 
   function hubAssetLiquidityThresholdRatio(address hubAsset_, uint256 chainId) external view returns (uint256) {
@@ -158,7 +162,8 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     HubAssetState storage hubAssetState = _hubAssetState($, hubAsset_, chainId);
 
     require(
-      liquidityThresholdRatio <= LIQUIDITY_THRESHOLD_PERCISION, StdError.InvalidParameter('liquidityThresholdRatio')
+      liquidityThresholdRatio <= LIQUIDITY_THRESHOLD_RATIO_PERCISION,
+      StdError.InvalidParameter('liquidityThresholdRatio')
     );
     require(hubAssetState.branchAsset != address(0), IAssetManagerStorageV1__HubAssetPairNotExist(hubAsset_));
 
@@ -246,7 +251,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     uint256 liquidityThresholdRatio = hubAssetState.liquidityThresholdRatio;
 
     require(
-      (allocated / collateral_ - amount) * LIQUIDITY_THRESHOLD_PERCISION > liquidityThresholdRatio,
+      (allocated / collateral_ - amount) * LIQUIDITY_THRESHOLD_RATIO_PERCISION > liquidityThresholdRatio,
       IAssetManagerStorageV1__BranchLiquidityNotInsufficient(chainId, hubAsset_, allocated, collateral_, amount)
     );
   }
