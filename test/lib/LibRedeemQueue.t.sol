@@ -271,7 +271,7 @@ contract LibRedeemQueueTest is Test {
     }
   }
 
-  function test_searchReserveLogByAccumulated() public {
+  function test_searchReserveLogByAccumulatedShares() public {
     uint256 startTime = block.timestamp;
     for (uint256 i = 0; i < 5; i++) {
       vm.warp(startTime + i * 10 seconds);
@@ -281,27 +281,61 @@ contract LibRedeemQueueTest is Test {
     LibRedeemQueue.ReserveLog memory log;
     bool found;
 
-    (log, found) = queue.searchReserveLogByAccumulated(3 ether);
+    (log, found) = queue.searchReserveLogByAccumulatedShares(3 ether);
     assertEq(log.reservedAt, startTime + 20 seconds);
-    assertEq(log.accumulated, 3 ether);
+    assertEq(log.accumulatedShares, 3 ether);
     assertTrue(found);
 
-    (log, found) = queue.searchReserveLogByAccumulated(2.5 ether);
+    (log, found) = queue.searchReserveLogByAccumulatedShares(2.5 ether);
     assertEq(log.reservedAt, startTime + 20 seconds);
-    assertEq(log.accumulated, 3 ether);
+    assertEq(log.accumulatedShares, 3 ether);
     assertTrue(found);
 
-    (log, found) = queue.searchReserveLogByAccumulated(3.5 ether);
+    (log, found) = queue.searchReserveLogByAccumulatedShares(3.5 ether);
     assertEq(log.reservedAt, startTime + 30 seconds);
-    assertEq(log.accumulated, 4 ether);
+    assertEq(log.accumulatedShares, 4 ether);
     assertTrue(found);
 
-    (log, found) = queue.searchReserveLogByAccumulated(4 ether);
+    (log, found) = queue.searchReserveLogByAccumulatedShares(4 ether);
     assertEq(log.reservedAt, startTime + 30 seconds);
-    assertEq(log.accumulated, 4 ether);
+    assertEq(log.accumulatedShares, 4 ether);
     assertTrue(found);
 
-    (log, found) = queue.searchReserveLogByAccumulated(10 ether);
+    (log, found) = queue.searchReserveLogByAccumulatedShares(10 ether);
+    assertFalse(found);
+  }
+
+  function test_searchReserveLogByAccumulatedAssets() public {
+    uint256 startTime = block.timestamp;
+    for (uint256 i = 0; i < 5; i++) {
+      vm.warp(startTime + i * 10 seconds);
+      queue.reserve(1 ether);
+    }
+
+    LibRedeemQueue.ReserveLog memory log;
+    bool found;
+
+    (log, found) = queue.searchReserveLogByAccumulatedAssets(3 ether);
+    assertEq(log.reservedAt, startTime + 20 seconds);
+    assertEq(log.accumulatedAssets, 3 ether);
+    assertTrue(found);
+
+    (log, found) = queue.searchReserveLogByAccumulatedAssets(2.5 ether);
+    assertEq(log.reservedAt, startTime + 20 seconds);
+    assertEq(log.accumulatedAssets, 3 ether);
+    assertTrue(found);
+
+    (log, found) = queue.searchReserveLogByAccumulatedAssets(3.5 ether);
+    assertEq(log.reservedAt, startTime + 30 seconds);
+    assertEq(log.accumulatedAssets, 4 ether);
+    assertTrue(found);
+
+    (log, found) = queue.searchReserveLogByAccumulatedAssets(4 ether);
+    assertEq(log.reservedAt, startTime + 30 seconds);
+    assertEq(log.accumulatedAssets, 4 ether);
+    assertTrue(found);
+
+    (log, found) = queue.searchReserveLogByAccumulatedAssets(10 ether);
     assertFalse(found);
   }
 
@@ -317,22 +351,22 @@ contract LibRedeemQueueTest is Test {
 
     (log, found) = queue.searchReserveLogByTimestamp(startTime + 15 seconds);
     assertEq(log.reservedAt, startTime + 10 seconds);
-    assertEq(log.accumulated, 2 ether);
+    assertEq(log.accumulatedAssets, 2 ether);
     assertTrue(found);
 
     (log, found) = queue.searchReserveLogByTimestamp(startTime + 20 seconds);
     assertEq(log.reservedAt, startTime + 20 seconds);
-    assertEq(log.accumulated, 3 ether);
+    assertEq(log.accumulatedAssets, 3 ether);
     assertTrue(found);
 
     (log, found) = queue.searchReserveLogByTimestamp(startTime + 25 seconds);
     assertEq(log.reservedAt, startTime + 20 seconds);
-    assertEq(log.accumulated, 3 ether);
+    assertEq(log.accumulatedAssets, 3 ether);
     assertTrue(found);
 
     (log, found) = queue.searchReserveLogByTimestamp(startTime + 30 seconds);
     assertEq(log.reservedAt, startTime + 30 seconds);
-    assertEq(log.accumulated, 4 ether);
+    assertEq(log.accumulatedAssets, 4 ether);
     assertTrue(found);
 
     (log, found) = queue.searchReserveLogByTimestamp(startTime + 60 seconds);

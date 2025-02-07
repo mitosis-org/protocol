@@ -221,10 +221,10 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
   function _sync(StorageV1 storage $, IMatrixVault matrixVault, uint256 assets) internal {
     MatrixVaultState storage matrixVaultState = $.states[address(matrixVault)];
 
-    matrixVault.withdraw(assets, address(this), address(this));
+    uint256 shares = matrixVault.withdraw(assets, address(this), address(this));
 
     matrixVaultState.queue.reserve(
-      assets, matrixVault.totalSupply(), matrixVault.totalAssets(), block.timestamp.toUint48()
+      shares, assets, matrixVault.totalSupply(), matrixVault.totalAssets(), block.timestamp.toUint48()
     );
   }
 

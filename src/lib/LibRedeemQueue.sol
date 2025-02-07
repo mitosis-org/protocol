@@ -29,7 +29,8 @@ library LibRedeemQueue {
   }
 
   struct ReserveLog {
-    uint256 accumulated;
+    uint256 accumulatedShares;
+    uint256 accumulatedAssets;
     uint48 reservedAt;
     uint208 totalShares;
     uint208 totalAssets;
@@ -46,6 +47,7 @@ library LibRedeemQueue {
   struct Queue {
     uint256 offset;
     uint256 size;
+    uint256 totalReservedShares;
     uint256 totalReservedAssets;
     uint256 totalClaimedAssets;
     uint256 redeemPeriod;
@@ -58,7 +60,7 @@ library LibRedeemQueue {
 
   event Queued(address indexed recipient, uint256 requestIdx, uint256 amount);
   event Claimed(address indexed recipient, uint256 requestIdx);
-  event Reserved(uint256 amount, uint256 historyIndex);
+  event Reserved(uint256 shares, uint256 assets, uint256 historyIndex);
   event QueueOffsetUpdated(uint256 oldOffset, uint256 newOffset);
   event IndexOffsetUpdated(address indexed recipient, uint256 oldOffset, uint256 newOffset);
 
@@ -120,7 +122,7 @@ library LibRedeemQueue {
     returns (ReserveLog memory reserveLog_, bool isReserved_)
   {
     Request memory req = get(q, itemIndex);
-    return _searchReserveLogByAccumulated(q.reserveHistory, req.accumulatedAssets);
+    return _searchReserveLogByAccumulatedShares(q.reserveHistory, req.accumulatedShares);
   }
 
   function reservedAt(Queue storage q, uint256 itemIndex) internal view returns (uint256 reservedAt_, bool isReserved_) {
@@ -200,12 +202,20 @@ library LibRedeemQueue {
     return _searchIndexOffset(q.indexes[recipient], queueOffset);
   }
 
-  function searchReserveLogByAccumulated(Queue storage q, uint256 accumulated)
+  function searchReserveLogByAccumulatedShares(Queue storage q, uint256 accumulatedShares)
     internal
     view
     returns (ReserveLog memory log, bool found)
   {
-    return _searchReserveLogByAccumulated(q.reserveHistory, accumulated);
+    return _searchReserveLogByAccumulatedShares(q.reserveHistory, accumulatedShares);
+  }
+
+  function searchReserveLogByAccumulatedAssets(Queue storage q, uint256 accumulatedAssets)
+    internal
+    view
+    returns (ReserveLog memory log, bool found)
+  {
+    return _searchReserveLogByAccumulatedAssets(q.reserveHistory, accumulatedAssets);
   }
 
   function searchReserveLogByTimestamp(Queue storage q, uint256 timestamp)
@@ -305,25 +315,45 @@ library LibRedeemQueue {
     return totalClaimedAssets;
   }
 
-  function reserve(Queue storage q, uint256 amount_, uint256 totalShares, uint256 totalAssets, uint48 timestamp)
-    internal
-  {
-    require(amount_ != 0, LibRedeemQueue__InvalidReserveAmount());
+  function reserve(
+    Queue storage q,
+    uint256 shares_,
+    uint256 assets_,
+    uint256 totalShares,
+    uint256 totalAssets,
+    uint48 timestamp
+  ) internal {
+    require(shares_ != 0, LibRedeemQueue__InvalidReserveAmount());
+    require(assets_ != 0, LibRedeemQueue__InvalidReserveAmount());
     uint256 historyIndex = q.reserveHistory.length;
 
-    q.totalReservedAssets += amount_;
-    q.reserveHistory.push(
-      ReserveLog({
-        accumulated: q.reserveHistory.length == 0 ? amount_ : q.reserveHistory[historyIndex - 1].accumulated + amount_,
+    q.totalReservedShares += shares_;
+    q.totalReservedAssets += assets_;
+
+    ReserveLog memory log;
+    if (q.reserveHistory.length == 0) {
+      log = ReserveLog({
+        accumulatedShares: shares_,
+        accumulatedAssets: assets_,
         reservedAt: timestamp,
         totalShares: totalShares.toUint208(),
         totalAssets: totalAssets.toUint208()
-      })
-    );
+      });
+    } else {
+      ReserveLog storage prevLog = q.reserveHistory[historyIndex - 1];
+      log = ReserveLog({
+        accumulatedShares: prevLog.accumulatedShares + shares_,
+        accumulatedAssets: prevLog.accumulatedAssets + assets_,
+        reservedAt: timestamp,
+        totalShares: totalShares.toUint208(),
+        totalAssets: totalAssets.toUint208()
+      });
+    }
+    q.reserveHistory.push(log);
 
     _updateQueueOffset(q, q.totalReservedAssets, timestamp);
 
-    emit Reserved(amount_, historyIndex);
+    emit Reserved(shares_, assets_, historyIndex);
   }
 
   function update(Queue storage q, uint48 timestamp) internal returns (uint256 offset, bool updated) {
@@ -355,7 +385,7 @@ library LibRedeemQueue {
   {
     if (!isReserved(q, req)) return (0, false);
 
-    (ReserveLog memory log, bool found) = _searchReserveLogByAccumulated(q.reserveHistory, req.accumulatedAssets);
+    (ReserveLog memory log, bool found) = _searchReserveLogByAccumulatedShares(q.reserveHistory, req.accumulatedShares);
     if (!found) return (0, false);
 
     return (log.reservedAt, true);
@@ -429,7 +459,7 @@ library LibRedeemQueue {
     return (low, true);
   }
 
-  function _searchReserveLogByAccumulated(ReserveLog[] memory logs, uint256 accumulated)
+  function _searchReserveLogByAccumulatedShares(ReserveLog[] memory logs, uint256 accumulatedShares)
     private
     pure
     returns (ReserveLog memory log, bool found)
@@ -439,11 +469,36 @@ library LibRedeemQueue {
     if (low == high) return (log, false);
 
     // ensure accumulated is within the range of the logs
-    if (accumulated < logs[low].accumulated || logs[high - 1].accumulated < accumulated) return (log, false);
+    if (accumulatedShares < logs[low].accumulatedShares || logs[high - 1].accumulatedShares < accumulatedShares) {
+      return (log, false);
+    }
 
     while (low < high) {
       uint256 mid = Math.average(low, high);
-      if (logs[mid].accumulated < accumulated) low = mid + 1;
+      if (logs[mid].accumulatedShares < accumulatedShares) low = mid + 1;
+      else high = mid;
+    }
+
+    return (logs[low], true);
+  }
+
+  function _searchReserveLogByAccumulatedAssets(ReserveLog[] memory logs, uint256 accumulatedAssets)
+    private
+    pure
+    returns (ReserveLog memory log, bool found)
+  {
+    uint256 low = 0;
+    uint256 high = logs.length;
+    if (low == high) return (log, false);
+
+    // ensure accumulated is within the range of the logs
+    if (accumulatedAssets < logs[low].accumulatedAssets || logs[high - 1].accumulatedAssets < accumulatedAssets) {
+      return (log, false);
+    }
+
+    while (low < high) {
+      uint256 mid = Math.average(low, high);
+      if (logs[mid].accumulatedAssets < accumulatedAssets) low = mid + 1;
       else high = mid;
     }
 

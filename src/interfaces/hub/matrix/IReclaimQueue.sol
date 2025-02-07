@@ -68,13 +68,15 @@ interface IReclaimQueueStorageV1 {
 
   /**
    * @notice Historical data about reserves at a specific point in time
-   * @param accumulated Total accumulated reserve assets at this point
+   * @param accumulatedShares Total accumulated reserve shares at this point
+   * @param accumulatedAssets Total accumulated reserve assets at this point
    * @param reservedAt Timestamp when this reserve entry was created
    * @param totalShares Total shares in the MatrixVault at this point
    * @param totalAssets Total assets in the MatrixVault at this point
    */
   struct GetReserveHistoryResponse {
-    uint256 accumulated;
+    uint256 accumulatedShares;
+    uint256 accumulatedAssets;
     uint48 reservedAt;
     uint208 totalShares;
     uint208 totalAssets;

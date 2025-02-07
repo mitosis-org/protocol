@@ -190,7 +190,8 @@ abstract contract ReclaimQueueStorageV1 is IReclaimQueueStorageV1, ContextUpgrad
   function reserveHistory(address matrixVault, uint256 index) external view returns (GetReserveHistoryResponse memory) {
     LibRedeemQueue.ReserveLog memory log = _queue(_getStorageV1(), matrixVault).reserveHistory[index];
     return GetReserveHistoryResponse({
-      accumulated: log.accumulated,
+      accumulatedShares: log.accumulatedShares,
+      accumulatedAssets: log.accumulatedAssets,
       reservedAt: log.reservedAt,
       totalShares: log.totalShares,
       totalAssets: log.totalAssets
