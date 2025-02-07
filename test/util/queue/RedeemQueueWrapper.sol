@@ -109,12 +109,20 @@ contract RedeemQueueWrapper {
     return _searchIndexOffset(recipient, accumulated, timestamp);
   }
 
-  function searchReserveLogByAccumulated(uint256 accumulated)
+  function searchReserveLogByAccumulatedShares(uint256 accumulatedShares)
     external
     view
     returns (LibRedeemQueue.ReserveLog memory log, bool found)
   {
-    return queue.searchReserveLogByAccumulated(accumulated);
+    return queue.searchReserveLogByAccumulatedShares(accumulatedShares);
+  }
+
+  function searchReserveLogByAccumulatedAssets(uint256 accumulatedAssets)
+    external
+    view
+    returns (LibRedeemQueue.ReserveLog memory log, bool found)
+  {
+    return queue.searchReserveLogByAccumulatedAssets(accumulatedAssets);
   }
 
   function searchReserveLogByTimestamp(uint256 timestamp)
@@ -148,11 +156,11 @@ contract RedeemQueueWrapper {
   }
 
   function reserve(uint256 amount_) external {
-    queue.reserve(amount_, 1 ether, 1 ether, block.timestamp.toUint48());
+    queue.reserve(amount_, amount_, 1 ether, 1 ether, block.timestamp.toUint48());
   }
 
   function reserve(uint256 amount_, uint256 totalShares_, uint256 totalAssets_) external {
-    queue.reserve(amount_, totalShares_.toUint208(), totalAssets_.toUint208(), block.timestamp.toUint48());
+    queue.reserve(amount_, amount_, totalShares_.toUint208(), totalAssets_.toUint208(), block.timestamp.toUint48());
   }
 
   function update() external returns (uint256 offset_, bool updated) {

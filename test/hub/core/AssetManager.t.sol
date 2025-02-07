@@ -228,6 +228,9 @@ contract AssetManagerTest is Toolkit {
     vm.prank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
 
+    vm.prank(owner);
+    _assetManager.setHubAssetRedeemStatus(branchChainId, address(_token), true);
+
     vm.prank(address(_assetManagerEntrypoint));
     _assetManager.deposit(branchChainId, branchAsset1, user1, 100 ether);
 
@@ -250,6 +253,9 @@ contract AssetManagerTest is Toolkit {
     vm.prank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
 
+    vm.prank(owner);
+    _assetManager.setHubAssetRedeemStatus(branchChainId, address(_token), true);
+
     vm.prank(address(_assetManagerEntrypoint));
     _assetManager.deposit(branchChainId, branchAsset1, user1, 100 ether);
 
@@ -264,6 +270,9 @@ contract AssetManagerTest is Toolkit {
   function test_redeem_ZeroAmount() public {
     vm.prank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+
+    vm.prank(owner);
+    _assetManager.setHubAssetRedeemStatus(branchChainId, address(_token), true);
 
     vm.prank(address(_assetManagerEntrypoint));
     _assetManager.deposit(branchChainId, branchAsset1, user1, 100 ether);
@@ -280,6 +289,8 @@ contract AssetManagerTest is Toolkit {
     vm.startPrank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
     _assetManager.setAssetPair(address(_token), branchChainId2, branchAsset1);
+    _assetManager.setHubAssetRedeemStatus(branchChainId, address(_token), true);
+    _assetManager.setHubAssetRedeemStatus(branchChainId2, address(_token), true);
     vm.stopPrank();
 
     vm.startPrank(address(_assetManagerEntrypoint));
