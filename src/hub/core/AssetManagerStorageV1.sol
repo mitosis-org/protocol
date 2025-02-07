@@ -18,6 +18,8 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     bool redeemable;
     address branchAsset;
     uint256 collateral;
+    uint256 branchAllocated;
+    uint256 liquidityThresholdRatio; // The number must be between 0 and 100.
   }
 
   struct BranchAssetState {
@@ -72,6 +74,10 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
 
   function hubAssetRedeemable(address hubAsset_, uint256 chainId) external view returns (bool) {
     return _hubAssetState(_getStorageV1(), hubAsset_, chainId).redeemable;
+  }
+
+  function hubAssetLiquidityThresholdRatio(address hubAsset_, uint256 chainId) external view returns (uint256) {
+    return _hubAssetState(_getStorageV1(), hubAsset_, chainId).liquidityThresholdRatio;
   }
 
   function hubAsset(uint256 chainId, address branchAsset_) external view returns (address) {
@@ -141,6 +147,24 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     emit HubAssetRedeemStatusSet(hubAsset_, chainId, available);
   }
 
+  function _setHubAssetLiquidityThresholdRatio(
+    StorageV1 storage $,
+    address hubAsset_,
+    uint256 chainId,
+    uint256 liquidityThresholdRatio
+  ) internal {
+    HubAssetState storage hubAssetState = _hubAssetState($, hubAsset_, chainId);
+
+    require(
+      liquidityThresholdRatio >= 0 && liquidityThresholdRatio <= 100,
+      StdError.InvalidParameter('liquidityThresholdRatio')
+    );
+    require(hubAssetState.branchAsset != address(0), IAssetManagerStorageV1__HubAssetPairNotExist(hubAsset_));
+
+    hubAssetState.liquidityThresholdRatio = liquidityThresholdRatio;
+    emit HubAssetLiquidityThresholdRatioSet(hubAsset_, chainId, liquidityThresholdRatio);
+  }
+
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
   function _hubAssetState(StorageV1 storage $, address hubAsset_, uint256 chainId)
@@ -206,6 +230,23 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     uint256 collateral_ = _hubAssetState($, hubAsset_, chainId).collateral;
     require(
       collateral_ >= amount, IAssetManagerStorageV1__CollateralInsufficient(chainId, hubAsset_, collateral_, amount)
+    );
+  }
+
+  function _assertBranchLiquidityNotInsufficient(
+    StorageV1 storage $,
+    address hubAsset_,
+    uint256 chainId,
+    uint256 amount
+  ) internal view virtual {
+    HubAssetState storage hubAssetState = _hubAssetState($, hubAsset_, chainId);
+    uint256 allocated = hubAssetState.branchAllocated;
+    uint256 collateral_ = hubAssetState.collateral;
+    uint256 liquidityThresholdRatio = hubAssetState.liquidityThresholdRatio;
+
+    require(
+      (allocated / collateral_ - amount) * 100 > liquidityThresholdRatio,
+      IAssetManagerStorageV1__BranchLiquidityNotInsufficient(chainId, hubAsset_, amount)
     );
   }
 
