@@ -17,9 +17,11 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   uint256 LIQUIDITY_THRESHOLD_RATIO_PERCISION = 10000;
 
   struct HubAssetState {
-    bool redeemable;
     address branchAsset;
     uint256 collateral;
+    // Redeemable state determined by collateral and threshold.
+    uint256 redeemableDepositThreshold;
+    // Redeemable states determined by collateral and the allocation ratio to the branch.
     uint256 branchAllocated;
     uint256 liquidityThresholdRatio; // The number must be between 0 and LIQUIDITY_THRESHOLD_RATIO_PERCISION.
   }
@@ -74,8 +76,15 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return _hubAssetState(_getStorageV1(), hubAsset_, chainId).branchAsset;
   }
 
-  function hubAssetRedeemable(address hubAsset_, uint256 chainId) external view returns (bool) {
-    return _hubAssetState(_getStorageV1(), hubAsset_, chainId).redeemable;
+  function redeemableDepositThreshold(address hubAsset_, uint256 chainId) external view returns (uint256) {
+    return _hubAssetState(_getStorageV1(), hubAsset_, chainId).redeemableDepositThreshold;
+  }
+
+  function redeemableAmount(address hubAsset_, uint256 chainId) external view returns (uint256) {
+    HubAssetState storage hubAssetState = _hubAssetState(_getStorageV1(), hubAsset_, chainId);
+    return hubAssetState.collateral <= hubAssetState.redeemableDepositThreshold
+      ? 0
+      : hubAssetState.collateral - hubAssetState.redeemableDepositThreshold;
   }
 
   function hubAssetLiquidityThresholdRatioPrecision() external view returns (uint256) {
@@ -144,13 +153,15 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     emit StrategistSet(matrixVault, strategist_);
   }
 
-  function _setHubAssetRedeemStatus(StorageV1 storage $, address hubAsset_, uint256 chainId, bool available) internal {
+  function _setRedeemableDepositThreshold(StorageV1 storage $, address hubAsset_, uint256 chainId, uint256 threshold)
+    internal
+  {
     HubAssetState storage hubAssetState = _hubAssetState($, hubAsset_, chainId);
 
     require(hubAssetState.branchAsset != address(0), IAssetManagerStorageV1__HubAssetPairNotExist(hubAsset_));
 
-    hubAssetState.redeemable = available;
-    emit HubAssetRedeemStatusSet(hubAsset_, chainId, available);
+    hubAssetState.redeemableDepositThreshold = threshold;
+    emit RedeemableDepositThresholdSet(hubAsset_, chainId, threshold);
   }
 
   function _setHubAssetLiquidityThresholdRatio(
@@ -221,9 +232,14 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     require(address($.treasury) != address(0), IAssetManagerStorageV1__TreasuryNotSet());
   }
 
-  function _assertHubAssetRedeemable(StorageV1 storage $, address hubAsset_, uint256 chainId) internal view virtual {
+  function _assertHubAssetRedeemable(StorageV1 storage $, address hubAsset_, uint256 chainId, uint256 amount)
+    internal
+    view
+    virtual
+  {
+    HubAssetState storage hubAssetState = _hubAssetState($, hubAsset_, chainId);
     require(
-      _hubAssetState($, hubAsset_, chainId).redeemable,
+      hubAssetState.collateral - amount >= hubAssetState.redeemableDepositThreshold,
       IAssetManagerStorageV1__HubAssetRedeemDisabled(hubAsset_, chainId)
     );
   }

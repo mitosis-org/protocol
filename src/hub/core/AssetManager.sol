@@ -84,8 +84,8 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    _assertHubAssetRedeemable($, hubAsset, chainId);
     _assertCollateralNotInsufficient($, hubAsset, chainId, amount);
+    _assertHubAssetRedeemable($, hubAsset, chainId, amount);
     _assertBranchLiquidityNotInsufficient($, hubAsset, chainId, amount);
 
     _burn($, chainId, hubAsset, _msgSender(), amount);
@@ -201,13 +201,11 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
     $.entrypoint.initializeAsset(chainId, branchAsset);
-    _setHubAssetRedeemStatus(_getStorageV1(), hubAsset, chainId, true);
-
     emit AssetInitialized(hubAsset, chainId, branchAsset);
   }
 
-  function setHubAssetRedeemStatus(uint256 chainId, address hubAsset, bool available) external onlyOwner {
-    _setHubAssetRedeemStatus(_getStorageV1(), hubAsset, chainId, available);
+  function setRedeemableDepositThreshold(uint256 chainId, address hubAsset, uint256 threshold) external onlyOwner {
+    _setRedeemableDepositThreshold(_getStorageV1(), hubAsset, chainId, threshold);
   }
 
   function setHubAssetLiquidityThresholdRatio(uint256 chainId, address hubAsset, uint256 thresholdRatio)
