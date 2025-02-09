@@ -98,13 +98,6 @@ interface IAssetManagerStorageV1 {
   function redeemableDepositThreshold(address hubAsset_, uint256 chainId) external view returns (uint256);
 
   /**
-   * @notice Retrieves the redeemable amount for a given hub asset and chain ID.
-   * @param hubAsset_ The address of the hub asset
-   * @param chainId The ID of the chain
-   */
-  function redeemableAmount(address hubAsset_, uint256 chainId) external view returns (uint256);
-
-  /**
    * @notice Get the precision used for the hub asset liquidity threshold ratio.
    * @dev This function returns the precision value used for representing the liquidity
    *      threshold ratio of hub assets. It ensures consistency in calculations.

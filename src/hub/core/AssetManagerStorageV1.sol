@@ -80,13 +80,6 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return _hubAssetState(_getStorageV1(), hubAsset_, chainId).redeemableDepositThreshold;
   }
 
-  function redeemableAmount(address hubAsset_, uint256 chainId) external view returns (uint256) {
-    HubAssetState storage hubAssetState = _hubAssetState(_getStorageV1(), hubAsset_, chainId);
-    return hubAssetState.collateral <= hubAssetState.redeemableDepositThreshold
-      ? 0
-      : hubAssetState.collateral - hubAssetState.redeemableDepositThreshold;
-  }
-
   function hubAssetLiquidityThresholdRatioPrecision() external view returns (uint256) {
     return LIQUIDITY_THRESHOLD_RATIO_PERCISION;
   }
