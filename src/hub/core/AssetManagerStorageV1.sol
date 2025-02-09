@@ -14,7 +14,7 @@ import { StdError } from '../../lib/StdError.sol';
 abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgradeable {
   using ERC7201Utils for string;
 
-  uint256 LIQUIDITY_THRESHOLD_RATIO_PERCISION = 10000;
+  uint256 constant LIQUIDITY_THRESHOLD_RATIO_PERCISION = 10000;
 
   struct HubAssetState {
     bool redeemable;
