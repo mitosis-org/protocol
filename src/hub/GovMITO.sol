@@ -59,11 +59,9 @@ contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
     revert StdError.Unauthorized();
   }
 
-  function initialize(address _owner, string calldata name, string calldata symbol, address minter_)
-    external
-    initializer
-  {
-    __ERC20_init(name, symbol);
+  function initialize(address _owner, address minter_) external initializer {
+    // TODO(thai): not fixed yet. could be modified before launching.
+    __ERC20_init('Mitosis Governance Token', 'gMITO');
     __Ownable2Step_init();
     _transferOwnership(_owner);
 

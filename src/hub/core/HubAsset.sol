@@ -9,8 +9,6 @@ import { StdError } from '../../lib/StdError.sol';
 import { HubAssetStorageV1 } from './HubAssetStorageV1.sol';
 
 contract HubAsset is Ownable2StepUpgradeable, ERC20Upgradeable, HubAssetStorageV1 {
-  using ERC7201Utils for string;
-
   constructor() {
     _disableInitializers();
   }

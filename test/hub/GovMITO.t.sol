@@ -29,9 +29,7 @@ contract GovMITOTest is Test {
       payable(
         address(
           new TransparentUpgradeableProxy(
-            address(govMITOImpl),
-            address(_proxyAdmin),
-            abi.encodeCall(govMITO.initialize, (owner, 'Mitosis Governance Token', 'gMITO', minter))
+            address(govMITOImpl), address(_proxyAdmin), abi.encodeCall(govMITO.initialize, (owner, minter))
           )
         )
       )
