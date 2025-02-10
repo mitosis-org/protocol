@@ -56,8 +56,9 @@ contract MatrixVaultFactoryTest is Toolkit {
     assertTrue(base.vaultTypeInitialized(MatrixVaultFactory.VaultType.Capped));
   }
 
-  function test_create_basic() public {
-    test_initVaultType();
+  function test_create_basic() public returns (address) {
+    vm.prank(contractOwner);
+    base.initVaultType(MatrixVaultFactory.VaultType.Basic, address(basicImpl));
 
     address instance = _createBasic(
       contractOwner,
@@ -75,10 +76,13 @@ contract MatrixVaultFactoryTest is Toolkit {
 
     assertEq(base.instancesLength(MatrixVaultFactory.VaultType.Basic), 1);
     assertEq(base.instances(MatrixVaultFactory.VaultType.Basic, 0), instance);
+
+    return instance;
   }
 
-  function test_create_capped() public {
-    test_initVaultType();
+  function test_create_capped() public returns (address) {
+    vm.prank(contractOwner);
+    base.initVaultType(MatrixVaultFactory.VaultType.Capped, address(cappedImpl));
 
     address instance = _createCapped(
       contractOwner,
@@ -96,6 +100,23 @@ contract MatrixVaultFactoryTest is Toolkit {
 
     assertEq(base.instancesLength(MatrixVaultFactory.VaultType.Capped), 1);
     assertEq(base.instances(MatrixVaultFactory.VaultType.Capped, 0), instance);
+
+    return instance;
+  }
+
+  function test_migrate() public {
+    address basic = test_create_basic();
+    address capped = test_create_capped();
+
+    vm.prank(contractOwner);
+    base.migrate(MatrixVaultFactory.VaultType.Basic, MatrixVaultFactory.VaultType.Capped, basic, '');
+
+    assertEq(base.instancesLength(MatrixVaultFactory.VaultType.Basic), 0);
+    assertEq(base.instancesLength(MatrixVaultFactory.VaultType.Capped), 2);
+    assertEq(base.instances(MatrixVaultFactory.VaultType.Capped, 0), capped);
+    assertEq(base.instances(MatrixVaultFactory.VaultType.Capped, 1), basic);
+
+    assertEq(base.beacon(MatrixVaultFactory.VaultType.Capped), _erc1967Beacon(basic));
   }
 
   function _createBasic(address caller, MatrixVaultFactory.BasicVaultInitArgs memory args) internal returns (address) {
