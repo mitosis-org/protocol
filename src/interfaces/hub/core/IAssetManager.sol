@@ -37,7 +37,7 @@ interface IAssetManagerStorageV1 {
    * @param chainId The ID of the chain where the threshold is applied
    * @param threshold The new redeemable deposit threshold amount
    */
-  event HubAssetLiquidityThresholdSet(address indexed hubAsset, uint256 indexed chainId, uint256 threshold);
+  event BranchLiquidityThresholdSet(address indexed hubAsset, uint256 indexed chainId, uint256 threshold);
 
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
@@ -55,7 +55,7 @@ interface IAssetManagerStorageV1 {
   );
 
   error IAssetManagerStorageV1__BranchLiquidityNotInsufficient(
-    uint256 chainId, address hubAsset, uint256 allocated, uint256 collateral, uint256 amount
+    uint256 chainId, address hubAsset, uint256 allocated, uint256 liquidity, uint256 amount
   );
 
   //=========== NOTE: STATE GETTERS ===========//
@@ -83,6 +83,14 @@ interface IAssetManagerStorageV1 {
   function branchAsset(address hubAsset_, uint256 chainId) external view returns (address);
 
   /**
+   * @notice Get the total liquidity amount of branch asset for a given chain ID and hub asset.
+   * @dev The liquidity amount is equals to the total amount of branch asset deposited to the MitosisVault
+   * @param chainId The ID of the chain
+   * @param hubAsset_ The address of the hub asset
+   */
+  function branchLiquidity(uint256 chainId, address hubAsset_) external view returns (uint256);
+
+  /**
    * @notice Get the allocated amount of a branch asset for a given hub asset and chain ID
    * @param hubAsset_ The address of the hub asset
    * @param chainId The ID of the chain
@@ -94,22 +102,7 @@ interface IAssetManagerStorageV1 {
    * @param hubAsset_ The address of the hub asset
    * @param chainId The ID of the chain
    */
-  function hubAssetLiquidityThreshold(address hubAsset_, uint256 chainId) external view returns (uint256);
-
-  /**
-   * @notice Get the hub asset address for a given chain ID and branch asset
-   * @param chainId The ID of the chain
-   * @param branchAsset_ The address of the branch asset
-   */
-  function hubAsset(uint256 chainId, address branchAsset_) external view returns (address);
-
-  /**
-   * @notice Get the total collateral amount of branch asset for a given chain ID and hub asset.
-   * @dev The collateral amount is equals to the total amount of branch asset deposited to the MitosisVault
-   * @param chainId The ID of the chain
-   * @param hubAsset_ The address of the hub asset
-   */
-  function collateral(uint256 chainId, address hubAsset_) external view returns (uint256);
+  function branchLiquidityThreshold(address hubAsset_, uint256 chainId) external view returns (uint256);
 
   /**
    * @notice Get the available liquidity of branch asset for a given chain ID and hub asset.
@@ -118,6 +111,13 @@ interface IAssetManagerStorageV1 {
    * @param hubAsset_ The address of the hub asset
    */
   function branchAvailableLiquidity(uint256 chainId, address hubAsset_) external view returns (uint256);
+
+  /**
+   * @notice Get the hub asset address for a given chain ID and branch asset
+   * @param chainId The ID of the chain
+   * @param branchAsset_ The address of the branch asset
+   */
+  function hubAsset(uint256 chainId, address branchAsset_) external view returns (address);
 
   /**
    * @notice Check if a MatrixVault is initialized for a given chain and branch asset (MatrixVault -> hubAsset -> branchAsset)
@@ -368,7 +368,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param hubAsset The address of the hub asset for which the threshold applies
    * @param threshold The minimum deposit amount required for redemption
    */
-  function setHubAssetLiquidityThreshold(uint256 chainId, address hubAsset, uint256 threshold) external;
+  function setBranchLiquidityThreshold(uint256 chainId, address hubAsset, uint256 threshold) external;
 
   /**
    * @notice Sets the redeemable deposit threshold for multiple assets across multiple chains
@@ -376,7 +376,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param hubAssets An array of hub asset addresses for which the thresholds apply
    * @param thresholds An array of minimum deposit amounts required for redemption
    */
-  function setHubAssetLiquidityThreshold(
+  function setBranchLiquidityThreshold(
     uint256[] calldata chainIds,
     address[] calldata hubAssets,
     uint256[] calldata thresholds

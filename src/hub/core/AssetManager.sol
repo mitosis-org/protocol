@@ -204,11 +204,11 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     emit AssetInitialized(hubAsset, chainId, branchAsset);
   }
 
-  function setHubAssetLiquidityThreshold(uint256 chainId, address hubAsset, uint256 threshold) external onlyOwner {
-    _setHubAssetLiquidityThreshold(_getStorageV1(), hubAsset, chainId, threshold);
+  function setBranchLiquidityThreshold(uint256 chainId, address hubAsset, uint256 threshold) external onlyOwner {
+    _setBranchLiquidityThreshold(_getStorageV1(), hubAsset, chainId, threshold);
   }
 
-  function setHubAssetLiquidityThreshold(
+  function setBranchLiquidityThreshold(
     uint256[] calldata chainIds,
     address[] calldata hubAssets,
     uint256[] calldata thresholds
@@ -218,7 +218,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
 
     StorageV1 storage $ = _getStorageV1();
     for (uint256 i = 0; i < chainIds.length; i++) {
-      _setHubAssetLiquidityThreshold($, hubAssets[i], chainIds[i], thresholds[i]);
+      _setBranchLiquidityThreshold($, hubAssets[i], chainIds[i], thresholds[i]);
     }
   }
 
@@ -278,12 +278,12 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
 
   function _mint(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
     IHubAsset(asset).mint(account, amount);
-    _hubAssetState($, asset, chainId).collateral += amount;
+    _hubAssetState($, asset, chainId).branchLiquidity += amount;
   }
 
   function _burn(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
     IHubAsset(asset).burn(account, amount);
-    _hubAssetState($, asset, chainId).collateral -= amount;
+    _hubAssetState($, asset, chainId).branchLiquidity -= amount;
   }
 
   //=========== NOTE: ASSERTIONS ===========//
