@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { Ownable } from '@oz-v5/access/Ownable.sol';
 import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
