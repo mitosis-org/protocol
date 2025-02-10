@@ -8,6 +8,8 @@ import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 import { ERC7201Utils } from '../ERC7201Utils.sol';
 
 interface IBeaconBase {
+  error IBeaconBase__BeaconCallFailed(bytes revertData);
+
   function beacon() external view returns (address);
   function isInstance(address instance) external view returns (bool);
   function instances(uint256 index) external view returns (address);
@@ -15,7 +17,7 @@ interface IBeaconBase {
   function instancesLength() external view returns (uint256);
 }
 
-contract BeaconBase is IBeaconBase, ContextUpgradeable {
+abstract contract BeaconBase is IBeaconBase, ContextUpgradeable {
   using ERC7201Utils for string;
 
   struct BeaconBaseStorage {
@@ -75,7 +77,7 @@ contract BeaconBase is IBeaconBase, ContextUpgradeable {
 
   function _callBeacon(bytes calldata data) internal returns (bytes memory) {
     (bool success, bytes memory result) = address(beacon()).call(data);
-    require(success, 'TestTokenHub: call beacon failed');
+    require(success, IBeaconBase__BeaconCallFailed(result));
     return result;
   }
 
