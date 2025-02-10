@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
