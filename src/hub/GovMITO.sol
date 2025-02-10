@@ -2,14 +2,16 @@
 pragma solidity ^0.8.28;
 
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
+
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 import { ERC20VotesUpgradeable } from '@ozu-v5/token/ERC20/extensions/ERC20VotesUpgradeable.sol';
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
+import { IGovMITO } from '../interfaces/hub/IGovMITO.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { StdError } from '../lib/StdError.sol';
-import { IGovMITO } from '../interfaces/hub/IGovMITO.sol';
 
 contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
   using ERC7201Utils for string;

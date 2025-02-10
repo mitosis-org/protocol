@@ -8,8 +8,8 @@ import { Vm } from '@std/Vm.sol';
 import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
-import { IGovMITO } from '../../src/interfaces/hub/IGovMITO.sol';
 import { GovMITO } from '../../src/hub/GovMITO.sol';
+import { IGovMITO } from '../../src/interfaces/hub/IGovMITO.sol';
 import { StdError } from '../../src/lib/StdError.sol';
 
 contract GovMITOTest is Test {
