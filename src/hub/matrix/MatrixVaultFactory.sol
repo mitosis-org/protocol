@@ -45,7 +45,6 @@ contract MatrixVaultFactory is OwnableUpgradeable {
   }
 
   struct Storage {
-    VaultType[] types;
     mapping(VaultType vaultType => BeaconInfo) infos;
   }
 
@@ -109,7 +108,6 @@ contract MatrixVaultFactory is OwnableUpgradeable {
     Storage storage $ = _getStorage();
     require(!$.infos[vaultType].initialized, AlreadyInitialized());
 
-    $.types.push(vaultType);
     $.infos[vaultType].initialized = true;
     $.infos[vaultType].beacon = address(new UpgradeableBeacon(address(this), initialImpl));
 
