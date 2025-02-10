@@ -67,7 +67,7 @@ contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
     __Ownable2Step_init();
     _transferOwnership(_owner);
 
-    _getGovMITOStorage().minter = minter_;
+    _setMinter(_getGovMITOStorage(), minter_);
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
@@ -97,11 +97,11 @@ contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
   // ============================ NOTE: OWNABLE FUNCTIONS ============================ //
 
   function setMinter(address minter_) external onlyOwner {
-    _getGovMITOStorage().minter = minter_;
+    _setMinter(_getGovMITOStorage(), minter_);
   }
 
   function setWhitelistedSender(address sender, bool isWhitelisted) external onlyOwner {
-    _getGovMITOStorage().isWhitelistedSender[sender] = isWhitelisted;
+    _setWhitelistedSender(_getGovMITOStorage(), sender, isWhitelisted);
   }
 
   // =========================== NOTE: ERC20 OVERRIDES =========================== //
@@ -131,5 +131,16 @@ contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
     returns (bool)
   {
     return super.transferFrom(from, to, amount);
+  }
+
+  // =========================== NOTE: INTERNAL FUNCTIONS =========================== //
+  function _setMinter(GovMITOStorage storage $, address minter_) internal {
+    $.minter = minter_;
+    emit MinterSet(minter_);
+  }
+
+  function _setWhitelistedSender(GovMITOStorage storage $, address sender, bool isWhitelisted) internal {
+    $.isWhitelistedSender[sender] = isWhitelisted;
+    emit WhiltelistedSenderSet(sender, isWhitelisted);
   }
 }

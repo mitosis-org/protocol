@@ -21,6 +21,19 @@ interface IGovMITO is IERC20, IERC5805 {
   event Redeemed(address indexed from, address indexed to, uint256 amount);
 
   /**
+   * @notice Emitted when the minter is set.
+   * @param minter The address of the new minter
+   */
+  event MinterSet(address indexed minter);
+
+  /**
+   * @notice Emitted when a whitelist status for a sender is set.
+   * @param sender The address of the sender
+   * @param whitelisted Whether the sender is whitelisted
+   */
+  event WhiltelistedSenderSet(address indexed sender, bool whitelisted);
+
+  /**
    * @notice Mint tokens to an address with corresponding MITO.
    * @dev Only the minter can call this function.
    * @param to The address to mint tokens to
