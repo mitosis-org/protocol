@@ -86,7 +86,6 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
 
     _assertCollateralNotInsufficient($, hubAsset, chainId, amount);
     _assertHubAssetRedeemable($, hubAsset, chainId, amount);
-    _assertBranchLiquidityNotInsufficient($, hubAsset, chainId, amount);
 
     _burn($, chainId, hubAsset, _msgSender(), amount);
     $.entrypoint.redeem(chainId, branchAsset, to, amount);
@@ -206,27 +205,6 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
 
   function setRedeemableDepositThreshold(uint256 chainId, address hubAsset, uint256 threshold) external onlyOwner {
     _setRedeemableDepositThreshold(_getStorageV1(), hubAsset, chainId, threshold);
-  }
-
-  function setHubAssetLiquidityThresholdRatio(uint256 chainId, address hubAsset, uint256 thresholdRatio)
-    external
-    onlyOwner
-  {
-    _setHubAssetLiquidityThresholdRatio(_getStorageV1(), hubAsset, chainId, thresholdRatio);
-  }
-
-  function setHubAssetLiquidityThresholdRatio(
-    uint256[] calldata chainIds,
-    address[] calldata hubAssets,
-    uint256[] calldata thresholdRatios
-  ) external onlyOwner {
-    require(chainIds.length == hubAssets.length, StdError.InvalidParameter('hubAssets'));
-    require(chainIds.length == thresholdRatios.length, StdError.InvalidParameter('thresholdRatios'));
-
-    StorageV1 storage $ = _getStorageV1();
-    for (uint256 i = 0; i < chainIds.length; i++) {
-      _setHubAssetLiquidityThresholdRatio($, hubAssets[i], chainIds[i], thresholdRatios[i]);
-    }
   }
 
   function initializeMatrix(uint256 chainId, address matrixVault) external onlyOwner {

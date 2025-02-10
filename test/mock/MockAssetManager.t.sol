@@ -56,20 +56,6 @@ contract MockAssetManager is IAssetManager {
 
   function setRedeemableDepositThreshold(uint256 chainId, address hubAsset_, uint256 threshold) external { }
 
-  function setHubAssetLiquidityThresholdRatio(uint256 chainId, address hubAsset_, uint256 thresholdRatio) external { }
-
-  function hubAssetLiquidityThresholdRatio(address hubAsset_, uint256 chainId) external view returns (uint256) { }
-
-  function hubAssetLiquidityThresholdRatioPrecision() external pure returns (uint256) {
-    return 10_000;
-  }
-
-  function setHubAssetLiquidityThresholdRatio(
-    uint256[] calldata chainIds,
-    address[] calldata hubAssets,
-    uint256[] calldata thresholdRatios
-  ) external { }
-
   function entrypoint() external view returns (address) {
     return _entrypoint;
   }
@@ -83,6 +69,8 @@ contract MockAssetManager is IAssetManager {
   }
 
   function branchAsset(address hubAsset_, uint256 chainId_) external view returns (address) { }
+
+  function branchAllocated(address hubAsset_, uint256 chainId) external view returns (uint256) { }
 
   function redeemableDepositThreshold(address hubAsset_, uint256 chainId) external view returns (uint256) { }
 
