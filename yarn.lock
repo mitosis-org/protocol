@@ -805,7 +805,7 @@ __metadata:
     hpl-v5: "https://github.com/mitosis-org/hyperlane-core#568df242092a8e12ef525b176bf50fab1f19316f"
     prettier: "npm:^3.3.3"
     prettier-plugin-sort-json: "npm:^4.0.0"
-    solc: "npm:^0.8.27"
+    solc: "npm:^0.8.28"
     toml: "npm:^3.0.0"
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.5.4"
@@ -3715,9 +3715,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"solc@npm:^0.8.27":
-  version: 0.8.27
-  resolution: "solc@npm:0.8.27"
+"solc@npm:^0.8.28":
+  version: 0.8.28
+  resolution: "solc@npm:0.8.28"
   dependencies:
     command-exists: "npm:^1.2.8"
     commander: "npm:^8.1.0"
@@ -3728,7 +3728,7 @@ __metadata:
     tmp: "npm:0.0.33"
   bin:
     solcjs: solc.js
-  checksum: 10c0/6b7bed9531c6e1f1efcd30eb4ef4a741954bafb79b4d016faa728992990c8ca36a16d38118e3eeb39a205e834557c519e75cf4188a6212ac871e9755663c478d
+  checksum: 10c0/83f06f81f28794102a3cc8d12bfb02044fb146478e148821f0fcf1d4cd97fd5ece7cb29f2a0d3fbaf075f9861bbf03592006db0118ac9f97689915a2265ce78f
   languageName: node
   linkType: hard
 
