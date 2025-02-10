@@ -298,8 +298,30 @@ contract AssetManagerTest is Toolkit {
 
     vm.startPrank(user1);
 
-    // TODO
     _assetManager.redeem(branchChainId1, address(_token), user1, 100 ether);
+
+    vm.stopPrank();
+  }
+
+  function test_redeem_HubAssetRedeemDisabled() public {
+    vm.prank(owner);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+
+    vm.prank(address(_assetManagerEntrypoint));
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
+
+    vm.prank(owner);
+    _assetManager.setHubAssetLiquidityThreshold(branchChainId1, address(_token), 80 ether);
+
+    vm.startPrank(user1);
+
+    vm.expectRevert(_errHubAssetRedeemDisabled(address(_token), branchChainId1));
+    _assetManager.redeem(branchChainId1, address(_token), user1, 21 ether);
+
+    _assetManager.redeem(branchChainId1, address(_token), user1, 20 ether);
+
+    vm.expectRevert(_errHubAssetRedeemDisabled(address(_token), branchChainId1));
+    _assetManager.redeem(branchChainId1, address(_token), user1, 1 ether);
 
     vm.stopPrank();
   }
@@ -633,6 +655,127 @@ contract AssetManagerTest is Toolkit {
     vm.stopPrank();
   }
 
+  function test_setHubAssetLiquidityThreshold() public {
+    vm.startPrank(owner);
+
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId2, branchAsset2);
+
+    _assetManager.setHubAssetLiquidityThreshold(branchChainId1, address(_token), 100 ether);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 100 ether);
+    _assetManager.setHubAssetLiquidityThreshold(branchChainId1, address(_token), 30 ether);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 30 ether);
+    _assetManager.setHubAssetLiquidityThreshold(branchChainId1, address(_token), 0);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 0);
+
+    _assetManager.setHubAssetLiquidityThreshold(branchChainId2, address(_token), 50 ether);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId2), 50 ether);
+    _assetManager.setHubAssetLiquidityThreshold(branchChainId1, address(_token), 80 ether);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 80 ether);
+    _assetManager.setHubAssetLiquidityThreshold(branchChainId1, address(_token), 0);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 0);
+
+    vm.stopPrank();
+  }
+
+  function test_setHubAssetLiquidityThreshold_HubAssetPairNotExist() public {
+    vm.startPrank(owner);
+
+    vm.expectRevert(_errHubAssetPairNotExist(address(_token)));
+    _assetManager.setHubAssetLiquidityThreshold(branchChainId1, address(_token), 100 ether);
+
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+
+    _assetManager.setHubAssetLiquidityThreshold(branchChainId1, address(_token), 100 ether);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 100 ether);
+  }
+
+  function test_setHubAssetLiquidityThreshold_batch() public {
+    vm.startPrank(owner);
+
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId2, branchAsset2);
+
+    uint256[] memory chainIds = new uint256[](2);
+    address[] memory hubAssets = new address[](2);
+    uint256[] memory thresholds = new uint256[](2);
+
+    chainIds[0] = branchChainId1;
+    hubAssets[0] = address(_token);
+    thresholds[0] = 50 ether;
+    chainIds[1] = branchChainId2;
+    hubAssets[1] = address(_token);
+    thresholds[1] = 100 ether;
+
+    _assetManager.setHubAssetLiquidityThreshold(chainIds, hubAssets, thresholds);
+
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 50 ether);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId2), 100 ether);
+
+    chainIds[0] = branchChainId1;
+    hubAssets[0] = address(_token);
+    thresholds[0] = 70 ether;
+    chainIds[1] = branchChainId2;
+    hubAssets[1] = address(_token);
+    thresholds[1] = 120 ether;
+
+    _assetManager.setHubAssetLiquidityThreshold(chainIds, hubAssets, thresholds);
+
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 70 ether);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId2), 120 ether);
+
+    chainIds[0] = branchChainId1;
+    hubAssets[0] = address(_token);
+    thresholds[0] = 20 ether;
+    chainIds[1] = branchChainId2;
+    hubAssets[1] = address(_token);
+    thresholds[1] = 5 ether;
+
+    _assetManager.setHubAssetLiquidityThreshold(chainIds, hubAssets, thresholds);
+
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 20 ether);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId2), 5 ether);
+
+    chainIds[0] = branchChainId1;
+    hubAssets[0] = address(_token);
+    thresholds[0] = 0;
+    chainIds[1] = branchChainId2;
+    hubAssets[1] = address(_token);
+    thresholds[1] = 0;
+
+    _assetManager.setHubAssetLiquidityThreshold(chainIds, hubAssets, thresholds);
+
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 0);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId2), 0);
+
+    vm.stopPrank();
+  }
+
+  function test_setHubAssetLiquidityThreshold_batch_HubAssetPairNotExist() public {
+    vm.startPrank(owner);
+
+    uint256[] memory chainIds = new uint256[](2);
+    address[] memory hubAssets = new address[](2);
+    uint256[] memory thresholds = new uint256[](2);
+
+    chainIds[0] = branchChainId1;
+    hubAssets[0] = address(_token);
+    thresholds[0] = 50 ether;
+    chainIds[1] = branchChainId2;
+    hubAssets[1] = address(_token);
+    thresholds[1] = 100 ether;
+
+    vm.expectRevert(_errHubAssetPairNotExist(address(_token)));
+    _assetManager.setHubAssetLiquidityThreshold(chainIds, hubAssets, thresholds);
+
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId2, branchAsset2);
+    _assetManager.setHubAssetLiquidityThreshold(chainIds, hubAssets, thresholds);
+
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 50 ether);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId2), 100 ether);
+  }
+
   function test_initializeMatrix() public {
     vm.prank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
@@ -847,6 +990,11 @@ contract AssetManagerTest is Toolkit {
     );
   }
 
+  function _errHubAssetPairNotExist(address hubAsset) internal pure returns (bytes memory) {
+    return
+      abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__HubAssetPairNotExist.selector, hubAsset);
+  }
+
   function _errMatrixNotInitialized(uint256 chainId, address matrixVault) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
       IAssetManagerStorageV1.IAssetManagerStorageV1__MatrixNotInitialized.selector, chainId, matrixVault
@@ -880,5 +1028,11 @@ contract AssetManagerTest is Toolkit {
 
   function _errMatrixInsufficient(address matrixVault) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(IAssetManager.IAssetManager__MatrixInsufficient.selector, matrixVault);
+  }
+
+  function _errHubAssetRedeemDisabled(address hubAsset, uint256 chainId) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(
+      IAssetManagerStorageV1.IAssetManagerStorageV1__HubAssetRedeemDisabled.selector, hubAsset, chainId
+    );
   }
 }
