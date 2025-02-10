@@ -105,6 +105,8 @@ contract MatrixVaultFactory is OwnableUpgradeable {
   }
 
   function initVaultType(VaultType vaultType, address initialImpl) external onlyOwner {
+    require(vaultType != VaultType.Unset, InvalidVaultType());
+
     Storage storage $ = _getStorage();
     require(!$.infos[vaultType].initialized, AlreadyInitialized());
 
@@ -112,6 +114,10 @@ contract MatrixVaultFactory is OwnableUpgradeable {
     $.infos[vaultType].beacon = address(new UpgradeableBeacon(address(this), initialImpl));
 
     emit VaultTypeInitialized(vaultType, address($.infos[vaultType].beacon));
+  }
+
+  function vaultTypeInitialized(VaultType t) external view returns (bool) {
+    return _getStorage().infos[t].initialized;
   }
 
   /**
