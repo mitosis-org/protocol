@@ -1,0 +1,54 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
+
+import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
+import { IMatrixVaultStorageV1 } from '../../interfaces/hub/matrix/IMatrixVault.sol';
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { StdError } from '../../lib/StdError.sol';
+
+contract MatrixVaultStorageV1 is IMatrixVaultStorageV1, ContextUpgradeable {
+  using ERC7201Utils for string;
+
+  struct StorageV1 {
+    IAssetManager assetManager;
+  }
+
+  string private constant _NAMESPACE = 'mitosis.storage.MatrixVaultStorage.v1';
+  bytes32 private immutable _slot = _NAMESPACE.storageSlot();
+
+  function _getStorageV1() internal view returns (StorageV1 storage $) {
+    bytes32 slot = _slot;
+    // slither-disable-next-line assembly
+    assembly {
+      $.slot := slot
+    }
+  }
+
+  // ============================ NOTE: VIEW FUNCTIONS ============================ //
+
+  function assetManager() external view returns (address) {
+    return address(_getStorageV1().assetManager);
+  }
+
+  // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
+
+  function _setAssetManager(StorageV1 storage $, address assetManager_) internal {
+    require(assetManager_.code.length > 0, StdError.InvalidAddress('AssetManager'));
+
+    $.assetManager = IAssetManager(assetManager_);
+
+    emit AssetManagerSet(assetManager_);
+  }
+
+  // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
+
+  function _assertOnlyAssetManager(StorageV1 storage $) internal view {
+    require(_msgSender() == address($.assetManager), StdError.Unauthorized());
+  }
+
+  function _assertOnlyReclaimQueue(StorageV1 storage $) internal view {
+    require(_msgSender() == $.assetManager.reclaimQueue(), StdError.Unauthorized());
+  }
+}

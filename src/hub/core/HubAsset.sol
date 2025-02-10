@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 
 import { StdError } from '../../lib/StdError.sol';
-import { ERC20TWABSnapshots } from '../../twab/ERC20TWABSnapshots.sol';
 import { HubAssetStorageV1 } from './HubAssetStorageV1.sol';
 
-contract HubAsset is Ownable2StepUpgradeable, ERC20TWABSnapshots, HubAssetStorageV1 {
+contract HubAsset is Ownable2StepUpgradeable, ERC20Upgradeable, HubAssetStorageV1 {
   constructor() {
     _disableInitializers();
   }
@@ -15,14 +15,13 @@ contract HubAsset is Ownable2StepUpgradeable, ERC20TWABSnapshots, HubAssetStorag
   function initialize(
     address owner_,
     address supplyManager_,
-    address delegationRegistry_,
     string memory name_,
     string memory symbol_,
     uint8 decimals_
   ) external initializer {
     __Ownable2Step_init();
     _transferOwnership(owner_);
-    __ERC20TWABSnapshots_init(delegationRegistry_, name_, symbol_);
+    __ERC20_init(name_, symbol_);
     _getStorageV1().supplyManager = supplyManager_;
     StorageV1 storage $ = _getStorageV1();
     $.supplyManager = supplyManager_;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.27;
+pragma solidity ^0.8.28;
 
 import { Context } from '@oz-v5/utils/Context.sol';
 
@@ -46,11 +46,11 @@ contract MockAssetManagerEntrypoint is Context, IAssetManagerEntrypoint {
 
   function initializeAsset(uint256 chainId, address branchAsset) external onlyAssetManager { }
 
-  function initializeEOL(uint256 chainId, address eolVault, address branchAsset) external onlyAssetManager { }
+  function initializeMatrix(uint256 chainId, address matrixVault, address branchAsset) external onlyAssetManager { }
 
   function redeem(uint256 chainId, address branchAsset, address to, uint256 amount) external onlyAssetManager { }
 
-  function allocateEOL(uint256 chainId, address eolVault, uint256 amount) external onlyAssetManager { }
+  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external onlyAssetManager { }
 
   // ============================= NOTE: PROCESSOR ============================= //
 
@@ -58,20 +58,23 @@ contract MockAssetManagerEntrypoint is Context, IAssetManagerEntrypoint {
     _assetManager.deposit(chainId, branchAsset, to, amount);
   }
 
-  function deallocateEOL(uint256 chainId, address eolVault, uint256 amount) external onlyMailbox {
-    _assetManager.deallocateEOL(chainId, eolVault, amount);
+  function deallocateMatrix(uint256 chainId, address hubMatrixVault, uint256 amount) external onlyMailbox {
+    _assetManager.deallocateMatrix(chainId, hubMatrixVault, amount);
   }
 
-  function settleYield(uint256 chainId, address eolVault, uint256 amount) external onlyMailbox {
-    _assetManager.settleYield(chainId, eolVault, amount);
+  function settleMatrixYield(uint256 chainId, address matrixVault, uint256 amount) external onlyMailbox {
+    _assetManager.settleMatrixYield(chainId, matrixVault, amount);
   }
 
-  function settleLoss(uint256 chainId, address eolVault, uint256 amount) external onlyMailbox {
-    _assetManager.settleLoss(chainId, eolVault, amount);
+  function settleMatrixLoss(uint256 chainId, address matrixVault, uint256 amount) external onlyMailbox {
+    _assetManager.settleMatrixLoss(chainId, matrixVault, amount);
   }
 
-  function settleExtraRewards(uint256 chainId, address eolVault, address reward, uint256 amount) external onlyMailbox {
-    _assetManager.settleExtraRewards(chainId, eolVault, reward, amount);
+  function settleMatrixExtraRewards(uint256 chainId, address matrixVault, address reward, uint256 amount)
+    external
+    onlyMailbox
+  {
+    _assetManager.settleMatrixExtraRewards(chainId, matrixVault, reward, amount);
   }
 
   // ============================= NOTE: HANDLER ============================= //

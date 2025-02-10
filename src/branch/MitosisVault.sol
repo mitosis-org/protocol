@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
@@ -8,9 +8,10 @@ import { Address } from '@oz-v5/utils/Address.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
 import { MitosisVaultStorageV1 } from '../branch/MitosisVaultStorageV1.sol';
-import { AssetAction, EOLAction, IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
+import { AssetAction, MatrixAction, IMitosisVault, IMatrixMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
-import { IEOLStrategyExecutor } from '../interfaces/branch/strategy/IEOLStrategyExecutor.sol';
+import { IMatrixStrategyExecutor } from '../interfaces/branch/strategy/IMatrixStrategyExecutor.sol';
+import { IStrategyExecutor } from '../interfaces/branch/strategy/IStrategyExecutor.sol';
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
 
@@ -42,32 +43,40 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
 
+  function maxCap(address asset) external view returns (uint256) {
+    return _getStorageV1().assets[asset].maxCap;
+  }
+
+  function availableCap(address asset) external view returns (uint256) {
+    return _getStorageV1().assets[asset].availableCap;
+  }
+
   function isAssetActionHalted(address asset, AssetAction action) external view returns (bool) {
     return _isHalted(_getStorageV1(), asset, action);
   }
 
-  function isEOLActionHalted(address hubEOLVault, EOLAction action) external view returns (bool) {
-    return _isHalted(_getStorageV1(), hubEOLVault, action);
+  function isMatrixActionHalted(address hubMatrixVault, MatrixAction action) external view returns (bool) {
+    return _isHalted(_getStorageV1(), hubMatrixVault, action);
   }
 
   function isAssetInitialized(address asset) external view returns (bool) {
     return _isAssetInitialized(_getStorageV1(), asset);
   }
 
-  function isEOLInitialized(address hubEOLVault) external view returns (bool) {
-    return _isEOLInitialized(_getStorageV1(), hubEOLVault);
+  function isMatrixInitialized(address hubMatrixVault) external view returns (bool) {
+    return _isMatrixInitialized(_getStorageV1(), hubMatrixVault);
   }
 
-  function availableEOL(address hubEOLVault) external view returns (uint256) {
-    return _getStorageV1().eols[hubEOLVault].availableEOL;
+  function availableMatrix(address hubMatrixVault) external view returns (uint256) {
+    return _getStorageV1().matrices[hubMatrixVault].availableLiquidity;
   }
 
   function entrypoint() external view returns (address) {
     return address(_getStorageV1().entrypoint);
   }
 
-  function eolStrategyExecutor(address hubEOLVault) external view returns (address) {
-    return _getStorageV1().eols[hubEOLVault].eolStrategyExecutor;
+  function matrixStrategyExecutor(address hubMatrixVault) external view returns (address) {
+    return _getStorageV1().matrices[hubMatrixVault].strategyExecutor;
   }
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
@@ -83,7 +92,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     $.assets[asset].initialized = true;
     emit AssetInitialized(asset);
 
-    // NOTE: we halt deposit by default.
+    // NOTE: we halt deposit and keep the cap at zero by default.
     _haltAsset($, asset, AssetAction.Deposit);
   }
 
@@ -95,15 +104,15 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     emit Deposited(asset, to, amount);
   }
 
-  function depositWithOptIn(address asset, address to, address hubEOLVault, uint256 amount) external {
+  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
     _deposit($, asset, to, amount);
 
-    _assertEOLInitialized($, hubEOLVault);
-    require(asset == $.eols[hubEOLVault].asset, IMitosisVault__InvalidEOLVault(hubEOLVault, asset));
+    _assertMatrixInitialized($, hubMatrixVault);
+    require(asset == $.matrices[hubMatrixVault].asset, IMitosisVault__InvalidMatrixVault(hubMatrixVault, asset));
 
-    $.entrypoint.depositWithOptIn(asset, to, hubEOLVault, amount);
-    emit DepositedWithOptIn(asset, to, hubEOLVault, amount);
+    $.entrypoint.depositWithSupplyMatrix(asset, to, hubMatrixVault, amount);
+    emit MatrixDepositedWithSupply(asset, to, hubMatrixVault, amount);
   }
 
   function redeem(address asset, address to, uint256 amount) external {
@@ -119,109 +128,109 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
 
   //=========== NOTE: MUTATIVE - EOL FUNCTIONS ===========//
 
-  function initializeEOL(address hubEOLVault, address asset) external {
+  function initializeMatrix(address hubMatrixVault, address asset) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
-    _assertEOLNotInitialized($, hubEOLVault);
+    _assertMatrixNotInitialized($, hubMatrixVault);
     _assertAssetInitialized($, asset);
 
-    $.eols[hubEOLVault].initialized = true;
-    $.eols[hubEOLVault].asset = asset;
+    $.matrices[hubMatrixVault].initialized = true;
+    $.matrices[hubMatrixVault].asset = asset;
 
-    emit EOLInitialized(hubEOLVault, asset);
+    emit MatrixInitialized(hubMatrixVault, asset);
   }
 
-  function allocateEOL(address hubEOLVault, uint256 amount) external {
+  function allocateMatrix(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
-    _assertEOLInitialized($, hubEOLVault);
+    _assertMatrixInitialized($, hubMatrixVault);
 
-    EOLInfo storage eolInfo = $.eols[hubEOLVault];
+    MatrixInfo storage matrixInfo = $.matrices[hubMatrixVault];
 
-    eolInfo.availableEOL += amount;
+    matrixInfo.availableLiquidity += amount;
 
-    emit EOLAllocated(hubEOLVault, amount);
+    emit MatrixAllocated(hubMatrixVault, amount);
   }
 
-  function deallocateEOL(address hubEOLVault, uint256 amount) external {
+  function deallocateMatrix(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
+    _assertMatrixInitialized($, hubMatrixVault);
+    _assertOnlyStrategyExecutor($, hubMatrixVault);
 
-    EOLInfo storage eolInfo = $.eols[hubEOLVault];
+    MatrixInfo storage matrixInfo = $.matrices[hubMatrixVault];
 
-    eolInfo.availableEOL -= amount;
-    $.entrypoint.deallocateEOL(hubEOLVault, amount);
+    matrixInfo.availableLiquidity -= amount;
+    $.entrypoint.deallocateMatrix(hubMatrixVault, amount);
 
-    emit EOLDeallocated(hubEOLVault, amount);
+    emit MatrixDeallocated(hubMatrixVault, amount);
   }
 
-  function fetchEOL(address hubEOLVault, uint256 amount) external {
+  function fetchMatrix(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
-    _assertNotHalted($, hubEOLVault, EOLAction.FetchEOL);
+    _assertMatrixInitialized($, hubMatrixVault);
+    _assertOnlyStrategyExecutor($, hubMatrixVault);
+    _assertNotHalted($, hubMatrixVault, MatrixAction.FetchMatrix);
 
-    EOLInfo storage eolInfo = $.eols[hubEOLVault];
+    MatrixInfo storage matrixInfo = $.matrices[hubMatrixVault];
 
-    eolInfo.availableEOL -= amount;
-    IERC20(eolInfo.asset).safeTransfer(eolInfo.eolStrategyExecutor, amount);
+    matrixInfo.availableLiquidity -= amount;
+    IERC20(matrixInfo.asset).safeTransfer(matrixInfo.strategyExecutor, amount);
 
-    emit EOLFetched(hubEOLVault, amount);
+    emit MatrixFetched(hubMatrixVault, amount);
   }
 
-  function returnEOL(address hubEOLVault, uint256 amount) external {
+  function returnMatrix(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
+    _assertMatrixInitialized($, hubMatrixVault);
+    _assertOnlyStrategyExecutor($, hubMatrixVault);
 
-    EOLInfo storage eolInfo = $.eols[hubEOLVault];
+    MatrixInfo storage matrixInfo = $.matrices[hubMatrixVault];
 
-    IERC20(eolInfo.asset).safeTransferFrom(eolInfo.eolStrategyExecutor, address(this), amount);
-    eolInfo.availableEOL += amount;
+    IERC20(matrixInfo.asset).safeTransferFrom(matrixInfo.strategyExecutor, address(this), amount);
+    matrixInfo.availableLiquidity += amount;
 
-    emit EOLReturned(hubEOLVault, amount);
+    emit MatrixReturned(hubMatrixVault, amount);
   }
 
-  function settleYield(address hubEOLVault, uint256 amount) external {
+  function settleMatrixYield(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
+    _assertMatrixInitialized($, hubMatrixVault);
+    _assertOnlyStrategyExecutor($, hubMatrixVault);
 
-    $.entrypoint.settleYield(hubEOLVault, amount);
+    $.entrypoint.settleMatrixYield(hubMatrixVault, amount);
 
-    emit YieldSettled(hubEOLVault, amount);
+    emit MatrixYieldSettled(hubMatrixVault, amount);
   }
 
-  function settleLoss(address hubEOLVault, uint256 amount) external {
+  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
+    _assertMatrixInitialized($, hubMatrixVault);
+    _assertOnlyStrategyExecutor($, hubMatrixVault);
 
-    $.entrypoint.settleLoss(hubEOLVault, amount);
+    $.entrypoint.settleMatrixLoss(hubMatrixVault, amount);
 
-    emit LossSettled(hubEOLVault, amount);
+    emit MatrixLossSettled(hubMatrixVault, amount);
   }
 
-  function settleExtraRewards(address hubEOLVault, address reward, uint256 amount) external {
+  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
+    _assertMatrixInitialized($, hubMatrixVault);
+    _assertOnlyStrategyExecutor($, hubMatrixVault);
     _assertAssetInitialized($, reward);
-    require(reward != $.eols[hubEOLVault].asset, StdError.InvalidAddress('reward'));
+    require(reward != $.matrices[hubMatrixVault].asset, StdError.InvalidAddress('reward'));
 
     IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
-    $.entrypoint.settleExtraRewards(hubEOLVault, reward, amount);
+    $.entrypoint.settleMatrixExtraRewards(hubMatrixVault, reward, amount);
 
-    emit ExtraRewardsSettled(hubEOLVault, reward, amount);
+    emit MatrixExtraRewardsSettled(hubMatrixVault, reward, amount);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
@@ -231,35 +240,41 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     emit EntrypointSet(address(entrypoint_));
   }
 
-  function setEOLStrategyExecutor(address hubEOLVault, address eolStrategyExecutor_) external onlyOwner {
+  function setMatrixStrategyExecutor(address hubMatrixVault, address strategyExecutor_) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    EOLInfo storage eolInfo = $.eols[hubEOLVault];
+    MatrixInfo storage matrixInfo = $.matrices[hubMatrixVault];
 
-    _assertEOLInitialized($, hubEOLVault);
+    _assertMatrixInitialized($, hubMatrixVault);
 
-    if (eolInfo.eolStrategyExecutor != address(0)) {
+    if (matrixInfo.strategyExecutor != address(0)) {
       // NOTE: no way to check if every extra rewards are settled.
-      bool drained = IEOLStrategyExecutor(eolInfo.eolStrategyExecutor).totalBalance() == 0
-        && IEOLStrategyExecutor(eolInfo.eolStrategyExecutor).storedTotalBalance() == 0;
-
-      require(drained, IMitosisVault__EOLStrategyExecutorNotDrained(hubEOLVault, eolInfo.eolStrategyExecutor));
+      bool drained = IMatrixStrategyExecutor(matrixInfo.strategyExecutor).totalBalance() == 0
+        && IMatrixStrategyExecutor(matrixInfo.strategyExecutor).storedTotalBalance() == 0;
+      require(drained, IMitosisVault__StrategyExecutorNotDrained(hubMatrixVault, matrixInfo.strategyExecutor));
     }
 
     require(
-      hubEOLVault == IEOLStrategyExecutor(eolStrategyExecutor_).hubEOLVault(),
-      StdError.InvalidId('eolStrategyExecutor.hubEOLVault')
+      hubMatrixVault == IMatrixStrategyExecutor(strategyExecutor_).hubMatrixVault(),
+      StdError.InvalidId('matrixStrategyExecutor.hubMatrixVault')
     );
     require(
-      address(this) == address(IEOLStrategyExecutor(eolStrategyExecutor_).vault()),
-      StdError.InvalidAddress('eolStrategyExecutor.vault')
+      address(this) == address(IMatrixStrategyExecutor(strategyExecutor_).vault()),
+      StdError.InvalidAddress('matrixStrategyExecutor.vault')
     );
     require(
-      eolInfo.asset == address(IEOLStrategyExecutor(eolStrategyExecutor_).asset()),
-      StdError.InvalidAddress('eolStrategyExecutor.asset')
+      matrixInfo.asset == address(IMatrixStrategyExecutor(strategyExecutor_).asset()),
+      StdError.InvalidAddress('matrixStrategyExecutor.asset')
     );
 
-    eolInfo.eolStrategyExecutor = eolStrategyExecutor_;
-    emit EOLStrategyExecutorSet(hubEOLVault, eolStrategyExecutor_);
+    matrixInfo.strategyExecutor = strategyExecutor_;
+    emit MatrixStrategyExecutorSet(hubMatrixVault, strategyExecutor_);
+  }
+
+  function setCap(address asset, uint256 newCap) external onlyOwner {
+    StorageV1 storage $ = _getStorageV1();
+    _assertAssetInitialized($, asset);
+
+    _setCap($, asset, newCap);
   }
 
   function haltAsset(address asset, AssetAction action) external onlyOwner {
@@ -274,16 +289,16 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     return _resumeAsset($, asset, action);
   }
 
-  function haltEOL(address hubEOLVault, EOLAction action) external onlyOwner {
+  function haltMatrix(address hubMatrixVault, MatrixAction action) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    _assertEOLInitialized($, hubEOLVault);
-    return _haltEOL($, hubEOLVault, action);
+    _assertMatrixInitialized($, hubMatrixVault);
+    return _haltMatrix($, hubMatrixVault, action);
   }
 
-  function resumeEOL(address hubEOLVault, EOLAction action) external onlyOwner {
+  function resumeMatrix(address hubMatrixVault, MatrixAction action) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    _assertEOLInitialized($, hubEOLVault);
-    return _resumeEOL($, hubEOLVault, action);
+    _assertMatrixInitialized($, hubMatrixVault);
+    return _resumeMatrix($, hubMatrixVault, action);
   }
 
   function pause() external onlyOwner {
@@ -300,8 +315,13 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     require(_msgSender() == address($.entrypoint), StdError.Unauthorized());
   }
 
-  function _assertOnlyEOLStrategyExecutor(StorageV1 storage $, address hubEOLVault) internal view {
-    require(_msgSender() == $.eols[hubEOLVault].eolStrategyExecutor, StdError.Unauthorized());
+  function _assertOnlyStrategyExecutor(StorageV1 storage $, address vault) internal view {
+    require(_msgSender() == $.matrices[vault].strategyExecutor, StdError.Unauthorized());
+  }
+
+  function _assertCapNotExceeded(StorageV1 storage $, address asset, uint256 amount) internal view {
+    uint256 available = $.assets[asset].availableCap;
+    require(available >= amount, IMitosisVault__ExceededCap(asset, amount, available));
   }
 
   function _assertAssetInitialized(StorageV1 storage $, address asset) internal view {
@@ -312,36 +332,50 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     require(!_isAssetInitialized($, asset), IMitosisVault__AssetAlreadyInitialized(asset));
   }
 
-  function _assertEOLInitialized(StorageV1 storage $, address hubEOLVault) internal view {
-    require(_isEOLInitialized($, hubEOLVault), IMitosisVault__EOLNotInitialized(hubEOLVault));
+  function _assertMatrixInitialized(StorageV1 storage $, address hubMatrixVault) internal view {
+    require(
+      _isMatrixInitialized($, hubMatrixVault),
+      IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixNotInitialized(hubMatrixVault)
+    );
   }
 
-  function _assertEOLNotInitialized(StorageV1 storage $, address hubEOLVault) internal view {
-    require(!_isEOLInitialized($, hubEOLVault), IMitosisVault__EOLAlreadyInitialized(hubEOLVault));
+  function _assertMatrixNotInitialized(StorageV1 storage $, address hubMatrixVault) internal view {
+    require(
+      !_isMatrixInitialized($, hubMatrixVault),
+      IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixAlreadyInitialized(hubMatrixVault)
+    );
   }
 
   function _assertNotHalted(StorageV1 storage $, address asset, AssetAction action) internal view {
     require(!_isHalted($, asset, action), StdError.Halted());
   }
 
-  function _assertNotHalted(StorageV1 storage $, address hubEOLVault, EOLAction action) internal view {
-    require(!_isHalted($, hubEOLVault, action), StdError.Halted());
+  function _assertNotHalted(StorageV1 storage $, address hubMatrixVault, MatrixAction action) internal view {
+    require(!_isHalted($, hubMatrixVault, action), StdError.Halted());
   }
 
   function _isHalted(StorageV1 storage $, address asset, AssetAction action) internal view returns (bool) {
     return $.assets[asset].isHalted[action];
   }
 
-  function _isHalted(StorageV1 storage $, address hubEOLVault, EOLAction action) internal view returns (bool) {
-    return $.eols[hubEOLVault].isHalted[action];
+  function _isHalted(StorageV1 storage $, address hubMatrixVault, MatrixAction action) internal view returns (bool) {
+    return $.matrices[hubMatrixVault].isHalted[action];
   }
 
   function _isAssetInitialized(StorageV1 storage $, address asset) internal view returns (bool) {
     return $.assets[asset].initialized;
   }
 
-  function _isEOLInitialized(StorageV1 storage $, address hubEOLVault) internal view returns (bool) {
-    return $.eols[hubEOLVault].initialized;
+  function _isMatrixInitialized(StorageV1 storage $, address hubMatrixVault) internal view returns (bool) {
+    return $.matrices[hubMatrixVault].initialized;
+  }
+
+  function _setCap(StorageV1 storage $, address asset, uint256 newCap) internal {
+    AssetInfo storage assetInfo = $.assets[asset];
+    uint256 prevCap = assetInfo.maxCap;
+    assetInfo.maxCap = newCap;
+    assetInfo.availableCap = newCap;
+    emit CapSet(_msgSender(), asset, prevCap, newCap);
   }
 
   function _haltAsset(StorageV1 storage $, address asset, AssetAction action) internal {
@@ -354,22 +388,25 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     emit AssetResumed(asset, action);
   }
 
-  function _haltEOL(StorageV1 storage $, address hubEOLVault, EOLAction action) internal {
-    $.eols[hubEOLVault].isHalted[action] = true;
-    emit EOLHalted(hubEOLVault, action);
+  function _haltMatrix(StorageV1 storage $, address hubMatrixVault, MatrixAction action) internal {
+    $.matrices[hubMatrixVault].isHalted[action] = true;
+    emit MatrixHalted(hubMatrixVault, action);
   }
 
-  function _resumeEOL(StorageV1 storage $, address hubEOLVault, EOLAction action) internal {
-    $.eols[hubEOLVault].isHalted[action] = false;
-    emit EOLResumed(hubEOLVault, action);
+  function _resumeMatrix(StorageV1 storage $, address hubMatrixVault, MatrixAction action) internal {
+    $.matrices[hubMatrixVault].isHalted[action] = false;
+    emit MatrixResumed(hubMatrixVault, action);
   }
 
   function _deposit(StorageV1 storage $, address asset, address to, uint256 amount) internal {
-    _assertAssetInitialized($, asset);
-    _assertNotHalted($, asset, AssetAction.Deposit);
     require(to != address(0), StdError.ZeroAddress('to'));
     require(amount != 0, StdError.ZeroAmount());
 
+    _assertAssetInitialized($, asset);
+    _assertNotHalted($, asset, AssetAction.Deposit);
+    _assertCapNotExceeded($, asset, amount);
+
+    $.assets[asset].availableCap -= amount;
     IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
   }
 }

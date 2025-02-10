@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.27;
+pragma solidity ^0.8.28;
 
 import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
 import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
@@ -112,12 +112,13 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, G
     _dispatchToBranch(chainId, enc);
   }
 
-  function initializeEOL(uint256 chainId, address eolVault, address branchAsset)
+  function initializeMatrix(uint256 chainId, address matrixVault, address branchAsset)
     external
     onlyAssetManager
     onlyDispatchable(chainId)
   {
-    bytes memory enc = MsgInitializeEOL({ eolVault: eolVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
+    bytes memory enc =
+      MsgInitializeMatrix({ matrixVault: matrixVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
     _dispatchToBranch(chainId, enc);
   }
 
@@ -130,12 +131,12 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, G
     _dispatchToBranch(chainId, enc);
   }
 
-  function allocateEOL(uint256 chainId, address eolVault, uint256 amount)
+  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount)
     external
     onlyAssetManager
     onlyDispatchable(chainId)
   {
-    bytes memory enc = MsgAllocateEOL({ eolVault: eolVault.toBytes32(), amount: amount }).encode();
+    bytes memory enc = MsgAllocateMatrix({ matrixVault: matrixVault.toBytes32(), amount: amount }).encode();
     _dispatchToBranch(chainId, enc);
   }
 
@@ -163,36 +164,36 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, G
       return;
     }
 
-    if (msgType == MsgType.MsgDepositWithOptIn) {
-      MsgDepositWithOptIn memory decoded = msg_.decodeDepositWithOptIn();
-      _assetManager.depositWithOptIn(
-        chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.eolVault.toAddress(), decoded.amount
+    if (msgType == MsgType.MsgDepositWithSupplyMatrix) {
+      MsgDepositWithSupplyMatrix memory decoded = msg_.decodeDepositWithSupplyMatrix();
+      _assetManager.depositWithSupplyMatrix(
+        chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.matrixVault.toAddress(), decoded.amount
       );
       return;
     }
 
-    if (msgType == MsgType.MsgDeallocateEOL) {
-      MsgDeallocateEOL memory decoded = msg_.decodeDeallocateEOL();
-      _assetManager.deallocateEOL(chainId, decoded.eolVault.toAddress(), decoded.amount);
+    if (msgType == MsgType.MsgDeallocateMatrix) {
+      MsgDeallocateMatrix memory decoded = msg_.decodeDeallocateMatrix();
+      _assetManager.deallocateMatrix(chainId, decoded.matrixVault.toAddress(), decoded.amount);
       return;
     }
 
-    if (msgType == MsgType.MsgSettleYield) {
-      MsgSettleYield memory decoded = msg_.decodeSettleYield();
-      _assetManager.settleYield(chainId, decoded.eolVault.toAddress(), decoded.amount);
+    if (msgType == MsgType.MsgSettleMatrixYield) {
+      MsgSettleMatrixYield memory decoded = msg_.decodeSettleMatrixYield();
+      _assetManager.settleMatrixYield(chainId, decoded.matrixVault.toAddress(), decoded.amount);
       return;
     }
 
-    if (msgType == MsgType.MsgSettleLoss) {
-      MsgSettleLoss memory decoded = msg_.decodeSettleLoss();
-      _assetManager.settleLoss(chainId, decoded.eolVault.toAddress(), decoded.amount);
+    if (msgType == MsgType.MsgSettleMatrixLoss) {
+      MsgSettleMatrixLoss memory decoded = msg_.decodeSettleMatrixLoss();
+      _assetManager.settleMatrixLoss(chainId, decoded.matrixVault.toAddress(), decoded.amount);
       return;
     }
 
-    if (msgType == MsgType.MsgSettleExtraRewards) {
-      MsgSettleExtraRewards memory decoded = msg_.decodeSettleExtraRewards();
-      _assetManager.settleExtraRewards(
-        chainId, decoded.eolVault.toAddress(), decoded.reward.toAddress(), decoded.amount
+    if (msgType == MsgType.MsgSettleMatrixExtraRewards) {
+      MsgSettleMatrixExtraRewards memory decoded = msg_.decodeSettleMatrixExtraRewards();
+      _assetManager.settleMatrixExtraRewards(
+        chainId, decoded.matrixVault.toAddress(), decoded.reward.toAddress(), decoded.amount
       );
       return;
     }

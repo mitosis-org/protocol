@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { IAssetManager } from './IAssetManager.sol';
 
@@ -43,12 +43,12 @@ interface IAssetManagerEntrypoint {
   function initializeAsset(uint256 chainId, address branchAsset) external;
 
   /**
-   * @notice Initializes an EOLVault on a specified branch chain
+   * @notice Initializes a MatrixVault on a specified branch chain
    * @param chainId The ID of the branch chain
-   * @param eolVault The address of the EOLVault
+   * @param matrixVault The address of the MatrixVault
    * @param branchAsset The address of the associated asset on the branch chain
    */
-  function initializeEOL(uint256 chainId, address eolVault, address branchAsset) external;
+  function initializeMatrix(uint256 chainId, address matrixVault, address branchAsset) external;
 
   /**
    * @notice Initiates a redemption of assets from a branch chain
@@ -60,10 +60,10 @@ interface IAssetManagerEntrypoint {
   function redeem(uint256 chainId, address branchAsset, address to, uint256 amount) external;
 
   /**
-   * @notice Allocates assets to the StrategyExecutor for MitosisVault on branch chain that corresponed to the EOLVault on hub chain
+   * @notice Allocates assets to the StrategyExecutor for MatrixVault on branch chain
    * @param chainId The ID of the branch chain
-   * @param eolVault The address of the EOLVault
+   * @param matrixVault The address of the MatrixVault
    * @param amount The amount of assets to allocate
    */
-  function allocateEOL(uint256 chainId, address eolVault, uint256 amount) external;
+  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external;
 }

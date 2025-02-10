@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { IRewardDistributor } from './IRewardDistributor.sol';
+import { ITreasury } from './ITreasury.sol';
 
 /**
  * @title IMerkleRewardDistributor
  * @notice Interface for the Merkle based reward distributor
  */
-interface IMerkleRewardDistributor {
-  event StageAdded(uint256 indexed stage, bytes32 root);
+interface IMerkleRewardDistributor is IRewardDistributor {
+  event RewardsFetched(uint256 indexed id, uint256 nonce, address indexed matrixVault, address reward, uint256 amount);
+
+  event StageAdded(uint256 indexed stage, bytes32 root, address[] rewards, uint256[] amounts);
 
   event Claimed(
-    address indexed receiver, uint256 indexed stage, address indexed eolVault, address[] rewards, uint256[] amounts
+    address indexed receiver, uint256 indexed stage, address indexed matrixVault, address[] rewards, uint256[] amounts
   );
 
   /**
@@ -25,9 +28,13 @@ interface IMerkleRewardDistributor {
   error IMerkleRewardDistributor__InvalidProof();
 
   /**
-   * @notice Error thrown when an invalid amount is provided for claim.
+   * @notice Error thrown when an invalid amount is provided for claim or adding stage.
    */
   error IMerkleRewardDistributor__InvalidAmount();
+
+  error IMerkleRewardDistributor__NotCurrentStage(uint256 stage);
+
+  error IMerkleRewardDistributor__InvalidStageNonce(uint256 stage, uint256 nonce);
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
@@ -42,26 +49,36 @@ interface IMerkleRewardDistributor {
   function root(uint256 stage_) external view returns (bytes32);
 
   /**
+   * @notice Returns the reward information of the specified stage. If the stage does not exist, it returns empty array.
+   */
+  function rewardInfo(uint256 stage_) external view returns (address[] memory rewards, uint256[] memory amounts);
+
+  /**
+   * @notice Retruns the ITreasury.
+   */
+  function treasury() external view returns (ITreasury);
+
+  /**
    * @notice Makes a leaf hash that expected to be used in the merkle tree.
    * @param stage The stage number.
    * @param receiver The receiver address.
-   * @param eolVault The EOL Vault address.
+   * @param matrixVault The EOL Vault address.
    * @param rewards The reward token addresses.
    * @param amounts The reward amounts.
    */
   function encodeLeaf(
     address receiver,
     uint256 stage,
-    address eolVault,
+    address matrixVault,
     address[] calldata rewards,
     uint256[] calldata amounts
   ) external pure returns (bytes32 leaf);
 
   /**
-   * @notice Checks if the account can claim the rewards for the specified eolVault in the specified stage.
+   * @notice Checks if the account can claim the rewards for the specified matrixVault in the specified stage.
    * @param receiver The receiver address.
    * @param stage The stage number.
-   * @param eolVault The EOL Vault address.
+   * @param matrixVault The EOL Vault address.
    * @param rewards The reward token addresses.
    * @param amounts The reward amounts.
    * @param proof The merkle proof.
@@ -69,7 +86,7 @@ interface IMerkleRewardDistributor {
   function claimable(
     address receiver,
     uint256 stage,
-    address eolVault,
+    address matrixVault,
     address[] calldata rewards,
     uint256[] calldata amounts,
     bytes32[] calldata proof
@@ -78,36 +95,36 @@ interface IMerkleRewardDistributor {
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   /**
-   * @notice Claims rewards for the specified eolVault in the specified stage.
+   * @notice Claims rewards for the specified matrixVault in the specified stage.
    */
   function claim(
     address receiver,
     uint256 stage,
-    address eolVault,
+    address matrixVault,
     address[] calldata rewards,
     uint256[] calldata amounts,
     bytes32[] calldata proof
   ) external;
 
   /**
-   * @notice Claims rewards for the multiple eolVaults in the specified stage.
+   * @notice Claims rewards for the multiple matrixVaults in the specified stage.
    */
   function claimMultiple(
     address receiver,
     uint256 stage,
-    address[] calldata eolVaults,
+    address[] calldata matrixVaults,
     address[][] calldata rewards,
     uint256[][] calldata amounts,
     bytes32[][] calldata proofs
   ) external;
 
   /**
-   * @notice Claims rewards for the multiple eolVaults in the multiple stages.
+   * @notice Claims rewards for the multiple matrixVaults in the multiple stages.
    */
   function claimBatch(
     address receiver,
     uint256[] calldata stages,
-    address[][] calldata eolVaults,
+    address[][] calldata matrixVaults,
     address[][][] calldata rewards,
     uint256[][][] calldata amounts,
     bytes32[][][] calldata proofs
@@ -116,9 +133,46 @@ interface IMerkleRewardDistributor {
   // ============================ NOTE: MANAGER FUNCTIONS ============================ //
 
   /**
+   * @notice Fetchs reward from the matrixVault to the specified stage.
+   */
+  function fetchRewards(uint256 stage, uint256 nonce, address matrixVault, address reward, uint256 amount) external;
+
+  /**
+   * @notice Fetchs rewards from the matrixVaults to the specified stage.
+   */
+  function fetchRewardsMultiple(
+    uint256 stage,
+    uint256 nonce,
+    address matrixVault,
+    address[] calldata rewards,
+    uint256[] calldata amounts
+  ) external;
+
+  /**
+   * @notice Fetchs rewards from the multiple matrixVaults to the specified stage.
+   */
+  function fetchRewardsBatch(
+    uint256 stage,
+    uint256 nonce,
+    address[] calldata matrixVaults,
+    address[][] calldata rewards,
+    uint256[][] calldata amounts
+  ) external;
+
+  /**
    * @notice Adds a new stage with the specified root hash.
    * @param root_ The root hash of the merkle tree.
+   * @param stage_ The stage number of the added root hash.
+   * @param nonce The nonce number of the stage.
+   * @param rewards The reward token addresses.
+   * @param amounts The reward amounts.
    * @return stage The stage number of the added root hash.
    */
-  function addStage(bytes32 root_) external returns (uint256 stage);
+  function addStage(
+    bytes32 root_,
+    uint256 stage_,
+    uint256 nonce,
+    address[] calldata rewards,
+    uint256[] calldata amounts
+  ) external returns (uint256 stage);
 }

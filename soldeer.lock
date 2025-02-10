@@ -7,45 +7,45 @@ integrity = "abccdb6010450a52ffca63f06f13f0092b7fcb901f91af9e99c27ba4669cb7d2"
 
 [[dependencies]]
 name = "@openzeppelin-contracts"
-version = "5.0.2"
-url = "https://soldeer-revisions.s3.amazonaws.com/@openzeppelin-contracts/5_0_2_14-03-2024_06:11:59_contracts.zip"
-checksum = "8bc4f0acc7c187771b878d46f7de4bfad1acad2eb5d096d9d05d34035853f5c3"
-integrity = "cb78d16b460035868c00fe7b09960ccf8cd35b6078c518cbfb9f354d98315750"
+version = "5.1.0"
+url = "https://soldeer-revisions.s3.amazonaws.com/@openzeppelin-contracts/5_1_0_19-10-2024_10:28:52_contracts.zip"
+checksum = "fd3d1ea561cb27897008aee18ada6e85f248eb161c86e4435272fc2b5777574f"
+integrity = "cb6cf6e878f2943b2291d5636a9d72ac51d43d8135896ceb6cf88d36c386f212"
 
 [[dependencies]]
 name = "@openzeppelin-contracts-upgradeable"
-version = "5.0.2"
-url = "https://soldeer-revisions.s3.amazonaws.com/@openzeppelin-contracts-upgradeable/5_0_2_14-03-2024_06:12:07_contracts-upgradeable.zip"
-checksum = "fb3f8db8541fc01636f91b0e7d9dd6f450f1bf7e2b4a17e96caf6e779ace8f5b"
-integrity = "4bded842e12902cca59a500494d26586b3baea76b59150fd4e2b1d29078a2e71"
+version = "5.1.0"
+url = "https://soldeer-revisions.s3.amazonaws.com/@openzeppelin-contracts-upgradeable/5_1_0_19-10-2024_10:28:58_contracts-upgradeable.zip"
+checksum = "87854223d14941d6fda3d78d900217e79e25755ea5bc48beca035766fa6a4e7e"
+integrity = "826fb621339dcee4261f848b283ec86364743d3c289d61f621747d95e315215a"
 
 [[dependencies]]
 name = "@openzeppelin-contracts-upgradeable-v4"
 version = "4.9.6"
 url = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/archive/refs/tags/v4.9.6.zip"
 checksum = "f438c623b1aa398337ec45cd92a4c13b0e0b079d28008f3c3be70f334ab6eba7"
-integrity = "2bec945aeac011713f18f71c373b6d11853d8fb925b83bae8561a52f5ee6f4cb"
+integrity = "cd2692a0627ab13be2bb59171cb688393f9264be12255851fa3922d418a16f95"
 
 [[dependencies]]
 name = "@openzeppelin-contracts-v4"
 version = "4.9.6"
 url = "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/refs/tags/v4.9.6.zip"
 checksum = "7af0307b0ad8560aa09405da10bd705fd189b544597695b2c3046b15ce637e47"
-integrity = "a59798013d01d56e07da42ec792cb5491db3f7113848271185dc6513c9ea5b67"
+integrity = "559f038c60d5352d61332f7b4e81d4e021b3d4b6688fd384d12a23aaf2649395"
 
 [[dependencies]]
 name = "forge-std"
 version = "1.9.1"
 url = "https://soldeer-revisions.s3.amazonaws.com/forge-std/v1_9_1_03-07-2024_14:44:59_forge-std-v1.9.1.zip"
 checksum = "110b35ad3604d91a919c521c71206c18cd07b29c750bd90b5cbbaf37288c9636"
-integrity = "229fada41d3af5734ba5e8b2715734b99c7d70335f3dd5a103d2a2e1cae831ba"
+integrity = "389f8bfe6b6aad01915b1e38e6d4839f8189e8d4792b42be4e10d0a96a358e3f"
 
 [[dependencies]]
 name = "openzeppelin-foundry-upgrades"
 version = "0.3.1"
 url = "https://soldeer-revisions.s3.amazonaws.com/openzeppelin-foundry-upgrades/0_3_1_25-06-2024_18:12:33_openzeppelin-foundry-upgrades.zip"
 checksum = "16a43c67b7c62e4a638b669b35f7b19c98a37278811fe910750b62b6e6fdffa7"
-integrity = "c2b01bec9276207f301b62da4e9d3872ae093250392e7f893c715e835a581f13"
+integrity = "9a7b6e6f82f0524e1980342d1e8075e3e9fb65861ffccab7954958ce18f37038"
 
 [[dependencies]]
 name = "solady"
@@ -53,3 +53,10 @@ version = "0.0.230"
 url = "https://soldeer-revisions.s3.amazonaws.com/solady/0_0_230_05-08-2024_05:33:52_solady.zip"
 checksum = "fdaca03b82610492117ca5210ece3f75f2a1d7cd1dec9228378f53f68525259d"
 integrity = "bbacdc9438e96233fef31778c8b9afd3e8a7d99a0c1b46b09e86a0c0fc25d282"
+
+[[dependencies]]
+name = "solmate"
+version = "6.8.0"
+url = "https://soldeer-revisions.s3.amazonaws.com/solmate/6_8_0_29-10-2024_19:01:45_solmate.zip"
+checksum = "e3ec0f0182cb3bbedecf8a0bcc39897266534a795ec732b2b03dafa285d78a5b"
+integrity = "a22e5a352de0231f671ee8adf5667bbe83c50012670083987bd1099a69feb429"

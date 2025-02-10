@@ -39,7 +39,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: corepack enable
+          cache: yarn
 
       - name: Yarn Install
         run: yarn install

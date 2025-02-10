@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { console } from '@std/console.sol';
 
@@ -9,13 +9,12 @@ import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
-import { MitosisVault, AssetAction, EOLAction } from '../../src/branch/MitosisVault.sol';
-import { IMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
+import { MitosisVault, AssetAction, MatrixAction } from '../../src/branch/MitosisVault.sol';
+import { IMitosisVault, IMatrixMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { StdError } from '../../src/lib/StdError.sol';
-import { MockDelegationRegistry } from '../mock/MockDelegationRegistry.t.sol';
-import { MockEOLStrategyExecutor } from '../mock/MockEOLStrategyExecutor.t.sol';
-import { MockERC20TWABSnapshots } from '../mock/MockERC20TWABSnapshots.t.sol';
+import { MockERC20Snapshots } from '../mock/MockERC20Snapshots.t.sol';
+import { MockMatrixStrategyExecutor } from '../mock/MockMatrixStrategyExecutor.t.sol';
 import { MockMitosisVaultEntrypoint } from '../mock/MockMitosisVaultEntrypoint.t.sol';
 import { Toolkit } from '../util/Toolkit.sol';
 
@@ -23,16 +22,14 @@ contract MitosisVaultTest is Toolkit {
   MitosisVault _mitosisVault;
   MockMitosisVaultEntrypoint _mitosisVaultEntrypoint;
   ProxyAdmin _proxyAdmin;
-  MockERC20TWABSnapshots _token;
-  MockEOLStrategyExecutor _eolStrategyExecutor;
-  MockDelegationRegistry _delegationRegistry;
+  MockERC20Snapshots _token;
+  MockMatrixStrategyExecutor _matrixStrategyExecutor;
 
   address immutable owner = makeAddr('owner');
   address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
-  address immutable hubEOLVault = makeAddr('hubEOLVault');
+  address immutable hubMatrixVault = makeAddr('hubMatrixVault');
 
   function setUp() public {
-    _delegationRegistry = new MockDelegationRegistry(mitosis);
     _proxyAdmin = new ProxyAdmin(owner);
 
     MitosisVault mitosisVaultImpl = new MitosisVault();
@@ -48,10 +45,10 @@ contract MitosisVaultTest is Toolkit {
 
     _mitosisVaultEntrypoint = new MockMitosisVaultEntrypoint();
 
-    _token = new MockERC20TWABSnapshots();
-    _token.initialize(address(_delegationRegistry), 'Token', 'TKN');
+    _token = new MockERC20Snapshots();
+    _token.initialize('Token', 'TKN');
 
-    _eolStrategyExecutor = new MockEOLStrategyExecutor(_mitosisVault, _token, hubEOLVault);
+    _matrixStrategyExecutor = new MockMatrixStrategyExecutor(_mitosisVault, _token, hubMatrixVault);
 
     vm.prank(owner);
     _mitosisVault.setEntrypoint(address(_mitosisVaultEntrypoint));
@@ -94,6 +91,9 @@ contract MitosisVaultTest is Toolkit {
 
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(_token));
+
+    vm.prank(owner);
+    _mitosisVault.setCap(address(_token), type(uint128).max); // set cap to infinite (temp)
 
     vm.prank(owner);
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
@@ -180,7 +180,7 @@ contract MitosisVaultTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_depositWithOptIn() public {
+  function test_depositWithSupplyMatrix() public {
     address user1 = makeAddr('user1');
 
     _token.mint(user1, 100 ether);
@@ -188,10 +188,13 @@ contract MitosisVaultTest is Toolkit {
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(_token));
 
-    vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.initializeEOL(hubEOLVault, address(_token));
+    vm.prank(owner);
+    _mitosisVault.setCap(address(_token), type(uint128).max); // set cap to infinite (temp)
 
-    // TODO: resumeEOL check?
+    vm.prank(address(_mitosisVaultEntrypoint));
+    _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
+
+    // TODO: resumeMatrix check?
 
     vm.prank(owner);
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
@@ -199,7 +202,7 @@ contract MitosisVaultTest is Toolkit {
     vm.startPrank(user1);
 
     _token.approve(address(_mitosisVault), 100 ether);
-    _mitosisVault.depositWithOptIn(address(_token), user1, hubEOLVault, 100 ether);
+    _mitosisVault.depositWithSupplyMatrix(address(_token), user1, hubMatrixVault, 100 ether);
 
     assertEq(_token.balanceOf(user1), 0);
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
@@ -207,7 +210,7 @@ contract MitosisVaultTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_depositWithOptIn_AssetNotInitialized() public {
+  function test_depositWithSupplyMatrix_AssetNotInitialized() public {
     address user1 = makeAddr('user1');
 
     _token.mint(user1, 100 ether);
@@ -217,12 +220,12 @@ contract MitosisVaultTest is Toolkit {
     _token.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(_errAssetNotInitialized(address(_token)));
-    _mitosisVault.depositWithOptIn(address(_token), user1, hubEOLVault, 100 ether);
+    _mitosisVault.depositWithSupplyMatrix(address(_token), user1, hubMatrixVault, 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_depositWithOptIn_AssetHalted() public {
+  function test_depositWithSupplyMatrix_AssetHalted() public {
     address user1 = makeAddr('user1');
 
     _token.mint(user1, 100 ether);
@@ -235,12 +238,12 @@ contract MitosisVaultTest is Toolkit {
     _token.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(StdError.Halted.selector);
-    _mitosisVault.depositWithOptIn(address(_token), user1, hubEOLVault, 100 ether);
+    _mitosisVault.depositWithSupplyMatrix(address(_token), user1, hubMatrixVault, 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_depositWithOptIn_EOLNotInitialized() public {
+  function test_depositWithSupplyMatrix_MatrixNotInitialized() public {
     address user1 = makeAddr('user1');
 
     _token.mint(user1, 100 ether);
@@ -248,8 +251,11 @@ contract MitosisVaultTest is Toolkit {
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(_token));
 
+    vm.prank(owner);
+    _mitosisVault.setCap(address(_token), type(uint128).max); // set cap to infinite (temp)
+
     // vm.prank(address(_mitosisVaultEntrypoint));
-    // _mitosisVault.initializeEOL(hubEOLVault, address(_token));
+    // _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
 
     vm.prank(owner);
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
@@ -258,13 +264,13 @@ contract MitosisVaultTest is Toolkit {
 
     _token.approve(address(_mitosisVault), 100 ether);
 
-    vm.expectRevert(_errEOLNotInitiailized(hubEOLVault));
-    _mitosisVault.depositWithOptIn(address(_token), user1, hubEOLVault, 100 ether);
+    vm.expectRevert(_errMatrixNotInitiailized(hubMatrixVault));
+    _mitosisVault.depositWithSupplyMatrix(address(_token), user1, hubMatrixVault, 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_depositWithOptIn_ZeroAddress() public {
+  function test_depositWithSupplyMatrix_ZeroAddress() public {
     address user1 = makeAddr('user1');
 
     _token.mint(user1, 100 ether);
@@ -273,7 +279,7 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.initializeAsset(address(_token));
 
     vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.initializeEOL(hubEOLVault, address(_token));
+    _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
 
     vm.prank(owner);
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
@@ -283,12 +289,12 @@ contract MitosisVaultTest is Toolkit {
     _token.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(_errZeroToAddress());
-    _mitosisVault.depositWithOptIn(address(_token), address(0), hubEOLVault, 100 ether);
+    _mitosisVault.depositWithSupplyMatrix(address(_token), address(0), hubMatrixVault, 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_depositWithOptIn_ZeroAmount() public {
+  function test_depositWithSupplyMatrix_ZeroAmount() public {
     address user1 = makeAddr('user1');
 
     _token.mint(user1, 100 ether);
@@ -297,7 +303,7 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.initializeAsset(address(_token));
 
     vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.initializeEOL(hubEOLVault, address(_token));
+    _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
 
     vm.prank(owner);
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
@@ -307,7 +313,7 @@ contract MitosisVaultTest is Toolkit {
     _token.approve(address(_mitosisVault), 0);
 
     vm.expectRevert(StdError.ZeroAmount.selector);
-    _mitosisVault.depositWithOptIn(address(_token), user1, hubEOLVault, 0);
+    _mitosisVault.depositWithSupplyMatrix(address(_token), user1, hubMatrixVault, 0);
 
     vm.stopPrank();
   }
@@ -357,371 +363,372 @@ contract MitosisVaultTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_initializeEOL() public {
-    assertFalse(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_initializeMatrix() public {
+    assertFalse(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
     vm.startPrank(address(_mitosisVaultEntrypoint));
 
     _mitosisVault.initializeAsset(address(_token));
-    _mitosisVault.initializeEOL(hubEOLVault, address(_token));
+    _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
 
     vm.stopPrank();
 
     assertTrue(_mitosisVault.isAssetInitialized(address(_token)));
   }
 
-  function test_initializeEOL_Unauthorized() public {
-    assertFalse(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_initializeMatrix_Unauthorized() public {
+    assertFalse(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(_token));
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.initializeEOL(hubEOLVault, address(_token));
+    _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
   }
 
-  function test_initializeEOL_EOLAlreadyInitialized() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_initializeMatrix_MatrixAlreadyInitialized() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
     vm.startPrank(address(_mitosisVaultEntrypoint));
 
-    vm.expectRevert(_errEOLAlreadyInitialized(hubEOLVault));
-    _mitosisVault.initializeEOL(hubEOLVault, address(_token));
+    vm.expectRevert(_errMatrixAlreadyInitialized(hubMatrixVault));
+    _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
 
     vm.stopPrank();
   }
 
-  function test_initializeEOL_AssetNotInitialized() public {
-    assertFalse(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_initializeMatrix_AssetNotInitialized() public {
+    assertFalse(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
     vm.startPrank(address(_mitosisVaultEntrypoint));
 
     // _mitosisVault.initializeAsset(address(_token));
     vm.expectRevert(_errAssetNotInitialized(address(_token)));
-    _mitosisVault.initializeEOL(hubEOLVault, address(_token));
+    _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
 
     vm.stopPrank();
   }
 
-  function test_allocateEOL() public {
+  function test_allocateMatrix() public {
     vm.startPrank(address(_mitosisVaultEntrypoint));
 
     _mitosisVault.initializeAsset(address(_token));
-    _mitosisVault.initializeEOL(hubEOLVault, address(_token));
+    _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
 
-    _mitosisVault.allocateEOL(hubEOLVault, 100 ether);
+    _mitosisVault.allocateMatrix(hubMatrixVault, 100 ether);
 
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+    assertEq(_mitosisVault.availableMatrix(hubMatrixVault), 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_allocateEOL_Unauthorized() public {
+  function test_allocateMatrix_Unauthorized() public {
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(_token));
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.initializeEOL(hubEOLVault, address(_token));
+    _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
   }
 
-  function test_allocateEOL_EOLNotInitialized() public {
+  function test_allocateMatrix_MatrixNotInitialized() public {
     vm.startPrank(address(_mitosisVaultEntrypoint));
 
     _mitosisVault.initializeAsset(address(_token));
 
-    // _mitosisVault.initializeEOL(hubEOLVault, address(_token));
+    // _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
 
-    vm.expectRevert(_errEOLNotInitiailized(hubEOLVault));
-    _mitosisVault.allocateEOL(hubEOLVault, 100 ether);
+    vm.expectRevert(_errMatrixNotInitiailized(hubMatrixVault));
+    _mitosisVault.allocateMatrix(hubMatrixVault, 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_deallocateEOL() public {
-    test_allocateEOL();
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+  function test_deallocateMatrix() public {
+    test_allocateMatrix();
+    assertEq(_mitosisVault.availableMatrix(hubMatrixVault), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
-    vm.prank(address(_eolStrategyExecutor));
-    _mitosisVault.deallocateEOL(hubEOLVault, 10 ether);
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 90 ether);
+    vm.prank(address(_matrixStrategyExecutor));
+    _mitosisVault.deallocateMatrix(hubMatrixVault, 10 ether);
+    assertEq(_mitosisVault.availableMatrix(hubMatrixVault), 90 ether);
 
-    vm.prank(address(_eolStrategyExecutor));
-    _mitosisVault.deallocateEOL(hubEOLVault, 90 ether);
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 0 ether);
+    vm.prank(address(_matrixStrategyExecutor));
+    _mitosisVault.deallocateMatrix(hubMatrixVault, 90 ether);
+    assertEq(_mitosisVault.availableMatrix(hubMatrixVault), 0 ether);
   }
 
-  function test_deallocateEOL_Unauthorized() public {
-    test_allocateEOL();
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+  function test_deallocateMatrix_Unauthorized() public {
+    test_allocateMatrix();
+    assertEq(_mitosisVault.availableMatrix(hubMatrixVault), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.deallocateEOL(hubEOLVault, 10 ether);
+    _mitosisVault.deallocateMatrix(hubMatrixVault, 10 ether);
   }
 
-  function test_deallocateEOL_InsufficientEOL() public {
-    test_allocateEOL();
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+  function test_deallocateMatrix_InsufficientMatrix() public {
+    test_allocateMatrix();
+    assertEq(_mitosisVault.availableMatrix(hubMatrixVault), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
     vm.expectRevert();
-    _mitosisVault.deallocateEOL(hubEOLVault, 101 ether);
+    _mitosisVault.deallocateMatrix(hubMatrixVault, 101 ether);
   }
 
-  function test_fetchEOL() public {
-    test_allocateEOL();
+  function test_fetchMatrix() public {
+    test_allocateMatrix();
     _token.mint(address(_mitosisVault), 100 ether);
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+    assertEq(_mitosisVault.availableMatrix(hubMatrixVault), 100 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
-    vm.startPrank(address(_eolStrategyExecutor));
-    _mitosisVault.fetchEOL(hubEOLVault, 10 ether);
-    assertEq(_token.balanceOf(address(_eolStrategyExecutor)), 10 ether);
+    vm.startPrank(address(_matrixStrategyExecutor));
+    _mitosisVault.fetchMatrix(hubMatrixVault, 10 ether);
+    assertEq(_token.balanceOf(address(_matrixStrategyExecutor)), 10 ether);
 
-    _mitosisVault.fetchEOL(hubEOLVault, 90 ether);
-    assertEq(_token.balanceOf(address(_eolStrategyExecutor)), 100 ether);
+    _mitosisVault.fetchMatrix(hubMatrixVault, 90 ether);
+    assertEq(_token.balanceOf(address(_matrixStrategyExecutor)), 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_fetchEOL_EOLNotInitialized() public {
-    // No occurrence case until methods like deinitializeEOL are added.
+  function test_fetchMatrix_MatrixNotInitialized() public {
+    // No occurrence case until methods like deinitializeMatrix are added.
   }
 
-  function test_fetchEOL_Unauthorized() public {
-    test_allocateEOL();
+  function test_fetchMatrix_Unauthorized() public {
+    test_allocateMatrix();
     _token.mint(address(_mitosisVault), 100 ether);
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+    assertEq(_mitosisVault.availableMatrix(hubMatrixVault), 100 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.fetchEOL(hubEOLVault, 10 ether);
+    _mitosisVault.fetchMatrix(hubMatrixVault, 10 ether);
   }
 
-  function test_fetchEOL_AssetHalted() public {
-    test_allocateEOL();
+  function test_fetchMatrix_AssetHalted() public {
+    test_allocateMatrix();
     _token.mint(address(_mitosisVault), 100 ether);
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+    assertEq(_mitosisVault.availableMatrix(hubMatrixVault), 100 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
     vm.prank(owner);
-    _mitosisVault.haltEOL(hubEOLVault, EOLAction.FetchEOL);
 
-    vm.startPrank(address(_eolStrategyExecutor));
+    _mitosisVault.haltMatrix(hubMatrixVault, MatrixAction.FetchMatrix);
+
+    vm.startPrank(address(_matrixStrategyExecutor));
 
     vm.expectRevert(StdError.Halted.selector);
-    _mitosisVault.fetchEOL(hubEOLVault, 10 ether);
+    _mitosisVault.fetchMatrix(hubMatrixVault, 10 ether);
 
     vm.stopPrank();
   }
 
-  function test_fetchEOL_InsufficientEOL() public {
-    test_allocateEOL();
+  function test_fetchMatrix_InsufficientMatrix() public {
+    test_allocateMatrix();
     _token.mint(address(_mitosisVault), 100 ether);
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+    assertEq(_mitosisVault.availableMatrix(hubMatrixVault), 100 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
-    vm.startPrank(address(_eolStrategyExecutor));
+    vm.startPrank(address(_matrixStrategyExecutor));
 
     vm.expectRevert();
-    _mitosisVault.fetchEOL(hubEOLVault, 101 ether);
+    _mitosisVault.fetchMatrix(hubMatrixVault, 101 ether);
 
     vm.stopPrank();
   }
 
-  function test_returnEOL() public {
-    test_fetchEOL();
-    assertEq(_token.balanceOf(address(_eolStrategyExecutor)), 100 ether);
+  function test_returnMatrix() public {
+    test_fetchMatrix();
+    assertEq(_token.balanceOf(address(_matrixStrategyExecutor)), 100 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 0);
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 0);
+    assertEq(_mitosisVault.availableMatrix(hubMatrixVault), 0);
 
-    vm.startPrank(address(_eolStrategyExecutor));
+    vm.startPrank(address(_matrixStrategyExecutor));
 
     _token.approve(address(_mitosisVault), 100 ether);
-    _mitosisVault.returnEOL(hubEOLVault, 100 ether);
+    _mitosisVault.returnMatrix(hubMatrixVault, 100 ether);
 
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 100 ether);
+    assertEq(_mitosisVault.availableMatrix(hubMatrixVault), 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_returnEOL_EOLNotInitialized() public {
-    // No occurrence case until methods like deinitializeEOL are added.
+  function test_returnMatrix_MatrixNotInitialized() public {
+    // No occurrence case until methods like deinitializeMatrix are added.
   }
 
-  function test_returnEOL_Unauthorized() public {
-    test_fetchEOL();
-    assertEq(_token.balanceOf(address(_eolStrategyExecutor)), 100 ether);
+  function test_returnMatrix_Unauthorized() public {
+    test_fetchMatrix();
+    assertEq(_token.balanceOf(address(_matrixStrategyExecutor)), 100 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 0);
-    assertEq(_mitosisVault.availableEOL(hubEOLVault), 0);
+    assertEq(_mitosisVault.availableMatrix(hubMatrixVault), 0);
 
-    vm.prank(address(_eolStrategyExecutor));
+    vm.prank(address(_matrixStrategyExecutor));
     _token.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.returnEOL(hubEOLVault, 100 ether);
+    _mitosisVault.returnMatrix(hubMatrixVault, 100 ether);
   }
 
-  function test_settleYield() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_settleMatrixYield() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
-    vm.prank(address(_eolStrategyExecutor));
-    _mitosisVault.settleYield(hubEOLVault, 100 ether);
+    vm.prank(address(_matrixStrategyExecutor));
+    _mitosisVault.settleMatrixYield(hubMatrixVault, 100 ether);
   }
 
-  function test_settleYield_EOLNotInitialized() public {
-    // No occurrence case until methods like deinitializeEOL are added.
+  function test_settleMatrixYield_MatrixNotInitialized() public {
+    // No occurrence case until methods like deinitializeMatrix are added.
   }
 
-  function test_settleYield_Unauthorized() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_settleMatrixYield_Unauthorized() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.settleYield(hubEOLVault, 100 ether);
+    _mitosisVault.settleMatrixYield(hubMatrixVault, 100 ether);
   }
 
-  function test_settleLoss() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_settleMatrixLoss() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
-    vm.prank(address(_eolStrategyExecutor));
-    _mitosisVault.settleLoss(hubEOLVault, 100 ether);
+    vm.prank(address(_matrixStrategyExecutor));
+    _mitosisVault.settleMatrixLoss(hubMatrixVault, 100 ether);
   }
 
-  function test_settleLoss_EOLNotInitialized() public {
-    // No occurrence case until methods like deinitializeEOL are added.
+  function test_settleMatrixLoss_MatrixNotInitialized() public {
+    // No occurrence case until methods like deinitializeMatrix are added.
   }
 
-  function test_settleLoss_Unauthorized() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_settleMatrixLoss_Unauthorized() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.settleLoss(hubEOLVault, 100 ether);
+    _mitosisVault.settleMatrixLoss(hubMatrixVault, 100 ether);
   }
 
-  function test_settleExtraRewards() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_settleMatrixExtraRewards() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
-    MockERC20TWABSnapshots reward = new MockERC20TWABSnapshots();
-    reward.initialize(address(_delegationRegistry), 'Reward', 'REWARD');
+    MockERC20Snapshots reward = new MockERC20Snapshots();
+    reward.initialize('Reward', 'REWARD');
 
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(reward));
 
-    vm.startPrank(address(_eolStrategyExecutor));
+    vm.startPrank(address(_matrixStrategyExecutor));
 
-    reward.mint(address(_eolStrategyExecutor), 100 ether);
+    reward.mint(address(_matrixStrategyExecutor), 100 ether);
     reward.approve(address(_mitosisVault), 100 ether);
 
-    _mitosisVault.settleExtraRewards(hubEOLVault, address(reward), 100 ether);
+    _mitosisVault.settleMatrixExtraRewards(hubMatrixVault, address(reward), 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_settleExtraRewards_EOLNotInitialized() public {
-    // No occurrence case until methods like deinitializeEOL are added.
+  function test_settleMatrixExtraRewards_MatrixNotInitialized() public {
+    // No occurrence case until methods like deinitializeMatrix are added.
   }
 
-  function test_settleExtraRewards_Unauthorized() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_settleMatrixExtraRewards_Unauthorized() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
-    MockERC20TWABSnapshots reward = new MockERC20TWABSnapshots();
-    reward.initialize(address(_delegationRegistry), 'Reward', 'REWARD');
+    MockERC20Snapshots reward = new MockERC20Snapshots();
+    reward.initialize('Reward', 'REWARD');
 
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(reward));
 
-    reward.mint(address(_eolStrategyExecutor), 100 ether);
+    reward.mint(address(_matrixStrategyExecutor), 100 ether);
 
-    vm.prank(address(_eolStrategyExecutor));
+    vm.prank(address(_matrixStrategyExecutor));
     reward.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.settleExtraRewards(hubEOLVault, address(reward), 100 ether);
+    _mitosisVault.settleMatrixExtraRewards(hubMatrixVault, address(reward), 100 ether);
   }
 
-  function test_settleExtraRewards_AssetNotInitialized() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_settleMatrixExtraRewards_AssetNotInitialized() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
-    MockERC20TWABSnapshots reward = new MockERC20TWABSnapshots();
-    reward.initialize(address(_delegationRegistry), 'Reward', 'REWARD');
+    MockERC20Snapshots reward = new MockERC20Snapshots();
+    reward.initialize('Reward', 'REWARD');
 
     // vm.prank(address(_mitosisVaultEntrypoint));
     // _mitosisVault.initializeAsset(address(reward));
 
-    vm.startPrank(address(_eolStrategyExecutor));
+    vm.startPrank(address(_matrixStrategyExecutor));
 
-    reward.mint(address(_eolStrategyExecutor), 100 ether);
+    reward.mint(address(_matrixStrategyExecutor), 100 ether);
     reward.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(_errAssetNotInitialized(address(reward)));
-    _mitosisVault.settleExtraRewards(hubEOLVault, address(reward), 100 ether);
+    _mitosisVault.settleMatrixExtraRewards(hubMatrixVault, address(reward), 100 ether);
 
     vm.stopPrank();
   }
 
-  function test_settleExtraRewards_InvalidRewardAddress() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_settleMatrixExtraRewards_InvalidRewardAddress() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
-    vm.startPrank(address(_eolStrategyExecutor));
+    vm.startPrank(address(_matrixStrategyExecutor));
 
-    _token.mint(address(_eolStrategyExecutor), 100 ether);
+    _token.mint(address(_matrixStrategyExecutor), 100 ether);
     _token.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(_errInvalidAddress('reward'));
-    _mitosisVault.settleExtraRewards(hubEOLVault, address(_token), 100 ether);
+    _mitosisVault.settleMatrixExtraRewards(hubMatrixVault, address(_token), 100 ether);
 
     vm.stopPrank();
   }
@@ -731,113 +738,115 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.setEntrypoint(address(0));
   }
 
-  function test_setEOLStrategyExecutor() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_setMatrixStrategyExecutor() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
   }
 
-  function test_setEOLStrategyExecutor_EOLNotInitialized() public {
+  function test_setMatrixStrategyExecutor_MatrixNotInitialized() public {
     vm.startPrank(owner);
 
-    vm.expectRevert(_errEOLNotInitiailized(hubEOLVault));
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    vm.expectRevert(_errMatrixNotInitiailized(hubMatrixVault));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
     vm.stopPrank();
   }
 
-  function test_setEOLStrategyExecutor_EOLStrategyExecutorNotDrained() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_setMatrixStrategyExecutor_MatrixStrategyExecutorNotDrained() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(_eolStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
-    _token.mint(address(_eolStrategyExecutor), 100 ether);
-    assertTrue(_eolStrategyExecutor.totalBalance() > 0);
+    _token.mint(address(_matrixStrategyExecutor), 100 ether);
+    assertTrue(_matrixStrategyExecutor.totalBalance() > 0);
 
-    MockEOLStrategyExecutor newEOLStrategyExecutor = new MockEOLStrategyExecutor(_mitosisVault, _token, hubEOLVault);
+    MockMatrixStrategyExecutor newMatrixStrategyExecutor =
+      new MockMatrixStrategyExecutor(_mitosisVault, _token, hubMatrixVault);
 
     vm.startPrank(owner);
 
-    vm.expectRevert(_errEOLStrategyExecutorNotDraind(hubEOLVault, address(_eolStrategyExecutor)));
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(newEOLStrategyExecutor));
+    vm.expectRevert(_errMatrixStrategyExecutorNotDraind(hubMatrixVault, address(_matrixStrategyExecutor)));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(newMatrixStrategyExecutor));
 
     vm.stopPrank();
 
-    vm.prank(address(_eolStrategyExecutor));
+    vm.prank(address(_matrixStrategyExecutor));
     _token.transfer(address(1), 100 ether);
 
-    assertEq(_eolStrategyExecutor.totalBalance(), 0);
+    assertEq(_matrixStrategyExecutor.totalBalance(), 0);
 
     vm.prank(owner);
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(newEOLStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(newMatrixStrategyExecutor));
 
-    assertEq(_mitosisVault.eolStrategyExecutor(hubEOLVault), address(newEOLStrategyExecutor));
+    assertEq(_mitosisVault.matrixStrategyExecutor(hubMatrixVault), address(newMatrixStrategyExecutor));
   }
 
-  function test_setEOLStrategyExecutor_InvalidVaultAddress() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_setMatrixStrategyExecutor_InvalidVaultAddress() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
-    MockEOLStrategyExecutor newEOLStrategyExecutor =
-      new MockEOLStrategyExecutor(IMitosisVault(address(0)), _token, hubEOLVault);
+    MockMatrixStrategyExecutor newMatrixStrategyExecutor =
+      new MockMatrixStrategyExecutor(IMitosisVault(address(0)), _token, hubMatrixVault);
 
     vm.startPrank(owner);
 
-    vm.expectRevert(_errInvalidAddress('eolStrategyExecutor.vault'));
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(newEOLStrategyExecutor));
+    vm.expectRevert(_errInvalidAddress('matrixStrategyExecutor.vault'));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(newMatrixStrategyExecutor));
 
     vm.stopPrank();
   }
 
-  function test_setEOLStrategyExecutor_InvalidAssetAddress() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_setMatrixStrategyExecutor_InvalidAssetAddress() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
-    MockEOLStrategyExecutor newEOLStrategyExecutor =
-      new MockEOLStrategyExecutor(_mitosisVault, IERC20(address(0)), hubEOLVault);
+    MockMatrixStrategyExecutor newMatrixStrategyExecutor =
+      new MockMatrixStrategyExecutor(_mitosisVault, IERC20(address(0)), hubMatrixVault);
 
     vm.startPrank(owner);
 
-    vm.expectRevert(_errInvalidAddress('eolStrategyExecutor.asset'));
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(newEOLStrategyExecutor));
+    vm.expectRevert(_errInvalidAddress('matrixStrategyExecutor.asset'));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(newMatrixStrategyExecutor));
 
     vm.stopPrank();
   }
 
-  function test_setEOLStrategyExecutor_InvalidHubEOLVault() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_setMatrixStrategyExecutor_InvalidhubMatrixVault() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
-    MockEOLStrategyExecutor newEOLStrategyExecutor;
-    newEOLStrategyExecutor = new MockEOLStrategyExecutor(_mitosisVault, _token, address(0));
+    MockMatrixStrategyExecutor newMatrixStrategyExecutor;
+    newMatrixStrategyExecutor = new MockMatrixStrategyExecutor(_mitosisVault, _token, address(0));
 
     vm.startPrank(owner);
 
     vm.expectRevert();
-    _mitosisVault.setEOLStrategyExecutor(hubEOLVault, address(newEOLStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(newMatrixStrategyExecutor));
 
-    newEOLStrategyExecutor = new MockEOLStrategyExecutor(_mitosisVault, _token, hubEOLVault);
+    newMatrixStrategyExecutor = new MockMatrixStrategyExecutor(_mitosisVault, _token, hubMatrixVault);
 
     vm.expectRevert();
-    _mitosisVault.setEOLStrategyExecutor(address(0), address(newEOLStrategyExecutor));
+    _mitosisVault.setMatrixStrategyExecutor(address(0), address(newMatrixStrategyExecutor));
 
     vm.stopPrank();
   }
 
-  function test_isEOLActionHalted() public {
-    test_initializeEOL();
-    assertTrue(_mitosisVault.isEOLInitialized(hubEOLVault));
+  function test_isMatrixActionHalted() public {
+    test_initializeMatrix();
+    assertTrue(_mitosisVault.isMatrixInitialized(hubMatrixVault));
 
-    assertFalse(_mitosisVault.isEOLActionHalted(hubEOLVault, EOLAction.FetchEOL)); // default to not halted
+    assertFalse(_mitosisVault.isMatrixActionHalted(hubMatrixVault, MatrixAction.FetchMatrix)); // default to not halted
 
     vm.prank(owner);
-    _mitosisVault.haltEOL(hubEOLVault, EOLAction.FetchEOL);
 
-    assertTrue(_mitosisVault.isEOLActionHalted(hubEOLVault, EOLAction.FetchEOL));
+    _mitosisVault.haltMatrix(hubMatrixVault, MatrixAction.FetchMatrix);
+
+    assertTrue(_mitosisVault.isMatrixActionHalted(hubMatrixVault, MatrixAction.FetchMatrix));
   }
 
   function test_isAssetActionHalted() public {
@@ -860,21 +869,25 @@ contract MitosisVaultTest is Toolkit {
     return abi.encodeWithSelector(IMitosisVault.IMitosisVault__AssetNotInitialized.selector, asset);
   }
 
-  function _errEOLAlreadyInitialized(address _hubEOLVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IMitosisVault.IMitosisVault__EOLAlreadyInitialized.selector, _hubEOLVault);
+  function _errMatrixAlreadyInitialized(address _hubMatrixVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(
+      IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixAlreadyInitialized.selector, _hubMatrixVault
+    );
   }
 
-  function _errEOLNotInitiailized(address _hubEOLVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IMitosisVault.IMitosisVault__EOLNotInitialized.selector, _hubEOLVault);
+  function _errMatrixNotInitiailized(address _hubMatrixVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(
+      IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixNotInitialized.selector, _hubMatrixVault
+    );
   }
 
-  function _errEOLStrategyExecutorNotDraind(address _hubEOLVault, address eolStrategyExecutor_)
+  function _errMatrixStrategyExecutorNotDraind(address _hubMatrixVault, address matrixStrategyExecutor_)
     internal
     pure
     returns (bytes memory)
   {
     return abi.encodeWithSelector(
-      IMitosisVault.IMitosisVault__EOLStrategyExecutorNotDrained.selector, _hubEOLVault, eolStrategyExecutor_
+      IMitosisVault.IMitosisVault__StrategyExecutorNotDrained.selector, _hubMatrixVault, matrixStrategyExecutor_
     );
   }
 }

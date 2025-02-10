@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
 
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
-import { IEOLVault } from '../../interfaces/hub/eol/vault/IEOLVault.sol';
+import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
 import { ITracle } from '../../interfaces/hub/oracle/ITracle.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
@@ -28,7 +28,7 @@ contract Tracle is ITracle, AccessControlUpgradeable {
   /// @custom:storage-location mitosis.storage.Tracle
   struct TracleStorage {
     mapping(bytes32 id => Price) prices;
-    mapping(bytes32 id => EOLVaultPriceConfig) eolVaultPriceConfigs;
+    mapping(bytes32 id => MatrixVaultPriceConfig) matrixVaultPriceConfigs;
   }
 
   // =========================== NOTE: STORAGE DEFINITIONS =========================== //
@@ -60,19 +60,19 @@ contract Tracle is ITracle, AccessControlUpgradeable {
 
   function getPrice(bytes32 id) external view returns (Price memory) {
     TracleStorage storage $ = _getTracleStorage();
-    EOLVaultPriceConfig storage config = $.eolVaultPriceConfigs[id];
+    MatrixVaultPriceConfig storage config = $.matrixVaultPriceConfigs[id];
 
-    if (config.eolVault != address(0)) {
-      return _getEOLVaultPrice($, IEOLVault(config.eolVault), config.underlyingPriceId);
+    if (config.matrixVault != address(0)) {
+      return _getMatrixVaultPrice($, IMatrixVault(config.matrixVault), config.underlyingPriceId);
     } else {
       return _getStoredPrice($, id);
     }
   }
 
-  function getEOLVaultPriceConfig(bytes32 id) external view returns (EOLVaultPriceConfig memory) {
+  function getMatrixVaultPriceConfig(bytes32 id) external view returns (MatrixVaultPriceConfig memory) {
     TracleStorage storage $ = _getTracleStorage();
-    require($.eolVaultPriceConfigs[id].eolVault != address(0), ITracle__InvalidPriceId(id));
-    return $.eolVaultPriceConfigs[id];
+    require($.matrixVaultPriceConfigs[id].matrixVault != address(0), ITracle__InvalidPriceId(id));
+    return $.matrixVaultPriceConfigs[id];
   }
 
   // ============================ NOTE: MANAGEMENT FUNCTIONS ============================ //
@@ -97,18 +97,18 @@ contract Tracle is ITracle, AccessControlUpgradeable {
     }
   }
 
-  function setEOLVaultPriceConfig(bytes32 id, EOLVaultPriceConfig memory config) external onlyManager {
+  function setMatrixVaultPriceConfig(bytes32 id, MatrixVaultPriceConfig memory config) external onlyManager {
     TracleStorage storage $ = _getTracleStorage();
 
-    $.eolVaultPriceConfigs[id] = config;
-    emit EOLVaultPriceConfigSet(id, config.eolVault, config.underlyingPriceId);
+    $.matrixVaultPriceConfigs[id] = config;
+    emit MatrixVaultPriceConfigSet(id, config.matrixVault, config.underlyingPriceId);
   }
 
-  function unsetEOLVaultPriceConfig(bytes32 id) external onlyManager {
+  function unsetMatrixVaultPriceConfig(bytes32 id) external onlyManager {
     TracleStorage storage $ = _getTracleStorage();
 
-    delete $.eolVaultPriceConfigs[id];
-    emit EOLVaultPriceConfigUnset(id);
+    delete $.matrixVaultPriceConfigs[id];
+    emit MatrixVaultPriceConfigUnset(id);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
@@ -118,13 +118,13 @@ contract Tracle is ITracle, AccessControlUpgradeable {
     return $.prices[id];
   }
 
-  function _getEOLVaultPrice(TracleStorage storage $, IEOLVault eolVault, bytes32 underlyingPriceId)
+  function _getMatrixVaultPrice(TracleStorage storage $, IMatrixVault matrixVault, bytes32 underlyingPriceId)
     internal
     view
     returns (Price memory)
   {
     Price memory underlyingPrice = _getStoredPrice($, underlyingPriceId);
-    uint208 price = SafeCast.toUint208(underlyingPrice.price * eolVault.totalAssets() / eolVault.totalSupply());
+    uint208 price = SafeCast.toUint208(underlyingPrice.price * matrixVault.totalAssets() / matrixVault.totalSupply());
     return Price({ price: price, updatedAt: underlyingPrice.updatedAt });
   }
 }
