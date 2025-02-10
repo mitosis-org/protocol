@@ -90,6 +90,8 @@ contract MockAssetManager is IAssetManager {
 
   function collateral(uint256 chainId_, address hubAsset_) external view returns (uint256) { }
 
+  function branchAvailableLiquidity(uint256 chainId, address hubAsset_) external view returns (uint256) { }
+
   function matrixInitialized(uint256 chainId_, address matrixVault_) external view returns (bool) { }
 
   function matrixIdle(address matrixVault_) external view returns (uint256) { }

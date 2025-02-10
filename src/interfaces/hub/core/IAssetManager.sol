@@ -58,8 +58,8 @@ interface IAssetManagerStorageV1 {
   error IAssetManagerStorageV1__MatrixNotInitialized(uint256 chainId, address matrixVault);
   error IAssetManagerStorageV1__MatrixAlreadyInitialized(uint256 chainId, address matrixVault);
 
-  error IAssetManagerStorageV1__CollateralInsufficient(
-    uint256 chainId, address hubAsset, uint256 collateral, uint256 amount
+  error IAssetManagerStorageV1__BranchAvailableLiquidityInsufficient(
+    uint256 chainId, address hubAsset, uint256 available, uint256 amount
   );
 
   error IAssetManagerStorageV1__BranchLiquidityNotInsufficient(
@@ -130,6 +130,14 @@ interface IAssetManagerStorageV1 {
    * @param hubAsset_ The address of the hub asset
    */
   function collateral(uint256 chainId, address hubAsset_) external view returns (uint256);
+
+  /**
+   * @notice Get the available liquidity of branch asset for a given chain ID and hub asset.
+   * @dev The available amount of branch asset can be used for redemption or allocation.
+   * @param chainId The ID of the chain
+   * @param hubAsset_ The address of the hub asset
+   */
+  function branchAvailableLiquidity(uint256 chainId, address hubAsset_) external view returns (uint256);
 
   /**
    * @notice Check if a MatrixVault is initialized for a given chain and branch asset (MatrixVault -> hubAsset -> branchAsset)

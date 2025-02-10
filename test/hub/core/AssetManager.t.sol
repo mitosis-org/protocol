@@ -37,7 +37,7 @@ contract AssetManagerTest is Toolkit {
   address user1 = makeAddr('user1');
   address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
-  uint48 branchChainId = 10;
+  uint48 branchChainId1 = 10;
   uint48 branchChainId2 = 20;
   address branchAsset1 = makeAddr('branchAsset1');
   address branchAsset2 = makeAddr('branchAsset2');
@@ -125,39 +125,39 @@ contract AssetManagerTest is Toolkit {
 
   function test_deposit() public {
     vm.prank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.deposit(branchChainId, branchAsset1, user1, 100 ether);
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
 
     assertEq(_token.balanceOf(user1), 100 ether);
   }
 
   function test_deposit_Unauthorized() public {
     vm.prank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.deposit(branchChainId, branchAsset1, user1, 100 ether);
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
   }
 
   function test_deposit_BranchAssetPairNotExist() public {
     vm.startPrank(address(_assetManagerEntrypoint));
 
     vm.expectRevert(_errBranchAssetPairNotExist(branchAsset1));
-    _assetManager.deposit(branchChainId, branchAsset1, user1, 100 ether);
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
 
     vm.stopPrank();
   }
 
   function test_depositWithSupplyMatrix() public {
     vm.startPrank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
-    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+    _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
     vm.stopPrank();
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.depositWithSupplyMatrix(branchChainId, branchAsset1, user1, address(_matrixVault), 100 ether);
+    _assetManager.depositWithSupplyMatrix(branchChainId1, branchAsset1, user1, address(_matrixVault), 100 ether);
 
     assertEq(_token.balanceOf(user1), 0);
     assertEq(_matrixVault.balanceOf(user1), 100 ether);
@@ -165,12 +165,12 @@ contract AssetManagerTest is Toolkit {
 
   function test_depositWithSupplyMatrix_Unauthorized() public {
     vm.startPrank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
-    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+    _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
     vm.stopPrank();
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.depositWithSupplyMatrix(branchChainId, branchAsset1, user1, address(_matrixVault), 100 ether);
+    _assetManager.depositWithSupplyMatrix(branchChainId1, branchAsset1, user1, address(_matrixVault), 100 ether);
   }
 
   function test_depositWithSupplyMatrix_BranchAssetPairNotExist() public {
@@ -179,14 +179,14 @@ contract AssetManagerTest is Toolkit {
 
   function test_depositWithSupplyMatrix_MatrixNotInitialized() public {
     vm.startPrank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
-    // _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+    // _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
     vm.stopPrank();
 
     vm.startPrank(address(_assetManagerEntrypoint));
 
-    vm.expectRevert(_errMatrixNotInitialized(branchChainId, address(_matrixVault)));
-    _assetManager.depositWithSupplyMatrix(branchChainId, branchAsset1, user1, address(_matrixVault), 100 ether);
+    vm.expectRevert(_errMatrixNotInitialized(branchChainId1, address(_matrixVault)));
+    _assetManager.depositWithSupplyMatrix(branchChainId1, branchAsset1, user1, address(_matrixVault), 100 ether);
 
     vm.stopPrank();
   }
@@ -209,33 +209,33 @@ contract AssetManagerTest is Toolkit {
     );
 
     vm.startPrank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
     // add incorrect pair
-    _assetManager.setAssetPair(address(myToken), branchChainId, branchAsset2);
-    _assetManager.initializeMatrix(branchChainId, address(incorrectMatrixVault));
+    _assetManager.setAssetPair(address(myToken), branchChainId1, branchAsset2);
+    _assetManager.initializeMatrix(branchChainId1, address(incorrectMatrixVault));
     vm.stopPrank();
 
     vm.startPrank(address(_assetManagerEntrypoint));
 
     vm.expectRevert(_errInvalidMatrixVault(address(incorrectMatrixVault), address(_token)));
-    _assetManager.depositWithSupplyMatrix(branchChainId, branchAsset1, user1, address(incorrectMatrixVault), 100 ether);
+    _assetManager.depositWithSupplyMatrix(branchChainId1, branchAsset1, user1, address(incorrectMatrixVault), 100 ether);
 
     vm.stopPrank();
   }
 
   function test_redeem() public {
     vm.prank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
     vm.prank(owner);
-    _assetManager.setHubAssetRedeemStatus(branchChainId, address(_token), true);
+    _assetManager.setHubAssetRedeemStatus(branchChainId1, address(_token), true);
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.deposit(branchChainId, branchAsset1, user1, 100 ether);
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
 
     vm.prank(user1);
-    _assetManager.redeem(branchChainId, address(_token), user1, 100 ether);
+    _assetManager.redeem(branchChainId1, address(_token), user1, 100 ether);
 
     assertEq(_token.balanceOf(user1), 0);
     assertEq(_token.balanceOf(address(_assetManager)), 0);
@@ -251,64 +251,64 @@ contract AssetManagerTest is Toolkit {
 
   function test_redeem_ToZeroAddress() public {
     vm.prank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
     vm.prank(owner);
-    _assetManager.setHubAssetRedeemStatus(branchChainId, address(_token), true);
+    _assetManager.setHubAssetRedeemStatus(branchChainId1, address(_token), true);
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.deposit(branchChainId, branchAsset1, user1, 100 ether);
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
 
     vm.startPrank(user1);
 
     vm.expectRevert(_errZeroToAddress());
-    _assetManager.redeem(branchChainId, address(_token), address(0), 100 ether);
+    _assetManager.redeem(branchChainId1, address(_token), address(0), 100 ether);
 
     vm.stopPrank();
   }
 
   function test_redeem_ZeroAmount() public {
     vm.prank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
     vm.prank(owner);
-    _assetManager.setHubAssetRedeemStatus(branchChainId, address(_token), true);
+    _assetManager.setHubAssetRedeemStatus(branchChainId1, address(_token), true);
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.deposit(branchChainId, branchAsset1, user1, 100 ether);
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
 
     vm.startPrank(user1);
 
     vm.expectRevert(_errZeroAmount());
-    _assetManager.redeem(branchChainId, address(_token), user1, 0);
+    _assetManager.redeem(branchChainId1, address(_token), user1, 0);
 
     vm.stopPrank();
   }
 
-  function test_redeem_CollateralInsufficient() public {
+  function test_redeem_BranchAvailableLiquidityInsufficient() public {
     vm.startPrank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
     _assetManager.setAssetPair(address(_token), branchChainId2, branchAsset1);
-    _assetManager.setHubAssetRedeemStatus(branchChainId, address(_token), true);
+    _assetManager.setHubAssetRedeemStatus(branchChainId1, address(_token), true);
     _assetManager.setHubAssetRedeemStatus(branchChainId2, address(_token), true);
     vm.stopPrank();
 
     vm.startPrank(address(_assetManagerEntrypoint));
-    _assetManager.deposit(branchChainId, branchAsset1, user1, 100 ether);
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
     _assetManager.deposit(branchChainId2, branchAsset1, user1, 50 ether);
     vm.stopPrank();
 
     vm.startPrank(user1);
 
-    vm.expectRevert(_errCollateralInsufficient(branchChainId, address(_token), 100 ether, 101 ether));
-    _assetManager.redeem(branchChainId, address(_token), user1, 101 ether);
+    vm.expectRevert(_errBranchAvailableLiquidityInsufficient(branchChainId1, address(_token), 100 ether, 101 ether));
+    _assetManager.redeem(branchChainId1, address(_token), user1, 101 ether);
 
-    vm.expectRevert(_errCollateralInsufficient(branchChainId2, address(_token), 50 ether, 51 ether));
+    vm.expectRevert(_errBranchAvailableLiquidityInsufficient(branchChainId2, address(_token), 50 ether, 51 ether));
     _assetManager.redeem(branchChainId2, address(_token), user1, 51 ether);
 
-    assertEq(_assetManager.collateral(branchChainId, address(_token)), 100 ether);
-    _assetManager.redeem(branchChainId, address(_token), user1, 100 ether);
-    assertEq(_assetManager.collateral(branchChainId, address(_token)), 0 ether);
+    assertEq(_assetManager.collateral(branchChainId1, address(_token)), 100 ether);
+    _assetManager.redeem(branchChainId1, address(_token), user1, 100 ether);
+    assertEq(_assetManager.collateral(branchChainId1, address(_token)), 0 ether);
 
     assertEq(_assetManager.collateral(branchChainId2, address(_token)), 50 ether);
     _assetManager.redeem(branchChainId2, address(_token), user1, 40 ether);
@@ -319,13 +319,13 @@ contract AssetManagerTest is Toolkit {
 
   function test_allocateMatrix() public {
     vm.startPrank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
-    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+    _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
     _assetManager.setStrategist(address(_matrixVault), strategist);
     vm.stopPrank();
 
-    vm.prank(address(_assetManager));
-    _token.mint(user1, 100 ether);
+    vm.prank(address(_assetManagerEntrypoint));
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
 
     vm.startPrank(user1);
 
@@ -337,7 +337,7 @@ contract AssetManagerTest is Toolkit {
     assertEq(_assetManager.matrixIdle(address(_matrixVault)), 100 ether);
 
     vm.prank(strategist);
-    _assetManager.allocateMatrix(branchChainId, address(_matrixVault), 100 ether);
+    _assetManager.allocateMatrix(branchChainId1, address(_matrixVault), 100 ether);
 
     assertEq(_assetManager.matrixAlloc(address(_matrixVault)), 100 ether);
     assertEq(_assetManager.matrixIdle(address(_matrixVault)), 0);
@@ -345,13 +345,13 @@ contract AssetManagerTest is Toolkit {
 
   function test_allocateMatrix_Unauthorized() public {
     vm.startPrank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
-    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+    _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
     _assetManager.setStrategist(address(_matrixVault), strategist);
     vm.stopPrank();
 
-    vm.prank(address(_assetManager));
-    _token.mint(user1, 100 ether);
+    vm.prank(address(_assetManagerEntrypoint));
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
 
     vm.startPrank(user1);
 
@@ -363,18 +363,18 @@ contract AssetManagerTest is Toolkit {
     assertEq(_assetManager.matrixIdle(address(_matrixVault)), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.allocateMatrix(branchChainId, address(_matrixVault), 100 ether);
+    _assetManager.allocateMatrix(branchChainId1, address(_matrixVault), 100 ether);
   }
 
   function test_allocateMatrix_MatrixNotInitialized() public {
     vm.startPrank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
-    // _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+    // _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
     _assetManager.setStrategist(address(_matrixVault), strategist);
     vm.stopPrank();
 
-    vm.prank(address(_assetManager));
-    _token.mint(user1, 100 ether);
+    vm.prank(address(_assetManagerEntrypoint));
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
 
     vm.startPrank(user1);
 
@@ -387,21 +387,21 @@ contract AssetManagerTest is Toolkit {
 
     vm.startPrank(strategist);
 
-    vm.expectRevert(_errMatrixNotInitialized(branchChainId, address(_matrixVault)));
-    _assetManager.allocateMatrix(branchChainId, address(_matrixVault), 100 ether);
+    vm.expectRevert(_errMatrixNotInitialized(branchChainId1, address(_matrixVault)));
+    _assetManager.allocateMatrix(branchChainId1, address(_matrixVault), 100 ether);
 
     vm.stopPrank();
   }
 
   function test_allocateMatrix_MatrixInsufficient() public {
     vm.startPrank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
-    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+    _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
     _assetManager.setStrategist(address(_matrixVault), strategist);
     vm.stopPrank();
 
-    vm.prank(address(_assetManager));
-    _token.mint(user1, 100 ether);
+    vm.prank(address(_assetManagerEntrypoint));
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
 
     vm.startPrank(user1);
 
@@ -415,7 +415,47 @@ contract AssetManagerTest is Toolkit {
     vm.startPrank(strategist);
 
     vm.expectRevert(_errMatrixInsufficient(address(_matrixVault)));
-    _assetManager.allocateMatrix(branchChainId, address(_matrixVault), 101 ether);
+    _assetManager.allocateMatrix(branchChainId1, address(_matrixVault), 101 ether);
+
+    vm.stopPrank();
+  }
+
+  function test_allocateMatrix_BranchAvailableLiquidityInsufficient() public {
+    vm.startPrank(owner);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId2, branchAsset2);
+    _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
+    _assetManager.initializeMatrix(branchChainId2, address(_matrixVault));
+    _assetManager.setStrategist(address(_matrixVault), strategist);
+    vm.stopPrank();
+
+    vm.startPrank(address(_assetManagerEntrypoint));
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
+    _assetManager.deposit(branchChainId2, branchAsset2, user1, 100 ether); // mint 100 of _token to user1
+    vm.stopPrank();
+
+    vm.startPrank(user1);
+    _token.approve(address(_matrixVault), 200 ether);
+    _matrixVault.deposit(200 ether, user1);
+    vm.stopPrank();
+
+    vm.startPrank(strategist);
+
+    assertEq(_assetManager.branchAvailableLiquidity(branchChainId1, address(_token)), 100 ether);
+    assertEq(_assetManager.branchAvailableLiquidity(branchChainId2, address(_token)), 100 ether);
+    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 200 ether);
+    assertEq(_assetManager.matrixAlloc(address(_matrixVault)), 0 ether);
+
+    _assetManager.allocateMatrix(branchChainId1, address(_matrixVault), 30 ether);
+    _assetManager.allocateMatrix(branchChainId2, address(_matrixVault), 50 ether);
+
+    assertEq(_assetManager.branchAvailableLiquidity(branchChainId1, address(_token)), 70 ether);
+    assertEq(_assetManager.branchAvailableLiquidity(branchChainId2, address(_token)), 50 ether);
+    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 120 ether);
+    assertEq(_assetManager.matrixAlloc(address(_matrixVault)), 80 ether);
+
+    vm.expectRevert(_errBranchAvailableLiquidityInsufficient(branchChainId1, address(_token), 70 ether, 71 ether));
+    _assetManager.allocateMatrix(branchChainId1, address(_matrixVault), 71 ether);
 
     vm.stopPrank();
   }
@@ -426,7 +466,7 @@ contract AssetManagerTest is Toolkit {
     assertEq(_assetManager.matrixAlloc(address(_matrixVault)), 100 ether);
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.deallocateMatrix(branchChainId, address(_matrixVault), 100 ether);
+    _assetManager.deallocateMatrix(branchChainId1, address(_matrixVault), 100 ether);
 
     assertEq(_assetManager.matrixIdle(address(_matrixVault)), 100 ether);
     assertEq(_assetManager.matrixAlloc(address(_matrixVault)), 0);
@@ -438,7 +478,7 @@ contract AssetManagerTest is Toolkit {
     assertEq(_assetManager.matrixAlloc(address(_matrixVault)), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.deallocateMatrix(branchChainId, address(_matrixVault), 100 ether);
+    _assetManager.deallocateMatrix(branchChainId1, address(_matrixVault), 100 ether);
   }
 
   function test_reserveMatrix() public {
@@ -474,14 +514,14 @@ contract AssetManagerTest is Toolkit {
 
   function test_settleMatrixYield() public {
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.settleMatrixYield(branchChainId, address(_matrixVault), 100 ether);
+    _assetManager.settleMatrixYield(branchChainId1, address(_matrixVault), 100 ether);
 
     assertEq(_token.balanceOf(address(_assetManager)), 0);
   }
 
   function test_settleMatrixYield_Unauthorized() public {
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.settleMatrixYield(branchChainId, address(_matrixVault), 100 ether);
+    _assetManager.settleMatrixYield(branchChainId1, address(_matrixVault), 100 ether);
   }
 
   function test_settleMatrixLoss() public {
@@ -495,17 +535,17 @@ contract AssetManagerTest is Toolkit {
 
     vm.startPrank(owner);
     _assetManager.setStrategist(address(_matrixVault), strategist);
-    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
     vm.stopPrank();
 
     vm.prank(strategist);
-    _assetManager.allocateMatrix(branchChainId, address(_matrixVault), 100 ether);
+    _assetManager.allocateMatrix(branchChainId1, address(_matrixVault), 100 ether);
 
     assertEq(_token.balanceOf(user1), 0);
     assertEq(_token.balanceOf(address(_matrixVault)), 100 ether);
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.settleMatrixLoss(branchChainId, address(_matrixVault), 10 ether);
+    _assetManager.settleMatrixLoss(branchChainId1, address(_matrixVault), 10 ether);
 
     assertEq(_token.balanceOf(address(_matrixVault)), 100 ether - 10 ether);
   }
@@ -523,7 +563,7 @@ contract AssetManagerTest is Toolkit {
     assertEq(_token.balanceOf(address(_matrixVault)), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.settleMatrixLoss(branchChainId, address(_matrixVault), 10 ether);
+    _assetManager.settleMatrixLoss(branchChainId1, address(_matrixVault), 10 ether);
   }
 
   function test_settleMatrixExtraRewards() public {
@@ -532,13 +572,13 @@ contract AssetManagerTest is Toolkit {
 
     vm.startPrank(owner);
     _assetManager.setTreasury(address(_treasury));
-    _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
+    _assetManager.setAssetPair(address(rewardToken), branchChainId1, branchRewardTokenAddress);
     vm.stopPrank();
 
     assertEq(rewardToken.totalSupply(), 0);
 
     vm.prank(address(_assetManagerEntrypoint));
-    _assetManager.settleMatrixExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
+    _assetManager.settleMatrixExtraRewards(branchChainId1, address(_matrixVault), branchRewardTokenAddress, 100 ether);
 
     assertEq(rewardToken.totalSupply(), 100 ether);
   }
@@ -549,50 +589,50 @@ contract AssetManagerTest is Toolkit {
 
     vm.startPrank(owner);
     _assetManager.setTreasury(address(_treasury));
-    _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
+    _assetManager.setAssetPair(address(rewardToken), branchChainId1, branchRewardTokenAddress);
     vm.stopPrank();
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.settleMatrixExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
+    _assetManager.settleMatrixExtraRewards(branchChainId1, address(_matrixVault), branchRewardTokenAddress, 100 ether);
   }
 
   function test_settleMatrixExtraRewards_BranchAssetPairNotExist() public {
     vm.startPrank(owner);
     _assetManager.setTreasury(address(_treasury));
-    // _assetManager.setAssetPair(address(rewardToken), branchChainId, branchRewardTokenAddress);
+    // _assetManager.setAssetPair(address(rewardToken), branchChainId1, branchRewardTokenAddress);
     vm.stopPrank();
 
     vm.startPrank(address(_assetManagerEntrypoint));
 
     vm.expectRevert(_errBranchAssetPairNotExist(branchRewardTokenAddress));
-    _assetManager.settleMatrixExtraRewards(branchChainId, address(_matrixVault), branchRewardTokenAddress, 100 ether);
+    _assetManager.settleMatrixExtraRewards(branchChainId1, address(_matrixVault), branchRewardTokenAddress, 100 ether);
 
     vm.stopPrank();
   }
 
   function test_initializeAsset() public {
     vm.prank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
     vm.prank(owner);
-    _assetManager.initializeAsset(branchChainId, address(_token));
+    _assetManager.initializeAsset(branchChainId1, address(_token));
 
-    assertEq(_assetManager.branchAsset(address(_token), branchChainId), branchAsset1);
+    assertEq(_assetManager.branchAsset(address(_token), branchChainId1), branchAsset1);
   }
 
   function test_initializeAsset_Unauthorized() public {
     vm.prank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
-    _assetManager.initializeAsset(branchChainId, address(_token));
+    _assetManager.initializeAsset(branchChainId1, address(_token));
   }
 
   function test_initializeAsset_InvalidParameter() public {
     vm.startPrank(owner);
 
     vm.expectRevert(_errInvalidParameter('hubAsset'));
-    _assetManager.initializeAsset(branchChainId, address(0));
+    _assetManager.initializeAsset(branchChainId1, address(0));
 
     vm.stopPrank();
   }
@@ -601,37 +641,37 @@ contract AssetManagerTest is Toolkit {
     vm.startPrank(owner);
 
     vm.expectRevert(_errBranchAssetPairNotExist(address(0)));
-    _assetManager.initializeAsset(branchChainId, address(_token));
+    _assetManager.initializeAsset(branchChainId1, address(_token));
 
     vm.stopPrank();
   }
 
   function test_initializeMatrix() public {
     vm.prank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
     vm.prank(owner);
-    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
 
-    assertTrue(_assetManager.matrixInitialized(branchChainId, address(_matrixVault)));
+    assertTrue(_assetManager.matrixInitialized(branchChainId1, address(_matrixVault)));
   }
 
   function test_initializeMatrix_Unauthorized() public {
     vm.prank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
-    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
   }
 
   function test_initializeMatrix_InvalidParameter() public {
     vm.prank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
     vm.startPrank(owner);
 
     vm.expectRevert(_errInvalidParameter('matrixVault'));
-    _assetManager.initializeMatrix(branchChainId, address(0));
+    _assetManager.initializeMatrix(branchChainId1, address(0));
 
     vm.stopPrank();
   }
@@ -640,40 +680,40 @@ contract AssetManagerTest is Toolkit {
     vm.startPrank(owner);
 
     vm.expectRevert(_errBranchAssetPairNotExist(address(0)));
-    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
 
     vm.stopPrank();
   }
 
   function test_initializeMatrix_MatrixAlreadyInitialized() public {
     test_initializeMatrix();
-    assertTrue(_assetManager.matrixInitialized(branchChainId, address(_matrixVault)));
+    assertTrue(_assetManager.matrixInitialized(branchChainId1, address(_matrixVault)));
 
     vm.startPrank(owner);
 
-    vm.expectRevert(_errMatrixAlreadyInitialized(branchChainId, address(_matrixVault)));
-    _assetManager.initializeMatrix(branchChainId, address(_matrixVault));
+    vm.expectRevert(_errMatrixAlreadyInitialized(branchChainId1, address(_matrixVault)));
+    _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
 
     vm.stopPrank();
   }
 
   function test_setAssetPair() public {
     vm.prank(owner);
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
-    assertEq(_assetManager.branchAsset(address(_token), branchChainId), branchAsset1);
+    assertEq(_assetManager.branchAsset(address(_token), branchChainId1), branchAsset1);
   }
 
   function test_setAssetPair_Unauthorized() public {
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
-    _assetManager.setAssetPair(address(_token), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
   }
 
   function test_setAssetPair_InvalidParameter() public {
     vm.startPrank(owner);
 
     vm.expectRevert(_errInvalidParameter('hubAsset'));
-    _assetManager.setAssetPair(address(0), branchChainId, branchAsset1);
+    _assetManager.setAssetPair(address(0), branchChainId1, branchAsset1);
 
     vm.stopPrank();
   }
@@ -832,16 +872,17 @@ contract AssetManagerTest is Toolkit {
     );
   }
 
-  function _errCollateralInsufficient(uint256 chainId, address hubAsset, uint256 collateral, uint256 amount)
-    internal
-    pure
-    returns (bytes memory)
-  {
+  function _errBranchAvailableLiquidityInsufficient(
+    uint256 chainId,
+    address hubAsset,
+    uint256 available,
+    uint256 amount
+  ) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
-      IAssetManagerStorageV1.IAssetManagerStorageV1__CollateralInsufficient.selector,
+      IAssetManagerStorageV1.IAssetManagerStorageV1__BranchAvailableLiquidityInsufficient.selector,
       chainId,
       hubAsset,
-      collateral,
+      available,
       amount
     );
   }

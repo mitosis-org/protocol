@@ -85,7 +85,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
     _assertHubAssetRedeemable($, hubAsset, chainId);
-    _assertCollateralNotInsufficient($, hubAsset, chainId, amount);
+    _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, amount);
     _assertBranchLiquidityNotInsufficient($, hubAsset, chainId, amount);
 
     _burn($, chainId, hubAsset, _msgSender(), amount);
@@ -109,6 +109,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     $.entrypoint.allocateMatrix(chainId, matrixVault, amount);
 
     address hubAsset = IMatrixVault(matrixVault).asset();
+    _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, amount);
     _hubAssetState($, hubAsset, chainId).branchAllocated += amount;
     $.matrixStates[matrixVault].allocation += amount;
 
