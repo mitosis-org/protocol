@@ -84,9 +84,8 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    _assertHubAssetRedeemable($, hubAsset, chainId);
+    _assertHubAssetRedeemable($, hubAsset, chainId, amount);
     _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, amount);
-    _assertBranchLiquidityNotInsufficient($, hubAsset, chainId, amount);
 
     _burn($, chainId, hubAsset, _msgSender(), amount);
     $.entrypoint.redeem(chainId, branchAsset, to, amount);
