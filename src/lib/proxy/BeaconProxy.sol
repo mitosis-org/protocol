@@ -9,6 +9,9 @@ import { Proxy } from '@oz-v5/proxy/Proxy.sol';
  * @dev ownable Interface of the BeaconProxy.
  */
 interface IBeaconProxy {
+  error IBeaconProxy_BeaconNotOwned();
+  error IBeaconProxy_InvalidFunctionCall();
+
   function upgradeBeaconToAndCall(address newBeacon, bytes memory data) external;
 }
 
@@ -31,6 +34,7 @@ contract BeaconProxy is Proxy {
    */
   constructor(address beacon, bytes memory data) payable {
     ERC1967Utils.upgradeBeaconToAndCall(beacon, data);
+    _getBeaconOwner(); // check if the beacon is owned
   }
 
   /**
@@ -50,7 +54,7 @@ contract BeaconProxy is Proxy {
   function _getBeaconOwner() internal view returns (address) {
     address beacon = _getBeacon();
     (bool ok, bytes memory ret) = beacon.staticcall(abi.encodeWithSignature('owner()'));
-    require(ok, 'looks like the beacon does not have an owner() function');
+    require(ok, IBeaconProxy.IBeaconProxy_BeaconNotOwned());
 
     address owner = abi.decode(ret, (address));
     return owner;
@@ -69,11 +73,9 @@ contract BeaconProxy is Proxy {
    */
   function _fallback() internal virtual override {
     if (msg.sender == _getBeaconOwner()) {
-      if (msg.sig != IBeaconProxy.upgradeBeaconToAndCall.selector) {
-        revert('BeaconProxy: invalid function call');
-      } else {
-        _dispatchUpgradeBeaconToAndCall();
-      }
+      require(msg.sig == IBeaconProxy.upgradeBeaconToAndCall.selector, IBeaconProxy.IBeaconProxy_InvalidFunctionCall());
+
+      _dispatchUpgradeBeaconToAndCall();
     } else {
       super._fallback();
     }
