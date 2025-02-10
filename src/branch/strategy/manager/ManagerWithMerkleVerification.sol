@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Based on https://github.com/Se7en-Seas/boring-vault
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 

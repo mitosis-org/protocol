@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
 import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
