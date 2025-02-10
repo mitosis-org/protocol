@@ -87,6 +87,10 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return _hubAssetState(_getStorageV1(), hubAsset_, chainId).collateral;
   }
 
+  function branchAvailableLiquidity(uint256 chainId, address hubAsset_) external view returns (uint256) {
+    return _branchAvailableLiquidity(_getStorageV1(), hubAsset_, chainId);
+  }
+
   function matrixInitialized(uint256 chainId, address matrixVault) external view returns (bool) {
     return _getStorageV1().matrixInitialized[chainId][matrixVault];
   }
@@ -166,6 +170,15 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return $.branchAssetStates[chainId][branchAsset_];
   }
 
+  function _branchAvailableLiquidity(StorageV1 storage $, address hubAsset_, uint256 chainId)
+    internal
+    view
+    returns (uint256)
+  {
+    HubAssetState storage hubAssetState = _hubAssetState($, hubAsset_, chainId);
+    return hubAssetState.collateral - hubAssetState.branchAllocated;
+  }
+
   function _matrixIdle(StorageV1 storage $, address matrixVault) internal view returns (uint256) {
     uint256 total = IMatrixVault(matrixVault).totalAssets();
     uint256 allocated = $.matrixStates[matrixVault].allocation;
@@ -210,14 +223,16 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     );
   }
 
-  function _assertCollateralNotInsufficient(StorageV1 storage $, address hubAsset_, uint256 chainId, uint256 amount)
-    internal
-    view
-    virtual
-  {
-    uint256 collateral_ = _hubAssetState($, hubAsset_, chainId).collateral;
+  function _assertBranchAvailableLiquiditySufficient(
+    StorageV1 storage $,
+    address hubAsset_,
+    uint256 chainId,
+    uint256 amount
+  ) internal view virtual {
+    uint256 available = _branchAvailableLiquidity($, hubAsset_, chainId);
     require(
-      collateral_ >= amount, IAssetManagerStorageV1__CollateralInsufficient(chainId, hubAsset_, collateral_, amount)
+      amount <= available,
+      IAssetManagerStorageV1__BranchAvailableLiquidityInsufficient(chainId, hubAsset_, available, amount)
     );
   }
 
