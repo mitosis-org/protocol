@@ -54,26 +54,23 @@ contract MockAssetManagerEntrypoint is Context, IAssetManagerEntrypoint {
 
   // ============================= NOTE: PROCESSOR ============================= //
 
-  function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external onlyMailbox {
+  function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external {
     _assetManager.deposit(chainId, branchAsset, to, amount);
   }
 
-  function deallocateMatrix(uint256 chainId, address hubMatrixVault, uint256 amount) external onlyMailbox {
+  function deallocateMatrix(uint256 chainId, address hubMatrixVault, uint256 amount) external {
     _assetManager.deallocateMatrix(chainId, hubMatrixVault, amount);
   }
 
-  function settleMatrixYield(uint256 chainId, address matrixVault, uint256 amount) external onlyMailbox {
+  function settleMatrixYield(uint256 chainId, address matrixVault, uint256 amount) external {
     _assetManager.settleMatrixYield(chainId, matrixVault, amount);
   }
 
-  function settleMatrixLoss(uint256 chainId, address matrixVault, uint256 amount) external onlyMailbox {
+  function settleMatrixLoss(uint256 chainId, address matrixVault, uint256 amount) external {
     _assetManager.settleMatrixLoss(chainId, matrixVault, amount);
   }
 
-  function settleMatrixExtraRewards(uint256 chainId, address matrixVault, address reward, uint256 amount)
-    external
-    onlyMailbox
-  {
+  function settleMatrixExtraRewards(uint256 chainId, address matrixVault, address reward, uint256 amount) external {
     _assetManager.settleMatrixExtraRewards(chainId, matrixVault, reward, amount);
   }
 
