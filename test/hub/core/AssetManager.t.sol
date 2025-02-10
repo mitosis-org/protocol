@@ -298,7 +298,6 @@ contract AssetManagerTest is Toolkit {
 
     vm.startPrank(user1);
 
-    // TODO
     _assetManager.redeem(branchChainId1, address(_token), user1, 100 ether);
 
     vm.stopPrank();
@@ -679,7 +678,7 @@ contract AssetManagerTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_setHubAssetLiquidityThreshold_ErrHubAssetPairNotExist() public {
+  function test_setHubAssetLiquidityThreshold_HubAssetPairNotExist() public {
     vm.startPrank(owner);
 
     vm.expectRevert(_errHubAssetPairNotExist(address(_token)));
@@ -689,6 +688,92 @@ contract AssetManagerTest is Toolkit {
 
     _assetManager.setHubAssetLiquidityThreshold(branchChainId1, address(_token), 100 ether);
     assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 100 ether);
+  }
+
+  function test_setHubAssetLiquidityThreshold_batch() public {
+    vm.startPrank(owner);
+
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId2, branchAsset2);
+
+    uint256[] memory chainIds = new uint256[](2);
+    address[] memory hubAssets = new address[](2);
+    uint256[] memory thresholds = new uint256[](2);
+
+    chainIds[0] = branchChainId1;
+    hubAssets[0] = address(_token);
+    thresholds[0] = 50 ether;
+    chainIds[1] = branchChainId2;
+    hubAssets[1] = address(_token);
+    thresholds[1] = 100 ether;
+
+    _assetManager.setHubAssetLiquidityThreshold(chainIds, hubAssets, thresholds);
+
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 50 ether);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId2), 100 ether);
+
+    chainIds[0] = branchChainId1;
+    hubAssets[0] = address(_token);
+    thresholds[0] = 70 ether;
+    chainIds[1] = branchChainId2;
+    hubAssets[1] = address(_token);
+    thresholds[1] = 120 ether;
+
+    _assetManager.setHubAssetLiquidityThreshold(chainIds, hubAssets, thresholds);
+
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 70 ether);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId2), 120 ether);
+
+    chainIds[0] = branchChainId1;
+    hubAssets[0] = address(_token);
+    thresholds[0] = 20 ether;
+    chainIds[1] = branchChainId2;
+    hubAssets[1] = address(_token);
+    thresholds[1] = 5 ether;
+
+    _assetManager.setHubAssetLiquidityThreshold(chainIds, hubAssets, thresholds);
+
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 20 ether);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId2), 5 ether);
+
+    chainIds[0] = branchChainId1;
+    hubAssets[0] = address(_token);
+    thresholds[0] = 0;
+    chainIds[1] = branchChainId2;
+    hubAssets[1] = address(_token);
+    thresholds[1] = 0;
+
+    _assetManager.setHubAssetLiquidityThreshold(chainIds, hubAssets, thresholds);
+
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 0);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId2), 0);
+
+    vm.stopPrank();
+  }
+
+  function test_setHubAssetLiquidityThreshold_batch_HubAssetPairNotExist() public {
+    vm.startPrank(owner);
+
+    uint256[] memory chainIds = new uint256[](2);
+    address[] memory hubAssets = new address[](2);
+    uint256[] memory thresholds = new uint256[](2);
+
+    chainIds[0] = branchChainId1;
+    hubAssets[0] = address(_token);
+    thresholds[0] = 50 ether;
+    chainIds[1] = branchChainId2;
+    hubAssets[1] = address(_token);
+    thresholds[1] = 100 ether;
+
+    vm.expectRevert(_errHubAssetPairNotExist(address(_token)));
+    _assetManager.setHubAssetLiquidityThreshold(chainIds, hubAssets, thresholds);
+
+    _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
+    _assetManager.setAssetPair(address(_token), branchChainId2, branchAsset2);
+    _assetManager.setHubAssetLiquidityThreshold(chainIds, hubAssets, thresholds);
+
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId1), 50 ether);
+    assertEq(_assetManager.hubAssetLiquidityThreshold(address(_token), branchChainId2), 100 ether);
   }
 
   function test_initializeMatrix() public {
