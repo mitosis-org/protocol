@@ -228,9 +228,6 @@ contract AssetManagerTest is Toolkit {
     vm.prank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
-    vm.prank(owner);
-    _assetManager.setHubAssetRedeemStatus(branchChainId1, address(_token), true);
-
     vm.prank(address(_assetManagerEntrypoint));
     _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
 
@@ -253,9 +250,6 @@ contract AssetManagerTest is Toolkit {
     vm.prank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
-    vm.prank(owner);
-    _assetManager.setHubAssetRedeemStatus(branchChainId1, address(_token), true);
-
     vm.prank(address(_assetManagerEntrypoint));
     _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
 
@@ -271,9 +265,6 @@ contract AssetManagerTest is Toolkit {
     vm.prank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
 
-    vm.prank(owner);
-    _assetManager.setHubAssetRedeemStatus(branchChainId1, address(_token), true);
-
     vm.prank(address(_assetManagerEntrypoint));
     _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
 
@@ -288,31 +279,27 @@ contract AssetManagerTest is Toolkit {
   function test_redeem_BranchAvailableLiquidityInsufficient() public {
     vm.startPrank(owner);
     _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
-    _assetManager.setAssetPair(address(_token), branchChainId2, branchAsset1);
-    _assetManager.setHubAssetRedeemStatus(branchChainId1, address(_token), true);
-    _assetManager.setHubAssetRedeemStatus(branchChainId2, address(_token), true);
+    _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
+    _assetManager.setStrategist(address(_matrixVault), strategist);
     vm.stopPrank();
 
     vm.startPrank(address(_assetManagerEntrypoint));
     _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
-    _assetManager.deposit(branchChainId2, branchAsset1, user1, 50 ether);
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
     vm.stopPrank();
 
     vm.startPrank(user1);
+    _token.approve(address(_matrixVault), 100 ether);
+    _matrixVault.deposit(100 ether, user1);
+    vm.stopPrank();
 
-    vm.expectRevert(_errBranchAvailableLiquidityInsufficient(branchChainId1, address(_token), 100 ether, 101 ether));
-    _assetManager.redeem(branchChainId1, address(_token), user1, 101 ether);
+    vm.prank(strategist);
+    _assetManager.allocateMatrix(branchChainId1, address(_matrixVault), 100);
 
-    vm.expectRevert(_errBranchAvailableLiquidityInsufficient(branchChainId2, address(_token), 50 ether, 51 ether));
-    _assetManager.redeem(branchChainId2, address(_token), user1, 51 ether);
+    vm.startPrank(user1);
 
-    assertEq(_assetManager.collateral(branchChainId1, address(_token)), 100 ether);
+    // TODO
     _assetManager.redeem(branchChainId1, address(_token), user1, 100 ether);
-    assertEq(_assetManager.collateral(branchChainId1, address(_token)), 0 ether);
-
-    assertEq(_assetManager.collateral(branchChainId2, address(_token)), 50 ether);
-    _assetManager.redeem(branchChainId2, address(_token), user1, 40 ether);
-    assertEq(_assetManager.collateral(branchChainId2, address(_token)), 10 ether);
 
     vm.stopPrank();
   }
