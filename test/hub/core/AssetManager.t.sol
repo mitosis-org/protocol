@@ -322,9 +322,10 @@ contract AssetManagerTest is Toolkit {
     _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
     _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
     _assetManager.setStrategist(address(_matrixVault), strategist);
-
-    _assetManagerEntrypoint.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
     vm.stopPrank();
+
+    vm.prank(address(_assetManagerEntrypoint));
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
 
     vm.startPrank(user1);
 
@@ -347,9 +348,10 @@ contract AssetManagerTest is Toolkit {
     _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
     _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
     _assetManager.setStrategist(address(_matrixVault), strategist);
-
-    _assetManagerEntrypoint.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
     vm.stopPrank();
+
+    vm.prank(address(_assetManagerEntrypoint));
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
 
     vm.startPrank(user1);
 
@@ -369,9 +371,10 @@ contract AssetManagerTest is Toolkit {
     _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
     // _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
     _assetManager.setStrategist(address(_matrixVault), strategist);
-
-    _assetManagerEntrypoint.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
     vm.stopPrank();
+
+    vm.prank(address(_assetManagerEntrypoint));
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
 
     vm.startPrank(user1);
 
@@ -395,9 +398,10 @@ contract AssetManagerTest is Toolkit {
     _assetManager.setAssetPair(address(_token), branchChainId1, branchAsset1);
     _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
     _assetManager.setStrategist(address(_matrixVault), strategist);
-
-    _assetManagerEntrypoint.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
     vm.stopPrank();
+
+    vm.prank(address(_assetManagerEntrypoint));
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
 
     vm.startPrank(user1);
 
@@ -423,9 +427,11 @@ contract AssetManagerTest is Toolkit {
     _assetManager.initializeMatrix(branchChainId1, address(_matrixVault));
     _assetManager.initializeMatrix(branchChainId2, address(_matrixVault));
     _assetManager.setStrategist(address(_matrixVault), strategist);
+    vm.stopPrank();
 
-    _assetManagerEntrypoint.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
-    _assetManagerEntrypoint.deposit(branchChainId2, branchAsset2, user1, 100 ether); // mint 100 of _token to user1
+    vm.startPrank(address(_assetManagerEntrypoint));
+    _assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether); // mint 100 of _token to user1
+    _assetManager.deposit(branchChainId2, branchAsset2, user1, 100 ether); // mint 100 of _token to user1
     vm.stopPrank();
 
     vm.startPrank(user1);
