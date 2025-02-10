@@ -203,8 +203,22 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     emit AssetInitialized(hubAsset, chainId, branchAsset);
   }
 
-  function setRedeemableDepositThreshold(uint256 chainId, address hubAsset, uint256 threshold) external onlyOwner {
-    _setRedeemableDepositThreshold(_getStorageV1(), hubAsset, chainId, threshold);
+  function setHubAssetLiquidityThreshold(uint256 chainId, address hubAsset, uint256 threshold) external onlyOwner {
+    _setHubAssetLiquidityThreshold(_getStorageV1(), hubAsset, chainId, threshold);
+  }
+
+  function setHubAssetLiquidityThreshold(
+    uint256[] calldata chainIds,
+    address[] calldata hubAssets,
+    uint256[] calldata thresholds
+  ) external onlyOwner {
+    require(chainIds.length == hubAssets.length, StdError.InvalidParameter('hubAssets'));
+    require(chainIds.length == thresholds.length, StdError.InvalidParameter('thresholds'));
+
+    StorageV1 storage $ = _getStorageV1();
+    for (uint256 i = 0; i < chainIds.length; i++) {
+      _setHubAssetLiquidityThreshold($, hubAssets[i], chainIds[i], thresholds[i]);
+    }
   }
 
   function initializeMatrix(uint256 chainId, address matrixVault) external onlyOwner {

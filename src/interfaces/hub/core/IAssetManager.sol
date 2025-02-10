@@ -37,7 +37,7 @@ interface IAssetManagerStorageV1 {
    * @param chainId The ID of the chain where the threshold is applied
    * @param threshold The new redeemable deposit threshold amount
    */
-  event RedeemableDepositThresholdSet(address indexed hubAsset, uint256 indexed chainId, uint256 threshold);
+  event HubAssetLiquidityThresholdSet(address indexed hubAsset, uint256 indexed chainId, uint256 threshold);
 
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
@@ -94,7 +94,7 @@ interface IAssetManagerStorageV1 {
    * @param hubAsset_ The address of the hub asset
    * @param chainId The ID of the chain
    */
-  function redeemableDepositThreshold(address hubAsset_, uint256 chainId) external view returns (uint256);
+  function hubAssetLiquidityThreshold(address hubAsset_, uint256 chainId) external view returns (uint256);
 
   /**
    * @notice Get the hub asset address for a given chain ID and branch asset
@@ -360,9 +360,19 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param hubAsset The address of the hub asset for which the threshold applies
    * @param threshold The minimum deposit amount required for redemption
    */
-  function setRedeemableDepositThreshold(uint256 chainId, address hubAsset, uint256 threshold) external;
+  function setHubAssetLiquidityThreshold(uint256 chainId, address hubAsset, uint256 threshold) external;
 
-  // TODO: setRedeemableDepositThreshold batch method
+  /**
+   * @notice Sets the redeemable deposit threshold for multiple assets across multiple chains
+   * @param chainIds An array of chain IDs where the thresholds are being set
+   * @param hubAssets An array of hub asset addresses for which the thresholds apply
+   * @param thresholds An array of minimum deposit amounts required for redemption
+   */
+  function setHubAssetLiquidityThreshold(
+    uint256[] calldata chainIds,
+    address[] calldata hubAssets,
+    uint256[] calldata thresholds
+  ) external;
 
   /**
    * @notice Initialize a Matrix for branch asset (MatrixVault) on a given chain

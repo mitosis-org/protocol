@@ -54,7 +54,13 @@ contract MockAssetManager is IAssetManager {
 
   function setStrategist(address matrixVault_, address strategist_) external { }
 
-  function setRedeemableDepositThreshold(uint256 chainId, address hubAsset_, uint256 threshold) external { }
+  function setHubAssetLiquidityThreshold(uint256 chainId, address hubAsset_, uint256 threshold) external { }
+
+  function setHubAssetLiquidityThreshold(
+    uint256[] calldata chainIds,
+    address[] calldata hubAssets,
+    uint256[] calldata thresholds
+  ) external { }
 
   function entrypoint() external view returns (address) {
     return _entrypoint;
@@ -72,7 +78,7 @@ contract MockAssetManager is IAssetManager {
 
   function branchAllocated(address hubAsset_, uint256 chainId) external view returns (uint256) { }
 
-  function redeemableDepositThreshold(address hubAsset_, uint256 chainId) external view returns (uint256) { }
+  function hubAssetLiquidityThreshold(address hubAsset_, uint256 chainId) external view returns (uint256) { }
 
   function redeemableAmount(address hubAsset_, uint256 chainId) external view returns (uint256) { }
 

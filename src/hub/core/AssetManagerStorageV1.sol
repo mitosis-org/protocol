@@ -18,8 +18,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     address branchAsset;
     uint256 collateral;
     uint256 branchAllocated;
-    // Redeemable state determined by collateral and threshold.
-    uint256 redeemableDepositThreshold;
+    uint256 liquidityThreshold;
   }
 
   struct BranchAssetState {
@@ -76,8 +75,8 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return _hubAssetState(_getStorageV1(), hubAsset_, chainId).branchAllocated;
   }
 
-  function redeemableDepositThreshold(address hubAsset_, uint256 chainId) external view returns (uint256) {
-    return _hubAssetState(_getStorageV1(), hubAsset_, chainId).redeemableDepositThreshold;
+  function hubAssetLiquidityThreshold(address hubAsset_, uint256 chainId) external view returns (uint256) {
+    return _hubAssetState(_getStorageV1(), hubAsset_, chainId).liquidityThreshold;
   }
 
   function hubAsset(uint256 chainId, address branchAsset_) external view returns (address) {
@@ -138,15 +137,15 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     emit StrategistSet(matrixVault, strategist_);
   }
 
-  function _setRedeemableDepositThreshold(StorageV1 storage $, address hubAsset_, uint256 chainId, uint256 threshold)
+  function _setHubAssetLiquidityThreshold(StorageV1 storage $, address hubAsset_, uint256 chainId, uint256 threshold)
     internal
   {
     HubAssetState storage hubAssetState = _hubAssetState($, hubAsset_, chainId);
 
     require(hubAssetState.branchAsset != address(0), IAssetManagerStorageV1__HubAssetPairNotExist(hubAsset_));
 
-    hubAssetState.redeemableDepositThreshold = threshold;
-    emit RedeemableDepositThresholdSet(hubAsset_, chainId, threshold);
+    hubAssetState.liquidityThreshold = threshold;
+    emit HubAssetLiquidityThresholdSet(hubAsset_, chainId, threshold);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
@@ -206,7 +205,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   {
     HubAssetState storage hubAssetState = _hubAssetState($, hubAsset_, chainId);
     require(
-      hubAssetState.collateral - amount >= hubAssetState.redeemableDepositThreshold,
+      hubAssetState.collateral - amount >= hubAssetState.liquidityThreshold,
       IAssetManagerStorageV1__HubAssetRedeemDisabled(hubAsset_, chainId)
     );
   }
