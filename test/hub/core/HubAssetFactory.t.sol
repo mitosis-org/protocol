@@ -17,14 +17,14 @@ contract HubAssetFactoryTest is Toolkit {
 
   HubAsset public hubAssetImpl;
   HubAssetFactory public hubAssetFactoryImpl;
-  HubAssetFactory public hubAssetFactory;
+  HubAssetFactory public base;
 
   function setUp() public {
     proxyFactory = new ERC1967Factory();
 
     hubAssetImpl = new HubAsset();
     hubAssetFactoryImpl = new HubAssetFactory();
-    hubAssetFactory = HubAssetFactory(
+    base = HubAssetFactory(
       proxyFactory.deployAndCall(
         address(hubAssetFactoryImpl),
         proxyAdmin,
@@ -34,25 +34,25 @@ contract HubAssetFactoryTest is Toolkit {
   }
 
   function test_init() public view {
-    assertEq(proxyAdmin, proxyFactory.adminOf(address(hubAssetFactory)));
-    assertEq(address(hubAssetFactoryImpl), _erc1967Impl(address(hubAssetFactory)));
-    assertEq(address(0x0), _erc1967Beacon(address(hubAssetFactory)));
+    assertEq(proxyAdmin, proxyFactory.adminOf(address(base)));
+    assertEq(address(hubAssetFactoryImpl), _erc1967Impl(address(base)));
+    assertEq(address(0x0), _erc1967Beacon(address(base)));
 
-    assertEq(hubAssetFactory.owner(), contractOwner);
-    assertEq(UpgradeableBeacon(hubAssetFactory.beacon()).owner(), address(hubAssetFactory));
-    assertEq(UpgradeableBeacon(hubAssetFactory.beacon()).implementation(), address(hubAssetImpl));
+    assertEq(base.owner(), contractOwner);
+    assertEq(UpgradeableBeacon(base.beacon()).owner(), address(base));
+    assertEq(UpgradeableBeacon(base.beacon()).implementation(), address(hubAssetImpl));
   }
 
   function test_create() public {
     vm.prank(contractOwner);
-    address hubAsset = hubAssetFactory.create(contractOwner, supplyManager, 'Test', 'TST', 18);
+    address hubAsset = base.create(contractOwner, supplyManager, 'Test', 'TST', 18);
 
     assertEq(address(0x0), _erc1967Admin(hubAsset));
     assertEq(address(0x0), _erc1967Impl(hubAsset));
-    assertEq(address(hubAssetFactory.beacon()), _erc1967Beacon(hubAsset));
+    assertEq(address(base.beacon()), _erc1967Beacon(hubAsset));
 
-    assertEq(hubAssetFactory.instancesLength(), 1);
-    assertEq(hubAssetFactory.instances(0), hubAsset);
+    assertEq(base.instancesLength(), 1);
+    assertEq(base.instances(0), hubAsset);
   }
 
   function test_create_ownable() public {
@@ -60,6 +60,6 @@ contract HubAssetFactoryTest is Toolkit {
 
     vm.expectRevert(_errOwnableUnauthorizedAccount(nonOwner));
     vm.prank(nonOwner);
-    hubAssetFactory.create(nonOwner, supplyManager, 'Test', 'TST', 18);
+    base.create(nonOwner, supplyManager, 'Test', 'TST', 18);
   }
 }
