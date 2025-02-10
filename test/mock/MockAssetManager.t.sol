@@ -76,13 +76,13 @@ contract MockAssetManager is IAssetManager {
 
   function branchAsset(address hubAsset_, uint256 chainId_) external view returns (address) { }
 
-  function branchLiquidity(uint256 chainId_, address hubAsset_) external view returns (uint256) { }
+  function branchLiquidity(address hubAsset_, uint256 chainId_) external view returns (uint256) { }
 
   function branchAllocated(address hubAsset_, uint256 chainId) external view returns (uint256) { }
 
   function branchLiquidityThreshold(address hubAsset_, uint256 chainId) external view returns (uint256) { }
 
-  function branchAvailableLiquidity(uint256 chainId, address hubAsset_) external view returns (uint256) { }
+  function branchAvailableLiquidity(address hubAsset_, uint256 chainId) external view returns (uint256) { }
 
   function redeemableAmount(address hubAsset_, uint256 chainId) external view returns (uint256) { }
 

@@ -71,7 +71,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return _hubAssetState(_getStorageV1(), hubAsset_, chainId).branchAsset;
   }
 
-  function branchLiquidity(uint256 chainId, address hubAsset_) external view returns (uint256) {
+  function branchLiquidity(address hubAsset_, uint256 chainId) external view returns (uint256) {
     return _hubAssetState(_getStorageV1(), hubAsset_, chainId).branchLiquidity;
   }
 
@@ -83,7 +83,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return _hubAssetState(_getStorageV1(), hubAsset_, chainId).branchLiquidityThreshold;
   }
 
-  function branchAvailableLiquidity(uint256 chainId, address hubAsset_) external view returns (uint256) {
+  function branchAvailableLiquidity(address hubAsset_, uint256 chainId) external view returns (uint256) {
     return _branchAvailableLiquidity(_getStorageV1(), hubAsset_, chainId);
   }
 

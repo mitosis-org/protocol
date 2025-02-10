@@ -428,16 +428,16 @@ contract AssetManagerTest is Toolkit {
 
     vm.startPrank(strategist);
 
-    assertEq(_assetManager.branchAvailableLiquidity(branchChainId1, address(_token)), 100 ether);
-    assertEq(_assetManager.branchAvailableLiquidity(branchChainId2, address(_token)), 100 ether);
+    assertEq(_assetManager.branchAvailableLiquidity(address(_token), branchChainId1), 100 ether);
+    assertEq(_assetManager.branchAvailableLiquidity(address(_token), branchChainId2), 100 ether);
     assertEq(_assetManager.matrixIdle(address(_matrixVault)), 200 ether);
     assertEq(_assetManager.matrixAlloc(address(_matrixVault)), 0 ether);
 
     _assetManager.allocateMatrix(branchChainId1, address(_matrixVault), 30 ether);
     _assetManager.allocateMatrix(branchChainId2, address(_matrixVault), 50 ether);
 
-    assertEq(_assetManager.branchAvailableLiquidity(branchChainId1, address(_token)), 70 ether);
-    assertEq(_assetManager.branchAvailableLiquidity(branchChainId2, address(_token)), 50 ether);
+    assertEq(_assetManager.branchAvailableLiquidity(address(_token), branchChainId1), 70 ether);
+    assertEq(_assetManager.branchAvailableLiquidity(address(_token), branchChainId2), 50 ether);
     assertEq(_assetManager.matrixIdle(address(_matrixVault)), 120 ether);
     assertEq(_assetManager.matrixAlloc(address(_matrixVault)), 80 ether);
 

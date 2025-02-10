@@ -83,12 +83,12 @@ interface IAssetManagerStorageV1 {
   function branchAsset(address hubAsset_, uint256 chainId) external view returns (address);
 
   /**
-   * @notice Get the total liquidity amount of branch asset for a given chain ID and hub asset.
+   * @notice Get the total liquidity amount of branch asset for a given hub asset and chain ID
    * @dev The liquidity amount is equals to the total amount of branch asset deposited to the MitosisVault
-   * @param chainId The ID of the chain
    * @param hubAsset_ The address of the hub asset
+   * @param chainId The ID of the chain
    */
-  function branchLiquidity(uint256 chainId, address hubAsset_) external view returns (uint256);
+  function branchLiquidity(address hubAsset_, uint256 chainId) external view returns (uint256);
 
   /**
    * @notice Get the allocated amount of a branch asset for a given hub asset and chain ID
@@ -98,19 +98,19 @@ interface IAssetManagerStorageV1 {
   function branchAllocated(address hubAsset_, uint256 chainId) external view returns (uint256);
 
   /**
-   * @notice Retrieves the redeemable deposit threshold for a given hub asset and chain ID.
+   * @notice Retrieves the redeemable deposit threshold for a given hub asset and chain ID
    * @param hubAsset_ The address of the hub asset
    * @param chainId The ID of the chain
    */
   function branchLiquidityThreshold(address hubAsset_, uint256 chainId) external view returns (uint256);
 
   /**
-   * @notice Get the available liquidity of branch asset for a given chain ID and hub asset.
+   * @notice Get the available liquidity of branch asset for a given hub asset and chain ID
    * @dev The available amount of branch asset can be used for redemption or allocation.
-   * @param chainId The ID of the chain
    * @param hubAsset_ The address of the hub asset
+   * @param chainId The ID of the chain
    */
-  function branchAvailableLiquidity(uint256 chainId, address hubAsset_) external view returns (uint256);
+  function branchAvailableLiquidity(address hubAsset_, uint256 chainId) external view returns (uint256);
 
   /**
    * @notice Get the hub asset address for a given chain ID and branch asset
