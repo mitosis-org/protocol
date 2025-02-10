@@ -211,15 +211,18 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     require(address($.treasury) != address(0), IAssetManagerStorageV1__TreasuryNotSet());
   }
 
-  function _assertHubAssetRedeemable(StorageV1 storage $, address hubAsset_, uint256 chainId, uint256 amount)
-    internal
-    view
-    virtual
-  {
+  function _assertBranchLiquidityThresholdSatisfied(
+    StorageV1 storage $,
+    address hubAsset_,
+    uint256 chainId,
+    uint256 redeemAmount
+  ) internal view virtual {
     HubAssetState storage hubAssetState = _hubAssetState($, hubAsset_, chainId);
     require(
-      hubAssetState.branchLiquidity - amount >= hubAssetState.branchLiquidityThreshold,
-      IAssetManagerStorageV1__HubAssetRedeemDisabled(hubAsset_, chainId)
+      hubAssetState.branchLiquidity - redeemAmount >= hubAssetState.branchLiquidityThreshold,
+      IAssetManagerStorageV1__BranchLiquidityThresholdNotSatisfied(
+        chainId, hubAsset_, hubAssetState.branchLiquidityThreshold, redeemAmount
+      )
     );
   }
 

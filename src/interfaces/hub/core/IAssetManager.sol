@@ -42,7 +42,6 @@ interface IAssetManagerStorageV1 {
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
   error IAssetManagerStorageV1__HubAssetPairNotExist(address hubAsset);
-  error IAssetManagerStorageV1__HubAssetRedeemDisabled(address hubAsset, uint256 chainId);
 
   error IAssetManagerStorageV1__BranchAssetPairNotExist(address branchAsset);
   error IAssetManagerStorageV1__TreasuryNotSet();
@@ -52,6 +51,10 @@ interface IAssetManagerStorageV1 {
 
   error IAssetManagerStorageV1__BranchAvailableLiquidityInsufficient(
     uint256 chainId, address hubAsset, uint256 available, uint256 amount
+  );
+
+  error IAssetManagerStorageV1__BranchLiquidityThresholdNotSatisfied(
+    uint256 chainId, address hubAsset, uint256 threshold, uint256 redeemAmount
   );
 
   error IAssetManagerStorageV1__BranchLiquidityNotInsufficient(
