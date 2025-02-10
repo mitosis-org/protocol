@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { WETH } from '@solady/tokens/WETH.sol';
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
