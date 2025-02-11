@@ -7,7 +7,6 @@ abstract contract ManagerWithMerkleVerificationStorageV1 {
   using ERC7201Utils for string;
 
   struct StorageV1 {
-    address strategist;
     mapping(address => bytes32) manageRoot;
   }
 

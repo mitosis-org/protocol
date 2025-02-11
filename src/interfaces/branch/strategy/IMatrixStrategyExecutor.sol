@@ -4,9 +4,10 @@ pragma solidity ^0.8.27;
 import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 
 import { IMitosisVault } from '../IMitosisVault.sol';
+import { IStrategyExecutor } from './IStrategyExecutor.sol';
 import { ITally } from './tally/ITally.sol';
 
-interface IMatrixStrategyExecutor {
+interface IMatrixStrategyExecutor is IStrategyExecutor {
   error IMatrixStrategyExecutor__TallyTotalBalanceNotZero(address implementation);
   error IMatrixStrategyExecutor__TallyAlreadySet(address implementation);
   error IMatrixStrategyExecutor__StrategistNotSet();

@@ -35,9 +35,8 @@ contract ManagerWithMerkleVerification is
     _transferOwnership(owner_);
   }
 
-  function setStrategist(address strategist) external onlyOwner {
-    _getStorageV1().strategist = strategist;
-    emit StrategistUpdated(strategist);
+  function manageRoot(address strategist) external view returns (bytes32) {
+    return _getStorageV1().manageRoot[strategist];
   }
 
   function setManageRoot(address strategist, bytes32 _manageRoot) external onlyOwner {
@@ -65,7 +64,6 @@ contract ManagerWithMerkleVerification is
     _assertNotPaused();
 
     StorageV1 storage $ = _getStorageV1();
-    _assertOnlyStrategist($);
 
     uint256 targetsLength = targets.length;
     if (targetsLength != manageProofs.length) revert('ManagerWithMerkleVerification__InvalidManageProofLength()');
@@ -76,6 +74,7 @@ contract ManagerWithMerkleVerification is
     }
 
     bytes32 strategistManageRoot = $.manageRoot[msg.sender];
+    require(strategistManageRoot != 0, StdError.NotFound('manageProof'));
 
     for (uint256 i; i < targetsLength; ++i) {
       _verifyCallData(
@@ -103,7 +102,9 @@ contract ManagerWithMerkleVerification is
         currentManageRoot, manageProof, target, decoderAndSanitizer, value, bytes4(targetData), packedArgumentAddresses
       )
     ) {
-      revert('ManagerWithMerkleVerification__FailedToVerifyManageProof(target, targetData, value)');
+      revert IManagerWithMerkleVerification.IManagerWithMerkleVerification__FailedToVerifyManageProof(
+        target, targetData, value
+      );
     }
   }
 
@@ -123,9 +124,5 @@ contract ManagerWithMerkleVerification is
     bytes32 leaf =
       keccak256(abi.encodePacked(decoderAndSanitizer, target, valueNonZero, selector, packedArgumentAddresses));
     return MerkleProofLib.verify(proof, root, leaf);
-  }
-
-  function _assertOnlyStrategist(StorageV1 storage $) internal view {
-    require(_msgSender() == $.strategist, StdError.Unauthorized());
   }
 }

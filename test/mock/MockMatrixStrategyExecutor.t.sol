@@ -57,6 +57,13 @@ contract MockMatrixStrategyExecutor is IMatrixStrategyExecutor {
 
   function settleExtraRewards(address reward, uint256 amount) external { }
 
+  function execute(address target, bytes calldata data, uint256 value) external returns (bytes memory result) { }
+
+  function execute(address[] calldata targets, bytes[] calldata data, uint256[] calldata values)
+    external
+    returns (bytes[] memory result)
+  { }
+
   function setTally(address implementation) external { }
 
   function setEmergencyManager(address emergencyManager_) external { }
