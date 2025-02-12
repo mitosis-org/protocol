@@ -8,6 +8,7 @@ evm_version = 'cancun' # by default
 optimizer = true
 optimizer_runs = 99999
 remappings = [
+    "@elliptic-curve-solidity=dependencies/@elliptic-curve-solidity-0.2.5/",
     "@hpl-v5=node_modules/hpl-v5/contracts",
     "@murky=dependencies/@murky-0.0.1/src",
     "@murky-0.0.1/=dependencies/@murky-0.0.1/",
@@ -109,3 +110,4 @@ solmate = "6.8.0"
 "@openzeppelin-contracts-v4" = { version = "4.9.6", url = "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/refs/tags/v4.9.6.zip" }
 "@openzeppelin-contracts-upgradeable-v4" = { version = "4.9.6", url = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/archive/refs/tags/v4.9.6.zip" }
 "@murky" = { version = "0.0.1", url = "https://github.com/mitosis-org/murky/archive/refs/tags/v0.0.1.zip" }
+"@elliptic-curve-solidity" = { version = "0.2.5", git = "git@github.com:witnet/elliptic-curve-solidity", rev = "3475478" }
