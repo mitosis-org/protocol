@@ -23,20 +23,14 @@ interface IReclaimQueueStorageV1 {
   /**
    * @notice Detailed information about a specific reclaim request
    * @param id Unique identifier of the request
-   * @param requestedShares Number of shares requested in the reclaim
-   * @param requestedAssets Equivalent asset amount at time of request
-   * @param accumulatedShares Total shares accumulated up to this request
-   * @param accumulatedAssets Total assets accumulated up to this request
+   * @param shares Number of shares requested in the reclaim
    * @param recipient Address that will receive the assets
    * @param createdAt Timestamp when the request was created
    * @param claimedAt Timestamp when the request was claimed (0 if unclaimed)
    */
   struct GetRequestResponse {
     uint256 id;
-    uint256 requestedShares;
-    uint256 requestedAssets;
-    uint256 accumulatedShares;
-    uint256 accumulatedAssets;
+    uint256 shares;
     address recipient;
     uint48 createdAt;
     uint48 claimedAt;
@@ -46,10 +40,7 @@ interface IReclaimQueueStorageV1 {
    * @notice Detailed information about a request, including its index in the queue
    * @param id Unique identifier of the request
    * @param indexId Position of the request in the recipient's index
-   * @param requestedShares Number of shares requested in the reclaim
-   * @param requestedAssets Equivalent asset amount at time of request
-   * @param accumulatedShares Total shares accumulated up to this request
-   * @param accumulatedAssets Total assets accumulated up to this request
+   * @param shares Number of shares requested in the reclaim
    * @param recipient Address that will receive the assets
    * @param createdAt Timestamp when the request was created
    * @param claimedAt Timestamp when the request was claimed (0 if unclaimed)
@@ -57,10 +48,7 @@ interface IReclaimQueueStorageV1 {
   struct GetRequestByIndexResponse {
     uint256 id;
     uint256 indexId;
-    uint256 requestedShares;
-    uint256 requestedAssets;
-    uint256 accumulatedShares;
-    uint256 accumulatedAssets;
+    uint256 shares;
     address recipient;
     uint48 createdAt;
     uint48 claimedAt;
@@ -68,18 +56,16 @@ interface IReclaimQueueStorageV1 {
 
   /**
    * @notice Historical data about reserves at a specific point in time
-   * @param accumulatedShares Total accumulated reserve shares at this point
-   * @param accumulatedAssets Total accumulated reserve assets at this point
+   * @param reserved Reserved amount for specific log
    * @param reservedAt Timestamp when this reserve entry was created
    * @param totalShares Total shares in the MatrixVault at this point
    * @param totalAssets Total assets in the MatrixVault at this point
    */
   struct GetReserveHistoryResponse {
-    uint256 accumulatedShares;
-    uint256 accumulatedAssets;
+    uint256 reserved;
     uint48 reservedAt;
-    uint208 totalShares;
-    uint208 totalAssets;
+    uint256 totalShares;
+    uint256 totalAssets;
   }
 
   /**
@@ -160,59 +146,10 @@ interface IReclaimQueueStorageV1 {
   function resolvedAt(address matrixVault, uint256 reqId) external view returns (uint256 resolvedAt_, bool isResolved);
 
   /**
-   * @notice Retrieves the number of shares for a specific request
-   * @param matrixVault Address of the MatrixVault to query
-   * @param reqId ID of the request to query
-   */
-  function requestShares(address matrixVault, uint256 reqId) external view returns (uint256);
-
-  /**
-   * @notice Gets the amount of assets for a specific request
-   * @param matrixVault Address of the MatrixVault to query
-   * @param reqId ID of the request to query
-   */
-  function requestAssets(address matrixVault, uint256 reqId) external view returns (uint256);
-
-  /**
-   * @notice Retrieves the current size of the queue for a specific MatrixVault
-   * @dev The queue size is the total number of requests in the queue
-   * @param matrixVault Address of the MatrixVault to query the queue
-   */
-  function queueSize(address matrixVault) external view returns (uint256);
-
-  /**
-   * @notice Gets the size of the queue index for a specific recipient in an MatrixVault
-   * @param matrixVault Address of the MatrixVault to query the queue
-   * @param recipient Address of the recipient to query the index for
-   */
-  function queueIndexSize(address matrixVault, address recipient) external view returns (uint256);
-
-  /**
-   * @notice Retrieves the current or simulated offset of the queue for an MatrixVault
-   * @param matrixVault Address of the MatrixVault to query
-   * @param simulate If true, returns the simulated offset based on current timestamp
-   */
-  function queueOffset(address matrixVault, bool simulate) external view returns (uint256);
-
-  /**
-   * @notice Gets the current or simulated offset of the queue index for a recipient in an MatrixVault
-   * @param matrixVault Address of the MatrixVault to query
-   * @param recipient Address of the recipient to query
-   * @param simulate If true, returns the simulated offset based on current timestamp
-   */
-  function queueIndexOffset(address matrixVault, address recipient, bool simulate) external view returns (uint256);
-
-  /**
    * @notice Retrieves the total amount of reserved assets for an MatrixVault's queue
    * @param matrixVault Address of the MatrixVault to query
    */
   function totalReserved(address matrixVault) external view returns (uint256);
-
-  /**
-   * @notice Gets the total amount of claimed assets for an MatrixVault's queue
-   * @param matrixVault Address of the MatrixVault to query
-   */
-  function totalClaimed(address matrixVault) external view returns (uint256);
 
   /**
    * @notice Retrieves the total amount of pending assets for an MatrixVault's queue
@@ -346,10 +283,11 @@ interface IReclaimQueue is IReclaimQueueStorageV1 {
   /**
    * @notice Updates the queue with available idle balance
    * @dev Can only be called by the asset manager
+   * @param executor Address of the executor calling the function
    * @param matrixVault Address of the MatrixVault to update
    * @param assets Amount of idle assets to allocate to pending requests
    */
-  function sync(address matrixVault, uint256 assets) external;
+  function sync(address executor, address matrixVault, uint256 assets) external;
 
   /**
    * @notice Activates the reclaim queue for an MatrixVault
