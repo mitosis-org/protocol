@@ -6,7 +6,6 @@ import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/Transparen
 
 import { Treasury } from '../../../src/hub/reward/Treasury.sol';
 import { MockERC20Snapshots } from '../../mock/MockERC20Snapshots.t.sol';
-import { MockRewardDistributor } from '../../mock/MockRewardDistributor.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract TreasuryTest is Toolkit {
@@ -54,7 +53,7 @@ contract TreasuryTest is Toolkit {
   function test_dispatch() public {
     test_storeReward();
 
-    MockRewardDistributor distributor = new MockRewardDistributor();
+    address distributor = makeAddr('distributor');
 
     address dispatcher = makeAddr('dispatcher');
     bytes32 dispatcherRole = _treasury.DISPATCHER_ROLE();
@@ -62,9 +61,9 @@ contract TreasuryTest is Toolkit {
     _treasury.grantRole(dispatcherRole, dispatcher);
 
     vm.prank(dispatcher);
-    _treasury.dispatch(matrixVault, address(_token), 100 ether, address(distributor));
+    _treasury.dispatch(matrixVault, address(_token), 100 ether, distributor);
 
     assertEq(_token.balanceOf(address(_treasury)), 0);
-    assertEq(_token.balanceOf(address(distributor)), 100 ether);
+    assertEq(_token.balanceOf(distributor), 100 ether);
   }
 }

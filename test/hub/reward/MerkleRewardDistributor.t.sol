@@ -66,7 +66,6 @@ contract MerkleRewardDistributorTest is Toolkit {
     vm.stopPrank();
   }
 
-  // function fetchRewards(uint256 stage, uint256 nonce, address matrixVault, address reward, uint256 amount)
   function test_fetchRewards() public {
     _token.mint(rewarder, 100 ether);
 
