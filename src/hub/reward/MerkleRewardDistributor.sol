@@ -219,10 +219,6 @@ contract MerkleRewardDistributor is
     require(nonce == s.nonce, IMerkleRewardDistributor__InvalidStageNonce(stage, nonce));
     require(rewards.length == amounts.length, StdError.InvalidParameter('amounts.length'));
 
-    for (uint256 i = 0; i < rewards.length; i++) {
-      require(amounts[i] >= IERC20(rewards[i]).balanceOf(address(this)), IMerkleRewardDistributor__InvalidAmount());
-    }
-
     _addStage($, merkleRoot, rewards, amounts);
 
     return merkleStage;

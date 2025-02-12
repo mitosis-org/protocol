@@ -14,9 +14,9 @@ contract TreasuryTest is Toolkit {
   MockERC20Snapshots _token;
   Treasury _treasury;
 
-  address owner = makeAddr('owner');
-  address rewarder = makeAddr('rewarder');
-  address matrixVault = makeAddr('matrixVault');
+  address immutable owner = makeAddr('owner');
+  address immutable rewarder = makeAddr('rewarder');
+  address immutable matrixVault = makeAddr('matrixVault');
 
   function setUp() public {
     _proxyAdmin = new ProxyAdmin(owner);
