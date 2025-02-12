@@ -8,7 +8,6 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
 
-import { IRewardDistributor } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { TreasuryStorageV1 } from './TreasuryStorageV1.sol';
@@ -70,9 +69,7 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
        })
     );
 
-    IERC20(reward).forceApprove(distributor, amount);
-    IRewardDistributor(distributor).handleReward(matrixVault, reward, amount);
-
+    IERC20(reward).transfer(distributor, amount);
     emit RewardDispatched(matrixVault, reward, distributor, amount);
   }
 
