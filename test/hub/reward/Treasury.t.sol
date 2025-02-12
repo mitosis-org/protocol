@@ -35,9 +35,9 @@ contract TreasuryTest is Toolkit {
       )
     );
 
+    bytes32 treasuryManagerRole = _treasury.TREASURY_MANAGER_ROLE();
     vm.prank(owner);
-    // _treasury.TREASURY_MANAGER_ROLE() ?
-    _treasury.grantRole(0xede9dcdb0ce99dc7cec9c7be9246ad08b37853683ad91569c187b647ddf5e21c, rewarder);
+    _treasury.grantRole(treasuryManagerRole, rewarder);
   }
 
   function test_storeReward() public {
@@ -53,13 +53,13 @@ contract TreasuryTest is Toolkit {
 
   function test_dispatch() public {
     test_storeReward();
-    // assertEq(_token.balanceOf(address(_treasury)), 100 ether);
 
     MockRewardDistributor distributor = new MockRewardDistributor();
 
     address dispatcher = makeAddr('dispatcher');
+    bytes32 dispatcherRole = _treasury.DISPATCHER_ROLE();
     vm.prank(owner);
-    _treasury.grantRole(0xfbd38eecf51668fdbc772b204dc63dd28c3a3cf32e3025f52a80aa807359f50c, dispatcher);
+    _treasury.grantRole(dispatcherRole, dispatcher);
 
     vm.prank(dispatcher);
     _treasury.dispatch(matrixVault, address(_token), 100 ether, address(distributor));
