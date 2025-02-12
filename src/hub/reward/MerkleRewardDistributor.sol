@@ -219,6 +219,13 @@ contract MerkleRewardDistributor is
     require(nonce == s.nonce, IMerkleRewardDistributor__InvalidStageNonce(stage, nonce));
     require(rewards.length == amounts.length, StdError.InvalidParameter('amounts.length'));
 
+    for (uint256 i = 0; i < rewards.length; i++) {
+      address reward = rewards[i];
+      uint256 amount = amounts[i];
+      require(_availableReward($, reward) >= amount, IMerkleRewardDistributor__InvalidAmount());
+      $.reservedRewardAmounts[reward] += amount;
+    }
+
     _addStage($, merkleRoot, rewards, amounts);
 
     return merkleStage;
@@ -307,9 +314,14 @@ contract MerkleRewardDistributor is
     require(rewards.length == amounts.length, StdError.InvalidParameter('amounts.length'));
     for (uint256 i = 0; i < rewards.length; i++) {
       IERC20(rewards[i]).safeTransfer(receiver, amounts[i]);
+      $.reservedRewardAmounts[rewards[i]] -= amounts[i];
     }
 
     emit Claimed(receiver, stage, matrixVault, rewards, amounts);
+  }
+
+  function _availableReward(StorageV1 storage $, address reward) internal view returns (uint256) {
+    return IERC20(reward).balanceOf(address(this)) - $.reservedRewardAmounts[reward];
   }
 
   function _leaf(
