@@ -222,7 +222,7 @@ contract MerkleRewardDistributor is
     for (uint256 i = 0; i < rewards.length; i++) {
       address reward = rewards[i];
       uint256 amount = amounts[i];
-      require(_availableReward($, reward) >= amount, IMerkleRewardDistributor__InvalidAmount());
+      require(_availableRewardAmount($, reward) >= amount, IMerkleRewardDistributor__InvalidAmount());
       $.reservedRewardAmounts[reward] += amount;
     }
 
@@ -320,7 +320,7 @@ contract MerkleRewardDistributor is
     emit Claimed(receiver, stage, matrixVault, rewards, amounts);
   }
 
-  function _availableReward(StorageV1 storage $, address reward) internal view returns (uint256) {
+  function _availableRewardAmount(StorageV1 storage $, address reward) internal view returns (uint256) {
     return IERC20(reward).balanceOf(address(this)) - $.reservedRewardAmounts[reward];
   }
 
