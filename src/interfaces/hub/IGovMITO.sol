@@ -13,12 +13,19 @@ interface IGovMITO is IERC20, IERC5805 {
   event Minted(address indexed to, uint256 amount);
 
   /**
-   * @notice Emitted when tokens are redeemed.
-   * @param from The address that redeemed the tokens
-   * @param to The address that received MITO
-   * @param amount The amount of tokens redeemed
+   * @notice Emitted when a redeem request is made.
+   * @param requester The address that made the request
+   * @param receiver The address that will receive the assets
+   * @param amount The amount of tokens to redeem
    */
-  event Redeemed(address indexed from, address indexed to, uint256 amount);
+  event RedeemRequested(address indexed requester, address indexed receiver, uint256 amount);
+
+  /**
+   * @notice Emitted when a redeem request is claimed.
+   * @param receiver The address that received the assets
+   * @param claimed The amount of assets claimed
+   */
+  event RedeemRequestClaimed(address indexed receiver, uint256 claimed);
 
   /**
    * @notice Emitted when the minter is set.
@@ -34,6 +41,12 @@ interface IGovMITO is IERC20, IERC5805 {
   event WhiltelistedSenderSet(address indexed sender, bool whitelisted);
 
   /**
+   * @notice Emitted when the redeem period is set.
+   * @param redeemPeriod The new redeem period
+   */
+  event RedeemPeriodSet(uint256 redeemPeriod);
+
+  /**
    * @notice Mint tokens to an address with corresponding MITO.
    * @dev Only the minter can call this function.
    * @param to The address to mint tokens to
@@ -42,9 +55,19 @@ interface IGovMITO is IERC20, IERC5805 {
   function mint(address to, uint256 amount) external payable;
 
   /**
-   * @notice Redeem tokens for MITO.
-   * @param to The address to send MITO to
+   * @notice Request to redeem tokens for assets.
+   * @dev The requester must have enough tokens to redeem.
+   * @param receiver The address to receive the assets
    * @param amount The amount of tokens to redeem
+   * @return reqId The ID of the redeem request
    */
-  function redeem(address to, uint256 amount) external;
+  function requestRedeem(address receiver, uint256 amount) external returns (uint256 reqId);
+
+  /**
+   * @notice Claim a redeem request.
+   * @dev The receiver must have a redeem request to claim.
+   * @param receiver The address to claim the redeem request for
+   * @return claimed The amount of assets claimed
+   */
+  function claimRedeem(address receiver) external returns (uint256 claimed);
 }

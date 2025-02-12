@@ -21,6 +21,8 @@ contract GovMITOTest is Test {
   address immutable user1 = makeAddr('user1');
   address immutable user2 = makeAddr('user2');
 
+  uint48 constant REDEEM_PERIOD = 21 days;
+
   function setUp() public {
     _proxyAdmin = new ProxyAdmin(owner);
     GovMITO govMITOImpl = new GovMITO();
@@ -29,7 +31,9 @@ contract GovMITOTest is Test {
       payable(
         address(
           new TransparentUpgradeableProxy(
-            address(govMITOImpl), address(_proxyAdmin), abi.encodeCall(govMITO.initialize, (owner, minter))
+            address(govMITOImpl),
+            address(_proxyAdmin),
+            abi.encodeCall(govMITO.initialize, (owner, minter, REDEEM_PERIOD))
           )
         )
       )
@@ -72,23 +76,222 @@ contract GovMITOTest is Test {
     govMITO.mint{ value: 101 }(user1, 100);
   }
 
-  function test_redeem() public {
+  function test_redeem_basic() public {
     payable(minter).transfer(100);
     vm.prank(minter);
     govMITO.mint{ value: 100 }(user1, 100);
 
     vm.startPrank(user1);
-    assertEq(user1.balance, 0);
 
-    govMITO.redeem(user1, 30);
+    uint256 requestedAt = block.timestamp;
+    govMITO.requestRedeem(user1, 30);
+    assertEq(user1.balance, 0);
+    assertEq(govMITO.balanceOf(user1), 70);
+
+    vm.warp(requestedAt + REDEEM_PERIOD - 1);
+    uint256 claimed = govMITO.claimRedeem(user1);
+    assertEq(claimed, 0);
+    assertEq(user1.balance, 0);
+    assertEq(govMITO.balanceOf(user1), 70);
+
+    vm.warp(requestedAt + REDEEM_PERIOD);
+    claimed = govMITO.claimRedeem(user1);
+    assertEq(claimed, 30);
     assertEq(user1.balance, 30);
     assertEq(govMITO.balanceOf(user1), 70);
 
-    govMITO.redeem(user1, 70);
+    requestedAt = block.timestamp;
+    govMITO.requestRedeem(user1, 70);
+    assertEq(user1.balance, 30);
+    assertEq(govMITO.balanceOf(user1), 0);
+
+    vm.warp(requestedAt + REDEEM_PERIOD - 1);
+    claimed = govMITO.claimRedeem(user1);
+    assertEq(claimed, 0);
+    assertEq(user1.balance, 30);
+    assertEq(govMITO.balanceOf(user1), 0);
+
+    vm.warp(requestedAt + REDEEM_PERIOD);
+    claimed = govMITO.claimRedeem(user1);
+    assertEq(claimed, 70);
     assertEq(user1.balance, 100);
     assertEq(govMITO.balanceOf(user1), 0);
 
     vm.stopPrank();
+  }
+
+  function test_redeem_requestTwiceAndClaimOnce() public {
+    payable(minter).transfer(100);
+    vm.prank(minter);
+    govMITO.mint{ value: 100 }(user1, 100);
+
+    vm.startPrank(user1);
+
+    uint256 requestedAt = block.timestamp;
+    govMITO.requestRedeem(user1, 30);
+    assertEq(user1.balance, 0);
+    assertEq(govMITO.balanceOf(user1), 70);
+
+    vm.warp(requestedAt + REDEEM_PERIOD / 2);
+    govMITO.requestRedeem(user1, 50);
+    assertEq(user1.balance, 0);
+    assertEq(govMITO.balanceOf(user1), 20);
+
+    vm.warp(requestedAt + REDEEM_PERIOD / 2 + REDEEM_PERIOD);
+    uint256 claimed = govMITO.claimRedeem(user1);
+    assertEq(claimed, 80);
+    assertEq(user1.balance, 80);
+    assertEq(govMITO.balanceOf(user1), 20);
+
+    vm.stopPrank();
+  }
+
+  function test_redeem_requestTwiceAndClaimTwice() public {
+    payable(minter).transfer(100);
+    vm.prank(minter);
+    govMITO.mint{ value: 100 }(user1, 100);
+
+    vm.startPrank(user1);
+
+    uint256 requestedAt = block.timestamp;
+    govMITO.requestRedeem(user1, 30);
+    assertEq(user1.balance, 0);
+    assertEq(govMITO.balanceOf(user1), 70);
+
+    vm.warp(requestedAt + REDEEM_PERIOD / 2);
+    govMITO.requestRedeem(user1, 50);
+    assertEq(user1.balance, 0);
+    assertEq(govMITO.balanceOf(user1), 20);
+
+    vm.warp(requestedAt + REDEEM_PERIOD);
+    uint256 claimed = govMITO.claimRedeem(user1);
+    assertEq(claimed, 30);
+    assertEq(user1.balance, 30);
+    assertEq(govMITO.balanceOf(user1), 20);
+
+    vm.warp(requestedAt + REDEEM_PERIOD / 2 + REDEEM_PERIOD - 1);
+    claimed = govMITO.claimRedeem(user1);
+    assertEq(claimed, 0);
+    assertEq(user1.balance, 30);
+    assertEq(govMITO.balanceOf(user1), 20);
+
+    vm.warp(requestedAt + REDEEM_PERIOD / 2 + REDEEM_PERIOD);
+    claimed = govMITO.claimRedeem(user1);
+    assertEq(claimed, 50);
+    assertEq(user1.balance, 80);
+    assertEq(govMITO.balanceOf(user1), 20);
+
+    vm.stopPrank();
+  }
+
+  function test_redeem_requestAfterClaimable() public {
+    payable(minter).transfer(100);
+    vm.prank(minter);
+    govMITO.mint{ value: 100 }(user1, 100);
+
+    vm.startPrank(user1);
+
+    uint256 requestedAt = block.timestamp;
+    govMITO.requestRedeem(user1, 30);
+    assertEq(user1.balance, 0);
+    assertEq(govMITO.balanceOf(user1), 70);
+
+    vm.warp(requestedAt + REDEEM_PERIOD);
+    govMITO.requestRedeem(user1, 50);
+    assertEq(user1.balance, 0);
+    assertEq(govMITO.balanceOf(user1), 20);
+
+    vm.warp(requestedAt + REDEEM_PERIOD * 2 - 1);
+    uint256 claimed = govMITO.claimRedeem(user1);
+    assertEq(claimed, 30);
+    assertEq(user1.balance, 30);
+    assertEq(govMITO.balanceOf(user1), 20);
+
+    vm.warp(requestedAt + REDEEM_PERIOD * 2);
+    claimed = govMITO.claimRedeem(user1);
+    assertEq(claimed, 50);
+    assertEq(user1.balance, 80);
+    assertEq(govMITO.balanceOf(user1), 20);
+
+    vm.stopPrank();
+  }
+
+  function test_redeem_severalUsers() public {
+    payable(minter).transfer(100);
+    vm.startPrank(minter);
+    govMITO.mint{ value: 50 }(user1, 50);
+    govMITO.mint{ value: 50 }(user2, 50);
+    vm.stopPrank();
+
+    uint256 requestedAt = block.timestamp;
+
+    vm.prank(user1);
+    govMITO.requestRedeem(user1, 30);
+    assertEq(user1.balance, 0);
+    assertEq(govMITO.balanceOf(user1), 20);
+
+    vm.prank(user2);
+    govMITO.requestRedeem(user2, 40);
+    assertEq(user2.balance, 0);
+    assertEq(govMITO.balanceOf(user2), 10);
+
+    vm.warp(requestedAt + REDEEM_PERIOD);
+
+    vm.prank(user1);
+    uint256 claimed = govMITO.claimRedeem(user1);
+    assertEq(claimed, 30);
+    assertEq(user1.balance, 30);
+    assertEq(user2.balance, 0);
+    assertEq(govMITO.balanceOf(user1), 20);
+    assertEq(govMITO.balanceOf(user2), 10);
+
+    vm.prank(user2);
+    claimed = govMITO.claimRedeem(user2);
+    assertEq(claimed, 40);
+    assertEq(user1.balance, 30);
+    assertEq(user2.balance, 40);
+    assertEq(govMITO.balanceOf(user1), 20);
+    assertEq(govMITO.balanceOf(user2), 10);
+  }
+
+  function test_redeem_differentReceiver() public {
+    payable(minter).transfer(100);
+    vm.prank(minter);
+    govMITO.mint{ value: 100 }(user1, 100);
+
+    uint256 requestedAt = block.timestamp;
+    vm.prank(user1);
+    govMITO.requestRedeem(user2, 30);
+    assertEq(user1.balance, 0);
+    assertEq(user2.balance, 0);
+    assertEq(govMITO.balanceOf(user1), 70);
+
+    vm.warp(requestedAt + REDEEM_PERIOD);
+    vm.prank(user2);
+    uint256 claimed = govMITO.claimRedeem(user2);
+    assertEq(claimed, 30);
+    assertEq(user1.balance, 0);
+    assertEq(user2.balance, 30);
+    assertEq(govMITO.balanceOf(user1), 70);
+  }
+
+  function test_redeem_anyoneCanClaim() public {
+    payable(minter).transfer(100);
+    vm.prank(minter);
+    govMITO.mint{ value: 100 }(user1, 100);
+
+    uint256 requestedAt = block.timestamp;
+    vm.prank(user1);
+    govMITO.requestRedeem(user1, 30);
+    assertEq(user1.balance, 0);
+    assertEq(govMITO.balanceOf(user1), 70);
+
+    vm.warp(requestedAt + REDEEM_PERIOD);
+    vm.prank(user2);
+    uint256 claimed = govMITO.claimRedeem(user1);
+    assertEq(claimed, 30);
+    assertEq(user1.balance, 30);
+    assertEq(govMITO.balanceOf(user1), 70);
   }
 
   function test_redeem_ERC20InsufficientBalance() public {
@@ -97,14 +300,11 @@ contract GovMITOTest is Test {
     govMITO.mint{ value: 100 }(user1, 100);
 
     vm.startPrank(user1);
-    assertEq(user1.balance, 0);
 
-    govMITO.redeem(user1, 30);
-    assertEq(user1.balance, 30);
-    assertEq(govMITO.balanceOf(user1), 70);
+    govMITO.requestRedeem(user1, 30);
 
     vm.expectRevert();
-    govMITO.redeem(user1, 71);
+    govMITO.requestRedeem(user1, 71);
 
     vm.stopPrank();
   }

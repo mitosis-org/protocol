@@ -2,23 +2,32 @@
 pragma solidity ^0.8.28;
 
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
+import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
+import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 import { ERC20VotesUpgradeable } from '@ozu-v5/token/ERC20/extensions/ERC20VotesUpgradeable.sol';
+import { VotesUpgradeable } from '@ozu-v5/governance/utils/VotesUpgradeable.sol';
 
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
 import { IGovMITO } from '../interfaces/hub/IGovMITO.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { StdError } from '../lib/StdError.sol';
+import { LibRedeemQueue } from '../lib/LibRedeemQueue.sol';
+
+// TODO(thai): Consider to support EIP-2612
+// TODO(thai): Add more view functions. (Check ReclaimQueueStorageV1.sol as a reference)
 
 contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
   using ERC7201Utils for string;
+  using LibRedeemQueue for *;
 
-  /// @custom:storage-location mitosis.storage.MatrixVaultCapped
+  /// @custom:storage-location mitosis.storage.GovMITO
   struct GovMITOStorage {
     address minter;
+    LibRedeemQueue.Queue redeemQueue;
     mapping(address sender => bool) isWhitelistedSender;
   }
 
@@ -59,13 +68,16 @@ contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
     revert StdError.Unauthorized();
   }
 
-  function initialize(address _owner, address minter_) external initializer {
+  function initialize(address _owner, address minter_, uint256 redeemPeriod_) external initializer {
     // TODO(thai): not fixed yet. could be modified before launching.
     __ERC20_init('Mitosis Governance Token', 'gMITO');
     __Ownable2Step_init();
     _transferOwnership(_owner);
 
-    _setMinter(_getGovMITOStorage(), minter_);
+    GovMITOStorage storage $ = _getGovMITOStorage();
+
+    _setMinter($, minter_);
+    _setRedeemPeriod($, redeemPeriod_);
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
@@ -78,6 +90,10 @@ contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
     return _getGovMITOStorage().isWhitelistedSender[sender];
   }
 
+  function redeemPeriod() external view returns (uint256) {
+    return _getGovMITOStorage().redeemQueue.redeemPeriod;
+  }
+
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   function mint(address to, uint256 amount) external payable onlyMinter {
@@ -86,10 +102,29 @@ contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
     emit Minted(to, amount);
   }
 
-  function redeem(address to, uint256 amount) external {
+  function requestRedeem(address receiver, uint256 amount) external returns (uint256 reqId) {
+    GovMITOStorage storage $ = _getGovMITOStorage();
+
     _burn(_msgSender(), amount);
-    SafeTransferLib.safeTransferETH(to, amount);
-    emit Redeemed(_msgSender(), to, amount);
+    reqId = $.redeemQueue.enqueue(receiver, amount, amount, clock());
+    $.redeemQueue.reserve(amount, amount, totalSupply(), totalSupply(), clock());
+
+    emit RedeemRequested(_msgSender(), receiver, amount);
+
+    return reqId;
+  }
+
+  function claimRedeem(address receiver) external returns (uint256 claimed) {
+    GovMITOStorage storage $ = _getGovMITOStorage();
+
+    $.redeemQueue.update(clock());
+    claimed = $.redeemQueue.claim(receiver, clock());
+
+    SafeTransferLib.safeTransferETH(receiver, claimed);
+
+    emit RedeemRequestClaimed(receiver, claimed);
+
+    return claimed;
   }
 
   // ============================ NOTE: OWNABLE FUNCTIONS ============================ //
@@ -100,6 +135,18 @@ contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
 
   function setWhitelistedSender(address sender, bool isWhitelisted) external onlyOwner {
     _setWhitelistedSender(_getGovMITOStorage(), sender, isWhitelisted);
+  }
+
+  // ============================ NOTE: IERC6372 OVERRIDES ============================ //
+
+  function clock() public view override(IERC6372, VotesUpgradeable) returns (uint48) {
+    return Time.timestamp();
+  }
+
+  function CLOCK_MODE() public view override(IERC6372, VotesUpgradeable) returns (string memory) {
+    // Check that the clock was not modified
+    require(clock() == Time.timestamp(), ERC6372InconsistentClock());
+    return 'mode=timestamp';
   }
 
   // =========================== NOTE: ERC20 OVERRIDES =========================== //
@@ -140,5 +187,10 @@ contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
   function _setWhitelistedSender(GovMITOStorage storage $, address sender, bool isWhitelisted) internal {
     $.isWhitelistedSender[sender] = isWhitelisted;
     emit WhiltelistedSenderSet(sender, isWhitelisted);
+  }
+
+  function _setRedeemPeriod(GovMITOStorage storage $, uint256 redeemPeriod_) internal {
+    $.redeemQueue.redeemPeriod = redeemPeriod_;
+    emit RedeemPeriodSet(redeemPeriod_);
   }
 }
