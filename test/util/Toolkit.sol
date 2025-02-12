@@ -56,4 +56,8 @@ contract Toolkit is Test {
   function _errInvalidParameter(string memory context) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(StdError.InvalidParameter.selector, context);
   }
+
+  function _errNotFound(string memory context) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(StdError.NotFound.selector, context);
+  }
 }
