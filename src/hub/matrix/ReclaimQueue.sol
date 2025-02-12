@@ -46,7 +46,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
     _assertQueueEnabled($, matrixVault);
 
     IMatrixVault(matrixVault).safeTransferFrom(_msgSender(), address(this), shares);
-    uint256 assets = IMatrixVault(matrixVault).previewRedeem(shares) - 1; // NOTE: tricky way to avoid rounding error
+    uint256 assets = IMatrixVault(matrixVault).previewRedeem(shares) - 1;
 
     uint256 reqId = $.states[matrixVault].queue.enqueue(
       receiver,
@@ -94,8 +94,9 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
 
     // send diff to matrixVault if there's any yield
     (uint256 impact, bool loss) = _abssub(totalClaimedWithoutImpact, totalClaimed_);
-    if (loss) {
-      cfg.hubAsset.safeTransfer(matrixVault, impact);
+    if (!loss && impact > 0) {
+      uint256 reserveShares = IMatrixVault(matrixVault).previewWithdraw(impact);
+      _sync($, address(this), IMatrixVault(matrixVault), reserveShares);
       emit ReclaimYieldReported(receiver, matrixVault, impact);
     }
 
@@ -117,7 +118,9 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
     _assertOnlyAssetManager($);
     _assertQueueEnabled($, matrixVault);
 
-    _sync($, executor, IMatrixVault(matrixVault), assets);
+    uint256 shares = IMatrixVault(matrixVault).withdraw(assets, address(this), address(this));
+
+    _sync($, executor, IMatrixVault(matrixVault), shares);
   }
 
   // =========================== NOTE: CONFIG FUNCTIONS =========================== //
@@ -183,7 +186,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
   ) private view returns (uint256, uint256) {
     (LibRedeemQueue.ReserveLog memory reserveLog,) = queue.reserveLog(reqId); // found can be ignored
 
-    (uint256 totalAssets, uint256 totalShares) = _decodeReserveMetadata(reserveLog.metadata);
+    (uint256 totalShares, uint256 totalAssets) = _decodeReserveMetadata(reserveLog.metadata);
 
     uint256 assetsOnReserve = _convertToAssets(
       sharesOnRequest, // calculate if there's any difference between the share ratio
@@ -210,7 +213,6 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
       LibRedeemQueue.Request memory req = queue.data[reqId];
       if (req.isClaimed()) continue;
       if (reqId >= cfg.queueOffset) break;
-      queue.data[reqId].claimedAt = cfg.timestamp.toUint48();
 
       // uint256 before, uint256 after
       (uint256 claimedWithoutImpact, uint256 claimed) = _calcClaimed(
@@ -220,6 +222,8 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
         _decodeRequestMetadata(req.metadata),
         cfg.decimalsOffset
       );
+
+      queue.data[reqId].claimedAt = cfg.timestamp.toUint48();
 
       totalClaimedWithoutImpact += claimedWithoutImpact;
       totalClaimed_ += claimed;
@@ -233,9 +237,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
     return (totalClaimed_, totalClaimedWithoutImpact);
   }
 
-  function _sync(StorageV1 storage $, address executor, IMatrixVault matrixVault, uint256 assets) internal {
-    uint256 shares = matrixVault.withdraw(assets, address(this), address(this));
-
+  function _sync(StorageV1 storage $, address executor, IMatrixVault matrixVault, uint256 shares) internal {
     $.states[address(matrixVault)].queue.reserve(
       executor,
       shares,
