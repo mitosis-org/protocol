@@ -173,6 +173,6 @@ contract ReclaimQueueTest is Test {
   }
 
   function _reclaimReserve(uint256 amount) internal withAccount(address(_assetManager)) {
-    _reclaimQueue.sync(address(_matrixVault), amount);
+    _reclaimQueue.sync(msg.sender, address(_matrixVault), amount);
   }
 }
