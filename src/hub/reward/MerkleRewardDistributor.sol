@@ -313,8 +313,10 @@ contract MerkleRewardDistributor is
 
     require(rewards.length == amounts.length, StdError.InvalidParameter('amounts.length'));
     for (uint256 i = 0; i < rewards.length; i++) {
-      IERC20(rewards[i]).safeTransfer(receiver, amounts[i]);
-      $.reservedRewardAmounts[rewards[i]] -= amounts[i];
+      address reward = rewards[i];
+      uint256 amount = amounts[i];
+      IERC20(reward).safeTransfer(receiver, amount);
+      $.reservedRewardAmounts[reward] -= amount;
     }
 
     emit Claimed(receiver, stage, matrixVault, rewards, amounts);
