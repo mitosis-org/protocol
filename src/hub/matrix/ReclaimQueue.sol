@@ -91,7 +91,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
     // send total claim amount to receiver
     cfg.hubAsset.safeTransfer(receiver, totalClaimed_);
 
-    if (impact != 0 && impact > 1) {
+    if (impact > 1) {
       uint256 reserveShares = IMatrixVault(matrixVault).previewWithdraw(uint256(impact));
       _sync($, address(this), IMatrixVault(matrixVault), reserveShares);
       emit ReclaimYieldReported(receiver, matrixVault, uint256(impact));
