@@ -10,8 +10,8 @@ contract CrossChainRegistryStorageV1 {
     string name;
     // Branch info
     uint32 hplDomain;
-    address vault;
-    address entrypoint;
+    address mitosisVault;
+    address mitosisVaultEntrypoint;
     bool entrypointEnrolled;
   }
 

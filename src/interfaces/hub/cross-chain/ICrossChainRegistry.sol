@@ -65,16 +65,16 @@ interface ICrossChainRegistry {
   /**
    * @notice Returns the vault address for a specified chain.
    * @param chainId The ID of the chain.
-   * @return The address of the vault.
+   * @return The address of the MitosisVault.
    */
-  function vault(uint256 chainId) external view returns (address);
+  function mitosisVault(uint256 chainId) external view returns (address);
 
   /**
    * @notice Returns the entrypoint address for a specified chain.
    * @param chainId The ID of the chain.
-   * @return The address of the entrypoint.
+   * @return The address of the MitosisVaultEntrypoint.
    */
-  function entrypoint(uint256 chainId) external view returns (address);
+  function mitosisVaultEntrypoint(uint256 chainId) external view returns (address);
 
   /**
    * @notice Checks if the entrypoint for a specified chain is enrolled.

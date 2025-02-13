@@ -66,7 +66,7 @@ contract CrossChainRegistryTest is Test {
       keccak256(abi.encodePacked(ccRegistry.chainName(1))) == keccak256(abi.encodePacked(name)), 'invalid chainNmae'
     );
     require(ccRegistry.hyperlaneDomain(chainID) == hplDomain, 'invalid hyperlaneDomain');
-    require(ccRegistry.entrypoint(chainID) == entrypoint, 'invalid entrypoint');
+    require(ccRegistry.mitosisVaultEntrypoint(chainID) == entrypoint, 'invalid entrypoint');
     require(ccRegistry.chainId(hplDomain) == chainID, 'invalid chainId');
   }
 
@@ -82,6 +82,6 @@ contract CrossChainRegistryTest is Test {
     uint32 hplDomain = 1;
     ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
     ccRegistry.setVault(chainID, vault);
-    require(ccRegistry.vault(chainID) == vault, 'invalid vault');
+    require(ccRegistry.mitosisVault(chainID) == vault, 'invalid mitosisVault');
   }
 }

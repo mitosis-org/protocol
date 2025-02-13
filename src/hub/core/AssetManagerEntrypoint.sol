@@ -56,12 +56,12 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, G
     return _ccRegistry.hyperlaneDomain(chainId);
   }
 
-  function branchVault(uint256 chainId) external view returns (address) {
-    return _ccRegistry.vault(chainId);
+  function branchMitosisVault(uint256 chainId) external view returns (address) {
+    return _ccRegistry.mitosisVault(chainId);
   }
 
-  function branchEntrypointAddr(uint256 chainId) external view returns (address) {
-    return _ccRegistry.entrypoint(chainId);
+  function branchMitosisVaultEntrypoint(uint256 chainId) external view returns (address) {
+    return _ccRegistry.mitosisVaultEntrypoint(chainId);
   }
 
   //=========== NOTE: ROUTER OVERRIDES ============//
@@ -153,7 +153,7 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, G
     uint256 chainId = _ccRegistry.chainId(origin);
     require(chainId != 0, ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
 
-    address entrypoint = _ccRegistry.entrypoint(chainId);
+    address entrypoint = _ccRegistry.mitosisVaultEntrypoint(chainId);
     require(sender.toAddress() == entrypoint, ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
 
     MsgType msgType = msg_.msgType();

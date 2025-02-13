@@ -47,12 +47,12 @@ contract CrossChainRegistry is ICrossChainRegistry, AccessControlUpgradeable, Cr
     return _getStorageV1().chains[chainId_].hplDomain;
   }
 
-  function entrypoint(uint256 chainId_) external view returns (address) {
-    return _getStorageV1().chains[chainId_].entrypoint;
+  function mitosisVaultEntrypoint(uint256 chainId_) external view returns (address) {
+    return _getStorageV1().chains[chainId_].mitosisVaultEntrypoint;
   }
 
-  function vault(uint256 chainId_) external view returns (address) {
-    return _getStorageV1().chains[chainId_].vault;
+  function mitosisVault(uint256 chainId_) external view returns (address) {
+    return _getStorageV1().chains[chainId_].mitosisVault;
   }
 
   function entrypointEnrolled(uint256 chainId_) external view returns (bool) {
@@ -86,7 +86,7 @@ contract CrossChainRegistry is ICrossChainRegistry, AccessControlUpgradeable, Cr
     $.hplDomains.push(hplDomain);
     $.chains[chainId_].name = name;
     $.chains[chainId_].hplDomain = hplDomain;
-    $.chains[chainId_].entrypoint = entrypoint_;
+    $.chains[chainId_].mitosisVaultEntrypoint = entrypoint_;
     $.hyperlanes[hplDomain].chainId = chainId_;
 
     emit ChainSet(chainId_, hplDomain, entrypoint_, name);
@@ -98,7 +98,7 @@ contract CrossChainRegistry is ICrossChainRegistry, AccessControlUpgradeable, Cr
     require(_isRegisteredChain(chainInfo), ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
     require(!_isRegisteredVault(chainInfo), ICrossChainRegistry.ICrossChainRegistry__AlreadyRegistered());
 
-    chainInfo.vault = vault_;
+    chainInfo.mitosisVault = vault_;
     emit VaultSet(chainId_, vault_);
   }
 
@@ -114,7 +114,7 @@ contract CrossChainRegistry is ICrossChainRegistry, AccessControlUpgradeable, Cr
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId_];
     if (_isEnrollableChain(chainInfo)) {
       chainInfo.entrypointEnrolled = true;
-      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.entrypoint.toBytes32());
+      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.mitosisVaultEntrypoint.toBytes32());
     }
   }
 
@@ -125,7 +125,7 @@ contract CrossChainRegistry is ICrossChainRegistry, AccessControlUpgradeable, Cr
   }
 
   function _isRegisteredVault(ChainInfo storage chainInfo) internal view returns (bool) {
-    return chainInfo.vault != address(0);
+    return chainInfo.mitosisVault != address(0);
   }
 
   function _isEntrypointEnrolled(ChainInfo storage chainInfo) internal view returns (bool) {
