@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Test } from '@std/Test.sol';
-
-import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
+import { Toolkit } from '../../util/Toolkit.sol';
 
 import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
 
@@ -14,14 +12,13 @@ import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.so
 import { IReclaimQueue } from '../../../src/interfaces/hub/matrix/IReclaimQueue.sol';
 import { MockAssetManager } from '../../mock/MockAssetManager.t.sol';
 
-contract ReclaimQueueTest is Test {
+contract ReclaimQueueTest is Toolkit {
   address internal _admin = makeAddr('admin');
   address internal _owner = makeAddr('owner');
   address internal _user = makeAddr('user');
   address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
   MockAssetManager internal _assetManager;
-  ERC1967Factory internal _factory;
   HubAsset internal _hubAsset;
   MatrixVaultBasic internal _matrixVault;
   ReclaimQueue internal _reclaimQueue;
@@ -35,8 +32,6 @@ contract ReclaimQueueTest is Test {
   }
 
   function setUp() public {
-    _factory = new ERC1967Factory();
-
     _assetManager = new MockAssetManager();
 
     _hubAsset = HubAsset(
@@ -128,14 +123,6 @@ contract ReclaimQueueTest is Test {
 
   function _errNothingToClaim() internal pure returns (bytes memory) {
     return abi.encodeWithSelector(IReclaimQueue.IReclaimQueue__NothingToClaim.selector);
-  }
-
-  function _proxy(address impl) internal returns (address) {
-    return _factory.deploy(impl, _admin);
-  }
-
-  function _proxy(address impl, bytes memory data) internal returns (address) {
-    return _factory.deployAndCall(impl, _admin, data);
   }
 
   function _mint(address to, uint256 amount) internal {

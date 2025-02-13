@@ -26,6 +26,14 @@ contract Toolkit is Test {
     return address(uint160(uint256(vm.load(target, ERC1967Utils.BEACON_SLOT))));
   }
 
+  function _proxy(address impl) internal returns (address) {
+    return _factory.deploy(impl, _admin);
+  }
+
+  function _proxy(address impl, bytes memory data) internal returns (address) {
+    return _factory.deployAndCall(impl, _admin, data);
+  }
+
   function _now() internal view returns (uint256) {
     return block.timestamp;
   }
