@@ -116,8 +116,6 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
   {
     require(amount > 0, StdError.InvalidParameter('amount'));
 
-    payable(address(0)).transfer(amount);
-
     emit MsgWithdrawCollateral(valkey, amount, receiver, withdrawAt);
   }
 
