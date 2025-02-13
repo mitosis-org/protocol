@@ -218,21 +218,12 @@ interface IReclaimQueue is IReclaimQueueStorageV1 {
   event ReclaimRequested(address indexed receiver, address indexed matrixVault, uint256 shares, uint256 assets);
 
   /**
-   * @notice Emitted when a yield is generated during the reclaim process
-   * @param receiver Address receiving the claim
-   * @param matrixVault Address of the MatrixVault
-   * @param yield Amount of yield generated
-   */
-  event ReclaimYieldReported(address indexed receiver, address indexed matrixVault, uint256 yield);
-
-  /**
    * @notice Emitted when an reclaim request is successfully claimed
    * @param receiver Address receiving the claim
    * @param matrixVault Address of the MatrixVault
    * @param claimed Amount of assets claimed
-   * @param impact Difference between requested and claimed amounts
    */
-  event ReclaimRequestClaimed(address indexed receiver, address indexed matrixVault, uint256 claimed, int256 impact);
+  event ReclaimRequestClaimed(address indexed receiver, address indexed matrixVault, uint256 claimed);
 
   /**
    * @notice Error thrown when trying to interact with a disabled queue

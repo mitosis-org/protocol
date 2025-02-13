@@ -80,7 +80,7 @@ contract ReclaimQueueTest is Toolkit {
     _reclaimReserve(100 ether);
 
     vm.expectEmit();
-    emit IReclaimQueue.ReclaimRequestClaimed(_user, address(_matrixVault), 100 ether - 1, 0);
+    emit IReclaimQueue.ReclaimRequestClaimed(_user, address(_matrixVault), 100 ether - 1);
     _reclaimClaim(_user);
 
     vm.expectRevert(_errNothingToClaim());
@@ -97,10 +97,9 @@ contract ReclaimQueueTest is Toolkit {
 
     _burn(address(_matrixVault), 100 ether); // report loss
     _reclaimReserve(90 ether);
-    _reclaimClaim(_user);
 
     vm.expectEmit();
-    emit IReclaimQueue.ReclaimRequestClaimed(_user, address(_matrixVault), 90 ether, -(10 ether - 1));
+    emit IReclaimQueue.ReclaimRequestClaimed(_user, address(_matrixVault), 90 ether);
     _reclaimClaim(_user);
 
     vm.expectRevert(_errNothingToClaim());
@@ -119,10 +118,7 @@ contract ReclaimQueueTest is Toolkit {
     _reclaimReserve(110 ether - 1);
 
     vm.expectEmit();
-    emit IReclaimQueue.ReclaimYieldReported(_user, address(_matrixVault), 10 ether + 1);
-
-    vm.expectEmit();
-    emit IReclaimQueue.ReclaimRequestClaimed(_user, address(_matrixVault), 100 ether - 1, 10 ether + 1);
+    emit IReclaimQueue.ReclaimRequestClaimed(_user, address(_matrixVault), 100 ether - 1);
 
     _reclaimClaim(_user);
 
@@ -172,7 +168,7 @@ contract ReclaimQueueTest is Toolkit {
     return totalClaimed;
   }
 
-  function _reclaimReserve(uint256 amount) internal withAccount(address(_assetManager)) {
-    _reclaimQueue.sync(msg.sender, address(_matrixVault), amount);
+  function _reclaimReserve(uint256 count) internal withAccount(address(_assetManager)) {
+    _reclaimQueue.sync(msg.sender, address(_matrixVault), count);
   }
 }
