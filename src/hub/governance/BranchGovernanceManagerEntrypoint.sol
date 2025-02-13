@@ -56,7 +56,6 @@ contract BranchGovernanceManagerEntrypoint is IMessageRecipient, GasRouter, Owna
       values: values,
       data: data
     }).encode();
-    bytes memory enc = MsgInitializeAsset({ asset: branchAsset.toBytes32() }).encode();
     _dispatchToBranch(chainId, enc);
   }
 
