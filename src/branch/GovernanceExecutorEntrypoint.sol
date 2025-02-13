@@ -3,18 +3,32 @@ pragma solidity ^0.8.28;
 
 import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
 
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+
 import { Conv } from '../lib/Conv.sol';
 import { StdError } from '../lib/StdError.sol';
 import '../message/Message.sol';
 import { GovernanceExecutor } from './GovernanceExecutor.sol';
 
-contract GovernanceExecutorEntrypoint is IMessageRecipient {
+// Removal after discussion: Since there will be no Branch -> Hub cases, it does not inherit from Router.
+contract GovernanceExecutorEntrypoint is IMessageRecipient, Ownable2StepUpgradeable {
   using Message for *;
   using Conv for *;
 
   GovernanceExecutor internal immutable _governanceExecutor;
   uint32 internal immutable _mitosisDomain;
-  bytes32 internal immutable _mitosisAddr;
+  bytes32 internal immutable _mitosisAddr; // Hub.BranchGovernanceManagerEntrypoint
+
+  constructor(address governanceExecutor_, uint32 mitosisDomain_, bytes32 mitosisAddr_) initializer {
+    _governanceExecutor = GovernanceExecutor(governanceExecutor_);
+    _mitosisDomain = mitosisDomain_;
+    _mitosisAddr = mitosisAddr_;
+  }
+
+  function initialize(address owner_) public initializer {
+    __Ownable2Step_init();
+    _transferOwnership(owner_);
+  }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//
 
