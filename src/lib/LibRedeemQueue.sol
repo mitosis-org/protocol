@@ -288,7 +288,7 @@ library LibRedeemQueue {
 
     return historyIndex;
   }
-
+  
   function update(Queue storage q, uint48 timestamp) internal returns (uint256 offset, bool updated) {
     return _updateQueueOffset(q, totalRequestAmount(q), timestamp);
   }

@@ -97,6 +97,7 @@ contract ReclaimQueueTest is Toolkit {
 
     _burn(address(_matrixVault), 100 ether); // report loss
     _reclaimReserve(90 ether);
+    _reclaimClaim(_user);
 
     vm.expectEmit();
     emit IReclaimQueue.ReclaimRequestClaimed(_user, address(_matrixVault), 90 ether, -(10 ether - 1));
@@ -122,6 +123,7 @@ contract ReclaimQueueTest is Toolkit {
 
     vm.expectEmit();
     emit IReclaimQueue.ReclaimRequestClaimed(_user, address(_matrixVault), 100 ether - 1, 10 ether + 1);
+
     _reclaimClaim(_user);
 
     vm.expectRevert(_errNothingToClaim());
