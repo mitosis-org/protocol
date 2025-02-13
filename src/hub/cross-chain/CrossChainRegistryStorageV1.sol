@@ -12,7 +12,9 @@ contract CrossChainRegistryStorageV1 {
     uint32 hplDomain;
     address mitosisVault;
     address mitosisVaultEntrypoint;
-    bool entrypointEnrolled;
+    address governanceExecutorEntrypoint;
+    bool mitosisVaultEntrypointEnrolled;
+    bool governanceExecutorEntrypointEnrolled;
   }
 
   struct HyperlaneInfo {

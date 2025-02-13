@@ -39,25 +39,27 @@ contract CrossChainRegistryTest is Test {
     uint256 chainID = 1;
     string memory name = 'Ethereum';
     uint32 hplDomain = 1;
-    address entrypoint = makeAddr('entrypoint');
+    address mitosisVaultEntrypoint = makeAddr('mitosisVaultEntrypoint');
+    address governanceExecutorEntrypoint = makeAddr('governanceExecutorEntrypoint');
 
     vm.expectRevert(); // 'AccessControlUnauthorizedAccount'
-    ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
+    ccRegistry.setChain(chainID, name, hplDomain, mitosisVaultEntrypoint, governanceExecutorEntrypoint);
 
     ccRegistry.grantRole(ccRegistry.REGISTERER_ROLE(), 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
-    ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
+    ccRegistry.setChain(chainID, name, hplDomain, mitosisVaultEntrypoint, governanceExecutorEntrypoint);
   }
 
   function test_setChain() public {
     uint256 chainID = 1;
     string memory name = 'Ethereum';
     uint32 hplDomain = 1;
-    address entrypoint = makeAddr('entrypoint');
+    address mitosisVaultEntrypoint = makeAddr('mitosisVaultEntrypoint');
+    address governanceExecutorEntrypoint = makeAddr('governanceExecutorEntrypoint');
 
-    ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
+    ccRegistry.setChain(chainID, name, hplDomain, mitosisVaultEntrypoint, governanceExecutorEntrypoint);
 
     vm.expectRevert(); // 'already registered chain'
-    ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
+    ccRegistry.setChain(chainID, name, hplDomain, mitosisVaultEntrypoint, governanceExecutorEntrypoint);
 
     uint256[] memory chainIds = ccRegistry.chainIds();
     require(chainIds.length == 1, 'invalid chainIds');
@@ -66,21 +68,26 @@ contract CrossChainRegistryTest is Test {
       keccak256(abi.encodePacked(ccRegistry.chainName(1))) == keccak256(abi.encodePacked(name)), 'invalid chainNmae'
     );
     require(ccRegistry.hyperlaneDomain(chainID) == hplDomain, 'invalid hyperlaneDomain');
-    require(ccRegistry.mitosisVaultEntrypoint(chainID) == entrypoint, 'invalid entrypoint');
+    require(ccRegistry.mitosisVaultEntrypoint(chainID) == mitosisVaultEntrypoint, 'invalid mitosisVaultEntrypoint');
+    require(
+      ccRegistry.governanceExecutorEntrypoint(chainID) == governanceExecutorEntrypoint,
+      'invalid governanceExecutorEntrypoint'
+    );
     require(ccRegistry.chainId(hplDomain) == chainID, 'invalid chainId');
   }
 
   function test_setVault() public {
     uint256 chainID = 1;
     address vault = makeAddr('vault');
-    address entrypoint = makeAddr('entrypoint');
+    address mitosisVaultEntrypoint = makeAddr('mitosisVaultEntrypoint');
+    address governanceExecutorEntrypoint = makeAddr('governanceExecutorEntrypoint');
 
     vm.expectRevert(); // 'not registered chain'
     ccRegistry.setVault(chainID, vault);
 
     string memory name = 'Ethereum';
     uint32 hplDomain = 1;
-    ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
+    ccRegistry.setChain(chainID, name, hplDomain, mitosisVaultEntrypoint, governanceExecutorEntrypoint);
     ccRegistry.setVault(chainID, vault);
     require(ccRegistry.mitosisVault(chainID) == vault, 'invalid mitosisVault');
   }

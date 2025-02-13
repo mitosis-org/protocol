@@ -31,7 +31,14 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, G
 
   modifier onlyDispatchable(uint256 chainId) {
     require(_ccRegistry.isRegisteredChain(chainId), ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
-    require(_ccRegistry.entrypointEnrolled(chainId), ICrossChainRegistry.ICrossChainRegistry__NotEnrolled());
+    require(
+      _ccRegistry.mitosisVaultEntrypointEnrolled(chainId),
+      ICrossChainRegistry.ICrossChainRegistry__MitosisVaultEntrypointNotEnrolled()
+    );
+    require(
+      _ccRegistry.governanceExecutorEntrypointEnrolled(chainId),
+      ICrossChainRegistry.ICrossChainRegistry__GovernanceExecutorEntrypointNotEnrolled()
+    );
     _;
   }
 
@@ -62,6 +69,10 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, G
 
   function branchMitosisVaultEntrypoint(uint256 chainId) external view returns (address) {
     return _ccRegistry.mitosisVaultEntrypoint(chainId);
+  }
+
+  function branchGovernanceExecutorEntrypoint(uint256 chainId) external view returns (address) {
+    return _ccRegistry.governanceExecutorEntrypoint(chainId);
   }
 
   //=========== NOTE: ROUTER OVERRIDES ============//

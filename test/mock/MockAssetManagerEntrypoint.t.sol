@@ -42,6 +42,10 @@ contract MockAssetManagerEntrypoint is Context, IAssetManagerEntrypoint {
     return address(0);
   }
 
+  function branchGovernanceExecutorEntrypoint(uint256) external pure returns (address) {
+    return address(0);
+  }
+
   // ============================= NOTE: DISPATCHER ============================= //
 
   function initializeAsset(uint256 chainId, address branchAsset) external onlyAssetManager { }

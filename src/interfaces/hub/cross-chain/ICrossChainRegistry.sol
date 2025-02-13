@@ -10,10 +10,17 @@ interface ICrossChainRegistry {
    * @notice Emitted when a new chain is registered or updated.
    * @param chainId The ID of the chain being set.
    * @param hplDomain The Hyperlane domain associated with the chain.
-   * @param entrypoint The address of the entrypoint contract for the chain.
+   * @param mitosisVaultEntrypoint The address of the MitosisVaultEntrypoint contract for the chain.
+   * @param governanceExecutorEntrypoint The address of the GovernanceExecutorEntrypoint contract for the chain.
    * @param name The name of the chain.
    */
-  event ChainSet(uint256 indexed chainId, uint32 indexed hplDomain, address indexed entrypoint, string name);
+  event ChainSet(
+    uint256 indexed chainId,
+    uint32 indexed hplDomain,
+    address mitosisVaultEntrypoint,
+    address governanceExecutorEntrypoint,
+    string name
+  );
 
   /**
    * @notice Emitted when a vault is set for a chain.
@@ -35,7 +42,8 @@ interface ICrossChainRegistry {
   /**
    * @notice Error thrown when attempting to perform an operation on a chain that is not enrolled.
    */
-  error ICrossChainRegistry__NotEnrolled();
+  error ICrossChainRegistry__MitosisVaultEntrypointNotEnrolled();
+  error ICrossChainRegistry__GovernanceExecutorEntrypointNotEnrolled();
 
   /**
    * @notice Error thrown when attempting to enroll an already enrolled chain.
@@ -77,11 +85,25 @@ interface ICrossChainRegistry {
   function mitosisVaultEntrypoint(uint256 chainId) external view returns (address);
 
   /**
+   * @notice Returns the entrypoint address for a specified chain.
+   * @param chainId The ID of the chain.
+   * @return The address of the GovernanceExecutorEntrypoint.
+   */
+  function governanceExecutorEntrypoint(uint256 chainId) external view returns (address);
+
+  /**
    * @notice Checks if the entrypoint for a specified chain is enrolled.
    * @param chainId The ID of the chain.
-   * @return A boolean indicating whether the entrypoint is enrolled.
+   * @return A boolean indicating whether the MitosisVaultEntrypoint is enrolled.
    */
-  function entrypointEnrolled(uint256 chainId) external view returns (bool);
+  function mitosisVaultEntrypointEnrolled(uint256 chainId) external view returns (bool);
+
+  /**
+   * @notice Checks if the entrypoint for a specified chain is enrolled.
+   * @param chainId The ID of the chain.
+   * @return A boolean indicating whether the GovernanceExecutorEntrypoint is enrolled.
+   */
+  function governanceExecutorEntrypointEnrolled(uint256 chainId) external view returns (bool);
 
   /**
    * @notice Returns the chain ID associated with a specified Hyperlane domain.
@@ -102,9 +124,16 @@ interface ICrossChainRegistry {
    * @param chainId_ The ID of the chain.
    * @param name The name of the chain.
    * @param hplDomain The Hyperlane domain associated with the chain.
-   * @param entrypoint_ The address of the entrypoint contract for the chain.
+   * @param mitosisVaultEntrypoint_ The address of the MitosisVaultEntrypoint for the chain.
+   * @param governanceExecutorEntrypoint_ The address of the GovernanceExecutorEntrypoint for the chain.
    */
-  function setChain(uint256 chainId_, string calldata name, uint32 hplDomain, address entrypoint_) external;
+  function setChain(
+    uint256 chainId_,
+    string calldata name,
+    uint32 hplDomain,
+    address mitosisVaultEntrypoint_,
+    address governanceExecutorEntrypoint_
+  ) external;
 
   /**
    * @notice Sets the vault for a specified chain.
@@ -114,15 +143,15 @@ interface ICrossChainRegistry {
   function setVault(uint256 chainId_, address vault_) external;
 
   /**
-   * @notice Enrolls the entrypoint for all registered chains.
+   * @notice Enrolls the MitosisVaultEntrypoint for all registered chains.
    * @param hplRouter The address of the Hyperlane router.
    */
-  function enrollEntrypoint(address hplRouter) external;
+  function enrollMitosisVaultEntrypoint(address hplRouter) external;
 
   /**
-   * @notice Enrolls the entrypoint for a specified chain.
+   * @notice Enrolls the GovernanceExecutorEntrypoint for a specified chain.
    * @param hplRouter The address of the Hyperlane router.
    * @param chainId_ The ID of the chain.
    */
-  function enrollEntrypoint(address hplRouter, uint256 chainId_) external;
+  function enrollGovernanceExecutorEntrypoint(address hplRouter, uint256 chainId_) external;
 }

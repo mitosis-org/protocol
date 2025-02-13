@@ -36,6 +36,13 @@ interface IAssetManagerEntrypoint {
   function branchMitosisVaultEntrypoint(uint256 chainId) external view returns (address);
 
   /**
+   * @notice Retrieves the address of the branch entrypoint for a given chain
+   * @param chainId The ID of the chain to query
+   * @return The address of the branch GovernanceExecutorEntrypoint on the specified chain
+   */
+  function branchGovernanceExecutorEntrypoint(uint256 chainId) external view returns (address);
+
+  /**
    * @notice Initializes an asset on a specified branch chain
    * @param chainId The ID of the branch chain
    * @param branchAsset The address of the asset on the branch chain
