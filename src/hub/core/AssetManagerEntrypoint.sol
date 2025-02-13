@@ -35,10 +35,6 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, G
       _ccRegistry.mitosisVaultEntrypointEnrolled(chainId),
       ICrossChainRegistry.ICrossChainRegistry__MitosisVaultEntrypointNotEnrolled()
     );
-    require(
-      _ccRegistry.governanceExecutorEntrypointEnrolled(chainId),
-      ICrossChainRegistry.ICrossChainRegistry__GovernanceExecutorEntrypointNotEnrolled()
-    );
     _;
   }
 
