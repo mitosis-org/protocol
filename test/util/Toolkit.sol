@@ -5,6 +5,8 @@ import { Test } from '@std/Test.sol';
 
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 
+import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
+
 import { ERC1967Utils } from '@oz-v5/proxy/ERC1967/ERC1967Utils.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
@@ -13,6 +15,15 @@ import { StdError } from '../../src/lib/StdError.sol';
 
 contract Toolkit is Test {
   using SafeCast for uint256;
+
+  address internal _defaultProxyAdmin = makeAddr('defaultProxyAdmin');
+  ERC1967Factory internal _factory;
+
+  constructor() {
+    _factory = new ERC1967Factory();
+  }
+
+  // erc1967
 
   function _erc1967Impl(address target) internal view returns (address) {
     return address(uint160(uint256(vm.load(target, ERC1967Utils.IMPLEMENTATION_SLOT))));
@@ -26,13 +37,21 @@ contract Toolkit is Test {
     return address(uint160(uint256(vm.load(target, ERC1967Utils.BEACON_SLOT))));
   }
 
+  // proxy
+
   function _proxy(address impl) internal returns (address) {
-    return _factory.deploy(impl, _admin);
+    return _factory.deploy(impl, _defaultProxyAdmin);
   }
 
   function _proxy(address impl, bytes memory data) internal returns (address) {
-    return _factory.deployAndCall(impl, _admin, data);
+    return _factory.deployAndCall(impl, _defaultProxyAdmin, data);
   }
+
+  function _proxy(address impl, bytes memory data, address admin) internal returns (address) {
+    return _factory.deployAndCall(impl, admin, data);
+  }
+
+  // time
 
   function _now() internal view returns (uint256) {
     return block.timestamp;
