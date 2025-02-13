@@ -78,6 +78,9 @@ contract ReclaimQueueTest is Toolkit {
     vm.warp(block.timestamp + _reclaimQueue.redeemPeriod(address(_matrixVault)));
 
     _reclaimReserve(100 ether);
+
+    vm.expectEmit();
+    emit IReclaimQueue.ReclaimRequestClaimed(_user, address(_matrixVault), 100 ether - 1, 0);
     _reclaimClaim(_user);
 
     vm.expectRevert(_errNothingToClaim());
@@ -94,6 +97,9 @@ contract ReclaimQueueTest is Toolkit {
 
     _burn(address(_matrixVault), 100 ether); // report loss
     _reclaimReserve(90 ether);
+
+    vm.expectEmit();
+    emit IReclaimQueue.ReclaimRequestClaimed(_user, address(_matrixVault), 90 ether, -(10 ether - 1));
     _reclaimClaim(_user);
 
     vm.expectRevert(_errNothingToClaim());
@@ -110,6 +116,12 @@ contract ReclaimQueueTest is Toolkit {
 
     _mint(address(_matrixVault), 100 ether); // report yield
     _reclaimReserve(110 ether - 1);
+
+    vm.expectEmit();
+    emit IReclaimQueue.ReclaimYieldReported(_user, address(_matrixVault), 10 ether + 1);
+
+    vm.expectEmit();
+    emit IReclaimQueue.ReclaimRequestClaimed(_user, address(_matrixVault), 100 ether - 1, 10 ether + 1);
     _reclaimClaim(_user);
 
     vm.expectRevert(_errNothingToClaim());
