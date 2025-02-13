@@ -67,10 +67,6 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, G
     return _ccRegistry.mitosisVaultEntrypoint(chainId);
   }
 
-  function branchGovernanceExecutorEntrypoint(uint256 chainId) external view returns (address) {
-    return _ccRegistry.governanceExecutorEntrypoint(chainId);
-  }
-
   //=========== NOTE: ROUTER OVERRIDES ============//
 
   function enrollRemoteRouter(uint32 domain_, bytes32 router_) external override {
