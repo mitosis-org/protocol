@@ -100,8 +100,8 @@ contract ReclaimQueueTest is Test {
 
     _burn(address(_matrixVault), 100 ether); // report loss
     _reclaimReserve(90 ether);
+    _reclaimClaim(_user);
 
-    // FIXME: declare share burn amount?
     vm.expectRevert(_errNothingToClaim());
     _reclaimClaim(_user);
   }
@@ -115,7 +115,7 @@ contract ReclaimQueueTest is Test {
     vm.warp(block.timestamp + _reclaimQueue.redeemPeriod(address(_matrixVault)));
 
     _mint(address(_matrixVault), 100 ether); // report yield
-    _reclaimReserve(100 ether);
+    _reclaimReserve(110 ether - 1);
     _reclaimClaim(_user);
 
     vm.expectRevert(_errNothingToClaim());
@@ -173,6 +173,6 @@ contract ReclaimQueueTest is Test {
   }
 
   function _reclaimReserve(uint256 amount) internal withAccount(address(_assetManager)) {
-    _reclaimQueue.sync(address(_matrixVault), amount);
+    _reclaimQueue.sync(msg.sender, address(_matrixVault), amount);
   }
 }

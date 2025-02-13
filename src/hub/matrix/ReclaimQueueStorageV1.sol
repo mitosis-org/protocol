@@ -86,14 +86,7 @@ abstract contract ReclaimQueueStorageV1 is IReclaimQueueStorageV1, ContextUpgrad
 
       resp[i] = GetRequestResponse({
         id: reqIds[i],
-        requestedShares: reqIds[i] > 0
-          ? req.accumulatedShares - queue.get(reqIds[i] - 1).accumulatedShares
-          : req.accumulatedShares,
-        requestedAssets: reqIds[i] > 0
-          ? req.accumulatedAssets - queue.get(reqIds[i] - 1).accumulatedAssets
-          : req.accumulatedAssets,
-        accumulatedShares: req.accumulatedShares,
-        accumulatedAssets: req.accumulatedAssets,
+        shares: reqIds[i] > 0 ? req.accumulated - queue.get(reqIds[i] - 1).accumulated : req.accumulated,
         recipient: req.recipient,
         createdAt: req.createdAt,
         claimedAt: req.claimedAt
@@ -119,14 +112,7 @@ abstract contract ReclaimQueueStorageV1 is IReclaimQueueStorageV1, ContextUpgrad
       resp[i] = GetRequestByIndexResponse({
         id: idxItemIds[i],
         indexId: indexId,
-        requestedShares: indexId > 0
-          ? req.accumulatedShares - queue.get(indexId - 1).accumulatedShares
-          : req.accumulatedShares,
-        requestedAssets: indexId > 0
-          ? req.accumulatedAssets - queue.get(indexId - 1).accumulatedAssets
-          : req.accumulatedAssets,
-        accumulatedShares: req.accumulatedShares,
-        accumulatedAssets: req.accumulatedAssets,
+        shares: indexId > 0 ? req.accumulated - queue.get(indexId - 1).accumulated : req.accumulated,
         recipient: req.recipient,
         createdAt: req.createdAt,
         claimedAt: req.claimedAt
@@ -143,58 +129,25 @@ abstract contract ReclaimQueueStorageV1 is IReclaimQueueStorageV1, ContextUpgrad
     return _queue(_getStorageV1(), matrixVault).resolvedAt(reqId, block.timestamp);
   }
 
-  function requestShares(address matrixVault, uint256 reqId) external view returns (uint256) {
-    return _queue(_getStorageV1(), matrixVault).shares(reqId);
-  }
-
-  function requestAssets(address matrixVault, uint256 reqId) external view returns (uint256) {
-    return _queue(_getStorageV1(), matrixVault).assets(reqId);
-  }
-
-  function queueSize(address matrixVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), matrixVault).size;
-  }
-
-  function queueIndexSize(address matrixVault, address recipient) external view returns (uint256) {
-    return _queue(_getStorageV1(), matrixVault).index(recipient).size;
-  }
-
-  function queueOffset(address matrixVault, bool simulate) external view returns (uint256) {
-    LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), matrixVault);
-    uint256 offset;
-    if (simulate) (offset,) = queue.searchQueueOffset(queue.totalReservedAssets, block.timestamp);
-    else offset = queue.offset;
-    return offset;
-  }
-
-  function queueIndexOffset(address matrixVault, address recipient, bool simulate) external view returns (uint256) {
-    LibRedeemQueue.Queue storage queue = _queue(_getStorageV1(), matrixVault);
-    uint256 offset;
-    if (simulate) (offset,) = queue.searchIndexOffset(recipient, queue.totalReservedAssets, block.timestamp);
-    else offset = queue.index(recipient).offset;
-    return offset;
-  }
-
   function totalReserved(address matrixVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), matrixVault).totalReservedAssets;
-  }
-
-  function totalClaimed(address matrixVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), matrixVault).totalClaimedAssets;
+    return _queue(_getStorageV1(), matrixVault).totalReservedAmount();
   }
 
   function totalPending(address matrixVault) external view returns (uint256) {
-    return _queue(_getStorageV1(), matrixVault).pending();
+    return _queue(_getStorageV1(), matrixVault).totalPendingAmount();
   }
 
   function reserveHistory(address matrixVault, uint256 index) external view returns (GetReserveHistoryResponse memory) {
-    LibRedeemQueue.ReserveLog memory log = _queue(_getStorageV1(), matrixVault).reserveHistory[index];
+    LibRedeemQueue.Queue storage q = _queue(_getStorageV1(), matrixVault);
+    LibRedeemQueue.ReserveLog memory log = q.reserveHistory[index];
+
+    (uint256 totalShares, uint256 totalAssets) = _decodeReserveMetadata(log.metadata);
+
     return GetReserveHistoryResponse({
-      accumulatedShares: log.accumulatedShares,
-      accumulatedAssets: log.accumulatedAssets,
+      reserved: index == 0 ? log.accumulated : log.accumulated - q.reserveHistory[index - 1].accumulated,
       reservedAt: log.reservedAt,
-      totalShares: log.totalShares,
-      totalAssets: log.totalAssets
+      totalShares: totalShares,
+      totalAssets: totalAssets
     });
   }
 
@@ -238,6 +191,28 @@ abstract contract ReclaimQueueStorageV1 is IReclaimQueueStorageV1, ContextUpgrad
 
   function _queue(StorageV1 storage $, address matrixVault) private view returns (LibRedeemQueue.Queue storage) {
     return $.states[matrixVault].queue;
+  }
+
+  // ============================ NOTE: METADATA ============================ //
+
+  function _encodeRequestMetadata(uint256 assets) internal pure returns (bytes memory) {
+    return abi.encode(assets);
+  }
+
+  function _decodeRequestMetadata(bytes memory metadata) internal pure returns (uint256 assets) {
+    return abi.decode(metadata, (uint256));
+  }
+
+  function _encodeReserveMetadata(uint256 totalShares, uint256 totalAssets) internal pure returns (bytes memory) {
+    return abi.encode(totalShares, totalAssets);
+  }
+
+  function _decodeReserveMetadata(bytes memory metadata)
+    internal
+    pure
+    returns (uint256 totalShares, uint256 totalAssets)
+  {
+    return abi.decode(metadata, (uint256, uint256));
   }
 
   // ============================ NOTE: VIRTUAL FUNCTIONS ============================== //
