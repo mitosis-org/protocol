@@ -12,6 +12,10 @@ contract MatrixVaultStorageV1 is IMatrixVaultStorageV1, ContextUpgradeable {
   using ERC7201Utils for string;
 
   struct StorageV1 {
+    address asset;
+    string name;
+    string symbol;
+    uint8 decimals;
     IAssetManager assetManager;
   }
 
