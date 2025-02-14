@@ -1,4 +1,10 @@
 [[dependencies]]
+name = "@elliptic-curve-solidity"
+version = "0.2.5"
+git = "git@github.com:witnet/elliptic-curve-solidity"
+rev = "347547890840fd501809dfe0b855206407136ec0"
+
+[[dependencies]]
 name = "@murky"
 version = "0.0.1"
 url = "https://github.com/mitosis-org/murky/archive/refs/tags/v0.0.1.zip"
