@@ -2,6 +2,10 @@
 pragma solidity ^0.8.28;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+
+import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
 
 import { IGovernanceExecutorEntrypoint } from '../interfaces/branch/IGovernanceExecutorEntrypoint.sol';
 import { Conv } from '../lib/Conv.sol';
@@ -9,8 +13,7 @@ import { StdError } from '../lib/StdError.sol';
 import '../message/Message.sol';
 import { GovernanceExecutor } from './GovernanceExecutor.sol';
 
-// Removal after discussion: Since there will be no Branch -> Hub cases, it does not inherit from Router.
-contract GovernanceExecutorEntrypoint is IGovernanceExecutorEntrypoint, Ownable2StepUpgradeable {
+contract GovernanceExecutorEntrypoint is IGovernanceExecutorEntrypoint, GasRouter, Ownable2StepUpgradeable {
   using Message for *;
   using Conv for *;
 
@@ -18,15 +21,21 @@ contract GovernanceExecutorEntrypoint is IGovernanceExecutorEntrypoint, Ownable2
   uint32 internal immutable _mitosisDomain;
   bytes32 internal immutable _mitosisAddr; // Hub.BranchGovernanceManagerEntrypoint
 
-  constructor(address governanceExecutor_, uint32 mitosisDomain_, bytes32 mitosisAddr_) initializer {
+  constructor(address mailbox, address governanceExecutor_, uint32 mitosisDomain_, bytes32 mitosisAddr_)
+    GasRouter(mailbox)
+    initializer
+  {
     _governanceExecutor = GovernanceExecutor(governanceExecutor_);
     _mitosisDomain = mitosisDomain_;
     _mitosisAddr = mitosisAddr_;
   }
 
-  function initialize(address owner_) public initializer {
+  function initialize(address owner_, address hook, address ism) public initializer {
+    _MailboxClient_initialize(hook, ism, owner_);
     __Ownable2Step_init();
     _transferOwnership(owner_);
+
+    _enrollRemoteRouter(_mitosisDomain, _mitosisAddr);
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//
@@ -38,17 +47,28 @@ contract GovernanceExecutorEntrypoint is IGovernanceExecutorEntrypoint, Ownable2
 
     if (msgType == MsgType.MsgDispatchMITOGovernanceExecution) {
       MsgDispatchMITOGovernanceExecution memory decoded = msg_.decodeDispatchMITOGovernanceExecution();
-      _governanceExecutor.execute(_convertBytes32ArrayToAddressArray(decoded.targets), decoded.data, decoded.value);
+      _governanceExecutor.execute(_convertBytes32ArrayToAddressArray(decoded.targets), decoded.data, decoded.values);
     }
   }
 
-  function _convertBytes32ArrayToAddressArray(bytes32[] calldata targets)
+  function _convertBytes32ArrayToAddressArray(bytes32[] memory targets)
     internal
-    returns (address[] calldata addressed)
+    pure
+    returns (address[] memory addressed)
   {
     addressed = new address[](targets.length);
     for (uint256 i = 0; i < targets.length; i++) {
       addressed[i] = targets[i].toAddress();
     }
+  }
+
+  //=========== NOTE: OwnableUpgradeable & Ownable2StepUpgradeable
+
+  function transferOwnership(address owner) public override(Ownable2StepUpgradeable, OwnableUpgradeable) {
+    Ownable2StepUpgradeable.transferOwnership(owner);
+  }
+
+  function _transferOwnership(address owner) internal override(Ownable2StepUpgradeable, OwnableUpgradeable) {
+    Ownable2StepUpgradeable._transferOwnership(owner);
   }
 }

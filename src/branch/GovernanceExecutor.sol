@@ -20,8 +20,8 @@ contract GovernanceExecutor is IGovernanceExecutor, GovernanceExecutorStorageV1,
     _assertOnlyGovernanceExecutorEntrypoint(_getStorageV1());
 
     bytes[] memory result = new bytes[](targets.length);
-    for (uint256 i = 0; i < targets; i++) {
-      bytes memory result = targets[i].functionCallWithValue(data[i], value[i]);
+    for (uint256 i = 0; i < targets.length; i++) {
+      result[i] = targets[i].functionCallWithValue(data[i], values[i]);
     }
 
     emit ExecutionDispatched(targets, data, values, result);
@@ -39,7 +39,7 @@ contract GovernanceExecutor is IGovernanceExecutor, GovernanceExecutorStorageV1,
     _unpause();
   }
 
-  function _assertOnlyGovernanceExecutorEntrypoint(StorageV1 storage $) internal {
+  function _assertOnlyGovernanceExecutorEntrypoint(StorageV1 storage $) internal view {
     require(_msgSender() == address($.entrypoint), StdError.Unauthorized());
   }
 }

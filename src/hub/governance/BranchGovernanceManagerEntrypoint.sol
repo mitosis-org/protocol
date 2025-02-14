@@ -5,12 +5,15 @@ import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
 import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 
 import { Address } from '@oz-v5/utils/Address.sol';
 
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 import { IBranchGovernanceManagerEntrypoint } from
   '../../interfaces/hub/governance/IBranchGovernanceManagerEntrypoint.sol';
+import { Conv } from '../../lib/Conv.sol';
+import { StdError } from '../../lib/StdError.sol';
 import '../../message/Message.sol';
 import { BranchGovernanceManager } from './BranchGovernanceManager.sol';
 
@@ -69,11 +72,16 @@ contract BranchGovernanceManagerEntrypoint is IBranchGovernanceManagerEntrypoint
     _GasRouter_dispatch(hplDomain, fee, enc, address(hook));
   }
 
-  // tmp
-  function _convertAddressArrayToBytes32Array(address[] calldata arr) internal returns (bytes32[] memory addressed) {
-    addressed = new bytes32[](addresses.length);
-    for (uint256 i = 0; i < addresses.length; i++) {
-      addressed = arr[i].toBytes32();
+  function _handle(uint32, bytes32, bytes calldata) internal override { }
+
+  function _convertAddressArrayToBytes32Array(address[] calldata arr)
+    internal
+    pure
+    returns (bytes32[] memory addressed)
+  {
+    addressed = new bytes32[](arr.length);
+    for (uint256 i = 0; i < arr.length; i++) {
+      addressed[i] = arr[i].toBytes32();
     }
   }
 

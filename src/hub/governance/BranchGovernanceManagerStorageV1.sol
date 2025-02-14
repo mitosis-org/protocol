@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IBranchGovernanceManagerEntrypoint } from
   '../../interfaces/hub/governance/IBranchGovernanceManagerEntrypoint.sol';
-import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { BranchGovernanceManagerEntrypoint } from './BranchGovernanceManagerEntrypoint.sol';
 
 contract BranchGovernanceManagerStorageV1 {
@@ -11,6 +11,8 @@ contract BranchGovernanceManagerStorageV1 {
 
   struct StorageV1 {
     IBranchGovernanceManagerEntrypoint entrypoint;
+    mapping(address account => bool isManager) managers;
+    bool managerPhaseOver;
     address mitoGovernance;
   }
 
