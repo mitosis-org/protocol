@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-interface IBranchGovernanceManagerEntrypoint {
+import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
+
+interface IBranchGovernanceManagerEntrypoint is IMessageRecipient {
   function dispatchGovernanceExecution(
     uint256 chainId,
     address[] calldata targets,

@@ -33,9 +33,11 @@ contract BranchGovernanceManager is
     uint256 chainId,
     address[] calldata targets,
     bytes[] calldata data,
-    uint256[] calldata valuess
+    uint256[] calldata values
   ) external {
     StorageV1 storage $ = _getStorageV1();
+
+    // TODO: multi-sig execution (trainning wheel)
     _assertOnlyMITOGovernance($);
     $.entrypoint.dispatchGovernanceExecution(chainId, targets, data, values);
   }

@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
-
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
+import { IGovernanceExecutorEntrypoint } from '../interfaces/branch/IGovernanceExecutorEntrypoint.sol';
 import { Conv } from '../lib/Conv.sol';
 import { StdError } from '../lib/StdError.sol';
 import '../message/Message.sol';
 import { GovernanceExecutor } from './GovernanceExecutor.sol';
 
 // Removal after discussion: Since there will be no Branch -> Hub cases, it does not inherit from Router.
-contract GovernanceExecutorEntrypoint is IMessageRecipient, Ownable2StepUpgradeable {
+contract GovernanceExecutorEntrypoint is IGovernanceExecutorEntrypoint, Ownable2StepUpgradeable {
   using Message for *;
   using Conv for *;
 

@@ -9,10 +9,12 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { Address } from '@oz-v5/utils/Address.sol';
 
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
+import { IBranchGovernanceManagerEntrypoint } from
+  '../../interfaces/hub/governance/IBranchGovernanceManagerEntrypoint.sol';
 import '../../message/Message.sol';
 import { BranchGovernanceManager } from './BranchGovernanceManager.sol';
 
-contract BranchGovernanceManagerEntrypoint is IMessageRecipient, GasRouter, Ownable2StepUpgradeable {
+contract BranchGovernanceManagerEntrypoint is IBranchGovernanceManagerEntrypoint, GasRouter, Ownable2StepUpgradeable {
   using Message for *;
   using Conv for *;
 
