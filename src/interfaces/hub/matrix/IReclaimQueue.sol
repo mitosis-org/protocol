@@ -209,21 +209,6 @@ interface IReclaimQueue is IReclaimQueueStorageV1 {
   }
 
   /**
-   * @notice Types of value effect on an reclaim request before and after claiming
-   */
-  enum ImpactType {
-    None,
-    /// loss settled during the reclaim process.
-    /// receiver will get the assets with the loss.
-    /// other assets will be sent to the vault.
-    Loss,
-    /// yield generated during the reclaim process
-    /// but we decided to send it to the vault. not to the receiver.
-    /// receiver will get the assets that determined at the time of request.
-    Yield
-  }
-
-  /**
    * @notice Emitted when a new reclaim request is added to the queue
    * @param receiver Address that will receive the assets
    * @param matrixVault Address of the MatrixVault
@@ -233,24 +218,12 @@ interface IReclaimQueue is IReclaimQueueStorageV1 {
   event ReclaimRequested(address indexed receiver, address indexed matrixVault, uint256 shares, uint256 assets);
 
   /**
-   * @notice Emitted when a yield is generated during the reclaim process
-   * @param receiver Address receiving the claim
-   * @param matrixVault Address of the MatrixVault
-   * @param yield Amount of yield generated
-   */
-  event ReclaimYieldReported(address indexed receiver, address indexed matrixVault, uint256 yield);
-
-  /**
    * @notice Emitted when an reclaim request is successfully claimed
    * @param receiver Address receiving the claim
    * @param matrixVault Address of the MatrixVault
    * @param claimed Amount of assets claimed
-   * @param impact Difference between requested and claimed amounts
-   * @param impactType Type of financial impact (None, Loss, or Yield)
    */
-  event ReclaimRequestClaimed(
-    address indexed receiver, address indexed matrixVault, uint256 claimed, uint256 impact, ImpactType impactType
-  );
+  event ReclaimRequestClaimed(address indexed receiver, address indexed matrixVault, uint256 claimed);
 
   /**
    * @notice Error thrown when trying to interact with a disabled queue

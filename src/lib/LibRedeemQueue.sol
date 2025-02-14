@@ -265,7 +265,10 @@ library LibRedeemQueue {
     return totalClaimed_;
   }
 
-  function reserve(Queue storage q, address executor, uint256 amount, uint48 timestamp, bytes memory metadata) internal {
+  function reserve(Queue storage q, address executor, uint256 amount, uint48 timestamp, bytes memory metadata)
+    internal
+    returns (uint256)
+  {
     require(amount != 0, LibRedeemQueue__InvalidReserveAmount());
     uint256 historyIndex = q.reserveHistory.length;
 
@@ -282,8 +285,10 @@ library LibRedeemQueue {
     _updateQueueOffset(q, log.accumulated, timestamp);
 
     emit Reserved(executor, amount, historyIndex);
-  }
 
+    return historyIndex;
+  }
+  
   function update(Queue storage q, uint48 timestamp) internal returns (uint256 offset, bool updated) {
     return _updateQueueOffset(q, totalRequestAmount(q), timestamp);
   }
