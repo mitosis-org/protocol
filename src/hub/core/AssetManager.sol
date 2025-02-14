@@ -137,7 +137,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
     uint256 idle = _matrixIdle($, matrixVault);
     require(amount <= idle, IAssetManager__MatrixInsufficient(matrixVault));
 
-    $.reclaimQueue.sync(matrixVault, amount);
+    $.reclaimQueue.sync(_msgSender(), matrixVault, amount);
   }
 
   /// @dev only entrypoint
