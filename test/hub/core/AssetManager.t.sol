@@ -490,21 +490,13 @@ contract AssetManagerTest is Toolkit {
     _assetManager.deallocateMatrix(branchChainId1, address(_matrixVault), 100 ether);
   }
 
-  function test_reserveMatrix() public {
+  function test_reserveMatrix_MatrixInsufficient() public {
     test_deallocateMatrix();
     assertEq(_assetManager.matrixIdle(address(_matrixVault)), 100 ether);
 
-    vm.prank(owner);
-    _reclaimQueue.enable(address(_matrixVault));
-
-    vm.prank(user1); // Resolve
-    _matrixVault.transfer(address(_reclaimQueue), 10 ether);
-
+    vm.expectRevert(_errMatrixInsufficient(address(_matrixVault)));
     vm.prank(strategist);
-    _assetManager.reserveMatrix(address(_matrixVault), 10 ether);
-
-    assertEq(_matrixVault.balanceOf(address(_reclaimQueue)), 0);
-    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 90 ether);
+    _assetManager.reserveMatrix(address(_matrixVault), 101 ether);
   }
 
   function test_reserveMatrix_Unauthorized() public {
