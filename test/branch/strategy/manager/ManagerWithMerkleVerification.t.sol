@@ -80,7 +80,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     vm.startPrank(owner);
     // note(ray): See the `test_generate_merkle_root` in this file.
     _managerWithMerkleVerification.setManageRoot(
-      strategist, 0x20a074e3733ead014e9338d3cfeaa97fd90530934619a273a6dbcb6eac7cae5f
+      strategist, 0xc07180f6901e597e364bf4c873f952084261ba4d1c2fb40de8ffe98a3cc02030
     );
     vm.stopPrank();
   }
@@ -229,24 +229,24 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     assertEq(_managerWithMerkleVerification.manageRoot(strategist2), root);
   }
 
-  // merkle root: 0x1fd6bfc64a6ddaa9a753726c2b52e35ccfe497dfc72acf2615a3c8362fe1b6c9
+  // merkle root: 0xc07180f6901e597e364bf4c873f952084261ba4d1c2fb40de8ffe98a3cc02030
   // leafs:
   //    [0]: deposit(makeAddr('user1'), uint256)
   //          proofs: [
-  //            0xa23e194a1cf74afb8fe2f73c879355502cd65f582b83a0f676e29c64653aeace,
-  //            0x687c09d0be127ad293ecca1322a0a6e9bfc6808aaf924c3bd3ee003c6ab190d6,
+  //            0x24c791245d8d6777f368aadfb6969609d54392fbf8fe45b8e64fcebe2b0d414e,
+  //            0x637690d4869c8b6848a7f10270415fe9a6d2a8f89f21a5ba312dd21a38a06809,
   //            0x849eda7a295b642e5ddaf49a30eec4470cf507efa83b4104c0752d069c7638fe,
   //          ]
   //    [1]: deposit(makeAddr('user2'), uint256)
   //          proofs: [
-  //            0xd3c864e25934c445c7459b8f5701ff170103ec6d43c2b553ce23ad41732313f7,
-  //            0x687c09d0be127ad293ecca1322a0a6e9bfc6808aaf924c3bd3ee003c6ab190d6,
+  //            0x0eac06991ea4eb7dd3f4f39206abfb963e49da453f2fad6bda13a1e5125fb4c5,
+  //            0x637690d4869c8b6848a7f10270415fe9a6d2a8f89f21a5ba312dd21a38a06809,
   //            0x849eda7a295b642e5ddaf49a30eec4470cf507efa83b4104c0752d069c7638fe,
   //          ]
   //    [2]: deposit(makeAddr('user3'), uint256)
   //          proofs: [
   //            0xa7a0fd846665d92e66be6155c6221b3acd7145ca7c4e4b67a594e4c516969400,
-  //            0x2eeea706711f701b4da75db0a16fd10cc74d494e20c259dcaf569503f1593007,
+  //            0x4b1dbd833716a3713994954341418997f137e6d6e71a543ba669e35127038ffc,
   //            0x849eda7a295b642e5ddaf49a30eec4470cf507efa83b4104c0752d069c7638fe,
   //          ]
   //
@@ -320,8 +320,8 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
   {
     manageProofs = new bytes32[][](1);
     manageProofs[0] = new bytes32[](3);
-    manageProofs[0][0] = 0xa23e194a1cf74afb8fe2f73c879355502cd65f582b83a0f676e29c64653aeace;
-    manageProofs[0][1] = 0x687c09d0be127ad293ecca1322a0a6e9bfc6808aaf924c3bd3ee003c6ab190d6;
+    manageProofs[0][0] = 0x24c791245d8d6777f368aadfb6969609d54392fbf8fe45b8e64fcebe2b0d414e;
+    manageProofs[0][1] = 0x637690d4869c8b6848a7f10270415fe9a6d2a8f89f21a5ba312dd21a38a06809;
     manageProofs[0][2] = 0x849eda7a295b642e5ddaf49a30eec4470cf507efa83b4104c0752d069c7638fe;
 
     decodersAndSanitizers = new address[](1);
@@ -352,8 +352,8 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
   {
     manageProofs = new bytes32[][](1);
     manageProofs[0] = new bytes32[](3);
-    manageProofs[0][0] = 0xd3c864e25934c445c7459b8f5701ff170103ec6d43c2b553ce23ad41732313f7;
-    manageProofs[0][1] = 0x687c09d0be127ad293ecca1322a0a6e9bfc6808aaf924c3bd3ee003c6ab190d6;
+    manageProofs[0][0] = 0x0eac06991ea4eb7dd3f4f39206abfb963e49da453f2fad6bda13a1e5125fb4c5;
+    manageProofs[0][1] = 0x637690d4869c8b6848a7f10270415fe9a6d2a8f89f21a5ba312dd21a38a06809;
     manageProofs[0][2] = 0x849eda7a295b642e5ddaf49a30eec4470cf507efa83b4104c0752d069c7638fe;
 
     decodersAndSanitizers = new address[](1);
@@ -385,7 +385,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     manageProofs = new bytes32[][](1);
     manageProofs[0] = new bytes32[](3);
     manageProofs[0][0] = 0xa7a0fd846665d92e66be6155c6221b3acd7145ca7c4e4b67a594e4c516969400;
-    manageProofs[0][1] = 0x2eeea706711f701b4da75db0a16fd10cc74d494e20c259dcaf569503f1593007;
+    manageProofs[0][1] = 0x4b1dbd833716a3713994954341418997f137e6d6e71a543ba669e35127038ffc;
     manageProofs[0][2] = 0x849eda7a295b642e5ddaf49a30eec4470cf507efa83b4104c0752d069c7638fe;
 
     decodersAndSanitizers = new address[](1);
