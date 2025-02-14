@@ -11,8 +11,7 @@ contract BranchGovernanceManagerStorageV1 {
 
   struct StorageV1 {
     IBranchGovernanceManagerEntrypoint entrypoint;
-    mapping(address account => bool isManager) managers;
-    bool managerPhaseOver;
+    mapping(address account => bool isExecutor) executors;
     address mitoGovernance;
   }
 

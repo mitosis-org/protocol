@@ -29,8 +29,8 @@ contract BranchGovernanceManager is
     _getStorageV1().entrypoint = IBranchGovernanceManagerEntrypoint(branchGovernanceManagerEntrypoint_);
   }
 
-  function isManager(address manager) public view returns (bool) {
-    return _getStorageV1().managers[manager];
+  function isExecutor(address executor) public view returns (bool) {
+    return _getStorageV1().executors[executor];
   }
 
   function dispatchExecution(
@@ -40,33 +40,17 @@ contract BranchGovernanceManager is
     uint256[] calldata values
   ) external {
     StorageV1 storage $ = _getStorageV1();
-    _assertExecutable($);
+    _assertOnlyExecutor($);
     $.entrypoint.dispatchGovernanceExecution(chainId, targets, data, values);
   }
 
-  function setMITOGovernance(address mitoGovernance_) external {
+  function setExecutor(address executor) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    _assertExecutable($);
-
-    address prev = $.mitoGovernance;
-    $.mitoGovernance = mitoGovernance_;
-    emit MITOGovernanceSet(prev, mitoGovernance_);
-  }
-
-  function setManager(address manager) external onlyOwner {
-    StorageV1 storage $ = _getStorageV1();
-    if ($.managers[manager]) {
+    if ($.executors[executor]) {
       return;
     }
-    _getStorageV1().managers[manager] = true;
-    emit ManagerSet(manager);
-  }
-
-  function finalizeManagerPhase() external {
-    StorageV1 storage $ = _getStorageV1();
-    _assertExecutable($);
-    $.managerPhaseOver = true;
-    emit ManagerPhaseOver();
+    _getStorageV1().executors[executor] = true;
+    emit ExecutorSet(executor);
   }
 
   function pause() external onlyOwner {
@@ -77,15 +61,7 @@ contract BranchGovernanceManager is
     _unpause();
   }
 
-  function _assertExecutable(StorageV1 storage $) internal view {
-    address msgSender = _msgSender();
-    if (!$.managerPhaseOver) {
-      require($.managers[msgSender] || msgSender == $.mitoGovernance, StdError.Unauthorized());
-    }
-    require(msgSender == $.mitoGovernance, StdError.Unauthorized());
-  }
-
-  function _assertOnlyMITOGovernance(StorageV1 storage $) internal view {
-    require(_msgSender() == $.mitoGovernance, StdError.Unauthorized());
+  function _assertOnlyExecutor(StorageV1 storage $) internal view {
+    require($.executors[_msgSender()], StdError.Unauthorized());
   }
 }

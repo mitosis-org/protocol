@@ -2,14 +2,9 @@
 pragma solidity ^0.8.28;
 
 interface IBranchGovernanceManager {
-  event MITOGovernanceSet(address prevMITOGovernance, address mitoGovernance);
-  event ManagerSet(address manager);
-  event ManagerPhaseOver();
+  event ExecutorSet(address executor);
 
-  function isManager(address manager) external view returns (bool);
-
-  function setMITOGovernance(address mitoGovernance_) external;
-  function finalizeManagerPhase() external;
+  function isExecutor(address account) external view returns (bool);
 
   function dispatchExecution(
     uint256 chainId,
