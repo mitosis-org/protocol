@@ -106,8 +106,8 @@ contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
     _burn(_msgSender(), amount);
-    reqId = $.redeemQueue.enqueue(receiver, amount, amount, clock());
-    $.redeemQueue.reserve(amount, amount, totalSupply(), totalSupply(), clock());
+    reqId = $.redeemQueue.enqueue(receiver, amount, clock(), bytes(''));
+    $.redeemQueue.reserve(address(this), amount, clock(), bytes(''));
 
     emit RedeemRequested(_msgSender(), receiver, amount);
 
