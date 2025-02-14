@@ -19,11 +19,29 @@ import { IConsensusValidatorEntrypoint } from '../consensus-layer/IConsensusVali
 /// 4. Unjailing the validator
 /// 5. Leaving the validator set = making it inactive, not removing anything
 interface IValidatorManager {
+  struct RedelegationsResponse {
+    uint96 epoch;
+    address fromValAddr;
+    address toValAddr;
+    address staker;
+    uint256 amount;
+  }
+
+  function staked(address valAddr, address staker) external view returns (uint256);
+  function staked(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
+  function stakedTWAB(address valAddr, address staker) external view returns (uint256);
+  function stakedTWAB(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
+  function redelegations(address toValAddr, address staker) external view returns (RedelegationsResponse[] memory);
+
+  function totalDelegation(address valAddr) external view returns (uint256);
+  function totalPendingDelegation(address valAddr) external view returns (uint256);
+
   // ========== USER ACTIONS ========== //
 
   function stake(address valAddr, address recipient) external payable;
   function unstake(address valAddr, uint256 amount) external;
-  function redelegate(address fromValidator, address toValidator, uint256 amount) external;
+  function redelegate(address fromValAddr, address toValAddr, uint256 amount) external;
+  function cancelRedelegation(address fromValAddr, address toValAddr, uint256 amount) external;
 
   // ========== VALIDATOR ACTIONS ========== //
 
