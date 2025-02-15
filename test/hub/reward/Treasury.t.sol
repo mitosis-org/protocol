@@ -8,8 +8,8 @@ import { MockERC20Snapshots } from '../../mock/MockERC20Snapshots.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract TreasuryTest is Toolkit {
-  MockERC20Snapshots _token;
-  Treasury _treasury;
+  MockERC20Snapshots internal _token;
+  Treasury internal _treasury;
 
   address immutable owner = makeAddr('owner');
   address immutable rewarder = makeAddr('rewarder');

@@ -43,24 +43,21 @@ contract AssetManagerTest is Toolkit {
   address strategist = makeAddr('strategist');
 
   function setUp() public {
-    Treasury treasuryImpl = new Treasury();
     _treasury =
-      Treasury(payable(new ERC1967Proxy(address(treasuryImpl), abi.encodeCall(_treasury.initialize, (owner)))));
+      Treasury(payable(new ERC1967Proxy(address(new Treasury()), abi.encodeCall(Treasury.initialize, (owner)))));
 
-    AssetManager assetManagerImpl = new AssetManager();
     _assetManager = AssetManager(
       payable(
         new ERC1967Proxy(
-          address(assetManagerImpl), abi.encodeCall(_assetManager.initialize, (owner, address(_treasury)))
+          address(new AssetManager()), abi.encodeCall(AssetManager.initialize, (owner, address(_treasury)))
         )
       )
     );
 
-    ReclaimQueue reclaimQueueImpl = new ReclaimQueue();
     _reclaimQueue = ReclaimQueue(
       payable(
         new ERC1967Proxy(
-          address(reclaimQueueImpl), abi.encodeCall(_reclaimQueue.initialize, (owner, address(_assetManager)))
+          address(new ReclaimQueue()), abi.encodeCall(ReclaimQueue.initialize, (owner, address(_assetManager)))
         )
       )
     );
@@ -167,7 +164,7 @@ contract AssetManagerTest is Toolkit {
     MatrixVaultBasic incorrectMatrixVault = MatrixVaultBasic(
       _proxy(
         address(new MatrixVaultBasic()),
-        abi.encodeCall(_matrixVault.initialize, (address(_assetManager), IERC20Metadata(address(myToken)), '', ''))
+        abi.encodeCall(MatrixVaultBasic.initialize, (address(_assetManager), IERC20Metadata(address(myToken)), '', ''))
       )
     );
 

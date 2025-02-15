@@ -23,14 +23,14 @@ import { MockTestVaultTally } from '../../mock/MockTestVaultTally.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract MatrixStrategyExecutorTest is Toolkit {
-  MitosisVault _mitosisVault;
-  MatrixStrategyExecutor _matrixStrategyExecutor;
-  MockManagerWithMerkleVerification _managerWithMerkleVerification;
-  MockMitosisVaultEntrypoint _mitosisVaultEntrypoint;
-  MockERC20Snapshots _token;
-  MockTestVault _testVault;
-  MockTestVaultDecoderAndSanitizer _testVaultDecoderAndSanitizer;
-  MockTestVaultTally _testVaultTally;
+  MitosisVault internal _mitosisVault;
+  MatrixStrategyExecutor internal _matrixStrategyExecutor;
+  MockManagerWithMerkleVerification internal _managerWithMerkleVerification;
+  MockMitosisVaultEntrypoint internal _mitosisVaultEntrypoint;
+  MockERC20Snapshots internal _token;
+  MockTestVault internal _testVault;
+  MockTestVaultDecoderAndSanitizer internal _testVaultDecoderAndSanitizer;
+  MockTestVaultTally internal _testVaultTally;
 
   address immutable owner = makeAddr('owner');
   address immutable mitosis = makeAddr('mitosis');

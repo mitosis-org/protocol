@@ -16,9 +16,9 @@ import { MockERC20Snapshots } from '../../mock/MockERC20Snapshots.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract MerkleRewardDistributorTest is Toolkit {
-  Treasury _treasury;
+  Treasury internal _treasury;
   MerkleRewardDistributor internal _distributor;
-  MockERC20Snapshots _token;
+  MockERC20Snapshots internal _token;
 
   address immutable owner = makeAddr('owner');
   address immutable matrixVault = makeAddr('matrixVault');

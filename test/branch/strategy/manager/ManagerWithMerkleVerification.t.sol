@@ -34,12 +34,12 @@ struct ManageLeaf {
 }
 
 contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
-  MockStrategyExecutor _strategyExecutor;
-  ManagerWithMerkleVerification _managerWithMerkleVerification;
-  MockERC20Snapshots _token;
-  MockTestVault _testVault;
-  MockTestVaultDecoderAndSanitizer _testVaultDecoderAndSanitizer;
-  MockTestVaultTally _testVaultTally;
+  MockStrategyExecutor internal _strategyExecutor;
+  ManagerWithMerkleVerification internal _managerWithMerkleVerification;
+  MockERC20Snapshots internal _token;
+  MockTestVault internal _testVault;
+  MockTestVaultDecoderAndSanitizer internal _testVaultDecoderAndSanitizer;
+  MockTestVaultTally internal _testVaultTally;
 
   address immutable owner = makeAddr('owner');
   address immutable hubMatrixVault = makeAddr('hubMatrixVault');

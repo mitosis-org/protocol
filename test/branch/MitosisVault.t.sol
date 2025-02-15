@@ -16,19 +16,18 @@ import { MockMitosisVaultEntrypoint } from '../mock/MockMitosisVaultEntrypoint.t
 import { Toolkit } from '../util/Toolkit.sol';
 
 contract MitosisVaultTest is Toolkit {
-  MitosisVault _mitosisVault;
-  MockMitosisVaultEntrypoint _mitosisVaultEntrypoint;
-  MockERC20Snapshots _token;
-  MockMatrixStrategyExecutor _matrixStrategyExecutor;
+  MitosisVault internal _mitosisVault;
+  MockMitosisVaultEntrypoint internal _mitosisVaultEntrypoint;
+  MockERC20Snapshots internal _token;
+  MockMatrixStrategyExecutor internal _matrixStrategyExecutor;
 
   address immutable owner = makeAddr('owner');
   address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
   address immutable hubMatrixVault = makeAddr('hubMatrixVault');
 
   function setUp() public {
-    MitosisVault mitosisVaultImpl = new MitosisVault();
     _mitosisVault = MitosisVault(
-      payable(new ERC1967Proxy(address(mitosisVaultImpl), abi.encodeCall(mitosisVaultImpl.initialize, (owner))))
+      payable(new ERC1967Proxy(address(new MitosisVault()), abi.encodeCall(MitosisVault.initialize, (owner))))
     );
 
     _mitosisVaultEntrypoint = new MockMitosisVaultEntrypoint();

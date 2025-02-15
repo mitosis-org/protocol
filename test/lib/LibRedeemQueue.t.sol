@@ -15,7 +15,7 @@ contract LibRedeemQueueTest is Toolkit {
   using LibString for *;
   using SafeCast for uint256;
 
-  LibRedeemQueue.Queue internal q;
+  LibRedeemQueue.Queue public q;
 
   function setUp() public { }
 

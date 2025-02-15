@@ -10,13 +10,16 @@ import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 import { CrossChainRegistry } from '../../../src/hub/cross-chain/CrossChainRegistry.sol';
 
 contract CrossChainRegistryTest is Test {
-  CrossChainRegistry internal ccRegistry;
-  address internal _owner = makeAddr('owner');
+  CrossChainRegistry ccRegistry;
+  address owner = makeAddr('owner');
 
   function setUp() public {
-    CrossChainRegistry ccRegistryImpl = new CrossChainRegistry();
     ccRegistry = CrossChainRegistry(
-      payable(new ERC1967Proxy(address(ccRegistryImpl), abi.encodeWithSelector(ccRegistry.initialize.selector, _owner)))
+      payable(
+        new ERC1967Proxy(
+          address(new CrossChainRegistry()), abi.encodeWithSelector(CrossChainRegistry.initialize.selector, owner)
+        )
+      )
     );
   }
 
@@ -29,7 +32,7 @@ contract CrossChainRegistryTest is Test {
     vm.expectRevert();
     ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
 
-    vm.prank(_owner);
+    vm.prank(owner);
     ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
   }
 
@@ -39,7 +42,7 @@ contract CrossChainRegistryTest is Test {
     uint32 hplDomain = 1;
     address entrypoint = makeAddr('entrypoint');
 
-    vm.startPrank(_owner);
+    vm.startPrank(owner);
 
     ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
 
@@ -64,7 +67,7 @@ contract CrossChainRegistryTest is Test {
     address vault = makeAddr('vault');
     address entrypoint = makeAddr('entrypoint');
 
-    vm.startPrank(_owner);
+    vm.startPrank(owner);
 
     vm.expectRevert(); // 'not registered chain'
     ccRegistry.setVault(chainID, vault);
