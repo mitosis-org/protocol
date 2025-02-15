@@ -46,11 +46,16 @@ contract BranchGovernanceManager is
 
   function setExecutor(address executor) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    if ($.executors[executor]) {
-      return;
-    }
+    require(!$.executors[executor], StdError.InvalidParameter('executor'));
     _getStorageV1().executors[executor] = true;
     emit ExecutorSet(executor);
+  }
+
+  function unsetExecutor(address executor) external onlyOwner {
+    StorageV1 storage $ = _getStorageV1();
+    require($.executors[executor], StdError.InvalidParameter('executor'));
+    _getStorageV1().executors[executor] = false;
+    emit ExecutorUnset(executor);
   }
 
   function pause() external onlyOwner {

@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 interface IBranchGovernanceManager {
   event ExecutorSet(address executor);
+  event ExecutorUnset(address executor);
 
   function isExecutor(address account) external view returns (bool);
 
