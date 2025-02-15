@@ -32,6 +32,7 @@ contract GovernanceExecutor is
     __Pausable_init();
     __AccessControl_init();
 
+    _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
     _grantRole(DEFAULT_ADMIN_ROLE, address(this));
     _grantRole(DEFAULT_ADMIN_ROLE, owner_);
     _getStorageV1().entrypoint = IGovernanceExecutorEntrypoint(governanceExecutorEntrypoint_);
