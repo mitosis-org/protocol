@@ -12,7 +12,6 @@ contract BranchGovernanceManagerStorageV1 {
   struct StorageV1 {
     IBranchGovernanceManagerEntrypoint entrypoint;
     mapping(address account => bool isExecutor) executors;
-    address mitoGovernance;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.BranchGovernanceManagerStorage.v1';
