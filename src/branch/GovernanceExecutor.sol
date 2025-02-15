@@ -17,7 +17,7 @@ contract GovernanceExecutor is IGovernanceExecutor, GovernanceExecutorStorageV1,
     require(targets.length == data.length, StdError.InvalidParameter('data'));
     require(targets.length == values.length, StdError.InvalidParameter('values'));
 
-    _assertOnlyGovernanceExecutorEntrypoint(_getStorageV1());
+    _assertAuthroizedCaller(_getStorageV1());
 
     bytes[] memory result = new bytes[](targets.length);
     for (uint256 i = 0; i < targets.length; i++) {
@@ -31,6 +31,20 @@ contract GovernanceExecutor is IGovernanceExecutor, GovernanceExecutorStorageV1,
     return address(_getStorageV1().entrypoint);
   }
 
+  function setManager(address manager) external onlyOwner {
+    StorageV1 storage $ = _getStorageV1();
+    require(!$.managers[manager], StdError.InvalidParameter('manager'));
+    _getStorageV1().managers[manager] = true;
+    emit ManagerSet(manager);
+  }
+
+  function unsetManager(address manager) external onlyOwner {
+    StorageV1 storage $ = _getStorageV1();
+    require($.managers[manager], StdError.InvalidParameter('manager'));
+    _getStorageV1().managers[manager] = false;
+    emit ManagerUnset(manager);
+  }
+
   function pause() external onlyOwner {
     _pause();
   }
@@ -39,7 +53,8 @@ contract GovernanceExecutor is IGovernanceExecutor, GovernanceExecutorStorageV1,
     _unpause();
   }
 
-  function _assertOnlyGovernanceExecutorEntrypoint(StorageV1 storage $) internal view {
-    require(_msgSender() == address($.entrypoint), StdError.Unauthorized());
+  function _assertAuthroizedCaller(StorageV1 storage $) internal view {
+    address msgSender = _msgSender();
+    require($.managers[msgSender] || msgSender == address($.entrypoint), StdError.Unauthorized());
   }
 }

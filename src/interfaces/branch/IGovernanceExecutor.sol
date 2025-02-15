@@ -3,7 +3,11 @@ pragma solidity ^0.8.28;
 
 interface IGovernanceExecutor {
   event ExecutionDispatched(address[] targets, bytes[] data, uint256[] values, bytes[] result);
+  event ManagerSet(address manager);
+  event ManagerUnset(address manager);
 
   function entrypoint() external view returns (address);
+  function setManager(address manager) external;
+  function unsetManager(address manager) external;
   function execute(address[] calldata targets, bytes[] calldata data, uint256[] calldata values) external;
 }
