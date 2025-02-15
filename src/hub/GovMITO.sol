@@ -8,7 +8,9 @@ import { Time } from '@oz-v5/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { VotesUpgradeable } from '@ozu-v5/governance/utils/VotesUpgradeable.sol';
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
+import { ERC20PermitUpgradeable } from '@ozu-v5/token/ERC20/extensions/ERC20PermitUpgradeable.sol';
 import { ERC20VotesUpgradeable } from '@ozu-v5/token/ERC20/extensions/ERC20VotesUpgradeable.sol';
+import { NoncesUpgradeable } from '@ozu-v5/utils/NoncesUpgradeable.sol';
 
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
@@ -17,10 +19,9 @@ import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { LibRedeemQueue } from '../lib/LibRedeemQueue.sol';
 import { StdError } from '../lib/StdError.sol';
 
-// TODO(thai): Consider to support EIP-2612
 // TODO(thai): Add more view functions. (Check ReclaimQueueStorageV1.sol as a reference)
 
-contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
+contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
   using ERC7201Utils for string;
   using LibRedeemQueue for *;
 
@@ -71,6 +72,8 @@ contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
   function initialize(address _owner, address minter_, uint256 redeemPeriod_) external initializer {
     // TODO(thai): not fixed yet. could be modified before launching.
     __ERC20_init('Mitosis Governance Token', 'gMITO');
+    __ERC20Permit_init('Mitosis Governance Token');
+    __ERC20Votes_init();
     __Ownable2Step_init();
     _transferOwnership(_owner);
 
@@ -176,6 +179,14 @@ contract GovMITO is IGovMITO, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
     returns (bool)
   {
     return super.transferFrom(from, to, amount);
+  }
+
+  function nonces(address owner) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
+    return super.nonces(owner);
+  }
+
+  function _update(address from, address to, uint256 amount) internal override(ERC20Upgradeable, ERC20VotesUpgradeable) {
+    super._update(from, to, amount);
   }
 
   // =========================== NOTE: INTERNAL FUNCTIONS =========================== //
