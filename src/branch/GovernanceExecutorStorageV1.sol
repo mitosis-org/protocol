@@ -9,7 +9,6 @@ abstract contract GovernanceExecutorStorageV1 {
 
   struct StorageV1 {
     IGovernanceExecutorEntrypoint entrypoint;
-    mapping(address account => bool isManager) managers;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.GovernanceExecutorStorage.v1';

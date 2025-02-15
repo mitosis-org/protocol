@@ -21,6 +21,9 @@ contract GovernanceExecutor is
 {
   using Address for address;
 
+  /// @notice Role for manager (keccak256("MANAGER_ROLE"))
+  bytes32 public constant MANAGER_ROLE = 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08;
+
   constructor() {
     _disableInitializers();
   }
@@ -52,20 +55,6 @@ contract GovernanceExecutor is
     return address(_getStorageV1().entrypoint);
   }
 
-  function setManager(address manager) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    StorageV1 storage $ = _getStorageV1();
-    require(!$.managers[manager], StdError.InvalidParameter('manager'));
-    _getStorageV1().managers[manager] = true;
-    emit ManagerSet(manager);
-  }
-
-  function unsetManager(address manager) external onlyRole(DEFAULT_ADMIN_ROLE) {
-    StorageV1 storage $ = _getStorageV1();
-    require($.managers[manager], StdError.InvalidParameter('manager'));
-    _getStorageV1().managers[manager] = false;
-    emit ManagerUnset(manager);
-  }
-
   function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
     _pause();
   }
@@ -76,7 +65,16 @@ contract GovernanceExecutor is
 
   function _assertAuthroizedCaller(StorageV1 storage $) internal view {
     address msgSender = _msgSender();
-    require($.managers[msgSender] || msgSender == address($.entrypoint), StdError.Unauthorized());
+    require(_hasRole(MANAGER_ROLE, msgSender) || msgSender == address($.entrypoint), StdError.Unauthorized());
+  }
+
+  function _hasRole(bytes32 role, address account) internal view returns (bool) {
+    AccessControlStorage storage $;
+    assembly {
+      // AccessControlUpgradeable.AccessControlStorageLocation
+      $.slot := 0x02dd7bc7dec4dceedda775e58dd541e08a116c6c53815c0bd028192f7b626800
+    }
+    return $._roles[role].hasRole[account];
   }
 
   function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
