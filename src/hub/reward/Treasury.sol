@@ -60,7 +60,7 @@ contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradea
     StorageV1 storage $ = _getStorageV1();
 
     uint256 balance = _balances($, matrixVault, reward);
-    require(balance >= amount, ITreasury__InsufficientBalance()); // TODO(eddy): custom error
+    require(balance >= amount, ITreasury__InsufficientBalance());
 
     $.balances[matrixVault][reward] = balance - amount;
     $.history[matrixVault][reward].push(
