@@ -5,8 +5,6 @@ import { console } from '@std/console.sol';
 
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
-import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
-import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 import { Strings } from '@oz-v5/utils/Strings.sol';
 
 import { MitosisVault, AssetAction, MatrixAction } from '../../../src/branch/MitosisVault.sol';
@@ -29,7 +27,6 @@ contract MatrixStrategyExecutorTest is Toolkit {
   MatrixStrategyExecutor _matrixStrategyExecutor;
   MockManagerWithMerkleVerification _managerWithMerkleVerification;
   MockMitosisVaultEntrypoint _mitosisVaultEntrypoint;
-  ProxyAdmin _proxyAdmin;
   MockERC20Snapshots _token;
   MockTestVault _testVault;
   MockTestVaultDecoderAndSanitizer _testVaultDecoderAndSanitizer;
@@ -40,11 +37,8 @@ contract MatrixStrategyExecutorTest is Toolkit {
   address immutable hubMatrixVault = makeAddr('hubMatrixVault');
 
   function setUp() public {
-    _proxyAdmin = new ProxyAdmin(owner);
-
-    MitosisVault mitosisVaultImpl = new MitosisVault();
     _mitosisVault = MitosisVault(
-      payable(new ERC1967Proxy(address(mitosisVaultImpl), abi.encodeCall(mitosisVaultImpl.initialize, (owner))))
+      payable(new ERC1967Proxy(address(new MitosisVault()), abi.encodeCall(MitosisVault.initialize, (owner))))
     );
 
     _mitosisVaultEntrypoint = new MockMitosisVaultEntrypoint();
@@ -52,16 +46,11 @@ contract MatrixStrategyExecutorTest is Toolkit {
     _token = new MockERC20Snapshots();
     _token.initialize('Token', 'TKN');
 
-    MatrixStrategyExecutor matrixStrategyExecutorImpl =
-      new MatrixStrategyExecutor(_mitosisVault, _token, hubMatrixVault);
     _matrixStrategyExecutor = MatrixStrategyExecutor(
       payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(matrixStrategyExecutorImpl),
-            address(_proxyAdmin),
-            abi.encodeCall(matrixStrategyExecutorImpl.initialize, (owner, owner))
-          )
+        _proxy(
+          address(new MatrixStrategyExecutor(_mitosisVault, _token, hubMatrixVault)),
+          abi.encodeCall(MatrixStrategyExecutor.initialize, (owner, owner))
         )
       )
     );

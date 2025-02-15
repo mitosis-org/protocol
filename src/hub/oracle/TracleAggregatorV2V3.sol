@@ -14,8 +14,6 @@ import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 contract TracleAggregatorV2V3 is AggregatorV2V3Interface, Initializable {
   using ERC7201Utils for string;
 
-  // =========================== NOTE: STORAGE DEFINITIONS =========================== //
-
   struct Storage {
     ITracle tracle;
     bytes32 priceId;
@@ -31,8 +29,6 @@ contract TracleAggregatorV2V3 is AggregatorV2V3Interface, Initializable {
       $.slot := slot
     }
   }
-
-  // ============================ NOTE: INITIALIZATION FUNCTIONS ============================ //
 
   constructor() {
     _disableInitializers();

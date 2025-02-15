@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
-import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
+import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { Treasury } from '../../../src/hub/reward/Treasury.sol';
 import { MockERC20Snapshots } from '../../mock/MockERC20Snapshots.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract TreasuryTest is Toolkit {
-  ProxyAdmin _proxyAdmin;
   MockERC20Snapshots _token;
   Treasury _treasury;
 
@@ -18,21 +16,11 @@ contract TreasuryTest is Toolkit {
   address immutable matrixVault = makeAddr('matrixVault');
 
   function setUp() public {
-    _proxyAdmin = new ProxyAdmin(owner);
-
     _token = new MockERC20Snapshots();
     _token.initialize('Token', 'TKN');
 
-    Treasury treasuryImpl = new Treasury();
-    _treasury = Treasury(
-      payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(treasuryImpl), address(_proxyAdmin), abi.encodeCall(_treasury.initialize, (owner))
-          )
-        )
-      )
-    );
+    _treasury =
+      Treasury(payable(new ERC1967Proxy(address(new Treasury()), abi.encodeCall(Treasury.initialize, (owner)))));
 
     bytes32 treasuryManagerRole = _treasury.TREASURY_MANAGER_ROLE();
     vm.prank(owner);
