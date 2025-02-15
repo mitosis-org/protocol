@@ -19,7 +19,6 @@ import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { LibRedeemQueue } from '../lib/LibRedeemQueue.sol';
 import { StdError } from '../lib/StdError.sol';
 
-// TODO(thai): Consider to support EIP-2612
 // TODO(thai): Add more view functions. (Check ReclaimQueueStorageV1.sol as a reference)
 
 contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
