@@ -3,9 +3,8 @@ pragma solidity ^0.8.27;
 
 import { console } from '@std/console.sol';
 
-import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
-
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
+import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 import { Strings } from '@oz-v5/utils/Strings.sol';
@@ -45,13 +44,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
 
     MitosisVault mitosisVaultImpl = new MitosisVault();
     _mitosisVault = MitosisVault(
-      payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(mitosisVaultImpl), address(_proxyAdmin), abi.encodeCall(mitosisVaultImpl.initialize, (owner))
-          )
-        )
-      )
+      payable(new ERC1967Proxy(address(mitosisVaultImpl), abi.encodeCall(mitosisVaultImpl.initialize, (owner))))
     );
 
     _mitosisVaultEntrypoint = new MockMitosisVaultEntrypoint();

@@ -6,6 +6,7 @@ import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
@@ -15,7 +16,13 @@ import '../message/Message.sol';
 
 // TODO(thai): consider to make our own contract (`HyperlaneConnector`) instead of using `GasRouter`.
 
-contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, GasRouter, Ownable2StepUpgradeable {
+contract MitosisVaultEntrypoint is
+  IMitosisVaultEntrypoint,
+  IMessageRecipient,
+  GasRouter,
+  Ownable2StepUpgradeable,
+  UUPSUpgradeable
+{
   using Message for *;
   using Conv for *;
 
@@ -40,6 +47,7 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, G
   function initialize(address owner_, address hook, address ism) public initializer {
     _MailboxClient_initialize(hook, ism, owner_);
     __Ownable2Step_init();
+    __UUPSUpgradeable_init();
     _transferOwnership(owner_);
 
     _enrollRemoteRouter(_mitosisDomain, _mitosisAddr);
@@ -135,6 +143,10 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, G
       _vault.allocateMatrix(decoded.matrixVault.toAddress(), decoded.amount);
     }
   }
+
+  //=========== NOTE: OWNABLE FUNCTIONS ===========//
+
+  function _authorizeUpgrade(address) internal override onlyOwner { }
 
   //=========== NOTE: OwnableUpgradeable & Ownable2StepUpgradeable
 

@@ -6,6 +6,7 @@ import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { Address } from '@oz-v5/utils/Address.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { MitosisVaultStorageV1 } from '../branch/MitosisVaultStorageV1.sol';
 import { AssetAction, MatrixAction, IMitosisVault, IMatrixMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
@@ -15,9 +16,7 @@ import { IStrategyExecutor } from '../interfaces/branch/strategy/IStrategyExecut
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
 
-// TODO(thai): add some view functions in MitosisVault
-
-contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, MitosisVaultStorageV1 {
+contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSUpgradeable, MitosisVaultStorageV1 {
   using SafeERC20 for IERC20;
   using Address for address;
 
@@ -38,6 +37,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
   function initialize(address owner_) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
+    __UUPSUpgradeable_init();
     _transferOwnership(owner_);
   }
 
@@ -234,6 +234,8 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
+
+  function _authorizeUpgrade(address) internal override onlyOwner { }
 
   function setEntrypoint(address entrypoint_) external onlyOwner {
     _getStorageV1().entrypoint = IMitosisVaultEntrypoint(entrypoint_);
