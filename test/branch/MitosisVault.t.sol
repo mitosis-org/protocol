@@ -7,7 +7,6 @@ import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
-import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
 import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
 import { MitosisVault, AssetAction, MatrixAction } from '../../src/branch/MitosisVault.sol';
@@ -22,7 +21,6 @@ import { Toolkit } from '../util/Toolkit.sol';
 contract MitosisVaultTest is Toolkit {
   MitosisVault _mitosisVault;
   MockMitosisVaultEntrypoint _mitosisVaultEntrypoint;
-  ProxyAdmin _proxyAdmin;
   MockERC20Snapshots _token;
   MockMatrixStrategyExecutor _matrixStrategyExecutor;
 
@@ -31,8 +29,6 @@ contract MitosisVaultTest is Toolkit {
   address immutable hubMatrixVault = makeAddr('hubMatrixVault');
 
   function setUp() public {
-    _proxyAdmin = new ProxyAdmin(owner);
-
     MitosisVault mitosisVaultImpl = new MitosisVault();
     _mitosisVault = MitosisVault(
       payable(new ERC1967Proxy(address(mitosisVaultImpl), abi.encodeCall(mitosisVaultImpl.initialize, (owner))))
