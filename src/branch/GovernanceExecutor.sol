@@ -21,28 +21,30 @@ contract GovernanceExecutor is
 {
   using Address for address;
 
-  /// @notice Role for manager (keccak256("MANAGER_ROLE"))
-  bytes32 public constant MANAGER_ROLE = 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08;
+  /// @notice Role for manager (keccak256("EXECUTOR_ROLE"))
+  bytes32 public constant EXECUTOR_ROLE = 0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63;
 
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(address owner_, address governanceExecutorEntrypoint_) public initializer {
+  function initialize(address[] memory executors) public initializer {
     __Pausable_init();
     __AccessControl_init();
 
     _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
     _grantRole(DEFAULT_ADMIN_ROLE, address(this));
-    _grantRole(DEFAULT_ADMIN_ROLE, owner_);
-    _getStorageV1().entrypoint = IGovernanceExecutorEntrypoint(governanceExecutorEntrypoint_);
+
+    for (uint256 i = 0; i < executors.length; i++) {
+      _grantRole(MANAGER_ROLE, executors[i]);
+    }
   }
 
   function execute(address[] calldata targets, bytes[] calldata data, uint256[] calldata values) external {
     require(targets.length == data.length, StdError.InvalidParameter('data'));
     require(targets.length == values.length, StdError.InvalidParameter('values'));
 
-    _assertAuthroizedCaller(_getStorageV1());
+    require(hasRole(MANAGER_ROLE, _msgSender()), StdError.Unauthorized());
 
     bytes[] memory result = new bytes[](targets.length);
     for (uint256 i = 0; i < targets.length; i++) {
@@ -62,11 +64,6 @@ contract GovernanceExecutor is
 
   function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
     _unpause();
-  }
-
-  function _assertAuthroizedCaller(StorageV1 storage $) internal view {
-    address msgSender = _msgSender();
-    require(hasRole(MANAGER_ROLE, msgSender) || msgSender == address($.entrypoint), StdError.Unauthorized());
   }
 
   function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
