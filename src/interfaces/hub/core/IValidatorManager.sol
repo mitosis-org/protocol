@@ -37,7 +37,11 @@ interface IValidatorManager {
     returns (RedelegationsResponse[] memory);
 
   function totalDelegation(address valAddr) external view returns (uint256);
+  function totalDelegation(address valAddr, uint48 timestamp) external view returns (uint256);
+  function totalDelegationTWAB(address valAddr) external view returns (uint256);
+  function totalDelegationTWAB(address valAddr, uint48 timestamp) external view returns (uint256);
   function totalPendingRedelegation(address valAddr) external view returns (uint256);
+  function totalPendingRedelegation(address valAddr, uint96 epoch) external view returns (uint256);
 
   // ========== USER ACTIONS ========== //
 
