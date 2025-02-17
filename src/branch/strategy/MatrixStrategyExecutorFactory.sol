@@ -2,14 +2,13 @@
 pragma solidity >=0.8.23 <0.9.0;
 
 import { BeaconProxy } from '@oz-v5/proxy/beacon/BeaconProxy.sol';
+import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 
-import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
-
 import { BeaconBase } from '../../lib/proxy/BeaconBase.sol';
 import { MatrixStrategyExecutor } from './MatrixStrategyExecutor.sol';
 
