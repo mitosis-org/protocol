@@ -2,9 +2,10 @@
 pragma solidity ^0.8.28;
 
 interface IManagerWithMerkleVerification {
-  event StrategyExecutorUpdated(address indexed protocolVault, address oldStategyExecutor, address newStrategyExecutor);
-  event ManageRootUpdated(address indexed protocolVault, address indexed strategist, bytes32 oldRoot, bytes32 newRoot);
-  event StrategyExecutorExecuted(address indexed protocolVault, address indexed strategyExecutor, uint256 callsMade);
+  event ManageRootUpdated(
+    address indexed strategyExecutor, address indexed strategist, bytes32 oldRoot, bytes32 newRoot
+  );
+  event StrategyExecutorExecuted(address indexed strategyExecutor, uint256 callsMade);
 
   error IManagerWithMerkleVerification__InvalidManageProofLength();
   error IManagerWithMerkleVerification__InvalidTargetDataLength();
@@ -12,14 +13,11 @@ interface IManagerWithMerkleVerification {
   error IManagerWithMerkleVerification__InvalidDecodersAndSanitizersLength();
 
   error IManagerWithMerkleVerification__FailedToVerifyManageProof(address target, bytes targetData, uint256 value);
-  error IManagerWithMerkleVerification__StrategyExecutorNotSet(address protocolVault);
 
-  function strategyExecutor(address protocolVault) external view returns (address);
-  function manageRoot(address protocolVault, address strategist) external view returns (bytes32);
-  function setStrategyExecutor(address protocolVault, address strategyExecutor) external;
-  function setManageRoot(address protocolVault, address strategist, bytes32 _manageRoot) external;
+  function manageRoot(address strategyExecutor, address strategist) external view returns (bytes32);
+  function setManageRoot(address strategyExecutor, address strategist, bytes32 _manageRoot) external;
   function manageVaultWithMerkleVerification(
-    address protocolVault,
+    address strategyExecutor,
     bytes32[][] calldata manageProofs,
     address[] calldata decodersAndSanitizers,
     address[] calldata targets,

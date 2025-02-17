@@ -7,13 +7,8 @@ import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 abstract contract ManagerWithMerkleVerificationStorageV1 {
   using ERC7201Utils for string;
 
-  struct ManageData {
-    IStrategyExecutor strategyExecutor;
-    mapping(address strategist => bytes32 root) root;
-  }
-
   struct StorageV1 {
-    mapping(address protocolVault => ManageData) manageData;
+    mapping(address strategyExecutor => mapping(address strategist => bytes32 manageRoot)) manageRoot;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.ManagerWithMerkleVerificationStorage.v1';
