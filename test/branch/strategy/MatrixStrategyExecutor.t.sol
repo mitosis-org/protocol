@@ -46,15 +46,11 @@ contract MatrixStrategyExecutorTest is Toolkit {
     _token = new MockERC20Snapshots();
     _token.initialize('Token', 'TKN');
 
-    MatrixStrategyExecutor matrixStrategyExecutorImpl = new MatrixStrategyExecutor();
     _matrixStrategyExecutor = MatrixStrategyExecutor(
       payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(matrixStrategyExecutorImpl),
-            address(_proxyAdmin),
-            abi.encodeCall(matrixStrategyExecutorImpl.initialize, (_mitosisVault, _token, hubMatrixVault, owner, owner))
-          )
+        _proxy(
+          address(new MatrixStrategyExecutor()),
+          abi.encodeCall(MatrixStrategyExecutor.initialize, (_mitosisVault, _token, hubMatrixVault, owner, owner))
         )
       )
     );
