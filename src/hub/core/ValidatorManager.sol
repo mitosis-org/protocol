@@ -13,6 +13,8 @@ import { LibSecp256k1 } from '../../lib/LibSecp256k1.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { IEpochFeeder } from './EpochFeeder.sol';
 
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+
 contract ValidatorManagerStorageV1 {
   using ERC7201Utils for string;
 
@@ -63,7 +65,7 @@ contract ValidatorManagerStorageV1 {
   }
 }
 
-contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownable2StepUpgradeable {
+contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownable2StepUpgradeable, UUPSUpgradeable {
   using SafeCast for uint256;
   using EnumerableMap for EnumerableMap.AddressToUintMap;
 
@@ -531,4 +533,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   function _assertOperator(Validator memory info) internal view {
     require(info.operator == _msgSender(), StdError.Unauthorized());
   }
+
+  // ========== UUPS ========== //
+
+  function _authorizeUpgrade(address newImplementation) internal override onlyOwner { }
 }
