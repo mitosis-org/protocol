@@ -2,26 +2,30 @@
 pragma solidity ^0.8.28;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { EnumerableMap } from '@oz-v5/utils/structs/EnumerableMap.sol';
 
 import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
+import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
 import { IValidatorManager } from '../../interfaces/hub/core/IValidatorManager.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibSecp256k1 } from '../../lib/LibSecp256k1.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { IEpochFeeder } from './EpochFeeder.sol';
-
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 contract ValidatorManagerStorageV1 {
   using ERC7201Utils for string;
 
-  struct DelegationLog {
+  struct TWABCheckpoint {
     uint256 amount;
     uint208 twab;
     uint48 lastUpdate;
+  }
+
+  struct EpochCheckpoint {
+    uint96 epoch;
+    uint256 amount;
   }
 
   struct Redelegation {
@@ -32,8 +36,8 @@ contract ValidatorManagerStorageV1 {
   }
 
   struct ValidatorStat {
-    uint256 totalDelegation;
-    uint256 totalPendingRedelegation;
+    TWABCheckpoint[] totalDelegations;
+    EpochCheckpoint[] totalPendingRedelegations;
     uint96 lastUpdatedEpoch;
   }
 
@@ -47,9 +51,10 @@ contract ValidatorManagerStorageV1 {
   struct StorageV1 {
     IEpochFeeder epochFeeder;
     IConsensusValidatorEntrypoint entrypoint;
-    Validator[] validators;
+    uint256[] validatorIndexes;
+    mapping(uint256 index => Validator) validators;
     mapping(address valAddr => uint256 index) indexByValAddr;
-    mapping(address valAddr => mapping(address staker => DelegationLog[])) delegationHistory;
+    mapping(address valAddr => mapping(address staker => TWABCheckpoint[])) delegationHistory;
     mapping(address staker => mapping(address toValAddr => Redelegation[])) redelegationHistory;
   }
 
@@ -69,6 +74,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   using SafeCast for uint256;
   using EnumerableMap for EnumerableMap.AddressToUintMap;
 
+  // NOTE: This is a temporary limit. It will be revised in the next version.
   uint256 public constant MAX_REDELEGATION_COUNT = 100;
 
   constructor() {
@@ -86,10 +92,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _setEntrypoint($, entrypoint);
 
     // 0 index is reserved for empty slot
-    {
-      Validator memory empty;
-      $.validators.push(empty);
-    }
+    $.validatorIndexes.push(0);
   }
 
   function staked(address valAddr, address staker) external view returns (uint256) {
@@ -136,11 +139,56 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function totalDelegation(address valAddr) external view returns (uint256) {
-    return _validatorInfo(_getStorageV1(), valAddr).stat.totalDelegation;
+    return _totalDelegation(valAddr, _getStorageV1().epochFeeder.clock());
+  }
+
+  function totalDelegation(address valAddr, uint48 timestamp) external view returns (uint256) {
+    return _totalDelegation(valAddr, timestamp);
+  }
+
+  function totalDelegationTWAB(address valAddr) external view returns (uint256) {
+    return _totalDelegationTWAB(valAddr, _getStorageV1().epochFeeder.clock());
+  }
+
+  function totalDelegationTWAB(address valAddr, uint48 timestamp) external view returns (uint256) {
+    return _totalDelegationTWAB(valAddr, timestamp);
   }
 
   function totalPendingRedelegation(address valAddr) external view returns (uint256) {
-    return _validatorInfo(_getStorageV1(), valAddr).stat.totalPendingRedelegation;
+    StorageV1 storage $ = _getStorageV1();
+    ValidatorStat memory stat = _validatorInfo($, valAddr).stat;
+    if (stat.totalPendingRedelegations.length == 0) return 0;
+
+    EpochCheckpoint[] memory history = stat.totalPendingRedelegations;
+    EpochCheckpoint memory last = history[history.length - 1];
+    if (stat.lastUpdatedEpoch == last.epoch) return last.amount;
+
+    return 0;
+  }
+
+  function totalPendingRedelegation(address valAddr, uint96 epoch) external view returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    ValidatorStat memory stat = _validatorInfo($, valAddr).stat;
+    if (stat.totalPendingRedelegations.length == 0) return 0;
+
+    EpochCheckpoint[] memory history = stat.totalPendingRedelegations;
+    uint256 left = 0;
+    uint256 right = history.length - 1;
+    uint256 target = 0;
+
+    while (left <= right) {
+      uint256 mid = left + (right - left) / 2;
+      if (history[mid].epoch == epoch) {
+        return history[mid].amount;
+      } else if (history[mid].epoch < epoch) {
+        target = mid;
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
+
+    return 0;
   }
 
   function stake(address valAddr, address recipient) external payable {
@@ -161,7 +209,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
     _assertValidatorExists($, valAddr);
 
-    DelegationLog[] storage history = $.delegationHistory[valAddr][_msgSender()];
+    TWABCheckpoint[] storage history = $.delegationHistory[valAddr][_msgSender()];
     require(history.length > 0, StdError.InvalidParameter('history'));
 
     _updatePendingDelegation($, valAddr);
@@ -184,7 +232,12 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _unstake($, fromValAddr, amount);
     _pushRedelegation($, fromValAddr, toValAddr, _msgSender(), amount);
 
-    $.validators[$.indexByValAddr[fromValAddr]].stat.totalPendingRedelegation += amount;
+    _pushEpochCheckpoint(
+      $.validators[$.indexByValAddr[fromValAddr]].stat.totalPendingRedelegations,
+      amount,
+      $.epochFeeder.epoch(),
+      _addAmount
+    );
   }
 
   function cancelRedelegation(address fromValAddr, address toValAddr, uint256 amount) external {
@@ -215,7 +268,9 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
     _stake($, fromValAddr, _msgSender(), amount, $.epochFeeder.clock());
 
-    $.validators[$.indexByValAddr[fromValAddr]].stat.totalPendingRedelegation -= amount;
+    _pushEpochCheckpoint(
+      $.validators[$.indexByValAddr[fromValAddr]].stat.totalPendingRedelegations, amount, epoch, _subAmount
+    );
   }
 
   function join(bytes calldata valKey) external payable {
@@ -227,15 +282,16 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
     _assertValidatorNotExists($, valAddr);
 
-    $.validators.push(
-      Validator({
-        validator: valAddr,
-        operator: valAddr,
-        pubKey: valKey,
-        stat: ValidatorStat({ totalDelegation: 0, totalPendingRedelegation: 0, lastUpdatedEpoch: $.epochFeeder.epoch() })
-      })
-    );
-    $.indexByValAddr[valAddr] = $.validators.length - 1;
+    uint256 valIndex = $.validatorIndexes.length;
+    $.validatorIndexes.push(valIndex);
+
+    Validator storage val = $.validators[valIndex];
+    val.validator = valAddr;
+    val.operator = valAddr;
+    val.pubKey = valKey;
+    val.stat.lastUpdatedEpoch = $.epochFeeder.epoch();
+
+    $.indexByValAddr[valAddr] = valIndex;
     $.entrypoint.registerValidator{ value: msg.value }(valKey, valAddr);
   }
 
@@ -297,12 +353,12 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //
 
-  function _searchDelegationLog(DelegationLog[] storage history, uint48 timestamp)
+  function _searchCheckpoint(TWABCheckpoint[] memory history, uint48 timestamp)
     internal
-    view
-    returns (DelegationLog memory)
+    pure
+    returns (TWABCheckpoint memory)
   {
-    DelegationLog memory last = history[history.length - 1];
+    TWABCheckpoint memory last = history[history.length - 1];
     if (last.lastUpdate <= timestamp) return last;
 
     uint256 left = 0;
@@ -359,10 +415,10 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
     // TODO: debug this
     // NOTE: no need to lookup the redelegation history here because it is already applied to the delegation history
-    DelegationLog[] storage history = $.delegationHistory[valAddr][staker];
+    TWABCheckpoint[] memory history = $.delegationHistory[valAddr][staker];
     if (history.length == 0) return 0;
 
-    DelegationLog memory last = _searchDelegationLog(history, timestamp);
+    TWABCheckpoint memory last = _searchCheckpoint(history, timestamp);
 
     // check if there are any pending redelegation
     Redelegation[] storage redelegations_ = $.redelegationHistory[staker][valAddr];
@@ -378,10 +434,10 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   function _stakedTWAB(address valAddr, address staker, uint48 timestamp) internal view returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
-    DelegationLog[] storage history = $.delegationHistory[valAddr][staker];
+    TWABCheckpoint[] memory history = $.delegationHistory[valAddr][staker];
     if (history.length == 0) return 0;
 
-    DelegationLog memory last = _searchDelegationLog(history, timestamp);
+    TWABCheckpoint memory last = _searchCheckpoint(history, timestamp);
 
     Redelegation[] storage redelegations_ = $.redelegationHistory[staker][valAddr];
     if (redelegations_.length > 0) {
@@ -401,41 +457,109 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     return last.twab;
   }
 
-  function _stake(StorageV1 storage $, address valAddr, address recipient, uint256 amount, uint48 now_) internal {
-    DelegationLog[] storage history = $.delegationHistory[valAddr][recipient];
+  function _totalDelegation(address valAddr, uint48 timestamp) internal view returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    ValidatorStat memory stat = _validatorInfo($, valAddr).stat;
+    TWABCheckpoint memory last = _searchCheckpoint(stat.totalDelegations, timestamp);
 
-    if (history.length > 0) {
-      DelegationLog memory last = history[history.length - 1];
+    uint96 epoch = $.epochFeeder.epochAt(timestamp);
+    if (stat.lastUpdatedEpoch < epoch) {
+      uint48 epochTime = $.epochFeeder.epochToTime(epoch);
+      if (epochTime <= timestamp) {
+        EpochCheckpoint memory lastEpochCheckpoint =
+          stat.totalPendingRedelegations[stat.totalPendingRedelegations.length - 1];
+        // if the last epoch checkpoint is the same as the target epoch, add the amount to the total delegation
+        if (lastEpochCheckpoint.epoch == epoch) last.amount += lastEpochCheckpoint.amount;
+      }
+    }
+
+    return last.amount;
+  }
+
+  function _totalDelegationTWAB(address valAddr, uint48 timestamp) internal view returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    ValidatorStat memory stat = _validatorInfo($, valAddr).stat;
+    TWABCheckpoint memory last = _searchCheckpoint(stat.totalDelegations, timestamp);
+
+    uint96 epoch = $.epochFeeder.epochAt(timestamp);
+    if (stat.lastUpdatedEpoch < epoch) {
+      uint48 epochTime = $.epochFeeder.epochToTime(epoch);
+      if (epochTime <= timestamp) {
+        last.twab += (last.amount * (epochTime - last.lastUpdate)).toUint208();
+
+        EpochCheckpoint memory lastEpochCheckpoint =
+          stat.totalPendingRedelegations[stat.totalPendingRedelegations.length - 1];
+        // if the last epoch checkpoint is the same as the target epoch, add the amount to the total delegation
+        if (lastEpochCheckpoint.epoch == epoch) last.amount += lastEpochCheckpoint.amount;
+        last.lastUpdate = epochTime;
+      }
+    }
+
+    last.twab += (last.amount * (timestamp - last.lastUpdate)).toUint208();
+
+    return last.twab;
+  }
+
+  function _stake(StorageV1 storage $, address valAddr, address recipient, uint256 amount, uint48 now_) internal {
+    _pushTWABCheckpoint($.delegationHistory[valAddr][recipient], amount, now_, _addAmount);
+    _pushTWABCheckpoint($.validators[$.indexByValAddr[valAddr]].stat.totalDelegations, amount, now_, _addAmount);
+  }
+
+  function _unstake(StorageV1 storage $, address valAddr, uint256 amount) internal {
+    TWABCheckpoint[] storage history = $.delegationHistory[valAddr][_msgSender()];
+    TWABCheckpoint memory last = history[history.length - 1];
+    require(amount <= last.amount, StdError.InvalidParameter('amount'));
+
+    uint48 now_ = $.epochFeeder.clock();
+    _pushTWABCheckpoint(history, amount, now_, _subAmount);
+    _pushTWABCheckpoint($.validators[$.indexByValAddr[valAddr]].stat.totalDelegations, amount, now_, _subAmount);
+  }
+
+  function _addAmount(uint256 x, uint256 y) internal pure returns (uint256) {
+    return x + y;
+  }
+
+  function _subAmount(uint256 x, uint256 y) internal pure returns (uint256) {
+    return x - y;
+  }
+
+  function _pushEpochCheckpoint(
+    EpochCheckpoint[] storage history,
+    uint256 amount,
+    uint96 epoch,
+    function (uint256, uint256) returns (uint256) nextAmountFunc
+  ) internal {
+    if (history.length == 0) {
+      // NOTE: it is impossible to push sub amount to the history
+      history.push(EpochCheckpoint({ epoch: epoch, amount: amount }));
+    } else {
+      EpochCheckpoint memory last = history[history.length - 1];
+      if (last.epoch != epoch) {
+        history.push(EpochCheckpoint({ epoch: epoch, amount: amount }));
+      } else {
+        history[history.length - 1].amount = nextAmountFunc(last.amount, amount);
+      }
+    }
+  }
+
+  function _pushTWABCheckpoint(
+    TWABCheckpoint[] storage history,
+    uint256 amount,
+    uint48 now_,
+    function (uint256, uint256) returns (uint256) nextAmountFunc
+  ) internal {
+    if (history.length == 0) {
+      history.push(TWABCheckpoint({ amount: amount, twab: 0, lastUpdate: now_ }));
+    } else {
+      TWABCheckpoint memory last = history[history.length - 1];
       history.push(
-        DelegationLog({
-          amount: last.amount + amount,
+        TWABCheckpoint({
+          amount: nextAmountFunc(last.amount, amount),
           twab: (last.amount * (now_ - last.lastUpdate)).toUint208(),
           lastUpdate: now_
         })
       );
-    } else {
-      history.push(DelegationLog({ amount: amount, twab: 0, lastUpdate: now_ }));
     }
-
-    $.validators[$.indexByValAddr[valAddr]].stat.totalDelegation += amount;
-  }
-
-  function _unstake(StorageV1 storage $, address valAddr, uint256 amount) internal {
-    DelegationLog[] storage history = $.delegationHistory[valAddr][_msgSender()];
-    DelegationLog memory last = history[history.length - 1];
-    require(amount <= last.amount, StdError.InvalidParameter('amount'));
-
-    uint48 now_ = $.epochFeeder.clock();
-
-    history.push(
-      DelegationLog({
-        amount: last.amount - amount,
-        twab: (last.amount * (now_ - last.lastUpdate)).toUint208(),
-        lastUpdate: now_
-      })
-    );
-
-    $.validators[$.indexByValAddr[valAddr]].stat.totalDelegation -= amount;
   }
 
   function _pushRedelegation(
@@ -495,15 +619,18 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   function _updatePendingDelegation(StorageV1 storage $, address valAddr) internal {
     uint96 epoch = $.epochFeeder.epoch();
+    uint48 now_ = $.epochFeeder.clock();
 
     Validator memory info = _validatorInfo($, valAddr);
     if (info.stat.lastUpdatedEpoch >= epoch) return;
 
-    $.validators[$.indexByValAddr[valAddr]].stat = ValidatorStat({
-      totalDelegation: info.stat.totalDelegation,
-      totalPendingRedelegation: 0,
-      lastUpdatedEpoch: epoch
-    });
+    ValidatorStat storage stat = $.validators[$.indexByValAddr[valAddr]].stat;
+
+    EpochCheckpoint[] memory history = info.stat.totalPendingRedelegations;
+    EpochCheckpoint memory last = history[history.length - 1];
+
+    if (last.epoch == epoch) _pushTWABCheckpoint(stat.totalDelegations, last.amount, now_, _addAmount);
+    stat.lastUpdatedEpoch = epoch;
   }
 
   function _setEpochFeeder(StorageV1 storage $, IEpochFeeder epochFeeder) internal {

@@ -2,20 +2,12 @@
 pragma solidity ^0.8.28;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
+import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-interface IEpochFeeder {
-  function clock() external view returns (uint48);
-  function epoch() external view returns (uint96);
-  function epochAt(uint48 timestamp_) external view returns (uint96);
-  function epochToTime(uint96 epoch) external view returns (uint48);
-  function interval() external view returns (uint48);
-  function lastRoll() external view returns (uint48);
-  function roll() external;
-}
-
-contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable {
+contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable, UUPSUpgradeable {
   uint96 private _epoch;
   uint48 private _interval;
   uint48 private _lastRoll;
@@ -80,4 +72,8 @@ contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable {
     _lastRoll = now_;
     _epoch++;
   }
+
+  // ================== UUPS ================== //
+
+  function _authorizeUpgrade(address newImplementation) internal override onlyOwner { }
 }
