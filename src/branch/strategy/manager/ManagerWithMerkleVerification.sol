@@ -65,12 +65,13 @@ contract ManagerWithMerkleVerification is
     StorageV1 storage $ = _getStorageV1();
 
     uint256 targetsLength = targets.length;
-    if (targetsLength != manageProofs.length) revert IManagerWithMerkleVerification__InvalidManageProofLength();
-    if (targetsLength != targetData.length) revert IManagerWithMerkleVerification__InvalidTargetDataLength();
-    if (targetsLength != values.length) revert IManagerWithMerkleVerification__InvalidValuesLength();
-    if (targetsLength != decodersAndSanitizers.length) {
-      revert IManagerWithMerkleVerification__InvalidDecodersAndSanitizersLength();
-    }
+    require(targetsLength == manageProofs.length, IManagerWithMerkleVerification__InvalidManageProofLength());
+    require(targetsLength == targetData.length, IManagerWithMerkleVerification__InvalidTargetDataLength());
+    require(targetsLength == values.length, IManagerWithMerkleVerification__InvalidValuesLength());
+    require(
+      targetsLength == decodersAndSanitizers.length,
+      IManagerWithMerkleVerification__InvalidDecodersAndSanitizersLength()
+    );
 
     bytes32 strategistManageRoot = $.manageRoot[strategyExecutor][_msgSender()];
     require(strategistManageRoot != 0, StdError.NotFound('manageProof'));
