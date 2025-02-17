@@ -22,7 +22,6 @@ contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable, UUPSUpgradeable {
     _disableInitializers();
   }
 
-  /// @inheritdoc IEpochFeeder
   function initialize(address owner_, uint48 interval_) external initializer {
     require(interval_ == 0, IntervalTooShort());
 

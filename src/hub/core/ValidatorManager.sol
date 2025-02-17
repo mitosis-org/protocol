@@ -105,6 +105,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     return validators_;
   }
 
+  function isValidator(address valAddr) external view returns (bool) {
+    StorageV1 storage $ = _getStorageV1();
+    return $.indexByValAddr[valAddr] != 0;
+  }
+
   function staked(address valAddr, address staker) external view returns (uint256) {
     return _staked(valAddr, staker, _getStorageV1().epochFeeder.clock());
   }
