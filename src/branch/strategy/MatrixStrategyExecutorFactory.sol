@@ -7,6 +7,9 @@ import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 
+import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
+import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
+
 import { BeaconBase } from '../../lib/proxy/BeaconBase.sol';
 import { MatrixStrategyExecutor } from './MatrixStrategyExecutor.sol';
 
@@ -20,8 +23,15 @@ contract MatrixStrategyExecutorFactory is BeaconBase, OwnableUpgradeable {
     __BeaconBase_init(new UpgradeableBeacon(address(this), address(initialImpl)));
   }
 
-  function create(address owner_, address emergencyManager_) external onlyOwner returns (address) {
-    bytes memory args = abi.encodeCall(MatrixStrategyExecutor.initialize, (owner_, emergencyManager_));
+  function create(
+    IMitosisVault vault_,
+    IERC20 asset_,
+    address hubMatrixVault_,
+    address owner_,
+    address emergencyManager_
+  ) external onlyOwner returns (address) {
+    bytes memory args =
+      abi.encodeCall(MatrixStrategyExecutor.initialize, (vault_, asset_, hubMatrixVault_, owner_, emergencyManager_));
     address instance = address(new BeaconProxy(address(beacon()), args));
 
     _pushInstance(instance);
