@@ -31,9 +31,8 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
   function initialize(address owner_, address assetManager) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
+    __Ownable_init(owner_);
     __UUPSUpgradeable_init();
-
-    _transferOwnership(owner_);
 
     StorageV1 storage $ = _getStorageV1();
     _setAssetManager($, assetManager);

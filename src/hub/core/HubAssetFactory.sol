@@ -18,10 +18,9 @@ contract HubAssetFactory is BeaconBase, Ownable2StepUpgradeable, UUPSUpgradeable
 
   function initialize(address owner_, address initialImpl) external initializer {
     __Ownable2Step_init();
+    __Ownable_init(owner_);
     __UUPSUpgradeable_init();
     __BeaconBase_init(new UpgradeableBeacon(address(this), address(initialImpl)));
-
-    _transferOwnership(owner_);
   }
 
   function create(address owner_, address supplyManager, string memory name, string memory symbol, uint8 decimals)

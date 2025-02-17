@@ -77,9 +77,8 @@ contract MatrixVaultFactory is Ownable2StepUpgradeable, UUPSUpgradeable {
 
   function initialize(address owner_) external initializer {
     __Ownable2Step_init();
+    __Ownable_init(owner_);
     __UUPSUpgradeable_init();
-
-    _transferOwnership(owner_);
   }
 
   function beacon(VaultType t) external view returns (address) {

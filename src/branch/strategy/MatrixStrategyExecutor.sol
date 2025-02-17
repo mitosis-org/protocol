@@ -51,7 +51,7 @@ contract MatrixStrategyExecutor is
   function initialize(address owner_, address emergencyManager_) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
-    _transferOwnership(owner_);
+    __Ownable_init(owner_);
 
     StorageV1 storage $ = _getStorageV1();
 

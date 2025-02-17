@@ -25,9 +25,9 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
   function initialize(address owner_, address treasury_) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
+    __Ownable_init(owner_);
     __UUPSUpgradeable_init();
 
-    _transferOwnership(owner_);
     _setTreasury(_getStorageV1(), treasury_);
   }
 
