@@ -85,6 +85,8 @@ contract ValidatorRewardDistributor is
   /// @param validatorManager_ Address of the validator manager contract
   function initialize(address initialOwner_, address epochFeeder_, address validatorManager_) external initializer {
     __Ownable_init(initialOwner_);
+    __Ownable2Step_init();
+
     _setEpochFeeder(epochFeeder_);
     _setValidatorManager(validatorManager_);
   }

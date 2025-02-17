@@ -86,6 +86,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     initializer
   {
     __Ownable_init(initialOwner);
+    __Ownable2Step_init();
 
     StorageV1 storage $ = _getStorageV1();
     _setEpochFeeder($, epochFeeder);

@@ -26,6 +26,8 @@ contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable, UUPSUpgradeable {
     require(interval_ == 0, IntervalTooShort());
 
     __Ownable_init(owner_);
+    __Ownable2Step_init();
+
     _epoch = 1;
     _interval = interval_;
     _lastRoll = uint48(block.timestamp); // Set initial lastRoll
