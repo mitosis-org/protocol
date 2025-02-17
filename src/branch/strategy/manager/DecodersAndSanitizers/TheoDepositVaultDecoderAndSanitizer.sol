@@ -4,8 +4,6 @@ pragma solidity ^0.8.28;
 import { BaseDecoderAndSanitizer } from './BaseDecoderAndSanitizer.sol';
 
 contract TheoDepositVaultDecoderAndSanitizer is BaseDecoderAndSanitizer {
-  constructor(address strategyExecutor_) BaseDecoderAndSanitizer(strategyExecutor_) { }
-
   function depositETH() external pure returns (bytes memory addresssesFound) {
     return addresssesFound;
   }

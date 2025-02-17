@@ -58,19 +58,19 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     _managerWithMerkleVerification = ManagerWithMerkleVerification(
       payable(
         _proxy(
-          address(new ManagerWithMerkleVerification(address(_strategyExecutor))),
+          address(new ManagerWithMerkleVerification()),
           abi.encodeCall(ManagerWithMerkleVerification.initialize, (owner))
         )
       )
     );
 
     _testVault = new MockTestVault(address(_token));
-    _testVaultDecoderAndSanitizer = new MockTestVaultDecoderAndSanitizer(address(_strategyExecutor));
+    _testVaultDecoderAndSanitizer = new MockTestVaultDecoderAndSanitizer();
 
     vm.startPrank(owner);
     // note(ray): See the `test_generate_merkle_root` in this file.
     _managerWithMerkleVerification.setManageRoot(
-      strategist, 0xe67a34d0763ff95202dd5649f069e0fb1722285c58bc685470a1c6c64024abe5
+      address(_strategyExecutor), strategist, 0xe67a34d0763ff95202dd5649f069e0fb1722285c58bc685470a1c6c64024abe5
     );
     vm.stopPrank();
   }
@@ -86,21 +86,21 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
 
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
     (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser2(100 ether);
 
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
     (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser3(100 ether);
 
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
   }
 
@@ -115,12 +115,12 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
 
     vm.expectRevert(_errNotFound('manageProof'));
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
   }
 
@@ -143,7 +143,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     vm.expectRevert(_errFailedToVerifyManageProof(targets[0], targetData[0], values[0]));
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
     (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
@@ -154,7 +154,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     vm.expectRevert(_errFailedToVerifyManageProof(targets[0], targetData[0], values[0]));
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
     (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
@@ -167,7 +167,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     vm.expectRevert();
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
     // FailedCAll()
@@ -175,7 +175,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     vm.expectRevert();
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
     (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
@@ -186,7 +186,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     vm.expectRevert(); // TODO
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
   }
 
@@ -195,15 +195,15 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     address strategist2 = makeAddr('strategist2');
 
     vm.prank(owner);
-    _managerWithMerkleVerification.setManageRoot(strategist2, root);
+    _managerWithMerkleVerification.setManageRoot(address(_strategyExecutor), strategist2, root);
 
-    assertEq(_managerWithMerkleVerification.manageRoot(strategist2), root);
+    assertEq(_managerWithMerkleVerification.manageRoot(address(_strategyExecutor), strategist2), root);
 
     root = 0x0000000000000000000000000000000000000000000000000000000000000002;
     vm.prank(owner);
-    _managerWithMerkleVerification.setManageRoot(strategist2, root);
+    _managerWithMerkleVerification.setManageRoot(address(_strategyExecutor), strategist2, root);
 
-    assertEq(_managerWithMerkleVerification.manageRoot(strategist2), root);
+    assertEq(_managerWithMerkleVerification.manageRoot(address(_strategyExecutor), strategist2), root);
   }
 
   function test_setManageRoot_OwnableUnauthorizedAccount() public {
@@ -211,12 +211,12 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     address strategist2 = makeAddr('strategist2');
 
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
-    _managerWithMerkleVerification.setManageRoot(strategist2, root);
+    _managerWithMerkleVerification.setManageRoot(address(_strategyExecutor), strategist2, root);
 
     vm.prank(owner);
-    _managerWithMerkleVerification.setManageRoot(strategist2, root);
+    _managerWithMerkleVerification.setManageRoot(address(_strategyExecutor), strategist2, root);
 
-    assertEq(_managerWithMerkleVerification.manageRoot(strategist2), root);
+    assertEq(_managerWithMerkleVerification.manageRoot(address(_strategyExecutor), strategist2), root);
   }
 
   // merkle root: 0xe67a34d0763ff95202dd5649f069e0fb1722285c58bc685470a1c6c64024abe5
