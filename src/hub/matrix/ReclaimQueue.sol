@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
@@ -16,7 +17,7 @@ import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { ReclaimQueueStorageV1 } from './ReclaimQueueStorageV1.sol';
 
-contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, ReclaimQueueStorageV1 {
+contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSUpgradeable, ReclaimQueueStorageV1 {
   using SafeERC20 for IMatrixVault;
   using SafeERC20 for IHubAsset;
   using SafeCast for uint256;
@@ -30,10 +31,11 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
   function initialize(address owner_, address assetManager) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
+    __UUPSUpgradeable_init();
+
     _transferOwnership(owner_);
 
     StorageV1 storage $ = _getStorageV1();
-
     _setAssetManager($, assetManager);
   }
 
@@ -106,7 +108,9 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, Recla
     _sync($, executor, IMatrixVault(matrixVault), claimCount);
   }
 
-  // =========================== NOTE: CONFIG FUNCTIONS =========================== //
+  // =========================== NOTE: OWNABLE FUNCTIONS =========================== //
+
+  function _authorizeUpgrade(address) internal override onlyOwner { }
 
   function pause() external onlyOwner {
     _pause();

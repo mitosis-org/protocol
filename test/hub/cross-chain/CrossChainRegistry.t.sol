@@ -5,46 +5,34 @@ import { console } from '@std/console.sol';
 import { Test } from '@std/Test.sol';
 import { Vm } from '@std/Vm.sol';
 
-import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
-import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
+import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { CrossChainRegistry } from '../../../src/hub/cross-chain/CrossChainRegistry.sol';
 
 contract CrossChainRegistryTest is Test {
-  CrossChainRegistry internal ccRegistry;
-
-  ProxyAdmin internal _proxyAdmin;
+  CrossChainRegistry ccRegistry;
+  address owner = makeAddr('owner');
 
   function setUp() public {
-    _proxyAdmin = new ProxyAdmin(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
-
-    CrossChainRegistry ccRegistryImpl = new CrossChainRegistry();
     ccRegistry = CrossChainRegistry(
       payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(ccRegistryImpl),
-            address(_proxyAdmin),
-            abi.encodeWithSelector(ccRegistry.initialize.selector, 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496)
-          )
+        new ERC1967Proxy(
+          address(new CrossChainRegistry()), abi.encodeWithSelector(CrossChainRegistry.initialize.selector, owner)
         )
       )
     );
-    ccRegistry.grantRole(ccRegistry.REGISTERER_ROLE(), 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
   }
 
   function test_auth() public {
-    ccRegistry.revokeRole(ccRegistry.REGISTERER_ROLE(), 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
-
     uint256 chainID = 1;
     string memory name = 'Ethereum';
     uint32 hplDomain = 1;
     address entrypoint = makeAddr('entrypoint');
 
-    vm.expectRevert(); // 'AccessControlUnauthorizedAccount'
+    vm.expectRevert();
     ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
 
-    ccRegistry.grantRole(ccRegistry.REGISTERER_ROLE(), 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
+    vm.prank(owner);
     ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
   }
 
@@ -53,6 +41,8 @@ contract CrossChainRegistryTest is Test {
     string memory name = 'Ethereum';
     uint32 hplDomain = 1;
     address entrypoint = makeAddr('entrypoint');
+
+    vm.startPrank(owner);
 
     ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
 
@@ -68,12 +58,16 @@ contract CrossChainRegistryTest is Test {
     require(ccRegistry.hyperlaneDomain(chainID) == hplDomain, 'invalid hyperlaneDomain');
     require(ccRegistry.entrypoint(chainID) == entrypoint, 'invalid entrypoint');
     require(ccRegistry.chainId(hplDomain) == chainID, 'invalid chainId');
+
+    vm.stopPrank();
   }
 
   function test_setVault() public {
     uint256 chainID = 1;
     address vault = makeAddr('vault');
     address entrypoint = makeAddr('entrypoint');
+
+    vm.startPrank(owner);
 
     vm.expectRevert(); // 'not registered chain'
     ccRegistry.setVault(chainID, vault);
@@ -83,5 +77,7 @@ contract CrossChainRegistryTest is Test {
     ccRegistry.setChain(chainID, name, hplDomain, entrypoint);
     ccRegistry.setVault(chainID, vault);
     require(ccRegistry.vault(chainID) == vault, 'invalid vault');
+
+    vm.stopPrank();
   }
 }

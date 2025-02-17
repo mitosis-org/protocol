@@ -3,16 +3,17 @@ pragma solidity >=0.8.23 <0.9.0;
 
 import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
 
-import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
-
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+
+import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { BeaconProxy, IBeaconProxy } from '../../lib/proxy/BeaconProxy.sol';
 import { MatrixVaultBasic } from './MatrixVaultBasic.sol';
 import { MatrixVaultCapped } from './MatrixVaultCapped.sol';
 
-contract MatrixVaultFactory is OwnableUpgradeable {
+contract MatrixVaultFactory is OwnableUpgradeable, UUPSUpgradeable {
   using ERC7201Utils for string;
 
   enum VaultType {
@@ -76,6 +77,7 @@ contract MatrixVaultFactory is OwnableUpgradeable {
 
   function initialize(address owner_) external initializer {
     __Ownable_init(owner_);
+    __UUPSUpgradeable_init();
   }
 
   function beacon(VaultType t) external view returns (address) {
@@ -208,4 +210,6 @@ contract MatrixVaultFactory is OwnableUpgradeable {
 
     return instance;
   }
+
+  function _authorizeUpgrade(address) internal override onlyOwner { }
 }

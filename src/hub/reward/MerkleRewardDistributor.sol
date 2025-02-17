@@ -6,6 +6,7 @@ import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { MerkleProof } from '@oz-v5/utils/cryptography/MerkleProof.sol';
 
 import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { IMerkleRewardDistributor } from '../../interfaces/hub/reward/IMerkleRewardDistributor.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
@@ -14,8 +15,9 @@ import { MerkleRewardDistributorStorageV1 } from './MerkleRewardDistributorStora
 
 contract MerkleRewardDistributor is
   IMerkleRewardDistributor,
-  MerkleRewardDistributorStorageV1,
-  AccessControlEnumerableUpgradeable
+  AccessControlEnumerableUpgradeable,
+  UUPSUpgradeable,
+  MerkleRewardDistributorStorageV1
 {
   using SafeERC20 for IERC20;
   using MerkleProof for bytes32[];
@@ -31,6 +33,7 @@ contract MerkleRewardDistributor is
 
   function initialize(address admin, address treasury_) public initializer {
     __AccessControlEnumerable_init();
+    __UUPSUpgradeable_init();
 
     _grantRole(DEFAULT_ADMIN_ROLE, admin);
     _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
@@ -152,6 +155,10 @@ contract MerkleRewardDistributor is
       claimMultiple(receiver, stages[i], matrixVaults[i], rewards[i], amounts[i], proofs[i]);
     }
   }
+
+  // ============================ NOTE: ADMIN FUNCTIONS ============================ //
+
+  function _authorizeUpgrade(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
 
   // ============================ NOTE: MANAGER FUNCTIONS ============================ //
 

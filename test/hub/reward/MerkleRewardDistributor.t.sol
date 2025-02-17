@@ -7,8 +7,7 @@ import { Merkle } from '@murky/Merkle.sol';
 
 import { WETH } from '@solady/tokens/WETH.sol';
 
-import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
-import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
+import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { MerkleRewardDistributor } from '../../../src/hub/reward/MerkleRewardDistributor.sol';
 import { Treasury } from '../../../src/hub/reward/Treasury.sol';
@@ -17,36 +16,23 @@ import { MockERC20Snapshots } from '../../mock/MockERC20Snapshots.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract MerkleRewardDistributorTest is Toolkit {
-  ProxyAdmin internal _proxyAdmin;
-  Treasury _treasury;
+  Treasury internal _treasury;
   MerkleRewardDistributor internal _distributor;
-  MockERC20Snapshots _token;
+  MockERC20Snapshots internal _token;
 
   address immutable owner = makeAddr('owner');
   address immutable matrixVault = makeAddr('matrixVault');
   address immutable rewarder = makeAddr('rewarder');
 
   function setUp() public {
-    _proxyAdmin = new ProxyAdmin(owner);
+    _treasury =
+      Treasury(payable(new ERC1967Proxy(address(new Treasury()), abi.encodeCall(Treasury.initialize, (owner)))));
 
-    Treasury treasuryImpl = new Treasury();
-    _treasury = Treasury(
-      payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(treasuryImpl), address(_proxyAdmin), abi.encodeCall(_treasury.initialize, (owner))
-          )
-        )
-      )
-    );
-
-    MerkleRewardDistributor distributorImpl = new MerkleRewardDistributor();
     _distributor = MerkleRewardDistributor(
-      address(
-        new TransparentUpgradeableProxy(
-          address(distributorImpl),
-          address(_proxyAdmin),
-          abi.encodeCall(distributorImpl.initialize, (owner, address(_treasury)))
+      payable(
+        new ERC1967Proxy(
+          address(new MerkleRewardDistributor()),
+          abi.encodeCall(MerkleRewardDistributor.initialize, (owner, address(_treasury)))
         )
       )
     );

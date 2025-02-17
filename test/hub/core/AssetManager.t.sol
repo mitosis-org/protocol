@@ -5,8 +5,7 @@ import { console } from '@std/console.sol';
 import { Vm } from '@std/Vm.sol';
 
 import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
-import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
-import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
+import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 import { ERC20 } from '@oz-v5/token/ERC20/ERC20.sol';
 
 import { AssetManager } from '../../../src/hub/core/AssetManager.sol';
@@ -31,7 +30,6 @@ contract AssetManagerTest is Toolkit {
   MockAssetManagerEntrypoint _assetManagerEntrypoint;
   MatrixVaultBasic _matrixVault;
   HubAsset _token;
-  ProxyAdmin internal _proxyAdmin;
 
   address owner = makeAddr('owner');
   address user1 = makeAddr('user1');
@@ -45,41 +43,21 @@ contract AssetManagerTest is Toolkit {
   address strategist = makeAddr('strategist');
 
   function setUp() public {
-    _proxyAdmin = new ProxyAdmin(owner);
+    _treasury =
+      Treasury(payable(new ERC1967Proxy(address(new Treasury()), abi.encodeCall(Treasury.initialize, (owner)))));
 
-    ReclaimQueue reclaimQueueImpl = new ReclaimQueue();
-    _reclaimQueue = ReclaimQueue(
-      payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(reclaimQueueImpl),
-            address(_proxyAdmin),
-            abi.encodeCall(_reclaimQueue.initialize, (owner, address(_proxyAdmin)))
-          )
-        )
-      )
-    );
-
-    Treasury treasuryImpl = new Treasury();
-    _treasury = Treasury(
-      payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(treasuryImpl), address(_proxyAdmin), abi.encodeCall(_treasury.initialize, (owner))
-          )
-        )
-      )
-    );
-
-    AssetManager assetManagerImpl = new AssetManager();
     _assetManager = AssetManager(
       payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(assetManagerImpl),
-            address(_proxyAdmin),
-            abi.encodeCall(_assetManager.initialize, (owner, address(_treasury)))
-          )
+        new ERC1967Proxy(
+          address(new AssetManager()), abi.encodeCall(AssetManager.initialize, (owner, address(_treasury)))
+        )
+      )
+    );
+
+    _reclaimQueue = ReclaimQueue(
+      payable(
+        new ERC1967Proxy(
+          address(new ReclaimQueue()), abi.encodeCall(ReclaimQueue.initialize, (owner, address(_assetManager)))
         )
       )
     );
@@ -91,29 +69,17 @@ contract AssetManagerTest is Toolkit {
 
     _assetManagerEntrypoint = new MockAssetManagerEntrypoint(_assetManager, address(0));
 
-    HubAsset tokenImpl = new HubAsset();
     _token = HubAsset(
-      payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(tokenImpl),
-            address(_proxyAdmin),
-            abi.encodeCall(_token.initialize, (owner, address(_assetManager), 'Token', 'TKN', 18))
-          )
-        )
+      _proxy(
+        address(new HubAsset()),
+        abi.encodeCall(HubAsset.initialize, (owner, address(_assetManager), 'Token', 'TKN', 18))
       )
     );
 
-    MatrixVaultBasic matrixVaultImpl = new MatrixVaultBasic();
     _matrixVault = MatrixVaultBasic(
-      payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(matrixVaultImpl),
-            address(_proxyAdmin),
-            abi.encodeCall(_matrixVault.initialize, (address(_assetManager), IERC20Metadata(address(_token)), '', ''))
-          )
-        )
+      _proxy(
+        address(new MatrixVaultBasic()),
+        abi.encodeCall(MatrixVaultBasic.initialize, (address(_assetManager), IERC20Metadata(address(_token)), '', ''))
       )
     );
 
@@ -195,16 +161,10 @@ contract AssetManagerTest is Toolkit {
     MockERC20Snapshots myToken = new MockERC20Snapshots();
     myToken.initialize('Token', 'TKN');
 
-    MatrixVaultBasic matrixVaultImpl = new MatrixVaultBasic();
     MatrixVaultBasic incorrectMatrixVault = MatrixVaultBasic(
-      payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(matrixVaultImpl),
-            address(_proxyAdmin),
-            abi.encodeCall(_matrixVault.initialize, (address(_assetManager), IERC20Metadata(address(myToken)), '', ''))
-          )
-        )
+      _proxy(
+        address(new MatrixVaultBasic()),
+        abi.encodeCall(MatrixVaultBasic.initialize, (address(_assetManager), IERC20Metadata(address(myToken)), '', ''))
       )
     );
 
@@ -870,42 +830,22 @@ contract AssetManagerTest is Toolkit {
   }
 
   function test_setReclaimQueue() public {
-    ReclaimQueue reclaimQueueImpl = new ReclaimQueue();
-    ReclaimQueue newReclaimQueue = ReclaimQueue(
-      payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(reclaimQueueImpl),
-            address(_proxyAdmin),
-            abi.encodeCall(ReclaimQueue.initialize, (owner, address(_assetManager)))
-          )
-        )
-      )
-    );
+    address newReclaimQueue =
+      _proxy(address(new ReclaimQueue()), abi.encodeCall(ReclaimQueue.initialize, (owner, address(_assetManager))));
 
     assertEq(_assetManager.reclaimQueue(), address(_reclaimQueue));
 
     vm.prank(owner);
-    _assetManager.setReclaimQueue(address(newReclaimQueue));
-    assertEq(_assetManager.reclaimQueue(), address(newReclaimQueue));
+    _assetManager.setReclaimQueue(newReclaimQueue);
+    assertEq(_assetManager.reclaimQueue(), newReclaimQueue);
   }
 
   function test_setReclaimQueue_Unauthorized() public {
-    ReclaimQueue reclaimQueueImpl = new ReclaimQueue();
-    ReclaimQueue newReclaimQueue = ReclaimQueue(
-      payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(reclaimQueueImpl),
-            address(_proxyAdmin),
-            abi.encodeCall(ReclaimQueue.initialize, (owner, address(_assetManager)))
-          )
-        )
-      )
-    );
+    address newReclaimQueue =
+      _proxy(address(new ReclaimQueue()), abi.encodeCall(ReclaimQueue.initialize, (owner, address(_assetManager))));
 
     vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
-    _assetManager.setReclaimQueue(address(newReclaimQueue));
+    _assetManager.setReclaimQueue(newReclaimQueue);
   }
 
   function test_setReclaimQueue_InvalidParameter() public {

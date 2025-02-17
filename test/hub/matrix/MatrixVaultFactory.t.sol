@@ -6,6 +6,7 @@ import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
 import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
+import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
 import { MatrixVaultCapped } from '../../../src/hub/matrix/MatrixVaultCapped.sol';
@@ -15,7 +16,6 @@ import { Toolkit } from '../../util/Toolkit.sol';
 contract Empty { }
 
 contract MatrixVaultFactoryTest is Toolkit {
-  address public proxyAdmin = makeAddr('proxyAdmin');
   address public contractOwner = makeAddr('owner');
   address public supplyManager = address(new Empty());
 
@@ -34,14 +34,13 @@ contract MatrixVaultFactoryTest is Toolkit {
     factoryImpl = new MatrixVaultFactory();
 
     base = MatrixVaultFactory(
-      proxyFactory.deployAndCall(
-        address(factoryImpl), proxyAdmin, abi.encodeCall(MatrixVaultFactory.initialize, (contractOwner))
-      )
+      payable(new ERC1967Proxy(address(factoryImpl), abi.encodeCall(MatrixVaultFactory.initialize, (contractOwner))))
     );
   }
 
   function test_init() public view {
     assertEq(base.owner(), contractOwner);
+    assertEq(_erc1967Impl(address(base)), address(factoryImpl));
   }
 
   function test_initVaultType() public {
