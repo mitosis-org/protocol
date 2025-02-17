@@ -32,7 +32,7 @@ contract ManagerWithMerkleVerification is
   function initialize(address owner_) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
-    _transferOwnership(owner_);
+    __Ownable_init(owner_);
   }
 
   function manageRoot(address strategist) external view returns (bytes32) {

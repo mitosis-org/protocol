@@ -49,7 +49,6 @@ contract MitosisVaultEntrypoint is
     __Ownable2Step_init();
     __UUPSUpgradeable_init();
 
-    _transferOwnership(owner_);
     _enrollRemoteRouter(_mitosisDomain, _mitosisAddr);
   }
 

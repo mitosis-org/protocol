@@ -27,9 +27,8 @@ contract CrossChainRegistry is
 
   function initialize(address owner_) external initializer {
     __Ownable2Step_init();
+    __Ownable_init(owner_);
     __UUPSUpgradeable_init();
-
-    _transferOwnership(owner_);
   }
 
   //=========== NOTE: VIEW FUNCTIONS ===========//

@@ -51,8 +51,6 @@ contract AssetManagerEntrypoint is
     _MailboxClient_initialize(hook, ism, owner_);
     __Ownable2Step_init();
     __UUPSUpgradeable_init();
-
-    _transferOwnership(owner_);
   }
 
   receive() external payable { }

@@ -48,6 +48,7 @@ contract MatrixStrategyExecutor is
     address emergencyManager_
   ) public initializer {
     __Pausable_init();
+    __Ownable2Step_init();
     __Ownable_init(owner_);
 
     StorageV1 storage $ = _getStorageV1();
