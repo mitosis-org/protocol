@@ -6,6 +6,11 @@ interface IManagerWithMerkleVerification {
   event ManageRootUpdated(address indexed protocolVault, address indexed strategist, bytes32 oldRoot, bytes32 newRoot);
   event StrategyExecutorExecuted(address indexed protocolVault, address indexed strategyExecutor, uint256 callsMade);
 
+  error IManagerWithMerkleVerification__InvalidManageProofLength();
+  error IManagerWithMerkleVerification__InvalidTargetDataLength();
+  error IManagerWithMerkleVerification__InvalidValuesLength();
+  error IManagerWithMerkleVerification__InvalidDecodersAndSanitizersLength();
+
   error IManagerWithMerkleVerification__FailedToVerifyManageProof(address target, bytes targetData, uint256 value);
   error IManagerWithMerkleVerification__StrategyExecutorNotSet(address protocolVault);
 

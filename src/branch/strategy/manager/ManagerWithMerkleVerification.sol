@@ -80,11 +80,11 @@ contract ManagerWithMerkleVerification is
     StorageV1 storage $ = _getStorageV1();
 
     uint256 targetsLength = targets.length;
-    if (targetsLength != manageProofs.length) revert('ManagerWithMerkleVerification__InvalidManageProofLength()');
-    if (targetsLength != targetData.length) revert('ManagerWithMerkleVerification__InvalidTargetDataLength()');
-    if (targetsLength != values.length) revert('ManagerWithMerkleVerification__InvalidValuesLength()');
+    if (targetsLength != manageProofs.length) revert IManagerWithMerkleVerification__InvalidManageProofLength();
+    if (targetsLength != targetData.length) revert IManagerWithMerkleVerification__InvalidTargetDataLength();
+    if (targetsLength != values.length) revert IManagerWithMerkleVerification__InvalidValuesLength();
     if (targetsLength != decodersAndSanitizers.length) {
-      revert('ManagerWithMerkleVerification__InvalidDecodersAndSanitizersLength()');
+      revert IManagerWithMerkleVerification__InvalidDecodersAndSanitizersLength();
     }
 
     ManageData storage manageData = $.manageData[protocolVault];
