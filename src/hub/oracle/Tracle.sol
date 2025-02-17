@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
-
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
+
+import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
 import { ITracle } from '../../interfaces/hub/oracle/ITracle.sol';
@@ -15,7 +16,7 @@ import { StdError } from '../../lib/StdError.sol';
  * @title Tracle
  * @notice A temporary oracle contract only for testnet.
  */
-contract Tracle is ITracle, AccessControlUpgradeable {
+contract Tracle is ITracle, AccessControlUpgradeable, UUPSUpgradeable {
   using ERC7201Utils for string;
 
   bytes32 public constant MANAGER_ROLE = keccak256('MANAGER_ROLE');
@@ -50,9 +51,11 @@ contract Tracle is ITracle, AccessControlUpgradeable {
     _disableInitializers();
   }
 
-  function initialize(address owner) external initializer {
+  function initialize(address admin) external initializer {
     __AccessControl_init();
-    _grantRole(DEFAULT_ADMIN_ROLE, owner);
+    __UUPSUpgradeable_init();
+
+    _grantRole(DEFAULT_ADMIN_ROLE, admin);
     _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
   }
 
@@ -110,6 +113,10 @@ contract Tracle is ITracle, AccessControlUpgradeable {
     delete $.matrixVaultPriceConfigs[id];
     emit MatrixVaultPriceConfigUnset(id);
   }
+
+  // ============================ NOTE: ADMIN FUNCTIONS ============================ //
+
+  function _authorizeUpgrade(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 

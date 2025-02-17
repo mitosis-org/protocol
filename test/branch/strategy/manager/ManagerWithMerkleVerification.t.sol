@@ -6,8 +6,6 @@ import { console } from '@std/console.sol';
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
-import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
-import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
 import { MitosisVault, AssetAction, MatrixAction } from '../../../../src/branch/MitosisVault.sol';
 import { ManagerWithMerkleVerification } from
@@ -36,13 +34,12 @@ struct ManageLeaf {
 }
 
 contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
-  MockStrategyExecutor _strategyExecutor;
-  ManagerWithMerkleVerification _managerWithMerkleVerification;
-  ProxyAdmin _proxyAdmin;
-  MockERC20Snapshots _token;
-  MockTestVault _testVault;
-  MockTestVaultDecoderAndSanitizer _testVaultDecoderAndSanitizer;
-  MockTestVaultTally _testVaultTally;
+  MockStrategyExecutor internal _strategyExecutor;
+  ManagerWithMerkleVerification internal _managerWithMerkleVerification;
+  MockERC20Snapshots internal _token;
+  MockTestVault internal _testVault;
+  MockTestVaultDecoderAndSanitizer internal _testVaultDecoderAndSanitizer;
+  MockTestVaultTally internal _testVaultTally;
 
   address immutable owner = makeAddr('owner');
   address immutable hubMatrixVault = makeAddr('hubMatrixVault');
@@ -53,23 +50,16 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
   address immutable user3 = makeAddr('user3');
 
   function setUp() public {
-    _proxyAdmin = new ProxyAdmin(owner);
-
     _token = new MockERC20Snapshots();
     _token.initialize('Token', 'TKN');
 
     _strategyExecutor = new MockStrategyExecutor();
 
-    ManagerWithMerkleVerification managerWithMerkleVerificationImpl =
-      new ManagerWithMerkleVerification(address(_strategyExecutor));
     _managerWithMerkleVerification = ManagerWithMerkleVerification(
       payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(managerWithMerkleVerificationImpl),
-            address(_proxyAdmin),
-            abi.encodeCall(managerWithMerkleVerificationImpl.initialize, (owner))
-          )
+        _proxy(
+          address(new ManagerWithMerkleVerification(address(_strategyExecutor))),
+          abi.encodeCall(ManagerWithMerkleVerification.initialize, (owner))
         )
       )
     );
@@ -80,7 +70,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     vm.startPrank(owner);
     // note(ray): See the `test_generate_merkle_root` in this file.
     _managerWithMerkleVerification.setManageRoot(
-      strategist, 0xc07180f6901e597e364bf4c873f952084261ba4d1c2fb40de8ffe98a3cc02030
+      strategist, 0xe67a34d0763ff95202dd5649f069e0fb1722285c58bc685470a1c6c64024abe5
     );
     vm.stopPrank();
   }
@@ -229,24 +219,24 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     assertEq(_managerWithMerkleVerification.manageRoot(strategist2), root);
   }
 
-  // merkle root: 0xc07180f6901e597e364bf4c873f952084261ba4d1c2fb40de8ffe98a3cc02030
+  // merkle root: 0xe67a34d0763ff95202dd5649f069e0fb1722285c58bc685470a1c6c64024abe5
   // leafs:
   //    [0]: deposit(makeAddr('user1'), uint256)
   //          proofs: [
-  //            0x24c791245d8d6777f368aadfb6969609d54392fbf8fe45b8e64fcebe2b0d414e,
-  //            0x637690d4869c8b6848a7f10270415fe9a6d2a8f89f21a5ba312dd21a38a06809,
+  //            0xe1805cecfec5b9693b31f813eea37b5fa5a93e54543f7014d1d5190665b60773,
+  //            0x8046847c775483778f8b8f8188021f1fea864ed77ddd034d55daf13f47ab5060,
   //            0x849eda7a295b642e5ddaf49a30eec4470cf507efa83b4104c0752d069c7638fe,
   //          ]
   //    [1]: deposit(makeAddr('user2'), uint256)
   //          proofs: [
-  //            0x0eac06991ea4eb7dd3f4f39206abfb963e49da453f2fad6bda13a1e5125fb4c5,
-  //            0x637690d4869c8b6848a7f10270415fe9a6d2a8f89f21a5ba312dd21a38a06809,
+  //            0x43ff63d6e83df456e0e51e845995a926f8589aca2a2db42e7ff80ba24c183d96,
+  //            0x8046847c775483778f8b8f8188021f1fea864ed77ddd034d55daf13f47ab5060,
   //            0x849eda7a295b642e5ddaf49a30eec4470cf507efa83b4104c0752d069c7638fe,
   //          ]
   //    [2]: deposit(makeAddr('user3'), uint256)
   //          proofs: [
   //            0xa7a0fd846665d92e66be6155c6221b3acd7145ca7c4e4b67a594e4c516969400,
-  //            0x4b1dbd833716a3713994954341418997f137e6d6e71a543ba669e35127038ffc,
+  //            0x39f0c2ac41c7b12564232c45ae725ddb6c279601ae61fa1f41e131e0f6ae3bff,
   //            0x849eda7a295b642e5ddaf49a30eec4470cf507efa83b4104c0752d069c7638fe,
   //          ]
   //
@@ -320,8 +310,8 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
   {
     manageProofs = new bytes32[][](1);
     manageProofs[0] = new bytes32[](3);
-    manageProofs[0][0] = 0x24c791245d8d6777f368aadfb6969609d54392fbf8fe45b8e64fcebe2b0d414e;
-    manageProofs[0][1] = 0x637690d4869c8b6848a7f10270415fe9a6d2a8f89f21a5ba312dd21a38a06809;
+    manageProofs[0][0] = 0xe1805cecfec5b9693b31f813eea37b5fa5a93e54543f7014d1d5190665b60773;
+    manageProofs[0][1] = 0x8046847c775483778f8b8f8188021f1fea864ed77ddd034d55daf13f47ab5060;
     manageProofs[0][2] = 0x849eda7a295b642e5ddaf49a30eec4470cf507efa83b4104c0752d069c7638fe;
 
     decodersAndSanitizers = new address[](1);
@@ -352,8 +342,8 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
   {
     manageProofs = new bytes32[][](1);
     manageProofs[0] = new bytes32[](3);
-    manageProofs[0][0] = 0x0eac06991ea4eb7dd3f4f39206abfb963e49da453f2fad6bda13a1e5125fb4c5;
-    manageProofs[0][1] = 0x637690d4869c8b6848a7f10270415fe9a6d2a8f89f21a5ba312dd21a38a06809;
+    manageProofs[0][0] = 0x43ff63d6e83df456e0e51e845995a926f8589aca2a2db42e7ff80ba24c183d96;
+    manageProofs[0][1] = 0x8046847c775483778f8b8f8188021f1fea864ed77ddd034d55daf13f47ab5060;
     manageProofs[0][2] = 0x849eda7a295b642e5ddaf49a30eec4470cf507efa83b4104c0752d069c7638fe;
 
     decodersAndSanitizers = new address[](1);
@@ -385,7 +375,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     manageProofs = new bytes32[][](1);
     manageProofs[0] = new bytes32[](3);
     manageProofs[0][0] = 0xa7a0fd846665d92e66be6155c6221b3acd7145ca7c4e4b67a594e4c516969400;
-    manageProofs[0][1] = 0x4b1dbd833716a3713994954341418997f137e6d6e71a543ba669e35127038ffc;
+    manageProofs[0][1] = 0x39f0c2ac41c7b12564232c45ae725ddb6c279601ae61fa1f41e131e0f6ae3bff;
     manageProofs[0][2] = 0x849eda7a295b642e5ddaf49a30eec4470cf507efa83b4104c0752d069c7638fe;
 
     decodersAndSanitizers = new address[](1);

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
+
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
@@ -9,7 +11,6 @@ import { HubAssetFactory } from '../../../src/hub/core/HubAssetFactory.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract HubAssetFactoryTest is Toolkit {
-  address public proxyAdmin = makeAddr('proxyAdmin');
   address public contractOwner = makeAddr('owner');
   address public supplyManager = makeAddr('supplyManager');
 
@@ -25,16 +26,16 @@ contract HubAssetFactoryTest is Toolkit {
     hubAssetImpl = new HubAsset();
     hubAssetFactoryImpl = new HubAssetFactory();
     base = HubAssetFactory(
-      proxyFactory.deployAndCall(
-        address(hubAssetFactoryImpl),
-        proxyAdmin,
-        abi.encodeCall(HubAssetFactory.initialize, (contractOwner, address(hubAssetImpl)))
+      payable(
+        new ERC1967Proxy(
+          address(hubAssetFactoryImpl),
+          abi.encodeCall(HubAssetFactory.initialize, (contractOwner, address(hubAssetImpl)))
+        )
       )
     );
   }
 
   function test_init() public view {
-    assertEq(proxyAdmin, proxyFactory.adminOf(address(base)));
     assertEq(address(hubAssetFactoryImpl), _erc1967Impl(address(base)));
     assertEq(address(0x0), _erc1967Beacon(address(base)));
 
