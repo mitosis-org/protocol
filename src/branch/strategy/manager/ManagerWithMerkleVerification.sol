@@ -6,14 +6,14 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 
 import { Address } from '@openzeppelin/contracts/utils/Address.sol';
 
+import { MerkleProofLib } from '@solmate/utils/MerkleProofLib.sol';
+
 import { IStrategyExecutor } from '../../../interfaces/branch/strategy/IStrategyExecutor.sol';
 import { IManagerWithMerkleVerification } from
   '../../../interfaces/branch/strategy/manager/IManagerWithMerkleVerification.sol';
 import { Pausable } from '../../../lib/Pausable.sol';
 import { StdError } from '../../../lib/StdError.sol';
 import { ManagerWithMerkleVerificationStorageV1 } from './ManagerWithMerkleVerificationStorageV1.sol';
-
-import { MerkleProofLib } from 'dependencies/solmate-6.8.0/src/utils/MerkleProofLib.sol'; // TODO
 
 contract ManagerWithMerkleVerification is
   IManagerWithMerkleVerification,
@@ -94,7 +94,7 @@ contract ManagerWithMerkleVerification is
       IManagerWithMerkleVerification__StrategyExecutorNotSet(protocolVault)
     );
 
-    bytes32 strategistManageRoot = manageData.root[msg.sender];
+    bytes32 strategistManageRoot = manageData.root[_msgSender()];
     require(strategistManageRoot != 0, StdError.NotFound('manageProof'));
 
     for (uint256 i; i < targetsLength; ++i) {
