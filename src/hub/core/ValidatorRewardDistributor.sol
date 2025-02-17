@@ -68,35 +68,38 @@ contract ValidatorRewardDistributor is ValidatorRewardDistributorStorageV1, Owna
     return _getStorageV1().lastClaimedEpoch[staker][valAddr];
   }
 
-  function claimableRewards(address valAddr, address staker) external view returns (uint256) {
+  function claimableRewards(address staker) external view returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
-
+    address[] memory validators = $.validatorManager.validators();
     uint256 totalClaimable;
-    (uint96 start, uint96 end) = _claimRange($, staker, valAddr, $.epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
-    if (start == end) return 0;
-
-    for (uint96 epoch = start; epoch < end; epoch++) {
-      totalClaimable += _claimRewardForEpoch($, valAddr, staker, epoch);
+    for (uint256 i = 0; i < validators.length; i++) {
+      totalClaimable += _claimableRewards($, validators[i], staker);
     }
-
     return totalClaimable;
   }
 
-  function claimRewards(address valAddr, uint256 epochCount) external returns (uint256) {
+  function claimableRewards(address valAddr, address staker) external view returns (uint256) {
+    return _claimableRewards(_getStorageV1(), valAddr, staker);
+  }
+
+  function claimRewards() external returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
-    require(0 < epochCount && epochCount <= MAX_CLAIM_EPOCHS, StdError.InvalidParameter('epochCount'));
-
+    address[] memory validators = $.validatorManager.validators();
     uint256 totalClaimable;
-    (uint96 start, uint96 end) = _claimRange($, _msgSender(), valAddr, $.epochFeeder.epoch(), epochCount);
-    require(start < end, StdError.InvalidParameter('start >= end'));
-
-    for (uint96 epoch = start; epoch < end; epoch++) {
-      totalClaimable += _claimRewardForEpoch($, valAddr, _msgSender(), epoch);
+    for (uint256 i = 0; i < validators.length; i++) {
+      totalClaimable += _claimRewards($, validators[i], MAX_CLAIM_EPOCHS);
     }
+    require(totalClaimable > 0, StdError.Unauthorized()); // FIXME(eddy): custom error
 
-    $.lastClaimedEpoch[_msgSender()][valAddr] = end;
     IGovMITO(payable(govMITO)).safeTransfer(_msgSender(), totalClaimable);
+    return totalClaimable;
+  }
 
+  function claimRewards(address valAddr) external returns (uint256) {
+    uint256 totalClaimable = _claimRewards(_getStorageV1(), valAddr, MAX_CLAIM_EPOCHS);
+    require(totalClaimable > 0, StdError.Unauthorized()); // FIXME(eddy): custom error
+
+    IGovMITO(payable(govMITO)).safeTransfer(_msgSender(), totalClaimable);
     return totalClaimable;
   }
 
@@ -138,6 +141,20 @@ contract ValidatorRewardDistributor is ValidatorRewardDistributorStorageV1, Owna
     _getStorageV1().validatorManager = IValidatorManager(validatorManager_);
   }
 
+  function _claimableRewards(StorageV1 storage $, address valAddr, address staker) internal view returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+
+    uint256 totalClaimable;
+    (uint96 start, uint96 end) = _claimRange($, staker, valAddr, $.epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
+    if (start == end) return 0;
+
+    for (uint96 epoch = start; epoch < end; epoch++) {
+      totalClaimable += _claimRewardForEpoch($, valAddr, staker, epoch);
+    }
+
+    return totalClaimable;
+  }
+
   function _claimRange(StorageV1 storage $, address staker, address valAddr, uint96 currentEpoch, uint256 epochCount)
     internal
     view
@@ -149,6 +166,21 @@ contract ValidatorRewardDistributor is ValidatorRewardDistributorStorageV1, Owna
     uint96 endEpoch = (Math.min(currentEpoch, startEpoch + epochCount - 1)).toUint96();
 
     return (startEpoch, endEpoch);
+  }
+
+  function _claimRewards(StorageV1 storage $, address valAddr, uint256 epochCount) internal returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+
+    uint256 totalClaimable;
+    (uint96 start, uint96 end) = _claimRange($, _msgSender(), valAddr, $.epochFeeder.epoch(), epochCount);
+    if (start == end) return 0;
+
+    for (uint96 epoch = start; epoch < end; epoch++) {
+      totalClaimable += _claimRewardForEpoch($, valAddr, _msgSender(), epoch);
+    }
+
+    $.lastClaimedEpoch[_msgSender()][valAddr] = end;
+    return totalClaimable;
   }
 
   /// @dev stakerRewardPerEpoch = TWAB(delegation[epoch] / totalSupply[epoch]) * rewards

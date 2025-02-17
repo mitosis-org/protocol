@@ -95,6 +95,16 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     $.validatorIndexes.push(0);
   }
 
+  function validators() external view returns (address[] memory) {
+    StorageV1 storage $ = _getStorageV1();
+    address[] memory validators_ = new address[]($.validatorIndexes.length - 1);
+    for (uint256 i = 1; i < $.validatorIndexes.length; i++) {
+      validators_[i - 1] = $.validators[i].validator;
+    }
+
+    return validators_;
+  }
+
   function staked(address valAddr, address staker) external view returns (uint256) {
     return _staked(valAddr, staker, _getStorageV1().epochFeeder.clock());
   }

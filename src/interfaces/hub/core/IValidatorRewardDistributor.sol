@@ -16,17 +16,23 @@ interface IValidatorRewardDistributor {
   /// @notice Returns the last claimed epoch for a staker and validator
   function lastClaimedEpoch(address staker, address valAddr) external view returns (uint96);
 
-  /// @notice Claims rewards for a validator over a range of epochs
+  /// @notice Returns the total claimable rewards for a staker
+  function claimableRewards(address staker) external view returns (uint256);
+
+  /// @notice Returns the total claimable rewards for a validator and staker
   /// @param valAddr The validator address to claim rewards for
   /// @param staker The staker address to claim rewards for
-  /// @return The total amount of rewards that can be claimed
+  /// @return amount The total amount of rewards that can be claimed
   function claimableRewards(address valAddr, address staker) external view returns (uint256);
+
+  /// @notice Claims rewards for a staker over a range of epochs
+  /// @return amount The total amount of rewards that were claimed
+  function claimRewards() external returns (uint256);
 
   /// @notice Claims rewards for a validator over a range of epochs
   /// @param valAddr The validator address to claim rewards for
-  /// @param epochCount The number of epochs to claim rewards for (max 32)
-  /// @return The total amount of rewards that were claimed
-  function claimRewards(address valAddr, uint256 epochCount) external returns (uint256);
+  /// @return amount The total amount of rewards that were claimed
+  function claimRewards(address valAddr) external returns (uint256);
 
   /// @notice Reports rewards for a single validator for the current epoch
   /// @param valAddr The validator address to report rewards for
