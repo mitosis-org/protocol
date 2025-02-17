@@ -23,7 +23,9 @@ contract ManagerWithMerkleVerification is
 {
   using Address for address;
 
-  constructor() initializer { }
+  constructor() {
+    _disableInitializers();
+  }
 
   function initialize(address owner_) public initializer {
     __Pausable_init();
