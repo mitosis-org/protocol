@@ -6,17 +6,22 @@ import { IManagerWithMerkleVerification } from
   '../../src/interfaces/branch/strategy/manager/IManagerWithMerkleVerification.sol';
 
 contract MockManagerWithMerkleVerification is IManagerWithMerkleVerification {
-  IStrategyExecutor _strategyExecutor;
+  mapping(address protocolVault => IStrategyExecutor) _strategyExecutors;
 
-  constructor(address strategyExecutor) {
-    _strategyExecutor = IStrategyExecutor(strategyExecutor);
+  function strategyExecutor(address protocolVault) external view returns (address) {
+    return address(_strategyExecutors[protocolVault]);
   }
 
-  function manageRoot(address strategist) external view returns (bytes32) { }
+  function setStrategyExecutor(address protocolVault, address strategyExecutor_) external {
+    _strategyExecutors[protocolVault] = IStrategyExecutor(strategyExecutor_);
+  }
 
-  function setManageRoot(address strategist, bytes32 _manageRoot) external { }
+  function manageRoot(address, address strategist) external view returns (bytes32) { }
+
+  function setManageRoot(address, address strategist, bytes32 _manageRoot) external { }
 
   function manageVaultWithMerkleVerification(
+    address hubMatrixVault,
     bytes32[][] calldata,
     address[] calldata,
     address[] calldata targets,
@@ -24,7 +29,7 @@ contract MockManagerWithMerkleVerification is IManagerWithMerkleVerification {
     uint256[] calldata values
   ) external {
     for (uint256 i = 0; i < targets.length; i++) {
-      _strategyExecutor.execute(targets[i], targetData[i], values[i]);
+      _strategyExecutors[hubMatrixVault].execute(targets[i], targetData[i], values[i]);
     }
   }
 }

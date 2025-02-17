@@ -23,11 +23,7 @@ contract ManagerWithMerkleVerification is
 {
   using Address for address;
 
-  IStrategyExecutor public immutable strategyExecutor;
-
-  constructor(address _strategyExecutor) initializer {
-    strategyExecutor = IStrategyExecutor(_strategyExecutor);
-  }
+  constructor() initializer { }
 
   function initialize(address owner_) public initializer {
     __Pausable_init();
@@ -35,15 +31,32 @@ contract ManagerWithMerkleVerification is
     _transferOwnership(owner_);
   }
 
-  function manageRoot(address strategist) external view returns (bytes32) {
-    return _getStorageV1().manageRoot[strategist];
+  function strategyExecutor(address protocolVault) external view returns (address) {
+    return address(_getStorageV1().manageData[protocolVault].strategyExecutor);
   }
 
-  function setManageRoot(address strategist, bytes32 _manageRoot) external onlyOwner {
+  function manageRoot(address protocolVault, address strategist) external view returns (bytes32) {
+    return _getStorageV1().manageData[protocolVault].root[strategist];
+  }
+
+  function setStrategyExecutor(address protocolVault, address strategyExecutor_) external onlyOwner {
+    ManageData storage manageData = _getStorageV1().manageData[protocolVault];
+    address oldStrategyExecutor = address(manageData.strategyExecutor);
+    manageData.strategyExecutor = IStrategyExecutor(strategyExecutor_);
+    emit StrategyExecutorUpdated(protocolVault, oldStrategyExecutor, strategyExecutor_);
+  }
+
+  function setManageRoot(address protocolVault, address strategist, bytes32 _manageRoot) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    bytes32 oldRoot = $.manageRoot[strategist];
-    $.manageRoot[strategist] = _manageRoot;
-    emit ManageRootUpdated(strategist, oldRoot, _manageRoot);
+
+    require(
+      address($.manageData[protocolVault].strategyExecutor) != address(0),
+      IManagerWithMerkleVerification__StrategyExecutorNotSet(protocolVault)
+    );
+
+    bytes32 oldRoot = $.manageData[protocolVault].root[strategist];
+    $.manageData[protocolVault].root[strategist] = _manageRoot;
+    emit ManageRootUpdated(protocolVault, strategist, oldRoot, _manageRoot);
   }
 
   function pause() external onlyOwner {
@@ -55,6 +68,7 @@ contract ManagerWithMerkleVerification is
   }
 
   function manageVaultWithMerkleVerification(
+    address protocolVault,
     bytes32[][] calldata manageProofs,
     address[] calldata decodersAndSanitizers,
     address[] calldata targets,
@@ -73,17 +87,24 @@ contract ManagerWithMerkleVerification is
       revert('ManagerWithMerkleVerification__InvalidDecodersAndSanitizersLength()');
     }
 
-    bytes32 strategistManageRoot = $.manageRoot[msg.sender];
+    ManageData storage manageData = $.manageData[protocolVault];
+
+    require(
+      address(manageData.strategyExecutor) != address(0),
+      IManagerWithMerkleVerification__StrategyExecutorNotSet(protocolVault)
+    );
+
+    bytes32 strategistManageRoot = manageData.root[msg.sender];
     require(strategistManageRoot != 0, StdError.NotFound('manageProof'));
 
     for (uint256 i; i < targetsLength; ++i) {
       _verifyCallData(
         strategistManageRoot, manageProofs[i], decodersAndSanitizers[i], targets[i], values[i], targetData[i]
       );
-      strategyExecutor.execute(targets[i], targetData[i], values[i]);
+      manageData.strategyExecutor.execute(targets[i], targetData[i], values[i]);
     }
 
-    emit StrategyExecutorExecuted(targetsLength);
+    emit StrategyExecutorExecuted(protocolVault, address(manageData.strategyExecutor), targetsLength);
   }
 
   function _verifyCallData(

@@ -55,13 +55,15 @@ contract MatrixStrategyExecutorTest is Toolkit {
       )
     );
 
-    _managerWithMerkleVerification = new MockManagerWithMerkleVerification(address(_matrixStrategyExecutor));
+    _managerWithMerkleVerification = new MockManagerWithMerkleVerification();
 
     _testVault = new MockTestVault(address(_token));
     _testVaultTally = new MockTestVaultTally(address(_token), address(_testVault));
     _testVaultDecoderAndSanitizer = new MockTestVaultDecoderAndSanitizer(address(_matrixStrategyExecutor));
 
     vm.startPrank(owner);
+
+    _managerWithMerkleVerification.setStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
     _mitosisVault.setEntrypoint(address(_mitosisVaultEntrypoint));
 
@@ -90,7 +92,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
     assertEq(_testVaultTally.totalBalance(''), 0);
 
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      hubMatrixVault, manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
     assertEq(_token.balanceOf(makeAddr('user1')), 0);
@@ -121,7 +123,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
 
     vm.expectRevert(StdError.Unauthorized.selector);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      hubMatrixVault, manageProofs, decodersAndSanitizers, targets, targetData, values
     );
   }
 
@@ -144,7 +146,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
 
     vm.expectRevert(_errTallyNotSet(address(testVault2)));
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      hubMatrixVault, manageProofs, decodersAndSanitizers, targets, targetData, values
     );
   }
 

@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { IStrategyExecutor } from '../../../interfaces/branch/strategy/IStrategyExecutor.sol';
 import { ERC7201Utils } from '../../../lib/ERC7201Utils.sol';
 
 abstract contract ManagerWithMerkleVerificationStorageV1 {
   using ERC7201Utils for string;
 
+  struct ManageData {
+    IStrategyExecutor strategyExecutor;
+    mapping(address strategist => bytes32 root) root;
+  }
+
   struct StorageV1 {
-    mapping(address => bytes32) manageRoot;
+    mapping(address protocolVault => ManageData) manageData;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.ManagerWithMerkleVerificationStorage.v1';
