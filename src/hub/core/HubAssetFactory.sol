@@ -5,13 +5,13 @@ import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
 import { BeaconProxy } from '@oz-v5/proxy/beacon/BeaconProxy.sol';
 
-import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { BeaconBase } from '../../lib/proxy/BeaconBase.sol';
 import { HubAsset } from './HubAsset.sol';
 
-contract HubAssetFactory is BeaconBase, OwnableUpgradeable, UUPSUpgradeable {
+contract HubAssetFactory is BeaconBase, Ownable2StepUpgradeable, UUPSUpgradeable {
   constructor() {
     _disableInitializers();
   }
