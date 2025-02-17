@@ -111,18 +111,23 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function staked(address valAddr, address staker) external view returns (uint256) {
+    require(staker != address(0), StdError.InvalidParameter('staker'));
     return _staked(valAddr, staker, _getStorageV1().epochFeeder.clock());
   }
 
   function staked(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
+    require(staker != address(0), StdError.InvalidParameter('staker'));
+    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _staked(valAddr, staker, timestamp);
   }
 
   function stakedTWAB(address valAddr, address staker) external view returns (uint256) {
+    require(staker != address(0), StdError.InvalidParameter('staker'));
     return _stakedTWAB(valAddr, staker, _getStorageV1().epochFeeder.clock());
   }
 
   function stakedTWAB(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
+    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _stakedTWAB(valAddr, staker, timestamp);
   }
 
@@ -131,6 +136,9 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     view
     returns (RedelegationsResponse[] memory)
   {
+    require(toValAddr != address(0) && staker != address(0), StdError.InvalidParameter('staker'));
+    require(epoch > 0, StdError.InvalidParameter('epoch'));
+
     Redelegation[] storage history = _getStorageV1().redelegationHistory[staker][toValAddr];
     if (history.length == 0) return new RedelegationsResponse[](0); // no redelegation history
 
@@ -158,6 +166,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function totalDelegation(address valAddr, uint48 timestamp) external view returns (uint256) {
+    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _totalDelegation(valAddr, timestamp);
   }
 
@@ -166,6 +175,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function totalDelegationTWAB(address valAddr, uint48 timestamp) external view returns (uint256) {
+    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _totalDelegationTWAB(valAddr, timestamp);
   }
 
@@ -182,6 +192,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function totalPendingRedelegation(address valAddr, uint96 epoch) external view returns (uint256) {
+    require(epoch > 0, StdError.InvalidParameter('epoch'));
+
     StorageV1 storage $ = _getStorageV1();
     ValidatorStat memory stat = _validatorInfo($, valAddr).stat;
     if (stat.totalPendingRedelegations.length == 0) return 0;
@@ -207,7 +219,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function stake(address valAddr, address recipient) external payable {
-    require(msg.value > 0, StdError.InvalidParameter('msg.value'));
+    require(msg.value > 0, StdError.ZeroAmount());
+    require(recipient != address(0), StdError.InvalidParameter('recipient'));
 
     StorageV1 storage $ = _getStorageV1();
     _assertValidatorExists($, valAddr);
@@ -219,7 +232,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function unstake(address valAddr, uint256 amount) external {
-    require(amount > 0, StdError.InvalidParameter('amount'));
+    require(amount > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
     _assertValidatorExists($, valAddr);
@@ -234,6 +247,9 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external {
+    require(amount > 0, StdError.ZeroAmount());
+    require(fromValAddr != toValAddr, StdError.InvalidParameter('from!=to'));
+
     StorageV1 storage $ = _getStorageV1();
     _assertValidatorExists($, fromValAddr);
     _assertValidatorExists($, toValAddr);
@@ -256,6 +272,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function cancelRedelegation(address fromValAddr, address toValAddr, uint256 amount) external {
+    require(amount > 0, StdError.ZeroAmount());
+
     StorageV1 storage $ = _getStorageV1();
     _assertValidatorExists($, fromValAddr);
     _assertValidatorExists($, toValAddr);
@@ -275,7 +293,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     require(last.epoch == epoch && !last.applied, StdError.InvalidParameter('history'));
 
     uint256 redelegationAmount = last.logs.get(fromValAddr);
-    require(redelegationAmount > amount, StdError.InvalidParameter('amount'));
+    require(redelegationAmount >= amount, StdError.InvalidParameter('amount'));
 
     if (redelegationAmount == amount) last.logs.remove(fromValAddr);
     else last.logs.set(fromValAddr, redelegationAmount - amount);
@@ -289,6 +307,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function join(bytes calldata valKey) external payable {
+    require(valKey.length > 0, StdError.InvalidParameter('valKey'));
     address valAddr = _msgSender();
 
     // verify the valKey is valid and corresponds to the caller
@@ -310,9 +329,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     $.entrypoint.registerValidator{ value: msg.value }(valKey, valAddr);
   }
 
-  /// @dev Operator must be following:
-  /// 1. validator == operator
-  /// 2. validator != operator && operator is not a validator
   function updateOperator(address operator) external {
     require(operator != address(0), StdError.InvalidParameter('operator'));
     address valAddr = _msgSender();
@@ -327,7 +343,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function depositCollateral(address valAddr) external payable {
-    require(msg.value > 0, StdError.InvalidParameter('msg.value'));
+    require(msg.value > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
     Validator memory info = _validatorInfo($, valAddr);
@@ -337,6 +353,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function withdrawCollateral(address valAddr, uint256 amount) external {
+    require(amount > 0, StdError.ZeroAmount());
+
     StorageV1 storage $ = _getStorageV1();
     Validator memory info = _validatorInfo($, valAddr);
     _assertOperator(info);
@@ -358,11 +376,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     $.entrypoint.unjail(info.pubKey);
   }
 
-  function setEpochFeeder(IEpochFeeder epochFeeder) external {
+  function setEpochFeeder(IEpochFeeder epochFeeder) external onlyOwner {
     _setEpochFeeder(_getStorageV1(), epochFeeder);
   }
 
-  function setEntrypoint(IConsensusValidatorEntrypoint entrypoint) external {
+  function setEntrypoint(IConsensusValidatorEntrypoint entrypoint) external onlyOwner {
     _setEntrypoint(_getStorageV1(), entrypoint);
   }
 
@@ -424,12 +442,10 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
 
     // prevent future lookup
-    require(timestamp > $.epochFeeder.clock(), StdError.InvalidParameter('timestamp'));
+    require(timestamp <= $.epochFeeder.clock(), StdError.InvalidParameter('timestamp'));
 
     uint96 epoch = $.epochFeeder.epochAt(timestamp);
 
-    // TODO: debug this
-    // NOTE: no need to lookup the redelegation history here because it is already applied to the delegation history
     TWABCheckpoint[] memory history = $.delegationHistory[valAddr][staker];
     if (history.length == 0) return 0;
 
@@ -605,7 +621,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       if (last.epoch == epoch) {
         (bool exists, uint256 value) = last.logs.tryGet(fromValAddr);
         // revert if the number of redelegations exceeds the limit
-        require(last.logs.length() + 1 > MAX_REDELEGATION_COUNT, StdError.Unauthorized());
+        require(last.logs.length() < MAX_REDELEGATION_COUNT, StdError.Unauthorized());
         last.logs.set(fromValAddr, exists ? value + amount : amount);
         last.total += amount;
       } else {
