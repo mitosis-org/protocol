@@ -5,7 +5,7 @@ import { BaseDecoderAndSanitizer } from
   '../../src/branch/strategy/manager/DecodersAndSanitizers/BaseDecoderAndSanitizer.sol';
 
 contract MockTestVaultDecoderAndSanitizer is BaseDecoderAndSanitizer {
-  constructor(address _strategyExecutor) BaseDecoderAndSanitizer(_strategyExecutor) { }
+  constructor() { }
 
   function deposit(address account, uint256) external pure returns (bytes memory addressesFound) {
     addressesFound = abi.encodePacked(account);

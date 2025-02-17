@@ -59,7 +59,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
 
     _testVault = new MockTestVault(address(_token));
     _testVaultTally = new MockTestVaultTally(address(_token), address(_testVault));
-    _testVaultDecoderAndSanitizer = new MockTestVaultDecoderAndSanitizer(address(_matrixStrategyExecutor));
+    _testVaultDecoderAndSanitizer = new MockTestVaultDecoderAndSanitizer();
 
     vm.startPrank(owner);
 

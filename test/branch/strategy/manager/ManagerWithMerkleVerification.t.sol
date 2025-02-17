@@ -65,7 +65,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     );
 
     _testVault = new MockTestVault(address(_token));
-    _testVaultDecoderAndSanitizer = new MockTestVaultDecoderAndSanitizer(address(_strategyExecutor));
+    _testVaultDecoderAndSanitizer = new MockTestVaultDecoderAndSanitizer();
 
     vm.startPrank(owner);
     _managerWithMerkleVerification.setStrategyExecutor(hubMatrixVault, address(_strategyExecutor));
