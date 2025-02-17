@@ -69,6 +69,8 @@ contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable, UUPSUpgradeable {
     uint48 now_ = clock();
     require(now_ > _lastRoll + _interval, StdError.Unauthorized());
 
+    _epochToTime[_epoch] = now_;
+
     _lastRoll = now_;
     _epoch++;
   }
