@@ -1,24 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.23 <0.9.0;
 
-import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
-
 import { BeaconProxy } from '@oz-v5/proxy/beacon/BeaconProxy.sol';
 
+import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
+
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { BeaconBase } from '../../lib/proxy/BeaconBase.sol';
 import { HubAsset } from './HubAsset.sol';
 
-contract HubAssetFactory is BeaconBase, OwnableUpgradeable, UUPSUpgradeable {
+contract HubAssetFactory is BeaconBase, OwnableUpgradeable {
   constructor() {
     _disableInitializers();
   }
 
   function initialize(address owner_, address initialImpl) external initializer {
     __Ownable_init(owner_);
-    __UUPSUpgradeable_init();
     __BeaconBase_init(new UpgradeableBeacon(address(this), address(initialImpl)));
   }
 
@@ -38,6 +36,4 @@ contract HubAssetFactory is BeaconBase, OwnableUpgradeable, UUPSUpgradeable {
   function callBeacon(bytes calldata data) external onlyOwner returns (bytes memory) {
     return _callBeacon(data);
   }
-
-  function _authorizeUpgrade(address) internal override onlyOwner { }
 }

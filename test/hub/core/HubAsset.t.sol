@@ -6,28 +6,47 @@ import { Test } from '@std/Test.sol';
 import { Vm } from '@std/Vm.sol';
 
 import { IERC20Errors } from '@oz-v5/interfaces/draft-IERC6093.sol';
+import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
+import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
-import { Toolkit } from '../../util/Toolkit.sol';
 
-contract HubAssetTest is Toolkit {
+contract HubAssetTest is Test {
   HubAsset hubAsset;
   HubAsset usdc;
 
+  ProxyAdmin internal _proxyAdmin;
   address immutable owner = makeAddr('owner');
   address immutable user1 = makeAddr('user1');
   address immutable user2 = makeAddr('user2');
   address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
   function setUp() public {
+    _proxyAdmin = new ProxyAdmin(owner);
+    HubAsset hubAssetImpl = new HubAsset();
+
     hubAsset = HubAsset(
-      _proxy(address(new HubAsset()), abi.encodeCall(HubAsset.initialize, (owner, address(this), 'Token', 'TKN', 18)))
+      payable(
+        address(
+          new TransparentUpgradeableProxy(
+            address(hubAssetImpl),
+            address(_proxyAdmin),
+            abi.encodeCall(hubAsset.initialize, (owner, address(this), 'Token', 'TKN', 18))
+          )
+        )
+      )
     );
 
     usdc = HubAsset(
-      _proxy(
-        address(new HubAsset()), abi.encodeCall(HubAsset.initialize, (owner, address(this), 'USD Coin', 'USDC', 6))
+      payable(
+        address(
+          new TransparentUpgradeableProxy(
+            address(hubAssetImpl),
+            address(_proxyAdmin),
+            abi.encodeCall(hubAsset.initialize, (owner, address(this), 'USD Coin', 'USDC', 6))
+          )
+        )
       )
     );
   }

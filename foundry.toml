@@ -29,7 +29,6 @@ remappings = [
     "openzeppelin-foundry-upgrades-0.3.1/=dependencies/openzeppelin-foundry-upgrades-0.3.1/",
     "solady-0.0.230/=dependencies/solady-0.0.230/",
 ]
-fs_permissions = [{ access = "read-write", path = "./TemporaryLeafs.json"}]
 
 [rpc_endpoints]
 # MAINNET

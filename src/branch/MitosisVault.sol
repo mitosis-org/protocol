@@ -38,7 +38,6 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
     __Pausable_init();
     __Ownable2Step_init();
     __UUPSUpgradeable_init();
-
     _transferOwnership(owner_);
   }
 
