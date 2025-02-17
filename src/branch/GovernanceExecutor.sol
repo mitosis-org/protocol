@@ -32,11 +32,11 @@ contract GovernanceExecutor is
     __Pausable_init();
     __AccessControl_init();
 
-    _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+    _setRoleAdmin(EXECUTOR_ROLE, DEFAULT_ADMIN_ROLE);
     _grantRole(DEFAULT_ADMIN_ROLE, address(this));
 
     for (uint256 i = 0; i < executors.length; i++) {
-      _grantRole(MANAGER_ROLE, executors[i]);
+      _grantRole(EXECUTOR_ROLE, executors[i]);
     }
   }
 
@@ -44,7 +44,7 @@ contract GovernanceExecutor is
     require(targets.length == data.length, StdError.InvalidParameter('data'));
     require(targets.length == values.length, StdError.InvalidParameter('values'));
 
-    require(hasRole(MANAGER_ROLE, _msgSender()), StdError.Unauthorized());
+    require(hasRole(EXECUTOR_ROLE, _msgSender()), StdError.Unauthorized());
 
     bytes[] memory result = new bytes[](targets.length);
     for (uint256 i = 0; i < targets.length; i++) {
