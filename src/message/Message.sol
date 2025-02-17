@@ -15,7 +15,7 @@ enum MsgType {
   MsgSettleMatrixLoss,
   MsgSettleMatrixExtraRewards,
   //=========== NOTE: MITOGovernance ===========//
-  MsgDispatchMITOGovernanceExecution
+  MsgDispatchGovernanceExecution
 }
 
 // hub -> branch
@@ -83,7 +83,7 @@ struct MsgSettleMatrixExtraRewards {
 }
 
 // hub -> branch
-struct MsgDispatchMITOGovernanceExecution {
+struct MsgDispatchGovernanceExecution {
   // proposal info?
   bytes32[] targets;
   uint256[] values;
@@ -237,19 +237,19 @@ library Message {
     decoded.amount = uint256(bytes32(msg_[65:]));
   }
 
-  function encode(MsgDispatchMITOGovernanceExecution memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgDispatchMITOGovernanceExecution), (abi.encode(msg_)));
+  function encode(MsgDispatchGovernanceExecution memory msg_) internal pure returns (bytes memory) {
+    return abi.encodePacked(uint8(MsgType.MsgDispatchGovernanceExecution), (abi.encode(msg_)));
   }
 
-  function decodeDispatchMITOGovernanceExecution(bytes calldata msg_)
+  function decodeDispatchGovernanceExecution(bytes calldata msg_)
     internal
     pure
-    returns (MsgDispatchMITOGovernanceExecution memory decoded)
+    returns (MsgDispatchGovernanceExecution memory decoded)
   {
     require(
-      msgType(msg_) == MsgType.MsgDispatchMITOGovernanceExecution,
-      Message__InvalidMsgType(msgType(msg_), MsgType.MsgDispatchMITOGovernanceExecution)
+      msgType(msg_) == MsgType.MsgDispatchGovernanceExecution,
+      Message__InvalidMsgType(msgType(msg_), MsgType.MsgDispatchGovernanceExecution)
     );
-    decoded = abi.decode(msg_[1:], (MsgDispatchMITOGovernanceExecution));
+    decoded = abi.decode(msg_[1:], (MsgDispatchGovernanceExecution));
   }
 }

@@ -44,8 +44,8 @@ contract GovernanceExecutorEntrypoint is IGovernanceExecutorEntrypoint, GasRoute
 
     MsgType msgType = msg_.msgType();
 
-    if (msgType == MsgType.MsgDispatchMITOGovernanceExecution) {
-      MsgDispatchMITOGovernanceExecution memory decoded = msg_.decodeDispatchMITOGovernanceExecution();
+    if (msgType == MsgType.MsgDispatchGovernanceExecution) {
+      MsgDispatchGovernanceExecution memory decoded = msg_.decodeDispatchGovernanceExecution();
       _governanceExecutor.execute(_convertBytes32ArrayToAddressArray(decoded.targets), decoded.data, decoded.values);
     }
   }

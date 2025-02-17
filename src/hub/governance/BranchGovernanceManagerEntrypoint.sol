@@ -57,7 +57,7 @@ contract BranchGovernanceManagerEntrypoint is IBranchGovernanceManagerEntrypoint
     bytes[] calldata data,
     uint256[] calldata values
   ) external onlyBranchGovernanceManager onlyDispatchable(chainId) {
-    bytes memory enc = MsgDispatchMITOGovernanceExecution({
+    bytes memory enc = MsgDispatchGovernanceExecution({
       targets: _convertAddressArrayToBytes32Array(targets),
       values: values,
       data: data
