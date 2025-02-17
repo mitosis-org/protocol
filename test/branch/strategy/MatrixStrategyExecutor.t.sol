@@ -5,8 +5,6 @@ import { console } from '@std/console.sol';
 
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
-import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
-import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
 import { Strings } from '@oz-v5/utils/Strings.sol';
 
 import { MitosisVault, AssetAction, MatrixAction } from '../../../src/branch/MitosisVault.sol';
@@ -25,26 +23,22 @@ import { MockTestVaultTally } from '../../mock/MockTestVaultTally.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract MatrixStrategyExecutorTest is Toolkit {
-  MitosisVault _mitosisVault;
-  MatrixStrategyExecutor _matrixStrategyExecutor;
-  MockManagerWithMerkleVerification _managerWithMerkleVerification;
-  MockMitosisVaultEntrypoint _mitosisVaultEntrypoint;
-  ProxyAdmin _proxyAdmin;
-  MockERC20Snapshots _token;
-  MockTestVault _testVault;
-  MockTestVaultDecoderAndSanitizer _testVaultDecoderAndSanitizer;
-  MockTestVaultTally _testVaultTally;
+  MitosisVault internal _mitosisVault;
+  MatrixStrategyExecutor internal _matrixStrategyExecutor;
+  MockManagerWithMerkleVerification internal _managerWithMerkleVerification;
+  MockMitosisVaultEntrypoint internal _mitosisVaultEntrypoint;
+  MockERC20Snapshots internal _token;
+  MockTestVault internal _testVault;
+  MockTestVaultDecoderAndSanitizer internal _testVaultDecoderAndSanitizer;
+  MockTestVaultTally internal _testVaultTally;
 
   address immutable owner = makeAddr('owner');
   address immutable mitosis = makeAddr('mitosis');
   address immutable hubMatrixVault = makeAddr('hubMatrixVault');
 
   function setUp() public {
-    _proxyAdmin = new ProxyAdmin(owner);
-
-    MitosisVault mitosisVaultImpl = new MitosisVault();
     _mitosisVault = MitosisVault(
-      payable(new ERC1967Proxy(address(mitosisVaultImpl), abi.encodeCall(mitosisVaultImpl.initialize, (owner))))
+      payable(new ERC1967Proxy(address(new MitosisVault()), abi.encodeCall(MitosisVault.initialize, (owner))))
     );
 
     _mitosisVaultEntrypoint = new MockMitosisVaultEntrypoint();
