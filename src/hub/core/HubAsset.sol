@@ -2,13 +2,14 @@
 pragma solidity ^0.8.28;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
+
+import { ERC20 } from '@solady/tokens/ERC20.sol';
 
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { HubAssetStorageV1 } from './HubAssetStorageV1.sol';
 
-contract HubAsset is Ownable2StepUpgradeable, ERC20Upgradeable, HubAssetStorageV1 {
+contract HubAsset is Ownable2StepUpgradeable, ERC20, HubAssetStorageV1 {
   constructor() {
     _disableInitializers();
   }
@@ -22,16 +23,25 @@ contract HubAsset is Ownable2StepUpgradeable, ERC20Upgradeable, HubAssetStorageV
   ) external initializer {
     __Ownable2Step_init();
     _transferOwnership(owner_);
-    __ERC20_init(name_, symbol_);
-    _getStorageV1().supplyManager = supplyManager_;
+
     StorageV1 storage $ = _getStorageV1();
-    $.supplyManager = supplyManager_;
+    $.name = name_;
+    $.symbol = symbol_;
     $.decimals = decimals_;
+    $.supplyManager = supplyManager_;
   }
 
   modifier onlySupplyManager() {
     require(_msgSender() == _getStorageV1().supplyManager, StdError.Unauthorized());
     _;
+  }
+
+  function name() public view override returns (string memory) {
+    return _getStorageV1().name;
+  }
+
+  function symbol() public view override returns (string memory) {
+    return _getStorageV1().symbol;
   }
 
   function decimals() public view override returns (uint8) {
