@@ -3,7 +3,7 @@ pragma solidity >=0.8.23 <0.9.0;
 
 import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
 
-import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
@@ -13,7 +13,7 @@ import { BeaconProxy, IBeaconProxy } from '../../lib/proxy/BeaconProxy.sol';
 import { MatrixVaultBasic } from './MatrixVaultBasic.sol';
 import { MatrixVaultCapped } from './MatrixVaultCapped.sol';
 
-contract MatrixVaultFactory is OwnableUpgradeable, UUPSUpgradeable {
+contract MatrixVaultFactory is Ownable2StepUpgradeable, UUPSUpgradeable {
   using ERC7201Utils for string;
 
   enum VaultType {
