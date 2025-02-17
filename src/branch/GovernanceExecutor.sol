@@ -66,16 +66,7 @@ contract GovernanceExecutor is
 
   function _assertAuthroizedCaller(StorageV1 storage $) internal view {
     address msgSender = _msgSender();
-    require(_hasRole(MANAGER_ROLE, msgSender) || msgSender == address($.entrypoint), StdError.Unauthorized());
-  }
-
-  function _hasRole(bytes32 role, address account) internal view returns (bool) {
-    AccessControlStorage storage $;
-    assembly {
-      // AccessControlUpgradeable.AccessControlStorageLocation
-      $.slot := 0x02dd7bc7dec4dceedda775e58dd541e08a116c6c53815c0bd028192f7b626800
-    }
-    return $._roles[role].hasRole[account];
+    require(hasRole(MANAGER_ROLE, msgSender) || msgSender == address($.entrypoint), StdError.Unauthorized());
   }
 
   function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
