@@ -54,10 +54,6 @@ contract GovernanceExecutor is
     emit ExecutionDispatched(targets, data, values, result);
   }
 
-  function entrypoint() external view returns (address) {
-    return address(_getStorageV1().entrypoint);
-  }
-
   function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
     _pause();
   }

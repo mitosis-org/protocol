@@ -8,7 +8,7 @@ abstract contract GovernanceExecutorStorageV1 {
   using ERC7201Utils for string;
 
   struct StorageV1 {
-    IGovernanceExecutorEntrypoint entrypoint;
+    address placeholder;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.GovernanceExecutorStorage.v1';
