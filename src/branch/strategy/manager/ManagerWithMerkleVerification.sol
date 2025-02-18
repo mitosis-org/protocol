@@ -6,14 +6,14 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 
 import { Address } from '@openzeppelin/contracts/utils/Address.sol';
 
+import { MerkleProofLib } from '@solmate/utils/MerkleProofLib.sol';
+
 import { IStrategyExecutor } from '../../../interfaces/branch/strategy/IStrategyExecutor.sol';
 import { IManagerWithMerkleVerification } from
   '../../../interfaces/branch/strategy/manager/IManagerWithMerkleVerification.sol';
 import { Pausable } from '../../../lib/Pausable.sol';
 import { StdError } from '../../../lib/StdError.sol';
 import { ManagerWithMerkleVerificationStorageV1 } from './ManagerWithMerkleVerificationStorageV1.sol';
-
-import { MerkleProofLib } from 'dependencies/solmate-6.8.0/src/utils/MerkleProofLib.sol'; // TODO
 
 contract ManagerWithMerkleVerification is
   IManagerWithMerkleVerification,
@@ -23,27 +23,25 @@ contract ManagerWithMerkleVerification is
 {
   using Address for address;
 
-  IStrategyExecutor public immutable strategyExecutor;
-
-  constructor(address _strategyExecutor) initializer {
-    strategyExecutor = IStrategyExecutor(_strategyExecutor);
+  constructor() {
+    _disableInitializers();
   }
 
   function initialize(address owner_) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
-    _transferOwnership(owner_);
+    __Ownable_init(owner_);
   }
 
-  function manageRoot(address strategist) external view returns (bytes32) {
-    return _getStorageV1().manageRoot[strategist];
+  function manageRoot(address strategyExecutor, address strategist) external view returns (bytes32) {
+    return _getStorageV1().manageRoot[strategyExecutor][strategist];
   }
 
-  function setManageRoot(address strategist, bytes32 _manageRoot) external onlyOwner {
+  function setManageRoot(address strategyExecutor, address strategist, bytes32 _manageRoot) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    bytes32 oldRoot = $.manageRoot[strategist];
-    $.manageRoot[strategist] = _manageRoot;
-    emit ManageRootUpdated(strategist, oldRoot, _manageRoot);
+    bytes32 oldRoot = $.manageRoot[strategyExecutor][strategist];
+    $.manageRoot[strategyExecutor][strategist] = _manageRoot;
+    emit ManageRootUpdated(strategyExecutor, strategist, oldRoot, _manageRoot);
   }
 
   function pause() external onlyOwner {
@@ -55,6 +53,7 @@ contract ManagerWithMerkleVerification is
   }
 
   function manageVaultWithMerkleVerification(
+    address strategyExecutor,
     bytes32[][] calldata manageProofs,
     address[] calldata decodersAndSanitizers,
     address[] calldata targets,
@@ -66,24 +65,25 @@ contract ManagerWithMerkleVerification is
     StorageV1 storage $ = _getStorageV1();
 
     uint256 targetsLength = targets.length;
-    if (targetsLength != manageProofs.length) revert('ManagerWithMerkleVerification__InvalidManageProofLength()');
-    if (targetsLength != targetData.length) revert('ManagerWithMerkleVerification__InvalidTargetDataLength()');
-    if (targetsLength != values.length) revert('ManagerWithMerkleVerification__InvalidValuesLength()');
-    if (targetsLength != decodersAndSanitizers.length) {
-      revert('ManagerWithMerkleVerification__InvalidDecodersAndSanitizersLength()');
-    }
+    require(targetsLength == manageProofs.length, IManagerWithMerkleVerification__InvalidManageProofLength());
+    require(targetsLength == targetData.length, IManagerWithMerkleVerification__InvalidTargetDataLength());
+    require(targetsLength == values.length, IManagerWithMerkleVerification__InvalidValuesLength());
+    require(
+      targetsLength == decodersAndSanitizers.length,
+      IManagerWithMerkleVerification__InvalidDecodersAndSanitizersLength()
+    );
 
-    bytes32 strategistManageRoot = $.manageRoot[msg.sender];
+    bytes32 strategistManageRoot = $.manageRoot[strategyExecutor][_msgSender()];
     require(strategistManageRoot != 0, StdError.NotFound('manageProof'));
 
     for (uint256 i; i < targetsLength; ++i) {
       _verifyCallData(
         strategistManageRoot, manageProofs[i], decodersAndSanitizers[i], targets[i], values[i], targetData[i]
       );
-      strategyExecutor.execute(targets[i], targetData[i], values[i]);
+      IStrategyExecutor(strategyExecutor).execute(targets[i], targetData[i], values[i]);
     }
 
-    emit StrategyExecutorExecuted(targetsLength);
+    emit StrategyExecutorExecuted(strategyExecutor, targetsLength);
   }
 
   function _verifyCallData(

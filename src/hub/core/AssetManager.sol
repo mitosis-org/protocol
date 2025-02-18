@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-
 import { Time } from '@oz-v5/utils/types/Time.sol';
+
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
@@ -14,7 +15,7 @@ import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { AssetManagerStorageV1 } from './AssetManagerStorageV1.sol';
 
-contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, AssetManagerStorageV1 {
+contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSUpgradeable, AssetManagerStorageV1 {
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
   constructor() {
@@ -24,7 +25,8 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
   function initialize(address owner_, address treasury_) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
-    _transferOwnership(owner_);
+    __Ownable_init(owner_);
+    __UUPSUpgradeable_init();
 
     _setTreasury(_getStorageV1(), treasury_);
   }
@@ -191,6 +193,8 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, Asset
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
+
+  function _authorizeUpgrade(address) internal override onlyOwner { }
 
   function initializeAsset(uint256 chainId, address hubAsset) external onlyOwner {
     _assertOnlyContract(hubAsset, 'hubAsset');

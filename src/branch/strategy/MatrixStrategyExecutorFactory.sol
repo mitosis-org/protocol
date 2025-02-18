@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.23 <0.9.0;
 
+import { BeaconProxy } from '@oz-v5/proxy/beacon/BeaconProxy.sol';
+import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
+
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
-import { BeaconProxy } from '@oz-v5/proxy/beacon/BeaconProxy.sol';
-
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
+import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
 import { BeaconBase } from '../../lib/proxy/BeaconBase.sol';
-import { HubAsset } from './HubAsset.sol';
+import { MatrixStrategyExecutor } from './MatrixStrategyExecutor.sol';
 
-contract HubAssetFactory is BeaconBase, Ownable2StepUpgradeable, UUPSUpgradeable {
+contract MatrixStrategyExecutorFactory is BeaconBase, Ownable2StepUpgradeable {
   constructor() {
     _disableInitializers();
   }
@@ -19,16 +20,18 @@ contract HubAssetFactory is BeaconBase, Ownable2StepUpgradeable, UUPSUpgradeable
   function initialize(address owner_, address initialImpl) external initializer {
     __Ownable2Step_init();
     __Ownable_init(owner_);
-    __UUPSUpgradeable_init();
     __BeaconBase_init(new UpgradeableBeacon(address(this), address(initialImpl)));
   }
 
-  function create(address owner_, address supplyManager, string memory name, string memory symbol, uint8 decimals)
-    external
-    onlyOwner
-    returns (address)
-  {
-    bytes memory args = abi.encodeCall(HubAsset.initialize, (owner_, supplyManager, name, symbol, decimals));
+  function create(
+    IMitosisVault vault_,
+    IERC20 asset_,
+    address hubMatrixVault_,
+    address owner_,
+    address emergencyManager_
+  ) external onlyOwner returns (address) {
+    bytes memory args =
+      abi.encodeCall(MatrixStrategyExecutor.initialize, (vault_, asset_, hubMatrixVault_, owner_, emergencyManager_));
     address instance = address(new BeaconProxy(address(beacon()), args));
 
     _pushInstance(instance);
@@ -39,6 +42,4 @@ contract HubAssetFactory is BeaconBase, Ownable2StepUpgradeable, UUPSUpgradeable
   function callBeacon(bytes calldata data) external onlyOwner returns (bytes memory) {
     return _callBeacon(data);
   }
-
-  function _authorizeUpgrade(address) internal override onlyOwner { }
 }
