@@ -40,11 +40,12 @@ contract GovernanceExecutor is
     }
   }
 
-  function execute(address[] calldata targets, bytes[] calldata data, uint256[] calldata values) external {
+  function execute(address[] calldata targets, bytes[] calldata data, uint256[] calldata values)
+    external
+    onlyRole(EXECUTOR_ROLE)
+  {
     require(targets.length == data.length, StdError.InvalidParameter('data'));
     require(targets.length == values.length, StdError.InvalidParameter('values'));
-
-    require(hasRole(EXECUTOR_ROLE, _msgSender()), StdError.Unauthorized());
 
     bool[] memory areSucceeded = new bool[](targets.length);
     bytes[] memory result = new bytes[](targets.length);
