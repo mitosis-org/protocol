@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
+import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { EnumerableMap } from '@oz-v5/utils/structs/EnumerableMap.sol';
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
@@ -36,22 +37,45 @@ contract ValidatorManagerStorageV1 {
     bool applied;
   }
 
+  struct GlobalValidatorConfig {
+    uint256 minimumCommissionRate;
+    uint96 commissionRateUpdateDelay; // in epoch
+  }
+
   struct ValidatorStat {
     TWABCheckpoint[] totalDelegations;
     EpochCheckpoint[] totalPendingRedelegations;
     uint96 lastUpdatedEpoch;
   }
 
+  struct ValidatorRewardConfig {
+    uint256 commissionRate; // bp ex) 10000 = 100%
+    uint256 pendingCommissionRate; // bp ex) 10000 = 100%
+    uint256 pendingCommissionRateUpdateEpoch; // current epoch + 2
+  }
+
   struct Validator {
     address validator;
     address operator;
+    address rewardRecipient;
     bytes pubKey;
     ValidatorStat stat;
+    // This will be applied after two epochs
+    ValidatorRewardConfig rewardConfig;
+    // TBD: Metadata format
+    // 1. moniker
+    // 2. identity
+    // 3. website
+    // 4. image url
+    // 5. ...
+    // This will be applied immediately
+    bytes metadata;
   }
 
   struct StorageV1 {
     IEpochFeeder epochFeeder;
     IConsensusValidatorEntrypoint entrypoint;
+    GlobalValidatorConfig globalValidatorConfig;
     uint256[] validatorIndexes;
     mapping(uint256 index => Validator) validators;
     mapping(address valAddr => uint256 index) indexByValAddr;
@@ -76,6 +100,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   using SafeCast for uint256;
   using EnumerableMap for EnumerableMap.AddressToUintMap;
   using EnumerableSet for EnumerableSet.AddressSet;
+
+  uint256 public constant MAX_COMMISSION_RATE = 10000; // 100% in bp
 
   // NOTE: This is a temporary limit. It will be revised in the next version.
   uint256 public constant MAX_STAKED_VALIDATOR_COUNT = 10;
@@ -102,23 +128,46 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     $.validatorIndexes.push(0);
   }
 
-  function validators() external view returns (address[] memory) {
-    StorageV1 storage $ = _getStorageV1();
-    address[] memory validators_ = new address[]($.validatorIndexes.length - 1);
-    for (uint256 i = 1; i < $.validatorIndexes.length; i++) {
-      validators_[i - 1] = $.validators[i].validator;
-    }
-
-    return validators_;
+  function validatorCount() external view returns (uint256) {
+    return _getStorageV1().validatorIndexes.length - 1;
   }
 
-  function stakedValidators(address staker) external view returns (address[] memory) {
-    return _getStorageV1().stakedValidators[staker].values();
+  function validatorAt(uint256 index) external view returns (address) {
+    return _getStorageV1().validators[index].validator;
   }
 
   function isValidator(address valAddr) external view returns (bool) {
     StorageV1 storage $ = _getStorageV1();
     return $.indexByValAddr[valAddr] != 0;
+  }
+
+  function validatorInfo(address valAddr) external view returns (ValidatorInfoResponse memory) {
+    StorageV1 storage $ = _getStorageV1();
+    Validator memory info = _validatorInfo($, valAddr);
+    _assertValidatorExists($, valAddr);
+
+    ValidatorInfoResponse memory response = ValidatorInfoResponse({
+      validator: info.validator,
+      operator: info.operator,
+      rewardRecipient: info.rewardRecipient,
+      commissionRate: info.rewardConfig.commissionRate,
+      metadata: info.metadata
+    });
+
+    // apply pending rate
+    uint96 epoch = $.epochFeeder.epoch();
+    if (info.rewardConfig.pendingCommissionRateUpdateEpoch >= epoch) {
+      response.commissionRate = info.rewardConfig.pendingCommissionRate;
+    }
+
+    // hard limit
+    response.commissionRate = Math.max(response.commissionRate, $.globalValidatorConfig.minimumCommissionRate);
+
+    return response;
+  }
+
+  function stakedValidators(address staker) external view returns (address[] memory) {
+    return _getStorageV1().stakedValidators[staker].values();
   }
 
   function isStakedValidator(address valAddr, address staker) external view returns (bool) {
@@ -321,8 +370,9 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     );
   }
 
-  function join(bytes calldata valKey) external payable {
+  function createValidator(bytes calldata valKey, CreateValidatorRequest calldata request) external payable {
     require(valKey.length > 0, StdError.InvalidParameter('valKey'));
+
     address valAddr = _msgSender();
 
     // verify the valKey is valid and corresponds to the caller
@@ -331,30 +381,26 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
     _assertValidatorNotExists($, valAddr);
 
+    require(
+      $.globalValidatorConfig.minimumCommissionRate <= request.commissionRate
+        && request.commissionRate <= MAX_COMMISSION_RATE,
+      StdError.InvalidParameter('commissionRate')
+    );
+
     uint256 valIndex = $.validatorIndexes.length;
     $.validatorIndexes.push(valIndex);
 
-    Validator storage val = $.validators[valIndex];
-    val.validator = valAddr;
-    val.operator = valAddr;
-    val.pubKey = valKey;
-    val.stat.lastUpdatedEpoch = $.epochFeeder.epoch();
+    Validator storage validator = $.validators[valIndex];
+    validator.validator = valAddr;
+    validator.operator = valAddr;
+    validator.rewardRecipient = valAddr;
+    validator.pubKey = valKey;
+    validator.stat.lastUpdatedEpoch = $.epochFeeder.epoch();
+    validator.rewardConfig.commissionRate = request.commissionRate;
+    validator.metadata = request.metadata;
 
     $.indexByValAddr[valAddr] = valIndex;
     $.entrypoint.registerValidator{ value: msg.value }(valKey, valAddr);
-  }
-
-  function updateOperator(address operator) external {
-    require(operator != address(0), StdError.InvalidParameter('operator'));
-    address valAddr = _msgSender();
-
-    StorageV1 storage $ = _getStorageV1();
-    Validator memory info = _validatorInfo($, valAddr);
-    require(
-      valAddr == operator || (valAddr != operator && info.operator == address(0)), StdError.InvalidParameter('operator')
-    );
-
-    $.validators[$.indexByValAddr[valAddr]].operator = operator;
   }
 
   function depositCollateral(address valAddr) external payable {
@@ -383,12 +429,80 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     );
   }
 
-  function unjail(address valAddr) external {
+  function unjailValidator(address valAddr) external {
     StorageV1 storage $ = _getStorageV1();
     Validator memory info = _validatorInfo($, valAddr);
     _assertOperator(info);
 
     $.entrypoint.unjail(info.pubKey);
+  }
+
+  function updateOperator(address operator) external {
+    require(operator != address(0), StdError.InvalidParameter('operator'));
+    address valAddr = _msgSender();
+
+    StorageV1 storage $ = _getStorageV1();
+    Validator memory info = _validatorInfo($, valAddr);
+    require(
+      valAddr == operator || (valAddr != operator && info.operator == address(0)), StdError.InvalidParameter('operator')
+    );
+
+    $.validators[$.indexByValAddr[valAddr]].operator = operator;
+  }
+
+  function updateRewardRecipient(address valAddr, address rewardRecipient) external {
+    require(rewardRecipient != address(0), StdError.InvalidParameter('rewardRecipient'));
+
+    StorageV1 storage $ = _getStorageV1();
+    Validator memory info = _validatorInfo($, valAddr);
+    _assertOperator(info);
+
+    $.validators[$.indexByValAddr[valAddr]].rewardRecipient = rewardRecipient;
+  }
+
+  function updateMetadata(address valAddr, bytes calldata metadata) external {
+    require(metadata.length > 0, StdError.InvalidParameter('metadata'));
+
+    StorageV1 storage $ = _getStorageV1();
+    Validator memory info = _validatorInfo($, valAddr);
+    _assertOperator(info);
+
+    $.validators[$.indexByValAddr[valAddr]].metadata = metadata;
+  }
+
+  function updateRewardConfig(address valAddr, UpdateRewardConfigRequest calldata request) external {
+    StorageV1 storage $ = _getStorageV1();
+    Validator memory info = _validatorInfo($, valAddr);
+    _assertOperator(info);
+
+    require(
+      $.globalValidatorConfig.minimumCommissionRate <= request.commissionRate
+        && request.commissionRate <= MAX_COMMISSION_RATE,
+      StdError.InvalidParameter('commissionRate')
+    );
+
+    Validator storage validator = $.validators[$.indexByValAddr[valAddr]];
+
+    if ($.globalValidatorConfig.commissionRateUpdateDelay == 0) {
+      validator.rewardConfig.commissionRate = request.commissionRate;
+    } else {
+      uint96 epoch = $.epochFeeder.epoch();
+      uint96 epochToUpdate = epoch + $.globalValidatorConfig.commissionRateUpdateDelay;
+
+      validator.rewardConfig.pendingCommissionRate = request.commissionRate;
+      validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate;
+    }
+  }
+
+  function setGlobalValidatorConfig(SetGlobalValidatorConfigRequest calldata request) external onlyOwner {
+    require(
+      0 <= request.minimumCommissionRate && request.minimumCommissionRate <= MAX_COMMISSION_RATE,
+      StdError.InvalidParameter('minimumCommissionRate')
+    );
+
+    StorageV1 storage $ = _getStorageV1();
+    $.globalValidatorConfig.minimumCommissionRate = request.minimumCommissionRate;
+    $.globalValidatorConfig.commissionRateUpdateDelay = request.commissionRateUpdateDelay;
   }
 
   function setEpochFeeder(IEpochFeeder epochFeeder) external onlyOwner {

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { IConsensusValidatorEntrypoint } from '../consensus-layer/IConsensusValidatorEntrypoint.sol';
+import { IEpochFeeder } from './IEpochFeeder.sol';
 
 /// @title IValidatorManager
 /// @notice Interface for the ValidatorManager contract.
@@ -19,6 +20,14 @@ import { IConsensusValidatorEntrypoint } from '../consensus-layer/IConsensusVali
 /// 4. Unjailing the validator
 /// 5. Leaving the validator set = making it inactive, not removing anything
 interface IValidatorManager {
+  struct ValidatorInfoResponse {
+    address validator;
+    address operator;
+    address rewardRecipient;
+    uint256 commissionRate;
+    bytes metadata;
+  }
+
   struct RedelegationsResponse {
     uint96 epoch;
     address fromValAddr;
@@ -27,8 +36,24 @@ interface IValidatorManager {
     uint256 amount;
   }
 
-  function validators() external view returns (address[] memory);
+  struct CreateValidatorRequest {
+    uint256 commissionRate; // bp ex) 10000 = 100%
+    bytes metadata;
+  }
+
+  struct UpdateRewardConfigRequest {
+    uint256 commissionRate; // bp ex) 10000 = 100%
+  }
+
+  struct SetGlobalValidatorConfigRequest {
+    uint256 minimumCommissionRate; // bp ex) 10000 = 100%
+    uint96 commissionRateUpdateDelay; // in epoch
+  }
+
+  function validatorCount() external view returns (uint256);
+  function validatorAt(uint256 index) external view returns (address);
   function isValidator(address valAddr) external view returns (bool);
+  function validatorInfo(address valAddr) external view returns (ValidatorInfoResponse memory);
 
   function stakedValidators(address staker) external view returns (address[] memory);
   function isStakedValidator(address valAddr, address staker) external view returns (bool);
@@ -58,14 +83,24 @@ interface IValidatorManager {
 
   // ========== VALIDATOR ACTIONS ========== //
 
+  // validator actions
   /// @param valKey The compressed 33-byte secp256k1 public key of the valAddr.
-  function join(bytes calldata valKey) external payable;
-  function updateOperator(address operator) external;
+  function createValidator(bytes calldata valKey, CreateValidatorRequest calldata request) external payable;
+  function updateOperator(address operator) external; // sender must be valAddr
+
+  // operator actions
   function depositCollateral(address valAddr) external payable;
   function withdrawCollateral(address valAddr, uint256 amount) external;
-  function unjail(address valAddr) external;
+  function unjailValidator(address valAddr) external;
+
+  // validator configurations
+  function updateRewardRecipient(address valAddr, address rewardRecipient) external;
+  function updateMetadata(address valAddr, bytes calldata metadata) external;
+  function updateRewardConfig(address valAddr, UpdateRewardConfigRequest calldata request) external;
 
   // ========== CONTRACT MANAGEMENT ========== //
 
+  function setGlobalValidatorConfig(SetGlobalValidatorConfigRequest calldata request) external;
+  function setEpochFeeder(IEpochFeeder epochFeeder) external;
   function setEntrypoint(IConsensusValidatorEntrypoint entrypoint) external;
 }
