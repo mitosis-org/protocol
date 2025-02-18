@@ -74,6 +74,7 @@ contract ValidatorContributionFeed is
   function initialize(address owner_, address epochFeeder_) external initializer {
     require(owner_ != address(0), StdError.ZeroAddress('owner'));
 
+    __UUPSUpgradeable_init();
     __Ownable_init(owner_);
     __Ownable2Step_init();
     __AccessControl_init();

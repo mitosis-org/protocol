@@ -125,6 +125,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     external
     initializer
   {
+    __UUPSUpgradeable_init();
     __Ownable_init(initialOwner);
     __Ownable2Step_init();
 

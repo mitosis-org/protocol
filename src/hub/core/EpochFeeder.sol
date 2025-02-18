@@ -35,6 +35,7 @@ contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable, UUPSUpgradeable {
     require(0 < interval_ && interval_ < type(uint48).max, InvalidInterval());
     require(nextEpochTime_ > block.timestamp, StdError.InvalidParameter('nextEpochTime'));
 
+    __UUPSUpgradeable_init();
     __Ownable_init(owner_);
     __Ownable2Step_init();
 

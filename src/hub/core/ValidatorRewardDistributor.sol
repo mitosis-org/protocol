@@ -69,19 +69,12 @@ contract ValidatorRewardDistributor is
   // Set to 32 based on gas cost analysis and typical usage patterns
   uint96 public constant MAX_CLAIM_EPOCHS = 32;
 
-  /// @notice Contract constructor
-  /// @param govMITO_ Address of the governance MITO token contract
   constructor(address govMITO_) {
     require(govMITO_.code.length > 0, StdError.InvalidAddress('govMITO'));
     govMITO = govMITO_;
     _disableInitializers();
   }
 
-  /// @notice Initializes the contract
-  /// @param initialOwner_ Address of the initial contract owner
-  /// @param epochFeeder_ Address of the epoch feeder contract
-  /// @param validatorManager_ Address of the validator manager contract
-  /// @param validatorContributionFeed_ Address of the reward feed contract
   function initialize(
     address initialOwner_,
     address epochFeeder_,
@@ -89,6 +82,7 @@ contract ValidatorRewardDistributor is
     address validatorContributionFeed_,
     address govMITOCommission_
   ) external initializer {
+    __UUPSUpgradeable_init();
     __Ownable_init(initialOwner_);
     __Ownable2Step_init();
 
