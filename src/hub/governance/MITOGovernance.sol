@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { IAccessControl } from '@oz-v5/access/IAccessControl.sol';
 import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
 
 import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { GovernorSettingsUpgradeable } from '@ozu-v5/governance/extensions/GovernorSettingsUpgradeable.sol';
 import { GovernorStorageUpgradeable } from '@ozu-v5/governance/extensions/GovernorStorageUpgradeable.sol';
 import { GovernorTimelockControlUpgradeable } from
@@ -14,19 +15,20 @@ import { GovernorVotesQuorumFractionUpgradeable } from
 import { GovernorVotesUpgradeable } from '@ozu-v5/governance/extensions/GovernorVotesUpgradeable.sol';
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
 import { TimelockControllerUpgradeable } from '@ozu-v5/governance/TimelockControllerUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { GovernorCountingBravoUpgradeable } from './GovernorCountingBravoUpgradeable.sol';
 
 contract MITOGovernance is
-  Ownable2StepUpgradeable,
-  AccessControlUpgradeable,
   GovernorUpgradeable,
   GovernorSettingsUpgradeable,
   GovernorCountingBravoUpgradeable,
   GovernorStorageUpgradeable,
   GovernorVotesUpgradeable,
   GovernorVotesQuorumFractionUpgradeable,
-  GovernorTimelockControlUpgradeable
+  GovernorTimelockControlUpgradeable,
+  AccessControlEnumerableUpgradeable,
+  UUPSUpgradeable
 {
   bytes32 public constant PROPOSER_ROLE = keccak256('PROPOSER_ROLE');
 
@@ -52,8 +54,6 @@ contract MITOGovernance is
     uint32 proposalThreshold_,
     uint32 quorumFraction_
   ) public initializer {
-    __AccessControl_init();
-
     __Governor_init('MITOGovernance');
     __GovernorSettings_init(votingDelay_, votingPeriod_, proposalThreshold_);
     __GovernorCountingBravo_init();
@@ -61,12 +61,23 @@ contract MITOGovernance is
     __GovernorVotes_init(token_);
     __GovernorVotesQuorumFraction_init(quorumFraction_);
     __GovernorTimelockControl_init(timelock_);
+
+    __AccessControlEnumerable_init();
+    __AccessControl_init();
+    __UUPSUpgradeable_init();
+
+    // NOTE: Don't setup admin role here because `_executor()` is considered as admin. (Check `hasRole()`)
   }
 
-  function hasRole(bytes32 role, address account) public view override returns (bool) {
+  function hasRole(bytes32 role, address account)
+    public
+    view
+    override(AccessControlUpgradeable, IAccessControl)
+    returns (bool)
+  {
     // Allow the executor to bypass role checks
     if (account == _executor()) return true;
-    return super.hasRole(role, account);
+    return AccessControlUpgradeable.hasRole(role, account);
   }
 
   function propose(
@@ -81,10 +92,11 @@ contract MITOGovernance is
   function supportsInterface(bytes4 interfaceId)
     public
     view
-    override(AccessControlUpgradeable, GovernorUpgradeable)
+    override(AccessControlEnumerableUpgradeable, GovernorUpgradeable)
     returns (bool)
   {
-    return AccessControlUpgradeable.supportsInterface(interfaceId) || GovernorUpgradeable.supportsInterface(interfaceId);
+    return AccessControlEnumerableUpgradeable.supportsInterface(interfaceId)
+      || GovernorUpgradeable.supportsInterface(interfaceId);
   }
 
   function proposalThreshold() public view override(GovernorUpgradeable, GovernorSettingsUpgradeable) returns (uint256) {
@@ -155,4 +167,6 @@ contract MITOGovernance is
   {
     return GovernorTimelockControlUpgradeable._executor();
   }
+
+  function _authorizeUpgrade(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
 }
