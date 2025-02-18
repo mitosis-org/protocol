@@ -6,6 +6,7 @@ import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { EnumerableMap } from '@oz-v5/utils/structs/EnumerableMap.sol';
+import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
 import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
@@ -56,6 +57,7 @@ contract ValidatorManagerStorageV1 {
     mapping(address valAddr => uint256 index) indexByValAddr;
     mapping(address valAddr => mapping(address staker => TWABCheckpoint[])) delegationHistory;
     mapping(address staker => mapping(address toValAddr => Redelegation[])) redelegationHistory;
+    mapping(address staker => EnumerableSet.AddressSet) stakedValidators;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.ValidatorManagerStorage.v1';
@@ -73,6 +75,10 @@ contract ValidatorManagerStorageV1 {
 contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownable2StepUpgradeable, UUPSUpgradeable {
   using SafeCast for uint256;
   using EnumerableMap for EnumerableMap.AddressToUintMap;
+  using EnumerableSet for EnumerableSet.AddressSet;
+
+  // NOTE: This is a temporary limit. It will be revised in the next version.
+  uint256 public constant MAX_STAKED_VALIDATOR_COUNT = 10;
 
   // NOTE: This is a temporary limit. It will be revised in the next version.
   uint256 public constant MAX_REDELEGATION_COUNT = 100;
@@ -106,9 +112,17 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     return validators_;
   }
 
+  function stakedValidators(address staker) external view returns (address[] memory) {
+    return _getStorageV1().stakedValidators[staker].values();
+  }
+
   function isValidator(address valAddr) external view returns (bool) {
     StorageV1 storage $ = _getStorageV1();
     return $.indexByValAddr[valAddr] != 0;
+  }
+
+  function isStakedValidator(address valAddr, address staker) external view returns (bool) {
+    return _getStorageV1().stakedValidators[staker].contains(valAddr);
   }
 
   function staked(address valAddr, address staker) external view returns (uint256) {
@@ -244,7 +258,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _updatePendingDelegation($, valAddr);
     _applyRedelegation($, valAddr, _msgSender());
 
-    _unstake($, valAddr, amount);
+    _unstake($, valAddr, _msgSender(), amount);
   }
 
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external {
@@ -261,7 +275,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _applyRedelegation($, fromValAddr, _msgSender());
     _applyRedelegation($, toValAddr, _msgSender());
 
-    _unstake($, fromValAddr, amount);
+    _unstake($, fromValAddr, _msgSender(), amount);
     _pushRedelegation($, fromValAddr, toValAddr, _msgSender(), amount);
 
     _pushEpochCheckpoint(
@@ -533,14 +547,25 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function _stake(StorageV1 storage $, address valAddr, address recipient, uint256 amount, uint48 now_) internal {
+    TWABCheckpoint[] storage history = $.delegationHistory[valAddr][recipient];
+    TWABCheckpoint memory last = history[history.length - 1];
+
+    if (last.amount == 0) {
+      EnumerableSet.AddressSet storage stakedValidators_ = $.stakedValidators[recipient];
+      require(stakedValidators_.length() < MAX_STAKED_VALIDATOR_COUNT, StdError.Unauthorized());
+      stakedValidators_.add(valAddr);
+    }
+
     _pushTWABCheckpoint($.delegationHistory[valAddr][recipient], amount, now_, _addAmount);
     _pushTWABCheckpoint($.validators[$.indexByValAddr[valAddr]].stat.totalDelegations, amount, now_, _addAmount);
   }
 
-  function _unstake(StorageV1 storage $, address valAddr, uint256 amount) internal {
-    TWABCheckpoint[] storage history = $.delegationHistory[valAddr][_msgSender()];
+  function _unstake(StorageV1 storage $, address valAddr, address recipient, uint256 amount) internal {
+    TWABCheckpoint[] storage history = $.delegationHistory[valAddr][recipient];
     TWABCheckpoint memory last = history[history.length - 1];
     require(amount <= last.amount, StdError.InvalidParameter('amount'));
+
+    if (last.amount - amount == 0) $.stakedValidators[recipient].remove(valAddr);
 
     uint48 now_ = $.epochFeeder.clock();
     _pushTWABCheckpoint(history, amount, now_, _subAmount);
