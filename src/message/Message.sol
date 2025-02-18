@@ -84,7 +84,6 @@ struct MsgSettleMatrixExtraRewards {
 
 // hub -> branch
 struct MsgDispatchGovernanceExecution {
-  // proposal info?
   bytes32[] targets;
   uint256[] values;
   bytes[] data;
