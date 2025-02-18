@@ -52,7 +52,7 @@ contract GovernanceExecutor is
     for (uint256 i = 0; i < targets.length; i++) {
       (bool success, bytes memory returndata) = targets[i].call{ value: values[i] }(data[i]);
       areSucceeded[i] = success;
-      result[i] = returnData;
+      result[i] = returndata;
     }
 
     emit ExecutionDispatched(targets, data, values, areSucceeded, result);
