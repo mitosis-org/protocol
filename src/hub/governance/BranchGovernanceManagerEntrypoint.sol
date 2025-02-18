@@ -4,8 +4,8 @@ pragma solidity ^0.8.28;
 import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
 import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { Address } from '@oz-v5/utils/Address.sol';
 
@@ -15,19 +15,20 @@ import { IBranchGovernanceManagerEntrypoint } from
 import { Conv } from '../../lib/Conv.sol';
 import { StdError } from '../../lib/StdError.sol';
 import '../../message/Message.sol';
-import { BranchGovernanceManager } from './BranchGovernanceManager.sol';
 
-contract BranchGovernanceManagerEntrypoint is IBranchGovernanceManagerEntrypoint, GasRouter, Ownable2StepUpgradeable {
+contract BranchGovernanceManagerEntrypoint is
+  IBranchGovernanceManagerEntrypoint,
+  GasRouter,
+  UUPSUpgradeable,
+  AccessControlUpgradeable
+{
   using Message for *;
   using Conv for *;
 
-  BranchGovernanceManager internal immutable _branchGovernanceManager;
-  ICrossChainRegistry internal immutable _ccRegistry;
+  /// @notice Role for manager (keccak256("MANAGER_ROLE"))
+  bytes32 public constant MANAGER_ROLE = 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08;
 
-  modifier onlyBranchGovernanceManager() {
-    require(_msgSender() == address(_branchGovernanceManager), StdError.InvalidAddress('BranchGovernanceManager'));
-    _;
-  }
+  ICrossChainRegistry internal immutable _ccRegistry;
 
   modifier onlyDispatchable(uint256 chainId) {
     require(_ccRegistry.isRegisteredChain(chainId), ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
@@ -38,15 +39,20 @@ contract BranchGovernanceManagerEntrypoint is IBranchGovernanceManagerEntrypoint
     _;
   }
 
-  constructor(address mailbox, address branchGovernanceManager_, address ccRegistry_) GasRouter(mailbox) initializer {
-    _branchGovernanceManager = BranchGovernanceManager(branchGovernanceManager_);
+  constructor(address mailbox, address ccRegistry_) GasRouter(mailbox) initializer {
     _ccRegistry = ICrossChainRegistry(ccRegistry_);
   }
 
-  function initialize(address owner_, address hook, address ism) public initializer {
+  function initialize(address owner_, address[] memory managers, address hook, address ism) public initializer {
+    __AccessControl_init();
+    __UUPSUpgradeable_init();
     _MailboxClient_initialize(hook, ism, owner_);
-    __Ownable2Step_init();
-    _transferOwnership(owner_);
+
+    _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+
+    for (uint256 i = 0; i < managers.length; i++) {
+      _grantRole(MANAGER_ROLE, managers[i]);
+    }
   }
 
   receive() external payable { }
@@ -56,7 +62,7 @@ contract BranchGovernanceManagerEntrypoint is IBranchGovernanceManagerEntrypoint
     address[] calldata targets,
     bytes[] calldata data,
     uint256[] calldata values
-  ) external onlyBranchGovernanceManager onlyDispatchable(chainId) {
+  ) external onlyRole(MANAGER_ROLE) onlyDispatchable(chainId) {
     bytes memory enc = MsgDispatchGovernanceExecution({
       targets: _convertAddressArrayToBytes32Array(targets),
       values: values,
@@ -126,13 +132,5 @@ contract BranchGovernanceManagerEntrypoint is IBranchGovernanceManagerEntrypoint
     _setDestinationGas(domain, gas);
   }
 
-  //=========== NOTE: OwnableUpgradeable & Ownable2StepUpgradeable
-
-  function transferOwnership(address owner) public override(Ownable2StepUpgradeable, OwnableUpgradeable) {
-    Ownable2StepUpgradeable.transferOwnership(owner);
-  }
-
-  function _transferOwnership(address owner) internal override(Ownable2StepUpgradeable, OwnableUpgradeable) {
-    Ownable2StepUpgradeable._transferOwnership(owner);
-  }
+  function _authorizeUpgrade(address newImplementation) internal override onlyRole(MANAGER_ROLE) { }
 }
