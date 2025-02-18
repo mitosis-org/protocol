@@ -32,7 +32,6 @@ contract GovernanceExecutor is
     __Pausable_init();
     __AccessControl_init();
 
-    _setRoleAdmin(EXECUTOR_ROLE, DEFAULT_ADMIN_ROLE);
     _grantRole(DEFAULT_ADMIN_ROLE, address(this));
 
     for (uint256 i = 0; i < executors.length; i++) {
@@ -56,7 +55,7 @@ contract GovernanceExecutor is
       result[i] = returndata;
     }
 
-    emit ExecutionDispatched(targets, data, values, areSucceeded, result);
+    emit Executed(targets, data, values, areSucceeded, result);
   }
 
   function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {

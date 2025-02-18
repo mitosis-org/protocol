@@ -48,8 +48,6 @@ contract BranchGovernanceManagerEntrypoint is
     __UUPSUpgradeable_init();
     _MailboxClient_initialize(hook, ism, owner_);
 
-    _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
-
     for (uint256 i = 0; i < managers.length; i++) {
       _grantRole(MANAGER_ROLE, managers[i]);
     }
