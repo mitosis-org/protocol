@@ -2,12 +2,12 @@
 pragma solidity ^0.8.28;
 
 import { IEpochFeeder } from './IEpochFeeder.sol';
+import { IValidatorContributionFeed, IValidatorContributionFeedNotifier } from './IValidatorContributionFeed.sol';
 import { IValidatorManager } from './IValidatorManager.sol';
-import { IValidatorContributionFeed } from './IValidatorContributionFeed.sol';
 
 /// @title IValidatorRewardDistributor
 /// @notice Interface for the ValidatorRewardDistributor contract that handles distribution of validator rewards
-interface IValidatorRewardDistributor {
+interface IValidatorRewardDistributor is IValidatorContributionFeedNotifier {
   // Events
   event RewardsReported(address indexed valAddr, uint256 amount, uint96 epoch);
   event RewardsClaimed(

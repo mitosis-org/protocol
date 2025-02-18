@@ -14,6 +14,10 @@ enum ReportStatus {
   FINALIZED
 }
 
+interface IValidatorContributionFeedNotifier {
+  function notifyReportFinalized(uint96 epoch) external;
+}
+
 interface IValidatorContributionFeed {
   struct ReportRequest {
     uint128 totalReward;
@@ -41,6 +45,7 @@ interface IValidatorContributionFeed {
   error InvalidWeightAddress();
   error InvalidTotalWeight();
   error InvalidValidatorCount();
+  error NotifierNotSet();
 
   function epochFeeder() external view returns (IEpochFeeder);
 

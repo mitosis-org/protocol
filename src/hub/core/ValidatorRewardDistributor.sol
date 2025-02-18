@@ -9,10 +9,15 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
+import {
+  IValidatorContributionFeed,
+  IValidatorContributionFeedNotifier,
+  ValidatorWeight
+} from '../../interfaces/hub/core/IValidatorContributionFeed.sol';
 import { IValidatorManager } from '../../interfaces/hub/core/IValidatorManager.sol';
 import { IValidatorRewardDistributor } from '../../interfaces/hub/core/IValidatorRewardDistributor.sol';
-import { IValidatorContributionFeed, ValidatorWeight } from '../../interfaces/hub/core/IValidatorContributionFeed.sol';
 import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
+import { IGovMITOCommission } from '../../interfaces/hub/IGovMITOCommission.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
@@ -30,6 +35,7 @@ contract ValidatorRewardDistributorStorageV1 {
     IEpochFeeder epochFeeder;
     IValidatorManager validatorManager;
     IValidatorContributionFeed validatorContributionFeed;
+    IGovMITOCommission govMITOCommission;
     LastClaimedEpoch lastClaimedEpoch;
   }
 
@@ -80,7 +86,8 @@ contract ValidatorRewardDistributor is
     address initialOwner_,
     address epochFeeder_,
     address validatorManager_,
-    address validatorContributionFeed_
+    address validatorContributionFeed_,
+    address govMITOCommission_
   ) external initializer {
     __Ownable_init(initialOwner_);
     __Ownable2Step_init();
@@ -88,6 +95,7 @@ contract ValidatorRewardDistributor is
     _setEpochFeeder(epochFeeder_);
     _setValidatorManager(validatorManager_);
     _setValidatorContributionFeed(validatorContributionFeed_);
+    _setGovMITOCommission(govMITOCommission_);
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -168,6 +176,16 @@ contract ValidatorRewardDistributor is
     return commission;
   }
 
+  function notifyReportFinalized(uint96 epoch) external {
+    StorageV1 storage $ = _getStorageV1();
+    IValidatorContributionFeed feed = $.validatorContributionFeed;
+    require(address(feed) == _msgSender(), StdError.Unauthorized());
+
+    IValidatorContributionFeed.Summary memory summary = feed.summary(epoch);
+
+    $.govMITOCommission.request(summary.totalReward);
+  }
+
   /// @notice Sets a new epoch feeder contract
   /// @param epochFeeder_ Address of the new epoch feeder contract
   function setEpochFeeder(address epochFeeder_) external onlyOwner {
@@ -186,6 +204,12 @@ contract ValidatorRewardDistributor is
     _setValidatorContributionFeed(validatorContributionFeed_);
   }
 
+  /// @notice Sets a new GovMITO commission contract
+  /// @param govMITOCommission_ Address of the new GovMITO commission contract
+  function setGovMITOCommission(address govMITOCommission_) external onlyOwner {
+    _setGovMITOCommission(govMITOCommission_);
+  }
+
   function _setEpochFeeder(address epochFeeder_) internal {
     require(epochFeeder_.code.length > 0, StdError.InvalidAddress('epochFeeder'));
     _getStorageV1().epochFeeder = IEpochFeeder(epochFeeder_);
@@ -199,6 +223,11 @@ contract ValidatorRewardDistributor is
   function _setValidatorContributionFeed(address validatorContributionFeed_) internal {
     require(validatorContributionFeed_.code.length > 0, StdError.InvalidAddress('validatorContributionFeed'));
     _getStorageV1().validatorContributionFeed = IValidatorContributionFeed(validatorContributionFeed_);
+  }
+
+  function _setGovMITOCommission(address govMITOCommission_) internal {
+    require(govMITOCommission_.code.length > 0, StdError.InvalidAddress('govMITOCommission'));
+    _getStorageV1().govMITOCommission = IGovMITOCommission(govMITOCommission_);
   }
 
   function _claimableRewards(StorageV1 storage $, address valAddr, address staker, uint96 epochCount)

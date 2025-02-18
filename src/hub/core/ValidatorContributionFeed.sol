@@ -11,6 +11,7 @@ import { EnumerableMap } from '@oz-v5/utils/structs/EnumerableMap.sol';
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
 import {
   IValidatorContributionFeed,
+  IValidatorContributionFeedNotifier,
   ValidatorWeight,
   ReportStatus
 } from '../../interfaces/hub/core/IValidatorContributionFeed.sol';
@@ -35,6 +36,7 @@ contract ValidatorContributionFeedStorageV1 {
 
   struct StorageV1 {
     IEpochFeeder epochFeeder;
+    IValidatorContributionFeedNotifier notifier;
     uint96 nextEpoch;
     ReportChecker checker;
     mapping(uint96 epoch => Reward reward) rewards;
@@ -127,6 +129,8 @@ contract ValidatorContributionFeed is
 
   function initializeReport(InitReportRequest calldata request) external onlyRole(FEEDER_ROLE) {
     StorageV1 storage $ = _getStorageV1();
+    require(address($.notifier) != address(0), NotifierNotSet());
+
     uint96 epoch = $.nextEpoch;
 
     require(epoch < $.epochFeeder.epoch(), StdError.InvalidParameter('epoch'));
@@ -187,12 +191,27 @@ contract ValidatorContributionFeed is
     $.nextEpoch++;
     delete $.checker;
 
+    $.notifier.notifyReportFinalized(epoch);
+
     emit ReportFinalized(epoch);
+  }
+
+  function setEpochFeeder(IEpochFeeder epochFeeder_) external onlyOwner {
+    _setEpochFeeder(_getStorageV1(), address(epochFeeder_));
+  }
+
+  function setNotifier(IValidatorContributionFeedNotifier notifier) external onlyOwner {
+    _setNotifier(_getStorageV1(), address(notifier));
   }
 
   function _setEpochFeeder(StorageV1 storage $, address epochFeeder_) internal {
     require(epochFeeder_.code.length > 0, StdError.InvalidParameter('epochFeeder'));
     $.epochFeeder = IEpochFeeder(epochFeeder_);
+  }
+
+  function _setNotifier(StorageV1 storage $, address notifier_) internal {
+    require(notifier_.code.length > 0, StdError.InvalidParameter('notifier'));
+    $.notifier = IValidatorContributionFeedNotifier(notifier_);
   }
 
   // ================== UUPS ================== //
