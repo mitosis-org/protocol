@@ -46,16 +46,12 @@ contract GovernanceExecutor is
     require(targets.length == data.length, StdError.InvalidParameter('data'));
     require(targets.length == values.length, StdError.InvalidParameter('values'));
 
-    bool[] memory areSucceeded = new bool[](targets.length);
     bytes[] memory result = new bytes[](targets.length);
-
     for (uint256 i = 0; i < targets.length; i++) {
-      (bool success, bytes memory returndata) = targets[i].call{ value: values[i] }(data[i]);
-      areSucceeded[i] = success;
-      result[i] = returndata;
+      result[i] = targets[i].functionCallWithValue(data[i], values[i]);
     }
 
-    emit Executed(targets, data, values, areSucceeded, result);
+    emit Executed(targets, data, values, result);
   }
 
   function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
