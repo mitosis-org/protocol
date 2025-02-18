@@ -4,14 +4,13 @@ pragma solidity ^0.8.28;
 import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
 import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
 
-import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { Address } from '@oz-v5/utils/Address.sol';
 
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
-import { IBranchGovernanceEntrypoint } from
-  '../../interfaces/hub/governance/IBranchGovernanceEntrypoint.sol';
+import { IBranchGovernanceEntrypoint } from '../../interfaces/hub/governance/IBranchGovernanceEntrypoint.sol';
 import { Conv } from '../../lib/Conv.sol';
 import { StdError } from '../../lib/StdError.sol';
 import '../../message/Message.sol';
@@ -20,7 +19,7 @@ contract BranchGovernanceEntrypoint is
   IBranchGovernanceEntrypoint,
   GasRouter,
   UUPSUpgradeable,
-  AccessControlUpgradeable
+  AccessControlEnumerableUpgradeable
 {
   using Message for *;
   using Conv for *;
@@ -44,7 +43,7 @@ contract BranchGovernanceEntrypoint is
   }
 
   function initialize(address owner_, address[] memory managers, address hook, address ism) public initializer {
-    __AccessControl_init();
+    __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
     _MailboxClient_initialize(hook, ism, owner_);
 
