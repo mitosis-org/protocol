@@ -112,7 +112,7 @@ contract ValidatorContributionFeed is
     require(reward.status == ReportStatus.FINALIZED, StdError.Unauthorized());
 
     uint256 index = reward.weightByValAddr[valAddr];
-    if (index == 0 && (reward.weights.length == 0 || reward.weights[0].addr != valAddr)) {
+    if (index == 0 || reward.weights.length == 0 || reward.weights[0].addr != valAddr) {
       ValidatorWeight memory empty;
       return (empty, false);
     }
@@ -167,7 +167,7 @@ contract ValidatorContributionFeed is
       uint256 index = reward.weightByValAddr[weight.addr];
 
       require(
-        index == 0 && (reward.weights.length == 0 || reward.weights[index].addr == weight.addr), InvalidWeightAddress()
+        index == 0 || reward.weights.length == 0 || reward.weights[index].addr == weight.addr, InvalidWeightAddress()
       );
 
       reward.weights.push(weight);

@@ -12,40 +12,30 @@ import { LibString } from '@solady/utils/LibString.sol';
 import { ValidatorContributionFeed } from '../../../src/hub/core/ValidatorContributionFeed.sol';
 import { IEpochFeeder } from '../../../src/interfaces/hub/core/IEpochFeeder.sol';
 import {
-  IValidatorContributionFeed, ValidatorWeight
+  IValidatorContributionFeed,
+  IValidatorContributionFeedNotifier,
+  ValidatorWeight
 } from '../../../src/interfaces/hub/core/IValidatorContributionFeed.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
-contract ContractStub {
-  struct Ret {
-    bool err;
-    bytes data;
+contract MockEpochFeeder {
+  uint96 epoch_ = 1;
+
+  function epoch() external view returns (uint96) {
+    return epoch_;
   }
 
-  mapping(bytes4 selector => Ret) private rets;
-
-  function setReturn(bytes4 selector, Ret calldata ret) external {
-    rets[selector] = ret;
+  function setEpoch(uint96 newEpoch) external {
+    epoch_ = newEpoch;
   }
+}
 
-  receive() external payable {
-    revert StdError.Unauthorized();
-  }
+contract MockNotifier {
+  uint256 public callCount;
 
-  fallback() external payable {
-    bytes4 selector = msg.sig;
-    Ret memory ret = rets[selector];
-    bytes memory data = ret.data;
-    if (ret.err) {
-      assembly {
-        revert(add(data, 32), mload(data))
-      }
-    } else {
-      assembly {
-        return(add(data, 32), mload(data))
-      }
-    }
+  function notifyReportFinalized(uint96) external {
+    callCount++;
   }
 }
 
@@ -56,16 +46,19 @@ contract ValidatorContributionFeedTest is Toolkit {
   address owner = makeAddr('owner');
   address feeder = makeAddr('feeder');
 
-  ContractStub epochFeederStub;
+  MockEpochFeeder epochFeeder;
+  MockNotifier notifier;
   ValidatorContributionFeed feed;
 
   function setUp() public {
-    epochFeederStub = new ContractStub();
+    epochFeeder = new MockEpochFeeder();
+    notifier = new MockNotifier();
+
     feed = ValidatorContributionFeed(
       address(
         new ERC1967Proxy(
           address(new ValidatorContributionFeed()),
-          abi.encodeCall(ValidatorContributionFeed.initialize, (owner, address(epochFeederStub)))
+          abi.encodeCall(ValidatorContributionFeed.initialize, (owner, address(epochFeeder)))
         )
       )
     );
@@ -77,11 +70,14 @@ contract ValidatorContributionFeedTest is Toolkit {
 
   function test_init() public view {
     assertEq(feed.owner(), owner);
-    assertEq(address(feed.epochFeeder()), address(epochFeederStub));
+    assertEq(address(feed.epochFeeder()), address(epochFeeder));
   }
 
   function test_report() public {
-    _stub_epoch(2);
+    epochFeeder.setEpoch(2);
+
+    vm.prank(owner);
+    feed.setNotifier(IValidatorContributionFeedNotifier(address(notifier)));
 
     vm.startPrank(feeder);
     feed.initializeReport(
@@ -98,9 +94,7 @@ contract ValidatorContributionFeedTest is Toolkit {
 
     feed.finalizeReport();
     vm.stopPrank();
-  }
 
-  function _stub_epoch(uint96 ret) internal {
-    epochFeederStub.setReturn(IEpochFeeder.epoch.selector, ContractStub.Ret({ err: false, data: abi.encode(ret) }));
+    assertEq(notifier.callCount(), 1);
   }
 }
