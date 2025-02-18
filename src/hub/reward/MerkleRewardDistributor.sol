@@ -6,17 +6,18 @@ import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { MerkleProof } from '@oz-v5/utils/cryptography/MerkleProof.sol';
 
 import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { IMerkleRewardDistributor } from '../../interfaces/hub/reward/IMerkleRewardDistributor.sol';
-import { IRewardDistributor } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { MerkleRewardDistributorStorageV1 } from './MerkleRewardDistributorStorageV1.sol';
 
 contract MerkleRewardDistributor is
   IMerkleRewardDistributor,
-  MerkleRewardDistributorStorageV1,
-  AccessControlEnumerableUpgradeable
+  AccessControlEnumerableUpgradeable,
+  UUPSUpgradeable,
+  MerkleRewardDistributorStorageV1
 {
   using SafeERC20 for IERC20;
   using MerkleProof for bytes32[];
@@ -32,6 +33,7 @@ contract MerkleRewardDistributor is
 
   function initialize(address admin, address treasury_) public initializer {
     __AccessControlEnumerable_init();
+    __UUPSUpgradeable_init();
 
     _grantRole(DEFAULT_ADMIN_ROLE, admin);
     _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
@@ -154,6 +156,10 @@ contract MerkleRewardDistributor is
     }
   }
 
+  // ============================ NOTE: ADMIN FUNCTIONS ============================ //
+
+  function _authorizeUpgrade(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
+
   // ============================ NOTE: MANAGER FUNCTIONS ============================ //
 
   function fetchRewards(uint256 stage, uint256 nonce, address matrixVault, address reward, uint256 amount)
@@ -220,7 +226,10 @@ contract MerkleRewardDistributor is
     require(rewards.length == amounts.length, StdError.InvalidParameter('amounts.length'));
 
     for (uint256 i = 0; i < rewards.length; i++) {
-      require(amounts[i] >= IERC20(rewards[i]).balanceOf(address(this)), IMerkleRewardDistributor__InvalidAmount());
+      address reward = rewards[i];
+      uint256 amount = amounts[i];
+      require(_availableRewardAmount($, reward) >= amount, IMerkleRewardDistributor__InvalidAmount());
+      $.reservedRewardAmounts[reward] += amount;
     }
 
     _addStage($, merkleRoot, rewards, amounts);
@@ -228,21 +237,11 @@ contract MerkleRewardDistributor is
     return merkleStage;
   }
 
-  function handleReward(address matrixVault, address reward, uint256 amount) external {
-    require(_msgSender() == address(_getStorageV1().treasury), StdError.Unauthorized());
-    _handleReward(matrixVault, reward, amount);
-  }
-
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
   function _setTreasury(StorageV1 storage $, address treasury_) internal {
     require(treasury_.code.length > 0, StdError.InvalidAddress('Treasury'));
     $.treasury = ITreasury(treasury_);
-  }
-
-  function _handleReward(address matrixVault, address reward, uint256 amount) internal {
-    IERC20(reward).transferFrom(_msgSender(), address(this), amount);
-    emit RewardHandled(matrixVault, reward, amount);
   }
 
   function _fetchRewards(StorageV1 storage $, uint256 stage, address matrixVault, address reward, uint256 amount)
@@ -310,10 +309,17 @@ contract MerkleRewardDistributor is
 
     require(rewards.length == amounts.length, StdError.InvalidParameter('amounts.length'));
     for (uint256 i = 0; i < rewards.length; i++) {
-      IERC20(rewards[i]).safeTransfer(receiver, amounts[i]);
+      address reward = rewards[i];
+      uint256 amount = amounts[i];
+      IERC20(reward).safeTransfer(receiver, amount);
+      $.reservedRewardAmounts[reward] -= amount;
     }
 
     emit Claimed(receiver, stage, matrixVault, rewards, amounts);
+  }
+
+  function _availableRewardAmount(StorageV1 storage $, address reward) internal view returns (uint256) {
+    return IERC20(reward).balanceOf(address(this)) - $.reservedRewardAmounts[reward];
   }
 
   function _leaf(

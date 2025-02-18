@@ -6,6 +6,7 @@ import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
@@ -17,7 +18,13 @@ import { AssetManager } from './AssetManager.sol';
 
 // TODO(thai): consider to make our own contract (`HyperlaneConnector`) instead of using `GasRouter`.
 
-contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, GasRouter, Ownable2StepUpgradeable {
+contract AssetManagerEntrypoint is
+  IAssetManagerEntrypoint,
+  IMessageRecipient,
+  GasRouter,
+  Ownable2StepUpgradeable,
+  UUPSUpgradeable
+{
   using Message for *;
   using Conv for *;
 
@@ -46,7 +53,7 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, G
   function initialize(address owner_, address hook, address ism) public initializer {
     _MailboxClient_initialize(hook, ism, owner_);
     __Ownable2Step_init();
-    _transferOwnership(owner_);
+    __UUPSUpgradeable_init();
   }
 
   receive() external payable { }
@@ -201,6 +208,10 @@ contract AssetManagerEntrypoint is IAssetManagerEntrypoint, IMessageRecipient, G
       return;
     }
   }
+
+  //=========== NOTE: OWNABLE FUNCTIONS ===========//
+
+  function _authorizeUpgrade(address) internal override onlyOwner { }
 
   //=========== NOTE: OwnableUpgradeable & Ownable2StepUpgradeable
 

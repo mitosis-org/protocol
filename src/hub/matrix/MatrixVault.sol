@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
-import { ERC4626Upgradeable } from '@ozu-v5/token/ERC20/extensions/ERC4626Upgradeable.sol';
+import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
 import { StdError } from '../../lib/StdError.sol';
@@ -14,29 +14,49 @@ import { MatrixVaultStorageV1 } from './MatrixVaultStorageV1.sol';
  * @title MatrixVault
  * @notice Base implementation of an MatrixVault
  */
-abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626Upgradeable {
+abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626 {
   using Math for uint256;
 
-  function __MatrixVault_init(address assetManager_, IERC20Metadata asset_, string memory name, string memory symbol)
+  function __MatrixVault_init(address assetManager_, IERC20Metadata asset_, string memory name_, string memory symbol_)
     internal
   {
-    if (bytes(name).length == 0 || bytes(symbol).length == 0) {
-      name = string.concat('Mitosis ', asset_.name());
-      symbol = string.concat('mi', asset_.symbol());
+    if (bytes(name_).length == 0 || bytes(symbol_).length == 0) {
+      name_ = string.concat('Mitosis Matrix ', asset_.name());
+      symbol_ = string.concat('ma', asset_.symbol());
     }
 
-    __ERC4626_init(asset_);
-
     StorageV1 storage $ = _getStorageV1();
+    $.asset = address(asset_);
+    $.name = name_;
+    $.symbol = symbol_;
+
+    (bool success, uint8 result) = _tryGetAssetDecimals(address(asset_));
+    $.decimals = success ? result : _DEFAULT_UNDERLYING_DECIMALS;
 
     _setAssetManager($, assetManager_);
+  }
+
+  function asset() public view override returns (address) {
+    return _getStorageV1().asset;
+  }
+
+  function name() public view override returns (string memory) {
+    return _getStorageV1().name;
+  }
+
+  function symbol() public view override returns (string memory) {
+    return _getStorageV1().symbol;
+  }
+
+  function _underlyingDecimals() internal view override returns (uint8) {
+    return _getStorageV1().decimals;
   }
 
   // Mutative functions
 
   function deposit(uint256 assets, address receiver) public virtual override returns (uint256) {
     uint256 maxAssets = maxDeposit(receiver);
-    require(assets <= maxAssets, ERC4626ExceededMaxDeposit(receiver, assets, maxAssets));
+    require(assets <= maxAssets, DepositMoreThanMax());
 
     uint256 shares = previewDeposit(assets);
     _deposit(_msgSender(), receiver, assets, shares);
@@ -46,7 +66,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626Upgradeable {
 
   function mint(uint256 shares, address receiver) public virtual override returns (uint256) {
     uint256 maxShares = maxMint(receiver);
-    require(shares <= maxShares, ERC4626ExceededMaxMint(receiver, shares, maxShares));
+    require(shares <= maxShares, MintMoreThanMax());
 
     uint256 assets = previewMint(shares);
     _deposit(_msgSender(), receiver, assets, shares);
@@ -60,7 +80,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626Upgradeable {
     _assertOnlyReclaimQueue($);
 
     uint256 maxAssets = maxWithdraw(owner);
-    require(assets <= maxAssets, ERC4626ExceededMaxWithdraw(owner, assets, maxAssets));
+    require(assets <= maxAssets, WithdrawMoreThanMax());
 
     uint256 shares = previewWithdraw(assets);
     _withdraw(_msgSender(), receiver, owner, assets, shares);
@@ -74,7 +94,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626Upgradeable {
     _assertOnlyReclaimQueue($);
 
     uint256 maxShares = maxRedeem(owner);
-    require(shares <= maxShares, ERC4626ExceededMaxRedeem(owner, shares, maxShares));
+    require(shares <= maxShares, RedeemMoreThanMax());
 
     uint256 assets = previewRedeem(shares);
     _withdraw(_msgSender(), receiver, owner, assets, shares);

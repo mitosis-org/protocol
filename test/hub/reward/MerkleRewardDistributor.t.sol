@@ -1,149 +1,69 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// import { Merkle } from '@murky/Merkle.sol';
+import { console } from '@std/console.sol';
 
-// import { WETH } from '@solady/tokens/WETH.sol';
+import { Merkle } from '@murky/Merkle.sol';
 
-// import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
-// import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
+import { WETH } from '@solady/tokens/WETH.sol';
 
-// import {
-//   LibDistributorRewardMetadata, RewardMerkleMetadata
-// } from '../../../src/hub/reward/LibDistributorRewardMetadata.sol';
-// import { MerkleRewardDistributor } from '../../../src/hub/reward/MerkleRewardDistributor.sol';
-// import { IMerkleRewardDistributor } from '../../../src/interfaces/hub/reward/IMerkleRewardDistributor.sol';
-// import { Toolkit } from '../../util/Toolkit.sol';
+import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
-// contract MerkleRewardDistributorTest is Toolkit {
-//   using LibDistributorRewardMetadata for bytes;
-//   using LibDistributorRewardMetadata for RewardMerkleMetadata;
+import { MerkleRewardDistributor } from '../../../src/hub/reward/MerkleRewardDistributor.sol';
+import { Treasury } from '../../../src/hub/reward/Treasury.sol';
+import { IMerkleRewardDistributor } from '../../../src/interfaces/hub/reward/IMerkleRewardDistributor.sol';
+import { MockERC20Snapshots } from '../../mock/MockERC20Snapshots.t.sol';
+import { Toolkit } from '../../util/Toolkit.sol';
 
-//   struct LeafBase {
-//     address eolVault;
-//     address reward;
-//     uint256 stage;
-//   }
+contract MerkleRewardDistributorTest is Toolkit {
+  Treasury internal _treasury;
+  MerkleRewardDistributor internal _distributor;
+  MockERC20Snapshots internal _token;
 
-//   struct Leaf {
-//     LeafBase base;
-//     address account;
-//     uint256 amount;
-//   }
+  address immutable owner = makeAddr('owner');
+  address immutable matrixVault = makeAddr('matrixVault');
+  address immutable rewarder = makeAddr('rewarder');
 
-//   address internal _owner = makeAddr('owner');
-//   address internal _rewardManager = makeAddr('rewardManager');
-//   address internal _rewardConfigurator = makeAddr('rewardConfigurator');
+  function setUp() public {
+    _treasury =
+      Treasury(payable(new ERC1967Proxy(address(new Treasury()), abi.encodeCall(Treasury.initialize, (owner)))));
 
-//   Merkle internal _merkle;
-//   WETH internal _weth;
+    _distributor = MerkleRewardDistributor(
+      payable(
+        new ERC1967Proxy(
+          address(new MerkleRewardDistributor()),
+          abi.encodeCall(MerkleRewardDistributor.initialize, (owner, address(_treasury)))
+        )
+      )
+    );
 
-//   ProxyAdmin internal _proxyAdmin;
-//   MerkleRewardDistributor internal _distributorImpl;
-//   MerkleRewardDistributor internal _distributor;
+    _token = new MockERC20Snapshots();
+    _token.initialize('Token', 'TKN');
 
-//   function setUp() public {
-//     _merkle = new Merkle();
-//     _weth = new WETH();
+    bytes32 distributorManagerRole = _distributor.MANAGER_ROLE();
 
-//     _proxyAdmin = new ProxyAdmin(_owner);
-//     _distributorImpl = new MerkleRewardDistributor();
-//     _distributor = MerkleRewardDistributor(
-//       address(
-//         new TransparentUpgradeableProxy(
-//           address(_distributorImpl),
-//           address(_proxyAdmin),
-//           abi.encodeCall(_distributorImpl.initialize, (_owner, _rewardManager, _rewardConfigurator))
-//         )
-//       )
-//     );
-//   }
+    bytes32 treasuryManagerRole = _treasury.TREASURY_MANAGER_ROLE();
+    bytes32 dispatcherRole = _treasury.DISPATCHER_ROLE();
 
-//   function test_claim() public {
-//     LeafBase memory base = LeafBase({ eolVault: makeAddr('eolVault'), reward: address(_weth), stage: 1 });
-//     Leaf[] memory leaves = new Leaf[](3);
+    vm.startPrank(owner);
+    _distributor.grantRole(distributorManagerRole, owner);
+    _treasury.grantRole(treasuryManagerRole, rewarder);
+    _treasury.grantRole(dispatcherRole, address(_distributor));
+    vm.stopPrank();
+  }
 
-//     leaves[0] = _makeLeaf(base, makeAddr('user-a'), 1 ether);
-//     leaves[1] = _makeLeaf(base, makeAddr('user-b'), 2 ether);
-//     leaves[2] = _makeLeaf(base, makeAddr('user-c'), 3 ether);
+  function test_fetchRewards() public {
+    _token.mint(rewarder, 100 ether);
 
-//     (bytes32 root,, bytes32[][] memory proofs) = _makeTree(leaves);
-//     _submitReward(base, 6 ether, root);
+    vm.startPrank(rewarder);
+    _token.approve(address(_treasury), 100 ether);
+    _treasury.storeRewards(matrixVault, address(_token), 100 ether);
+    vm.stopPrank();
 
-//     for (uint256 i = 0; i < leaves.length; i++) {
-//       vm.startPrank(leaves[i].account);
+    vm.prank(owner);
+    _distributor.fetchRewards(0, 0, matrixVault, address(_token), 100 ether);
 
-//       bytes memory metadata = _leafToMetadata(leaves[i], proofs[i]);
-
-//       // before claim
-//       assertTrue(_distributor.claimable(leaves[i].account, base.reward, metadata));
-//       assertEq(_distributor.claimableAmount(leaves[i].account, base.reward, metadata), leaves[i].amount);
-
-//       _distributor.claim(base.reward, metadata);
-
-//       // after claim
-//       assertFalse(_distributor.claimable(leaves[i].account, base.reward, metadata));
-//       assertEq(_distributor.claimableAmount(leaves[i].account, base.reward, metadata), 0);
-
-//       vm.expectRevert(_errAlreadyClaimed());
-//       _distributor.claim(base.reward, metadata);
-
-//       vm.stopPrank();
-//     }
-//   }
-
-//   function _submitReward(LeafBase memory base, uint256 amount, bytes32 root) internal {
-//     vm.startPrank(_rewardManager);
-
-//     vm.deal(_rewardManager, amount);
-//     _weth.deposit{ value: amount }();
-//     _weth.approve(address(_distributor), amount);
-
-//     _distributor.handleReward(base.eolVault, base.reward, amount, abi.encode(base.stage, root));
-
-//     vm.stopPrank();
-//   }
-
-//   function _makeLeaf(LeafBase memory base, address account, uint256 amount) internal pure returns (Leaf memory) {
-//     return Leaf({ base: base, account: account, amount: amount });
-//   }
-
-//   function _makeTree(Leaf[] memory leaves)
-//     internal
-//     view
-//     returns (bytes32 root, bytes32[] memory tree, bytes32[][] memory proofs)
-//   {
-//     tree = new bytes32[](leaves.length);
-//     for (uint256 i = 0; i < leaves.length; i++) {
-//       tree[i] = _encodeLeaf(leaves[i]);
-//     }
-
-//     proofs = new bytes32[][](leaves.length);
-//     for (uint256 i = 0; i < leaves.length; i++) {
-//       proofs[i] = _merkle.getProof(tree, i);
-//     }
-
-//     return (_merkle.getRoot(tree), tree, proofs);
-//   }
-
-//   function _encodeLeaf(Leaf memory leaf) internal view returns (bytes32) {
-//     return _distributor.encodeLeaf(leaf.base.eolVault, leaf.base.reward, leaf.base.stage, leaf.account, leaf.amount);
-//   }
-
-//   function _leafToMetadata(Leaf memory leaf, bytes32[] memory proof) internal pure returns (bytes memory) {
-//     return RewardMerkleMetadata({
-//       eolVault: leaf.base.eolVault,
-//       stage: leaf.base.stage,
-//       amount: leaf.amount,
-//       proof: proof
-//     }).encode();
-//   }
-
-//   function _errAlreadyClaimed() internal pure returns (bytes memory) {
-//     return abi.encodeWithSelector(IMerkleRewardDistributor.IMerkleRewardDistributor__AlreadyClaimed.selector);
-//   }
-
-//   function _errInvalidProof() internal pure returns (bytes memory) {
-//     return abi.encodeWithSelector(IMerkleRewardDistributor.IMerkleRewardDistributor__InvalidProof.selector);
-//   }
-// }
+    assertEq(_token.balanceOf(address(_treasury)), 0);
+    assertEq(_token.balanceOf(address(_distributor)), 100 ether);
+  }
+}

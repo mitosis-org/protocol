@@ -3,11 +3,8 @@ pragma solidity ^0.8.28;
 
 import { console } from '@std/console.sol';
 
-import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
-
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
-import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
-import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
+import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { MitosisVault, AssetAction, MatrixAction } from '../../src/branch/MitosisVault.sol';
 import { IMitosisVault, IMatrixMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
@@ -19,28 +16,18 @@ import { MockMitosisVaultEntrypoint } from '../mock/MockMitosisVaultEntrypoint.t
 import { Toolkit } from '../util/Toolkit.sol';
 
 contract MitosisVaultTest is Toolkit {
-  MitosisVault _mitosisVault;
-  MockMitosisVaultEntrypoint _mitosisVaultEntrypoint;
-  ProxyAdmin _proxyAdmin;
-  MockERC20Snapshots _token;
-  MockMatrixStrategyExecutor _matrixStrategyExecutor;
+  MitosisVault internal _mitosisVault;
+  MockMitosisVaultEntrypoint internal _mitosisVaultEntrypoint;
+  MockERC20Snapshots internal _token;
+  MockMatrixStrategyExecutor internal _matrixStrategyExecutor;
 
   address immutable owner = makeAddr('owner');
   address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
   address immutable hubMatrixVault = makeAddr('hubMatrixVault');
 
   function setUp() public {
-    _proxyAdmin = new ProxyAdmin(owner);
-
-    MitosisVault mitosisVaultImpl = new MitosisVault();
     _mitosisVault = MitosisVault(
-      payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(mitosisVaultImpl), address(_proxyAdmin), abi.encodeCall(mitosisVaultImpl.initialize, (owner))
-          )
-        )
-      )
+      payable(new ERC1967Proxy(address(new MitosisVault()), abi.encodeCall(MitosisVault.initialize, (owner))))
     );
 
     _mitosisVaultEntrypoint = new MockMitosisVaultEntrypoint();

@@ -20,6 +20,7 @@ abstract contract MerkleRewardDistributorStorageV1 {
     uint256 lastStage;
     ITreasury treasury;
     mapping(uint256 stage => Stage) stages;
+    mapping(address reward => uint256 amount) reservedRewardAmounts;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.MerkleRewardDistributorStorage.v1';

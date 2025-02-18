@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IRewardDistributor } from './IRewardDistributor.sol';
 import { ITreasury } from './ITreasury.sol';
 
 /**
  * @title IMerkleRewardDistributor
  * @notice Interface for the Merkle based reward distributor
  */
-interface IMerkleRewardDistributor is IRewardDistributor {
+interface IMerkleRewardDistributor {
   event RewardsFetched(uint256 indexed id, uint256 nonce, address indexed matrixVault, address reward, uint256 amount);
 
   event StageAdded(uint256 indexed stage, bytes32 root, address[] rewards, uint256[] amounts);

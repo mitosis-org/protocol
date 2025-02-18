@@ -7,8 +7,8 @@ import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
-import { IRewardDistributor } from '../../interfaces/hub/reward/IRewardDistributor.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { TreasuryStorageV1 } from './TreasuryStorageV1.sol';
@@ -17,7 +17,7 @@ import { TreasuryStorageV1 } from './TreasuryStorageV1.sol';
  * @title Treasury
  * @notice A reward handler that stores rewards for later dispatch
  */
-contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgradeable {
+contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradeable, TreasuryStorageV1 {
   using SafeERC20 for IERC20;
   using SafeCast for uint256;
 
@@ -34,6 +34,7 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
 
   function initialize(address admin) external initializer {
     __AccessControlEnumerable_init();
+    __UUPSUpgradeable_init();
 
     _grantRole(DEFAULT_ADMIN_ROLE, admin);
     _setRoleAdmin(TREASURY_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
@@ -59,7 +60,7 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
     StorageV1 storage $ = _getStorageV1();
 
     uint256 balance = _balances($, matrixVault, reward);
-    require(balance >= amount, ITreasury__InsufficientBalance()); // TODO(eddy): custom error
+    require(balance >= amount, ITreasury__InsufficientBalance());
 
     $.balances[matrixVault][reward] = balance - amount;
     $.history[matrixVault][reward].push(
@@ -70,11 +71,13 @@ contract Treasury is ITreasury, TreasuryStorageV1, AccessControlEnumerableUpgrad
        })
     );
 
-    IERC20(reward).forceApprove(distributor, amount);
-    IRewardDistributor(distributor).handleReward(matrixVault, reward, amount);
-
+    IERC20(reward).transfer(distributor, amount);
     emit RewardDispatched(matrixVault, reward, distributor, amount);
   }
+
+  //=========== NOTE: ADMIN FUNCTIONS ===========//
+
+  function _authorizeUpgrade(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 

@@ -4,14 +4,6 @@ pragma solidity ^0.8.28;
 contract BaseDecoderAndSanitizer {
   error BaseDecoderAndSanitizer__FunctionSelectorNotSupported();
 
-  //============================== IMMUTABLES ===============================
-
-  address internal immutable _strategyExecutor;
-
-  constructor(address strategyExecutor_) {
-    _strategyExecutor = strategyExecutor_;
-  }
-
   //============================== FALLBACK ===============================
   /**
    * @notice The purpose of this function is to revert with a known error,
