@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
@@ -16,7 +16,7 @@ contract GovernanceExecutorEntrypoint is
   IGovernanceExecutorEntrypoint,
   GasRouter,
   UUPSUpgradeable,
-  AccessControlUpgradeable
+  AccessControlEnumerableUpgradeable
 {
   using Message for *;
   using Conv for *;
@@ -36,6 +36,7 @@ contract GovernanceExecutorEntrypoint is
 
   function initialize(address owner_, address hook, address ism) public initializer {
     _MailboxClient_initialize(hook, ism, owner_);
+    __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
 
     _grantRole(DEFAULT_ADMIN_ROLE, owner_);

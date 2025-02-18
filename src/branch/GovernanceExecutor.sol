@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import { Address } from '@oz-v5/utils/Address.sol';
 
-import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { IGovernanceExecutor } from '../interfaces/branch/IGovernanceExecutor.sol';
@@ -17,7 +17,7 @@ contract GovernanceExecutor is
   GovernanceExecutorStorageV1,
   Pausable,
   UUPSUpgradeable,
-  AccessControlUpgradeable
+  AccessControlEnumerableUpgradeable
 {
   using Address for address;
 
@@ -30,7 +30,7 @@ contract GovernanceExecutor is
 
   function initialize(address[] memory executors) public initializer {
     __Pausable_init();
-    __AccessControl_init();
+    __AccessControlEnumerable_init();
 
     _grantRole(DEFAULT_ADMIN_ROLE, address(this));
 
