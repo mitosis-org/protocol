@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IEpochFeeder } from './IEpochFeeder.sol';
 import { IValidatorManager } from './IValidatorManager.sol';
-import { IValidatorRewardFeed } from './IValidatorRewardFeed.sol';
+import { IValidatorContributionFeed } from './IValidatorContributionFeed.sol';
 
 /// @title IValidatorRewardDistributor
 /// @notice Interface for the ValidatorRewardDistributor contract that handles distribution of validator rewards
@@ -31,8 +31,8 @@ interface IValidatorRewardDistributor {
   /// @notice Returns the validator manager contract
   function validatorManager() external view returns (IValidatorManager);
 
-  /// @notice Returns the validator reward feed contract
-  function validatorRewardFeed() external view returns (IValidatorRewardFeed);
+  /// @notice Returns the validator contribution feed contract
+  function validatorContributionFeed() external view returns (IValidatorContributionFeed);
 
   /// @notice Returns the total claimable rewards for multiple validators and a staker
   /// @param staker The staker address to check rewards for

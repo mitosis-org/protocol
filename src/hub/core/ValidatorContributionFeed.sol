@@ -9,11 +9,15 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { EnumerableMap } from '@oz-v5/utils/structs/EnumerableMap.sol';
 
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
-import { IValidatorRewardFeed, Weight, ReportStatus } from '../../interfaces/hub/core/IValidatorRewardFeed.sol';
+import {
+  IValidatorContributionFeed,
+  ValidatorWeight,
+  ReportStatus
+} from '../../interfaces/hub/core/IValidatorContributionFeed.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-contract ValidatorRewardFeedStorageV1 {
+contract ValidatorContributionFeedStorageV1 {
   using ERC7201Utils for string;
 
   struct ReportChecker {
@@ -25,7 +29,7 @@ contract ValidatorRewardFeedStorageV1 {
     ReportStatus status;
     uint128 totalReward;
     uint128 totalWeight;
-    Weight[] weights;
+    ValidatorWeight[] weights;
     mapping(address valAddr => uint256 index) weightByValAddr;
   }
 
@@ -36,7 +40,7 @@ contract ValidatorRewardFeedStorageV1 {
     mapping(uint96 epoch => Reward reward) rewards;
   }
 
-  string private constant _NAMESPACE = 'mitosis.storage.ValidatorRewardFeedStorage.v1';
+  string private constant _NAMESPACE = 'mitosis.storage.ValidatorContributionFeedStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
@@ -48,9 +52,9 @@ contract ValidatorRewardFeedStorageV1 {
   }
 }
 
-contract ValidatorRewardFeed is
-  IValidatorRewardFeed,
-  ValidatorRewardFeedStorageV1,
+contract ValidatorContributionFeed is
+  IValidatorContributionFeed,
+  ValidatorContributionFeedStorageV1,
   Ownable2StepUpgradeable,
   AccessControlEnumerableUpgradeable,
   UUPSUpgradeable
@@ -58,7 +62,7 @@ contract ValidatorRewardFeed is
   using SafeCast for uint256;
   using EnumerableMap for EnumerableMap.AddressToUintMap;
 
-  /// @notice keccak256('mitosis.role.ValidatorRewardFeed.feeder')
+  /// @notice keccak256('mitosis.role.ValidatorContributionFeed.feeder')
   bytes32 public constant FEEDER_ROLE = 0xed3cedcdadd7625ff13ce12c112792caf5f35e0f515e9d8bd5cb9ad0c4cd4262;
 
   constructor() {
@@ -90,11 +94,11 @@ contract ValidatorRewardFeed is
     return _getStorageV1().rewards[epoch].weights.length;
   }
 
-  function weightAt(uint96 epoch, uint256 index) external view returns (Weight memory) {
+  function weightAt(uint96 epoch, uint256 index) external view returns (ValidatorWeight memory) {
     return _getStorageV1().rewards[epoch].weights[index];
   }
 
-  function weightOf(uint96 epoch, address valAddr) external view returns (Weight memory, bool) {
+  function weightOf(uint96 epoch, address valAddr) external view returns (ValidatorWeight memory, bool) {
     StorageV1 storage $ = _getStorageV1();
     Reward storage reward = $.rewards[epoch];
 
@@ -102,7 +106,7 @@ contract ValidatorRewardFeed is
 
     uint256 index = reward.weightByValAddr[valAddr];
     if (index == 0 && (reward.weights.length == 0 || reward.weights[0].addr != valAddr)) {
-      Weight memory empty;
+      ValidatorWeight memory empty;
       return (empty, false);
     }
     return (reward.weights[index], true);
@@ -137,7 +141,7 @@ contract ValidatorRewardFeed is
     emit ReportInitialized(epoch, request.totalReward, request.totalWeight, request.numOfValidators);
   }
 
-  function pushWeights(Weight[] calldata weights) external onlyRole(FEEDER_ROLE) {
+  function pushValidatorWeights(ValidatorWeight[] calldata weights) external onlyRole(FEEDER_ROLE) {
     StorageV1 storage $ = _getStorageV1();
     uint96 epoch = $.nextEpoch;
 
@@ -147,7 +151,7 @@ contract ValidatorRewardFeed is
     ReportChecker memory checker = $.checker;
 
     for (uint256 i = 0; i < weights.length; i++) {
-      Weight memory weight = weights[i];
+      ValidatorWeight memory weight = weights[i];
       uint256 index = reward.weightByValAddr[weight.addr];
 
       require(

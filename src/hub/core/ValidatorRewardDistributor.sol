@@ -11,7 +11,7 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
 import { IValidatorManager } from '../../interfaces/hub/core/IValidatorManager.sol';
 import { IValidatorRewardDistributor } from '../../interfaces/hub/core/IValidatorRewardDistributor.sol';
-import { IValidatorRewardFeed, Weight as ValidatorWeight } from '../../interfaces/hub/core/IValidatorRewardFeed.sol';
+import { IValidatorContributionFeed, ValidatorWeight } from '../../interfaces/hub/core/IValidatorContributionFeed.sol';
 import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
@@ -29,7 +29,7 @@ contract ValidatorRewardDistributorStorageV1 {
   struct StorageV1 {
     IEpochFeeder epochFeeder;
     IValidatorManager validatorManager;
-    IValidatorRewardFeed validatorRewardFeed;
+    IValidatorContributionFeed validatorContributionFeed;
     LastClaimedEpoch lastClaimedEpoch;
   }
 
@@ -75,19 +75,19 @@ contract ValidatorRewardDistributor is
   /// @param initialOwner_ Address of the initial contract owner
   /// @param epochFeeder_ Address of the epoch feeder contract
   /// @param validatorManager_ Address of the validator manager contract
-  /// @param validatorRewardFeed_ Address of the reward feed contract
+  /// @param validatorContributionFeed_ Address of the reward feed contract
   function initialize(
     address initialOwner_,
     address epochFeeder_,
     address validatorManager_,
-    address validatorRewardFeed_
+    address validatorContributionFeed_
   ) external initializer {
     __Ownable_init(initialOwner_);
     __Ownable2Step_init();
 
     _setEpochFeeder(epochFeeder_);
     _setValidatorManager(validatorManager_);
-    _setValidatorRewardFeed(validatorRewardFeed_);
+    _setValidatorContributionFeed(validatorContributionFeed_);
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -101,9 +101,8 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-
-  function validatorRewardFeed() external view returns (IValidatorRewardFeed) {
-    return _getStorageV1().validatorRewardFeed;
+  function validatorContributionFeed() external view returns (IValidatorContributionFeed) {
+    return _getStorageV1().validatorContributionFeed;
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -182,9 +181,9 @@ contract ValidatorRewardDistributor is
   }
 
   /// @notice Sets a new validator reward feed contract
-  /// @param validatorRewardFeed_ Address of the new validator reward feed contract
-  function setValidatorRewardFeed(address validatorRewardFeed_) external onlyOwner {
-    _setValidatorRewardFeed(validatorRewardFeed_);
+  /// @param validatorContributionFeed_ Address of the new validator reward feed contract
+  function setValidatorContributionFeed(address validatorContributionFeed_) external onlyOwner {
+    _setValidatorContributionFeed(validatorContributionFeed_);
   }
 
   function _setEpochFeeder(address epochFeeder_) internal {
@@ -197,9 +196,9 @@ contract ValidatorRewardDistributor is
     _getStorageV1().validatorManager = IValidatorManager(validatorManager_);
   }
 
-  function _setValidatorRewardFeed(address validatorRewardFeed_) internal {
-    require(validatorRewardFeed_.code.length > 0, StdError.InvalidAddress('validatorRewardFeed'));
-    _getStorageV1().validatorRewardFeed = IValidatorRewardFeed(validatorRewardFeed_);
+  function _setValidatorContributionFeed(address validatorContributionFeed_) internal {
+    require(validatorContributionFeed_.code.length > 0, StdError.InvalidAddress('validatorContributionFeed'));
+    _getStorageV1().validatorContributionFeed = IValidatorContributionFeed(validatorContributionFeed_);
   }
 
   function _claimableRewards(StorageV1 storage $, address valAddr, address staker, uint96 epochCount)
@@ -320,8 +319,8 @@ contract ValidatorRewardDistributor is
     returns (uint256, uint256)
   {
     IValidatorManager.ValidatorInfoResponse memory validatorInfo = $.validatorManager.validatorInfo(epoch, valAddr);
-    IValidatorRewardFeed.Summary memory rewardSummary = $.validatorRewardFeed.summary(epoch);
-    (ValidatorWeight memory weight, bool exists) = $.validatorRewardFeed.weightOf(epoch, valAddr);
+    IValidatorContributionFeed.Summary memory rewardSummary = $.validatorContributionFeed.summary(epoch);
+    (ValidatorWeight memory weight, bool exists) = $.validatorContributionFeed.weightOf(epoch, valAddr);
     if (!exists) return (0, 0);
 
     uint256 totalReward = (rewardSummary.totalReward * weight.weight) / rewardSummary.totalWeight;

@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IEpochFeeder } from './IEpochFeeder.sol';
 
-struct Weight {
+struct ValidatorWeight {
   address addr;
   uint96 weight; // max 79 billion * 1e18
 }
@@ -14,11 +14,11 @@ enum ReportStatus {
   FINALIZED
 }
 
-interface IValidatorRewardFeed {
+interface IValidatorContributionFeed {
   struct ReportRequest {
     uint128 totalReward;
     uint128 totalWeight;
-    Weight[] weights;
+    ValidatorWeight[] weights;
   }
 
   struct InitReportRequest {
@@ -46,15 +46,15 @@ interface IValidatorRewardFeed {
 
   function weightCount(uint96 epoch) external view returns (uint256);
 
-  function weightAt(uint96 epoch, uint256 index) external view returns (Weight memory);
+  function weightAt(uint96 epoch, uint256 index) external view returns (ValidatorWeight memory);
 
-  function weightOf(uint96 epoch, address valAddr) external view returns (Weight memory, bool);
+  function weightOf(uint96 epoch, address valAddr) external view returns (ValidatorWeight memory, bool);
 
   function summary(uint96 epoch) external view returns (Summary memory);
 
   function initializeReport(InitReportRequest calldata request) external;
 
-  function pushWeights(Weight[] calldata weights) external;
+  function pushValidatorWeights(ValidatorWeight[] calldata weights) external;
 
   function finalizeReport() external;
 }

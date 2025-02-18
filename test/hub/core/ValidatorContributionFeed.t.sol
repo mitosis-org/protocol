@@ -9,9 +9,11 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { LibClone } from '@solady/utils/LibClone.sol';
 import { LibString } from '@solady/utils/LibString.sol';
 
-import { ValidatorRewardFeed } from '../../../src/hub/core/ValidatorRewardFeed.sol';
+import { ValidatorContributionFeed } from '../../../src/hub/core/ValidatorContributionFeed.sol';
 import { IEpochFeeder } from '../../../src/interfaces/hub/core/IEpochFeeder.sol';
-import { IValidatorRewardFeed, Weight } from '../../../src/interfaces/hub/core/IValidatorRewardFeed.sol';
+import {
+  IValidatorContributionFeed, ValidatorWeight
+} from '../../../src/interfaces/hub/core/IValidatorContributionFeed.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
@@ -47,7 +49,7 @@ contract ContractStub {
   }
 }
 
-contract ValidatorRewardFeedTest is Toolkit {
+contract ValidatorContributionFeedTest is Toolkit {
   using SafeCast for uint256;
   using LibString for *;
 
@@ -55,15 +57,15 @@ contract ValidatorRewardFeedTest is Toolkit {
   address feeder = makeAddr('feeder');
 
   ContractStub epochFeederStub;
-  ValidatorRewardFeed feed;
+  ValidatorContributionFeed feed;
 
   function setUp() public {
     epochFeederStub = new ContractStub();
-    feed = ValidatorRewardFeed(
+    feed = ValidatorContributionFeed(
       address(
         new ERC1967Proxy(
-          address(new ValidatorRewardFeed()),
-          abi.encodeCall(ValidatorRewardFeed.initialize, (owner, address(epochFeederStub)))
+          address(new ValidatorContributionFeed()),
+          abi.encodeCall(ValidatorContributionFeed.initialize, (owner, address(epochFeederStub)))
         )
       )
     );
@@ -83,15 +85,15 @@ contract ValidatorRewardFeedTest is Toolkit {
 
     vm.startPrank(feeder);
     feed.initializeReport(
-      IValidatorRewardFeed.InitReportRequest({ totalReward: 300, totalWeight: 300, numOfValidators: 300 })
+      IValidatorContributionFeed.InitReportRequest({ totalReward: 300, totalWeight: 300, numOfValidators: 300 })
     );
 
     for (uint256 i = 0; i < 6; i++) {
-      Weight[] memory weights = new Weight[](50);
+      ValidatorWeight[] memory weights = new ValidatorWeight[](50);
       for (uint256 j = 0; j < 50; j++) {
-        weights[j] = Weight({ addr: makeAddr(string.concat('val-', ((i * 50) + j).toString())), weight: 1 });
+        weights[j] = ValidatorWeight({ addr: makeAddr(string.concat('val-', ((i * 50) + j).toString())), weight: 1 });
       }
-      feed.pushWeights(weights);
+      feed.pushValidatorWeights(weights);
     }
 
     feed.finalizeReport();
