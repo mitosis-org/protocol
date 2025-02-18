@@ -46,9 +46,36 @@ interface IValidatorManager {
   }
 
   struct SetGlobalValidatorConfigRequest {
+    uint256 initialValidatorDeposit; // used on creation of the validator
+    uint256 unstakeCooldown; // in seconds
+    uint256 collateralWithdrawalDelay; // in seconds
     uint256 minimumCommissionRate; // bp ex) 10000 = 100%
     uint96 commissionRateUpdateDelay; // in epoch
   }
+
+  event Staked(address indexed valAddr, address indexed staker, address indexed recipient, uint256 amount);
+  event UnstakeRequested(
+    address indexed valAddr, address indexed unstaker, address indexed recipient, uint256 amount, uint256 reqId
+  );
+  event UnstakeClaimed(address indexed valAddr, address indexed recipient, uint256 amount);
+
+  event Redelegated(address indexed fromValAddr, address indexed toValAddr, address indexed staker, uint256 amount);
+  event RedelegationCancelled(
+    address indexed fromValAddr, address indexed toValAddr, address indexed staker, uint256 amount
+  );
+
+  event ValidatorCreated(address indexed valAddr, bytes valKey);
+  event CollateralDeposited(address indexed valAddr, uint256 amount);
+  event CollateralWithdrawn(address indexed valAddr, uint256 amount);
+  event ValidatorUnjailed(address indexed valAddr);
+  event OperatorUpdated(address indexed valAddr, address indexed operator);
+  event RewardRecipientUpdated(address indexed valAddr, address indexed operator, address indexed rewardRecipient);
+  event MetadataUpdated(address indexed valAddr, address indexed operator, bytes metadata);
+  event RewardConfigUpdated(address indexed valAddr, address indexed operator);
+
+  event GlobalValidatorConfigUpdated();
+  event EpochFeederUpdated(IEpochFeeder indexed epochFeeder);
+  event EntrypointUpdated(IConsensusValidatorEntrypoint indexed entrypoint);
 
   function validatorCount() external view returns (uint256);
   function validatorAt(uint256 index) external view returns (address);
@@ -62,6 +89,8 @@ interface IValidatorManager {
   function staked(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
   function stakedTWAB(address valAddr, address staker) external view returns (uint256);
   function stakedTWAB(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
+  function unstaking(address valAddr, address staker) external view returns (uint256, uint256);
+  function unstaking(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256);
   function redelegations(address toValAddr, address staker, uint96 epoch)
     external
     view
@@ -77,7 +106,8 @@ interface IValidatorManager {
   // ========== USER ACTIONS ========== //
 
   function stake(address valAddr, address recipient) external payable;
-  function unstake(address valAddr, uint256 amount) external;
+  function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256);
+  function claimUnstake(address valAddr, address receiver) external returns (uint256);
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external;
   function cancelRedelegation(address fromValAddr, address toValAddr, uint256 amount) external;
 
@@ -90,7 +120,7 @@ interface IValidatorManager {
 
   // operator actions
   function depositCollateral(address valAddr) external payable;
-  function withdrawCollateral(address valAddr, uint256 amount) external;
+  function withdrawCollateral(address valAddr, address recipient, uint256 amount) external;
   function unjailValidator(address valAddr) external;
 
   // validator configurations

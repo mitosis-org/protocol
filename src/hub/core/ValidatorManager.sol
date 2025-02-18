@@ -9,10 +9,13 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { EnumerableMap } from '@oz-v5/utils/structs/EnumerableMap.sol';
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
+import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
+
 import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
 import { IValidatorManager } from '../../interfaces/hub/core/IValidatorManager.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { LibSecp256k1 } from '../../lib/LibSecp256k1.sol';
 import { StdError } from '../../lib/StdError.sol';
 
@@ -38,6 +41,9 @@ contract ValidatorManagerStorageV1 {
   }
 
   struct GlobalValidatorConfig {
+    uint256 initialValidatorDeposit; // used on creation of the validator
+    uint256 unstakeCooldown; // in seconds
+    uint256 collateralWithdrawalDelay; // in seconds
     uint256 minimumCommissionRate;
     uint96 commissionRateUpdateDelay; // in epoch
   }
@@ -79,6 +85,7 @@ contract ValidatorManagerStorageV1 {
     uint256[] validatorIndexes;
     mapping(uint256 index => Validator) validators;
     mapping(address valAddr => uint256 index) indexByValAddr;
+    mapping(address valAddr => LibRedeemQueue.Queue) unstakeQueue;
     mapping(address valAddr => mapping(address staker => TWABCheckpoint[])) delegationHistory;
     mapping(address staker => mapping(address toValAddr => Redelegation[])) redelegationHistory;
     mapping(address staker => EnumerableSet.AddressSet) stakedValidators;
@@ -100,6 +107,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   using SafeCast for uint256;
   using EnumerableMap for EnumerableMap.AddressToUintMap;
   using EnumerableSet for EnumerableSet.AddressSet;
+  using LibRedeemQueue for LibRedeemQueue.Queue;
 
   uint256 public constant MAX_COMMISSION_RATE = 10000; // 100% in bp
 
@@ -193,6 +201,15 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   function stakedTWAB(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
     require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _stakedTWAB(valAddr, staker, timestamp);
+  }
+
+  function unstaking(address valAddr, address staker) external view returns (uint256, uint256) {
+    return _unstaking(valAddr, staker, _getStorageV1().epochFeeder.clock());
+  }
+
+  function unstaking(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256) {
+    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
+    return _unstaking(valAddr, staker, timestamp);
   }
 
   function redelegations(address toValAddr, address staker, uint96 epoch)
@@ -293,9 +310,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _applyRedelegation($, valAddr, recipient);
 
     _stake($, valAddr, recipient, msg.value, $.epochFeeder.clock());
+
+    emit Staked(valAddr, _msgSender(), recipient, msg.value);
   }
 
-  function unstake(address valAddr, uint256 amount) external {
+  function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256) {
     require(amount > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
@@ -308,6 +327,35 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _applyRedelegation($, valAddr, _msgSender());
 
     _unstake($, valAddr, _msgSender(), amount);
+
+    // FIXME(eddy): shorten the enqueue + reserve flow
+    uint48 now_ = $.epochFeeder.clock();
+    uint256 reqId = $.unstakeQueue[valAddr].enqueue(receiver, amount, now_, bytes(''));
+    $.unstakeQueue[valAddr].reserve(valAddr, amount, now_, bytes(''));
+
+    emit UnstakeRequested(valAddr, _msgSender(), receiver, amount, reqId);
+
+    return reqId;
+  }
+
+  function claimUnstake(address valAddr, address receiver) external returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    _assertValidatorExists($, valAddr);
+
+    LibRedeemQueue.Queue storage unstakeQueue = $.unstakeQueue[valAddr];
+
+    uint256 globalCooldown = $.globalValidatorConfig.unstakeCooldown;
+    if (globalCooldown != 0) unstakeQueue.redeemPeriod = globalCooldown;
+
+    uint48 now_ = $.epochFeeder.clock();
+    unstakeQueue.update(now_);
+    uint256 claimed = unstakeQueue.claim(receiver, now_);
+
+    SafeTransferLib.safeTransferETH(receiver, claimed);
+
+    emit UnstakeClaimed(valAddr, receiver, claimed);
+
+    return claimed;
   }
 
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external {
@@ -333,6 +381,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       $.epochFeeder.epoch(),
       _addAmount
     );
+
+    emit Redelegated(fromValAddr, toValAddr, _msgSender(), amount);
   }
 
   function cancelRedelegation(address fromValAddr, address toValAddr, uint256 amount) external {
@@ -368,6 +418,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _pushEpochCheckpoint(
       $.validators[$.indexByValAddr[fromValAddr]].stat.totalPendingRedelegations, amount, epoch, _subAmount
     );
+
+    emit RedelegationCancelled(fromValAddr, toValAddr, _msgSender(), amount);
   }
 
   function createValidator(bytes calldata valKey, CreateValidatorRequest calldata request) external payable {
@@ -381,6 +433,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
     _assertValidatorNotExists($, valAddr);
 
+    require($.globalValidatorConfig.initialValidatorDeposit <= msg.value, StdError.InvalidParameter('msg.value'));
     require(
       $.globalValidatorConfig.minimumCommissionRate <= request.commissionRate
         && request.commissionRate <= MAX_COMMISSION_RATE,
@@ -399,8 +452,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     validator.rewardConfig.commissionRate = request.commissionRate;
     validator.metadata = request.metadata;
 
+    $.unstakeQueue[valAddr].redeemPeriod = $.globalValidatorConfig.unstakeCooldown;
     $.indexByValAddr[valAddr] = valIndex;
     $.entrypoint.registerValidator{ value: msg.value }(valKey, valAddr);
+
+    emit ValidatorCreated(valAddr, valKey);
   }
 
   function depositCollateral(address valAddr) external payable {
@@ -411,9 +467,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _assertOperator(info);
 
     $.entrypoint.depositCollateral{ value: msg.value }(info.pubKey);
+
+    emit CollateralDeposited(valAddr, msg.value);
   }
 
-  function withdrawCollateral(address valAddr, uint256 amount) external {
+  function withdrawCollateral(address valAddr, address recipient, uint256 amount) external {
     require(amount > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
@@ -423,10 +481,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     $.entrypoint.withdrawCollateral(
       info.pubKey,
       amount,
-      _msgSender(),
-      // interval() returns 1 epoch's interval
-      $.epochFeeder.clock() + ($.epochFeeder.interval() * 3)
+      recipient,
+      $.epochFeeder.clock() + $.globalValidatorConfig.collateralWithdrawalDelay.toUint48()
     );
+
+    emit CollateralWithdrawn(valAddr, amount);
   }
 
   function unjailValidator(address valAddr) external {
@@ -435,6 +494,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _assertOperator(info);
 
     $.entrypoint.unjail(info.pubKey);
+
+    emit ValidatorUnjailed(valAddr);
   }
 
   function updateOperator(address operator) external {
@@ -448,6 +509,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     );
 
     $.validators[$.indexByValAddr[valAddr]].operator = operator;
+
+    emit OperatorUpdated(valAddr, operator);
   }
 
   function updateRewardRecipient(address valAddr, address rewardRecipient) external {
@@ -458,6 +521,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _assertOperator(info);
 
     $.validators[$.indexByValAddr[valAddr]].rewardRecipient = rewardRecipient;
+
+    emit RewardRecipientUpdated(valAddr, _msgSender(), rewardRecipient);
   }
 
   function updateMetadata(address valAddr, bytes calldata metadata) external {
@@ -468,6 +533,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _assertOperator(info);
 
     $.validators[$.indexByValAddr[valAddr]].metadata = metadata;
+
+    emit MetadataUpdated(valAddr, _msgSender(), metadata);
   }
 
   function updateRewardConfig(address valAddr, UpdateRewardConfigRequest calldata request) external {
@@ -492,6 +559,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       validator.rewardConfig.pendingCommissionRate = request.commissionRate;
       validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate;
     }
+
+    emit RewardConfigUpdated(valAddr, _msgSender());
   }
 
   function setGlobalValidatorConfig(SetGlobalValidatorConfigRequest calldata request) external onlyOwner {
@@ -503,6 +572,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
     $.globalValidatorConfig.minimumCommissionRate = request.minimumCommissionRate;
     $.globalValidatorConfig.commissionRateUpdateDelay = request.commissionRateUpdateDelay;
+
+    emit GlobalValidatorConfigUpdated();
   }
 
   function setEpochFeeder(IEpochFeeder epochFeeder) external onlyOwner {
@@ -615,6 +686,31 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     last.twab += (last.amount * (timestamp - last.lastUpdate)).toUint208();
 
     return last.twab;
+  }
+
+  function _unstaking(address valAddr, address staker, uint48 timestamp) internal view returns (uint256, uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    _assertValidatorExists($, valAddr);
+
+    LibRedeemQueue.Queue storage unstakeQueue = $.unstakeQueue[valAddr];
+
+    uint256 offset = unstakeQueue.indexes[staker].offset;
+    (uint256 newOffset, bool found) = unstakeQueue.searchIndexOffset(staker, type(uint256).max, timestamp);
+
+    uint256 claimable = 0;
+    uint256 nonClaimable = 0;
+
+    if (found) {
+      for (uint256 i = offset; i < newOffset; i++) {
+        claimable += unstakeQueue.requestAmount(i);
+      }
+    }
+
+    for (uint256 i = found ? newOffset : offset; i < unstakeQueue.indexes[staker].size; i++) {
+      nonClaimable += unstakeQueue.requestAmount(i);
+    }
+
+    return (claimable, nonClaimable);
   }
 
   function _totalDelegation(address valAddr, uint48 timestamp) internal view returns (uint256) {
@@ -807,11 +903,15 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   function _setEpochFeeder(StorageV1 storage $, IEpochFeeder epochFeeder) internal {
     require(address(epochFeeder).code.length > 0, StdError.InvalidParameter('epochFeeder'));
     $.epochFeeder = epochFeeder;
+
+    emit EpochFeederUpdated(epochFeeder);
   }
 
   function _setEntrypoint(StorageV1 storage $, IConsensusValidatorEntrypoint entrypoint) internal {
     require(address(entrypoint).code.length > 0, StdError.InvalidParameter('entrypoint'));
     $.entrypoint = entrypoint;
+
+    emit EntrypointUpdated(entrypoint);
   }
 
   function _validatorInfo(StorageV1 storage $, address valAddr) internal view returns (Validator memory) {
