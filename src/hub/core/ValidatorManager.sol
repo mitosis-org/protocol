@@ -44,7 +44,7 @@ contract ValidatorManagerStorageV1 {
     uint256 initialValidatorDeposit; // used on creation of the validator
     uint256 unstakeCooldown; // in seconds
     uint256 collateralWithdrawalDelay; // in seconds
-    uint256 minimumCommissionRate;
+    EpochCheckpoint[] minimumCommissionRates;
     uint96 commissionRateUpdateDelay; // in epoch
   }
 
@@ -55,7 +55,7 @@ contract ValidatorManagerStorageV1 {
   }
 
   struct ValidatorRewardConfig {
-    uint256 commissionRate; // bp ex) 10000 = 100%
+    EpochCheckpoint[] commissionRates; // bp ex) 10000 = 100%
     uint256 pendingCommissionRate; // bp ex) 10000 = 100%
     uint256 pendingCommissionRateUpdateEpoch; // current epoch + 2
   }
@@ -149,27 +149,29 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     return $.indexByValAddr[valAddr] != 0;
   }
 
-  function validatorInfo(address valAddr) external view returns (ValidatorInfoResponse memory) {
+  function validatorInfo(uint96 epoch, address valAddr) external view returns (ValidatorInfoResponse memory) {
     StorageV1 storage $ = _getStorageV1();
     Validator memory info = _validatorInfo($, valAddr);
     _assertValidatorExists($, valAddr);
+
+    uint256 commissionRate = _searchCheckpoint(info.rewardConfig.commissionRates, epoch).amount;
 
     ValidatorInfoResponse memory response = ValidatorInfoResponse({
       validator: info.validator,
       operator: info.operator,
       rewardRecipient: info.rewardRecipient,
-      commissionRate: info.rewardConfig.commissionRate,
+      commissionRate: commissionRate,
       metadata: info.metadata
     });
 
     // apply pending rate
-    uint96 epoch = $.epochFeeder.epoch();
     if (info.rewardConfig.pendingCommissionRateUpdateEpoch >= epoch) {
       response.commissionRate = info.rewardConfig.pendingCommissionRate;
     }
 
     // hard limit
-    response.commissionRate = Math.max(response.commissionRate, $.globalValidatorConfig.minimumCommissionRate);
+    response.commissionRate =
+      Math.max(response.commissionRate, _searchCheckpoint($.globalValidatorConfig.minimumCommissionRates, epoch).amount);
 
     return response;
   }
@@ -433,23 +435,27 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
     _assertValidatorNotExists($, valAddr);
 
-    require($.globalValidatorConfig.initialValidatorDeposit <= msg.value, StdError.InvalidParameter('msg.value'));
+    GlobalValidatorConfig memory globalConfig = $.globalValidatorConfig;
+
+    require(globalConfig.initialValidatorDeposit <= msg.value, StdError.InvalidParameter('msg.value'));
     require(
-      $.globalValidatorConfig.minimumCommissionRate <= request.commissionRate
-        && request.commissionRate <= MAX_COMMISSION_RATE,
+      globalConfig.minimumCommissionRates[globalConfig.minimumCommissionRates.length - 1].amount
+        <= request.commissionRate && request.commissionRate <= MAX_COMMISSION_RATE,
       StdError.InvalidParameter('commissionRate')
     );
 
     uint256 valIndex = $.validatorIndexes.length;
     $.validatorIndexes.push(valIndex);
 
+    uint96 epoch = $.epochFeeder.epoch();
+
     Validator storage validator = $.validators[valIndex];
     validator.validator = valAddr;
     validator.operator = valAddr;
     validator.rewardRecipient = valAddr;
     validator.pubKey = valKey;
-    validator.stat.lastUpdatedEpoch = $.epochFeeder.epoch();
-    validator.rewardConfig.commissionRate = request.commissionRate;
+    validator.stat.lastUpdatedEpoch = epoch;
+    validator.rewardConfig.commissionRates.push(EpochCheckpoint({ epoch: epoch, amount: request.commissionRate }));
     validator.metadata = request.metadata;
 
     $.unstakeQueue[valAddr].redeemPeriod = $.globalValidatorConfig.unstakeCooldown;
@@ -542,19 +548,20 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     Validator memory info = _validatorInfo($, valAddr);
     _assertOperator(info);
 
+    GlobalValidatorConfig memory globalConfig = $.globalValidatorConfig;
     require(
-      $.globalValidatorConfig.minimumCommissionRate <= request.commissionRate
-        && request.commissionRate <= MAX_COMMISSION_RATE,
+      globalConfig.minimumCommissionRates[globalConfig.minimumCommissionRates.length - 1].amount
+        <= request.commissionRate && request.commissionRate <= MAX_COMMISSION_RATE,
       StdError.InvalidParameter('commissionRate')
     );
 
     Validator storage validator = $.validators[$.indexByValAddr[valAddr]];
 
-    if ($.globalValidatorConfig.commissionRateUpdateDelay == 0) {
-      validator.rewardConfig.commissionRate = request.commissionRate;
+    uint96 epoch = $.epochFeeder.epoch();
+    if (globalConfig.commissionRateUpdateDelay == 0) {
+      validator.rewardConfig.commissionRates.push(EpochCheckpoint({ epoch: epoch, amount: request.commissionRate }));
     } else {
-      uint96 epoch = $.epochFeeder.epoch();
-      uint96 epochToUpdate = epoch + $.globalValidatorConfig.commissionRateUpdateDelay;
+      uint96 epochToUpdate = epoch + globalConfig.commissionRateUpdateDelay;
 
       validator.rewardConfig.pendingCommissionRate = request.commissionRate;
       validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate;
@@ -570,7 +577,10 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     );
 
     StorageV1 storage $ = _getStorageV1();
-    $.globalValidatorConfig.minimumCommissionRate = request.minimumCommissionRate;
+    uint96 epoch = $.epochFeeder.epoch();
+    $.globalValidatorConfig.minimumCommissionRates.push(
+      EpochCheckpoint({ epoch: epoch, amount: request.minimumCommissionRate })
+    );
     $.globalValidatorConfig.commissionRateUpdateDelay = request.commissionRateUpdateDelay;
 
     emit GlobalValidatorConfigUpdated();
@@ -585,6 +595,31 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //
+
+  function _searchCheckpoint(EpochCheckpoint[] memory history, uint96 epoch)
+    internal
+    pure
+    returns (EpochCheckpoint memory)
+  {
+    EpochCheckpoint memory last = history[history.length - 1];
+    if (last.epoch <= epoch) return last;
+
+    uint256 left = 0;
+    uint256 right = history.length - 1;
+    uint256 target = 0;
+
+    while (left <= right) {
+      uint256 mid = left + (right - left) / 2;
+      if (history[mid].epoch <= epoch) {
+        target = mid;
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
+
+    return history[target];
+  }
 
   function _searchCheckpoint(TWABCheckpoint[] memory history, uint48 timestamp)
     internal

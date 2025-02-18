@@ -11,6 +11,7 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
 import { IValidatorManager } from '../../interfaces/hub/core/IValidatorManager.sol';
 import { IValidatorRewardDistributor } from '../../interfaces/hub/core/IValidatorRewardDistributor.sol';
+import { IValidatorRewardFeed, Weight as ValidatorWeight } from '../../interfaces/hub/core/IValidatorRewardFeed.sol';
 import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
@@ -20,11 +21,16 @@ import { StdError } from '../../lib/StdError.sol';
 contract ValidatorRewardDistributorStorageV1 {
   using ERC7201Utils for string;
 
+  struct LastClaimedEpoch {
+    mapping(address staker => mapping(address valAddr => uint96)) staker;
+    mapping(address valAddr => uint96) commission;
+  }
+
   struct StorageV1 {
     IEpochFeeder epochFeeder;
     IValidatorManager validatorManager;
-    mapping(uint96 epoch => mapping(address valAddr => uint256 amount)) rewards;
-    mapping(address staker => mapping(address valAddr => uint96)) lastClaimedEpoch;
+    IValidatorRewardFeed validatorRewardFeed;
+    LastClaimedEpoch lastClaimedEpoch;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.ValidatorRewardDistributorStorage.v1';
@@ -50,26 +56,12 @@ contract ValidatorRewardDistributor is
   using SafeCast for uint256;
   using SafeERC20 for IGovMITO;
 
-  // Events
-  event RewardsReported(address indexed valAddr, uint256 amount, uint96 epoch);
-  event RewardsClaimed(
-    address indexed staker, address indexed valAddr, uint256 amount, uint96 fromEpoch, uint96 toEpoch
-  );
-  event EpochFeederSet(address indexed epochFeeder);
-  event ValidatorManagerSet(address indexed validatorManager);
-
-  // Custom errors
-  error NotValidator();
-  error NoRewardsToClaim();
-  error ArrayLengthMismatch();
-  error InvalidClaimEpochRange();
-
   // Address of the governance MITO token contract
   address private immutable govMITO;
 
   // Maximum number of epochs that can be claimed at once
   // Set to 32 based on gas cost analysis and typical usage patterns
-  uint256 public constant MAX_CLAIM_EPOCHS = 32;
+  uint96 public constant MAX_CLAIM_EPOCHS = 32;
 
   /// @notice Contract constructor
   /// @param govMITO_ Address of the governance MITO token contract
@@ -83,12 +75,19 @@ contract ValidatorRewardDistributor is
   /// @param initialOwner_ Address of the initial contract owner
   /// @param epochFeeder_ Address of the epoch feeder contract
   /// @param validatorManager_ Address of the validator manager contract
-  function initialize(address initialOwner_, address epochFeeder_, address validatorManager_) external initializer {
+  /// @param validatorRewardFeed_ Address of the reward feed contract
+  function initialize(
+    address initialOwner_,
+    address epochFeeder_,
+    address validatorManager_,
+    address validatorRewardFeed_
+  ) external initializer {
     __Ownable_init(initialOwner_);
     __Ownable2Step_init();
 
     _setEpochFeeder(epochFeeder_);
     _setValidatorManager(validatorManager_);
+    _setValidatorRewardFeed(validatorRewardFeed_);
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -102,102 +101,72 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function rewards(uint96 epoch, address valAddr) external view returns (uint256) {
-    return _getStorageV1().rewards[epoch][valAddr];
+
+  function validatorRewardFeed() external view returns (IValidatorRewardFeed) {
+    return _getStorageV1().validatorRewardFeed;
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function lastClaimedEpoch(address staker, address valAddr) external view returns (uint96) {
-    return _getStorageV1().lastClaimedEpoch[staker][valAddr];
-  }
-
-  /// @inheritdoc IValidatorRewardDistributor
-  function claimableRewards(address valAddr, address staker) external view returns (uint256) {
+  function claimableRewards(address staker) external view returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
-    require($.validatorManager.isValidator(valAddr), NotValidator());
-
-    return _claimableRewards($, valAddr, staker);
-  }
-
-  /// @inheritdoc IValidatorRewardDistributor
-  function claimableRewards(address[] memory valAddrs, address staker) external view returns (uint256) {
-    require(staker != address(0), StdError.ZeroAddress('staker'));
-
-    StorageV1 storage $ = _getStorageV1();
+    address[] memory valAddrs = $.validatorManager.stakedValidators(staker);
+    if (valAddrs.length == 0) return 0;
 
     uint256 totalClaimable;
     unchecked {
       // Gas optimization: Use unchecked since validators array length is bounded
       for (uint256 i = 0; i < valAddrs.length; i++) {
-        require($.validatorManager.isValidator(valAddrs[i]), NotValidator());
-        totalClaimable += _claimableRewards($, valAddrs[i], staker);
+        (uint256 claimable,) = _claimableRewards($, valAddrs[i], staker, MAX_CLAIM_EPOCHS);
+        totalClaimable += claimable;
       }
     }
 
     return totalClaimable;
   }
 
-  /// @inheritdoc IValidatorRewardDistributor
-  function claimRewards(address valAddr) external returns (uint256) {
-    StorageV1 storage $ = _getStorageV1();
-    require($.validatorManager.isValidator(valAddr), NotValidator());
-
-    uint256 totalClaimable = _claimRewards($, valAddr, MAX_CLAIM_EPOCHS);
-    if (totalClaimable == 0) revert NoRewardsToClaim();
-
-    IGovMITO(payable(govMITO)).safeTransfer(_msgSender(), totalClaimable);
-    return totalClaimable;
+  function claimableCommission(address valAddr) external view returns (uint256) {
+    (uint256 commission,) = _claimableCommission(_getStorageV1(), valAddr, MAX_CLAIM_EPOCHS);
+    return commission;
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function claimRewards(address[] calldata valAddrs) external returns (uint256) {
+  function claimRewards() external returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
+
+    address[] memory valAddrs = $.validatorManager.stakedValidators(_msgSender());
+    require(valAddrs.length == 0, NoStakedValidators());
 
     uint256 totalClaimable;
     unchecked {
       // Gas optimization: Use unchecked since validators array length is bounded
       for (uint256 i = 0; i < valAddrs.length; i++) {
-        require($.validatorManager.isValidator(valAddrs[i]), NotValidator());
-        totalClaimable += _claimRewards($, valAddrs[i], MAX_CLAIM_EPOCHS);
+        (uint256 claimable, uint96 nextEpoch) = _claimableRewards($, valAddrs[i], _msgSender(), MAX_CLAIM_EPOCHS);
+        if (claimable == 0) continue;
+
+        $.lastClaimedEpoch.staker[_msgSender()][valAddrs[i]] = nextEpoch;
+        totalClaimable += claimable;
       }
     }
-    if (totalClaimable == 0) revert NoRewardsToClaim();
+    require(totalClaimable > 0, NoRewardsToClaim());
 
     IGovMITO(payable(govMITO)).safeTransfer(_msgSender(), totalClaimable);
     return totalClaimable;
   }
 
-  /// @inheritdoc IValidatorRewardDistributor
-  function reportRewards(address valAddr, uint256 amount) external onlyOwner {
-    require(amount > 0, StdError.ZeroAmount());
-
+  function claimCommission(address valAddr) external returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
-    require($.validatorManager.isValidator(valAddr), NotValidator());
 
-    uint96 epoch = $.epochFeeder.epoch();
-    $.rewards[epoch][valAddr] += amount;
+    IValidatorManager.ValidatorInfoResponse memory validatorInfo =
+      $.validatorManager.validatorInfo($.epochFeeder.epoch(), valAddr);
+    require(validatorInfo.rewardRecipient == _msgSender(), NotRewardRecipient());
 
-    IGovMITO(payable(govMITO)).safeTransferFrom(_msgSender(), address(this), amount);
-    emit RewardsReported(valAddr, amount, epoch);
-  }
+    (uint256 commission, uint96 nextEpoch) = _claimableCommission($, valAddr, MAX_CLAIM_EPOCHS);
+    require(commission > 0, NoCommissionToClaim());
 
-  /// @inheritdoc IValidatorRewardDistributor
-  function reportRewards(address[] calldata valAddrs, uint256[] calldata amounts) external onlyOwner {
-    if (valAddrs.length != amounts.length) revert ArrayLengthMismatch();
-    StorageV1 storage $ = _getStorageV1();
-    uint96 epoch = $.epochFeeder.epoch();
-    uint256 totalAmount;
+    $.lastClaimedEpoch.commission[valAddr] = nextEpoch;
 
-    for (uint256 i = 0; i < valAddrs.length; i++) {
-      require(amounts[i] > 0, StdError.ZeroAmount());
-      require($.validatorManager.isValidator(valAddrs[i]), NotValidator());
-
-      $.rewards[epoch][valAddrs[i]] += amounts[i];
-      totalAmount += amounts[i];
-      emit RewardsReported(valAddrs[i], amounts[i], epoch);
-    }
-
-    IGovMITO(payable(govMITO)).safeTransferFrom(_msgSender(), address(this), totalAmount);
+    IGovMITO(payable(govMITO)).safeTransfer(validatorInfo.rewardRecipient, commission);
+    return commission;
   }
 
   /// @notice Sets a new epoch feeder contract
@@ -212,51 +181,69 @@ contract ValidatorRewardDistributor is
     _setValidatorManager(validatorManager_);
   }
 
-  /// @notice Internal function to set the epoch feeder contract
-  /// @param epochFeeder_ Address of the new epoch feeder contract
+  /// @notice Sets a new validator reward feed contract
+  /// @param validatorRewardFeed_ Address of the new validator reward feed contract
+  function setValidatorRewardFeed(address validatorRewardFeed_) external onlyOwner {
+    _setValidatorRewardFeed(validatorRewardFeed_);
+  }
+
   function _setEpochFeeder(address epochFeeder_) internal {
     require(epochFeeder_.code.length > 0, StdError.InvalidAddress('epochFeeder'));
     _getStorageV1().epochFeeder = IEpochFeeder(epochFeeder_);
   }
 
-  /// @notice Internal function to set the validator manager contract
-  /// @param validatorManager_ Address of the new validator manager contract
   function _setValidatorManager(address validatorManager_) internal {
     require(validatorManager_.code.length > 0, StdError.InvalidAddress('validatorManager'));
     _getStorageV1().validatorManager = IValidatorManager(validatorManager_);
   }
 
-  /// @notice Calculates the total claimable rewards for a validator and staker
-  /// @param $ Storage pointer
-  /// @param valAddr Validator address
-  /// @param staker Staker address
-  /// @return Total claimable rewards
-  function _claimableRewards(StorageV1 storage $, address valAddr, address staker) internal view returns (uint256) {
+  function _setValidatorRewardFeed(address validatorRewardFeed_) internal {
+    require(validatorRewardFeed_.code.length > 0, StdError.InvalidAddress('validatorRewardFeed'));
+    _getStorageV1().validatorRewardFeed = IValidatorRewardFeed(validatorRewardFeed_);
+  }
+
+  function _claimableRewards(StorageV1 storage $, address valAddr, address staker, uint96 epochCount)
+    internal
+    view
+    returns (uint256, uint96)
+  {
+    (uint96 start, uint96 end) =
+      _claimRange($.lastClaimedEpoch.staker[staker][valAddr], $.epochFeeder.epoch(), epochCount);
+    if (start == end) return (0, 0);
+
     uint256 totalClaimable;
-    (uint96 start, uint96 end) = _claimRange($, staker, valAddr, $.epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
-    if (start == end) return 0;
 
     for (uint96 epoch = start; epoch < end; epoch++) {
       totalClaimable += _claimRewardForEpoch($, valAddr, staker, epoch);
     }
 
-    return totalClaimable;
+    return (totalClaimable, end);
   }
 
-  /// @notice Calculates the valid epoch range for claiming rewards
-  /// @param $ Storage pointer
-  /// @param staker Staker address
-  /// @param valAddr Validator address
-  /// @param currentEpoch Current epoch
-  /// @param epochCount Maximum number of epochs to claim
-  /// @return startEpoch Start epoch for claiming
-  /// @return endEpoch End epoch for claiming
-  function _claimRange(StorageV1 storage $, address staker, address valAddr, uint96 currentEpoch, uint256 epochCount)
+  function _claimableCommission(StorageV1 storage $, address valAddr, uint96 epochCount)
     internal
     view
+    returns (uint256, uint96)
+  {
+    (uint96 start, uint96 end) = _claimRange($.lastClaimedEpoch.commission[valAddr], $.epochFeeder.epoch(), epochCount);
+    if (start == end) return (0, 0);
+
+    uint256 totalCommission;
+
+    for (uint96 epoch = start; epoch < end; epoch++) {
+      (uint256 commission,) = _validatorRewardForEpoch($, valAddr, epoch);
+      totalCommission += commission;
+    }
+
+    return (totalCommission, end);
+  }
+
+  function _claimRange(uint96 lastClaimedEpoch, uint96 currentEpoch, uint256 epochCount)
+    internal
+    pure
     returns (uint96, uint96)
   {
-    uint96 startEpoch = $.lastClaimedEpoch[staker][valAddr];
+    uint96 startEpoch = lastClaimedEpoch;
     startEpoch = startEpoch == 0 ? 1 : startEpoch; // min epoch is 1
     // do not claim rewards for current epoch
     uint96 endEpoch = (Math.min(currentEpoch, startEpoch + epochCount - 1)).toUint96();
@@ -264,38 +251,46 @@ contract ValidatorRewardDistributor is
     return (startEpoch, endEpoch);
   }
 
-  /// @notice Claims rewards for a validator over a range of epochs
-  /// @param $ Storage pointer
-  /// @param valAddr Validator address
-  /// @param epochCount Maximum number of epochs to claim
-  /// @return Total claimed rewards
-  function _claimRewards(StorageV1 storage $, address valAddr, uint256 epochCount) internal returns (uint256) {
-    uint256 totalClaimable;
-    (uint96 start, uint96 end) = _claimRange($, _msgSender(), valAddr, $.epochFeeder.epoch(), epochCount);
+  function _claimRewards(StorageV1 storage $, address valAddr, address staker, uint256 epochCount)
+    internal
+    returns (uint256)
+  {
+    uint96 lastClaimedEpoch = $.lastClaimedEpoch.staker[staker][valAddr];
+    (uint96 start, uint96 end) = _claimRange(lastClaimedEpoch, $.epochFeeder.epoch(), epochCount);
     if (start == end) return 0;
 
+    uint256 totalClaimable;
+
     for (uint96 epoch = start; epoch < end; epoch++) {
-      totalClaimable += _claimRewardForEpoch($, valAddr, _msgSender(), epoch);
+      totalClaimable += _claimRewardForEpoch($, valAddr, staker, epoch);
     }
 
-    $.lastClaimedEpoch[_msgSender()][valAddr] = end;
+    $.lastClaimedEpoch.staker[staker][valAddr] = end;
     return totalClaimable;
   }
 
-  /// @notice Calculates the reward amount for a specific epoch
-  /// @dev stakerRewardPerEpoch = TWAB(delegation[epoch] / totalSupply[epoch]) * rewards
-  /// @param $ Storage pointer
-  /// @param valAddr Validator address
-  /// @param staker Staker address
-  /// @param epoch Epoch number
-  /// @return Reward amount for the epoch
+  function _claimCommission(StorageV1 storage $, address valAddr, uint256 epochCount) internal view returns (uint256) {
+    uint96 lastClaimedEpoch = $.lastClaimedEpoch.commission[valAddr];
+    (uint96 start, uint96 end) = _claimRange(lastClaimedEpoch, $.epochFeeder.epoch(), epochCount);
+    if (start == end) return 0;
+
+    uint256 totalCommission;
+
+    for (uint96 epoch = start; epoch < end; epoch++) {
+      (uint256 commission,) = _validatorRewardForEpoch($, valAddr, epoch);
+      totalCommission += commission;
+    }
+
+    return totalCommission;
+  }
+
   function _claimRewardForEpoch(StorageV1 storage $, address valAddr, address staker, uint96 epoch)
     internal
     view
     returns (uint256)
   {
-    uint256 rewards_ = $.rewards[epoch][valAddr];
-    if (rewards_ == 0) return 0;
+    (, uint256 stakerReward) = _validatorRewardForEpoch($, valAddr, epoch);
+    if (stakerReward == 0) return 0;
 
     uint48 epochTime = $.epochFeeder.epochToTime(epoch);
     uint48 nextEpochTime = $.epochFeeder.epochToTime(epoch + 1) - 1; // -1 to avoid double counting
@@ -314,9 +309,25 @@ contract ValidatorRewardDistributor is
     }
 
     if (totalDelegation == 0) return 0;
-    uint256 claimable = (stakerDelegation * rewards_) / totalDelegation;
+    uint256 claimable = (stakerDelegation * stakerReward) / totalDelegation;
 
     return claimable;
+  }
+
+  function _validatorRewardForEpoch(StorageV1 storage $, address valAddr, uint96 epoch)
+    internal
+    view
+    returns (uint256, uint256)
+  {
+    IValidatorManager.ValidatorInfoResponse memory validatorInfo = $.validatorManager.validatorInfo(epoch, valAddr);
+    IValidatorRewardFeed.Summary memory rewardSummary = $.validatorRewardFeed.summary(epoch);
+    (ValidatorWeight memory weight, bool exists) = $.validatorRewardFeed.weightOf(epoch, valAddr);
+    if (!exists) return (0, 0);
+
+    uint256 totalReward = (rewardSummary.totalReward * weight.weight) / rewardSummary.totalWeight;
+    uint256 commission = (totalReward * validatorInfo.commissionRate) / $.validatorManager.MAX_COMMISSION_RATE();
+
+    return (commission, totalReward - commission);
   }
 
   // ====================== UUPS ======================

@@ -94,13 +94,18 @@ contract ValidatorRewardFeed is
     return _getStorageV1().rewards[epoch].weights[index];
   }
 
-  function weightOf(uint96 epoch, address valAddr) external view returns (Weight memory) {
+  function weightOf(uint96 epoch, address valAddr) external view returns (Weight memory, bool) {
     StorageV1 storage $ = _getStorageV1();
     Reward storage reward = $.rewards[epoch];
 
     require(reward.status == ReportStatus.FINALIZED, StdError.Unauthorized());
 
-    return reward.weights[reward.weightByValAddr[valAddr]];
+    uint256 index = reward.weightByValAddr[valAddr];
+    if (index == 0 && (reward.weights.length == 0 || reward.weights[0].addr != valAddr)) {
+      Weight memory empty;
+      return (empty, false);
+    }
+    return (reward.weights[index], true);
   }
 
   function summary(uint96 epoch) external view returns (Summary memory) {
@@ -146,7 +151,7 @@ contract ValidatorRewardFeed is
       uint256 index = reward.weightByValAddr[weight.addr];
 
       require(
-        reward.weights.length == 0 || index == 0 || reward.weights[index].addr == weight.addr, InvalidWeightAddress()
+        index == 0 && (reward.weights.length == 0 || reward.weights[index].addr == weight.addr), InvalidWeightAddress()
       );
 
       reward.weights.push(weight);

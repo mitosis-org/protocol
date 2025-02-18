@@ -48,7 +48,7 @@ interface IValidatorRewardFeed {
 
   function weightAt(uint96 epoch, uint256 index) external view returns (Weight memory);
 
-  function weightOf(uint96 epoch, address valAddr) external view returns (Weight memory);
+  function weightOf(uint96 epoch, address valAddr) external view returns (Weight memory, bool);
 
   function summary(uint96 epoch) external view returns (Summary memory);
 

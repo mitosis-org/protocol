@@ -77,10 +77,14 @@ interface IValidatorManager {
   event EpochFeederUpdated(IEpochFeeder indexed epochFeeder);
   event EntrypointUpdated(IConsensusValidatorEntrypoint indexed entrypoint);
 
+  function MAX_COMMISSION_RATE() external view returns (uint256);
+  function MAX_STAKED_VALIDATOR_COUNT() external view returns (uint256);
+  function MAX_REDELEGATION_COUNT() external view returns (uint256);
+
   function validatorCount() external view returns (uint256);
   function validatorAt(uint256 index) external view returns (address);
   function isValidator(address valAddr) external view returns (bool);
-  function validatorInfo(address valAddr) external view returns (ValidatorInfoResponse memory);
+  function validatorInfo(uint96 epoch, address valAddr) external view returns (ValidatorInfoResponse memory);
 
   function stakedValidators(address staker) external view returns (address[] memory);
   function isStakedValidator(address valAddr, address staker) external view returns (bool);
