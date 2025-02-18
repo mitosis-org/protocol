@@ -23,7 +23,7 @@ contract GovernanceExecutorEntrypoint is
 
   GovernanceExecutor internal immutable _governanceExecutor;
   uint32 internal immutable _mitosisDomain;
-  bytes32 internal immutable _mitosisAddr; // Hub.BranchGovernanceManagerEntrypoint
+  bytes32 internal immutable _mitosisAddr; // Hub.BranchGovernanceEntrypoint
 
   constructor(address mailbox, address governanceExecutor_, uint32 mitosisDomain_, bytes32 mitosisAddr_)
     GasRouter(mailbox)

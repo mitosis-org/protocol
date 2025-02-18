@@ -10,14 +10,14 @@ import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 import { Address } from '@oz-v5/utils/Address.sol';
 
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
-import { IBranchGovernanceManagerEntrypoint } from
-  '../../interfaces/hub/governance/IBranchGovernanceManagerEntrypoint.sol';
+import { IBranchGovernanceEntrypoint } from
+  '../../interfaces/hub/governance/IBranchGovernanceEntrypoint.sol';
 import { Conv } from '../../lib/Conv.sol';
 import { StdError } from '../../lib/StdError.sol';
 import '../../message/Message.sol';
 
-contract BranchGovernanceManagerEntrypoint is
-  IBranchGovernanceManagerEntrypoint,
+contract BranchGovernanceEntrypoint is
+  IBranchGovernanceEntrypoint,
   GasRouter,
   UUPSUpgradeable,
   AccessControlUpgradeable
