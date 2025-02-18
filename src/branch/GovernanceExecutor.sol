@@ -46,12 +46,16 @@ contract GovernanceExecutor is
 
     require(hasRole(EXECUTOR_ROLE, _msgSender()), StdError.Unauthorized());
 
+    bool[] memory areSucceeded = new bool[](targets.length);
     bytes[] memory result = new bytes[](targets.length);
+
     for (uint256 i = 0; i < targets.length; i++) {
-      result[i] = targets[i].functionCallWithValue(data[i], values[i]);
+      (bool success, bytes memory returndata) = targets[i].call{ value: values[i] }(data[i]);
+      areSucceeded[i] = success;
+      result[i] = returnData;
     }
 
-    emit ExecutionDispatched(targets, data, values, result);
+    emit ExecutionDispatched(targets, data, values, areSucceeded, result);
   }
 
   function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
