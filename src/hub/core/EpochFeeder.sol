@@ -4,6 +4,8 @@ pragma solidity ^0.8.28;
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
+import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
 import { StdError } from '../../lib/StdError.sol';
 
@@ -13,87 +15,139 @@ import { StdError } from '../../lib/StdError.sol';
  * @dev This contract is upgradeable using UUPS pattern
  */
 contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable, UUPSUpgradeable {
-  uint96 private _epoch;
-  uint48 private _interval;
-  uint48 private _lastRoll;
-  mapping(uint96 epoch => uint48 timestamp) private _epochToTime;
+  using SafeCast for uint256;
+
+  /// @dev Current epoch number
+  uint256 private _epoch;
+
+  /// @dev Array of epoch timestamps
+  uint256[] private _epochs;
+
+  /// @dev Time interval between epochs after the last scheduled epoch
+  uint256 private _interval;
 
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(address owner_, uint48 interval_) external initializer {
-    require(interval_ == 0, IntervalTooShort());
+  function initialize(address owner_, uint256 nextEpochTime_, uint256 interval_) external initializer {
+    require(owner_ != address(0), StdError.ZeroAddress('owner'));
+    require(0 < interval_ && interval_ < type(uint48).max, InvalidInterval());
+    require(nextEpochTime_ > block.timestamp, StdError.InvalidParameter('nextEpochTime'));
 
     __Ownable_init(owner_);
     __Ownable2Step_init();
 
-    _epoch = 1;
+    _epoch = 0;
+    _epochs.push(block.timestamp); // first epoch
+    _epochs.push(nextEpochTime_); // next epoch
     _interval = interval_;
-    _lastRoll = uint48(block.timestamp); // Set initial lastRoll
   }
 
   /// @inheritdoc IEpochFeeder
   function clock() public view returns (uint48) {
-    return uint48(block.timestamp - _lastRoll);
+    return block.timestamp.toUint48();
   }
 
   /// @inheritdoc IEpochFeeder
   function epoch() public view returns (uint96) {
-    return _epoch;
+    uint256 now_ = block.timestamp;
+    uint256 epoch_ = _epoch;
+
+    for (uint256 nextEpochTime = _epochs[epoch_ + 1]; nextEpochTime <= now_; epoch_++) {
+      uint256 nextEpoch = epoch_ + 1;
+      if (nextEpoch >= _epochs.length) nextEpochTime += _interval;
+      else nextEpochTime = _epochs[nextEpoch];
+    }
+    return epoch_.toUint96();
   }
 
   /// @inheritdoc IEpochFeeder
   function epochAt(uint48 timestamp_) public view returns (uint96) {
-    require(timestamp_ != 0, InvalidEpoch());
+    require(timestamp_ != 0, InvalidTimestamp());
 
-    uint96 left = 1;
-    uint96 right = _epoch;
+    {
+      uint256 lastEpoch = _epochs.length - 1;
+      uint256 lastEpochTime = _epochs[lastEpoch];
+      if (timestamp_ == lastEpochTime) return lastEpoch.toUint96();
+      if (timestamp_ > lastEpochTime) return ((timestamp_ - lastEpochTime) / _interval + lastEpoch).toUint96();
+    }
 
-    while (left <= right) {
-      uint96 mid = left + (right - left) / 2;
-      uint48 midTime = _epochToTime[mid];
+    uint256 left = 0;
+    uint256 right = _epochs.length - 1;
 
-      if (midTime == timestamp_) {
-        return mid;
-      }
+    while (left < right) {
+      uint256 mid = left + (right - left) / 2;
+      uint256 midTime = _epochs[mid];
 
-      if (midTime < timestamp_) {
+      if (midTime <= timestamp_) {
         left = mid + 1;
       } else {
-        right = mid - 1;
+        right = mid;
       }
     }
 
-    return right;
+    if (_epochs[left] <= timestamp_) {
+      return left.toUint96();
+    }
+    return (left - 1).toUint96();
   }
 
   /// @inheritdoc IEpochFeeder
   function epochToTime(uint96 epoch_) public view returns (uint48) {
-    require(epoch_ == 0 || epoch_ > _epoch, InvalidEpoch());
-    return _epochToTime[epoch_];
+    require(epoch_ > 0, InvalidEpoch());
+
+    uint256 lastEpoch = _epochs.length - 1;
+    if (lastEpoch < epoch_) {
+      return ((epoch_ - lastEpoch) * _interval + _epochs[lastEpoch]).toUint48();
+    } else {
+      return _epochs[epoch_].toUint48();
+    }
   }
 
   /// @inheritdoc IEpochFeeder
   function interval() public view returns (uint48) {
-    return _interval;
+    return _interval.toUint48();
   }
 
   /// @inheritdoc IEpochFeeder
-  function lastRoll() public view returns (uint48) {
-    return _lastRoll;
+  function update() external {
+    _update();
   }
 
-  /// @inheritdoc IEpochFeeder
-  function roll() external onlyOwner {
-    uint48 now_ = uint48(block.timestamp);
-    require(now_ > _lastRoll + _interval, StdError.Unauthorized());
+  function setInterval(uint256 interval_) external onlyOwner {
+    require(0 < interval_ && interval_ < type(uint48).max, InvalidInterval());
 
-    _epochToTime[_epoch] = now_;
-    _lastRoll = now_;
-    _epoch++;
+    _update();
 
-    emit EpochRolled(_epoch, now_);
+    _epochs.push(_epochs[_epochs.length - 1] + interval_);
+    _interval = interval_;
+
+    emit IntervalUpdated(interval_.toUint48());
+  }
+
+  /// @dev Updates the current epoch based on the current time
+  /// @notice This function will emit EpochRolled events for each epoch transition
+  function _update() internal {
+    uint256 now_ = clock();
+    uint256 epoch_ = _epoch;
+    uint256 nextEpochTime = _epochs[epoch_ + 1];
+
+    while (nextEpochTime <= now_) {
+      uint256 nextEpoch = epoch_ + 1;
+
+      if (nextEpoch >= _epochs.length) {
+        nextEpochTime += _interval;
+        _epochs.push(nextEpochTime);
+      } else {
+        nextEpochTime = _epochs[nextEpoch];
+      }
+
+      emit EpochRolled(epoch_.toUint96(), _epochs[epoch_].toUint48());
+      epoch_++;
+    }
+
+    _epoch = epoch_;
   }
 
   // ================== UUPS ================== //

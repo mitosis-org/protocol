@@ -9,8 +9,15 @@ interface IEpochFeeder {
   /// @param timestamp The timestamp when the epoch was rolled
   event EpochRolled(uint96 indexed epoch, uint48 timestamp);
 
+  /// @notice Emitted when interval is updated
+  /// @param interval The new interval in seconds
+  event IntervalUpdated(uint48 interval);
+
+  /// @dev Thrown when timestamp is invalid (zero)
+  error InvalidTimestamp();
+
   /// @dev Thrown when interval is set to zero
-  error IntervalTooShort();
+  error InvalidInterval();
 
   /// @dev Thrown when epoch is invalid (zero or greater than current)
   error InvalidEpoch();
@@ -39,12 +46,6 @@ interface IEpochFeeder {
   /// @return interval Current interval in seconds
   function interval() external view returns (uint48);
 
-  /// @notice Returns timestamp of last epoch roll
-  /// @return timestamp Timestamp of last roll
-  function lastRoll() external view returns (uint48);
-
-  /// @notice Advances to next epoch if interval has passed
-  /// @dev Only callable by owner
-  /// @dev Reverts if insufficient time has passed since last roll
-  function roll() external;
+  /// @notice Updates the epoch feeder
+  function update() external;
 }
