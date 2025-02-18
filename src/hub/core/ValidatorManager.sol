@@ -137,19 +137,23 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     $.validatorIndexes.push(0);
   }
 
+  /// @inheritdoc IValidatorManager
   function validatorCount() external view returns (uint256) {
     return _getStorageV1().validatorIndexes.length - 1;
   }
 
+  /// @inheritdoc IValidatorManager
   function validatorAt(uint256 index) external view returns (address) {
     return _getStorageV1().validators[index].validator;
   }
 
+  /// @inheritdoc IValidatorManager
   function isValidator(address valAddr) external view returns (bool) {
     StorageV1 storage $ = _getStorageV1();
     return $.indexByValAddr[valAddr] != 0;
   }
 
+  /// @inheritdoc IValidatorManager
   function validatorInfo(uint96 epoch, address valAddr) external view returns (ValidatorInfoResponse memory) {
     StorageV1 storage $ = _getStorageV1();
     Validator memory info = _validatorInfo($, valAddr);
@@ -177,44 +181,53 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     return response;
   }
 
+  /// @inheritdoc IValidatorManager
   function stakedValidators(address staker) external view returns (address[] memory) {
     return _getStorageV1().stakedValidators[staker].values();
   }
 
+  /// @inheritdoc IValidatorManager
   function isStakedValidator(address valAddr, address staker) external view returns (bool) {
     return _getStorageV1().stakedValidators[staker].contains(valAddr);
   }
 
+  /// @inheritdoc IValidatorManager
   function staked(address valAddr, address staker) external view returns (uint256) {
     require(staker != address(0), StdError.InvalidParameter('staker'));
     return _staked(valAddr, staker, _getStorageV1().epochFeeder.clock());
   }
 
+  /// @inheritdoc IValidatorManager
   function staked(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
     require(staker != address(0), StdError.InvalidParameter('staker'));
     require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _staked(valAddr, staker, timestamp);
   }
 
+  /// @inheritdoc IValidatorManager
   function stakedTWAB(address valAddr, address staker) external view returns (uint256) {
     require(staker != address(0), StdError.InvalidParameter('staker'));
     return _stakedTWAB(valAddr, staker, _getStorageV1().epochFeeder.clock());
   }
 
+  /// @inheritdoc IValidatorManager
   function stakedTWAB(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
     require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _stakedTWAB(valAddr, staker, timestamp);
   }
 
+  /// @inheritdoc IValidatorManager
   function unstaking(address valAddr, address staker) external view returns (uint256, uint256) {
     return _unstaking(valAddr, staker, _getStorageV1().epochFeeder.clock());
   }
 
+  /// @inheritdoc IValidatorManager
   function unstaking(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256) {
     require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _unstaking(valAddr, staker, timestamp);
   }
 
+  /// @inheritdoc IValidatorManager
   function redelegations(address toValAddr, address staker, uint96 epoch)
     external
     view
@@ -245,24 +258,29 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     return responses;
   }
 
+  /// @inheritdoc IValidatorManager
   function totalDelegation(address valAddr) external view returns (uint256) {
     return _totalDelegation(valAddr, _getStorageV1().epochFeeder.clock());
   }
 
+  /// @inheritdoc IValidatorManager
   function totalDelegation(address valAddr, uint48 timestamp) external view returns (uint256) {
     require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _totalDelegation(valAddr, timestamp);
   }
 
+  /// @inheritdoc IValidatorManager
   function totalDelegationTWAB(address valAddr) external view returns (uint256) {
     return _totalDelegationTWAB(valAddr, _getStorageV1().epochFeeder.clock());
   }
 
+  /// @inheritdoc IValidatorManager
   function totalDelegationTWAB(address valAddr, uint48 timestamp) external view returns (uint256) {
     require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _totalDelegationTWAB(valAddr, timestamp);
   }
 
+  /// @inheritdoc IValidatorManager
   function totalPendingRedelegation(address valAddr) external view returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
     ValidatorStat memory stat = _validatorInfo($, valAddr).stat;
@@ -275,6 +293,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     return 0;
   }
 
+  /// @inheritdoc IValidatorManager
   function totalPendingRedelegation(address valAddr, uint96 epoch) external view returns (uint256) {
     require(epoch > 0, StdError.InvalidParameter('epoch'));
 
@@ -302,6 +321,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     return 0;
   }
 
+  /// @inheritdoc IValidatorManager
   function stake(address valAddr, address recipient) external payable {
     require(msg.value > 0, StdError.ZeroAmount());
     require(recipient != address(0), StdError.InvalidParameter('recipient'));
@@ -317,6 +337,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit Staked(valAddr, _msgSender(), recipient, msg.value);
   }
 
+  /// @inheritdoc IValidatorManager
   function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256) {
     require(amount > 0, StdError.ZeroAmount());
 
@@ -341,6 +362,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     return reqId;
   }
 
+  /// @inheritdoc IValidatorManager
   function claimUnstake(address valAddr, address receiver) external returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
     _assertValidatorExists($, valAddr);
@@ -361,6 +383,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     return claimed;
   }
 
+  /// @inheritdoc IValidatorManager
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external {
     require(amount > 0, StdError.ZeroAmount());
     require(fromValAddr != toValAddr, StdError.InvalidParameter('from!=to'));
@@ -388,6 +411,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit Redelegated(fromValAddr, toValAddr, _msgSender(), amount);
   }
 
+  /// @inheritdoc IValidatorManager
   function cancelRedelegation(address fromValAddr, address toValAddr, uint256 amount) external {
     require(amount > 0, StdError.ZeroAmount());
 
@@ -425,6 +449,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit RedelegationCancelled(fromValAddr, toValAddr, _msgSender(), amount);
   }
 
+  /// @inheritdoc IValidatorManager
   function createValidator(bytes calldata valKey, CreateValidatorRequest calldata request) external payable {
     require(valKey.length > 0, StdError.InvalidParameter('valKey'));
 
@@ -466,6 +491,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit ValidatorCreated(valAddr, valKey);
   }
 
+  /// @inheritdoc IValidatorManager
   function depositCollateral(address valAddr) external payable {
     require(msg.value > 0, StdError.ZeroAmount());
 
@@ -478,6 +504,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit CollateralDeposited(valAddr, msg.value);
   }
 
+  /// @inheritdoc IValidatorManager
   function withdrawCollateral(address valAddr, address recipient, uint256 amount) external {
     require(amount > 0, StdError.ZeroAmount());
 
@@ -495,6 +522,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit CollateralWithdrawn(valAddr, amount);
   }
 
+  /// @inheritdoc IValidatorManager
   function unjailValidator(address valAddr) external {
     StorageV1 storage $ = _getStorageV1();
     Validator memory info = _validatorInfo($, valAddr);
@@ -505,6 +533,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit ValidatorUnjailed(valAddr);
   }
 
+  /// @inheritdoc IValidatorManager
   function updateOperator(address operator) external {
     require(operator != address(0), StdError.InvalidParameter('operator'));
     address valAddr = _msgSender();
@@ -520,6 +549,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit OperatorUpdated(valAddr, operator);
   }
 
+  /// @inheritdoc IValidatorManager
   function updateRewardRecipient(address valAddr, address rewardRecipient) external {
     require(rewardRecipient != address(0), StdError.InvalidParameter('rewardRecipient'));
 
@@ -532,6 +562,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit RewardRecipientUpdated(valAddr, _msgSender(), rewardRecipient);
   }
 
+  /// @inheritdoc IValidatorManager
   function updateMetadata(address valAddr, bytes calldata metadata) external {
     require(metadata.length > 0, StdError.InvalidParameter('metadata'));
 
@@ -544,6 +575,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit MetadataUpdated(valAddr, _msgSender(), metadata);
   }
 
+  /// @inheritdoc IValidatorManager
   function updateRewardConfig(address valAddr, UpdateRewardConfigRequest calldata request) external {
     StorageV1 storage $ = _getStorageV1();
     Validator memory info = _validatorInfo($, valAddr);
@@ -571,6 +603,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit RewardConfigUpdated(valAddr, _msgSender());
   }
 
+  /// @inheritdoc IValidatorManager
   function setGlobalValidatorConfig(SetGlobalValidatorConfigRequest calldata request) external onlyOwner {
     require(
       0 <= request.minimumCommissionRate && request.minimumCommissionRate <= MAX_COMMISSION_RATE,
@@ -587,10 +620,12 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit GlobalValidatorConfigUpdated();
   }
 
+  /// @inheritdoc IValidatorManager
   function setEpochFeeder(IEpochFeeder epochFeeder) external onlyOwner {
     _setEpochFeeder(_getStorageV1(), epochFeeder);
   }
 
+  /// @inheritdoc IValidatorManager
   function setEntrypoint(IConsensusValidatorEntrypoint entrypoint) external onlyOwner {
     _setEntrypoint(_getStorageV1(), entrypoint);
   }

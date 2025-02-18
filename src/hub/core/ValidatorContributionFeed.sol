@@ -89,18 +89,22 @@ contract ValidatorContributionFeed is
     _setEpochFeeder($, epochFeeder_);
   }
 
+  /// @inheritdoc IValidatorContributionFeed
   function epochFeeder() external view returns (IEpochFeeder) {
     return _getStorageV1().epochFeeder;
   }
 
+  /// @inheritdoc IValidatorContributionFeed
   function weightCount(uint96 epoch) external view returns (uint256) {
     return _getStorageV1().rewards[epoch].weights.length;
   }
 
+  /// @inheritdoc IValidatorContributionFeed
   function weightAt(uint96 epoch, uint256 index) external view returns (ValidatorWeight memory) {
     return _getStorageV1().rewards[epoch].weights[index];
   }
 
+  /// @inheritdoc IValidatorContributionFeed
   function weightOf(uint96 epoch, address valAddr) external view returns (ValidatorWeight memory, bool) {
     StorageV1 storage $ = _getStorageV1();
     Reward storage reward = $.rewards[epoch];
@@ -115,6 +119,7 @@ contract ValidatorContributionFeed is
     return (reward.weights[index], true);
   }
 
+  /// @inheritdoc IValidatorContributionFeed
   function summary(uint96 epoch) external view returns (Summary memory) {
     StorageV1 storage $ = _getStorageV1();
     Reward storage reward = $.rewards[epoch];
@@ -128,6 +133,7 @@ contract ValidatorContributionFeed is
     });
   }
 
+  /// @inheritdoc IValidatorContributionFeed
   function initializeReport(InitReportRequest calldata request) external onlyRole(FEEDER_ROLE) {
     StorageV1 storage $ = _getStorageV1();
     require(address($.notifier) != address(0), NotifierNotSet());
@@ -146,6 +152,7 @@ contract ValidatorContributionFeed is
     emit ReportInitialized(epoch, request.totalReward, request.totalWeight, request.numOfValidators);
   }
 
+  /// @inheritdoc IValidatorContributionFeed
   function pushValidatorWeights(ValidatorWeight[] calldata weights) external onlyRole(FEEDER_ROLE) {
     StorageV1 storage $ = _getStorageV1();
     uint96 epoch = $.nextEpoch;
@@ -176,6 +183,7 @@ contract ValidatorContributionFeed is
     emit WeightsPushed(epoch, checker.totalWeight - prevTotalWeight, weights.length.toUint16());
   }
 
+  /// @inheritdoc IValidatorContributionFeed
   function finalizeReport() external onlyRole(FEEDER_ROLE) {
     StorageV1 storage $ = _getStorageV1();
     uint96 epoch = $.nextEpoch;

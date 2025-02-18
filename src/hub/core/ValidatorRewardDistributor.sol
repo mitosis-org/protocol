@@ -125,6 +125,7 @@ contract ValidatorRewardDistributor is
     return totalClaimable;
   }
 
+  /// @inheritdoc IValidatorRewardDistributor
   function claimableCommission(address valAddr) external view returns (uint256) {
     (uint256 commission,) = _claimableCommission(_getStorageV1(), valAddr, MAX_CLAIM_EPOCHS);
     return commission;
@@ -154,6 +155,7 @@ contract ValidatorRewardDistributor is
     return totalClaimable;
   }
 
+  /// @inheritdoc IValidatorRewardDistributor
   function claimCommission(address valAddr) external returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
