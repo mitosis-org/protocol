@@ -69,11 +69,12 @@ contract ValidatorManagerStorageV1 {
     // This will be applied after two epochs
     ValidatorRewardConfig rewardConfig;
     // TBD: Metadata format
-    // 1. moniker
-    // 2. identity
-    // 3. website
-    // 4. image url
-    // 5. ...
+    // 1. name
+    // 2. moniker
+    // 3. description
+    // 4. website
+    // 5. image url
+    // 6. ...
     // This will be applied immediately
     bytes metadata;
   }
