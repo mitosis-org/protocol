@@ -12,11 +12,11 @@ import { LibClone } from '@solady/utils/LibClone.sol';
 import { LibString } from '@solady/utils/LibString.sol';
 
 import { EpochFeeder } from '../../../src/hub/core/EpochFeeder.sol';
-import { ValidatorRegistry } from '../../../src/hub/core/ValidatorRegistry.sol';
+import { ValidatorManager } from '../../../src/hub/core/ValidatorManager.sol';
 import { IConsensusValidatorEntrypoint } from
   '../../../src/interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
 import { IEpochFeeder } from '../../../src/interfaces/hub/core/IEpochFeeder.sol';
-import { IValidatorRegistry } from '../../../src/interfaces/hub/core/IValidatorRegistry.sol';
+import { IValidatorManager } from '../../../src/interfaces/hub/core/IValidatorManager.sol';
 import { LibSecp256k1 } from '../../../src/lib/LibSecp256k1.sol';
 import { MockContract } from '../../util/MockContract.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
@@ -38,7 +38,7 @@ contract ValidatorManagerTest is Toolkit {
 
   MockContract entrypoint;
   EpochFeeder epochFeeder;
-  ValidatorRegistry registry;
+  ValidatorManager manager;
 
   function setUp() public {
     entrypoint = new MockContract();
@@ -49,16 +49,16 @@ contract ValidatorManagerTest is Toolkit {
         abi.encodeCall(EpochFeeder.initialize, (owner, block.timestamp + epochInterval, epochInterval))
       )
     );
-    registry = ValidatorRegistry(
+    manager = ValidatorManager(
       _proxy(
-        address(new ValidatorRegistry()),
+        address(new ValidatorManager()),
         abi.encodeCall(
-          ValidatorRegistry.initialize,
+          ValidatorManager.initialize,
           (
             owner,
             epochFeeder,
             IConsensusValidatorEntrypoint(address(entrypoint)),
-            IValidatorRegistry.SetGlobalValidatorConfigRequest({
+            IValidatorManager.SetGlobalValidatorConfigRequest({
               initialValidatorDeposit: 1000 ether,
               unstakeCooldown: 1000 seconds,
               redelegationCooldown: 1000 seconds,
@@ -73,18 +73,18 @@ contract ValidatorManagerTest is Toolkit {
   }
 
   function test_init() public view {
-    assertEq(registry.owner(), owner);
-    assertEq(address(registry.epochFeeder()), address(epochFeeder));
-    assertEq(address(registry.entrypoint()), address(entrypoint));
+    assertEq(manager.owner(), owner);
+    assertEq(address(manager.epochFeeder()), address(epochFeeder));
+    assertEq(address(manager.entrypoint()), address(entrypoint));
 
-    IValidatorRegistry.GlobalValidatorConfigResponse memory config = registry.globalValidatorConfig();
+    IValidatorManager.GlobalValidatorConfigResponse memory config = manager.globalValidatorConfig();
     assertEq(config.initialValidatorDeposit, 1000 ether);
     assertEq(config.unstakeCooldown, 1000 seconds);
     assertEq(config.collateralWithdrawalDelay, 1000 seconds);
     assertEq(config.minimumCommissionRate, 100);
     assertEq(config.commissionRateUpdateDelay, 3);
 
-    assertEq(registry.validatorCount(), 0);
+    assertEq(manager.validatorCount(), 0);
   }
 
   function test_createValidator(string memory name) public returns (ValidatorKey memory) {
@@ -93,12 +93,12 @@ contract ValidatorManagerTest is Toolkit {
 
     bytes memory metadata = _buildMetadata(name, 'test-val', 'test validator of mitosis');
 
-    uint256 nextIndex = registry.validatorCount();
+    uint256 nextIndex = manager.validatorCount();
 
     vm.prank(val.addr);
-    registry.createValidator{ value: 1000 ether }(
+    manager.createValidator{ value: 1000 ether }(
       LibSecp256k1.compressPubkey(val.pubKey),
-      IValidatorRegistry.CreateValidatorRequest({ commissionRate: 100, metadata: metadata })
+      IValidatorManager.CreateValidatorRequest({ commissionRate: 100, metadata: metadata })
     );
 
     entrypoint.assertLastCall(
@@ -107,11 +107,11 @@ contract ValidatorManagerTest is Toolkit {
       1000 ether
     );
 
-    assertEq(registry.validatorCount(), nextIndex + 1);
-    assertEq(registry.validatorAt(nextIndex), val.addr);
-    assertTrue(registry.isValidator(val.addr));
+    assertEq(manager.validatorCount(), nextIndex + 1);
+    assertEq(manager.validatorAt(nextIndex), val.addr);
+    assertTrue(manager.isValidator(val.addr));
 
-    IValidatorRegistry.ValidatorInfoResponse memory info = registry.validatorInfo(val.addr);
+    IValidatorManager.ValidatorInfoResponse memory info = manager.validatorInfo(val.addr);
     assertEq(info.validator, val.addr);
     assertEq(info.operator, val.addr);
     assertEq(info.rewardRecipient, val.addr);
@@ -126,11 +126,11 @@ contract ValidatorManagerTest is Toolkit {
     address operator = makeAddr('operator');
 
     vm.prank(val.addr);
-    registry.updateOperator(operator);
+    manager.updateOperator(operator);
 
     vm.deal(operator, 1000 ether);
     vm.prank(operator);
-    registry.depositCollateral{ value: 1000 ether }(val.addr);
+    manager.depositCollateral{ value: 1000 ether }(val.addr);
 
     entrypoint.assertLastCall(
       IConsensusValidatorEntrypoint.depositCollateral.selector,
@@ -145,10 +145,10 @@ contract ValidatorManagerTest is Toolkit {
     address recipient = makeAddr('recipient');
 
     vm.prank(val.addr);
-    registry.updateOperator(operator);
+    manager.updateOperator(operator);
 
     vm.prank(operator);
-    registry.withdrawCollateral(val.addr, recipient, 1000 ether);
+    manager.withdrawCollateral(val.addr, recipient, 1000 ether);
 
     entrypoint.assertLastCall(
       IConsensusValidatorEntrypoint.withdrawCollateral.selector,
@@ -161,10 +161,10 @@ contract ValidatorManagerTest is Toolkit {
     address operator = makeAddr('operator');
 
     vm.prank(val.addr);
-    registry.updateOperator(operator);
+    manager.updateOperator(operator);
 
     vm.prank(operator);
-    registry.unjailValidator(val.addr);
+    manager.unjailValidator(val.addr);
 
     entrypoint.assertLastCall(
       IConsensusValidatorEntrypoint.unjail.selector, abi.encode(LibSecp256k1.compressPubkey(val.pubKey))
@@ -176,9 +176,9 @@ contract ValidatorManagerTest is Toolkit {
     address newOperator = makeAddr('newOperator');
 
     vm.prank(val.addr);
-    registry.updateOperator(newOperator);
+    manager.updateOperator(newOperator);
 
-    assertEq(registry.validatorInfo(val.addr).operator, newOperator);
+    assertEq(manager.validatorInfo(val.addr).operator, newOperator);
   }
 
   function test_updateRewardRecipient() public {
@@ -187,12 +187,12 @@ contract ValidatorManagerTest is Toolkit {
     address newRecipient = makeAddr('newRecipient');
 
     vm.prank(val.addr);
-    registry.updateOperator(newOperator);
+    manager.updateOperator(newOperator);
 
     vm.prank(newOperator);
-    registry.updateRewardRecipient(val.addr, newRecipient);
+    manager.updateRewardRecipient(val.addr, newRecipient);
 
-    assertEq(registry.validatorInfo(val.addr).rewardRecipient, newRecipient);
+    assertEq(manager.validatorInfo(val.addr).rewardRecipient, newRecipient);
   }
 
   function test_updateMetadata() public {
@@ -201,12 +201,12 @@ contract ValidatorManagerTest is Toolkit {
     bytes memory newMetadata = _buildMetadata('val-2', 'test-val-2', 'test validator of mitosis-2');
 
     vm.prank(val.addr);
-    registry.updateOperator(newOperator);
+    manager.updateOperator(newOperator);
 
     vm.prank(newOperator);
-    registry.updateMetadata(val.addr, newMetadata);
+    manager.updateMetadata(val.addr, newMetadata);
 
-    assertEq(registry.validatorInfo(val.addr).metadata, newMetadata);
+    assertEq(manager.validatorInfo(val.addr).metadata, newMetadata);
   }
 
   function test_updateRewardConfig() public {
@@ -215,14 +215,14 @@ contract ValidatorManagerTest is Toolkit {
     uint256 newCommissionRate = 200;
 
     vm.prank(val.addr);
-    registry.updateOperator(newOperator);
+    manager.updateOperator(newOperator);
 
     vm.prank(newOperator);
-    registry.updateRewardConfig(
-      val.addr, IValidatorRegistry.UpdateRewardConfigRequest({ commissionRate: newCommissionRate })
+    manager.updateRewardConfig(
+      val.addr, IValidatorManager.UpdateRewardConfigRequest({ commissionRate: newCommissionRate })
     );
 
-    assertEq(registry.validatorInfo(val.addr).commissionRate, newCommissionRate);
+    assertEq(manager.validatorInfo(val.addr).commissionRate, newCommissionRate);
   }
 
   // function test_stake() public returns (ValidatorKey memory) {
@@ -231,22 +231,22 @@ contract ValidatorManagerTest is Toolkit {
 
   //   vm.deal(staker, 500 ether);
   //   vm.prank(staker);
-  //   registry.stake{ value: 500 ether }(val.addr, staker);
+  //   manager.stake{ value: 500 ether }(val.addr, staker);
 
-  //   assertEq(registry.totalStaked(), 500 ether);
-  //   assertEq(registry.totalUnstaking(), 0 ether);
+  //   assertEq(manager.totalStaked(), 500 ether);
+  //   assertEq(manager.totalUnstaking(), 0 ether);
 
-  //   assertEq(registry.staked(val.addr, staker), 500 ether);
-  //   assertEq(registry.totalDelegation(val.addr), 500 ether);
+  //   assertEq(manager.staked(val.addr, staker), 500 ether);
+  //   assertEq(manager.totalDelegation(val.addr), 500 ether);
 
   //   // no time has passed
-  //   assertEq(registry.stakedTWAB(val.addr, staker), 0);
-  //   assertEq(registry.totalDelegationTWAB(val.addr), 0);
+  //   assertEq(manager.stakedTWAB(val.addr, staker), 0);
+  //   assertEq(manager.totalDelegationTWAB(val.addr), 0);
 
   //   // 1 second has passed - must be the same with the current staked amount
   //   uint48 now_ = epochFeeder.clock();
-  //   assertEq(registry.stakedTWABAt(val.addr, staker, now_ + 3), 500 ether * 3);
-  //   assertEq(registry.totalDelegationTWABAt(val.addr, now_ + 3), 500 ether * 3);
+  //   assertEq(manager.stakedTWABAt(val.addr, staker, now_ + 3), 500 ether * 3);
+  //   assertEq(manager.totalDelegationTWABAt(val.addr, now_ + 3), 500 ether * 3);
 
   //   return val;
   // }
@@ -257,36 +257,36 @@ contract ValidatorManagerTest is Toolkit {
 
   //   vm.deal(staker, 500 ether);
   //   vm.prank(staker);
-  //   registry.stake{ value: 500 ether }(val.addr, staker);
+  //   manager.stake{ value: 500 ether }(val.addr, staker);
 
   //   vm.prank(staker);
-  //   registry.requestUnstake(val.addr, staker, 500 ether);
+  //   manager.requestUnstake(val.addr, staker, 500 ether);
 
-  //   assertEq(registry.staked(val.addr, staker), 0);
-  //   assertEq(registry.totalStaked(), 0);
-  //   assertEq(registry.totalUnstaking(), 500 ether);
-  //   assertEq(registry.totalDelegation(val.addr), 0);
+  //   assertEq(manager.staked(val.addr, staker), 0);
+  //   assertEq(manager.totalStaked(), 0);
+  //   assertEq(manager.totalUnstaking(), 500 ether);
+  //   assertEq(manager.totalDelegation(val.addr), 0);
 
   //   {
-  //     (uint256 claimable, uint256 nonClaimable) = registry.unstaking(val.addr, staker);
+  //     (uint256 claimable, uint256 nonClaimable) = manager.unstaking(val.addr, staker);
   //     assertEq(claimable, 0);
   //     assertEq(nonClaimable, 500 ether);
   //   }
 
-  //   vm.warp(block.timestamp + registry.globalValidatorConfig().unstakeCooldown + 1);
+  //   vm.warp(block.timestamp + manager.globalValidatorConfig().unstakeCooldown + 1);
 
   //   {
-  //     (uint256 claimable, uint256 nonClaimable) = registry.unstaking(val.addr, staker);
+  //     (uint256 claimable, uint256 nonClaimable) = manager.unstaking(val.addr, staker);
   //     assertEq(claimable, 500 ether);
   //     assertEq(nonClaimable, 0);
   //   }
 
   //   vm.prank(staker);
-  //   uint256 claimAmount = registry.claimUnstake(val.addr, staker);
+  //   uint256 claimAmount = manager.claimUnstake(val.addr, staker);
 
   //   assertEq(claimAmount, 500 ether);
   //   {
-  //     (uint256 claimable, uint256 nonClaimable) = registry.unstaking(val.addr, staker);
+  //     (uint256 claimable, uint256 nonClaimable) = manager.unstaking(val.addr, staker);
   //     assertEq(claimable, 0);
   //     assertEq(nonClaimable, 0);
   //   }
@@ -301,15 +301,15 @@ contract ValidatorManagerTest is Toolkit {
 
   //   vm.deal(staker, 500 ether);
   //   vm.startPrank(staker);
-  //   registry.stake{ value: 500 ether }(val1.addr, staker);
-  //   registry.redelegate(val1.addr, val2.addr, 250 ether);
+  //   manager.stake{ value: 500 ether }(val1.addr, staker);
+  //   manager.redelegate(val1.addr, val2.addr, 250 ether);
   //   vm.stopPrank();
 
-  //   assertEq(registry.totalStaked(), 500 ether);
-  //   assertEq(registry.staked(val1.addr, staker), 250 ether);
-  //   assertEq(registry.staked(val2.addr, staker), 250 ether);
-  //   assertEq(registry.totalDelegation(val1.addr), 250 ether);
-  //   assertEq(registry.totalDelegation(val2.addr), 250 ether);
+  //   assertEq(manager.totalStaked(), 500 ether);
+  //   assertEq(manager.staked(val1.addr, staker), 250 ether);
+  //   assertEq(manager.staked(val2.addr, staker), 250 ether);
+  //   assertEq(manager.totalDelegation(val1.addr), 250 ether);
+  //   assertEq(manager.totalDelegation(val2.addr), 250 ether);
   // }
 
   function _makeValKey(string memory name) internal returns (ValidatorKey memory) {

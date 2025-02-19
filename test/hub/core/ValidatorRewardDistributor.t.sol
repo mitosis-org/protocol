@@ -13,7 +13,7 @@ import {
   IValidatorContributionFeed, ValidatorWeight
 } from '../../../src/interfaces/hub/core/IValidatorContributionFeed.sol';
 import { IValidatorDelegationManager } from '../../../src/interfaces/hub/core/IValidatorDelegationManager.sol';
-import { IValidatorRegistry } from '../../../src/interfaces/hub/core/IValidatorRegistry.sol';
+import { IValidatorManager } from '../../../src/interfaces/hub/core/IValidatorManager.sol';
 import { IValidatorRewardDistributor } from '../../../src/interfaces/hub/core/IValidatorRewardDistributor.sol';
 import { IGovMITO } from '../../../src/interfaces/hub/IGovMITO.sol';
 import { IGovMITOEmission } from '../../../src/interfaces/hub/IGovMITOEmission.sol';
@@ -29,7 +29,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
   MockContract govMITO;
   MockContract govMITOEmission;
-  MockContract registry;
+  MockContract validatorManager;
   MockContract delegationManager;
   EpochFeeder epochFeed;
   MockContract contributionFeed;
@@ -42,10 +42,10 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     govMITOEmission = new MockContract();
 
-    registry = new MockContract();
-    registry.setStatic(IValidatorRegistry.validatorInfo.selector, true);
-    registry.setStatic(IValidatorRegistry.validatorInfoAt.selector, true);
-    registry.setStatic(IValidatorRegistry.MAX_COMMISSION_RATE.selector, true);
+    validatorManager = new MockContract();
+    validatorManager.setStatic(IValidatorManager.validatorInfo.selector, true);
+    validatorManager.setStatic(IValidatorManager.validatorInfoAt.selector, true);
+    validatorManager.setStatic(IValidatorManager.MAX_COMMISSION_RATE.selector, true);
 
     delegationManager = new MockContract();
     delegationManager.setStatic(IValidatorDelegationManager.totalDelegationTWABAt.selector, true);
@@ -70,7 +70,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
           (
             owner,
             address(epochFeed),
-            address(registry),
+            address(validatorManager),
             address(delegationManager),
             address(contributionFeed),
             address(govMITOEmission)
@@ -83,7 +83,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   function test_init() public view {
     assertEq(distributor.owner(), owner);
     assertEq(address(distributor.epochFeeder()), address(epochFeed));
-    assertEq(address(distributor.validatorRegistry()), address(registry));
+    assertEq(address(distributor.validatorManager()), address(validatorManager));
     assertEq(address(distributor.validatorDelegationManager()), address(delegationManager));
     assertEq(address(distributor.validatorContributionFeed()), address(contributionFeed));
     assertEq(address(distributor.govMITO()), address(govMITO));

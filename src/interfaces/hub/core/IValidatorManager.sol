@@ -4,8 +4,8 @@ pragma solidity ^0.8.28;
 import { IConsensusValidatorEntrypoint } from '../consensus-layer/IConsensusValidatorEntrypoint.sol';
 import { IEpochFeeder } from './IEpochFeeder.sol';
 
-/// @title IValidatorRegistry
-/// @notice Interface for the ValidatorRegistry contract.
+/// @title IValidatorManager
+/// @notice Interface for the ValidatorManager contract.
 /// @dev This interface defines the actions that users and validators can perform.
 ///
 /// User Actions
@@ -19,7 +19,7 @@ import { IEpochFeeder } from './IEpochFeeder.sol';
 /// 3. Withdraw collateral
 /// 4. Unjailing the validator
 /// 5. Leaving the validator set = making it inactive, not removing anything
-interface IValidatorRegistry {
+interface IValidatorManager {
   struct GlobalValidatorConfigResponse {
     uint256 initialValidatorDeposit;
     uint256 unstakeCooldown;

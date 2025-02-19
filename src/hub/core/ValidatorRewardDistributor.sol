@@ -11,7 +11,7 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
 import { IValidatorContributionFeed, ValidatorWeight } from '../../interfaces/hub/core/IValidatorContributionFeed.sol';
 import { IValidatorDelegationManager } from '../../interfaces/hub/core/IValidatorDelegationManager.sol';
-import { IValidatorRegistry } from '../../interfaces/hub/core/IValidatorRegistry.sol';
+import { IValidatorManager } from '../../interfaces/hub/core/IValidatorManager.sol';
 import { IValidatorRewardDistributor } from '../../interfaces/hub/core/IValidatorRewardDistributor.sol';
 import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
 import { IGovMITOEmission } from '../../interfaces/hub/IGovMITOEmission.sol';
@@ -30,7 +30,7 @@ contract ValidatorRewardDistributorStorageV1 {
 
   struct StorageV1 {
     IEpochFeeder epochFeeder;
-    IValidatorRegistry validatorRegistry;
+    IValidatorManager validatorManager;
     IValidatorDelegationManager validatorDelegationManager;
     IValidatorContributionFeed validatorContributionFeed;
     IGovMITOEmission govMITOEmission;
@@ -76,7 +76,7 @@ contract ValidatorRewardDistributor is
   function initialize(
     address initialOwner_,
     address epochFeeder_,
-    address validatorRegistry_,
+    address validatorManager_,
     address validatorDelegationManager_,
     address validatorContributionFeed_,
     address govMITOEmission_
@@ -86,7 +86,7 @@ contract ValidatorRewardDistributor is
     __Ownable2Step_init();
 
     _setEpochFeeder(epochFeeder_);
-    _setValidatorRegistry(validatorRegistry_);
+    _setValidatorManager(validatorManager_);
     _setValidatorDelegationManager(validatorDelegationManager_);
     _setValidatorContributionFeed(validatorContributionFeed_);
     _setGovMITOEmission(govMITOEmission_);
@@ -103,8 +103,8 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function validatorRegistry() external view returns (IValidatorRegistry) {
-    return _getStorageV1().validatorRegistry;
+  function validatorManager() external view returns (IValidatorManager) {
+    return _getStorageV1().validatorManager;
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -184,9 +184,9 @@ contract ValidatorRewardDistributor is
   }
 
   /// @notice Sets a new validator manager contract
-  /// @param validatorRegistry_ Address of the new validator manager contract
-  function setValidatorRegistry(address validatorRegistry_) external onlyOwner {
-    _setValidatorRegistry(validatorRegistry_);
+  /// @param validatorManager_ Address of the new validator manager contract
+  function setValidatorManager(address validatorManager_) external onlyOwner {
+    _setValidatorManager(validatorManager_);
   }
 
   /// @notice Sets a new validator delegation manager contract
@@ -212,9 +212,9 @@ contract ValidatorRewardDistributor is
     _getStorageV1().epochFeeder = IEpochFeeder(epochFeeder_);
   }
 
-  function _setValidatorRegistry(address validatorRegistry_) internal {
-    require(validatorRegistry_.code.length > 0, StdError.InvalidAddress('validatorRegistry'));
-    _getStorageV1().validatorRegistry = IValidatorRegistry(validatorRegistry_);
+  function _setValidatorManager(address validatorManager_) internal {
+    require(validatorManager_.code.length > 0, StdError.InvalidAddress('validatorManager'));
+    _getStorageV1().validatorManager = IValidatorManager(validatorManager_);
   }
 
   function _setValidatorDelegationManager(address validatorDelegationManager_) internal {
@@ -297,7 +297,7 @@ contract ValidatorRewardDistributor is
       _claimRange($.lastClaimedEpoch.commission[valAddr], $.epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
     if (start == end) return 0;
 
-    address recipient = $.validatorRegistry.validatorInfo(valAddr).rewardRecipient;
+    address recipient = $.validatorManager.validatorInfo(valAddr).rewardRecipient;
     uint256 totalClaimed;
 
     for (uint96 epoch = start; epoch < end; epoch++) {
@@ -363,7 +363,7 @@ contract ValidatorRewardDistributor is
     view
     returns (uint256, uint256)
   {
-    IValidatorRegistry.ValidatorInfoResponse memory validatorInfo = $.validatorRegistry.validatorInfoAt(epoch, valAddr);
+    IValidatorManager.ValidatorInfoResponse memory validatorInfo = $.validatorManager.validatorInfoAt(epoch, valAddr);
     IValidatorContributionFeed.Summary memory rewardSummary = $.validatorContributionFeed.summary(epoch);
     (ValidatorWeight memory weight, bool exists) = $.validatorContributionFeed.weightOf(epoch, valAddr);
     if (!exists) return (0, 0);
@@ -376,7 +376,7 @@ contract ValidatorRewardDistributor is
 
     uint256 totalRewardShare = weight.collateralRewardShare + weight.delegationRewardShare;
     uint256 delegationReward = (totalReward * weight.delegationRewardShare) / totalRewardShare;
-    uint256 commission = (delegationReward * validatorInfo.commissionRate) / $.validatorRegistry.MAX_COMMISSION_RATE();
+    uint256 commission = (delegationReward * validatorInfo.commissionRate) / $.validatorManager.MAX_COMMISSION_RATE();
 
     return ((totalReward - delegationReward) + commission, delegationReward - commission);
   }

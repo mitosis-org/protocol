@@ -13,13 +13,13 @@ import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
 import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
-import { IValidatorRegistry } from '../../interfaces/hub/core/IValidatorRegistry.sol';
+import { IValidatorManager } from '../../interfaces/hub/core/IValidatorManager.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { LibSecp256k1 } from '../../lib/LibSecp256k1.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-contract ValidatorRegistryStorageV1 {
+contract ValidatorManagerStorageV1 {
   using ERC7201Utils for string;
 
   struct EpochCheckpoint {
@@ -69,7 +69,7 @@ contract ValidatorRegistryStorageV1 {
     mapping(address valAddr => uint256 index) indexByValAddr;
   }
 
-  string private constant _NAMESPACE = 'mitosis.storage.ValidatorRegistryStorage.v1';
+  string private constant _NAMESPACE = 'mitosis.storage.ValidatorManagerStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
@@ -81,7 +81,7 @@ contract ValidatorRegistryStorageV1 {
   }
 }
 
-contract ValidatorRegistry is IValidatorRegistry, ValidatorRegistryStorageV1, Ownable2StepUpgradeable, UUPSUpgradeable {
+contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownable2StepUpgradeable, UUPSUpgradeable {
   using SafeCast for uint256;
   using EnumerableMap for EnumerableMap.AddressToUintMap;
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -111,17 +111,17 @@ contract ValidatorRegistry is IValidatorRegistry, ValidatorRegistryStorageV1, Ow
     $.validatorCount = 1;
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function entrypoint() external view returns (IConsensusValidatorEntrypoint) {
     return _getStorageV1().entrypoint;
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function epochFeeder() external view returns (IEpochFeeder) {
     return _getStorageV1().epochFeeder;
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function globalValidatorConfig() external view returns (GlobalValidatorConfigResponse memory) {
     StorageV1 storage $ = _getStorageV1();
     GlobalValidatorConfig memory config = $.globalValidatorConfig;
@@ -136,29 +136,29 @@ contract ValidatorRegistry is IValidatorRegistry, ValidatorRegistryStorageV1, Ow
     });
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function validatorCount() external view returns (uint256) {
     return _getStorageV1().validatorCount - 1;
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function validatorAt(uint256 index) external view returns (address) {
     StorageV1 storage $ = _getStorageV1();
     return $.validators[index + 1].validator;
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function isValidator(address valAddr) external view returns (bool) {
     StorageV1 storage $ = _getStorageV1();
     return $.indexByValAddr[valAddr] != 0;
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function validatorInfo(address valAddr) public view returns (ValidatorInfoResponse memory) {
     return validatorInfoAt(_getStorageV1().epochFeeder.epoch(), valAddr);
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function validatorInfoAt(uint96 epoch, address valAddr) public view returns (ValidatorInfoResponse memory) {
     StorageV1 storage $ = _getStorageV1();
     Validator storage info = _validator($, valAddr);
@@ -185,7 +185,7 @@ contract ValidatorRegistry is IValidatorRegistry, ValidatorRegistryStorageV1, Ow
     return response;
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function createValidator(bytes calldata valKey, CreateValidatorRequest calldata request) external payable {
     require(valKey.length > 0, StdError.InvalidParameter('valKey'));
 
@@ -227,7 +227,7 @@ contract ValidatorRegistry is IValidatorRegistry, ValidatorRegistryStorageV1, Ow
     emit ValidatorCreated(valAddr, valKey);
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function depositCollateral(address valAddr) external payable {
     require(msg.value > 0, StdError.ZeroAmount());
 
@@ -240,7 +240,7 @@ contract ValidatorRegistry is IValidatorRegistry, ValidatorRegistryStorageV1, Ow
     emit CollateralDeposited(valAddr, msg.value);
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function withdrawCollateral(address valAddr, address recipient, uint256 amount) external {
     require(amount > 0, StdError.ZeroAmount());
 
@@ -258,7 +258,7 @@ contract ValidatorRegistry is IValidatorRegistry, ValidatorRegistryStorageV1, Ow
     emit CollateralWithdrawn(valAddr, amount);
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function unjailValidator(address valAddr) external {
     StorageV1 storage $ = _getStorageV1();
     Validator storage validator = _validator($, valAddr);
@@ -269,7 +269,7 @@ contract ValidatorRegistry is IValidatorRegistry, ValidatorRegistryStorageV1, Ow
     emit ValidatorUnjailed(valAddr);
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function updateOperator(address operator) external {
     require(operator != address(0), StdError.InvalidParameter('operator'));
     address valAddr = _msgSender();
@@ -283,7 +283,7 @@ contract ValidatorRegistry is IValidatorRegistry, ValidatorRegistryStorageV1, Ow
     emit OperatorUpdated(valAddr, operator);
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function updateRewardRecipient(address valAddr, address rewardRecipient) external {
     require(rewardRecipient != address(0), StdError.InvalidParameter('rewardRecipient'));
 
@@ -296,7 +296,7 @@ contract ValidatorRegistry is IValidatorRegistry, ValidatorRegistryStorageV1, Ow
     emit RewardRecipientUpdated(valAddr, _msgSender(), rewardRecipient);
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function updateMetadata(address valAddr, bytes calldata metadata) external {
     require(metadata.length > 0, StdError.InvalidParameter('metadata'));
 
@@ -309,7 +309,7 @@ contract ValidatorRegistry is IValidatorRegistry, ValidatorRegistryStorageV1, Ow
     emit MetadataUpdated(valAddr, _msgSender(), metadata);
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function updateRewardConfig(address valAddr, UpdateRewardConfigRequest calldata request) external {
     StorageV1 storage $ = _getStorageV1();
     Validator storage validator = _validator($, valAddr);
@@ -337,17 +337,17 @@ contract ValidatorRegistry is IValidatorRegistry, ValidatorRegistryStorageV1, Ow
     emit RewardConfigUpdated(valAddr, _msgSender());
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function setGlobalValidatorConfig(SetGlobalValidatorConfigRequest calldata request) external onlyOwner {
     _setGlobalValidatorConfig(_getStorageV1(), request);
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function setEpochFeeder(IEpochFeeder epochFeeder_) external onlyOwner {
     _setEpochFeeder(_getStorageV1(), epochFeeder_);
   }
 
-  /// @inheritdoc IValidatorRegistry
+  /// @inheritdoc IValidatorManager
   function setEntrypoint(IConsensusValidatorEntrypoint entrypoint_) external onlyOwner {
     _setEntrypoint(_getStorageV1(), entrypoint_);
   }

@@ -6,7 +6,7 @@ import { IGovMITOEmission } from '../IGovMITOEmission.sol';
 import { IEpochFeeder } from './IEpochFeeder.sol';
 import { IValidatorContributionFeed } from './IValidatorContributionFeed.sol';
 import { IValidatorDelegationManager } from './IValidatorDelegationManager.sol';
-import { IValidatorRegistry } from './IValidatorRegistry.sol';
+import { IValidatorManager } from './IValidatorManager.sol';
 
 /// @title IValidatorRewardDistributor
 /// @notice Interface for the ValidatorRewardDistributor contract that handles distribution of validator rewards
@@ -17,7 +17,7 @@ interface IValidatorRewardDistributor {
     address indexed staker, address indexed valAddr, uint256 amount, uint96 fromEpoch, uint96 toEpoch
   );
   event EpochFeederSet(address indexed epochFeeder);
-  event ValidatorRegistrySet(address indexed validatorRegistry);
+  event ValidatorManagerSet(address indexed validatorManager);
 
   // Custom errors
   error NotValidator();
@@ -37,7 +37,7 @@ interface IValidatorRewardDistributor {
   function epochFeeder() external view returns (IEpochFeeder);
 
   /// @notice Returns the validator registry contract
-  function validatorRegistry() external view returns (IValidatorRegistry);
+  function validatorManager() external view returns (IValidatorManager);
 
   /// @notice Returns the validator contribution feed contract
   function validatorContributionFeed() external view returns (IValidatorContributionFeed);

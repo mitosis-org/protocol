@@ -10,7 +10,7 @@ import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
 import { IValidatorDelegationManager } from '../../interfaces/hub/core/IValidatorDelegationManager.sol';
-import { IValidatorRegistry } from '../../interfaces/hub/core/IValidatorRegistry.sol';
+import { IValidatorManager } from '../../interfaces/hub/core/IValidatorManager.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { StdError } from '../../lib/StdError.sol';
@@ -58,11 +58,11 @@ contract ValidatorDelegationManager is
   using LibRedeemQueue for LibRedeemQueue.Queue;
 
   IEpochFeeder private immutable _epochFeeder;
-  IValidatorRegistry private immutable _registry;
+  IValidatorManager private immutable _manager;
 
-  constructor(IEpochFeeder epochFeeder_, IValidatorRegistry registry_) {
+  constructor(IEpochFeeder epochFeeder_, IValidatorManager manager_) {
     _epochFeeder = epochFeeder_;
-    _registry = registry_;
+    _manager = manager_;
     _disableInitializers();
   }
 
@@ -82,8 +82,8 @@ contract ValidatorDelegationManager is
   }
 
   /// @inheritdoc IValidatorDelegationManager
-  function registry() external view returns (IValidatorRegistry) {
-    return _registry;
+  function registry() external view returns (IValidatorManager) {
+    return _manager;
   }
 
   /// @inheritdoc IValidatorDelegationManager
@@ -177,7 +177,7 @@ contract ValidatorDelegationManager is
   function stake(address valAddr, address recipient) external payable {
     require(msg.value > 0, StdError.ZeroAmount());
     require(recipient != address(0), StdError.InvalidParameter('recipient'));
-    require(_registry.isValidator(valAddr), NotValidator());
+    require(_manager.isValidator(valAddr), NotValidator());
 
     StorageV1 storage $ = _getStorageV1();
 
@@ -191,7 +191,7 @@ contract ValidatorDelegationManager is
   /// @inheritdoc IValidatorDelegationManager
   function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256) {
     require(amount > 0, StdError.ZeroAmount());
-    require(_registry.isValidator(valAddr), NotValidator());
+    require(_manager.isValidator(valAddr), NotValidator());
 
     StorageV1 storage $ = _getStorageV1();
 
@@ -214,7 +214,7 @@ contract ValidatorDelegationManager is
 
   /// @inheritdoc IValidatorDelegationManager
   function claimUnstake(address valAddr, address receiver) external returns (uint256) {
-    require(_registry.isValidator(valAddr), NotValidator());
+    require(_manager.isValidator(valAddr), NotValidator());
 
     StorageV1 storage $ = _getStorageV1();
 
@@ -241,8 +241,8 @@ contract ValidatorDelegationManager is
     require(fromValAddr != toValAddr, RedelegateToSameValidator());
 
     StorageV1 storage $ = _getStorageV1();
-    require(_registry.isValidator(fromValAddr), NotValidator());
-    require(_registry.isValidator(toValAddr), NotValidator());
+    require(_manager.isValidator(fromValAddr), NotValidator());
+    require(_manager.isValidator(toValAddr), NotValidator());
 
     uint48 now_ = _epochFeeder.clock();
     uint256 last = $.lastRedelegationTime[_msgSender()];

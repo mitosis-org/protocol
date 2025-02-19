@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { IEpochFeeder } from './IEpochFeeder.sol';
-import { IValidatorRegistry } from './IValidatorRegistry.sol';
+import { IValidatorManager } from './IValidatorManager.sol';
 
 /// @title IValidatorDelegationManager
 /// @notice Interface for the ValidatorDelegationManager contract.
@@ -23,7 +23,7 @@ interface IValidatorDelegationManager {
   // ========== VIEWS ========== //
 
   function epochFeeder() external view returns (IEpochFeeder);
-  function registry() external view returns (IValidatorRegistry);
+  function registry() external view returns (IValidatorManager);
 
   function unstakeCooldown() external view returns (uint48);
   function redelegationCooldown() external view returns (uint48);
