@@ -54,9 +54,9 @@ interface IValidatorRewardDistributor {
   /// @return epoch The last claimed staker rewards epoch
   function lastClaimedStakerRewardsEpoch(address staker, address valAddr) external view returns (uint96);
 
-  /// @notice Returns the last claimed commission epoch for a validator
-  /// @param valAddr The validator address to check commission for
-  /// @return epoch The last claimed commission epoch
+  /// @notice Returns the last claimed operator rewards epoch for a validator
+  /// @param valAddr The validator address to check rewards for
+  /// @return epoch The last claimed operator rewards epoch
   function lastClaimedOperatorRewardsEpoch(address valAddr) external view returns (uint96);
 
   /// @notice Returns the total claimable rewards for multiple validators and a staker
@@ -66,10 +66,10 @@ interface IValidatorRewardDistributor {
   /// @return nextEpoch The next epoch to claim rewards from
   function claimableStakerRewards(address staker, address valAddr) external view returns (uint256, uint96);
 
-  /// @notice Returns the total claimable commission for a validator
-  /// @param valAddr The validator address to check commission for
-  /// @return amount The total amount of commission that can be claimed
-  /// @return nextEpoch The next epoch to claim commission from
+  /// @notice Returns the total claimable operator rewards for a validator
+  /// @param valAddr The validator address to check rewards for
+  /// @return amount The total amount of rewards that can be claimed
+  /// @return nextEpoch The next epoch to claim rewards from
   function claimableOperatorRewards(address valAddr) external view returns (uint256, uint96);
 
   /// @notice Claims rewards for multiple validators over a range of epochs
@@ -86,13 +86,13 @@ interface IValidatorRewardDistributor {
     external
     returns (uint256);
 
-  /// @notice Claims commission for a validator
-  /// @param valAddr The validator address to claim commission for
-  /// @return amount The total amount of commission that was claimed
+  /// @notice Claims operator rewards for a validator
+  /// @param valAddr The validator address to claim rewards for
+  /// @return amount The total amount of rewards that were claimed
   function claimOperatorRewards(address valAddr) external returns (uint256);
 
-  /// @notice Claims commission for multiple validators
-  /// @param valAddrs The validator addresses to claim commission for
-  /// @return amount The total amount of commission that was claimed
+  /// @notice Claims operator rewards for multiple validators
+  /// @param valAddrs The validator addresses to claim rewards for
+  /// @return amount The total amount of rewards that were claimed
   function batchClaimOperatorRewards(address[] calldata valAddrs) external returns (uint256);
 }
