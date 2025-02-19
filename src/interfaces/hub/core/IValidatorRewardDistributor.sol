@@ -72,8 +72,19 @@ interface IValidatorRewardDistributor {
   /// @return amount The total amount of rewards that were claimed
   function claimRewards(address staker, address valAddr) external returns (uint256);
 
+  /// @notice Claims rewards for multiple validators over a range of epochs
+  /// @param stakers The staker addresses to claim rewards for
+  /// @param valAddrs The validator addresses to claim rewards for
+  /// @return amount The total amount of rewards that were claimed
+  function batchClaimRewards(address[] calldata stakers, address[][] calldata valAddrs) external returns (uint256);
+
   /// @notice Claims commission for a validator
   /// @param valAddr The validator address to claim commission for
   /// @return amount The total amount of commission that was claimed
   function claimCommission(address valAddr) external returns (uint256);
+
+  /// @notice Claims commission for multiple validators
+  /// @param valAddrs The validator addresses to claim commission for
+  /// @return amount The total amount of commission that was claimed
+  function batchClaimCommission(address[] calldata valAddrs) external returns (uint256);
 }

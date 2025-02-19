@@ -135,51 +135,35 @@ contract ValidatorRewardDistributor is
 
   /// @inheritdoc IValidatorRewardDistributor
   function claimRewards(address staker, address valAddr) external returns (uint256) {
-    StorageV1 storage $ = _getStorageV1();
+    return _claimRewards(_getStorageV1(), staker, valAddr);
+  }
 
-    (uint96 start, uint96 end) =
-      _claimRange($.lastClaimedEpoch.staker[staker][valAddr], $.epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
-    if (start == end) return 0;
+  /// @inheritdoc IValidatorRewardDistributor
+  function batchClaimRewards(address[] calldata stakers, address[][] calldata valAddrs) external returns (uint256) {
+    require(stakers.length == valAddrs.length, StdError.InvalidParameter('stakers.length != valAddrs.length'));
 
     uint256 totalClaimed;
-
-    for (uint96 epoch = start; epoch < end; epoch++) {
-      if (!$.validatorContributionFeed.available(epoch)) break;
-      uint256 claimable = _claimRewardForEpoch($, valAddr, staker, epoch);
-
-      totalClaimed += claimable;
-
-      // NOTE(eddy): reentrancy guard?
-      $.govMITOEmission.requestValidatorReward(epoch, staker, claimable);
+    for (uint256 i = 0; i < stakers.length; i++) {
+      for (uint256 j = 0; j < valAddrs[i].length; j++) {
+        totalClaimed += _claimRewards(_getStorageV1(), stakers[i], valAddrs[i][j]);
+      }
     }
-
-    $.lastClaimedEpoch.staker[staker][valAddr] = end;
 
     return totalClaimed;
   }
 
   /// @inheritdoc IValidatorRewardDistributor
   function claimCommission(address valAddr) external returns (uint256) {
-    StorageV1 storage $ = _getStorageV1();
+    return _claimCommission(_getStorageV1(), valAddr);
+  }
 
-    (uint96 start, uint96 end) =
-      _claimRange($.lastClaimedEpoch.commission[valAddr], $.epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
-    if (start == end) return 0;
-
-    address recipient = $.validatorManager.validatorInfo(valAddr).rewardRecipient;
+  /// @inheritdoc IValidatorRewardDistributor
+  function batchClaimCommission(address[] calldata valAddrs) external returns (uint256) {
     uint256 totalClaimed;
 
-    for (uint96 epoch = start; epoch < end; epoch++) {
-      if (!$.validatorContributionFeed.available(epoch)) break;
-      (uint256 claimable,) = _validatorRewardForEpoch($, valAddr, epoch);
-
-      totalClaimed += claimable;
-
-      // NOTE(eddy): reentrancy guard?
-      $.govMITOEmission.requestValidatorReward(epoch, recipient, claimable);
+    for (uint256 i = 0; i < valAddrs.length; i++) {
+      totalClaimed += _claimCommission(_getStorageV1(), valAddrs[i]);
     }
-
-    $.lastClaimedEpoch.commission[valAddr] = end;
 
     return totalClaimed;
   }
@@ -264,6 +248,51 @@ contract ValidatorRewardDistributor is
     }
 
     return (totalCommission, end);
+  }
+
+  function _claimRewards(StorageV1 storage $, address staker, address valAddr) internal returns (uint256) {
+    (uint96 start, uint96 end) =
+      _claimRange($.lastClaimedEpoch.staker[staker][valAddr], $.epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
+    if (start == end) return 0;
+
+    uint256 totalClaimed;
+
+    for (uint96 epoch = start; epoch < end; epoch++) {
+      if (!$.validatorContributionFeed.available(epoch)) break;
+      uint256 claimable = _claimRewardForEpoch($, valAddr, staker, epoch);
+
+      totalClaimed += claimable;
+
+      // NOTE(eddy): reentrancy guard?
+      $.govMITOEmission.requestValidatorReward(epoch, staker, claimable);
+    }
+
+    $.lastClaimedEpoch.staker[staker][valAddr] = end;
+
+    return totalClaimed;
+  }
+
+  function _claimCommission(StorageV1 storage $, address valAddr) internal returns (uint256) {
+    (uint96 start, uint96 end) =
+      _claimRange($.lastClaimedEpoch.commission[valAddr], $.epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
+    if (start == end) return 0;
+
+    address recipient = $.validatorManager.validatorInfo(valAddr).rewardRecipient;
+    uint256 totalClaimed;
+
+    for (uint96 epoch = start; epoch < end; epoch++) {
+      if (!$.validatorContributionFeed.available(epoch)) break;
+      (uint256 claimable,) = _validatorRewardForEpoch($, valAddr, epoch);
+
+      totalClaimed += claimable;
+
+      // NOTE(eddy): reentrancy guard?
+      $.govMITOEmission.requestValidatorReward(epoch, recipient, claimable);
+    }
+
+    $.lastClaimedEpoch.commission[valAddr] = end;
+
+    return totalClaimed;
   }
 
   function _claimRange(uint96 lastClaimedEpoch, uint96 currentEpoch, uint256 epochCount)
