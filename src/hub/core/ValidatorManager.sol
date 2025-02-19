@@ -121,10 +121,12 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _disableInitializers();
   }
 
-  function initialize(address initialOwner, IEpochFeeder epochFeeder_, IConsensusValidatorEntrypoint entrypoint_)
-    external
-    initializer
-  {
+  function initialize(
+    address initialOwner,
+    IEpochFeeder epochFeeder_,
+    IConsensusValidatorEntrypoint entrypoint_,
+    SetGlobalValidatorConfigRequest memory initialGlobalValidatorConfig
+  ) external initializer {
     __UUPSUpgradeable_init();
     __Ownable_init(initialOwner);
     __Ownable2Step_init();
@@ -132,6 +134,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
     _setEpochFeeder($, epochFeeder_);
     _setEntrypoint($, entrypoint_);
+    _setGlobalValidatorConfig($, initialGlobalValidatorConfig);
 
     // 0 index is reserved for empty slot
     $.validatorIndexes.push(0);
@@ -629,19 +632,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   /// @inheritdoc IValidatorManager
   function setGlobalValidatorConfig(SetGlobalValidatorConfigRequest calldata request) external onlyOwner {
-    require(
-      0 <= request.minimumCommissionRate && request.minimumCommissionRate <= MAX_COMMISSION_RATE,
-      StdError.InvalidParameter('minimumCommissionRate')
-    );
-
-    StorageV1 storage $ = _getStorageV1();
-    uint96 epoch = $.epochFeeder.epoch();
-    $.globalValidatorConfig.minimumCommissionRates.push(
-      EpochCheckpoint({ epoch: epoch, amount: request.minimumCommissionRate })
-    );
-    $.globalValidatorConfig.commissionRateUpdateDelay = request.commissionRateUpdateDelay;
-
-    emit GlobalValidatorConfigUpdated();
+    _setGlobalValidatorConfig(_getStorageV1(), request);
   }
 
   /// @inheritdoc IValidatorManager
@@ -1007,6 +998,21 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     $.entrypoint = entrypoint_;
 
     emit EntrypointUpdated(entrypoint_);
+  }
+
+  function _setGlobalValidatorConfig(StorageV1 storage $, SetGlobalValidatorConfigRequest memory request) internal {
+    require(
+      0 <= request.minimumCommissionRate && request.minimumCommissionRate <= MAX_COMMISSION_RATE,
+      StdError.InvalidParameter('minimumCommissionRate')
+    );
+
+    uint96 epoch = $.epochFeeder.epoch();
+    $.globalValidatorConfig.minimumCommissionRates.push(
+      EpochCheckpoint({ epoch: epoch, amount: request.minimumCommissionRate })
+    );
+    $.globalValidatorConfig.commissionRateUpdateDelay = request.commissionRateUpdateDelay;
+
+    emit GlobalValidatorConfigUpdated();
   }
 
   function _validatorInfo(StorageV1 storage $, address valAddr) internal view returns (Validator memory) {
