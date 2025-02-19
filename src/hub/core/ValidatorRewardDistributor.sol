@@ -108,6 +108,21 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
+  function govMITOCommission() external view returns (IGovMITOCommission) {
+    return _getStorageV1().govMITOCommission;
+  }
+
+  /// @inheritdoc IValidatorRewardDistributor
+  function lastClaimedCommissionEpoch(address valAddr) external view returns (uint96) {
+    return _getStorageV1().lastClaimedEpoch.commission[valAddr];
+  }
+
+  /// @inheritdoc IValidatorRewardDistributor
+  function lastClaimedStakerRewardsEpoch(address staker, address valAddr) external view returns (uint96) {
+    return _getStorageV1().lastClaimedEpoch.staker[staker][valAddr];
+  }
+
+  /// @inheritdoc IValidatorRewardDistributor
   function claimableRewards(address staker) external view returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
     address[] memory valAddrs = $.validatorManager.stakedValidators(staker);
