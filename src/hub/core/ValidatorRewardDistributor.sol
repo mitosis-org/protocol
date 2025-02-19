@@ -10,8 +10,8 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
 import { IValidatorContributionFeed, ValidatorWeight } from '../../interfaces/hub/core/IValidatorContributionFeed.sol';
-import { IValidatorRegistry } from '../../interfaces/hub/core/IValidatorRegistry.sol';
 import { IValidatorDelegationManager } from '../../interfaces/hub/core/IValidatorDelegationManager.sol';
+import { IValidatorRegistry } from '../../interfaces/hub/core/IValidatorRegistry.sol';
 import { IValidatorRewardDistributor } from '../../interfaces/hub/core/IValidatorRewardDistributor.sol';
 import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
 import { IGovMITOEmission } from '../../interfaces/hub/IGovMITOEmission.sol';

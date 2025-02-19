@@ -18,8 +18,8 @@ import { IConsensusValidatorEntrypoint } from
 import { IEpochFeeder } from '../../../src/interfaces/hub/core/IEpochFeeder.sol';
 import { IValidatorRegistry } from '../../../src/interfaces/hub/core/IValidatorRegistry.sol';
 import { LibSecp256k1 } from '../../../src/lib/LibSecp256k1.sol';
-import { Toolkit } from '../../util/Toolkit.sol';
 import { MockContract } from '../../util/MockContract.sol';
+import { Toolkit } from '../../util/Toolkit.sol';
 
 contract ValidatorManagerTest is Toolkit {
   using SafeCast for uint256;

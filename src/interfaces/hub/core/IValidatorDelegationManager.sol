@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IValidatorRegistry } from './IValidatorRegistry.sol';
 import { IEpochFeeder } from './IEpochFeeder.sol';
+import { IValidatorRegistry } from './IValidatorRegistry.sol';
 
 /// @title IValidatorDelegationManager
 /// @notice Interface for the ValidatorDelegationManager contract.

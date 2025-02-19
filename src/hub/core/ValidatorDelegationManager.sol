@@ -9,8 +9,8 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
-import { IValidatorRegistry } from '../../interfaces/hub/core/IValidatorRegistry.sol';
 import { IValidatorDelegationManager } from '../../interfaces/hub/core/IValidatorDelegationManager.sol';
+import { IValidatorRegistry } from '../../interfaces/hub/core/IValidatorRegistry.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { StdError } from '../../lib/StdError.sol';
