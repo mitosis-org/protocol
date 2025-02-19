@@ -88,7 +88,5 @@ contract GovMITOCommission is IGovMITOCommission, GovMITOCommissionStorageV1, UU
 
   // ================== UUPS ================== //
 
-  function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
-    require(newImplementation != address(0), StdError.ZeroAddress('newImpl'));
-  }
+  function _authorizeUpgrade(address) internal view override onlyOwner { }
 }

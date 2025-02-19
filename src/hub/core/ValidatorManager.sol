@@ -1087,5 +1087,5 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   // ========== UUPS ========== //
 
-  function _authorizeUpgrade(address newImplementation) internal override onlyOwner { }
+  function _authorizeUpgrade(address) internal override onlyOwner { }
 }

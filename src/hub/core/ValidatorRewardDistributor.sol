@@ -377,7 +377,5 @@ contract ValidatorRewardDistributor is
 
   // ====================== UUPS ======================
 
-  /// @notice Authorizes an upgrade to a new implementation
-  /// @param newImplementation Address of the new implementation
-  function _authorizeUpgrade(address newImplementation) internal override onlyOwner { }
+  function _authorizeUpgrade(address) internal override onlyOwner { }
 }
