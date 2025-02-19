@@ -109,7 +109,7 @@ contract ValidatorContributionFeed is
     StorageV1 storage $ = _getStorageV1();
     Reward storage reward = $.rewards[epoch];
 
-    require(reward.status == ReportStatus.FINALIZED, StdError.Unauthorized());
+    require(reward.status == ReportStatus.FINALIZED, EpochNotFinalized());
 
     uint256 index = reward.weightByValAddr[valAddr];
     if (index == 0) {
@@ -120,11 +120,16 @@ contract ValidatorContributionFeed is
   }
 
   /// @inheritdoc IValidatorContributionFeed
+  function available(uint96 epoch) external view returns (bool) {
+    return _getStorageV1().rewards[epoch].status == ReportStatus.FINALIZED;
+  }
+
+  /// @inheritdoc IValidatorContributionFeed
   function summary(uint96 epoch) external view returns (Summary memory) {
     StorageV1 storage $ = _getStorageV1();
     Reward storage reward = $.rewards[epoch];
 
-    require(reward.status == ReportStatus.FINALIZED, StdError.Unauthorized());
+    require(reward.status == ReportStatus.FINALIZED, EpochNotFinalized());
 
     return Summary({
       totalReward: reward.totalReward,

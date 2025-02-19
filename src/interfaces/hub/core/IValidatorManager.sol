@@ -96,7 +96,9 @@ interface IValidatorManager {
   function validatorCount() external view returns (uint256);
   function validatorAt(uint256 index) external view returns (address);
   function isValidator(address valAddr) external view returns (bool);
-  function validatorInfo(uint96 epoch, address valAddr) external view returns (ValidatorInfoResponse memory);
+
+  function validatorInfo(address valAddr) external view returns (ValidatorInfoResponse memory);
+  function validatorInfoAt(uint96 epoch, address valAddr) external view returns (ValidatorInfoResponse memory);
 
   function stakedValidators(address staker) external view returns (address[] memory);
   function isStakedValidator(address valAddr, address staker) external view returns (bool);
@@ -105,22 +107,25 @@ interface IValidatorManager {
   function totalUnstaking() external view returns (uint256);
 
   function staked(address valAddr, address staker) external view returns (uint256);
-  function staked(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
+  function stakedAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
   function stakedTWAB(address valAddr, address staker) external view returns (uint256);
-  function stakedTWAB(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
+  function stakedTWABAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
+
   function unstaking(address valAddr, address staker) external view returns (uint256, uint256);
-  function unstaking(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256);
-  function redelegations(address toValAddr, address staker, uint96 epoch)
+  function unstakingAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256);
+
+  function redelegations(address toValAddr, address staker) external view returns (RedelegationsResponse[] memory);
+  function redelegationsAt(address toValAddr, address staker, uint96 epoch)
     external
     view
     returns (RedelegationsResponse[] memory);
 
   function totalDelegation(address valAddr) external view returns (uint256);
-  function totalDelegation(address valAddr, uint48 timestamp) external view returns (uint256);
+  function totalDelegationAt(address valAddr, uint48 timestamp) external view returns (uint256);
   function totalDelegationTWAB(address valAddr) external view returns (uint256);
-  function totalDelegationTWAB(address valAddr, uint48 timestamp) external view returns (uint256);
+  function totalDelegationTWABAt(address valAddr, uint48 timestamp) external view returns (uint256);
   function totalPendingRedelegation(address valAddr) external view returns (uint256);
-  function totalPendingRedelegation(address valAddr, uint96 epoch) external view returns (uint256);
+  function totalPendingRedelegationAt(address valAddr, uint96 epoch) external view returns (uint256);
 
   // ========== USER ACTIONS ========== //
 

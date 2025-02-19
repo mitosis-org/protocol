@@ -45,6 +45,7 @@ interface IValidatorContributionFeed {
   error InvalidWeightAddress();
   error InvalidTotalWeight();
   error InvalidValidatorCount();
+  error EpochNotFinalized();
   error NotifierNotSet();
 
   function epochFeeder() external view returns (IEpochFeeder);
@@ -54,6 +55,8 @@ interface IValidatorContributionFeed {
   function weightAt(uint96 epoch, uint256 index) external view returns (ValidatorWeight memory);
 
   function weightOf(uint96 epoch, address valAddr) external view returns (ValidatorWeight memory, bool);
+
+  function available(uint96 epoch) external view returns (bool);
 
   function summary(uint96 epoch) external view returns (Summary memory);
 

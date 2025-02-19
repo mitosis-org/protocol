@@ -63,7 +63,7 @@ contract ValidatorRewardDistributor is
   using SafeERC20 for IGovMITO;
 
   // Address of the governance MITO token contract
-  address private immutable govMITO;
+  address private immutable _govMITO;
 
   // Maximum number of epochs that can be claimed at once
   // Set to 32 based on gas cost analysis and typical usage patterns
@@ -71,7 +71,7 @@ contract ValidatorRewardDistributor is
 
   constructor(address govMITO_) {
     require(govMITO_.code.length > 0, StdError.InvalidAddress('govMITO'));
-    govMITO = govMITO_;
+    _govMITO = govMITO_;
     _disableInitializers();
   }
 
@@ -90,6 +90,11 @@ contract ValidatorRewardDistributor is
     _setValidatorManager(validatorManager_);
     _setValidatorContributionFeed(validatorContributionFeed_);
     _setGovMITOCommission(govMITOCommission_);
+  }
+
+  /// @inheritdoc IValidatorRewardDistributor
+  function govMITO() external view returns (IGovMITO) {
+    return IGovMITO(payable(_govMITO));
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -166,7 +171,7 @@ contract ValidatorRewardDistributor is
     }
     require(totalClaimable > 0, NoRewardsToClaim());
 
-    IGovMITO(payable(govMITO)).safeTransfer(_msgSender(), totalClaimable);
+    IGovMITO(payable(_govMITO)).safeTransfer(_msgSender(), totalClaimable);
     return totalClaimable;
   }
 
@@ -174,8 +179,7 @@ contract ValidatorRewardDistributor is
   function claimCommission(address valAddr) external returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
-    IValidatorManager.ValidatorInfoResponse memory validatorInfo =
-      $.validatorManager.validatorInfo($.epochFeeder.epoch(), valAddr);
+    IValidatorManager.ValidatorInfoResponse memory validatorInfo = $.validatorManager.validatorInfo(valAddr);
     require(validatorInfo.rewardRecipient == _msgSender(), NotRewardRecipient());
 
     (uint256 commission, uint96 nextEpoch) = _claimableCommission($, valAddr, MAX_CLAIM_EPOCHS);
@@ -183,7 +187,7 @@ contract ValidatorRewardDistributor is
 
     $.lastClaimedEpoch.commission[valAddr] = nextEpoch;
 
-    IGovMITO(payable(govMITO)).safeTransfer(validatorInfo.rewardRecipient, commission);
+    IGovMITO(payable(_govMITO)).safeTransfer(validatorInfo.rewardRecipient, commission);
     return commission;
   }
 
@@ -253,6 +257,7 @@ contract ValidatorRewardDistributor is
     uint256 totalClaimable;
 
     for (uint96 epoch = start; epoch < end; epoch++) {
+      if (!$.validatorContributionFeed.available(epoch)) break;
       totalClaimable += _claimRewardForEpoch($, valAddr, staker, epoch);
     }
 
@@ -270,6 +275,7 @@ contract ValidatorRewardDistributor is
     uint256 totalCommission;
 
     for (uint96 epoch = start; epoch < end; epoch++) {
+      if (!$.validatorContributionFeed.available(epoch)) break;
       (uint256 commission,) = _validatorRewardForEpoch($, valAddr, epoch);
       totalCommission += commission;
     }
@@ -337,13 +343,13 @@ contract ValidatorRewardDistributor is
     uint256 totalDelegation;
     uint256 stakerDelegation;
     {
-      uint256 startTWAB = $.validatorManager.totalDelegationTWAB(valAddr, epochTime);
-      uint256 endTWAB = $.validatorManager.totalDelegationTWAB(valAddr, nextEpochTime);
+      uint256 startTWAB = $.validatorManager.totalDelegationTWABAt(valAddr, epochTime);
+      uint256 endTWAB = $.validatorManager.totalDelegationTWABAt(valAddr, nextEpochTime);
       totalDelegation = (endTWAB - startTWAB) * 1e18 / (nextEpochTime - epochTime) / 1e18;
     }
     {
-      uint256 startTWAB = $.validatorManager.stakedTWAB(valAddr, staker, epochTime);
-      uint256 endTWAB = $.validatorManager.stakedTWAB(valAddr, staker, nextEpochTime);
+      uint256 startTWAB = $.validatorManager.stakedTWABAt(valAddr, staker, epochTime);
+      uint256 endTWAB = $.validatorManager.stakedTWABAt(valAddr, staker, nextEpochTime);
       stakerDelegation = (endTWAB - startTWAB) * 1e18 / (nextEpochTime - epochTime) / 1e18;
     }
 
@@ -358,7 +364,7 @@ contract ValidatorRewardDistributor is
     view
     returns (uint256, uint256)
   {
-    IValidatorManager.ValidatorInfoResponse memory validatorInfo = $.validatorManager.validatorInfo(epoch, valAddr);
+    IValidatorManager.ValidatorInfoResponse memory validatorInfo = $.validatorManager.validatorInfoAt(epoch, valAddr);
     IValidatorContributionFeed.Summary memory rewardSummary = $.validatorContributionFeed.summary(epoch);
     (ValidatorWeight memory weight, bool exists) = $.validatorContributionFeed.weightOf(epoch, valAddr);
     if (!exists) return (0, 0);

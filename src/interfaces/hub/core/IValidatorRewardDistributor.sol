@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { IGovMITO } from '../IGovMITO.sol';
 import { IGovMITOCommission } from '../IGovMITOCommission.sol';
 import { IEpochFeeder } from './IEpochFeeder.sol';
 import { IValidatorContributionFeed, IValidatorContributionFeedNotifier } from './IValidatorContributionFeed.sol';
@@ -25,6 +26,9 @@ interface IValidatorRewardDistributor is IValidatorContributionFeedNotifier {
   error NoCommissionToClaim();
   error ArrayLengthMismatch();
   error InvalidClaimEpochRange();
+
+  /// @notice Returns the gov MITO contract
+  function govMITO() external view returns (IGovMITO);
 
   /// @notice Returns the epoch feeder contract
   function epochFeeder() external view returns (IEpochFeeder);

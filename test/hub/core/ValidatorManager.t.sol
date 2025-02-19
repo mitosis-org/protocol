@@ -19,48 +19,7 @@ import { IEpochFeeder } from '../../../src/interfaces/hub/core/IEpochFeeder.sol'
 import { IValidatorManager } from '../../../src/interfaces/hub/core/IValidatorManager.sol';
 import { LibSecp256k1 } from '../../../src/lib/LibSecp256k1.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
-
-contract MockConsensusValidatorEntrypoint {
-  struct Log {
-    bytes4 sig;
-    bytes args;
-    uint256 value;
-  }
-
-  mapping(bytes4 => uint256) public calls;
-  mapping(bytes4 => Log[]) public callLogs;
-
-  receive() external payable { }
-
-  fallback() external payable {
-    // allow every call
-    calls[msg.sig]++;
-    callLogs[msg.sig].push(Log({ sig: msg.sig, args: msg.data[4:], value: msg.value }));
-  }
-
-  function lastCallLog(bytes4 sig) external view returns (Log memory) {
-    return _lastCallLog(sig);
-  }
-
-  function assertLastCall(bytes4 sig, bytes memory args) external view {
-    _assertLastCall(sig, args, 0);
-  }
-
-  function assertLastCall(bytes4 sig, bytes memory args, uint256 value) external view {
-    _assertLastCall(sig, args, value);
-  }
-
-  function _lastCallLog(bytes4 sig) internal view returns (Log memory) {
-    return callLogs[sig][callLogs[sig].length - 1];
-  }
-
-  function _assertLastCall(bytes4 sig, bytes memory args, uint256 value) internal view {
-    Log memory log = _lastCallLog(sig);
-    require(log.sig == sig, 'sig mismatch');
-    require(keccak256(log.args) == keccak256(args), 'args mismatch');
-    require(log.value == value, 'value mismatch');
-  }
-}
+import { MockContract } from '../../util/MockContract.sol';
 
 contract ValidatorManagerTest is Toolkit {
   using SafeCast for uint256;
@@ -77,13 +36,12 @@ contract ValidatorManagerTest is Toolkit {
   uint256 jsonNonce = 0;
   uint256 epochInterval = 100 seconds;
 
-  MockConsensusValidatorEntrypoint entrypoint;
+  MockContract entrypoint;
   EpochFeeder epochFeeder;
   ValidatorManager manager;
 
   function setUp() public {
-    entrypoint = new MockConsensusValidatorEntrypoint();
-    address entrypointAddr = address(entrypoint);
+    entrypoint = new MockContract();
 
     epochFeeder = EpochFeeder(
       _proxy(
@@ -99,7 +57,7 @@ contract ValidatorManagerTest is Toolkit {
           (
             owner,
             epochFeeder,
-            IConsensusValidatorEntrypoint(entrypointAddr),
+            IConsensusValidatorEntrypoint(address(entrypoint)),
             IValidatorManager.SetGlobalValidatorConfigRequest({
               initialValidatorDeposit: 1000 ether,
               unstakeCooldown: 1000 seconds,
@@ -152,7 +110,7 @@ contract ValidatorManagerTest is Toolkit {
     assertEq(manager.validatorAt(nextIndex), val.addr);
     assertTrue(manager.isValidator(val.addr));
 
-    IValidatorManager.ValidatorInfoResponse memory info = manager.validatorInfo(0, val.addr);
+    IValidatorManager.ValidatorInfoResponse memory info = manager.validatorInfo(val.addr);
     assertEq(info.validator, val.addr);
     assertEq(info.operator, val.addr);
     assertEq(info.rewardRecipient, val.addr);
@@ -219,7 +177,7 @@ contract ValidatorManagerTest is Toolkit {
     vm.prank(val.addr);
     manager.updateOperator(newOperator);
 
-    assertEq(manager.validatorInfo(0, val.addr).operator, newOperator);
+    assertEq(manager.validatorInfo(val.addr).operator, newOperator);
   }
 
   function test_updateRewardRecipient() public {
@@ -233,7 +191,7 @@ contract ValidatorManagerTest is Toolkit {
     vm.prank(newOperator);
     manager.updateRewardRecipient(val.addr, newRecipient);
 
-    assertEq(manager.validatorInfo(0, val.addr).rewardRecipient, newRecipient);
+    assertEq(manager.validatorInfo(val.addr).rewardRecipient, newRecipient);
   }
 
   function test_updateMetadata() public {
@@ -247,7 +205,7 @@ contract ValidatorManagerTest is Toolkit {
     vm.prank(newOperator);
     manager.updateMetadata(val.addr, newMetadata);
 
-    assertEq(manager.validatorInfo(0, val.addr).metadata, newMetadata);
+    assertEq(manager.validatorInfo(val.addr).metadata, newMetadata);
   }
 
   function test_updateRewardConfig() public {
@@ -263,7 +221,7 @@ contract ValidatorManagerTest is Toolkit {
       val.addr, IValidatorManager.UpdateRewardConfigRequest({ commissionRate: newCommissionRate })
     );
 
-    assertEq(manager.validatorInfo(0, val.addr).commissionRate, newCommissionRate);
+    assertEq(manager.validatorInfo(val.addr).commissionRate, newCommissionRate);
   }
 
   function test_stake() public returns (ValidatorKey memory) {
@@ -288,8 +246,8 @@ contract ValidatorManagerTest is Toolkit {
 
     // 1 second has passed - must be the same with the current staked amount
     uint48 now_ = epochFeeder.clock();
-    assertEq(manager.stakedTWAB(val.addr, staker, now_ + 3), 500 ether * 3);
-    assertEq(manager.totalDelegationTWAB(val.addr, now_ + 3), 500 ether * 3);
+    assertEq(manager.stakedTWABAt(val.addr, staker, now_ + 3), 500 ether * 3);
+    assertEq(manager.totalDelegationTWABAt(val.addr, now_ + 3), 500 ether * 3);
 
     return val;
   }
