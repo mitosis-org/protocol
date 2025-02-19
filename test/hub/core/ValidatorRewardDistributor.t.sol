@@ -78,4 +78,6 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(address(distributor.govMITO()), address(govMITO));
     assertEq(address(distributor.govMITOCommission()), address(govMITOCommission));
   }
+
+  // TODO(eddy): cover all the functions
 }
