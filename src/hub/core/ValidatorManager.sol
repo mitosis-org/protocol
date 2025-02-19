@@ -222,7 +222,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     validator.metadata = request.metadata;
 
     $.indexByValAddr[valAddr] = valIndex;
-    $.entrypoint.registerValidator{ value: msg.value }(valKey, valAddr);
+    $.entrypoint.registerValidator{ value: msg.value }(valKey);
 
     emit ValidatorCreated(valAddr, valKey);
   }
