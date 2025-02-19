@@ -12,9 +12,9 @@ import { IEpochFeeder } from '../../../src/interfaces/hub/core/IEpochFeeder.sol'
 import {
   IValidatorContributionFeed, ValidatorWeight
 } from '../../../src/interfaces/hub/core/IValidatorContributionFeed.sol';
-import { IValidatorStaking } from '../../../src/interfaces/hub/core/IValidatorStaking.sol';
 import { IValidatorManager } from '../../../src/interfaces/hub/core/IValidatorManager.sol';
 import { IValidatorRewardDistributor } from '../../../src/interfaces/hub/core/IValidatorRewardDistributor.sol';
+import { IValidatorStaking } from '../../../src/interfaces/hub/core/IValidatorStaking.sol';
 import { IGovMITO } from '../../../src/interfaces/hub/IGovMITO.sol';
 import { IGovMITOEmission } from '../../../src/interfaces/hub/IGovMITOEmission.sol';
 import { MockContract } from '../../util/MockContract.sol';

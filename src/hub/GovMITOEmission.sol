@@ -81,7 +81,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
 
   /// @inheritdoc IGovMITOEmission
   function deposit() external payable onlyOwner {
-    _govMITO.mint{ value: msg.value }(address(this), msg.value);
+    _govMITO.mint{ value: msg.value }(address(this));
 
     emit Deposited(msg.value);
   }

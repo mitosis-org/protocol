@@ -5,8 +5,8 @@ import { IGovMITO } from '../IGovMITO.sol';
 import { IGovMITOEmission } from '../IGovMITOEmission.sol';
 import { IEpochFeeder } from './IEpochFeeder.sol';
 import { IValidatorContributionFeed } from './IValidatorContributionFeed.sol';
-import { IValidatorStaking } from './IValidatorStaking.sol';
 import { IValidatorManager } from './IValidatorManager.sol';
+import { IValidatorStaking } from './IValidatorStaking.sol';
 
 /// @title IValidatorRewardDistributor
 /// @notice Interface for the ValidatorRewardDistributor contract that handles distribution of validator rewards
@@ -21,12 +21,7 @@ interface IValidatorRewardDistributor {
 
   // Custom errors
   error NotValidator();
-  error NoStakedValidators();
-  error NoRewardsToClaim();
-  error NotRewardRecipient();
-  error NoCommissionToClaim();
   error ArrayLengthMismatch();
-  error InvalidClaimEpochRange();
 
   // ========== VIEWS ========== //
 

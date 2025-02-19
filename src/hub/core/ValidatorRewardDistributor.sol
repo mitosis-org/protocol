@@ -10,9 +10,9 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
 import { IValidatorContributionFeed, ValidatorWeight } from '../../interfaces/hub/core/IValidatorContributionFeed.sol';
-import { IValidatorStaking } from '../../interfaces/hub/core/IValidatorStaking.sol';
 import { IValidatorManager } from '../../interfaces/hub/core/IValidatorManager.sol';
 import { IValidatorRewardDistributor } from '../../interfaces/hub/core/IValidatorRewardDistributor.sol';
+import { IValidatorStaking } from '../../interfaces/hub/core/IValidatorStaking.sol';
 import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
 import { IGovMITOEmission } from '../../interfaces/hub/IGovMITOEmission.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
@@ -152,7 +152,7 @@ contract ValidatorRewardDistributor is
     external
     returns (uint256)
   {
-    require(stakers.length == valAddrs.length, StdError.InvalidParameter('stakers.length != valAddrs.length'));
+    require(stakers.length == valAddrs.length, ArrayLengthMismatch());
 
     uint256 totalClaimed;
     for (uint256 i = 0; i < stakers.length; i++) {
@@ -284,10 +284,10 @@ contract ValidatorRewardDistributor is
       if (!$.validatorContributionFeed.available(epoch)) break;
       uint256 claimable = _calculateStakerRewardForEpoch($, valAddr, staker, epoch);
 
-      totalClaimed += claimable;
-
       // NOTE(eddy): reentrancy guard?
-      $.govMITOEmission.requestValidatorReward(epoch, staker, claimable);
+      if (claimable > 0) $.govMITOEmission.requestValidatorReward(epoch, staker, claimable);
+
+      totalClaimed += claimable;
     }
 
     $.lastClaimedEpoch.staker[staker][valAddr] = end;
@@ -307,10 +307,10 @@ contract ValidatorRewardDistributor is
       if (!$.validatorContributionFeed.available(epoch)) break;
       (uint256 claimable,) = _rewardForEpoch($, valAddr, epoch);
 
-      totalClaimed += claimable;
-
       // NOTE(eddy): reentrancy guard?
-      $.govMITOEmission.requestValidatorReward(epoch, recipient, claimable);
+      if (claimable > 0) $.govMITOEmission.requestValidatorReward(epoch, recipient, claimable);
+
+      totalClaimed += claimable;
     }
 
     $.lastClaimedEpoch.operator[valAddr] = end;
