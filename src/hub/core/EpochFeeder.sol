@@ -96,7 +96,7 @@ contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable, UUPSUpgradeable {
 
   /// @inheritdoc IEpochFeeder
   function epochToTime(uint96 epoch_) public view returns (uint48) {
-    require(epoch_ > 0, InvalidEpoch());
+    require(epoch_ >= 0, InvalidEpoch());
 
     uint256 lastEpoch = _epochs.length - 1;
     if (lastEpoch < epoch_) {
