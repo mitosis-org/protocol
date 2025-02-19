@@ -229,7 +229,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
     StorageV1 storage $ = _getStorageV1();
     Validator storage validator = _validator($, valAddr);
-    _assertOperator(validator);
 
     $.entrypoint.depositCollateral{ value: msg.value }(validator.pubKey);
 
