@@ -22,8 +22,6 @@ import { IEpochFeeder } from './IEpochFeeder.sol';
 interface IValidatorManager {
   struct GlobalValidatorConfigResponse {
     uint256 initialValidatorDeposit;
-    uint256 unstakeCooldown;
-    uint256 redelegationCooldown;
     uint256 collateralWithdrawalDelay;
     uint256 minimumCommissionRate;
     uint96 commissionRateUpdateDelay;
@@ -56,8 +54,6 @@ interface IValidatorManager {
 
   struct SetGlobalValidatorConfigRequest {
     uint256 initialValidatorDeposit; // used on creation of the validator
-    uint256 unstakeCooldown; // in seconds
-    uint256 redelegationCooldown; // in seconds
     uint256 collateralWithdrawalDelay; // in seconds
     uint256 minimumCommissionRate; // bp ex) 10000 = 100%
     uint96 commissionRateUpdateDelay; // in epoch

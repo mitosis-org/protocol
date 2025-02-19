@@ -60,8 +60,6 @@ contract ValidatorManagerTest is Toolkit {
             IConsensusValidatorEntrypoint(address(entrypoint)),
             IValidatorManager.SetGlobalValidatorConfigRequest({
               initialValidatorDeposit: 1000 ether,
-              unstakeCooldown: 1000 seconds,
-              redelegationCooldown: 1000 seconds,
               collateralWithdrawalDelay: 1000 seconds,
               minimumCommissionRate: 100, // 1 %
               commissionRateUpdateDelay: 3 // 3 * 100 seconds
@@ -79,7 +77,6 @@ contract ValidatorManagerTest is Toolkit {
 
     IValidatorManager.GlobalValidatorConfigResponse memory config = manager.globalValidatorConfig();
     assertEq(config.initialValidatorDeposit, 1000 ether);
-    assertEq(config.unstakeCooldown, 1000 seconds);
     assertEq(config.collateralWithdrawalDelay, 1000 seconds);
     assertEq(config.minimumCommissionRate, 100);
     assertEq(config.commissionRateUpdateDelay, 3);

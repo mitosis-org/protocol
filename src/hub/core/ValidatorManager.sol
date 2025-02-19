@@ -29,8 +29,6 @@ contract ValidatorManagerStorageV1 {
 
   struct GlobalValidatorConfig {
     uint256 initialValidatorDeposit; // used on creation of the validator
-    uint256 unstakeCooldown; // in seconds
-    uint256 redelegationCooldown; // in seconds
     uint256 collateralWithdrawalDelay; // in seconds
     EpochCheckpoint[] minimumCommissionRates;
     uint96 commissionRateUpdateDelay; // in epoch
@@ -128,8 +126,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
     return GlobalValidatorConfigResponse({
       initialValidatorDeposit: config.initialValidatorDeposit,
-      unstakeCooldown: config.unstakeCooldown,
-      redelegationCooldown: config.redelegationCooldown,
       collateralWithdrawalDelay: config.collateralWithdrawalDelay,
       minimumCommissionRate: config.minimumCommissionRates[config.minimumCommissionRates.length - 1].amount,
       commissionRateUpdateDelay: config.commissionRateUpdateDelay
@@ -400,8 +396,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     );
     require(request.commissionRateUpdateDelay > 0, StdError.InvalidParameter('commissionRateUpdateDelay'));
     require(request.initialValidatorDeposit >= 0, StdError.InvalidParameter('initialValidatorDeposit'));
-    require(request.unstakeCooldown >= 0, StdError.InvalidParameter('unstakeCooldown'));
-    require(request.redelegationCooldown >= 0, StdError.InvalidParameter('redelegationCooldown'));
     require(request.collateralWithdrawalDelay >= 0, StdError.InvalidParameter('collateralWithdrawalDelay'));
 
     uint96 epoch = $.epochFeeder.epoch();
@@ -410,8 +404,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     );
     $.globalValidatorConfig.commissionRateUpdateDelay = request.commissionRateUpdateDelay;
     $.globalValidatorConfig.initialValidatorDeposit = request.initialValidatorDeposit;
-    $.globalValidatorConfig.unstakeCooldown = request.unstakeCooldown;
-    $.globalValidatorConfig.redelegationCooldown = request.redelegationCooldown;
     $.globalValidatorConfig.collateralWithdrawalDelay = request.collateralWithdrawalDelay;
 
     emit GlobalValidatorConfigUpdated();
