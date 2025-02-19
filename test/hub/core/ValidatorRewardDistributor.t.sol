@@ -26,7 +26,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   uint256 epochInterval = 100 seconds;
 
   MockContract govMITO;
-  MockContract GovMITOEmission;
+  MockContract govMITOEmission;
   MockContract manager;
   EpochFeeder epochFeed;
   MockContract contributionFeed;
@@ -37,7 +37,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     govMITO.setStatic(IERC20.totalSupply.selector, true);
     govMITO.setStatic(IERC20.balanceOf.selector, true);
 
-    GovMITOEmission = new MockContract();
+    govMITOEmission = new MockContract();
 
     manager = new MockContract();
     manager.setStatic(IValidatorManager.validatorInfo.selector, true);
@@ -62,7 +62,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
         address(new ValidatorRewardDistributor(address(govMITO))),
         abi.encodeCall(
           ValidatorRewardDistributor.initialize,
-          (owner, address(epochFeed), address(manager), address(contributionFeed), address(GovMITOEmission))
+          (owner, address(epochFeed), address(manager), address(contributionFeed), address(govMITOEmission))
         )
       )
     );
@@ -74,7 +74,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(address(distributor.validatorManager()), address(manager));
     assertEq(address(distributor.validatorContributionFeed()), address(contributionFeed));
     assertEq(address(distributor.govMITO()), address(govMITO));
-    assertEq(address(distributor.govMITOEmission()), address(GovMITOEmission));
+    assertEq(address(distributor.govMITOEmission()), address(govMITOEmission));
   }
 
   // TODO(eddy): cover all the functions
