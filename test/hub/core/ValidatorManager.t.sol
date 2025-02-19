@@ -225,92 +225,92 @@ contract ValidatorManagerTest is Toolkit {
     assertEq(manager.validatorInfo(val.addr).commissionRate, newCommissionRate);
   }
 
-  function test_stake() public returns (ValidatorKey memory) {
-    address staker = makeAddr('staker');
-    ValidatorKey memory val = test_createValidator('val-1');
+  // function test_stake() public returns (ValidatorKey memory) {
+  //   address staker = makeAddr('staker');
+  //   ValidatorKey memory val = test_createValidator('val-1');
 
-    vm.deal(staker, 500 ether);
-    vm.prank(staker);
-    manager.stake{ value: 500 ether }(val.addr, staker);
+  //   vm.deal(staker, 500 ether);
+  //   vm.prank(staker);
+  //   manager.stake{ value: 500 ether }(val.addr, staker);
 
-    assertEq(manager.totalStaked(), 500 ether);
-    assertEq(manager.totalUnstaking(), 0 ether);
+  //   assertEq(manager.totalStaked(), 500 ether);
+  //   assertEq(manager.totalUnstaking(), 0 ether);
 
-    assertEq(manager.staked(val.addr, staker), 500 ether);
-    assertEq(manager.totalDelegation(val.addr), 500 ether);
+  //   assertEq(manager.staked(val.addr, staker), 500 ether);
+  //   assertEq(manager.totalDelegation(val.addr), 500 ether);
 
-    // no time has passed
-    assertEq(manager.stakedTWAB(val.addr, staker), 0);
-    assertEq(manager.totalDelegationTWAB(val.addr), 0);
+  //   // no time has passed
+  //   assertEq(manager.stakedTWAB(val.addr, staker), 0);
+  //   assertEq(manager.totalDelegationTWAB(val.addr), 0);
 
-    // 1 second has passed - must be the same with the current staked amount
-    uint48 now_ = epochFeeder.clock();
-    assertEq(manager.stakedTWABAt(val.addr, staker, now_ + 3), 500 ether * 3);
-    assertEq(manager.totalDelegationTWABAt(val.addr, now_ + 3), 500 ether * 3);
+  //   // 1 second has passed - must be the same with the current staked amount
+  //   uint48 now_ = epochFeeder.clock();
+  //   assertEq(manager.stakedTWABAt(val.addr, staker, now_ + 3), 500 ether * 3);
+  //   assertEq(manager.totalDelegationTWABAt(val.addr, now_ + 3), 500 ether * 3);
 
-    return val;
-  }
+  //   return val;
+  // }
 
-  function test_unstake() public {
-    address staker = makeAddr('staker');
-    ValidatorKey memory val = test_createValidator('val-1');
+  // function test_unstake() public {
+  //   address staker = makeAddr('staker');
+  //   ValidatorKey memory val = test_createValidator('val-1');
 
-    vm.deal(staker, 500 ether);
-    vm.prank(staker);
-    manager.stake{ value: 500 ether }(val.addr, staker);
+  //   vm.deal(staker, 500 ether);
+  //   vm.prank(staker);
+  //   manager.stake{ value: 500 ether }(val.addr, staker);
 
-    vm.prank(staker);
-    manager.requestUnstake(val.addr, staker, 500 ether);
+  //   vm.prank(staker);
+  //   manager.requestUnstake(val.addr, staker, 500 ether);
 
-    assertEq(manager.staked(val.addr, staker), 0);
-    assertEq(manager.totalStaked(), 0);
-    assertEq(manager.totalUnstaking(), 500 ether);
-    assertEq(manager.totalDelegation(val.addr), 0);
+  //   assertEq(manager.staked(val.addr, staker), 0);
+  //   assertEq(manager.totalStaked(), 0);
+  //   assertEq(manager.totalUnstaking(), 500 ether);
+  //   assertEq(manager.totalDelegation(val.addr), 0);
 
-    {
-      (uint256 claimable, uint256 nonClaimable) = manager.unstaking(val.addr, staker);
-      assertEq(claimable, 0);
-      assertEq(nonClaimable, 500 ether);
-    }
+  //   {
+  //     (uint256 claimable, uint256 nonClaimable) = manager.unstaking(val.addr, staker);
+  //     assertEq(claimable, 0);
+  //     assertEq(nonClaimable, 500 ether);
+  //   }
 
-    vm.warp(block.timestamp + manager.globalValidatorConfig().unstakeCooldown + 1);
+  //   vm.warp(block.timestamp + manager.globalValidatorConfig().unstakeCooldown + 1);
 
-    {
-      (uint256 claimable, uint256 nonClaimable) = manager.unstaking(val.addr, staker);
-      assertEq(claimable, 500 ether);
-      assertEq(nonClaimable, 0);
-    }
+  //   {
+  //     (uint256 claimable, uint256 nonClaimable) = manager.unstaking(val.addr, staker);
+  //     assertEq(claimable, 500 ether);
+  //     assertEq(nonClaimable, 0);
+  //   }
 
-    vm.prank(staker);
-    uint256 claimAmount = manager.claimUnstake(val.addr, staker);
+  //   vm.prank(staker);
+  //   uint256 claimAmount = manager.claimUnstake(val.addr, staker);
 
-    assertEq(claimAmount, 500 ether);
-    {
-      (uint256 claimable, uint256 nonClaimable) = manager.unstaking(val.addr, staker);
-      assertEq(claimable, 0);
-      assertEq(nonClaimable, 0);
-    }
+  //   assertEq(claimAmount, 500 ether);
+  //   {
+  //     (uint256 claimable, uint256 nonClaimable) = manager.unstaking(val.addr, staker);
+  //     assertEq(claimable, 0);
+  //     assertEq(nonClaimable, 0);
+  //   }
 
-    assertEq(staker.balance, 500 ether);
-  }
+  //   assertEq(staker.balance, 500 ether);
+  // }
 
-  function test_redelegate() public {
-    address staker = makeAddr('staker');
-    ValidatorKey memory val1 = test_createValidator('val-1');
-    ValidatorKey memory val2 = test_createValidator('val-2');
+  // function test_redelegate() public {
+  //   address staker = makeAddr('staker');
+  //   ValidatorKey memory val1 = test_createValidator('val-1');
+  //   ValidatorKey memory val2 = test_createValidator('val-2');
 
-    vm.deal(staker, 500 ether);
-    vm.startPrank(staker);
-    manager.stake{ value: 500 ether }(val1.addr, staker);
-    manager.redelegate(val1.addr, val2.addr, 250 ether);
-    vm.stopPrank();
+  //   vm.deal(staker, 500 ether);
+  //   vm.startPrank(staker);
+  //   manager.stake{ value: 500 ether }(val1.addr, staker);
+  //   manager.redelegate(val1.addr, val2.addr, 250 ether);
+  //   vm.stopPrank();
 
-    assertEq(manager.totalStaked(), 500 ether);
-    assertEq(manager.staked(val1.addr, staker), 250 ether);
-    assertEq(manager.staked(val2.addr, staker), 250 ether);
-    assertEq(manager.totalDelegation(val1.addr), 250 ether);
-    assertEq(manager.totalDelegation(val2.addr), 250 ether);
-  }
+  //   assertEq(manager.totalStaked(), 500 ether);
+  //   assertEq(manager.staked(val1.addr, staker), 250 ether);
+  //   assertEq(manager.staked(val2.addr, staker), 250 ether);
+  //   assertEq(manager.totalDelegation(val1.addr), 250 ether);
+  //   assertEq(manager.totalDelegation(val2.addr), 250 ether);
+  // }
 
   function _makeValKey(string memory name) internal returns (ValidatorKey memory) {
     (address addr, uint256 privKey) = makeAddrAndKey(name);

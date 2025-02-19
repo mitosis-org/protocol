@@ -10,6 +10,7 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
 import { IValidatorContributionFeed, ValidatorWeight } from '../../interfaces/hub/core/IValidatorContributionFeed.sol';
+import { IValidatorDelegationManager } from '../../interfaces/hub/core/IValidatorDelegationManager.sol';
 import { IValidatorManager } from '../../interfaces/hub/core/IValidatorManager.sol';
 import { IValidatorRewardDistributor } from '../../interfaces/hub/core/IValidatorRewardDistributor.sol';
 import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
@@ -30,6 +31,7 @@ contract ValidatorRewardDistributorStorageV1 {
   struct StorageV1 {
     IEpochFeeder epochFeeder;
     IValidatorManager validatorManager;
+    IValidatorDelegationManager validatorDelegationManager;
     IValidatorContributionFeed validatorContributionFeed;
     IGovMITOEmission govMITOEmission;
     LastClaimedEpoch lastClaimedEpoch;
@@ -75,6 +77,7 @@ contract ValidatorRewardDistributor is
     address initialOwner_,
     address epochFeeder_,
     address validatorManager_,
+    address validatorDelegationManager_,
     address validatorContributionFeed_,
     address govMITOEmission_
   ) external initializer {
@@ -84,6 +87,7 @@ contract ValidatorRewardDistributor is
 
     _setEpochFeeder(epochFeeder_);
     _setValidatorManager(validatorManager_);
+    _setValidatorDelegationManager(validatorDelegationManager_);
     _setValidatorContributionFeed(validatorContributionFeed_);
     _setGovMITOEmission(govMITOEmission_);
   }
@@ -106,6 +110,11 @@ contract ValidatorRewardDistributor is
   /// @inheritdoc IValidatorRewardDistributor
   function validatorContributionFeed() external view returns (IValidatorContributionFeed) {
     return _getStorageV1().validatorContributionFeed;
+  }
+
+  /// @inheritdoc IValidatorRewardDistributor
+  function validatorDelegationManager() external view returns (IValidatorDelegationManager) {
+    return _getStorageV1().validatorDelegationManager;
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -180,6 +189,12 @@ contract ValidatorRewardDistributor is
     _setValidatorManager(validatorManager_);
   }
 
+  /// @notice Sets a new validator delegation manager contract
+  /// @param validatorDelegationManager_ Address of the new validator delegation manager contract
+  function setValidatorDelegationManager(address validatorDelegationManager_) external onlyOwner {
+    _setValidatorDelegationManager(validatorDelegationManager_);
+  }
+
   /// @notice Sets a new validator reward feed contract
   /// @param validatorContributionFeed_ Address of the new validator reward feed contract
   function setValidatorContributionFeed(address validatorContributionFeed_) external onlyOwner {
@@ -200,6 +215,11 @@ contract ValidatorRewardDistributor is
   function _setValidatorManager(address validatorManager_) internal {
     require(validatorManager_.code.length > 0, StdError.InvalidAddress('validatorManager'));
     _getStorageV1().validatorManager = IValidatorManager(validatorManager_);
+  }
+
+  function _setValidatorDelegationManager(address validatorDelegationManager_) internal {
+    require(validatorDelegationManager_.code.length > 0, StdError.InvalidAddress('validatorDelegationManager'));
+    _getStorageV1().validatorDelegationManager = IValidatorDelegationManager(validatorDelegationManager_);
   }
 
   function _setValidatorContributionFeed(address validatorContributionFeed_) internal {
@@ -322,13 +342,13 @@ contract ValidatorRewardDistributor is
     uint256 totalDelegation;
     uint256 stakerDelegation;
     {
-      uint256 startTWAB = $.validatorManager.totalDelegationTWABAt(valAddr, epochTime);
-      uint256 endTWAB = $.validatorManager.totalDelegationTWABAt(valAddr, nextEpochTime);
+      uint256 startTWAB = $.validatorDelegationManager.totalDelegationTWABAt(valAddr, epochTime);
+      uint256 endTWAB = $.validatorDelegationManager.totalDelegationTWABAt(valAddr, nextEpochTime);
       totalDelegation = (endTWAB - startTWAB) * 1e18 / (nextEpochTime - epochTime) / 1e18;
     }
     {
-      uint256 startTWAB = $.validatorManager.stakedTWABAt(valAddr, staker, epochTime);
-      uint256 endTWAB = $.validatorManager.stakedTWABAt(valAddr, staker, nextEpochTime);
+      uint256 startTWAB = $.validatorDelegationManager.stakedTWABAt(valAddr, staker, epochTime);
+      uint256 endTWAB = $.validatorDelegationManager.stakedTWABAt(valAddr, staker, nextEpochTime);
       stakerDelegation = (endTWAB - startTWAB) * 1e18 / (nextEpochTime - epochTime) / 1e18;
     }
 

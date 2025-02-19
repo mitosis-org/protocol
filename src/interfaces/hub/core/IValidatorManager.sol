@@ -63,17 +63,6 @@ interface IValidatorManager {
     uint96 commissionRateUpdateDelay; // in epoch
   }
 
-  event Staked(address indexed valAddr, address indexed staker, address indexed recipient, uint256 amount);
-  event UnstakeRequested(
-    address indexed valAddr, address indexed unstaker, address indexed recipient, uint256 amount, uint256 reqId
-  );
-  event UnstakeClaimed(address indexed valAddr, address indexed recipient, uint256 amount);
-
-  event Redelegated(address indexed fromValAddr, address indexed toValAddr, address indexed staker, uint256 amount);
-  event RedelegationCancelled(
-    address indexed fromValAddr, address indexed toValAddr, address indexed staker, uint256 amount
-  );
-
   event ValidatorCreated(address indexed valAddr, bytes valKey);
   event CollateralDeposited(address indexed valAddr, uint256 amount);
   event CollateralWithdrawn(address indexed valAddr, uint256 amount);
@@ -87,9 +76,9 @@ interface IValidatorManager {
   event EpochFeederUpdated(IEpochFeeder indexed epochFeeder);
   event EntrypointUpdated(IConsensusValidatorEntrypoint indexed entrypoint);
 
+  // ========== VIEWS ========== //
+
   function MAX_COMMISSION_RATE() external view returns (uint256);
-  function MAX_STAKED_VALIDATOR_COUNT() external view returns (uint256);
-  function MAX_REDELEGATION_COUNT() external view returns (uint256);
 
   function entrypoint() external view returns (IConsensusValidatorEntrypoint);
   function epochFeeder() external view returns (IEpochFeeder);
@@ -101,31 +90,6 @@ interface IValidatorManager {
 
   function validatorInfo(address valAddr) external view returns (ValidatorInfoResponse memory);
   function validatorInfoAt(uint96 epoch, address valAddr) external view returns (ValidatorInfoResponse memory);
-
-  function totalStaked() external view returns (uint256);
-  function totalUnstaking() external view returns (uint256);
-
-  function staked(address valAddr, address staker) external view returns (uint256);
-  function stakedAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
-  function stakedTWAB(address valAddr, address staker) external view returns (uint256);
-  function stakedTWABAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
-
-  function unstaking(address valAddr, address staker) external view returns (uint256, uint256);
-  function unstakingAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256);
-
-  function totalDelegation(address valAddr) external view returns (uint256);
-  function totalDelegationAt(address valAddr, uint48 timestamp) external view returns (uint256);
-  function totalDelegationTWAB(address valAddr) external view returns (uint256);
-  function totalDelegationTWABAt(address valAddr, uint48 timestamp) external view returns (uint256);
-
-  function lastRedelegationTime(address staker) external view returns (uint256);
-
-  // ========== USER ACTIONS ========== //
-
-  function stake(address valAddr, address recipient) external payable;
-  function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256);
-  function claimUnstake(address valAddr, address receiver) external returns (uint256);
-  function redelegate(address fromValAddr, address toValAddr, uint256 amount) external;
 
   // ========== VALIDATOR ACTIONS ========== //
 

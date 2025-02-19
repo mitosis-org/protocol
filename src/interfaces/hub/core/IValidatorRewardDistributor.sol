@@ -5,6 +5,7 @@ import { IGovMITO } from '../IGovMITO.sol';
 import { IGovMITOEmission } from '../IGovMITOEmission.sol';
 import { IEpochFeeder } from './IEpochFeeder.sol';
 import { IValidatorContributionFeed } from './IValidatorContributionFeed.sol';
+import { IValidatorDelegationManager } from './IValidatorDelegationManager.sol';
 import { IValidatorManager } from './IValidatorManager.sol';
 
 /// @title IValidatorRewardDistributor
@@ -27,17 +28,22 @@ interface IValidatorRewardDistributor {
   error ArrayLengthMismatch();
   error InvalidClaimEpochRange();
 
+  // ========== VIEWS ========== //
+
   /// @notice Returns the gov MITO contract
   function govMITO() external view returns (IGovMITO);
 
   /// @notice Returns the epoch feeder contract
   function epochFeeder() external view returns (IEpochFeeder);
 
-  /// @notice Returns the validator manager contract
+  /// @notice Returns the validator registry contract
   function validatorManager() external view returns (IValidatorManager);
 
   /// @notice Returns the validator contribution feed contract
   function validatorContributionFeed() external view returns (IValidatorContributionFeed);
+
+  /// @notice Returns the validator delegation manager contract
+  function validatorDelegationManager() external view returns (IValidatorDelegationManager);
 
   /// @notice Returns the gov MITO emission contract
   function govMITOEmission() external view returns (IGovMITOEmission);

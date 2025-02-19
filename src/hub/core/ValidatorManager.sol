@@ -22,12 +22,6 @@ import { StdError } from '../../lib/StdError.sol';
 contract ValidatorManagerStorageV1 {
   using ERC7201Utils for string;
 
-  struct TWABCheckpoint {
-    uint256 twab;
-    uint208 amount;
-    uint48 lastUpdate;
-  }
-
   struct EpochCheckpoint {
     uint96 epoch;
     uint160 amount;
@@ -63,19 +57,12 @@ contract ValidatorManagerStorageV1 {
     // 6. ...
     // This will be applied immediately
     bytes metadata;
-    // storages
-    LibRedeemQueue.Queue unstakeQueue;
-    TWABCheckpoint[] totalDelegations;
-    mapping(address staker => TWABCheckpoint[]) delegationLog;
   }
 
   struct StorageV1 {
     IEpochFeeder epochFeeder;
     IConsensusValidatorEntrypoint entrypoint;
     GlobalValidatorConfig globalValidatorConfig;
-    uint256 totalStaked;
-    uint256 totalUnstaking;
-    mapping(address staker => uint256) lastRedelegationTime;
     // validator
     uint256 validatorCount;
     mapping(uint256 index => Validator) validators;
@@ -101,12 +88,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   using LibRedeemQueue for LibRedeemQueue.Queue;
 
   uint256 public constant MAX_COMMISSION_RATE = 10000; // 100% in bp
-
-  // NOTE: This is a temporary limit. It will be revised in the next version.
-  uint256 public constant MAX_STAKED_VALIDATOR_COUNT = 10;
-
-  // NOTE: This is a temporary limit. It will be revised in the next version.
-  uint256 public constant MAX_REDELEGATION_COUNT = 100;
 
   constructor() {
     _disableInitializers();
@@ -205,166 +186,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function totalStaked() external view returns (uint256) {
-    return _getStorageV1().totalStaked;
-  }
-
-  /// @inheritdoc IValidatorManager
-  function totalUnstaking() external view returns (uint256) {
-    return _getStorageV1().totalUnstaking;
-  }
-
-  /// @inheritdoc IValidatorManager
-  function staked(address valAddr, address staker) external view returns (uint256) {
-    require(staker != address(0), StdError.InvalidParameter('staker'));
-    return _staked(valAddr, staker, _getStorageV1().epochFeeder.clock());
-  }
-
-  /// @inheritdoc IValidatorManager
-  function stakedAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
-    require(staker != address(0), StdError.InvalidParameter('staker'));
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    return _staked(valAddr, staker, timestamp);
-  }
-
-  /// @inheritdoc IValidatorManager
-  function stakedTWAB(address valAddr, address staker) external view returns (uint256) {
-    require(staker != address(0), StdError.InvalidParameter('staker'));
-    return _stakedTWAB(valAddr, staker, _getStorageV1().epochFeeder.clock());
-  }
-
-  /// @inheritdoc IValidatorManager
-  function stakedTWABAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
-    require(staker != address(0), StdError.InvalidParameter('staker'));
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    return _stakedTWAB(valAddr, staker, timestamp);
-  }
-
-  /// @inheritdoc IValidatorManager
-  function unstaking(address valAddr, address staker) external view returns (uint256, uint256) {
-    require(staker != address(0), StdError.InvalidParameter('staker'));
-    return _unstaking(valAddr, staker, _getStorageV1().epochFeeder.clock());
-  }
-
-  /// @inheritdoc IValidatorManager
-  function unstakingAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256) {
-    require(staker != address(0), StdError.InvalidParameter('staker'));
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    return _unstaking(valAddr, staker, timestamp);
-  }
-
-  /// @inheritdoc IValidatorManager
-  function totalDelegation(address valAddr) external view returns (uint256) {
-    return _totalDelegation(valAddr, _getStorageV1().epochFeeder.clock());
-  }
-
-  /// @inheritdoc IValidatorManager
-  function totalDelegationAt(address valAddr, uint48 timestamp) external view returns (uint256) {
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    return _totalDelegation(valAddr, timestamp);
-  }
-
-  /// @inheritdoc IValidatorManager
-  function totalDelegationTWAB(address valAddr) external view returns (uint256) {
-    return _totalDelegationTWAB(valAddr, _getStorageV1().epochFeeder.clock());
-  }
-
-  /// @inheritdoc IValidatorManager
-  function totalDelegationTWABAt(address valAddr, uint48 timestamp) external view returns (uint256) {
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    return _totalDelegationTWAB(valAddr, timestamp);
-  }
-
-  /// @inheritdoc IValidatorManager
-  function lastRedelegationTime(address staker) external view returns (uint256) {
-    return _getStorageV1().lastRedelegationTime[staker];
-  }
-
-  /// @inheritdoc IValidatorManager
-  function stake(address valAddr, address recipient) external payable {
-    require(msg.value > 0, StdError.ZeroAmount());
-    require(recipient != address(0), StdError.InvalidParameter('recipient'));
-
-    StorageV1 storage $ = _getStorageV1();
-    _assertValidatorExists($, valAddr);
-
-    _stake($, valAddr, recipient, msg.value, $.epochFeeder.clock());
-
-    $.totalStaked += msg.value;
-
-    emit Staked(valAddr, _msgSender(), recipient, msg.value);
-  }
-
-  /// @inheritdoc IValidatorManager
-  function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256) {
-    require(amount > 0, StdError.ZeroAmount());
-
-    StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valAddr);
-
-    _unstake($, valAddr, _msgSender(), amount);
-
-    LibRedeemQueue.Queue storage queue = validator.unstakeQueue;
-
-    // FIXME(eddy): shorten the enqueue + reserve flow
-    uint48 now_ = $.epochFeeder.clock();
-    uint256 reqId = queue.enqueue(receiver, amount, now_, bytes(''));
-    queue.reserve(valAddr, amount, now_, bytes(''));
-
-    $.totalStaked -= amount;
-    $.totalUnstaking += amount;
-
-    emit UnstakeRequested(valAddr, _msgSender(), receiver, amount, reqId);
-
-    return reqId;
-  }
-
-  /// @inheritdoc IValidatorManager
-  function claimUnstake(address valAddr, address receiver) external returns (uint256) {
-    StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valAddr);
-
-    LibRedeemQueue.Queue storage queue = validator.unstakeQueue;
-
-    uint256 globalCooldown = $.globalValidatorConfig.unstakeCooldown;
-    if (globalCooldown != 0) queue.redeemPeriod = globalCooldown;
-
-    uint48 now_ = $.epochFeeder.clock();
-    queue.update(now_);
-    uint256 claimed = queue.claim(receiver, now_);
-
-    SafeTransferLib.safeTransferETH(receiver, claimed);
-
-    $.totalUnstaking -= claimed;
-
-    emit UnstakeClaimed(valAddr, receiver, claimed);
-
-    return claimed;
-  }
-
-  /// @inheritdoc IValidatorManager
-  function redelegate(address fromValAddr, address toValAddr, uint256 amount) external {
-    require(amount > 0, StdError.ZeroAmount());
-    require(fromValAddr != toValAddr, StdError.InvalidParameter('from!=to'));
-
-    StorageV1 storage $ = _getStorageV1();
-    _assertValidatorExists($, fromValAddr);
-    _assertValidatorExists($, toValAddr);
-
-    uint48 now_ = $.epochFeeder.clock();
-    uint256 lastRedelegationTime_ = $.lastRedelegationTime[_msgSender()];
-    require(
-      lastRedelegationTime_ == 0 || now_ <= lastRedelegationTime_ + $.globalValidatorConfig.redelegationCooldown,
-      StdError.Unauthorized()
-    );
-
-    _unstake($, fromValAddr, _msgSender(), amount);
-    _stake($, toValAddr, _msgSender(), amount, now_);
-
-    emit Redelegated(fromValAddr, toValAddr, _msgSender(), amount);
-  }
-
-  /// @inheritdoc IValidatorManager
   function createValidator(bytes calldata valKey, CreateValidatorRequest calldata request) external payable {
     require(valKey.length > 0, StdError.InvalidParameter('valKey'));
 
@@ -399,7 +220,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       EpochCheckpoint({ epoch: epoch, amount: request.commissionRate.toUint160() })
     );
     validator.metadata = request.metadata;
-    validator.unstakeQueue.redeemPeriod = $.globalValidatorConfig.unstakeCooldown;
 
     $.indexByValAddr[valAddr] = valIndex;
     $.entrypoint.registerValidator{ value: msg.value }(valKey, valAddr);
@@ -557,154 +377,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     }
 
     return history[target];
-  }
-
-  function _searchCheckpoint(TWABCheckpoint[] storage history, uint48 timestamp)
-    internal
-    view
-    returns (TWABCheckpoint memory)
-  {
-    TWABCheckpoint memory last = history[history.length - 1];
-    if (last.lastUpdate <= timestamp) return last;
-
-    uint256 left = 0;
-    uint256 right = history.length - 1;
-    uint256 target = 0;
-
-    while (left <= right) {
-      uint256 mid = left + (right - left) / 2;
-      if (history[mid].lastUpdate <= timestamp) {
-        target = mid;
-        left = mid + 1;
-      } else {
-        right = mid - 1;
-      }
-    }
-
-    return history[target];
-  }
-
-  function _staked(address valAddr, address staker, uint48 timestamp) internal view returns (uint256) {
-    StorageV1 storage $ = _getStorageV1();
-
-    TWABCheckpoint[] storage history = _validator($, valAddr).delegationLog[staker];
-    if (history.length == 0) return 0;
-
-    TWABCheckpoint memory last = _searchCheckpoint(history, timestamp);
-    return last.amount;
-  }
-
-  function _stakedTWAB(address valAddr, address staker, uint48 timestamp) internal view returns (uint256) {
-    StorageV1 storage $ = _getStorageV1();
-
-    TWABCheckpoint[] storage history = _validator($, valAddr).delegationLog[staker];
-    if (history.length == 0) return 0;
-
-    TWABCheckpoint memory last = _searchCheckpoint(history, timestamp);
-    return (last.amount * (timestamp - last.lastUpdate));
-  }
-
-  function _unstaking(address valAddr, address staker, uint48 timestamp) internal view returns (uint256, uint256) {
-    StorageV1 storage $ = _getStorageV1();
-    _assertValidatorExists($, valAddr);
-
-    LibRedeemQueue.Queue storage unstakeQueue = _validator($, valAddr).unstakeQueue;
-
-    uint256 offset = unstakeQueue.indexes[staker].offset;
-    (uint256 newOffset, bool found) = unstakeQueue.searchIndexOffset(staker, type(uint256).max, timestamp);
-
-    uint256 claimable = 0;
-    uint256 nonClaimable = 0;
-
-    if (found) {
-      for (uint256 i = offset; i < newOffset; i++) {
-        claimable += unstakeQueue.requestAmount(i);
-      }
-    }
-
-    for (uint256 i = found ? newOffset : offset; i < unstakeQueue.indexes[staker].size; i++) {
-      nonClaimable += unstakeQueue.requestAmount(i);
-    }
-
-    return (claimable, nonClaimable);
-  }
-
-  function _totalDelegation(address valAddr, uint48 timestamp) internal view returns (uint256) {
-    StorageV1 storage $ = _getStorageV1();
-    TWABCheckpoint[] storage history = _validator($, valAddr).totalDelegations;
-    if (history.length == 0) return 0;
-
-    return _searchCheckpoint(history, timestamp).amount;
-  }
-
-  function _totalDelegationTWAB(address valAddr, uint48 timestamp) internal view returns (uint256) {
-    StorageV1 storage $ = _getStorageV1();
-    TWABCheckpoint[] storage history = _validator($, valAddr).totalDelegations;
-    if (history.length == 0) return 0;
-
-    TWABCheckpoint memory last = _searchCheckpoint(history, timestamp);
-    return last.twab + (last.amount * (timestamp - last.lastUpdate));
-  }
-
-  function _stake(StorageV1 storage $, address valAddr, address recipient, uint256 amount, uint48 now_) internal {
-    Validator storage validator = _validator($, valAddr);
-    _pushTWABCheckpoint(validator.delegationLog[recipient], amount, now_, _addAmount);
-    _pushTWABCheckpoint(validator.totalDelegations, amount, now_, _addAmount);
-  }
-
-  function _unstake(StorageV1 storage $, address valAddr, address recipient, uint256 amount) internal {
-    uint48 now_ = $.epochFeeder.clock();
-
-    Validator storage validator = _validator($, valAddr);
-    _pushTWABCheckpoint(validator.delegationLog[recipient], amount, now_, _subAmount);
-    _pushTWABCheckpoint(validator.totalDelegations, amount, now_, _subAmount);
-  }
-
-  function _addAmount(uint256 x, uint256 y) internal pure returns (uint256) {
-    return x + y;
-  }
-
-  function _subAmount(uint256 x, uint256 y) internal pure returns (uint256) {
-    return x - y;
-  }
-
-  function _pushEpochCheckpoint(
-    EpochCheckpoint[] storage history,
-    uint256 amount,
-    uint96 epoch,
-    function (uint256, uint256) returns (uint256) nextAmountFunc
-  ) internal {
-    if (history.length == 0) {
-      // NOTE: it is impossible to push sub amount to the history
-      history.push(EpochCheckpoint({ epoch: epoch, amount: amount.toUint160() }));
-    } else {
-      EpochCheckpoint memory last = history[history.length - 1];
-      if (last.epoch != epoch) {
-        history.push(EpochCheckpoint({ epoch: epoch, amount: amount.toUint160() }));
-      } else {
-        history[history.length - 1].amount = nextAmountFunc(last.amount, amount).toUint160();
-      }
-    }
-  }
-
-  function _pushTWABCheckpoint(
-    TWABCheckpoint[] storage history,
-    uint256 amount,
-    uint48 now_,
-    function (uint256, uint256) returns (uint256) nextAmountFunc
-  ) internal {
-    if (history.length == 0) {
-      history.push(TWABCheckpoint({ twab: 0, amount: amount.toUint208(), lastUpdate: now_ }));
-    } else {
-      TWABCheckpoint memory last = history[history.length - 1];
-      history.push(
-        TWABCheckpoint({
-          twab: last.amount * (now_ - last.lastUpdate),
-          amount: nextAmountFunc(last.amount, amount).toUint208(),
-          lastUpdate: now_
-        })
-      );
-    }
   }
 
   function _setEpochFeeder(StorageV1 storage $, IEpochFeeder epochFeeder_) internal {

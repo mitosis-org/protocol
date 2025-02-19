@@ -12,6 +12,7 @@ import { IEpochFeeder } from '../../../src/interfaces/hub/core/IEpochFeeder.sol'
 import {
   IValidatorContributionFeed, ValidatorWeight
 } from '../../../src/interfaces/hub/core/IValidatorContributionFeed.sol';
+import { IValidatorDelegationManager } from '../../../src/interfaces/hub/core/IValidatorDelegationManager.sol';
 import { IValidatorManager } from '../../../src/interfaces/hub/core/IValidatorManager.sol';
 import { IValidatorRewardDistributor } from '../../../src/interfaces/hub/core/IValidatorRewardDistributor.sol';
 import { IGovMITO } from '../../../src/interfaces/hub/IGovMITO.sol';
@@ -28,7 +29,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
   MockContract govMITO;
   MockContract govMITOEmission;
-  MockContract manager;
+  MockContract validatorManager;
+  MockContract delegationManager;
   EpochFeeder epochFeed;
   MockContract contributionFeed;
   ValidatorRewardDistributor distributor;
@@ -40,12 +42,14 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     govMITOEmission = new MockContract();
 
-    manager = new MockContract();
-    manager.setStatic(IValidatorManager.validatorInfo.selector, true);
-    manager.setStatic(IValidatorManager.validatorInfoAt.selector, true);
-    manager.setStatic(IValidatorManager.stakedTWABAt.selector, true);
-    manager.setStatic(IValidatorManager.totalDelegationTWABAt.selector, true);
-    manager.setStatic(IValidatorManager.MAX_COMMISSION_RATE.selector, true);
+    validatorManager = new MockContract();
+    validatorManager.setStatic(IValidatorManager.validatorInfo.selector, true);
+    validatorManager.setStatic(IValidatorManager.validatorInfoAt.selector, true);
+    validatorManager.setStatic(IValidatorManager.MAX_COMMISSION_RATE.selector, true);
+
+    delegationManager = new MockContract();
+    delegationManager.setStatic(IValidatorDelegationManager.totalDelegationTWABAt.selector, true);
+    delegationManager.setStatic(IValidatorDelegationManager.stakedTWABAt.selector, true);
 
     contributionFeed = new MockContract();
     contributionFeed.setStatic(IValidatorContributionFeed.available.selector, true);
@@ -63,7 +67,14 @@ contract ValidatorRewardDistributorTest is Toolkit {
         address(new ValidatorRewardDistributor(address(govMITO))),
         abi.encodeCall(
           ValidatorRewardDistributor.initialize,
-          (owner, address(epochFeed), address(manager), address(contributionFeed), address(govMITOEmission))
+          (
+            owner,
+            address(epochFeed),
+            address(validatorManager),
+            address(delegationManager),
+            address(contributionFeed),
+            address(govMITOEmission)
+          )
         )
       )
     );
@@ -72,7 +83,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
   function test_init() public view {
     assertEq(distributor.owner(), owner);
     assertEq(address(distributor.epochFeeder()), address(epochFeed));
-    assertEq(address(distributor.validatorManager()), address(manager));
+    assertEq(address(distributor.validatorManager()), address(validatorManager));
+    assertEq(address(distributor.validatorDelegationManager()), address(delegationManager));
     assertEq(address(distributor.validatorContributionFeed()), address(contributionFeed));
     assertEq(address(distributor.govMITO()), address(govMITO));
     assertEq(address(distributor.govMITOEmission()), address(govMITOEmission));
