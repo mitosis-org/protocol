@@ -23,14 +23,14 @@ contract ValidatorManagerStorageV1 {
   using ERC7201Utils for string;
 
   struct TWABCheckpoint {
-    uint256 amount;
-    uint208 twab;
+    uint256 twab;
+    uint208 amount;
     uint48 lastUpdate;
   }
 
   struct EpochCheckpoint {
     uint96 epoch;
-    uint256 amount;
+    uint160 amount;
   }
 
   struct GlobalValidatorConfig {
@@ -395,7 +395,9 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     validator.operator = valAddr;
     validator.rewardRecipient = valAddr;
     validator.pubKey = valKey;
-    validator.rewardConfig.commissionRates.push(EpochCheckpoint({ epoch: epoch, amount: request.commissionRate }));
+    validator.rewardConfig.commissionRates.push(
+      EpochCheckpoint({ epoch: epoch, amount: request.commissionRate.toUint160() })
+    );
     validator.metadata = request.metadata;
     validator.unstakeQueue.redeemPeriod = $.globalValidatorConfig.unstakeCooldown;
 
@@ -502,7 +504,9 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
     uint96 epoch = $.epochFeeder.epoch();
     if (globalConfig.commissionRateUpdateDelay == 0) {
-      validator.rewardConfig.commissionRates.push(EpochCheckpoint({ epoch: epoch, amount: request.commissionRate }));
+      validator.rewardConfig.commissionRates.push(
+        EpochCheckpoint({ epoch: epoch, amount: request.commissionRate.toUint160() })
+      );
     } else {
       uint96 epochToUpdate = epoch + globalConfig.commissionRateUpdateDelay;
 
@@ -597,7 +601,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     if (history.length == 0) return 0;
 
     TWABCheckpoint memory last = _searchCheckpoint(history, timestamp);
-    return (last.amount * (timestamp - last.lastUpdate)).toUint208();
+    return (last.amount * (timestamp - last.lastUpdate));
   }
 
   function _unstaking(address valAddr, address staker, uint48 timestamp) internal view returns (uint256, uint256) {
@@ -639,7 +643,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     if (history.length == 0) return 0;
 
     TWABCheckpoint memory last = _searchCheckpoint(history, timestamp);
-    return last.twab + (last.amount * (timestamp - last.lastUpdate)).toUint208();
+    return last.twab + (last.amount * (timestamp - last.lastUpdate));
   }
 
   function _stake(StorageV1 storage $, address valAddr, address recipient, uint256 amount, uint48 now_) internal {
@@ -672,13 +676,13 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   ) internal {
     if (history.length == 0) {
       // NOTE: it is impossible to push sub amount to the history
-      history.push(EpochCheckpoint({ epoch: epoch, amount: amount }));
+      history.push(EpochCheckpoint({ epoch: epoch, amount: amount.toUint160() }));
     } else {
       EpochCheckpoint memory last = history[history.length - 1];
       if (last.epoch != epoch) {
-        history.push(EpochCheckpoint({ epoch: epoch, amount: amount }));
+        history.push(EpochCheckpoint({ epoch: epoch, amount: amount.toUint160() }));
       } else {
-        history[history.length - 1].amount = nextAmountFunc(last.amount, amount);
+        history[history.length - 1].amount = nextAmountFunc(last.amount, amount).toUint160();
       }
     }
   }
@@ -690,13 +694,13 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     function (uint256, uint256) returns (uint256) nextAmountFunc
   ) internal {
     if (history.length == 0) {
-      history.push(TWABCheckpoint({ amount: amount, twab: 0, lastUpdate: now_ }));
+      history.push(TWABCheckpoint({ twab: 0, amount: amount.toUint208(), lastUpdate: now_ }));
     } else {
       TWABCheckpoint memory last = history[history.length - 1];
       history.push(
         TWABCheckpoint({
-          amount: nextAmountFunc(last.amount, amount),
-          twab: (last.amount * (now_ - last.lastUpdate)).toUint208(),
+          twab: last.amount * (now_ - last.lastUpdate),
+          amount: nextAmountFunc(last.amount, amount).toUint208(),
           lastUpdate: now_
         })
       );
@@ -730,7 +734,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
     uint96 epoch = $.epochFeeder.epoch();
     $.globalValidatorConfig.minimumCommissionRates.push(
-      EpochCheckpoint({ epoch: epoch, amount: request.minimumCommissionRate })
+      EpochCheckpoint({ epoch: epoch, amount: request.minimumCommissionRate.toUint160() })
     );
     $.globalValidatorConfig.commissionRateUpdateDelay = request.commissionRateUpdateDelay;
     $.globalValidatorConfig.initialValidatorDeposit = request.initialValidatorDeposit;
