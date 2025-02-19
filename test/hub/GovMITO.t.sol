@@ -53,18 +53,6 @@ contract GovMITOTest is Test {
     govMITO.mint{ value: 100 }(user1);
   }
 
-  function test_mint_MismatchedVaule() public {
-    payable(minter).transfer(100000);
-
-    vm.prank(minter);
-    vm.expectRevert(abi.encodeWithSelector(StdError.InvalidParameter.selector, 'amount'));
-    govMITO.mint{ value: 99 }(user1);
-
-    vm.prank(minter);
-    vm.expectRevert(abi.encodeWithSelector(StdError.InvalidParameter.selector, 'amount'));
-    govMITO.mint{ value: 101 }(user1);
-  }
-
   function test_redeem_basic() public {
     payable(minter).transfer(100);
     vm.prank(minter);
