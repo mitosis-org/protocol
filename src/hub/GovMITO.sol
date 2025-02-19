@@ -102,10 +102,10 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  function mint(address to, uint256 amount) external payable onlyMinter {
-    require(msg.value == amount, StdError.InvalidParameter('amount'));
-    _mint(to, amount);
-    emit Minted(to, amount);
+  function mint(address to) external payable onlyMinter {
+    require(msg.value > 0, StdError.ZeroAmount());
+    _mint(to, msg.value);
+    emit Minted(to, msg.value);
   }
 
   function requestRedeem(address receiver, uint256 amount) external returns (uint256 reqId) {
