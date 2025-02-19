@@ -9,13 +9,13 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
-import { IValidatorDelegationManager } from '../../interfaces/hub/core/IValidatorDelegationManager.sol';
+import { IValidatorStaking } from '../../interfaces/hub/core/IValidatorStaking.sol';
 import { IValidatorManager } from '../../interfaces/hub/core/IValidatorManager.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-contract ValidatorDelegationManagerStorageV1 {
+contract ValidatorStakingStorageV1 {
   using ERC7201Utils for string;
 
   struct TWABCheckpoint {
@@ -36,7 +36,7 @@ contract ValidatorDelegationManagerStorageV1 {
     mapping(address valAddr => mapping(address staker => TWABCheckpoint[])) delegationLogs;
   }
 
-  string private constant _NAMESPACE = 'mitosis.storage.ValidatorDelegationManagerStorage.v1';
+  string private constant _NAMESPACE = 'mitosis.storage.ValidatorStakingStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
@@ -48,12 +48,7 @@ contract ValidatorDelegationManagerStorageV1 {
   }
 }
 
-contract ValidatorDelegationManager is
-  IValidatorDelegationManager,
-  ValidatorDelegationManagerStorageV1,
-  Ownable2StepUpgradeable,
-  UUPSUpgradeable
-{
+contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownable2StepUpgradeable, UUPSUpgradeable {
   using SafeCast for uint256;
   using LibRedeemQueue for LibRedeemQueue.Queue;
 
@@ -76,43 +71,43 @@ contract ValidatorDelegationManager is
     _setRedelegationCooldown($, redelegationCooldown_);
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function epochFeeder() external view returns (IEpochFeeder) {
     return _epochFeeder;
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function registry() external view returns (IValidatorManager) {
     return _manager;
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function unstakeCooldown() external view returns (uint48) {
     return _getStorageV1().unstakeCooldown;
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function redelegationCooldown() external view returns (uint48) {
     return _getStorageV1().redelegationCooldown;
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function totalStaked() external view returns (uint256) {
     return _getStorageV1().totalStaked;
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function totalUnstaking() external view returns (uint256) {
     return _getStorageV1().totalUnstaking;
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function staked(address valAddr, address staker) external view returns (uint256) {
     require(staker != address(0), StdError.InvalidParameter('staker'));
     return _staked(_getStorageV1(), valAddr, staker, _epochFeeder.clock());
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function stakedAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
     require(staker != address(0), StdError.InvalidParameter('staker'));
     require(timestamp > 0, StdError.InvalidParameter('timestamp'));
@@ -120,60 +115,60 @@ contract ValidatorDelegationManager is
     return _staked($, valAddr, staker, timestamp);
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function stakedTWAB(address valAddr, address staker) external view returns (uint256) {
     require(staker != address(0), StdError.InvalidParameter('staker'));
     return _stakedTWAB(_getStorageV1(), valAddr, staker, _epochFeeder.clock());
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function stakedTWABAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
     require(staker != address(0), StdError.InvalidParameter('staker'));
     require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _stakedTWAB(_getStorageV1(), valAddr, staker, timestamp);
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function unstaking(address valAddr, address staker) external view returns (uint256, uint256) {
     require(staker != address(0), StdError.InvalidParameter('staker'));
     return _unstaking(_getStorageV1(), valAddr, staker, _epochFeeder.clock());
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function unstakingAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256) {
     require(staker != address(0), StdError.InvalidParameter('staker'));
     require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _unstaking(_getStorageV1(), valAddr, staker, timestamp);
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function totalDelegation(address valAddr) external view returns (uint256) {
     return _totalDelegation(_getStorageV1(), valAddr, _epochFeeder.clock());
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function totalDelegationAt(address valAddr, uint48 timestamp) external view returns (uint256) {
     require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _totalDelegation(_getStorageV1(), valAddr, timestamp);
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function totalDelegationTWAB(address valAddr) external view returns (uint256) {
     return _totalDelegationTWAB(_getStorageV1(), valAddr, _epochFeeder.clock());
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function totalDelegationTWABAt(address valAddr, uint48 timestamp) external view returns (uint256) {
     require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _totalDelegationTWAB(_getStorageV1(), valAddr, timestamp);
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function lastRedelegationTime(address staker) external view returns (uint256) {
     return _getStorageV1().lastRedelegationTime[staker];
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function stake(address valAddr, address recipient) external payable {
     require(msg.value > 0, StdError.ZeroAmount());
     require(recipient != address(0), StdError.InvalidParameter('recipient'));
@@ -188,7 +183,7 @@ contract ValidatorDelegationManager is
     emit Staked(valAddr, _msgSender(), recipient, msg.value);
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256) {
     require(amount > 0, StdError.ZeroAmount());
     require(_manager.isValidator(valAddr), NotValidator());
@@ -212,7 +207,7 @@ contract ValidatorDelegationManager is
     return reqId;
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function claimUnstake(address valAddr, address receiver) external returns (uint256) {
     require(_manager.isValidator(valAddr), NotValidator());
 
@@ -235,7 +230,7 @@ contract ValidatorDelegationManager is
     return claimed;
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external {
     require(amount > 0, StdError.ZeroAmount());
     require(fromValAddr != toValAddr, RedelegateToSameValidator());
@@ -254,12 +249,12 @@ contract ValidatorDelegationManager is
     emit Redelegated(fromValAddr, toValAddr, _msgSender(), amount);
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function setUnstakeCooldown(uint48 unstakeCooldown_) external onlyOwner {
     _setUnstakeCooldown(_getStorageV1(), unstakeCooldown_);
   }
 
-  /// @inheritdoc IValidatorDelegationManager
+  /// @inheritdoc IValidatorStaking
   function setRedelegationCooldown(uint48 redelegationCooldown_) external onlyOwner {
     _setRedelegationCooldown(_getStorageV1(), redelegationCooldown_);
   }

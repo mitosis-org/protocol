@@ -4,10 +4,10 @@ pragma solidity ^0.8.28;
 import { IEpochFeeder } from './IEpochFeeder.sol';
 import { IValidatorManager } from './IValidatorManager.sol';
 
-/// @title IValidatorDelegationManager
-/// @notice Interface for the ValidatorDelegationManager contract.
+/// @title IValidatorStaking
+/// @notice Interface for the ValidatorStaking contract.
 /// @dev This interface defines the actions that users and validators can perform.
-interface IValidatorDelegationManager {
+interface IValidatorStaking {
   event Staked(address indexed val, address indexed who, address indexed to, uint256 amount);
   event UnstakeRequested(address indexed val, address indexed who, address indexed to, uint256 amount, uint256 reqId);
   event UnstakeClaimed(address indexed val, address indexed who, uint256 amount);
