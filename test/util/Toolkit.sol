@@ -7,6 +7,7 @@ import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 
+import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 import { ERC1967Utils } from '@oz-v5/proxy/ERC1967/ERC1967Utils.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
@@ -15,13 +16,6 @@ import { StdError } from '../../src/lib/StdError.sol';
 
 contract Toolkit is Test {
   using SafeCast for uint256;
-
-  address internal _defaultProxyAdmin = makeAddr('defaultProxyAdmin');
-  ERC1967Factory internal _factory;
-
-  constructor() {
-    _factory = new ERC1967Factory();
-  }
 
   // erc1967
 
@@ -40,15 +34,11 @@ contract Toolkit is Test {
   // proxy
 
   function _proxy(address impl) internal returns (address) {
-    return _factory.deploy(impl, _defaultProxyAdmin);
+    return address(new ERC1967Proxy(impl, bytes('')));
   }
 
   function _proxy(address impl, bytes memory data) internal returns (address) {
-    return _factory.deployAndCall(impl, _defaultProxyAdmin, data);
-  }
-
-  function _proxy(address impl, bytes memory data, address admin) internal returns (address) {
-    return _factory.deployAndCall(impl, admin, data);
+    return address(new ERC1967Proxy(impl, data));
   }
 
   // time
