@@ -96,12 +96,12 @@ contract ValidatorContributionFeed is
 
   /// @inheritdoc IValidatorContributionFeed
   function weightCount(uint96 epoch) external view returns (uint256) {
-    return _getStorageV1().rewards[epoch].weights.length;
+    return _getStorageV1().rewards[epoch].weights.length - 1;
   }
 
   /// @inheritdoc IValidatorContributionFeed
   function weightAt(uint96 epoch, uint256 index) external view returns (ValidatorWeight memory) {
-    return _getStorageV1().rewards[epoch].weights[index];
+    return _getStorageV1().rewards[epoch].weights[index + 1];
   }
 
   /// @inheritdoc IValidatorContributionFeed
@@ -112,7 +112,7 @@ contract ValidatorContributionFeed is
     require(reward.status == ReportStatus.FINALIZED, StdError.Unauthorized());
 
     uint256 index = reward.weightByValAddr[valAddr];
-    if (index == 0 || reward.weights.length == 0 || reward.weights[0].addr != valAddr) {
+    if (index == 0) {
       ValidatorWeight memory empty;
       return (empty, false);
     }
@@ -148,6 +148,8 @@ contract ValidatorContributionFeed is
     reward.status = ReportStatus.INITIALIZED;
     reward.totalReward = request.totalReward;
     reward.totalWeight = request.totalWeight;
+    // 0 index is reserved for empty slot
+    reward.weights.push(ValidatorWeight({ addr: address(0), weight: 0 }));
 
     emit ReportInitialized(epoch, request.totalReward, request.totalWeight, request.numOfValidators);
   }
@@ -165,10 +167,7 @@ contract ValidatorContributionFeed is
     for (uint256 i = 0; i < weights.length; i++) {
       ValidatorWeight memory weight = weights[i];
       uint256 index = reward.weightByValAddr[weight.addr];
-
-      require(
-        index == 0 || reward.weights.length == 0 || reward.weights[index].addr == weight.addr, InvalidWeightAddress()
-      );
+      require(index == 0, InvalidWeightAddress());
 
       reward.weights.push(weight);
       reward.weightByValAddr[weight.addr] = i;
@@ -193,7 +192,7 @@ contract ValidatorContributionFeed is
 
     ReportChecker memory checker = $.checker;
     require(checker.totalWeight == reward.totalWeight, InvalidTotalWeight());
-    require(checker.numOfValidators == reward.weights.length, InvalidValidatorCount());
+    require(checker.numOfValidators == reward.weights.length - 1, InvalidValidatorCount());
 
     reward.status = ReportStatus.FINALIZED;
 

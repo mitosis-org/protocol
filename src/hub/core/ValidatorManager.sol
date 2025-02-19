@@ -172,8 +172,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   /// @inheritdoc IValidatorManager
   function validatorAt(uint256 index) external view returns (address) {
     StorageV1 storage $ = _getStorageV1();
-    require(index > 0 && index < $.validatorIndexes.length, StdError.InvalidParameter('index'));
-    return $.validators[$.validatorIndexes[index]].validator;
+    return $.validators[$.validatorIndexes[index + 1]].validator;
   }
 
   /// @inheritdoc IValidatorManager
