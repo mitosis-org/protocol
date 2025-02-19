@@ -1005,12 +1005,19 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       0 <= request.minimumCommissionRate && request.minimumCommissionRate <= MAX_COMMISSION_RATE,
       StdError.InvalidParameter('minimumCommissionRate')
     );
+    require(request.commissionRateUpdateDelay > 0, StdError.InvalidParameter('commissionRateUpdateDelay'));
+    require(request.initialValidatorDeposit >= 0, StdError.InvalidParameter('initialValidatorDeposit'));
+    require(request.unstakeCooldown >= 0, StdError.InvalidParameter('unstakeCooldown'));
+    require(request.collateralWithdrawalDelay >= 0, StdError.InvalidParameter('collateralWithdrawalDelay'));
 
     uint96 epoch = $.epochFeeder.epoch();
     $.globalValidatorConfig.minimumCommissionRates.push(
       EpochCheckpoint({ epoch: epoch, amount: request.minimumCommissionRate })
     );
     $.globalValidatorConfig.commissionRateUpdateDelay = request.commissionRateUpdateDelay;
+    $.globalValidatorConfig.initialValidatorDeposit = request.initialValidatorDeposit;
+    $.globalValidatorConfig.unstakeCooldown = request.unstakeCooldown;
+    $.globalValidatorConfig.collateralWithdrawalDelay = request.collateralWithdrawalDelay;
 
     emit GlobalValidatorConfigUpdated();
   }
