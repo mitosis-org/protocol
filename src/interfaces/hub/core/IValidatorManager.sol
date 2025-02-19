@@ -101,6 +101,9 @@ interface IValidatorManager {
   function stakedValidators(address staker) external view returns (address[] memory);
   function isStakedValidator(address valAddr, address staker) external view returns (bool);
 
+  function totalStaked() external view returns (uint256);
+  function totalUnstaking() external view returns (uint256);
+
   function staked(address valAddr, address staker) external view returns (uint256);
   function staked(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
   function stakedTWAB(address valAddr, address staker) external view returns (uint256);

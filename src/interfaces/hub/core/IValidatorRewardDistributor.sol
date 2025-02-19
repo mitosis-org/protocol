@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { IGovMITOCommission } from '../IGovMITOCommission.sol';
 import { IEpochFeeder } from './IEpochFeeder.sol';
 import { IValidatorContributionFeed, IValidatorContributionFeedNotifier } from './IValidatorContributionFeed.sol';
 import { IValidatorManager } from './IValidatorManager.sol';
-import { IGovMITOCommission } from '../IGovMITOCommission.sol';
 
 /// @title IValidatorRewardDistributor
 /// @notice Interface for the ValidatorRewardDistributor contract that handles distribution of validator rewards
