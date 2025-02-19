@@ -6,7 +6,7 @@ import { IEpochFeeder } from './IEpochFeeder.sol';
 
 /// @title IValidatorManager
 /// @notice Interface for the ValidatorManager contract.
-/// @dev This interface defines the actions that users and validators can perform.
+/// @dev This interface defines the actions that operators can perform.
 ///
 /// User Actions
 /// 1. Staking (Delegate)
