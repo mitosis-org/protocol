@@ -644,7 +644,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   function _stake(StorageV1 storage $, address valAddr, address recipient, uint256 amount, uint48 now_) internal {
     Validator storage validator = _validator($, valAddr);
-
     _pushTWABCheckpoint(validator.delegationLog[recipient], amount, now_, _addAmount);
     _pushTWABCheckpoint(validator.totalDelegations, amount, now_, _addAmount);
   }
