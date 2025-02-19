@@ -23,6 +23,7 @@ interface IValidatorManager {
   struct GlobalValidatorConfigResponse {
     uint256 initialValidatorDeposit;
     uint256 unstakeCooldown;
+    uint256 redelegationCooldown;
     uint256 collateralWithdrawalDelay;
     uint256 minimumCommissionRate;
     uint96 commissionRateUpdateDelay;
@@ -56,6 +57,7 @@ interface IValidatorManager {
   struct SetGlobalValidatorConfigRequest {
     uint256 initialValidatorDeposit; // used on creation of the validator
     uint256 unstakeCooldown; // in seconds
+    uint256 redelegationCooldown; // in seconds
     uint256 collateralWithdrawalDelay; // in seconds
     uint256 minimumCommissionRate; // bp ex) 10000 = 100%
     uint96 commissionRateUpdateDelay; // in epoch
@@ -100,9 +102,6 @@ interface IValidatorManager {
   function validatorInfo(address valAddr) external view returns (ValidatorInfoResponse memory);
   function validatorInfoAt(uint96 epoch, address valAddr) external view returns (ValidatorInfoResponse memory);
 
-  function stakedValidators(address staker) external view returns (address[] memory);
-  function isStakedValidator(address valAddr, address staker) external view returns (bool);
-
   function totalStaked() external view returns (uint256);
   function totalUnstaking() external view returns (uint256);
 
@@ -114,18 +113,12 @@ interface IValidatorManager {
   function unstaking(address valAddr, address staker) external view returns (uint256, uint256);
   function unstakingAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256);
 
-  function redelegations(address toValAddr, address staker) external view returns (RedelegationsResponse[] memory);
-  function redelegationsAt(address toValAddr, address staker, uint96 epoch)
-    external
-    view
-    returns (RedelegationsResponse[] memory);
-
   function totalDelegation(address valAddr) external view returns (uint256);
   function totalDelegationAt(address valAddr, uint48 timestamp) external view returns (uint256);
   function totalDelegationTWAB(address valAddr) external view returns (uint256);
   function totalDelegationTWABAt(address valAddr, uint48 timestamp) external view returns (uint256);
-  function totalPendingRedelegation(address valAddr) external view returns (uint256);
-  function totalPendingRedelegationAt(address valAddr, uint96 epoch) external view returns (uint256);
+
+  function lastRedelegationTime(address staker) external view returns (uint256);
 
   // ========== USER ACTIONS ========== //
 
@@ -133,7 +126,6 @@ interface IValidatorManager {
   function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256);
   function claimUnstake(address valAddr, address receiver) external returns (uint256);
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external;
-  function cancelRedelegation(address fromValAddr, address toValAddr, uint256 amount) external;
 
   // ========== VALIDATOR ACTIONS ========== //
 

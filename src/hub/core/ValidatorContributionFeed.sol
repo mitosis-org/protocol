@@ -11,7 +11,6 @@ import { EnumerableMap } from '@oz-v5/utils/structs/EnumerableMap.sol';
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
 import {
   IValidatorContributionFeed,
-  IValidatorContributionFeedNotifier,
   ValidatorWeight,
   ReportStatus
 } from '../../interfaces/hub/core/IValidatorContributionFeed.sol';
@@ -28,15 +27,13 @@ contract ValidatorContributionFeedStorageV1 {
 
   struct Reward {
     ReportStatus status;
-    uint128 totalReward;
-    uint128 totalWeight;
+    uint248 totalWeight;
     ValidatorWeight[] weights;
     mapping(address valAddr => uint256 index) weightByValAddr;
   }
 
   struct StorageV1 {
     IEpochFeeder epochFeeder;
-    IValidatorContributionFeedNotifier notifier;
     uint96 nextEpoch;
     ReportChecker checker;
     mapping(uint96 epoch => Reward reward) rewards;
@@ -72,8 +69,6 @@ contract ValidatorContributionFeed is
   }
 
   function initialize(address owner_, address epochFeeder_) external initializer {
-    require(owner_ != address(0), StdError.ZeroAddress('owner'));
-
     __UUPSUpgradeable_init();
     __Ownable_init(owner_);
     __Ownable2Step_init();
@@ -132,16 +127,14 @@ contract ValidatorContributionFeed is
     require(reward.status == ReportStatus.FINALIZED, EpochNotFinalized());
 
     return Summary({
-      totalReward: reward.totalReward,
-      totalWeight: reward.totalWeight,
-      numOfValidators: reward.weights.length.toUint16()
+      totalWeight: uint256(reward.totalWeight).toUint128(),
+      numOfValidators: reward.weights.length.toUint128()
     });
   }
 
   /// @inheritdoc IValidatorContributionFeed
   function initializeReport(InitReportRequest calldata request) external onlyRole(FEEDER_ROLE) {
     StorageV1 storage $ = _getStorageV1();
-    require(address($.notifier) != address(0), NotifierNotSet());
 
     uint96 epoch = $.nextEpoch;
 
@@ -151,7 +144,6 @@ contract ValidatorContributionFeed is
     require(reward.status == ReportStatus.NONE, InvalidReportStatus());
 
     reward.status = ReportStatus.INITIALIZED;
-    reward.totalReward = request.totalReward;
     reward.totalWeight = request.totalWeight;
     // 0 index is reserved for empty slot
     {
@@ -159,7 +151,7 @@ contract ValidatorContributionFeed is
       reward.weights.push(empty);
     }
 
-    emit ReportInitialized(epoch, request.totalReward, request.totalWeight, request.numOfValidators);
+    emit ReportInitialized(epoch, request.totalWeight, request.numOfValidators);
   }
 
   /// @inheritdoc IValidatorContributionFeed
@@ -207,8 +199,6 @@ contract ValidatorContributionFeed is
     $.nextEpoch++;
     delete $.checker;
 
-    $.notifier.notifyReportFinalized(epoch);
-
     emit ReportFinalized(epoch);
   }
 
@@ -216,18 +206,9 @@ contract ValidatorContributionFeed is
     _setEpochFeeder(_getStorageV1(), address(epochFeeder_));
   }
 
-  function setNotifier(IValidatorContributionFeedNotifier notifier) external onlyOwner {
-    _setNotifier(_getStorageV1(), address(notifier));
-  }
-
   function _setEpochFeeder(StorageV1 storage $, address epochFeeder_) internal {
     require(epochFeeder_.code.length > 0, StdError.InvalidParameter('epochFeeder'));
     $.epochFeeder = IEpochFeeder(epochFeeder_);
-  }
-
-  function _setNotifier(StorageV1 storage $, address notifier_) internal {
-    require(notifier_.code.length > 0, StdError.InvalidParameter('notifier'));
-    $.notifier = IValidatorContributionFeedNotifier(notifier_);
   }
 
   // ================== UUPS ================== //

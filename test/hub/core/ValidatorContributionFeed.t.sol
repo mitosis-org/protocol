@@ -12,9 +12,7 @@ import { LibString } from '@solady/utils/LibString.sol';
 import { ValidatorContributionFeed } from '../../../src/hub/core/ValidatorContributionFeed.sol';
 import { IEpochFeeder } from '../../../src/interfaces/hub/core/IEpochFeeder.sol';
 import {
-  IValidatorContributionFeed,
-  IValidatorContributionFeedNotifier,
-  ValidatorWeight
+  IValidatorContributionFeed, ValidatorWeight
 } from '../../../src/interfaces/hub/core/IValidatorContributionFeed.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
@@ -47,12 +45,10 @@ contract ValidatorContributionFeedTest is Toolkit {
   address feeder = makeAddr('feeder');
 
   MockEpochFeeder epochFeeder;
-  MockNotifier notifier;
   ValidatorContributionFeed feed;
 
   function setUp() public {
     epochFeeder = new MockEpochFeeder();
-    notifier = new MockNotifier();
 
     feed = ValidatorContributionFeed(
       address(
@@ -76,13 +72,8 @@ contract ValidatorContributionFeedTest is Toolkit {
   function test_report() public {
     epochFeeder.setEpoch(2);
 
-    vm.prank(owner);
-    feed.setNotifier(IValidatorContributionFeedNotifier(address(notifier)));
-
     vm.startPrank(feeder);
-    feed.initializeReport(
-      IValidatorContributionFeed.InitReportRequest({ totalReward: 300, totalWeight: 300, numOfValidators: 300 })
-    );
+    feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300, numOfValidators: 300 }));
 
     for (uint256 i = 0; i < 6; i++) {
       ValidatorWeight[] memory weights = new ValidatorWeight[](50);
@@ -99,7 +90,5 @@ contract ValidatorContributionFeedTest is Toolkit {
 
     feed.finalizeReport();
     vm.stopPrank();
-
-    assertEq(notifier.callCount(), 1);
   }
 }

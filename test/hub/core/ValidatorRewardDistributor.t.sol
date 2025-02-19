@@ -7,12 +7,10 @@ import { LibString } from '@solady/utils/LibString.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 import { ValidatorRewardDistributor } from '../../../src/hub/core/ValidatorRewardDistributor.sol';
 import { IGovMITO } from '../../../src/interfaces/hub/IGovMITO.sol';
-import { IGovMITOCommission } from '../../../src/interfaces/hub/IGovMITOCommission.sol';
+import { IGovMITOEmission } from '../../../src/interfaces/hub/IGovMITOEmission.sol';
 import { IValidatorManager } from '../../../src/interfaces/hub/core/IValidatorManager.sol';
 import {
-  IValidatorContributionFeed,
-  IValidatorContributionFeedNotifier,
-  ValidatorWeight
+  IValidatorContributionFeed, ValidatorWeight
 } from '../../../src/interfaces/hub/core/IValidatorContributionFeed.sol';
 import { IValidatorRewardDistributor } from '../../../src/interfaces/hub/core/IValidatorRewardDistributor.sol';
 import { EpochFeeder } from '../../../src/hub/core/EpochFeeder.sol';
@@ -28,7 +26,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   uint256 epochInterval = 100 seconds;
 
   MockContract govMITO;
-  MockContract govMITOCommission;
+  MockContract GovMITOEmission;
   MockContract manager;
   EpochFeeder epochFeed;
   MockContract contributionFeed;
@@ -39,7 +37,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     govMITO.setStatic(IERC20.totalSupply.selector, true);
     govMITO.setStatic(IERC20.balanceOf.selector, true);
 
-    govMITOCommission = new MockContract();
+    GovMITOEmission = new MockContract();
 
     manager = new MockContract();
     manager.setStatic(IValidatorManager.validatorInfo.selector, true);
@@ -64,7 +62,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
         address(new ValidatorRewardDistributor(address(govMITO))),
         abi.encodeCall(
           ValidatorRewardDistributor.initialize,
-          (owner, address(epochFeed), address(manager), address(contributionFeed), address(govMITOCommission))
+          (owner, address(epochFeed), address(manager), address(contributionFeed), address(GovMITOEmission))
         )
       )
     );
@@ -76,7 +74,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(address(distributor.validatorManager()), address(manager));
     assertEq(address(distributor.validatorContributionFeed()), address(contributionFeed));
     assertEq(address(distributor.govMITO()), address(govMITO));
-    assertEq(address(distributor.govMITOCommission()), address(govMITOCommission));
+    assertEq(address(distributor.govMITOEmission()), address(GovMITOEmission));
   }
 
   // TODO(eddy): cover all the functions

@@ -2,14 +2,14 @@
 pragma solidity ^0.8.28;
 
 import { IGovMITO } from '../IGovMITO.sol';
-import { IGovMITOCommission } from '../IGovMITOCommission.sol';
+import { IGovMITOEmission } from '../IGovMITOEmission.sol';
 import { IEpochFeeder } from './IEpochFeeder.sol';
-import { IValidatorContributionFeed, IValidatorContributionFeedNotifier } from './IValidatorContributionFeed.sol';
+import { IValidatorContributionFeed } from './IValidatorContributionFeed.sol';
 import { IValidatorManager } from './IValidatorManager.sol';
 
 /// @title IValidatorRewardDistributor
 /// @notice Interface for the ValidatorRewardDistributor contract that handles distribution of validator rewards
-interface IValidatorRewardDistributor is IValidatorContributionFeedNotifier {
+interface IValidatorRewardDistributor {
   // Events
   event RewardsReported(address indexed valAddr, uint256 amount, uint96 epoch);
   event RewardsClaimed(
@@ -39,8 +39,8 @@ interface IValidatorRewardDistributor is IValidatorContributionFeedNotifier {
   /// @notice Returns the validator contribution feed contract
   function validatorContributionFeed() external view returns (IValidatorContributionFeed);
 
-  /// @notice Returns the gov MITO commission contract
-  function govMITOCommission() external view returns (IGovMITOCommission);
+  /// @notice Returns the gov MITO emission contract
+  function govMITOEmission() external view returns (IGovMITOEmission);
 
   /// @notice Returns the last claimed commission epoch for a validator
   /// @param valAddr The validator address to check commission for

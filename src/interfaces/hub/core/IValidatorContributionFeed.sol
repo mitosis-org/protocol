@@ -16,31 +16,24 @@ enum ReportStatus {
   FINALIZED
 }
 
-interface IValidatorContributionFeedNotifier {
-  function notifyReportFinalized(uint96 epoch) external;
-}
-
 interface IValidatorContributionFeed {
   struct ReportRequest {
-    uint128 totalReward;
     uint128 totalWeight;
     ValidatorWeight[] weights;
   }
 
   struct InitReportRequest {
-    uint128 totalReward;
     uint128 totalWeight;
-    uint16 numOfValidators;
+    uint128 numOfValidators;
   }
 
   struct Summary {
-    uint128 totalReward;
     uint128 totalWeight;
-    uint16 numOfValidators;
+    uint128 numOfValidators;
   }
 
-  event ReportInitialized(uint96 epoch, uint128 totalReward, uint128 totalWeight, uint16 numOfValidators);
-  event WeightsPushed(uint96 epoch, uint128 totalWeight, uint16 numOfValidators);
+  event ReportInitialized(uint96 epoch, uint128 totalWeight, uint128 numOfValidators);
+  event WeightsPushed(uint96 epoch, uint128 totalWeight, uint128 numOfValidators);
   event ReportFinalized(uint96 epoch);
 
   error InvalidReportStatus();
@@ -48,7 +41,6 @@ interface IValidatorContributionFeed {
   error InvalidTotalWeight();
   error InvalidValidatorCount();
   error EpochNotFinalized();
-  error NotifierNotSet();
 
   function epochFeeder() external view returns (IEpochFeeder);
 

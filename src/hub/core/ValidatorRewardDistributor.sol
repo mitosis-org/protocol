@@ -9,15 +9,11 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
-import {
-  IValidatorContributionFeed,
-  IValidatorContributionFeedNotifier,
-  ValidatorWeight
-} from '../../interfaces/hub/core/IValidatorContributionFeed.sol';
+import { IValidatorContributionFeed, ValidatorWeight } from '../../interfaces/hub/core/IValidatorContributionFeed.sol';
 import { IValidatorManager } from '../../interfaces/hub/core/IValidatorManager.sol';
 import { IValidatorRewardDistributor } from '../../interfaces/hub/core/IValidatorRewardDistributor.sol';
 import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
-import { IGovMITOCommission } from '../../interfaces/hub/IGovMITOCommission.sol';
+import { IGovMITOEmission } from '../../interfaces/hub/IGovMITOEmission.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
@@ -35,7 +31,7 @@ contract ValidatorRewardDistributorStorageV1 {
     IEpochFeeder epochFeeder;
     IValidatorManager validatorManager;
     IValidatorContributionFeed validatorContributionFeed;
-    IGovMITOCommission govMITOCommission;
+    IGovMITOEmission govMITOEmission;
     LastClaimedEpoch lastClaimedEpoch;
   }
 
@@ -80,7 +76,7 @@ contract ValidatorRewardDistributor is
     address epochFeeder_,
     address validatorManager_,
     address validatorContributionFeed_,
-    address govMITOCommission_
+    address govMITOEmission_
   ) external initializer {
     __UUPSUpgradeable_init();
     __Ownable_init(initialOwner_);
@@ -89,7 +85,7 @@ contract ValidatorRewardDistributor is
     _setEpochFeeder(epochFeeder_);
     _setValidatorManager(validatorManager_);
     _setValidatorContributionFeed(validatorContributionFeed_);
-    _setGovMITOCommission(govMITOCommission_);
+    _setGovMITOEmission(govMITOEmission_);
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -113,8 +109,8 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function govMITOCommission() external view returns (IGovMITOCommission) {
-    return _getStorageV1().govMITOCommission;
+  function govMITOEmission() external view returns (IGovMITOEmission) {
+    return _getStorageV1().govMITOEmission;
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -141,39 +137,51 @@ contract ValidatorRewardDistributor is
   function claimRewards(address staker, address valAddr) external returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
-    (uint256 claimable, uint96 nextEpoch) = _claimableRewards($, valAddr, staker, MAX_CLAIM_EPOCHS);
-    require(claimable > 0, NoRewardsToClaim());
+    (uint96 start, uint96 end) =
+      _claimRange($.lastClaimedEpoch.staker[staker][valAddr], $.epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
+    if (start == end) return 0;
 
-    $.lastClaimedEpoch.staker[staker][valAddr] = nextEpoch;
+    uint256 totalClaimed;
 
-    IGovMITO(payable(_govMITO)).safeTransfer(staker, claimable);
-    return claimable;
+    for (uint96 epoch = start; epoch < end; epoch++) {
+      if (!$.validatorContributionFeed.available(epoch)) break;
+      uint256 claimable = _claimRewardForEpoch($, valAddr, staker, epoch);
+
+      totalClaimed += claimable;
+
+      // NOTE(eddy): reentrancy guard?
+      $.govMITOEmission.requestValidatorReward(epoch, staker, claimable);
+    }
+
+    $.lastClaimedEpoch.staker[staker][valAddr] = end;
+
+    return totalClaimed;
   }
 
   /// @inheritdoc IValidatorRewardDistributor
   function claimCommission(address valAddr) external returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
-    // already asserts that valAddr is actually a validator
-    IValidatorManager.ValidatorInfoResponse memory validatorInfo = $.validatorManager.validatorInfo(valAddr);
+    (uint96 start, uint96 end) =
+      _claimRange($.lastClaimedEpoch.commission[valAddr], $.epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
+    if (start == end) return 0;
 
-    (uint256 commission, uint96 nextEpoch) = _claimableCommission($, valAddr, MAX_CLAIM_EPOCHS);
-    require(commission > 0, NoCommissionToClaim());
+    address recipient = $.validatorManager.validatorInfo(valAddr).rewardRecipient;
+    uint256 totalClaimed;
 
-    $.lastClaimedEpoch.commission[valAddr] = nextEpoch;
+    for (uint96 epoch = start; epoch < end; epoch++) {
+      if (!$.validatorContributionFeed.available(epoch)) break;
+      (uint256 claimable,) = _validatorRewardForEpoch($, valAddr, epoch);
 
-    IGovMITO(payable(_govMITO)).safeTransfer(validatorInfo.rewardRecipient, commission);
-    return commission;
-  }
+      totalClaimed += claimable;
 
-  function notifyReportFinalized(uint96 epoch) external {
-    StorageV1 storage $ = _getStorageV1();
-    IValidatorContributionFeed feed = $.validatorContributionFeed;
-    require(address(feed) == _msgSender(), StdError.Unauthorized());
+      // NOTE(eddy): reentrancy guard?
+      $.govMITOEmission.requestValidatorReward(epoch, recipient, claimable);
+    }
 
-    IValidatorContributionFeed.Summary memory summary = feed.summary(epoch);
+    $.lastClaimedEpoch.commission[valAddr] = end;
 
-    $.govMITOCommission.request(summary.totalReward);
+    return totalClaimed;
   }
 
   /// @notice Sets a new epoch feeder contract
@@ -194,10 +202,10 @@ contract ValidatorRewardDistributor is
     _setValidatorContributionFeed(validatorContributionFeed_);
   }
 
-  /// @notice Sets a new GovMITO commission contract
-  /// @param govMITOCommission_ Address of the new GovMITO commission contract
-  function setGovMITOCommission(address govMITOCommission_) external onlyOwner {
-    _setGovMITOCommission(govMITOCommission_);
+  /// @notice Sets a new GovMITO emission contract
+  /// @param govMITOEmission_ Address of the new GovMITO emission contract
+  function setGovMITOEmission(address govMITOEmission_) external onlyOwner {
+    _setGovMITOEmission(govMITOEmission_);
   }
 
   function _setEpochFeeder(address epochFeeder_) internal {
@@ -215,9 +223,9 @@ contract ValidatorRewardDistributor is
     _getStorageV1().validatorContributionFeed = IValidatorContributionFeed(validatorContributionFeed_);
   }
 
-  function _setGovMITOCommission(address govMITOCommission_) internal {
-    require(govMITOCommission_.code.length > 0, StdError.InvalidAddress('govMITOCommission'));
-    _getStorageV1().govMITOCommission = IGovMITOCommission(govMITOCommission_);
+  function _setGovMITOEmission(address govMITOEmission_) internal {
+    require(govMITOEmission_.code.length > 0, StdError.InvalidAddress('govMITOEmission'));
+    _getStorageV1().govMITOEmission = IGovMITOEmission(govMITOEmission_);
   }
 
   function _claimableRewards(StorageV1 storage $, address valAddr, address staker, uint96 epochCount)
@@ -271,39 +279,6 @@ contract ValidatorRewardDistributor is
     return (startEpoch, endEpoch);
   }
 
-  function _claimRewards(StorageV1 storage $, address valAddr, address staker, uint256 epochCount)
-    internal
-    returns (uint256)
-  {
-    uint96 lastClaimedEpoch = $.lastClaimedEpoch.staker[staker][valAddr];
-    (uint96 start, uint96 end) = _claimRange(lastClaimedEpoch, $.epochFeeder.epoch(), epochCount);
-    if (start == end) return 0;
-
-    uint256 totalClaimable;
-
-    for (uint96 epoch = start; epoch < end; epoch++) {
-      totalClaimable += _claimRewardForEpoch($, valAddr, staker, epoch);
-    }
-
-    $.lastClaimedEpoch.staker[staker][valAddr] = end;
-    return totalClaimable;
-  }
-
-  function _claimCommission(StorageV1 storage $, address valAddr, uint256 epochCount) internal view returns (uint256) {
-    uint96 lastClaimedEpoch = $.lastClaimedEpoch.commission[valAddr];
-    (uint96 start, uint96 end) = _claimRange(lastClaimedEpoch, $.epochFeeder.epoch(), epochCount);
-    if (start == end) return 0;
-
-    uint256 totalCommission;
-
-    for (uint96 epoch = start; epoch < end; epoch++) {
-      (uint256 commission,) = _validatorRewardForEpoch($, valAddr, epoch);
-      totalCommission += commission;
-    }
-
-    return totalCommission;
-  }
-
   function _claimRewardForEpoch(StorageV1 storage $, address valAddr, address staker, uint96 epoch)
     internal
     view
@@ -344,15 +319,17 @@ contract ValidatorRewardDistributor is
     (ValidatorWeight memory weight, bool exists) = $.validatorContributionFeed.weightOf(epoch, valAddr);
     if (!exists) return (0, 0);
 
-    uint256 totalReward = (rewardSummary.totalReward * weight.weight) / rewardSummary.totalWeight;
+    uint256 totalReward;
+    {
+      (uint256 totalValidatorReward,) = $.govMITOEmission.validatorReward(epoch);
+      totalReward = (totalValidatorReward * weight.weight) / rewardSummary.totalWeight;
+    }
 
     uint256 totalRewardShare = weight.collateralRewardShare + weight.delegationRewardShare;
-    uint256 collateralReward = (totalReward * weight.collateralRewardShare) / totalRewardShare;
     uint256 delegationReward = (totalReward * weight.delegationRewardShare) / totalRewardShare;
-
     uint256 commission = (delegationReward * validatorInfo.commissionRate) / $.validatorManager.MAX_COMMISSION_RATE();
 
-    return (collateralReward + commission, delegationReward - commission);
+    return ((totalReward - delegationReward) + commission, delegationReward - commission);
   }
 
   // ====================== UUPS ======================

@@ -61,6 +61,7 @@ contract ValidatorManagerTest is Toolkit {
             IValidatorManager.SetGlobalValidatorConfigRequest({
               initialValidatorDeposit: 1000 ether,
               unstakeCooldown: 1000 seconds,
+              redelegationCooldown: 1000 seconds,
               collateralWithdrawalDelay: 1000 seconds,
               minimumCommissionRate: 100, // 1 %
               commissionRateUpdateDelay: 3 // 3 * 100 seconds
@@ -234,8 +235,6 @@ contract ValidatorManagerTest is Toolkit {
 
     assertEq(manager.totalStaked(), 500 ether);
     assertEq(manager.totalUnstaking(), 0 ether);
-    assertEq(manager.stakedValidators(staker).length, 1);
-    assertTrue(manager.isStakedValidator(val.addr, staker));
 
     assertEq(manager.staked(val.addr, staker), 500 ether);
     assertEq(manager.totalDelegation(val.addr), 500 ether);
@@ -308,22 +307,9 @@ contract ValidatorManagerTest is Toolkit {
 
     assertEq(manager.totalStaked(), 500 ether);
     assertEq(manager.staked(val1.addr, staker), 250 ether);
-    assertEq(manager.staked(val2.addr, staker), 0);
+    assertEq(manager.staked(val2.addr, staker), 250 ether);
     assertEq(manager.totalDelegation(val1.addr), 250 ether);
-    assertEq(manager.totalDelegation(val2.addr), 0);
-    assertEq(manager.totalPendingRedelegation(val1.addr), 0);
-    assertEq(manager.totalPendingRedelegation(val2.addr), 250 ether);
-
-    for (uint256 i = 0; i < 2; i++) {
-      vm.warp(epochFeeder.epochToTime(epochFeeder.epoch() + 1));
-
-      assertEq(manager.staked(val1.addr, staker), 250 ether);
-      assertEq(manager.staked(val2.addr, staker), 250 ether);
-      assertEq(manager.totalDelegation(val1.addr), 250 ether);
-      assertEq(manager.totalDelegation(val2.addr), 250 ether);
-      assertEq(manager.totalPendingRedelegation(val1.addr), 0);
-      assertEq(manager.totalPendingRedelegation(val2.addr), 0);
-    }
+    assertEq(manager.totalDelegation(val2.addr), 250 ether);
   }
 
   function _makeValKey(string memory name) internal returns (ValidatorKey memory) {
