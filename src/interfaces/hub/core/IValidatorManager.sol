@@ -20,6 +20,14 @@ import { IEpochFeeder } from './IEpochFeeder.sol';
 /// 4. Unjailing the validator
 /// 5. Leaving the validator set = making it inactive, not removing anything
 interface IValidatorManager {
+  struct GlobalValidatorConfigResponse {
+    uint256 initialValidatorDeposit;
+    uint256 unstakeCooldown;
+    uint256 collateralWithdrawalDelay;
+    uint256 minimumCommissionRate;
+    uint96 commissionRateUpdateDelay;
+  }
+
   struct ValidatorInfoResponse {
     address validator;
     address operator;
@@ -80,6 +88,10 @@ interface IValidatorManager {
   function MAX_COMMISSION_RATE() external view returns (uint256);
   function MAX_STAKED_VALIDATOR_COUNT() external view returns (uint256);
   function MAX_REDELEGATION_COUNT() external view returns (uint256);
+
+  function entrypoint() external view returns (IConsensusValidatorEntrypoint);
+  function epochFeeder() external view returns (IEpochFeeder);
+  function globalValidatorConfig() external view returns (GlobalValidatorConfigResponse memory);
 
   function validatorCount() external view returns (uint256);
   function validatorAt(uint256 index) external view returns (address);

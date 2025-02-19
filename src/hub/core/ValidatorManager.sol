@@ -121,7 +121,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _disableInitializers();
   }
 
-  function initialize(address initialOwner, IEpochFeeder epochFeeder, IConsensusValidatorEntrypoint entrypoint)
+  function initialize(address initialOwner, IEpochFeeder epochFeeder_, IConsensusValidatorEntrypoint entrypoint_)
     external
     initializer
   {
@@ -130,11 +130,35 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     __Ownable2Step_init();
 
     StorageV1 storage $ = _getStorageV1();
-    _setEpochFeeder($, epochFeeder);
-    _setEntrypoint($, entrypoint);
+    _setEpochFeeder($, epochFeeder_);
+    _setEntrypoint($, entrypoint_);
 
     // 0 index is reserved for empty slot
     $.validatorIndexes.push(0);
+  }
+
+  /// @inheritdoc IValidatorManager
+  function entrypoint() external view returns (IConsensusValidatorEntrypoint) {
+    return _getStorageV1().entrypoint;
+  }
+
+  /// @inheritdoc IValidatorManager
+  function epochFeeder() external view returns (IEpochFeeder) {
+    return _getStorageV1().epochFeeder;
+  }
+
+  /// @inheritdoc IValidatorManager
+  function globalValidatorConfig() external view returns (GlobalValidatorConfigResponse memory) {
+    StorageV1 storage $ = _getStorageV1();
+    GlobalValidatorConfig memory config = $.globalValidatorConfig;
+
+    return GlobalValidatorConfigResponse({
+      initialValidatorDeposit: config.initialValidatorDeposit,
+      unstakeCooldown: config.unstakeCooldown,
+      collateralWithdrawalDelay: config.collateralWithdrawalDelay,
+      minimumCommissionRate: config.minimumCommissionRates[config.minimumCommissionRates.length - 1].amount,
+      commissionRateUpdateDelay: config.commissionRateUpdateDelay
+    });
   }
 
   /// @inheritdoc IValidatorManager
@@ -621,13 +645,13 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function setEpochFeeder(IEpochFeeder epochFeeder) external onlyOwner {
-    _setEpochFeeder(_getStorageV1(), epochFeeder);
+  function setEpochFeeder(IEpochFeeder epochFeeder_) external onlyOwner {
+    _setEpochFeeder(_getStorageV1(), epochFeeder_);
   }
 
   /// @inheritdoc IValidatorManager
-  function setEntrypoint(IConsensusValidatorEntrypoint entrypoint) external onlyOwner {
-    _setEntrypoint(_getStorageV1(), entrypoint);
+  function setEntrypoint(IConsensusValidatorEntrypoint entrypoint_) external onlyOwner {
+    _setEntrypoint(_getStorageV1(), entrypoint_);
   }
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //
@@ -971,18 +995,18 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     stat.lastUpdatedEpoch = epoch;
   }
 
-  function _setEpochFeeder(StorageV1 storage $, IEpochFeeder epochFeeder) internal {
-    require(address(epochFeeder).code.length > 0, StdError.InvalidParameter('epochFeeder'));
-    $.epochFeeder = epochFeeder;
+  function _setEpochFeeder(StorageV1 storage $, IEpochFeeder epochFeeder_) internal {
+    require(address(epochFeeder_).code.length > 0, StdError.InvalidParameter('epochFeeder'));
+    $.epochFeeder = epochFeeder_;
 
-    emit EpochFeederUpdated(epochFeeder);
+    emit EpochFeederUpdated(epochFeeder_);
   }
 
-  function _setEntrypoint(StorageV1 storage $, IConsensusValidatorEntrypoint entrypoint) internal {
-    require(address(entrypoint).code.length > 0, StdError.InvalidParameter('entrypoint'));
-    $.entrypoint = entrypoint;
+  function _setEntrypoint(StorageV1 storage $, IConsensusValidatorEntrypoint entrypoint_) internal {
+    require(address(entrypoint_).code.length > 0, StdError.InvalidParameter('entrypoint'));
+    $.entrypoint = entrypoint_;
 
-    emit EntrypointUpdated(entrypoint);
+    emit EntrypointUpdated(entrypoint_);
   }
 
   function _validatorInfo(StorageV1 storage $, address valAddr) internal view returns (Validator memory) {
