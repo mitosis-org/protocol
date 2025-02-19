@@ -55,18 +55,25 @@ interface IValidatorRewardDistributor is IValidatorContributionFeedNotifier {
 
   /// @notice Returns the total claimable rewards for multiple validators and a staker
   /// @param staker The staker address to check rewards for
+  /// @param valAddr The validator address to check rewards for
   /// @return amount The total amount of rewards that can be claimed
-  function claimableRewards(address staker) external view returns (uint256);
+  /// @return nextEpoch The next epoch to claim rewards from
+  function claimableRewards(address staker, address valAddr) external view returns (uint256, uint96);
+
   /// @notice Returns the total claimable commission for a validator
   /// @param valAddr The validator address to check commission for
   /// @return amount The total amount of commission that can be claimed
-  function claimableCommission(address valAddr) external view returns (uint256);
+  /// @return nextEpoch The next epoch to claim commission from
+  function claimableCommission(address valAddr) external view returns (uint256, uint96);
 
   /// @notice Claims rewards for multiple validators over a range of epochs
+  /// @param staker The staker address to claim rewards for
+  /// @param valAddr The validator address to claim rewards for
   /// @return amount The total amount of rewards that were claimed
-  function claimRewards() external returns (uint256);
+  function claimRewards(address staker, address valAddr) external returns (uint256);
 
   /// @notice Claims commission for a validator
+  /// @param valAddr The validator address to claim commission for
   /// @return amount The total amount of commission that was claimed
   function claimCommission(address valAddr) external returns (uint256);
 }

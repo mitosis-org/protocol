@@ -154,7 +154,10 @@ contract ValidatorContributionFeed is
     reward.totalReward = request.totalReward;
     reward.totalWeight = request.totalWeight;
     // 0 index is reserved for empty slot
-    reward.weights.push(ValidatorWeight({ addr: address(0), weight: 0 }));
+    {
+      ValidatorWeight memory empty;
+      reward.weights.push(empty);
+    }
 
     emit ReportInitialized(epoch, request.totalReward, request.totalWeight, request.numOfValidators);
   }

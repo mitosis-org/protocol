@@ -128,59 +128,34 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function claimableRewards(address staker) external view returns (uint256) {
-    StorageV1 storage $ = _getStorageV1();
-    address[] memory valAddrs = $.validatorManager.stakedValidators(staker);
-    if (valAddrs.length == 0) return 0;
-
-    uint256 totalClaimable;
-    unchecked {
-      // Gas optimization: Use unchecked since validators array length is bounded
-      for (uint256 i = 0; i < valAddrs.length; i++) {
-        (uint256 claimable,) = _claimableRewards($, valAddrs[i], staker, MAX_CLAIM_EPOCHS);
-        totalClaimable += claimable;
-      }
-    }
-
-    return totalClaimable;
+  function claimableRewards(address staker, address valAddr) external view returns (uint256, uint96) {
+    return _claimableRewards(_getStorageV1(), valAddr, staker, MAX_CLAIM_EPOCHS);
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function claimableCommission(address valAddr) external view returns (uint256) {
-    (uint256 commission,) = _claimableCommission(_getStorageV1(), valAddr, MAX_CLAIM_EPOCHS);
-    return commission;
+  function claimableCommission(address valAddr) external view returns (uint256, uint96) {
+    return _claimableCommission(_getStorageV1(), valAddr, MAX_CLAIM_EPOCHS);
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function claimRewards() external returns (uint256) {
+  function claimRewards(address staker, address valAddr) external returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
-    address[] memory valAddrs = $.validatorManager.stakedValidators(_msgSender());
-    require(valAddrs.length == 0, NoStakedValidators());
+    (uint256 claimable, uint96 nextEpoch) = _claimableRewards($, valAddr, staker, MAX_CLAIM_EPOCHS);
+    require(claimable > 0, NoRewardsToClaim());
 
-    uint256 totalClaimable;
-    unchecked {
-      // Gas optimization: Use unchecked since validators array length is bounded
-      for (uint256 i = 0; i < valAddrs.length; i++) {
-        (uint256 claimable, uint96 nextEpoch) = _claimableRewards($, valAddrs[i], _msgSender(), MAX_CLAIM_EPOCHS);
-        if (claimable == 0) continue;
+    $.lastClaimedEpoch.staker[staker][valAddr] = nextEpoch;
 
-        $.lastClaimedEpoch.staker[_msgSender()][valAddrs[i]] = nextEpoch;
-        totalClaimable += claimable;
-      }
-    }
-    require(totalClaimable > 0, NoRewardsToClaim());
-
-    IGovMITO(payable(_govMITO)).safeTransfer(_msgSender(), totalClaimable);
-    return totalClaimable;
+    IGovMITO(payable(_govMITO)).safeTransfer(staker, claimable);
+    return claimable;
   }
 
   /// @inheritdoc IValidatorRewardDistributor
   function claimCommission(address valAddr) external returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
+    // already asserts that valAddr is actually a validator
     IValidatorManager.ValidatorInfoResponse memory validatorInfo = $.validatorManager.validatorInfo(valAddr);
-    require(validatorInfo.rewardRecipient == _msgSender(), NotRewardRecipient());
 
     (uint256 commission, uint96 nextEpoch) = _claimableCommission($, valAddr, MAX_CLAIM_EPOCHS);
     require(commission > 0, NoCommissionToClaim());
@@ -370,9 +345,14 @@ contract ValidatorRewardDistributor is
     if (!exists) return (0, 0);
 
     uint256 totalReward = (rewardSummary.totalReward * weight.weight) / rewardSummary.totalWeight;
-    uint256 commission = (totalReward * validatorInfo.commissionRate) / $.validatorManager.MAX_COMMISSION_RATE();
 
-    return (commission, totalReward - commission);
+    uint256 totalRewardShare = weight.collateralRewardShare + weight.delegationRewardShare;
+    uint256 collateralReward = (totalReward * weight.collateralRewardShare) / totalRewardShare;
+    uint256 delegationReward = (totalReward * weight.delegationRewardShare) / totalRewardShare;
+
+    uint256 commission = (delegationReward * validatorInfo.commissionRate) / $.validatorManager.MAX_COMMISSION_RATE();
+
+    return (collateralReward + commission, delegationReward - commission);
   }
 
   // ====================== UUPS ======================

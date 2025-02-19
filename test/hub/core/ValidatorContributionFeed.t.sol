@@ -87,7 +87,12 @@ contract ValidatorContributionFeedTest is Toolkit {
     for (uint256 i = 0; i < 6; i++) {
       ValidatorWeight[] memory weights = new ValidatorWeight[](50);
       for (uint256 j = 0; j < 50; j++) {
-        weights[j] = ValidatorWeight({ addr: makeAddr(string.concat('val-', ((i * 50) + j).toString())), weight: 1 });
+        weights[j] = ValidatorWeight({
+          addr: makeAddr(string.concat('val-', ((i * 50) + j).toString())),
+          weight: 1,
+          collateralRewardShare: 1e18,
+          delegationRewardShare: 1e18
+        });
       }
       feed.pushValidatorWeights(weights);
     }

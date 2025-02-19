@@ -6,6 +6,8 @@ import { IEpochFeeder } from './IEpochFeeder.sol';
 struct ValidatorWeight {
   address addr;
   uint96 weight; // max 79 billion * 1e18
+  uint128 collateralRewardShare;
+  uint128 delegationRewardShare;
 }
 
 enum ReportStatus {
