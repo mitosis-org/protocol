@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
@@ -10,7 +11,7 @@ import { StdError } from '../../lib/StdError.sol';
 
 // TODO(thai): test codes
 
-contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2StepUpgradeable {
+contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2StepUpgradeable, UUPSUpgradeable {
   using ERC7201Utils for string;
 
   /// @custom:storage-location mitosis.storage.ConsensusValidatorEntrypoint
@@ -66,9 +67,10 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
     revert StdError.Unauthorized();
   }
 
-  function initialize(address _owner) external initializer {
+  function initialize(address owner_) external initializer {
     __Ownable2Step_init();
-    _transferOwnership(_owner);
+    __Ownable_init(owner_);
+    __UUPSUpgradeable_init();
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
@@ -132,6 +134,8 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
   }
 
   // ============================ NOTE: OWNABLE FUNCTIONS ============================ //
+
+  function _authorizeUpgrade(address) internal override onlyOwner { }
 
   function setPermittedCaller(address caller, bool isPermitted) external onlyOwner {
     _getStorage().isPermittedCaller[caller] = isPermitted;
