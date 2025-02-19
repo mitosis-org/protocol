@@ -43,6 +43,13 @@ contract GovernanceExecutor is
     external
     onlyRole(EXECUTOR_ROLE)
   {
+    try _execute(targets, data, values) { }
+    catch {
+      emit Executed(false, targets, data, values, new bytes[](targets.length));
+    }
+  }
+
+  function _execute(address[] calldata targets, bytes[] calldata data, uint256[] calldata values) internal {
     require(targets.length == data.length, StdError.InvalidParameter('data'));
     require(targets.length == values.length, StdError.InvalidParameter('values'));
 
@@ -51,7 +58,7 @@ contract GovernanceExecutor is
       result[i] = targets[i].functionCallWithValue(data[i], values[i]);
     }
 
-    emit Executed(targets, data, values, result);
+    emit Executed(true, targets, data, values, result);
   }
 
   function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
