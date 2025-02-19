@@ -81,26 +81,12 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  // TODO(thai): Move the logic which checks `valkey` is corresponding to `initialOperator` from here to the caller contract.
-  function registerValidator(bytes calldata valkey, address initialOperator)
-    external
-    payable
-    onlyPermittedCaller
-    verifyValkeyWithAddress(valkey, initialOperator)
-  {
+  function registerValidator(bytes calldata valkey) external payable onlyPermittedCaller verifyValkey(valkey) {
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
 
     payable(address(0)).transfer(msg.value);
 
     emit MsgRegisterValidator(valkey, msg.value);
-  }
-
-  function unregisterValidator(bytes calldata valkey, uint48 unregisterAt)
-    external
-    onlyPermittedCaller
-    verifyValkey(valkey)
-  {
-    emit MsgUnregisterValidator(valkey, unregisterAt);
   }
 
   function depositCollateral(bytes calldata valkey) external payable onlyPermittedCaller verifyValkey(valkey) {
@@ -111,14 +97,14 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
     emit MsgDepositCollateral(valkey, msg.value);
   }
 
-  function withdrawCollateral(bytes calldata valkey, uint256 amount, address receiver, uint48 withdrawAt)
+  function withdrawCollateral(bytes calldata valkey, uint256 amount, address receiver, uint48 receivesAt)
     external
     onlyPermittedCaller
     verifyValkey(valkey)
   {
     require(amount > 0, StdError.InvalidParameter('amount'));
 
-    emit MsgWithdrawCollateral(valkey, amount, receiver, withdrawAt);
+    emit MsgWithdrawCollateral(valkey, amount, receiver, receivesAt);
   }
 
   function unjail(bytes calldata valkey) external onlyPermittedCaller verifyValkey(valkey) {
