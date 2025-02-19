@@ -83,7 +83,7 @@ contract CrossChainRegistry is
     uint32 hplDomain,
     address mitosisVaultEntrypoint_,
     address governanceExecutorEntrypoint_
-  ) external onlyRegisterer {
+  ) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
 
     require(
@@ -112,7 +112,7 @@ contract CrossChainRegistry is
     emit VaultSet(chainId_, vault_);
   }
 
-  function enrollMitosisVaultEntrypoint(address hplRouter) external onlyRegisterer {
+  function enrollMitosisVaultEntrypoint(address hplRouter) external onlyOwner {
     uint256[] memory allChainIds = _getStorageV1().chainIds;
     // TODO(ray): IRouter.enrollRemoteRouters
     for (uint256 i = 0; i < allChainIds.length; i++) {
@@ -120,14 +120,14 @@ contract CrossChainRegistry is
     }
   }
 
-  function enrollGovernanceExecutorEntrypoint(address hplRouter) external onlyRegisterer {
+  function enrollGovernanceExecutorEntrypoint(address hplRouter) external onlyOwner {
     uint256[] memory allChainIds = _getStorageV1().chainIds;
     for (uint256 i = 0; i < allChainIds.length; i++) {
       enrollGovernanceExecutorEntrypoint(hplRouter, allChainIds[i]);
     }
   }
 
-  function enrollMitosisVaultEntrypoint(address hplRouter, uint256 chainId_) public onlyRegisterer {
+  function enrollMitosisVaultEntrypoint(address hplRouter, uint256 chainId_) public onlyOwner {
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId_];
     if (_isMitosisVaultEntrypointEnrollableChain(chainInfo)) {
       chainInfo.mitosisVaultEntrypointEnrolled = true;
@@ -135,7 +135,7 @@ contract CrossChainRegistry is
     }
   }
 
-  function enrollGovernanceExecutorEntrypoint(address hplRouter, uint256 chainId_) public onlyRegisterer {
+  function enrollGovernanceExecutorEntrypoint(address hplRouter, uint256 chainId_) public onlyOwner {
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId_];
     if (_isGovernanceExecutorEntrypointEnrollableChain(chainInfo)) {
       chainInfo.governanceExecutorEntrypointEnrolled = true;

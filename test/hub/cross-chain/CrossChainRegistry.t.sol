@@ -33,7 +33,10 @@ contract CrossChainRegistryTest is Test {
     vm.expectRevert(); // 'AccessControlUnauthorizedAccount'
     ccRegistry.setChain(chainID, name, hplDomain, mitosisVaultEntrypoint, governanceExecutorEntrypoint);
 
-    ccRegistry.grantRole(ccRegistry.REGISTERER_ROLE(), 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
+    vm.prank(owner);
+    ccRegistry.transferOwnership(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
+
+    ccRegistry.acceptOwnership();
     ccRegistry.setChain(chainID, name, hplDomain, mitosisVaultEntrypoint, governanceExecutorEntrypoint);
   }
 
