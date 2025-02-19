@@ -5,8 +5,7 @@ import { console } from '@std/console.sol';
 import { Test } from '@std/Test.sol';
 import { Vm } from '@std/Vm.sol';
 
-import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
-import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
+import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { GovMITO } from '../../src/hub/GovMITO.sol';
 import { IGovMITO } from '../../src/interfaces/hub/IGovMITO.sol';
@@ -15,7 +14,6 @@ import { StdError } from '../../src/lib/StdError.sol';
 contract GovMITOTest is Test {
   GovMITO govMITO;
 
-  ProxyAdmin internal _proxyAdmin;
   address immutable owner = makeAddr('owner');
   address immutable minter = makeAddr('minter');
   address immutable user1 = makeAddr('user1');
@@ -24,18 +22,9 @@ contract GovMITOTest is Test {
   uint48 constant REDEEM_PERIOD = 21 days;
 
   function setUp() public {
-    _proxyAdmin = new ProxyAdmin(owner);
-    GovMITO govMITOImpl = new GovMITO();
-
     govMITO = GovMITO(
       payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(govMITOImpl),
-            address(_proxyAdmin),
-            abi.encodeCall(govMITO.initialize, (owner, minter, REDEEM_PERIOD))
-          )
-        )
+        new ERC1967Proxy(address(new GovMITO()), abi.encodeCall(GovMITO.initialize, (owner, minter, REDEEM_PERIOD)))
       )
     );
   }

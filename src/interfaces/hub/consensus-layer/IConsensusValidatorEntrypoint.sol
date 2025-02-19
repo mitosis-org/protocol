@@ -5,9 +5,8 @@ interface IConsensusValidatorEntrypoint {
   event PermittedCallerSet(address caller, bool isPermitted);
 
   event MsgRegisterValidator(bytes valkey, uint256 initialCollateralAmount);
-  event MsgUnregisterValidator(bytes valkey, uint48 unregisterAt);
   event MsgDepositCollateral(bytes valkey, uint256 amount);
-  event MsgWithdrawCollateral(bytes valkey, uint256 amount, address receiver, uint48 withdrawAt);
+  event MsgWithdrawCollateral(bytes valkey, uint256 amount, address receiver, uint48 receivesAt);
   event MsgUnjail(bytes valkey);
   event MsgUpdateExtraVotingPower(bytes valkey, uint256 extraVotingPower);
 
@@ -15,18 +14,8 @@ interface IConsensusValidatorEntrypoint {
    * @notice Register a validator in the consensus layer.
    * @dev Nothing happens if the validator is already registered in the consensus layer.
    * @param valkey The compressed 33-byte secp256k1 public key of the validator.
-   * @param initialOperator The address of the initial operator of the validator.
    */
-  function registerValidator(bytes calldata valkey, address initialOperator) external payable;
-
-  /**
-   * @notice Unregister a validator in the consensus layer.
-   * @dev Nothing happens if the validator is not registered in the consensus layer.
-   * If there is already a pending unregistration for the validator, the new one will replace the old one.
-   * @param valkey The compressed 33-byte secp256k1 public key of the validator.
-   * @param unregisterAt The time at which the validator will be unregistered.
-   */
-  function unregisterValidator(bytes calldata valkey, uint48 unregisterAt) external;
+  function registerValidator(bytes calldata valkey) external payable;
 
   /**
    * @notice Deposit collateral to the validator in the consensus layer.
@@ -42,9 +31,9 @@ interface IConsensusValidatorEntrypoint {
    * @param valkey The compressed 33-byte secp256k1 public key of the validator.
    * @param amount The amount of collateral to withdraw.
    * @param receiver The address to receive the withdrawn collateral.
-   * @param withdrawAt The time at which the collateral will be withdrawn.
+   * @param receivesAt The time at which the collateral will be transferred to the receiver.
    */
-  function withdrawCollateral(bytes calldata valkey, uint256 amount, address receiver, uint48 withdrawAt) external;
+  function withdrawCollateral(bytes calldata valkey, uint256 amount, address receiver, uint48 receivesAt) external;
 
   /**
    * @notice Unjail a validator in the consensus layer.

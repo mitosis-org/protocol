@@ -3,11 +3,8 @@ pragma solidity ^0.8.27;
 
 import { console } from '@std/console.sol';
 
-import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
-
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
-import { ProxyAdmin } from '@oz-v5/proxy/transparent/ProxyAdmin.sol';
-import { TransparentUpgradeableProxy } from '@oz-v5/proxy/transparent/TransparentUpgradeableProxy.sol';
+import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 import { Strings } from '@oz-v5/utils/Strings.sol';
 
 import { MitosisVault, AssetAction, MatrixAction } from '../../../src/branch/MitosisVault.sol';
@@ -26,32 +23,22 @@ import { MockTestVaultTally } from '../../mock/MockTestVaultTally.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract MatrixStrategyExecutorTest is Toolkit {
-  MitosisVault _mitosisVault;
-  MatrixStrategyExecutor _matrixStrategyExecutor;
-  MockManagerWithMerkleVerification _managerWithMerkleVerification;
-  MockMitosisVaultEntrypoint _mitosisVaultEntrypoint;
-  ProxyAdmin _proxyAdmin;
-  MockERC20Snapshots _token;
-  MockTestVault _testVault;
-  MockTestVaultDecoderAndSanitizer _testVaultDecoderAndSanitizer;
-  MockTestVaultTally _testVaultTally;
+  MitosisVault internal _mitosisVault;
+  MatrixStrategyExecutor internal _matrixStrategyExecutor;
+  MockManagerWithMerkleVerification internal _managerWithMerkleVerification;
+  MockMitosisVaultEntrypoint internal _mitosisVaultEntrypoint;
+  MockERC20Snapshots internal _token;
+  MockTestVault internal _testVault;
+  MockTestVaultDecoderAndSanitizer internal _testVaultDecoderAndSanitizer;
+  MockTestVaultTally internal _testVaultTally;
 
   address immutable owner = makeAddr('owner');
   address immutable mitosis = makeAddr('mitosis');
   address immutable hubMatrixVault = makeAddr('hubMatrixVault');
 
   function setUp() public {
-    _proxyAdmin = new ProxyAdmin(owner);
-
-    MitosisVault mitosisVaultImpl = new MitosisVault();
     _mitosisVault = MitosisVault(
-      payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(mitosisVaultImpl), address(_proxyAdmin), abi.encodeCall(mitosisVaultImpl.initialize, (owner))
-          )
-        )
-      )
+      payable(new ERC1967Proxy(address(new MitosisVault()), abi.encodeCall(MitosisVault.initialize, (owner))))
     );
 
     _mitosisVaultEntrypoint = new MockMitosisVaultEntrypoint();
@@ -59,25 +46,20 @@ contract MatrixStrategyExecutorTest is Toolkit {
     _token = new MockERC20Snapshots();
     _token.initialize('Token', 'TKN');
 
-    MatrixStrategyExecutor matrixStrategyExecutorImpl =
-      new MatrixStrategyExecutor(_mitosisVault, _token, hubMatrixVault);
     _matrixStrategyExecutor = MatrixStrategyExecutor(
       payable(
-        address(
-          new TransparentUpgradeableProxy(
-            address(matrixStrategyExecutorImpl),
-            address(_proxyAdmin),
-            abi.encodeCall(matrixStrategyExecutorImpl.initialize, (owner, owner))
-          )
+        _proxy(
+          address(new MatrixStrategyExecutor()),
+          abi.encodeCall(MatrixStrategyExecutor.initialize, (_mitosisVault, _token, hubMatrixVault, owner, owner))
         )
       )
     );
 
-    _managerWithMerkleVerification = new MockManagerWithMerkleVerification(address(_matrixStrategyExecutor));
+    _managerWithMerkleVerification = new MockManagerWithMerkleVerification();
 
     _testVault = new MockTestVault(address(_token));
     _testVaultTally = new MockTestVaultTally(address(_token), address(_testVault));
-    _testVaultDecoderAndSanitizer = new MockTestVaultDecoderAndSanitizer(address(_matrixStrategyExecutor));
+    _testVaultDecoderAndSanitizer = new MockTestVaultDecoderAndSanitizer();
 
     vm.startPrank(owner);
 
@@ -108,7 +90,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
     assertEq(_testVaultTally.totalBalance(''), 0);
 
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_matrixStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
     assertEq(_token.balanceOf(makeAddr('user1')), 0);
@@ -139,7 +121,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
 
     vm.expectRevert(StdError.Unauthorized.selector);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_matrixStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
   }
 
@@ -162,7 +144,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
 
     vm.expectRevert(_errTallyNotSet(address(testVault2)));
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
-      manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_matrixStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
   }
 

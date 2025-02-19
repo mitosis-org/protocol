@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
+import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
@@ -48,9 +49,11 @@ contract ReclaimQueueTest is Toolkit {
       )
     );
     _reclaimQueue = ReclaimQueue(
-      _proxy(
-        address(new ReclaimQueue()),
-        abi.encodeCall(ReclaimQueue.initialize, (_owner, address(_assetManager))) //
+      payable(
+        new ERC1967Proxy(
+          address(new ReclaimQueue()),
+          abi.encodeCall(ReclaimQueue.initialize, (_owner, address(_assetManager))) //
+        )
       )
     );
 

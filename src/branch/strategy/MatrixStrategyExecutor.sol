@@ -26,18 +26,10 @@ contract MatrixStrategyExecutor is
   using SafeERC20 for IERC20;
   using Address for address;
 
-  //=========== NOTE: IMMUTABLE VARIABLES ===========//
-
-  IMitosisVault internal immutable _vault;
-  IERC20 internal immutable _asset;
-  address internal immutable _hubMatrixVault;
-
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  constructor(IMitosisVault vault_, IERC20 asset_, address hubMatrixVault_) initializer {
-    _vault = vault_;
-    _asset = asset_;
-    _hubMatrixVault = hubMatrixVault_;
+  constructor() {
+    _disableInitializers();
   }
 
   fallback() external payable {
@@ -48,28 +40,37 @@ contract MatrixStrategyExecutor is
     revert StdError.Unauthorized();
   }
 
-  function initialize(address owner_, address emergencyManager_) public initializer {
+  function initialize(
+    IMitosisVault vault_,
+    IERC20 asset_,
+    address hubMatrixVault_,
+    address owner_,
+    address emergencyManager_
+  ) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
-    _transferOwnership(owner_);
+    __Ownable_init(owner_);
 
     StorageV1 storage $ = _getStorageV1();
 
+    $.vault = vault_;
+    $.asset = asset_;
+    $.hubMatrixVault = hubMatrixVault_;
     $.emergencyManager = emergencyManager_;
   }
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
 
   function vault() external view returns (IMitosisVault) {
-    return _vault;
+    return _getStorageV1().vault;
   }
 
   function asset() external view returns (IERC20) {
-    return _asset;
+    return _getStorageV1().asset;
   }
 
   function hubMatrixVault() external view returns (address) {
-    return _hubMatrixVault;
+    return _getStorageV1().hubMatrixVault;
   }
 
   function strategist() external view returns (address) {
@@ -99,12 +100,12 @@ contract MatrixStrategyExecutor is
   //=========== NOTE: STRATEGIST FUNCTIONS ===========//
 
   function deallocateLiquidity(uint256 amount) external {
-    StorageV1 storage $ = _getStorageV1();
+    StorageV1 memory $ = _getStorageV1();
 
     _assertNotPaused();
     _assertOnlyStrategist($);
 
-    _vault.deallocateMatrix(_hubMatrixVault, amount);
+    $.vault.deallocateMatrix($.hubMatrixVault, amount);
   }
 
   function fetchLiquidity(uint256 amount) external {
@@ -113,7 +114,7 @@ contract MatrixStrategyExecutor is
     _assertNotPaused();
     _assertOnlyStrategist($);
 
-    _vault.fetchMatrix(_hubMatrixVault, amount);
+    $.vault.fetchMatrix($.hubMatrixVault, amount);
     $.storedTotalBalance += amount;
   }
 
@@ -123,8 +124,8 @@ contract MatrixStrategyExecutor is
     _assertNotPaused();
     _assertOnlyStrategist($);
 
-    _asset.approve(address(_vault), amount);
-    _vault.returnMatrix(_hubMatrixVault, amount);
+    $.asset.approve(address($.vault), amount);
+    $.vault.returnMatrix($.hubMatrixVault, amount);
     $.storedTotalBalance -= amount;
   }
 
@@ -140,27 +141,27 @@ contract MatrixStrategyExecutor is
     $.storedTotalBalance = totalBalance_;
 
     if (totalBalance_ >= storedTotalBalance_) {
-      _vault.settleMatrixYield(_hubMatrixVault, totalBalance_ - storedTotalBalance_);
+      $.vault.settleMatrixYield($.hubMatrixVault, totalBalance_ - storedTotalBalance_);
     } else {
-      _vault.settleMatrixLoss(_hubMatrixVault, storedTotalBalance_ - totalBalance_);
+      $.vault.settleMatrixLoss($.hubMatrixVault, storedTotalBalance_ - totalBalance_);
     }
   }
 
   function settleExtraRewards(address reward, uint256 amount) external {
-    StorageV1 storage $ = _getStorageV1();
+    StorageV1 memory $ = _getStorageV1();
 
     _assertNotPaused();
     _assertOnlyStrategist($);
-    require(reward != address(_asset), StdError.InvalidAddress('reward'));
+    require(reward != address($.asset), StdError.InvalidAddress('reward'));
 
-    IERC20(reward).approve(address(_vault), amount);
-    _vault.settleMatrixExtraRewards(_hubMatrixVault, reward, amount);
+    IERC20(reward).approve(address($.vault), amount);
+    $.vault.settleMatrixExtraRewards($.hubMatrixVault, reward, amount);
   }
 
   //=========== NOTE: EXECUTOR FUNCTIONS ===========//
 
   function execute(address target, bytes calldata data, uint256 value) external returns (bytes memory result) {
-    StorageV1 storage $ = _getStorageV1();
+    StorageV1 memory $ = _getStorageV1();
     _assertOnlyExecutor($);
     _assertOnlyTallyRegisteredProtocol($, target);
 
@@ -171,7 +172,7 @@ contract MatrixStrategyExecutor is
     external
     returns (bytes[] memory results)
   {
-    StorageV1 storage $ = _getStorageV1();
+    StorageV1 memory $ = _getStorageV1();
     _assertOnlyExecutor($);
     _assertOnlyTallyRegisteredProtocol($, targets);
 
@@ -226,7 +227,7 @@ contract MatrixStrategyExecutor is
   }
 
   function pause() external {
-    StorageV1 storage $ = _getStorageV1();
+    StorageV1 memory $ = _getStorageV1();
     require(_msgSender() == owner() || _msgSender() == $.emergencyManager, StdError.Unauthorized());
     _pause();
   }
@@ -237,23 +238,23 @@ contract MatrixStrategyExecutor is
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _assertOnlyStrategist(StorageV1 storage $) internal view {
+  function _assertOnlyStrategist(StorageV1 memory $) internal view {
     address strategist_ = $.strategist;
     require(strategist_ != address(0), IMatrixStrategyExecutor.IMatrixStrategyExecutor__StrategistNotSet());
     require(_msgSender() == strategist_, StdError.Unauthorized());
   }
 
-  function _assertOnlyExecutor(StorageV1 storage $) internal view {
+  function _assertOnlyExecutor(StorageV1 memory $) internal view {
     address executor_ = $.executor;
     require(executor_ != address(0), IMatrixStrategyExecutor.IMatrixStrategyExecutor__ExecutorNotSet());
     require(_msgSender() == executor_, StdError.Unauthorized());
   }
 
-  function _assertOnlyTallyRegisteredProtocol(StorageV1 storage $, address target) internal view {
+  function _assertOnlyTallyRegisteredProtocol(StorageV1 memory $, address target) internal view {
     require($.tally.protocolAddress() == target, IMatrixStrategyExecutor__TallyNotSet(target));
   }
 
-  function _assertOnlyTallyRegisteredProtocol(StorageV1 storage $, address[] memory targets) internal view {
+  function _assertOnlyTallyRegisteredProtocol(StorageV1 memory $, address[] memory targets) internal view {
     address expected = $.tally.protocolAddress();
     for (uint256 i = 0; i < targets.length; i++) {
       address target = targets[i];
@@ -267,6 +268,6 @@ contract MatrixStrategyExecutor is
   }
 
   function _totalBalance(StorageV1 storage $) internal view returns (uint256) {
-    return _asset.balanceOf(address(this)) + _tallyTotalBalance($);
+    return $.asset.balanceOf(address(this)) + _tallyTotalBalance($);
   }
 }
