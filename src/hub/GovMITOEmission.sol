@@ -97,6 +97,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
   function requestValidatorReward(uint96 epoch, address recipient, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
     ValidatorReward memory reward = $.validatorReward[epoch];
+    require($.validatorRewardRecipient != address(0), StdError.Unauthorized());
     require(reward.amount >= reward.claimed + amount, NotEnoughReserve());
 
     $.validatorReward[epoch].claimed += amount;
