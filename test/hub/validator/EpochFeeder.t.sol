@@ -6,8 +6,8 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { LibClone } from '@solady/utils/LibClone.sol';
 
-import { EpochFeeder } from '../../../src/hub/core/EpochFeeder.sol';
-import { IEpochFeeder } from '../../../src/interfaces/hub/core/IEpochFeeder.sol';
+import { EpochFeeder } from '../../../src/hub/validator/EpochFeeder.sol';
+import { IEpochFeeder } from '../../../src/interfaces/hub/validator/IEpochFeeder.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract EpochFeederTest is Toolkit {

@@ -6,17 +6,18 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { LibString } from '@solady/utils/LibString.sol';
 
-import { EpochFeeder } from '../../../src/hub/core/EpochFeeder.sol';
-import { ValidatorRewardDistributor } from '../../../src/hub/core/ValidatorRewardDistributor.sol';
-import { IEpochFeeder } from '../../../src/interfaces/hub/core/IEpochFeeder.sol';
-import {
-  IValidatorContributionFeed, ValidatorWeight
-} from '../../../src/interfaces/hub/core/IValidatorContributionFeed.sol';
-import { IValidatorManager } from '../../../src/interfaces/hub/core/IValidatorManager.sol';
-import { IValidatorRewardDistributor } from '../../../src/interfaces/hub/core/IValidatorRewardDistributor.sol';
-import { IValidatorStaking } from '../../../src/interfaces/hub/core/IValidatorStaking.sol';
+import { EpochFeeder } from '../../../src/hub/validator/EpochFeeder.sol';
+import { ValidatorRewardDistributor } from '../../../src/hub/validator/ValidatorRewardDistributor.sol';
 import { IGovMITO } from '../../../src/interfaces/hub/IGovMITO.sol';
 import { IGovMITOEmission } from '../../../src/interfaces/hub/IGovMITOEmission.sol';
+import { IEpochFeeder } from '../../../src/interfaces/hub/validator/IEpochFeeder.sol';
+import {
+  IValidatorContributionFeed,
+  ValidatorWeight
+} from '../../../src/interfaces/hub/validator/IValidatorContributionFeed.sol';
+import { IValidatorManager } from '../../../src/interfaces/hub/validator/IValidatorManager.sol';
+import { IValidatorRewardDistributor } from '../../../src/interfaces/hub/validator/IValidatorRewardDistributor.sol';
+import { IValidatorStaking } from '../../../src/interfaces/hub/validator/IValidatorStaking.sol';
 import { MockContract } from '../../util/MockContract.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 

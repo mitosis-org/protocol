@@ -12,8 +12,8 @@ import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
 import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
-import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
-import { IValidatorManager } from '../../interfaces/hub/core/IValidatorManager.sol';
+import { IEpochFeeder } from '../../interfaces/hub/validator/IEpochFeeder.sol';
+import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { LibSecp256k1 } from '../../lib/LibSecp256k1.sol';

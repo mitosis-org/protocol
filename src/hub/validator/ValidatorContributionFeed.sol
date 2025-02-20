@@ -8,12 +8,12 @@ import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { EnumerableMap } from '@oz-v5/utils/structs/EnumerableMap.sol';
 
-import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
+import { IEpochFeeder } from '../../interfaces/hub/validator/IEpochFeeder.sol';
 import {
   IValidatorContributionFeed,
   ValidatorWeight,
   ReportStatus
-} from '../../interfaces/hub/core/IValidatorContributionFeed.sol';
+} from '../../interfaces/hub/validator/IValidatorContributionFeed.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 

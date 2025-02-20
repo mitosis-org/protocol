@@ -9,11 +9,12 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { LibClone } from '@solady/utils/LibClone.sol';
 import { LibString } from '@solady/utils/LibString.sol';
 
-import { ValidatorContributionFeed } from '../../../src/hub/core/ValidatorContributionFeed.sol';
-import { IEpochFeeder } from '../../../src/interfaces/hub/core/IEpochFeeder.sol';
+import { ValidatorContributionFeed } from '../../../src/hub/validator/ValidatorContributionFeed.sol';
+import { IEpochFeeder } from '../../../src/interfaces/hub/validator/IEpochFeeder.sol';
 import {
-  IValidatorContributionFeed, ValidatorWeight
-} from '../../../src/interfaces/hub/core/IValidatorContributionFeed.sol';
+  IValidatorContributionFeed,
+  ValidatorWeight
+} from '../../../src/interfaces/hub/validator/IValidatorContributionFeed.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 

@@ -6,7 +6,7 @@ import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
-import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
+import { IEpochFeeder } from '../../interfaces/hub/validator/IEpochFeeder.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 /**

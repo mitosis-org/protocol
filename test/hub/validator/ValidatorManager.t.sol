@@ -11,12 +11,12 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { LibClone } from '@solady/utils/LibClone.sol';
 import { LibString } from '@solady/utils/LibString.sol';
 
-import { EpochFeeder } from '../../../src/hub/core/EpochFeeder.sol';
-import { ValidatorManager } from '../../../src/hub/core/ValidatorManager.sol';
+import { EpochFeeder } from '../../../src/hub/validator/EpochFeeder.sol';
+import { ValidatorManager } from '../../../src/hub/validator/ValidatorManager.sol';
 import { IConsensusValidatorEntrypoint } from
   '../../../src/interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
-import { IEpochFeeder } from '../../../src/interfaces/hub/core/IEpochFeeder.sol';
-import { IValidatorManager } from '../../../src/interfaces/hub/core/IValidatorManager.sol';
+import { IEpochFeeder } from '../../../src/interfaces/hub/validator/IEpochFeeder.sol';
+import { IValidatorManager } from '../../../src/interfaces/hub/validator/IValidatorManager.sol';
 import { LibSecp256k1 } from '../../../src/lib/LibSecp256k1.sol';
 import { MockContract } from '../../util/MockContract.sol';
 import { Toolkit } from '../../util/Toolkit.sol';

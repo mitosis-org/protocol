@@ -8,13 +8,15 @@ import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
-import { IEpochFeeder } from '../../interfaces/hub/core/IEpochFeeder.sol';
-import { IValidatorContributionFeed, ValidatorWeight } from '../../interfaces/hub/core/IValidatorContributionFeed.sol';
-import { IValidatorManager } from '../../interfaces/hub/core/IValidatorManager.sol';
-import { IValidatorRewardDistributor } from '../../interfaces/hub/core/IValidatorRewardDistributor.sol';
-import { IValidatorStaking } from '../../interfaces/hub/core/IValidatorStaking.sol';
 import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
 import { IGovMITOEmission } from '../../interfaces/hub/IGovMITOEmission.sol';
+import { IEpochFeeder } from '../../interfaces/hub/validator/IEpochFeeder.sol';
+import {
+  IValidatorContributionFeed, ValidatorWeight
+} from '../../interfaces/hub/validator/IValidatorContributionFeed.sol';
+import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
+import { IValidatorRewardDistributor } from '../../interfaces/hub/validator/IValidatorRewardDistributor.sol';
+import { IValidatorStaking } from '../../interfaces/hub/validator/IValidatorStaking.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
