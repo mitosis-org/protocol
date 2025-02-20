@@ -31,7 +31,6 @@ contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable, UUPSUpgradeable {
   }
 
   function initialize(address owner_, uint256 nextEpochTime_, uint256 interval_) external initializer {
-    require(owner_ != address(0), StdError.ZeroAddress('owner'));
     require(0 < interval_ && interval_ < type(uint48).max, InvalidInterval());
     require(nextEpochTime_ > block.timestamp, StdError.InvalidParameter('nextEpochTime'));
 
@@ -157,7 +156,5 @@ contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable, UUPSUpgradeable {
    * @notice Authorizes an upgrade to a new implementation
    * @param newImplementation Address of new implementation
    */
-  function _authorizeUpgrade(address newImplementation) internal view override onlyOwner {
-    require(newImplementation != address(0), StdError.ZeroAddress('newImpl'));
-  }
+  function _authorizeUpgrade(address newImplementation) internal view override onlyOwner { }
 }
