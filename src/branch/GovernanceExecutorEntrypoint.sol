@@ -10,7 +10,7 @@ import { IGovernanceExecutorEntrypoint } from '../interfaces/branch/IGovernanceE
 import { Conv } from '../lib/Conv.sol';
 import { StdError } from '../lib/StdError.sol';
 import '../message/Message.sol';
-import { GovernanceExecutor } from './GovernanceExecutor.sol';
+import { BranchTimelock } from './BranchTimelock.sol';
 
 contract GovernanceExecutorEntrypoint is
   IGovernanceExecutorEntrypoint,
@@ -21,15 +21,15 @@ contract GovernanceExecutorEntrypoint is
   using Message for *;
   using Conv for *;
 
-  GovernanceExecutor internal immutable _governanceExecutor;
+  BranchTimelock internal immutable _timelock;
   uint32 internal immutable _mitosisDomain;
   bytes32 internal immutable _mitosisAddr; // Hub.BranchGovernanceEntrypoint
 
-  constructor(address mailbox, address governanceExecutor_, uint32 mitosisDomain_, bytes32 mitosisAddr_)
+  constructor(address mailbox, BranchTimelock timelock_, uint32 mitosisDomain_, bytes32 mitosisAddr_)
     GasRouter(mailbox)
     initializer
   {
-    _governanceExecutor = GovernanceExecutor(governanceExecutor_);
+    _timelock = timelock_;
     _mitosisDomain = mitosisDomain_;
     _mitosisAddr = mitosisAddr_;
   }
@@ -53,7 +53,9 @@ contract GovernanceExecutorEntrypoint is
 
     if (msgType == MsgType.MsgDispatchGovernanceExecution) {
       MsgDispatchGovernanceExecution memory decoded = msg_.decodeDispatchGovernanceExecution();
-      _governanceExecutor.execute(_convertBytes32ArrayToAddressArray(decoded.targets), decoded.data, decoded.values);
+      _timelock.scheduleBatch(
+        _convertBytes32ArrayToAddressArray(decoded.targets), decoded.values, decoded.data, 0, _timelock.getMinDelay()
+      );
     }
   }
 
