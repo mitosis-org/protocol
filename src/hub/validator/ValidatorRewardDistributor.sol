@@ -62,16 +62,11 @@ contract ValidatorRewardDistributor is
   using SafeCast for uint256;
   using SafeERC20 for IGovMITO;
 
-  // Address of the governance MITO token contract
-  address private immutable _govMITO;
-
   // Maximum number of epochs that can be claimed at once
   // Set to 32 based on gas cost analysis and typical usage patterns
   uint96 public constant MAX_CLAIM_EPOCHS = 32;
 
-  constructor(address govMITO_) {
-    require(govMITO_.code.length > 0, StdError.InvalidAddress('govMITO'));
-    _govMITO = govMITO_;
+  constructor() {
     _disableInitializers();
   }
 
@@ -92,11 +87,6 @@ contract ValidatorRewardDistributor is
     _setValidatorStaking(validatorStaking_);
     _setValidatorContributionFeed(validatorContributionFeed_);
     _setGovMITOEmission(govMITOEmission_);
-  }
-
-  /// @inheritdoc IValidatorRewardDistributor
-  function govMITO() external view returns (IGovMITO) {
-    return IGovMITO(payable(_govMITO));
   }
 
   /// @inheritdoc IValidatorRewardDistributor

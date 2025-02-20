@@ -65,7 +65,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     );
     distributor = ValidatorRewardDistributor(
       _proxy(
-        address(new ValidatorRewardDistributor(address(govMITO))),
+        address(new ValidatorRewardDistributor()),
         abi.encodeCall(
           ValidatorRewardDistributor.initialize,
           (
@@ -87,7 +87,6 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(address(distributor.validatorManager()), address(validatorManager));
     assertEq(address(distributor.validatorStaking()), address(staking));
     assertEq(address(distributor.validatorContributionFeed()), address(contributionFeed));
-    assertEq(address(distributor.govMITO()), address(govMITO));
     assertEq(address(distributor.govMITOEmission()), address(govMITOEmission));
   }
 

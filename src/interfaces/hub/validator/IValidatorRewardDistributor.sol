@@ -25,9 +25,6 @@ interface IValidatorRewardDistributor {
 
   // ========== VIEWS ========== //
 
-  /// @notice Returns the gov MITO contract
-  function govMITO() external view returns (IGovMITO);
-
   /// @notice Returns the epoch feeder contract
   function epochFeeder() external view returns (IEpochFeeder);
 
