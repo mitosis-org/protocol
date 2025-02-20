@@ -104,7 +104,7 @@ contract ValidatorContributionFeed is
     StorageV1 storage $ = _getStorageV1();
     Reward storage reward = $.rewards[epoch];
 
-    require(reward.status == ReportStatus.FINALIZED, EpochNotFinalized());
+    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__EpochNotFinalized());
 
     uint256 index = reward.weightByValAddr[valAddr];
     if (index == 0) {
@@ -124,7 +124,7 @@ contract ValidatorContributionFeed is
     StorageV1 storage $ = _getStorageV1();
     Reward storage reward = $.rewards[epoch];
 
-    require(reward.status == ReportStatus.FINALIZED, EpochNotFinalized());
+    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__EpochNotFinalized());
 
     return Summary({
       totalWeight: uint256(reward.totalWeight).toUint128(),
@@ -141,7 +141,7 @@ contract ValidatorContributionFeed is
     require(epoch < $.epochFeeder.epoch(), StdError.InvalidParameter('epoch'));
 
     Reward storage reward = $.rewards[epoch];
-    require(reward.status == ReportStatus.NONE, InvalidReportStatus());
+    require(reward.status == ReportStatus.NONE, IValidatorContributionFeed__InvalidReportStatus());
 
     reward.status = ReportStatus.INITIALIZED;
     reward.totalWeight = request.totalWeight;
@@ -160,14 +160,14 @@ contract ValidatorContributionFeed is
     uint96 epoch = $.nextEpoch;
 
     Reward storage reward = $.rewards[epoch];
-    require(reward.status == ReportStatus.INITIALIZED, InvalidReportStatus());
+    require(reward.status == ReportStatus.INITIALIZED, IValidatorContributionFeed__InvalidReportStatus());
 
     ReportChecker memory checker = $.checker;
 
     for (uint256 i = 0; i < weights.length; i++) {
       ValidatorWeight memory weight = weights[i];
       uint256 index = reward.weightByValAddr[weight.addr];
-      require(index == 0, InvalidWeightAddress());
+      require(index == 0, IValidatorContributionFeed__InvalidWeightAddress());
 
       reward.weights.push(weight);
       reward.weightByValAddr[weight.addr] = i;
@@ -188,11 +188,11 @@ contract ValidatorContributionFeed is
     uint96 epoch = $.nextEpoch;
 
     Reward storage reward = $.rewards[epoch];
-    require(reward.status == ReportStatus.INITIALIZED, InvalidReportStatus());
+    require(reward.status == ReportStatus.INITIALIZED, IValidatorContributionFeed__InvalidReportStatus());
 
     ReportChecker memory checker = $.checker;
-    require(checker.totalWeight == reward.totalWeight, InvalidTotalWeight());
-    require(checker.numOfValidators == reward.weights.length - 1, InvalidValidatorCount());
+    require(checker.totalWeight == reward.totalWeight, IValidatorContributionFeed__InvalidTotalWeight());
+    require(checker.numOfValidators == reward.weights.length - 1, IValidatorContributionFeed__InvalidValidatorCount());
 
     reward.status = ReportStatus.FINALIZED;
 

@@ -16,9 +16,9 @@ interface IValidatorStaking {
   event UnstakeCooldownUpdated(uint48 unstakeCooldown);
   event RedelegationCooldownUpdated(uint48 redelegationCooldown);
 
-  error NotValidator();
-  error RedelegateToSameValidator();
-  error CooldownNotPassed();
+  error IValidatorStaking__NotValidator();
+  error IValidatorStaking__RedelegateToSameValidator();
+  error IValidatorStaking__CooldownNotPassed();
 
   // ========== VIEWS ========== //
 

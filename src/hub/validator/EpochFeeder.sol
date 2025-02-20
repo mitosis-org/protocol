@@ -31,7 +31,7 @@ contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable, UUPSUpgradeable {
   }
 
   function initialize(address owner_, uint256 nextEpochTime_, uint256 interval_) external initializer {
-    require(0 < interval_ && interval_ < type(uint48).max, InvalidInterval());
+    require(0 < interval_ && interval_ < type(uint48).max, IEpochFeeder__InvalidInterval());
     require(nextEpochTime_ > block.timestamp, StdError.InvalidParameter('nextEpochTime'));
 
     __UUPSUpgradeable_init();
@@ -64,7 +64,7 @@ contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable, UUPSUpgradeable {
 
   /// @inheritdoc IEpochFeeder
   function epochAt(uint48 timestamp_) public view returns (uint96) {
-    require(timestamp_ != 0, InvalidTimestamp());
+    require(timestamp_ != 0, IEpochFeeder__InvalidTimestamp());
 
     {
       uint256 lastEpoch = _epochs.length - 1;
@@ -95,7 +95,7 @@ contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable, UUPSUpgradeable {
 
   /// @inheritdoc IEpochFeeder
   function epochToTime(uint96 epoch_) public view returns (uint48) {
-    require(epoch_ >= 0, InvalidEpoch());
+    require(epoch_ >= 0, IEpochFeeder__InvalidEpoch());
 
     uint256 lastEpoch = _epochs.length - 1;
     if (lastEpoch < epoch_) {
@@ -116,7 +116,7 @@ contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable, UUPSUpgradeable {
   }
 
   function setInterval(uint256 interval_) external onlyOwner {
-    require(0 < interval_ && interval_ < type(uint48).max, InvalidInterval());
+    require(0 < interval_ && interval_ < type(uint48).max, IEpochFeeder__InvalidInterval());
 
     _update();
 

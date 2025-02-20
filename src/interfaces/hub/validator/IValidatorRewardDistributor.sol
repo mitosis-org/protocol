@@ -20,8 +20,8 @@ interface IValidatorRewardDistributor {
   event ValidatorManagerSet(address indexed validatorManager);
 
   // Custom errors
-  error NotValidator();
-  error ArrayLengthMismatch();
+  error IValidatorRewardDistributor__NotValidator();
+  error IValidatorRewardDistributor__ArrayLengthMismatch();
 
   // ========== VIEWS ========== //
 

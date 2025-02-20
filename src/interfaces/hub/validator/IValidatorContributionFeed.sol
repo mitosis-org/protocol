@@ -36,11 +36,11 @@ interface IValidatorContributionFeed {
   event WeightsPushed(uint96 epoch, uint128 totalWeight, uint128 numOfValidators);
   event ReportFinalized(uint96 epoch);
 
-  error InvalidReportStatus();
-  error InvalidWeightAddress();
-  error InvalidTotalWeight();
-  error InvalidValidatorCount();
-  error EpochNotFinalized();
+  error IValidatorContributionFeed__InvalidReportStatus();
+  error IValidatorContributionFeed__InvalidWeightAddress();
+  error IValidatorContributionFeed__InvalidTotalWeight();
+  error IValidatorContributionFeed__InvalidValidatorCount();
+  error IValidatorContributionFeed__EpochNotFinalized();
 
   function epochFeeder() external view returns (IEpochFeeder);
 

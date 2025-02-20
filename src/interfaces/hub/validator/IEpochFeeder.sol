@@ -14,13 +14,13 @@ interface IEpochFeeder {
   event IntervalUpdated(uint48 interval);
 
   /// @dev Thrown when timestamp is invalid (zero)
-  error InvalidTimestamp();
+  error IEpochFeeder__InvalidTimestamp();
 
   /// @dev Thrown when interval is set to zero
-  error InvalidInterval();
+  error IEpochFeeder__InvalidInterval();
 
   /// @dev Thrown when epoch is invalid (zero or greater than current)
-  error InvalidEpoch();
+  error IEpochFeeder__InvalidEpoch();
 
   /// @notice Returns time elapsed since last roll
   /// @return timestamp Current clock time in seconds since last roll

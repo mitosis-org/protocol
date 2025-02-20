@@ -172,7 +172,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   function stake(address valAddr, address recipient) external payable {
     require(msg.value > 0, StdError.ZeroAmount());
     require(recipient != address(0), StdError.InvalidParameter('recipient'));
-    require(_manager.isValidator(valAddr), NotValidator());
+    require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
 
     StorageV1 storage $ = _getStorageV1();
 
@@ -186,7 +186,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   /// @inheritdoc IValidatorStaking
   function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256) {
     require(amount > 0, StdError.ZeroAmount());
-    require(_manager.isValidator(valAddr), NotValidator());
+    require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
 
     StorageV1 storage $ = _getStorageV1();
 
@@ -209,7 +209,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
   /// @inheritdoc IValidatorStaking
   function claimUnstake(address valAddr, address receiver) external returns (uint256) {
-    require(_manager.isValidator(valAddr), NotValidator());
+    require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
 
     StorageV1 storage $ = _getStorageV1();
 
@@ -233,15 +233,15 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   /// @inheritdoc IValidatorStaking
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external {
     require(amount > 0, StdError.ZeroAmount());
-    require(fromValAddr != toValAddr, RedelegateToSameValidator());
+    require(fromValAddr != toValAddr, IValidatorStaking__RedelegateToSameValidator());
 
     StorageV1 storage $ = _getStorageV1();
-    require(_manager.isValidator(fromValAddr), NotValidator());
-    require(_manager.isValidator(toValAddr), NotValidator());
+    require(_manager.isValidator(fromValAddr), IValidatorStaking__NotValidator());
+    require(_manager.isValidator(toValAddr), IValidatorStaking__NotValidator());
 
     uint48 now_ = _epochFeeder.clock();
     uint256 lastRedelegationTime_ = $.lastRedelegationTime[_msgSender()];
-    require(now_ >= lastRedelegationTime_ + $.redelegationCooldown, CooldownNotPassed());
+    require(now_ >= lastRedelegationTime_ + $.redelegationCooldown, IValidatorStaking__CooldownNotPassed());
 
     _unstake($, fromValAddr, _msgSender(), amount);
     _stake($, toValAddr, _msgSender(), amount, now_);

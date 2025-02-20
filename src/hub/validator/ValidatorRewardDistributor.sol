@@ -144,7 +144,7 @@ contract ValidatorRewardDistributor is
     external
     returns (uint256)
   {
-    require(stakers.length == valAddrs.length, ArrayLengthMismatch());
+    require(stakers.length == valAddrs.length, IValidatorRewardDistributor__ArrayLengthMismatch());
 
     uint256 totalClaimed;
     for (uint256 i = 0; i < stakers.length; i++) {
