@@ -240,8 +240,8 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     require(_manager.isValidator(toValAddr), NotValidator());
 
     uint48 now_ = _epochFeeder.clock();
-    uint256 last = $.lastRedelegationTime[_msgSender()];
-    require(last == 0 || now_ <= last + $.redelegationCooldown, CooldownNotPassed());
+    uint256 lastRedelegationTime_ = $.lastRedelegationTime[_msgSender()];
+    require(now_ >= lastRedelegationTime_ + $.redelegationCooldown, CooldownNotPassed());
 
     _unstake($, fromValAddr, _msgSender(), amount);
     _stake($, toValAddr, _msgSender(), amount, now_);
