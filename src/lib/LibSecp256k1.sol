@@ -129,4 +129,13 @@ library LibSecp256k1 {
 
     return address(uint160(uint256(keccak256(noPrefix))));
   }
+
+  /**
+   * @notice Derives an EVM address from a compressed 33-byte secp256k1 public key.
+   * @dev It assumes that the given public key is a valid compressed 33-byte secp256k1 public key.
+   * @param cmpPubkey The compressed 33-byte public key
+   */
+  function deriveAddressFromCmpPubkey(bytes memory cmpPubkey) internal pure returns (address) {
+    return deriveAddressFromUncmpPubkey(uncompressPubkey(cmpPubkey));
+  }
 }
