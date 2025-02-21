@@ -100,6 +100,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     require($.validatorRewardRecipient != address(0), StdError.Unauthorized());
     require(reward.amount >= reward.claimed + amount, NotEnoughReserve());
 
+    $.totalReserved -= amount;
     $.validatorReward[epoch].claimed += amount;
     _govMITO.safeTransfer(recipient, amount);
 
