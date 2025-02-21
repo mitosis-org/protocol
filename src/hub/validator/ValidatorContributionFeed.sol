@@ -62,7 +62,7 @@ contract ValidatorContributionFeed is
   using EnumerableMap for EnumerableMap.AddressToUintMap;
 
   /// @notice keccak256('mitosis.role.ValidatorContributionFeed.feeder')
-  bytes32 public constant FEEDER_ROLE = 0xed3cedcdadd7625ff13ce12c112792caf5f35e0f515e9d8bd5cb9ad0c4cd4262;
+  bytes32 public constant FEEDER_ROLE = 0xa33b22848ec080944b3c811b3fe6236387c5104ce69ccd386b545a980fbe6827;
 
   constructor() {
     _disableInitializers();
