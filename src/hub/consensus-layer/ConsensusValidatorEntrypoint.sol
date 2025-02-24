@@ -105,7 +105,7 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
     verifyValkey(valkey)
   {
     require(amount > 0, StdError.InvalidParameter('amount'));
-    require(amount % 1 gwei == 0, StdError.InvalidParameter('msg.value'));
+    require(amount % 1 gwei == 0, StdError.InvalidParameter('amount'));
 
     emit MsgWithdrawCollateral(valkey, amount, receiver, receivesAt);
   }
