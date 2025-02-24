@@ -91,6 +91,30 @@ library LibSecp256k1 {
   }
 
   /**
+   * @notice Compresses an uncompressed 65-byte secp256k1 public key.
+   * @param uncmpPubkey The uncompressed 65-byte public key
+   * @return cmpPubkey The compressed 33-byte public key
+   */
+  function compressPubkey(bytes memory uncmpPubkey) internal pure returns (bytes memory cmpPubkey) {
+    require(uncmpPubkey.length == 65, StdError.InvalidParameter('uncmpPubkey.length'));
+    require(uncmpPubkey[0] == 0x04, StdError.InvalidParameter('uncmpPubkey[0]'));
+
+    uint256 x;
+    uint256 y;
+    assembly {
+      x := mload(add(uncmpPubkey, 0x21))
+      y := mload(add(uncmpPubkey, 0x41))
+    }
+
+    cmpPubkey = new bytes(33);
+    cmpPubkey[0] = bytes1(uint8(y % 2 == 0 ? 0x02 : 0x03));
+    assembly {
+      mstore(add(cmpPubkey, 0x21), x)
+    }
+    return cmpPubkey;
+  }
+
+  /**
    * @notice Derives an EVM address from an uncompressed 65-byte secp256k1 public key.
    * @dev It assumes that the given public key is a valid uncompressed 65-byte secp256k1 public key.
    * @param uncmpPubkey The uncompressed 65-byte public key

@@ -50,9 +50,8 @@ interface IGovMITO is IERC20, IERC5805 {
    * @notice Mint tokens to an address with corresponding MITO.
    * @dev Only the minter can call this function.
    * @param to The address to mint tokens to
-   * @param amount The amount of tokens to mint
    */
-  function mint(address to, uint256 amount) external payable;
+  function mint(address to) external payable;
 
   /**
    * @notice Request to redeem tokens for assets.

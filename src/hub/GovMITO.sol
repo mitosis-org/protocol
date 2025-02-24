@@ -7,6 +7,7 @@ import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { VotesUpgradeable } from '@ozu-v5/governance/utils/VotesUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 import { ERC20PermitUpgradeable } from '@ozu-v5/token/ERC20/extensions/ERC20PermitUpgradeable.sol';
 import { ERC20VotesUpgradeable } from '@ozu-v5/token/ERC20/extensions/ERC20VotesUpgradeable.sol';
@@ -21,7 +22,7 @@ import { StdError } from '../lib/StdError.sol';
 
 // TODO(thai): Add more view functions. (Check ReclaimQueueStorageV1.sol as a reference)
 
-contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Ownable2StepUpgradeable {
+contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUpgradeable {
   using ERC7201Utils for string;
   using LibRedeemQueue for *;
 
@@ -69,13 +70,15 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
     revert StdError.Unauthorized();
   }
 
-  function initialize(address _owner, address minter_, uint256 redeemPeriod_) external initializer {
+  function initialize(address owner_, address minter_, uint256 redeemPeriod_) external initializer {
     // TODO(thai): not fixed yet. could be modified before launching.
     __ERC20_init('Mitosis Governance Token', 'gMITO');
     __ERC20Permit_init('Mitosis Governance Token');
     __ERC20Votes_init();
+
     __Ownable2Step_init();
-    _transferOwnership(_owner);
+    __Ownable_init(owner_);
+    __UUPSUpgradeable_init();
 
     GovMITOStorage storage $ = _getGovMITOStorage();
 
@@ -99,10 +102,10 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  function mint(address to, uint256 amount) external payable onlyMinter {
-    require(msg.value == amount, StdError.InvalidParameter('amount'));
-    _mint(to, amount);
-    emit Minted(to, amount);
+  function mint(address to) external payable onlyMinter {
+    require(msg.value > 0, StdError.ZeroAmount());
+    _mint(to, msg.value);
+    emit Minted(to, msg.value);
   }
 
   function requestRedeem(address receiver, uint256 amount) external returns (uint256 reqId) {
@@ -131,6 +134,8 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   }
 
   // ============================ NOTE: OWNABLE FUNCTIONS ============================ //
+
+  function _authorizeUpgrade(address) internal override onlyOwner { }
 
   function setMinter(address minter_) external onlyOwner {
     _setMinter(_getGovMITOStorage(), minter_);
