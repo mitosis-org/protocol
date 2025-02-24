@@ -83,6 +83,7 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
 
   function registerValidator(bytes calldata valkey) external payable onlyPermittedCaller verifyValkey(valkey) {
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
+    require(msg.value % 1 gwei == 0, StdError.InvalidParameter('msg.value'));
 
     payable(address(0)).transfer(msg.value);
 
@@ -91,6 +92,7 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
 
   function depositCollateral(bytes calldata valkey) external payable onlyPermittedCaller verifyValkey(valkey) {
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
+    require(msg.value % 1 gwei == 0, StdError.InvalidParameter('msg.value'));
 
     payable(address(0)).transfer(msg.value);
 
@@ -103,6 +105,7 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
     verifyValkey(valkey)
   {
     require(amount > 0, StdError.InvalidParameter('amount'));
+    require(amount % 1 gwei == 0, StdError.InvalidParameter('msg.value'));
 
     emit MsgWithdrawCollateral(valkey, amount, receiver, receivesAt);
   }
