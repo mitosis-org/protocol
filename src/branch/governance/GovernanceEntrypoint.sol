@@ -6,18 +6,13 @@ import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
 
-import { IGovernanceExecutorEntrypoint } from '../interfaces/branch/IGovernanceExecutorEntrypoint.sol';
-import { Conv } from '../lib/Conv.sol';
-import { StdError } from '../lib/StdError.sol';
-import '../message/Message.sol';
+import { IGovernanceEntrypoint } from '../../interfaces/branch/governance/IGovernanceEntrypoint.sol';
+import { Conv } from '../../lib/Conv.sol';
+import { StdError } from '../../lib/StdError.sol';
+import '../../message/Message.sol';
 import { BranchTimelock } from './BranchTimelock.sol';
 
-contract GovernanceExecutorEntrypoint is
-  IGovernanceExecutorEntrypoint,
-  GasRouter,
-  UUPSUpgradeable,
-  AccessControlEnumerableUpgradeable
-{
+contract GovernanceEntrypoint is IGovernanceEntrypoint, GasRouter, UUPSUpgradeable, AccessControlEnumerableUpgradeable {
   using Message for *;
   using Conv for *;
 
