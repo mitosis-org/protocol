@@ -5,8 +5,8 @@ import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/Ac
 import { TimelockControllerUpgradeable } from '@ozu-v5/governance/TimelockControllerUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
-import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
-import { StdError } from '../lib/StdError.sol';
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { StdError } from '../../lib/StdError.sol';
 
 contract BranchTimelock is TimelockControllerUpgradeable, UUPSUpgradeable {
   using ERC7201Utils for string;
