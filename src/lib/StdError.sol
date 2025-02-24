@@ -6,6 +6,7 @@ library StdError {
   error Unauthorized();
   error NotFound(string description);
   error NotImplemented();
+  error NotSupported();
 
   error InvalidId(string description);
   error InvalidAddress(string description);

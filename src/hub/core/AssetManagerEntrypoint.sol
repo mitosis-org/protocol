@@ -38,7 +38,10 @@ contract AssetManagerEntrypoint is
 
   modifier onlyDispatchable(uint256 chainId) {
     require(_ccRegistry.isRegisteredChain(chainId), ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
-    require(_ccRegistry.entrypointEnrolled(chainId), ICrossChainRegistry.ICrossChainRegistry__NotEnrolled());
+    require(
+      _ccRegistry.mitosisVaultEntrypointEnrolled(chainId),
+      ICrossChainRegistry.ICrossChainRegistry__MitosisVaultEntrypointNotEnrolled()
+    );
     _;
   }
 
@@ -63,12 +66,12 @@ contract AssetManagerEntrypoint is
     return _ccRegistry.hyperlaneDomain(chainId);
   }
 
-  function branchVault(uint256 chainId) external view returns (address) {
-    return _ccRegistry.vault(chainId);
+  function branchMitosisVault(uint256 chainId) external view returns (address) {
+    return _ccRegistry.mitosisVault(chainId);
   }
 
-  function branchEntrypointAddr(uint256 chainId) external view returns (address) {
-    return _ccRegistry.entrypoint(chainId);
+  function branchMitosisVaultEntrypoint(uint256 chainId) external view returns (address) {
+    return _ccRegistry.mitosisVaultEntrypoint(chainId);
   }
 
   //=========== NOTE: ROUTER OVERRIDES ============//
@@ -160,7 +163,7 @@ contract AssetManagerEntrypoint is
     uint256 chainId = _ccRegistry.chainId(origin);
     require(chainId != 0, ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
 
-    address entrypoint = _ccRegistry.entrypoint(chainId);
+    address entrypoint = _ccRegistry.mitosisVaultEntrypoint(chainId);
     require(sender.toAddress() == entrypoint, ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
 
     MsgType msgType = msg_.msgType();
