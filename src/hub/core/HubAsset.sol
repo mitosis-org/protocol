@@ -5,6 +5,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 
 import { ERC20 } from '@solady/tokens/ERC20.sol';
 
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { HubAssetStorageV1 } from './HubAssetStorageV1.sol';
 
