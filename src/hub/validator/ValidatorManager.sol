@@ -40,8 +40,9 @@ contract ValidatorManagerStorageV1 {
     uint256 pendingCommissionRateUpdateEpoch; // current epoch + 2
   }
 
+  // TODO(eddy): versioning + search logic by epoch
   struct Validator {
-    address validator;
+    address valAddr;
     address operator;
     address rewardRecipient;
     bytes pubKey;
@@ -84,6 +85,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   using EnumerableMap for EnumerableMap.AddressToUintMap;
   using EnumerableSet for EnumerableSet.AddressSet;
   using LibRedeemQueue for LibRedeemQueue.Queue;
+  using LibSecp256k1 for bytes;
 
   uint256 public constant MAX_COMMISSION_RATE = 10000; // 100% in bp
 
@@ -139,46 +141,43 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   /// @inheritdoc IValidatorManager
   function validatorAt(uint256 index) external view returns (address) {
-    StorageV1 storage $ = _getStorageV1();
-    return $.validators[index + 1].validator;
+    return _getStorageV1().validators[index + 1].valAddr;
   }
 
   /// @inheritdoc IValidatorManager
   function isValidator(address valAddr) external view returns (bool) {
-    StorageV1 storage $ = _getStorageV1();
-    return $.indexByValAddr[valAddr] != 0;
+    return _getStorageV1().indexByValAddr[valAddr] != 0;
+  }
+
+  /// @inheritdoc IValidatorManager
+  function isValidatorWithPubKey(bytes calldata valKey) external view returns (bool) {
+    return _getStorageV1().indexByValAddr[valKey.deriveAddressFromCmpPubkey()] != 0;
   }
 
   /// @inheritdoc IValidatorManager
   function validatorInfo(address valAddr) public view returns (ValidatorInfoResponse memory) {
-    return validatorInfoAt(_getStorageV1().epochFeeder.epoch(), valAddr);
+    StorageV1 storage $ = _getStorageV1();
+    return _validatorInfoAt($, valAddr, $.epochFeeder.epoch());
+  }
+
+  /// @inheritdoc IValidatorManager
+  function validatorInfoWithPubKey(bytes calldata valKey) public view returns (ValidatorInfoResponse memory) {
+    StorageV1 storage $ = _getStorageV1();
+    return _validatorInfoAt($, valKey.deriveAddressFromCmpPubkey(), $.epochFeeder.epoch());
   }
 
   /// @inheritdoc IValidatorManager
   function validatorInfoAt(uint96 epoch, address valAddr) public view returns (ValidatorInfoResponse memory) {
-    StorageV1 storage $ = _getStorageV1();
-    Validator storage info = _validator($, valAddr);
+    return _validatorInfoAt(_getStorageV1(), valAddr, epoch);
+  }
 
-    uint256 commissionRate = _searchCheckpoint(info.rewardConfig.commissionRates, epoch).amount;
-
-    ValidatorInfoResponse memory response = ValidatorInfoResponse({
-      validator: info.validator,
-      operator: info.operator,
-      rewardRecipient: info.rewardRecipient,
-      commissionRate: commissionRate,
-      metadata: info.metadata
-    });
-
-    // apply pending rate
-    if (info.rewardConfig.pendingCommissionRateUpdateEpoch >= epoch) {
-      response.commissionRate = info.rewardConfig.pendingCommissionRate;
-    }
-
-    // hard limit
-    response.commissionRate =
-      Math.max(response.commissionRate, _searchCheckpoint($.globalValidatorConfig.minimumCommissionRates, epoch).amount);
-
-    return response;
+  /// @inheritdoc IValidatorManager
+  function validatorInfoAtWithPubKey(uint96 epoch, bytes calldata valKey)
+    public
+    view
+    returns (ValidatorInfoResponse memory)
+  {
+    return _validatorInfoAt(_getStorageV1(), valKey.deriveAddressFromCmpPubkey(), epoch);
   }
 
   /// @inheritdoc IValidatorManager
@@ -188,7 +187,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     address valAddr = _msgSender();
 
     // verify the valKey is valid and corresponds to the caller
-    LibSecp256k1.verifyCmpPubkeyWithAddress(valKey, valAddr);
+    valKey.verifyCmpPubkeyWithAddress(valAddr);
 
     StorageV1 storage $ = _getStorageV1();
     _assertValidatorNotExists($, valAddr);
@@ -208,7 +207,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     uint96 epoch = $.epochFeeder.epoch();
 
     Validator storage validator = $.validators[valIndex];
-    validator.validator = valAddr;
+    validator.valAddr = valAddr;
     validator.operator = valAddr;
     validator.rewardRecipient = valAddr;
     validator.pubKey = valKey;
@@ -224,23 +223,23 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function depositCollateral(address valAddr) external payable {
+  function depositCollateral(bytes calldata valKey) external payable {
     require(msg.value > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valAddr);
+    Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
 
     $.entrypoint.depositCollateral{ value: msg.value }(validator.pubKey);
 
-    emit CollateralDeposited(valAddr, msg.value);
+    emit CollateralDeposited(validator.valAddr, msg.value);
   }
 
   /// @inheritdoc IValidatorManager
-  function withdrawCollateral(address valAddr, address recipient, uint256 amount) external {
+  function withdrawCollateral(bytes calldata valKey, address recipient, uint256 amount) external {
     require(amount > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valAddr);
+    Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
     _assertOperator(validator);
 
     $.entrypoint.withdrawCollateral(
@@ -250,64 +249,64 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       $.epochFeeder.clock() + $.globalValidatorConfig.collateralWithdrawalDelay.toUint48()
     );
 
-    emit CollateralWithdrawn(valAddr, amount);
+    emit CollateralWithdrawn(validator.valAddr, amount);
   }
 
   /// @inheritdoc IValidatorManager
-  function unjailValidator(address valAddr) external {
+  function unjailValidator(bytes calldata valKey) external {
     StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valAddr);
+    Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
     _assertOperator(validator);
 
     $.entrypoint.unjail(validator.pubKey);
 
-    emit ValidatorUnjailed(valAddr);
+    emit ValidatorUnjailed(validator.valAddr);
   }
 
   /// @inheritdoc IValidatorManager
-  function updateOperator(address operator) external {
+  function updateOperator(bytes calldata valKey, address operator) external {
     require(operator != address(0), StdError.InvalidParameter('operator'));
     address valAddr = _msgSender();
 
     StorageV1 storage $ = _getStorageV1();
-    _assertValidatorExists($, valAddr);
-    if (valAddr != operator) _assertValidatorNotExists($, operator);
+    Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
+    if (validator.valAddr != operator) _assertValidatorNotExists($, operator);
 
     $.validators[$.indexByValAddr[valAddr]].operator = operator;
 
-    emit OperatorUpdated(valAddr, operator);
+    emit OperatorUpdated(validator.valAddr, operator);
   }
 
   /// @inheritdoc IValidatorManager
-  function updateRewardRecipient(address valAddr, address rewardRecipient) external {
+  function updateRewardRecipient(bytes calldata valKey, address rewardRecipient) external {
     require(rewardRecipient != address(0), StdError.InvalidParameter('rewardRecipient'));
 
     StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valAddr);
+    Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
     _assertOperator(validator);
 
-    $.validators[$.indexByValAddr[valAddr]].rewardRecipient = rewardRecipient;
+    $.validators[$.indexByValAddr[validator.valAddr]].rewardRecipient = rewardRecipient;
 
-    emit RewardRecipientUpdated(valAddr, _msgSender(), rewardRecipient);
+    emit RewardRecipientUpdated(validator.valAddr, _msgSender(), rewardRecipient);
   }
 
   /// @inheritdoc IValidatorManager
-  function updateMetadata(address valAddr, bytes calldata metadata) external {
+  function updateMetadata(bytes calldata valKey, bytes calldata metadata) external {
     require(metadata.length > 0, StdError.InvalidParameter('metadata'));
 
     StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valAddr);
+    Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
     _assertOperator(validator);
 
-    $.validators[$.indexByValAddr[valAddr]].metadata = metadata;
+    $.validators[$.indexByValAddr[validator.valAddr]].metadata = metadata;
 
-    emit MetadataUpdated(valAddr, _msgSender(), metadata);
+    emit MetadataUpdated(validator.valAddr, _msgSender(), metadata);
   }
 
   /// @inheritdoc IValidatorManager
-  function updateRewardConfig(address valAddr, UpdateRewardConfigRequest calldata request) external {
+  function updateRewardConfig(bytes calldata valKey, UpdateRewardConfigRequest calldata request) external {
     StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valAddr);
+    Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
     _assertOperator(validator);
 
     GlobalValidatorConfig memory globalConfig = $.globalValidatorConfig;
@@ -329,7 +328,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate;
     }
 
-    emit RewardConfigUpdated(valAddr, _msgSender());
+    emit RewardConfigUpdated(validator.valAddr, _msgSender());
   }
 
   /// @inheritdoc IValidatorManager
@@ -348,6 +347,35 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //
+
+  function _validatorInfoAt(StorageV1 storage $, address valAddr, uint96 epoch)
+    internal
+    view
+    returns (ValidatorInfoResponse memory)
+  {
+    Validator storage info = _validator($, valAddr);
+
+    uint256 commissionRate = _searchCheckpoint(info.rewardConfig.commissionRates, epoch).amount;
+
+    ValidatorInfoResponse memory response = ValidatorInfoResponse({
+      valAddr: info.valAddr,
+      operator: info.operator,
+      rewardRecipient: info.rewardRecipient,
+      commissionRate: commissionRate,
+      metadata: info.metadata
+    });
+
+    // apply pending rate
+    if (info.rewardConfig.pendingCommissionRateUpdateEpoch >= epoch) {
+      response.commissionRate = info.rewardConfig.pendingCommissionRate;
+    }
+
+    // hard limit
+    response.commissionRate =
+      Math.max(response.commissionRate, _searchCheckpoint($.globalValidatorConfig.minimumCommissionRates, epoch).amount);
+
+    return response;
+  }
 
   function _searchCheckpoint(EpochCheckpoint[] storage history, uint96 epoch)
     internal

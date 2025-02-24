@@ -24,6 +24,7 @@ import { Toolkit } from '../../util/Toolkit.sol';
 contract ValidatorManagerTest is Toolkit {
   using SafeCast for uint256;
   using stdJson for string;
+  using LibSecp256k1 for bytes;
   using LibString for *;
 
   struct ValidatorKey {
@@ -109,7 +110,7 @@ contract ValidatorManagerTest is Toolkit {
     assertTrue(manager.isValidator(val.addr));
 
     IValidatorManager.ValidatorInfoResponse memory info = manager.validatorInfo(val.addr);
-    assertEq(info.validator, val.addr);
+    assertEq(info.valAddr, val.addr);
     assertEq(info.operator, val.addr);
     assertEq(info.rewardRecipient, val.addr);
     assertEq(info.commissionRate, 100);
@@ -123,16 +124,14 @@ contract ValidatorManagerTest is Toolkit {
     address operator = makeAddr('operator');
 
     vm.prank(val.addr);
-    manager.updateOperator(operator);
+    manager.updateOperator(val.pubKey.compressPubkey(), operator);
 
     vm.deal(operator, 1000 ether);
     vm.prank(operator);
-    manager.depositCollateral{ value: 1000 ether }(val.addr);
+    manager.depositCollateral{ value: 1000 ether }(val.pubKey.compressPubkey());
 
     entrypoint.assertLastCall(
-      IConsensusValidatorEntrypoint.depositCollateral.selector,
-      abi.encode(LibSecp256k1.compressPubkey(val.pubKey)),
-      1000 ether
+      IConsensusValidatorEntrypoint.depositCollateral.selector, abi.encode(val.pubKey.compressPubkey()), 1000 ether
     );
   }
 
@@ -142,10 +141,10 @@ contract ValidatorManagerTest is Toolkit {
     address recipient = makeAddr('recipient');
 
     vm.prank(val.addr);
-    manager.updateOperator(operator);
+    manager.updateOperator(val.pubKey.compressPubkey(), operator);
 
     vm.prank(operator);
-    manager.withdrawCollateral(val.addr, recipient, 1000 ether);
+    manager.withdrawCollateral(val.pubKey.compressPubkey(), recipient, 1000 ether);
 
     entrypoint.assertLastCall(
       IConsensusValidatorEntrypoint.withdrawCollateral.selector,
@@ -158,10 +157,10 @@ contract ValidatorManagerTest is Toolkit {
     address operator = makeAddr('operator');
 
     vm.prank(val.addr);
-    manager.updateOperator(operator);
+    manager.updateOperator(val.pubKey.compressPubkey(), operator);
 
     vm.prank(operator);
-    manager.unjailValidator(val.addr);
+    manager.unjailValidator(val.pubKey.compressPubkey());
 
     entrypoint.assertLastCall(
       IConsensusValidatorEntrypoint.unjail.selector, abi.encode(LibSecp256k1.compressPubkey(val.pubKey))
@@ -173,7 +172,7 @@ contract ValidatorManagerTest is Toolkit {
     address newOperator = makeAddr('newOperator');
 
     vm.prank(val.addr);
-    manager.updateOperator(newOperator);
+    manager.updateOperator(val.pubKey.compressPubkey(), newOperator);
 
     assertEq(manager.validatorInfo(val.addr).operator, newOperator);
   }
@@ -184,10 +183,10 @@ contract ValidatorManagerTest is Toolkit {
     address newRecipient = makeAddr('newRecipient');
 
     vm.prank(val.addr);
-    manager.updateOperator(newOperator);
+    manager.updateOperator(val.pubKey.compressPubkey(), newOperator);
 
     vm.prank(newOperator);
-    manager.updateRewardRecipient(val.addr, newRecipient);
+    manager.updateRewardRecipient(val.pubKey.compressPubkey(), newRecipient);
 
     assertEq(manager.validatorInfo(val.addr).rewardRecipient, newRecipient);
   }
@@ -198,10 +197,10 @@ contract ValidatorManagerTest is Toolkit {
     bytes memory newMetadata = _buildMetadata('val-2', 'test-val-2', 'test validator of mitosis-2');
 
     vm.prank(val.addr);
-    manager.updateOperator(newOperator);
+    manager.updateOperator(val.pubKey.compressPubkey(), newOperator);
 
     vm.prank(newOperator);
-    manager.updateMetadata(val.addr, newMetadata);
+    manager.updateMetadata(val.pubKey.compressPubkey(), newMetadata);
 
     assertEq(manager.validatorInfo(val.addr).metadata, newMetadata);
   }
@@ -212,11 +211,11 @@ contract ValidatorManagerTest is Toolkit {
     uint256 newCommissionRate = 200;
 
     vm.prank(val.addr);
-    manager.updateOperator(newOperator);
+    manager.updateOperator(val.pubKey.compressPubkey(), newOperator);
 
     vm.prank(newOperator);
     manager.updateRewardConfig(
-      val.addr, IValidatorManager.UpdateRewardConfigRequest({ commissionRate: newCommissionRate })
+      val.pubKey.compressPubkey(), IValidatorManager.UpdateRewardConfigRequest({ commissionRate: newCommissionRate })
     );
 
     assertEq(manager.validatorInfo(val.addr).commissionRate, newCommissionRate);
