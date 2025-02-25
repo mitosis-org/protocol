@@ -111,4 +111,4 @@ solmate = "6.8.0"
 "@openzeppelin-contracts-v4" = { version = "4.9.6", url = "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/refs/tags/v4.9.6.zip" }
 "@openzeppelin-contracts-upgradeable-v4" = { version = "4.9.6", url = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/archive/refs/tags/v4.9.6.zip" }
 "@murky" = { version = "0.0.1", url = "https://github.com/mitosis-org/murky/archive/refs/tags/v0.0.1.zip" }
-"@elliptic-curve-solidity" = { version = "0.2.5", git = "git@github.com:witnet/elliptic-curve-solidity", rev = "3475478" }
+"@elliptic-curve-solidity" = { version = "0.2.5", url = "https://github.com/witnet/elliptic-curve-solidity/archive/c845495d1b6a58bccfbe0041128b910766e2a609.zip" }
