@@ -13,7 +13,9 @@ enum MsgType {
   MsgDeallocateMatrix,
   MsgSettleMatrixYield,
   MsgSettleMatrixLoss,
-  MsgSettleMatrixExtraRewards
+  MsgSettleMatrixExtraRewards,
+  //=========== NOTE: MITOGovernance ===========//
+  MsgDispatchGovernanceExecution
 }
 
 // hub -> branch
@@ -78,6 +80,13 @@ struct MsgSettleMatrixExtraRewards {
   bytes32 matrixVault;
   bytes32 reward;
   uint256 amount;
+}
+
+// hub -> branch
+struct MsgDispatchGovernanceExecution {
+  bytes32[] targets;
+  uint256[] values;
+  bytes[] data;
 }
 
 library Message {
@@ -225,5 +234,21 @@ library Message {
     decoded.matrixVault = bytes32(msg_[1:33]);
     decoded.reward = bytes32(msg_[33:65]);
     decoded.amount = uint256(bytes32(msg_[65:]));
+  }
+
+  function encode(MsgDispatchGovernanceExecution memory msg_) internal pure returns (bytes memory) {
+    return abi.encodePacked(uint8(MsgType.MsgDispatchGovernanceExecution), (abi.encode(msg_)));
+  }
+
+  function decodeDispatchGovernanceExecution(bytes calldata msg_)
+    internal
+    pure
+    returns (MsgDispatchGovernanceExecution memory decoded)
+  {
+    require(
+      msgType(msg_) == MsgType.MsgDispatchGovernanceExecution,
+      Message__InvalidMsgType(msgType(msg_), MsgType.MsgDispatchGovernanceExecution)
+    );
+    decoded = abi.decode(msg_[1:], (MsgDispatchGovernanceExecution));
   }
 }

@@ -28,7 +28,7 @@ contract MitosisVaultEntrypoint is
 
   IMitosisVault internal immutable _vault;
   uint32 internal immutable _mitosisDomain;
-  bytes32 internal immutable _mitosisAddr;
+  bytes32 internal immutable _mitosisAddr; // Hub.AssetManagerEntrypoint
 
   modifier onlyVault() {
     require(_msgSender() == address(_vault), StdError.InvalidAddress('vault'));

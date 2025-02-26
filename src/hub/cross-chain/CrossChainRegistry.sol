@@ -45,16 +45,24 @@ contract CrossChainRegistry is
     return _getStorageV1().chains[chainId_].hplDomain;
   }
 
-  function entrypoint(uint256 chainId_) external view returns (address) {
-    return _getStorageV1().chains[chainId_].entrypoint;
+  function mitosisVaultEntrypoint(uint256 chainId_) external view returns (address) {
+    return _getStorageV1().chains[chainId_].mitosisVaultEntrypoint;
   }
 
-  function vault(uint256 chainId_) external view returns (address) {
-    return _getStorageV1().chains[chainId_].vault;
+  function governanceExecutorEntrypoint(uint256 chainId_) external view returns (address) {
+    return _getStorageV1().chains[chainId_].governanceExecutorEntrypoint;
   }
 
-  function entrypointEnrolled(uint256 chainId_) external view returns (bool) {
-    return _isEntrypointEnrolled(_getStorageV1().chains[chainId_]);
+  function mitosisVault(uint256 chainId_) external view returns (address) {
+    return _getStorageV1().chains[chainId_].mitosisVault;
+  }
+
+  function mitosisVaultEntrypointEnrolled(uint256 chainId_) external view returns (bool) {
+    return _isMitosisVaultEntrypointEnrolled(_getStorageV1().chains[chainId_]);
+  }
+
+  function governanceExecutorEntrypointEnrolled(uint256 chainId_) external view returns (bool) {
+    return _isGovernanceExecutorEntrypointEnrolled(_getStorageV1().chains[chainId_]);
   }
 
   function chainId(uint32 hplDomain) external view returns (uint256) {
@@ -69,7 +77,13 @@ contract CrossChainRegistry is
 
   function _authorizeUpgrade(address) internal override onlyOwner { }
 
-  function setChain(uint256 chainId_, string calldata name, uint32 hplDomain, address entrypoint_) external onlyOwner {
+  function setChain(
+    uint256 chainId_,
+    string calldata name,
+    uint32 hplDomain,
+    address mitosisVaultEntrypoint_,
+    address governanceExecutorEntrypoint_
+  ) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
 
     require(
@@ -81,10 +95,11 @@ contract CrossChainRegistry is
     $.hplDomains.push(hplDomain);
     $.chains[chainId_].name = name;
     $.chains[chainId_].hplDomain = hplDomain;
-    $.chains[chainId_].entrypoint = entrypoint_;
+    $.chains[chainId_].mitosisVaultEntrypoint = mitosisVaultEntrypoint_;
+    $.chains[chainId_].governanceExecutorEntrypoint = governanceExecutorEntrypoint_;
     $.hyperlanes[hplDomain].chainId = chainId_;
 
-    emit ChainSet(chainId_, hplDomain, entrypoint_, name);
+    emit ChainSet(chainId_, hplDomain, mitosisVaultEntrypoint_, governanceExecutorEntrypoint_, name);
   }
 
   function setVault(uint256 chainId_, address vault_) external onlyOwner {
@@ -93,22 +108,38 @@ contract CrossChainRegistry is
     require(_isRegisteredChain(chainInfo), ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
     require(!_isRegisteredVault(chainInfo), ICrossChainRegistry.ICrossChainRegistry__AlreadyRegistered());
 
-    chainInfo.vault = vault_;
+    chainInfo.mitosisVault = vault_;
     emit VaultSet(chainId_, vault_);
   }
 
-  function enrollEntrypoint(address hplRouter) external onlyOwner {
+  function enrollMitosisVaultEntrypoint(address hplRouter) external onlyOwner {
     uint256[] memory allChainIds = _getStorageV1().chainIds;
+    // TODO(ray): IRouter.enrollRemoteRouters
     for (uint256 i = 0; i < allChainIds.length; i++) {
-      enrollEntrypoint(hplRouter, allChainIds[i]);
+      enrollMitosisVaultEntrypoint(hplRouter, allChainIds[i]);
     }
   }
 
-  function enrollEntrypoint(address hplRouter, uint256 chainId_) public onlyOwner {
+  function enrollGovernanceExecutorEntrypoint(address hplRouter) external onlyOwner {
+    uint256[] memory allChainIds = _getStorageV1().chainIds;
+    for (uint256 i = 0; i < allChainIds.length; i++) {
+      enrollGovernanceExecutorEntrypoint(hplRouter, allChainIds[i]);
+    }
+  }
+
+  function enrollMitosisVaultEntrypoint(address hplRouter, uint256 chainId_) public onlyOwner {
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId_];
-    if (_isEnrollableChain(chainInfo)) {
-      chainInfo.entrypointEnrolled = true;
-      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.entrypoint.toBytes32());
+    if (_isMitosisVaultEntrypointEnrollableChain(chainInfo)) {
+      chainInfo.mitosisVaultEntrypointEnrolled = true;
+      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.mitosisVaultEntrypoint.toBytes32());
+    }
+  }
+
+  function enrollGovernanceExecutorEntrypoint(address hplRouter, uint256 chainId_) public onlyOwner {
+    ChainInfo storage chainInfo = _getStorageV1().chains[chainId_];
+    if (_isGovernanceExecutorEntrypointEnrollableChain(chainInfo)) {
+      chainInfo.governanceExecutorEntrypointEnrolled = true;
+      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.governanceExecutorEntrypoint.toBytes32());
     }
   }
 
@@ -119,15 +150,23 @@ contract CrossChainRegistry is
   }
 
   function _isRegisteredVault(ChainInfo storage chainInfo) internal view returns (bool) {
-    return chainInfo.vault != address(0);
+    return chainInfo.mitosisVault != address(0);
   }
 
-  function _isEntrypointEnrolled(ChainInfo storage chainInfo) internal view returns (bool) {
-    return chainInfo.entrypointEnrolled;
+  function _isMitosisVaultEntrypointEnrolled(ChainInfo storage chainInfo) internal view returns (bool) {
+    return chainInfo.mitosisVaultEntrypointEnrolled;
   }
 
-  function _isEnrollableChain(ChainInfo storage chainInfo) internal view returns (bool) {
-    return _isRegisteredChain(chainInfo) && !_isEntrypointEnrolled(chainInfo);
+  function _isGovernanceExecutorEntrypointEnrolled(ChainInfo storage chainInfo) internal view returns (bool) {
+    return chainInfo.governanceExecutorEntrypointEnrolled;
+  }
+
+  function _isMitosisVaultEntrypointEnrollableChain(ChainInfo storage chainInfo) internal view returns (bool) {
+    return _isRegisteredChain(chainInfo) && !_isMitosisVaultEntrypointEnrolled(chainInfo);
+  }
+
+  function _isGovernanceExecutorEntrypointEnrollableChain(ChainInfo storage chainInfo) internal view returns (bool) {
+    return _isRegisteredChain(chainInfo) && !_isGovernanceExecutorEntrypointEnrolled(chainInfo);
   }
 
   function _isRegisteredHyperlane(HyperlaneInfo storage hplInfo) internal view returns (bool) {

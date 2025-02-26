@@ -10,9 +10,11 @@ contract CrossChainRegistryStorageV1 {
     string name;
     // Branch info
     uint32 hplDomain;
-    address vault;
-    address entrypoint;
-    bool entrypointEnrolled;
+    address mitosisVault;
+    address mitosisVaultEntrypoint;
+    address governanceExecutorEntrypoint;
+    bool mitosisVaultEntrypointEnrolled;
+    bool governanceExecutorEntrypointEnrolled;
   }
 
   struct HyperlaneInfo {

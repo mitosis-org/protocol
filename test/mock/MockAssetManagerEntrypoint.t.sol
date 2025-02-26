@@ -34,11 +34,11 @@ contract MockAssetManagerEntrypoint is Context, IAssetManagerEntrypoint {
     return 0;
   }
 
-  function branchVault(uint256) external pure returns (address) {
+  function branchMitosisVault(uint256) external pure returns (address) {
     return address(0);
   }
 
-  function branchEntrypointAddr(uint256) external pure returns (address) {
+  function branchMitosisVaultEntrypoint(uint256) external pure returns (address) {
     return address(0);
   }
 

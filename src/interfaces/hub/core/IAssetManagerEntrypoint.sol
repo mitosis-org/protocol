@@ -24,16 +24,16 @@ interface IAssetManagerEntrypoint {
   /**
    * @notice Gets the address of the branch vault for a specific chain
    * @param chainId The ID of the chain to query
-   * @return The address of the branch vault on the specified chain
+   * @return The address of the branch MitosisVault on the specified chain
    */
-  function branchVault(uint256 chainId) external view returns (address);
+  function branchMitosisVault(uint256 chainId) external view returns (address);
 
   /**
    * @notice Retrieves the address of the branch entrypoint for a given chain
    * @param chainId The ID of the chain to query
-   * @return The address of the branch entrypoint on the specified chain
+   * @return The address of the branch MitosisVaultEntrypoint on the specified chain
    */
-  function branchEntrypointAddr(uint256 chainId) external view returns (address);
+  function branchMitosisVaultEntrypoint(uint256 chainId) external view returns (address);
 
   /**
    * @notice Initializes an asset on a specified branch chain
