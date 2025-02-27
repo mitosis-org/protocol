@@ -6,8 +6,8 @@ import { Script } from '@std/Script.sol';
 
 import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
-import { ConsensusValidatorEntrypoint } from '../src/hub/consensus-layer/ConsensusValidatorEntrypoint.sol';
 import { ConsensusGovernanceEntrypoint } from '../src/hub/consensus-layer/ConsensusGovernanceEntrypoint.sol';
+import { ConsensusValidatorEntrypoint } from '../src/hub/consensus-layer/ConsensusValidatorEntrypoint.sol';
 
 // NOTE: This is not for production use. This is just for testing and development purposes.
 contract DeployConsensusEntrypoints is Script {
