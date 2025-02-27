@@ -13,6 +13,6 @@ if [ -z "${PRIVATE_KEY}" ]; then
 fi
 
 forge script script/DeployConsensusEntrypoints.s.sol:DeployConsensusEntrypoints \
-    --broadcast -vvvv \
+    --broadcast \
     --rpc-url "${RPC_URL}" \
     --private-key "${PRIVATE_KEY}"
