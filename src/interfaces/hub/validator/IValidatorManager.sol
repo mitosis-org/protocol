@@ -53,6 +53,14 @@ interface IValidatorManager {
     uint256 commissionRate; // bp ex) 10000 = 100%
   }
 
+  struct GenesisValidatorSet {
+    bytes valKey;
+    address operator;
+    uint256 commissionRate;
+    bytes metadata;
+    bytes signature;
+  }
+
   struct SetGlobalValidatorConfigRequest {
     uint256 initialValidatorDeposit; // used on creation of the validator
     uint256 collateralWithdrawalDelay; // in seconds

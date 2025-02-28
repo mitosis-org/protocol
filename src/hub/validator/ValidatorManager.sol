@@ -10,6 +10,7 @@ import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
 import { EnumerableMap } from '@oz-v5/utils/structs/EnumerableMap.sol';
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
+import { ECDSA } from '@solady/utils/ECDSA.sol';
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
 import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
@@ -94,7 +95,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     address initialOwner,
     IEpochFeeder epochFeeder_,
     IConsensusValidatorEntrypoint entrypoint_,
-    SetGlobalValidatorConfigRequest memory initialGlobalValidatorConfig
+    SetGlobalValidatorConfigRequest memory initialGlobalValidatorConfig,
+    GenesisValidatorSet[] memory genesisValidators
   ) external initializer {
     __UUPSUpgradeable_init();
     __Ownable_init(initialOwner);
@@ -106,6 +108,28 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _setGlobalValidatorConfig($, initialGlobalValidatorConfig);
 
     $.validatorCount = 1;
+
+    // TODO(eddy): test me
+    for (uint256 i = 0; i < genesisValidators.length; i++) {
+      GenesisValidatorSet memory genVal = genesisValidators[i];
+
+      address valAddr = ECDSA.recover(
+        keccak256(abi.encodePacked(genVal.operator, genVal.commissionRate, genVal.metadata)), genVal.signature
+      );
+
+      genVal.valKey.verifyCmpPubkeyWithAddress(valAddr);
+
+      _createValidator(
+        $,
+        valAddr,
+        genVal.valKey,
+        CreateValidatorRequest({
+          operator: genVal.operator,
+          commissionRate: genVal.commissionRate,
+          metadata: genVal.metadata
+        })
+      );
+    }
   }
 
   /// @inheritdoc IValidatorManager
@@ -186,19 +210,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     // verify the valKey is valid and corresponds to the caller
     valKey.verifyCmpPubkeyWithAddress(valAddr);
 
-    StorageV1 storage $ = _getStorageV1();
-    _assertValidatorNotExists($, valAddr);
-
-    GlobalValidatorConfig storage globalConfig = $.globalValidatorConfig;
-
-    require(globalConfig.initialValidatorDeposit <= msg.value, StdError.InvalidParameter('msg.value'));
-    require(
-      globalConfig.minimumCommissionRates.latest() <= request.commissionRate
-        && request.commissionRate <= MAX_COMMISSION_RATE,
-      StdError.InvalidParameter('commissionRate')
-    );
-
-    _createValidator($, valAddr, valKey, request);
+    _createValidator(_getStorageV1(), valAddr, valKey, request);
   }
 
   /// @inheritdoc IValidatorManager
@@ -389,9 +401,20 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   function _createValidator(
     StorageV1 storage $,
     address valAddr,
-    bytes calldata valKey,
-    CreateValidatorRequest calldata request
+    bytes memory valKey,
+    CreateValidatorRequest memory request
   ) internal {
+    _assertValidatorNotExists($, valAddr);
+
+    GlobalValidatorConfig storage globalConfig = $.globalValidatorConfig;
+
+    require(globalConfig.initialValidatorDeposit <= msg.value, StdError.InvalidParameter('msg.value'));
+    require(
+      globalConfig.minimumCommissionRates.latest() <= request.commissionRate
+        && request.commissionRate <= MAX_COMMISSION_RATE,
+      StdError.InvalidParameter('commissionRate')
+    );
+
     // start from 1
     uint256 valIndex = $.validatorCount++;
 
