@@ -58,12 +58,16 @@ contract BranchGovernanceEntrypoint is
     uint256 chainId,
     address[] calldata targets,
     bytes[] calldata data,
-    uint256[] calldata values
+    uint256[] calldata values,
+    bytes32 predecessor,
+    bytes32 salt
   ) external onlyRole(MANAGER_ROLE) onlyDispatchable(chainId) {
     bytes memory enc = MsgDispatchGovernanceExecution({
       targets: _convertAddressArrayToBytes32Array(targets),
       values: values,
-      data: data
+      data: data,
+      predecessor: predecessor,
+      salt: salt
     }).encode();
     _dispatchToBranch(chainId, enc);
   }

@@ -6,6 +6,8 @@ interface IBranchGovernanceEntrypoint {
     uint256 chainId,
     address[] calldata targets,
     bytes[] calldata data,
-    uint256[] calldata values
+    uint256[] calldata values,
+    bytes32 predecessor,
+    bytes32 salt
   ) external;
 }

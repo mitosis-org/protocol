@@ -49,7 +49,12 @@ contract GovernanceEntrypoint is IGovernanceEntrypoint, GasRouter, UUPSUpgradeab
     if (msgType == MsgType.MsgDispatchGovernanceExecution) {
       MsgDispatchGovernanceExecution memory decoded = msg_.decodeDispatchGovernanceExecution();
       _timelock.scheduleBatch(
-        _convertBytes32ArrayToAddressArray(decoded.targets), decoded.values, decoded.data, 0, _timelock.getMinDelay()
+        _convertBytes32ArrayToAddressArray(decoded.targets),
+        decoded.values,
+        decoded.data,
+        decoded.predecessor,
+        decoded.salt,
+        _timelock.getMinDelay()
       );
     }
   }
