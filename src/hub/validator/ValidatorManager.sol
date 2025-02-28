@@ -6,6 +6,7 @@ import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
 import { EnumerableMap } from '@oz-v5/utils/structs/EnumerableMap.sol';
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 
@@ -22,20 +23,15 @@ import { StdError } from '../../lib/StdError.sol';
 contract ValidatorManagerStorageV1 {
   using ERC7201Utils for string;
 
-  struct EpochCheckpoint {
-    uint96 epoch;
-    uint160 amount;
-  }
-
   struct GlobalValidatorConfig {
     uint256 initialValidatorDeposit; // used on creation of the validator
     uint256 collateralWithdrawalDelay; // in seconds
-    EpochCheckpoint[] minimumCommissionRates;
+    Checkpoints.Trace160 minimumCommissionRates;
     uint96 commissionRateUpdateDelay; // in epoch
   }
 
   struct ValidatorRewardConfig {
-    EpochCheckpoint[] commissionRates; // bp ex) 10000 = 100%
+    Checkpoints.Trace160 commissionRates; // bp ex) 10000 = 100%
     uint256 pendingCommissionRate; // bp ex) 10000 = 100%
     uint256 pendingCommissionRateUpdateEpoch; // current epoch + 2
   }
@@ -86,6 +82,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   using EnumerableSet for EnumerableSet.AddressSet;
   using LibRedeemQueue for LibRedeemQueue.Queue;
   using LibSecp256k1 for bytes;
+  using Checkpoints for Checkpoints.Trace160;
 
   uint256 public constant MAX_COMMISSION_RATE = 10000; // 100% in bp
 
@@ -124,12 +121,12 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   /// @inheritdoc IValidatorManager
   function globalValidatorConfig() external view returns (GlobalValidatorConfigResponse memory) {
     StorageV1 storage $ = _getStorageV1();
-    GlobalValidatorConfig memory config = $.globalValidatorConfig;
+    GlobalValidatorConfig storage config = $.globalValidatorConfig;
 
     return GlobalValidatorConfigResponse({
       initialValidatorDeposit: config.initialValidatorDeposit,
       collateralWithdrawalDelay: config.collateralWithdrawalDelay,
-      minimumCommissionRate: config.minimumCommissionRates[config.minimumCommissionRates.length - 1].amount,
+      minimumCommissionRate: config.minimumCommissionRates.latest(),
       commissionRateUpdateDelay: config.commissionRateUpdateDelay
     });
   }
@@ -192,12 +189,12 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
     _assertValidatorNotExists($, valAddr);
 
-    GlobalValidatorConfig memory globalConfig = $.globalValidatorConfig;
+    GlobalValidatorConfig storage globalConfig = $.globalValidatorConfig;
 
     require(globalConfig.initialValidatorDeposit <= msg.value, StdError.InvalidParameter('msg.value'));
     require(
-      globalConfig.minimumCommissionRates[globalConfig.minimumCommissionRates.length - 1].amount
-        <= request.commissionRate && request.commissionRate <= MAX_COMMISSION_RATE,
+      globalConfig.minimumCommissionRates.latest() <= request.commissionRate
+        && request.commissionRate <= MAX_COMMISSION_RATE,
       StdError.InvalidParameter('commissionRate')
     );
 
@@ -211,9 +208,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     validator.operator = valAddr;
     validator.rewardRecipient = valAddr;
     validator.pubKey = valKey;
-    validator.rewardConfig.commissionRates.push(
-      EpochCheckpoint({ epoch: epoch, amount: request.commissionRate.toUint160() })
-    );
+    validator.rewardConfig.commissionRates.push(epoch, request.commissionRate.toUint160());
     validator.metadata = request.metadata;
 
     $.indexByValAddr[valAddr] = valIndex;
@@ -309,10 +304,10 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
     _assertOperator(validator);
 
-    GlobalValidatorConfig memory globalConfig = $.globalValidatorConfig;
+    GlobalValidatorConfig storage globalConfig = $.globalValidatorConfig;
     require(
-      globalConfig.minimumCommissionRates[globalConfig.minimumCommissionRates.length - 1].amount
-        <= request.commissionRate && request.commissionRate <= MAX_COMMISSION_RATE,
+      globalConfig.minimumCommissionRates.latest() <= request.commissionRate
+        && request.commissionRate <= MAX_COMMISSION_RATE,
       StdError.InvalidParameter('commissionRate')
     );
 
@@ -348,7 +343,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   {
     Validator storage info = _validator($, valAddr);
 
-    uint256 commissionRate = _searchCheckpoint(info.rewardConfig.commissionRates, epoch).amount;
+    uint256 commissionRate = info.rewardConfig.commissionRates.lowerLookup(epoch);
 
     ValidatorInfoResponse memory response = ValidatorInfoResponse({
       valAddr: info.valAddr,
@@ -365,34 +360,9 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
     // hard limit
     response.commissionRate =
-      Math.max(response.commissionRate, _searchCheckpoint($.globalValidatorConfig.minimumCommissionRates, epoch).amount);
+      Math.max(response.commissionRate, $.globalValidatorConfig.minimumCommissionRates.lowerLookup(epoch));
 
     return response;
-  }
-
-  function _searchCheckpoint(EpochCheckpoint[] storage history, uint96 epoch)
-    internal
-    view
-    returns (EpochCheckpoint memory)
-  {
-    EpochCheckpoint memory last = history[history.length - 1];
-    if (last.epoch <= epoch) return last;
-
-    uint256 left = 0;
-    uint256 right = history.length - 1;
-    uint256 target = 0;
-
-    while (left <= right) {
-      uint256 mid = left + (right - left) / 2;
-      if (history[mid].epoch <= epoch) {
-        target = mid;
-        left = mid + 1;
-      } else {
-        right = mid - 1;
-      }
-    }
-
-    return history[target];
   }
 
   function _setEpochFeeder(StorageV1 storage $, IEpochFeeder epochFeeder_) internal {
@@ -419,9 +389,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     require(request.collateralWithdrawalDelay >= 0, StdError.InvalidParameter('collateralWithdrawalDelay'));
 
     uint96 epoch = $.epochFeeder.epoch();
-    $.globalValidatorConfig.minimumCommissionRates.push(
-      EpochCheckpoint({ epoch: epoch, amount: request.minimumCommissionRate.toUint160() })
-    );
+    $.globalValidatorConfig.minimumCommissionRates.push(epoch, request.minimumCommissionRate.toUint160());
     $.globalValidatorConfig.commissionRateUpdateDelay = request.commissionRateUpdateDelay;
     $.globalValidatorConfig.initialValidatorDeposit = request.initialValidatorDeposit;
     $.globalValidatorConfig.collateralWithdrawalDelay = request.collateralWithdrawalDelay;
