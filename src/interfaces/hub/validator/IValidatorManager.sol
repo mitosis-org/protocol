@@ -87,8 +87,8 @@ interface IValidatorManager {
 
   function validatorInfo(address valAddr) external view returns (ValidatorInfoResponse memory);
   function validatorInfoWithPubKey(bytes calldata valKey) external view returns (ValidatorInfoResponse memory);
-  function validatorInfoAt(uint96 epoch, address valAddr) external view returns (ValidatorInfoResponse memory);
-  function validatorInfoAtWithPubKey(uint96 epoch, bytes calldata valKey)
+  function validatorInfoAt(uint256 epoch, address valAddr) external view returns (ValidatorInfoResponse memory);
+  function validatorInfoAtWithPubKey(uint256 epoch, bytes calldata valKey)
     external
     view
     returns (ValidatorInfoResponse memory);

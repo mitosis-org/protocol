@@ -12,9 +12,9 @@ import { IValidatorStaking } from './IValidatorStaking.sol';
 /// @notice Interface for the ValidatorRewardDistributor contract that handles distribution of validator rewards
 interface IValidatorRewardDistributor {
   // Events
-  event RewardsReported(address indexed valAddr, uint256 amount, uint96 epoch);
+  event RewardsReported(address indexed valAddr, uint256 amount, uint256 epoch);
   event RewardsClaimed(
-    address indexed staker, address indexed valAddr, uint256 amount, uint96 fromEpoch, uint96 toEpoch
+    address indexed staker, address indexed valAddr, uint256 amount, uint256 fromEpoch, uint256 toEpoch
   );
   event EpochFeederSet(address indexed epochFeeder);
   event ValidatorManagerSet(address indexed validatorManager);
@@ -44,25 +44,25 @@ interface IValidatorRewardDistributor {
   /// @param staker The staker address to check rewards for
   /// @param valAddr The validator address to check rewards for
   /// @return epoch The last claimed staker rewards epoch
-  function lastClaimedStakerRewardsEpoch(address staker, address valAddr) external view returns (uint96);
+  function lastClaimedStakerRewardsEpoch(address staker, address valAddr) external view returns (uint256);
 
   /// @notice Returns the last claimed operator rewards epoch for a validator
   /// @param valAddr The validator address to check rewards for
   /// @return epoch The last claimed operator rewards epoch
-  function lastClaimedOperatorRewardsEpoch(address valAddr) external view returns (uint96);
+  function lastClaimedOperatorRewardsEpoch(address valAddr) external view returns (uint256);
 
   /// @notice Returns the total claimable rewards for multiple validators and a staker
   /// @param staker The staker address to check rewards for
   /// @param valAddr The validator address to check rewards for
   /// @return amount The total amount of rewards that can be claimed
   /// @return nextEpoch The next epoch to claim rewards from
-  function claimableStakerRewards(address staker, address valAddr) external view returns (uint256, uint96);
+  function claimableStakerRewards(address staker, address valAddr) external view returns (uint256, uint256);
 
   /// @notice Returns the total claimable operator rewards for a validator
   /// @param valAddr The validator address to check rewards for
   /// @return amount The total amount of rewards that can be claimed
   /// @return nextEpoch The next epoch to claim rewards from
-  function claimableOperatorRewards(address valAddr) external view returns (uint256, uint96);
+  function claimableOperatorRewards(address valAddr) external view returns (uint256, uint256);
 
   /// @notice Claims rewards for multiple validators over a range of epochs
   /// @param staker The staker address to claim rewards for

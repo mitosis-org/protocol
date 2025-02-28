@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { LibString } from '@solady/utils/LibString.sol';
 
@@ -60,7 +61,9 @@ contract ValidatorRewardDistributorTest is Toolkit {
     epochFeed = EpochFeeder(
       _proxy(
         address(new EpochFeeder()),
-        abi.encodeCall(EpochFeeder.initialize, (owner, block.timestamp + epochInterval, epochInterval))
+        abi.encodeCall(
+          EpochFeeder.initialize, (owner, Time.timestamp() + epochInterval.toUint48(), epochInterval.toUint48())
+        )
       )
     );
     distributor = ValidatorRewardDistributor(

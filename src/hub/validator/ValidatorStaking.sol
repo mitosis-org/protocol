@@ -5,6 +5,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
@@ -104,7 +105,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   /// @inheritdoc IValidatorStaking
   function staked(address valAddr, address staker) external view returns (uint256) {
     require(staker != address(0), StdError.InvalidParameter('staker'));
-    return _staked(_getStorageV1(), valAddr, staker, _epochFeeder.clock());
+    return _staked(_getStorageV1(), valAddr, staker, Time.timestamp());
   }
 
   /// @inheritdoc IValidatorStaking
@@ -118,7 +119,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   /// @inheritdoc IValidatorStaking
   function stakedTWAB(address valAddr, address staker) external view returns (uint256) {
     require(staker != address(0), StdError.InvalidParameter('staker'));
-    return _stakedTWAB(_getStorageV1(), valAddr, staker, _epochFeeder.clock());
+    return _stakedTWAB(_getStorageV1(), valAddr, staker, Time.timestamp());
   }
 
   /// @inheritdoc IValidatorStaking
@@ -131,7 +132,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   /// @inheritdoc IValidatorStaking
   function unstaking(address valAddr, address staker) external view returns (uint256, uint256) {
     require(staker != address(0), StdError.InvalidParameter('staker'));
-    return _unstaking(_getStorageV1(), valAddr, staker, _epochFeeder.clock());
+    return _unstaking(_getStorageV1(), valAddr, staker, Time.timestamp());
   }
 
   /// @inheritdoc IValidatorStaking
@@ -143,7 +144,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
   /// @inheritdoc IValidatorStaking
   function totalDelegation(address valAddr) external view returns (uint256) {
-    return _totalDelegation(_getStorageV1(), valAddr, _epochFeeder.clock());
+    return _totalDelegation(_getStorageV1(), valAddr, Time.timestamp());
   }
 
   /// @inheritdoc IValidatorStaking
@@ -154,7 +155,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
   /// @inheritdoc IValidatorStaking
   function totalDelegationTWAB(address valAddr) external view returns (uint256) {
-    return _totalDelegationTWAB(_getStorageV1(), valAddr, _epochFeeder.clock());
+    return _totalDelegationTWAB(_getStorageV1(), valAddr, Time.timestamp());
   }
 
   /// @inheritdoc IValidatorStaking
@@ -176,7 +177,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
     StorageV1 storage $ = _getStorageV1();
 
-    _stake($, valAddr, recipient, msg.value, _epochFeeder.clock());
+    _stake($, valAddr, recipient, msg.value, Time.timestamp());
 
     $.totalStaked += msg.value.toUint128();
 
@@ -195,7 +196,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
 
     // FIXME(eddy): shorten the enqueue + reserve flow
-    uint48 now_ = _epochFeeder.clock();
+    uint48 now_ = Time.timestamp();
     uint256 reqId = queue.enqueue(receiver, amount, now_, bytes(''));
     queue.reserve(valAddr, amount, now_, bytes(''));
 
@@ -217,7 +218,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
     queue.redeemPeriod = $.unstakeCooldown;
 
-    uint48 now_ = _epochFeeder.clock();
+    uint48 now_ = Time.timestamp();
     queue.update(now_);
     uint256 claimed = queue.claim(receiver, now_);
 
@@ -239,7 +240,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     require(_manager.isValidator(fromValAddr), IValidatorStaking__NotValidator());
     require(_manager.isValidator(toValAddr), IValidatorStaking__NotValidator());
 
-    uint48 now_ = _epochFeeder.clock();
+    uint48 now_ = Time.timestamp();
     uint256 lastRedelegationTime_ = $.lastRedelegationTime[_msgSender()];
     require(now_ >= lastRedelegationTime_ + $.redelegationCooldown, IValidatorStaking__CooldownNotPassed());
 
@@ -332,7 +333,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   function _unstake(StorageV1 storage $, address valAddr, address recipient, uint256 amount) internal {
-    uint48 now_ = _epochFeeder.clock();
+    uint48 now_ = Time.timestamp();
 
     _pushTWABCheckpoint($.delegationLogs[valAddr][recipient], amount, now_, _subAmount);
     _pushTWABCheckpoint($.totalDelegations[valAddr], amount, now_, _subAmount);
