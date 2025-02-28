@@ -34,9 +34,9 @@ contract ValidatorContributionFeedStorageV1 {
 
   struct StorageV1 {
     IEpochFeeder epochFeeder;
-    uint96 nextEpoch;
+    uint256 nextEpoch;
     ReportChecker checker;
-    mapping(uint96 epoch => Reward reward) rewards;
+    mapping(uint256 epoch => Reward reward) rewards;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.ValidatorContributionFeedStorage.v1';
@@ -90,17 +90,17 @@ contract ValidatorContributionFeed is
   }
 
   /// @inheritdoc IValidatorContributionFeed
-  function weightCount(uint96 epoch) external view returns (uint256) {
+  function weightCount(uint256 epoch) external view returns (uint256) {
     return _getStorageV1().rewards[epoch].weights.length - 1;
   }
 
   /// @inheritdoc IValidatorContributionFeed
-  function weightAt(uint96 epoch, uint256 index) external view returns (ValidatorWeight memory) {
+  function weightAt(uint256 epoch, uint256 index) external view returns (ValidatorWeight memory) {
     return _getStorageV1().rewards[epoch].weights[index + 1];
   }
 
   /// @inheritdoc IValidatorContributionFeed
-  function weightOf(uint96 epoch, address valAddr) external view returns (ValidatorWeight memory, bool) {
+  function weightOf(uint256 epoch, address valAddr) external view returns (ValidatorWeight memory, bool) {
     StorageV1 storage $ = _getStorageV1();
     Reward storage reward = $.rewards[epoch];
 
@@ -115,12 +115,12 @@ contract ValidatorContributionFeed is
   }
 
   /// @inheritdoc IValidatorContributionFeed
-  function available(uint96 epoch) external view returns (bool) {
+  function available(uint256 epoch) external view returns (bool) {
     return _getStorageV1().rewards[epoch].status == ReportStatus.FINALIZED;
   }
 
   /// @inheritdoc IValidatorContributionFeed
-  function summary(uint96 epoch) external view returns (Summary memory) {
+  function summary(uint256 epoch) external view returns (Summary memory) {
     StorageV1 storage $ = _getStorageV1();
     Reward storage reward = $.rewards[epoch];
 
@@ -136,7 +136,7 @@ contract ValidatorContributionFeed is
   function initializeReport(InitReportRequest calldata request) external onlyRole(FEEDER_ROLE) {
     StorageV1 storage $ = _getStorageV1();
 
-    uint96 epoch = $.nextEpoch;
+    uint256 epoch = $.nextEpoch;
 
     require(epoch < $.epochFeeder.epoch(), StdError.InvalidParameter('epoch'));
 
@@ -157,7 +157,7 @@ contract ValidatorContributionFeed is
   /// @inheritdoc IValidatorContributionFeed
   function pushValidatorWeights(ValidatorWeight[] calldata weights) external onlyRole(FEEDER_ROLE) {
     StorageV1 storage $ = _getStorageV1();
-    uint96 epoch = $.nextEpoch;
+    uint256 epoch = $.nextEpoch;
 
     Reward storage reward = $.rewards[epoch];
     require(reward.status == ReportStatus.INITIALIZED, IValidatorContributionFeed__InvalidReportStatus());
@@ -185,7 +185,7 @@ contract ValidatorContributionFeed is
   /// @inheritdoc IValidatorContributionFeed
   function finalizeReport() external onlyRole(FEEDER_ROLE) {
     StorageV1 storage $ = _getStorageV1();
-    uint96 epoch = $.nextEpoch;
+    uint256 epoch = $.nextEpoch;
 
     Reward storage reward = $.rewards[epoch];
     require(reward.status == ReportStatus.INITIALIZED, IValidatorContributionFeed__InvalidReportStatus());

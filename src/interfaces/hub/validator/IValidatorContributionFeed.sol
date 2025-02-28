@@ -32,9 +32,9 @@ interface IValidatorContributionFeed {
     uint128 numOfValidators;
   }
 
-  event ReportInitialized(uint96 epoch, uint128 totalWeight, uint128 numOfValidators);
-  event WeightsPushed(uint96 epoch, uint128 totalWeight, uint128 numOfValidators);
-  event ReportFinalized(uint96 epoch);
+  event ReportInitialized(uint256 epoch, uint128 totalWeight, uint128 numOfValidators);
+  event WeightsPushed(uint256 epoch, uint128 totalWeight, uint128 numOfValidators);
+  event ReportFinalized(uint256 epoch);
 
   error IValidatorContributionFeed__InvalidReportStatus();
   error IValidatorContributionFeed__InvalidWeightAddress();
@@ -44,15 +44,15 @@ interface IValidatorContributionFeed {
 
   function epochFeeder() external view returns (IEpochFeeder);
 
-  function weightCount(uint96 epoch) external view returns (uint256);
+  function weightCount(uint256 epoch) external view returns (uint256);
 
-  function weightAt(uint96 epoch, uint256 index) external view returns (ValidatorWeight memory);
+  function weightAt(uint256 epoch, uint256 index) external view returns (ValidatorWeight memory);
 
-  function weightOf(uint96 epoch, address valAddr) external view returns (ValidatorWeight memory, bool);
+  function weightOf(uint256 epoch, address valAddr) external view returns (ValidatorWeight memory, bool);
 
-  function available(uint96 epoch) external view returns (bool);
+  function available(uint256 epoch) external view returns (bool);
 
-  function summary(uint96 epoch) external view returns (Summary memory);
+  function summary(uint256 epoch) external view returns (Summary memory);
 
   function initializeReport(InitReportRequest calldata request) external;
 

@@ -9,6 +9,7 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
 import { EnumerableMap } from '@oz-v5/utils/structs/EnumerableMap.sol';
 import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
+import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { ECDSA } from '@solady/utils/ECDSA.sol';
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
@@ -188,12 +189,12 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function validatorInfoAt(uint96 epoch, address valAddr) public view returns (ValidatorInfoResponse memory) {
+  function validatorInfoAt(uint256 epoch, address valAddr) public view returns (ValidatorInfoResponse memory) {
     return _validatorInfoAt(_getStorageV1(), valAddr, epoch);
   }
 
   /// @inheritdoc IValidatorManager
-  function validatorInfoAtWithPubKey(uint96 epoch, bytes calldata valKey)
+  function validatorInfoAtWithPubKey(uint256 epoch, bytes calldata valKey)
     public
     view
     returns (ValidatorInfoResponse memory)
@@ -237,7 +238,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       validator.pubKey,
       amount,
       recipient,
-      $.epochFeeder.clock() + $.globalValidatorConfig.collateralWithdrawalDelay.toUint48()
+      Time.timestamp() + $.globalValidatorConfig.collateralWithdrawalDelay.toUint48()
     );
 
     emit CollateralWithdrawn(validator.valAddr, amount);
@@ -331,7 +332,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //
 
-  function _validatorInfoAt(StorageV1 storage $, address valAddr, uint96 epoch)
+  function _validatorInfoAt(StorageV1 storage $, address valAddr, uint256 epoch)
     internal
     view
     returns (ValidatorInfoResponse memory)
