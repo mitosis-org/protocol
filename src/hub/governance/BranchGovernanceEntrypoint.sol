@@ -32,8 +32,8 @@ contract BranchGovernanceEntrypoint is
   modifier onlyDispatchable(uint256 chainId) {
     require(_ccRegistry.isRegisteredChain(chainId), ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
     require(
-      _ccRegistry.governanceExecutorEntrypointEnrolled(chainId),
-      ICrossChainRegistry.ICrossChainRegistry__GovernanceExecutorEntrypointNotEnrolled()
+      _ccRegistry.governanceEntrypointEnrolled(chainId),
+      ICrossChainRegistry.ICrossChainRegistry__GovernanceEntrypointNotEnrolled()
     );
     _;
   }

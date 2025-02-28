@@ -11,14 +11,14 @@ interface ICrossChainRegistry {
    * @param chainId The ID of the chain being set.
    * @param hplDomain The Hyperlane domain associated with the chain.
    * @param mitosisVaultEntrypoint The address of the MitosisVaultEntrypoint contract for the chain.
-   * @param governanceExecutorEntrypoint The address of the GovernanceExecutorEntrypoint contract for the chain.
+   * @param governanceEntrypoint The address of the GovernanceEntrypoint contract for the chain.
    * @param name The name of the chain.
    */
   event ChainSet(
     uint256 indexed chainId,
     uint32 indexed hplDomain,
     address mitosisVaultEntrypoint,
-    address governanceExecutorEntrypoint,
+    address governanceEntrypoint,
     string name
   );
 
@@ -43,7 +43,7 @@ interface ICrossChainRegistry {
    * @notice Error thrown when attempting to perform an operation on a chain that is not enrolled.
    */
   error ICrossChainRegistry__MitosisVaultEntrypointNotEnrolled();
-  error ICrossChainRegistry__GovernanceExecutorEntrypointNotEnrolled();
+  error ICrossChainRegistry__GovernanceEntrypointNotEnrolled();
 
   /**
    * @notice Error thrown when attempting to enroll an already enrolled chain.
@@ -87,9 +87,9 @@ interface ICrossChainRegistry {
   /**
    * @notice Returns the entrypoint address for a specified chain.
    * @param chainId The ID of the chain.
-   * @return The address of the GovernanceExecutorEntrypoint.
+   * @return The address of the GovernanceEntrypoint.
    */
-  function governanceExecutorEntrypoint(uint256 chainId) external view returns (address);
+  function governanceEntrypoint(uint256 chainId) external view returns (address);
 
   /**
    * @notice Checks if the entrypoint for a specified chain is enrolled.
@@ -101,9 +101,9 @@ interface ICrossChainRegistry {
   /**
    * @notice Checks if the entrypoint for a specified chain is enrolled.
    * @param chainId The ID of the chain.
-   * @return A boolean indicating whether the GovernanceExecutorEntrypoint is enrolled.
+   * @return A boolean indicating whether the GovernanceEntrypoint is enrolled.
    */
-  function governanceExecutorEntrypointEnrolled(uint256 chainId) external view returns (bool);
+  function governanceEntrypointEnrolled(uint256 chainId) external view returns (bool);
 
   /**
    * @notice Returns the chain ID associated with a specified Hyperlane domain.
@@ -125,14 +125,14 @@ interface ICrossChainRegistry {
    * @param name The name of the chain.
    * @param hplDomain The Hyperlane domain associated with the chain.
    * @param mitosisVaultEntrypoint_ The address of the MitosisVaultEntrypoint for the chain.
-   * @param governanceExecutorEntrypoint_ The address of the GovernanceExecutorEntrypoint for the chain.
+   * @param governanceEntrypoint_ The address of the GovernanceEntrypoint for the chain.
    */
   function setChain(
     uint256 chainId_,
     string calldata name,
     uint32 hplDomain,
     address mitosisVaultEntrypoint_,
-    address governanceExecutorEntrypoint_
+    address governanceEntrypoint_
   ) external;
 
   /**
@@ -149,9 +149,9 @@ interface ICrossChainRegistry {
   function enrollMitosisVaultEntrypoint(address hplRouter) external;
 
   /**
-   * @notice Enrolls the GovernanceExecutorEntrypoint for a specified chain.
+   * @notice Enrolls the GovernanceEntrypoint for a specified chain.
    * @param hplRouter The address of the Hyperlane router.
    * @param chainId_ The ID of the chain.
    */
-  function enrollGovernanceExecutorEntrypoint(address hplRouter, uint256 chainId_) external;
+  function enrollGovernanceEntrypoint(address hplRouter, uint256 chainId_) external;
 }

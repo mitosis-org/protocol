@@ -49,8 +49,8 @@ contract CrossChainRegistry is
     return _getStorageV1().chains[chainId_].mitosisVaultEntrypoint;
   }
 
-  function governanceExecutorEntrypoint(uint256 chainId_) external view returns (address) {
-    return _getStorageV1().chains[chainId_].governanceExecutorEntrypoint;
+  function governanceEntrypoint(uint256 chainId_) external view returns (address) {
+    return _getStorageV1().chains[chainId_].governanceEntrypoint;
   }
 
   function mitosisVault(uint256 chainId_) external view returns (address) {
@@ -61,8 +61,8 @@ contract CrossChainRegistry is
     return _isMitosisVaultEntrypointEnrolled(_getStorageV1().chains[chainId_]);
   }
 
-  function governanceExecutorEntrypointEnrolled(uint256 chainId_) external view returns (bool) {
-    return _isGovernanceExecutorEntrypointEnrolled(_getStorageV1().chains[chainId_]);
+  function governanceEntrypointEnrolled(uint256 chainId_) external view returns (bool) {
+    return _isGovernanceEntrypointEnrolled(_getStorageV1().chains[chainId_]);
   }
 
   function chainId(uint32 hplDomain) external view returns (uint256) {
@@ -82,7 +82,7 @@ contract CrossChainRegistry is
     string calldata name,
     uint32 hplDomain,
     address mitosisVaultEntrypoint_,
-    address governanceExecutorEntrypoint_
+    address governanceEntrypoint_
   ) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
 
@@ -96,10 +96,10 @@ contract CrossChainRegistry is
     $.chains[chainId_].name = name;
     $.chains[chainId_].hplDomain = hplDomain;
     $.chains[chainId_].mitosisVaultEntrypoint = mitosisVaultEntrypoint_;
-    $.chains[chainId_].governanceExecutorEntrypoint = governanceExecutorEntrypoint_;
+    $.chains[chainId_].governanceEntrypoint = governanceEntrypoint_;
     $.hyperlanes[hplDomain].chainId = chainId_;
 
-    emit ChainSet(chainId_, hplDomain, mitosisVaultEntrypoint_, governanceExecutorEntrypoint_, name);
+    emit ChainSet(chainId_, hplDomain, mitosisVaultEntrypoint_, governanceEntrypoint_, name);
   }
 
   function setVault(uint256 chainId_, address vault_) external onlyOwner {
@@ -120,10 +120,10 @@ contract CrossChainRegistry is
     }
   }
 
-  function enrollGovernanceExecutorEntrypoint(address hplRouter) external onlyOwner {
+  function enrollGovernanceEntrypoint(address hplRouter) external onlyOwner {
     uint256[] memory allChainIds = _getStorageV1().chainIds;
     for (uint256 i = 0; i < allChainIds.length; i++) {
-      enrollGovernanceExecutorEntrypoint(hplRouter, allChainIds[i]);
+      enrollGovernanceEntrypoint(hplRouter, allChainIds[i]);
     }
   }
 
@@ -135,11 +135,11 @@ contract CrossChainRegistry is
     }
   }
 
-  function enrollGovernanceExecutorEntrypoint(address hplRouter, uint256 chainId_) public onlyOwner {
+  function enrollGovernanceEntrypoint(address hplRouter, uint256 chainId_) public onlyOwner {
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId_];
-    if (_isGovernanceExecutorEntrypointEnrollableChain(chainInfo)) {
-      chainInfo.governanceExecutorEntrypointEnrolled = true;
-      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.governanceExecutorEntrypoint.toBytes32());
+    if (_isGovernanceEntrypointEnrollableChain(chainInfo)) {
+      chainInfo.governanceEntrypointEnrolled = true;
+      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.governanceEntrypoint.toBytes32());
     }
   }
 
@@ -157,16 +157,16 @@ contract CrossChainRegistry is
     return chainInfo.mitosisVaultEntrypointEnrolled;
   }
 
-  function _isGovernanceExecutorEntrypointEnrolled(ChainInfo storage chainInfo) internal view returns (bool) {
-    return chainInfo.governanceExecutorEntrypointEnrolled;
+  function _isGovernanceEntrypointEnrolled(ChainInfo storage chainInfo) internal view returns (bool) {
+    return chainInfo.governanceEntrypointEnrolled;
   }
 
   function _isMitosisVaultEntrypointEnrollableChain(ChainInfo storage chainInfo) internal view returns (bool) {
     return _isRegisteredChain(chainInfo) && !_isMitosisVaultEntrypointEnrolled(chainInfo);
   }
 
-  function _isGovernanceExecutorEntrypointEnrollableChain(ChainInfo storage chainInfo) internal view returns (bool) {
-    return _isRegisteredChain(chainInfo) && !_isGovernanceExecutorEntrypointEnrolled(chainInfo);
+  function _isGovernanceEntrypointEnrollableChain(ChainInfo storage chainInfo) internal view returns (bool) {
+    return _isRegisteredChain(chainInfo) && !_isGovernanceEntrypointEnrolled(chainInfo);
   }
 
   function _isRegisteredHyperlane(HyperlaneInfo storage hplInfo) internal view returns (bool) {
