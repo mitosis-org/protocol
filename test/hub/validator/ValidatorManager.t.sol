@@ -7,6 +7,7 @@ import { Vm } from '@std/Vm.sol';
 
 import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { LibClone } from '@solady/utils/LibClone.sol';
 import { LibString } from '@solady/utils/LibString.sol';
@@ -47,7 +48,9 @@ contract ValidatorManagerTest is Toolkit {
     epochFeeder = EpochFeeder(
       _proxy(
         address(new EpochFeeder()), //
-        abi.encodeCall(EpochFeeder.initialize, (owner, block.timestamp + epochInterval, epochInterval))
+        abi.encodeCall(
+          EpochFeeder.initialize, (owner, Time.timestamp() + epochInterval.toUint48(), epochInterval.toUint48())
+        )
       )
     );
     manager = ValidatorManager(
