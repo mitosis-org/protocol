@@ -2,16 +2,29 @@
 pragma solidity ^0.8.28;
 
 import { IGovMITO } from './IGovMITO.sol';
+import { IEpochFeeder } from './validator/IEpochFeeder.sol';
 
 interface IGovMITOEmission {
+  struct ValidatorRewardConfig {
+    uint256 rps;
+    uint256 total;
+    uint160 deductionRate; // 10000 = 100%
+    uint48 deductionPeriod;
+    uint48 startsFrom;
+    address recipient;
+  }
+
+  struct ConfigureValidatorRewardEmissionRequest {
+    uint256 rps;
+    uint160 deductionRate;
+    uint48 deductionPeriod;
+  }
+
   error NotEnoughBalance();
   error NotEnoughReserve();
 
-  event Deposited(uint256 amount);
-  event Withdrawn(uint256 amount);
   event ValidatorRewardRequested(uint96 indexed epoch, uint256 amount);
-  event ValidatorRewardReserved(uint96 indexed epoch, uint256 amount);
-  event ValidatorRewardRecipientUpdated(address indexed previousRecipient, address indexed newRecipient);
+  event ValidatorRewardEmissionConfigured(uint256 rps, uint160 deductionRate, uint48 deductionPeriod, uint48 timestamp);
 
   /**
    * @notice Returns the GovMITO token contract
@@ -19,33 +32,54 @@ interface IGovMITOEmission {
   function govMITO() external view returns (IGovMITO);
 
   /**
-   * @notice Returns the total reserved amount of gMITO tokens
+   * @notice Returns the epoch feeder contract
    */
-  function totalReserved() external view returns (uint256);
+  function epochFeeder() external view returns (IEpochFeeder);
 
   /**
    * @notice Returns the validator reward for a given epoch
    * @param epoch Epoch number
    * @return amount The total amount of gMITO tokens reserved for the validator reward
-   * @return claimed The amount of gMITO tokens already claimed
    */
-  function validatorReward(uint96 epoch) external view returns (uint256 amount, uint256 claimed);
+  function validatorReward(uint96 epoch) external view returns (uint256 amount);
+
+  /**
+   * @notice Returns the total amount of gMITO tokens reserved for validator rewards
+   */
+  function validatorRewardTotal() external view returns (uint256);
+
+  /**
+   * @notice Returns the total amount of gMITO tokens spent on validator rewards
+   */
+  function validatorRewardSpent() external view returns (uint256);
+
+  /**
+   * @notice Returns the number of validator reward emissions
+   */
+  function validatorRewardEmissionsCount() external view returns (uint256);
+
+  /**
+   * @notice Returns the validator reward emission at the given index
+   * @param index Index of the emission
+   */
+  function validatorRewardEmissionsByIndex(uint256 index)
+    external
+    view
+    returns (uint256 rps, uint160 deductionRate, uint48 deductionPeriod);
+
+  /**
+   * @notice Returns the validator reward emission at the given timestamp
+   * @param timestamp Timestamp to look up
+   */
+  function validatorRewardEmissionsByTime(uint48 timestamp)
+    external
+    view
+    returns (uint256 rps, uint160 deductionRate, uint48 deductionPeriod);
 
   /**
    * @notice Returns the validator reward recipient
    */
   function validatorRewardRecipient() external view returns (address);
-
-  /**
-   * @notice Deposits ETH and mints gMITO tokens to this contract
-   */
-  function deposit() external payable;
-
-  /**
-   * @notice Forces withdrawal of gMITO tokens to owner
-   * @param amount Amount of gMITO tokens to withdraw
-   */
-  function withdraw(uint256 amount) external;
 
   /**
    * @notice Requests a validator reward
@@ -56,15 +90,10 @@ interface IGovMITOEmission {
   function requestValidatorReward(uint96 epoch, address recipient, uint256 amount) external;
 
   /**
-   * @notice Reserves a validator reward
-   * @param epoch Epoch number
-   * @param amount Amount of gMITO tokens to reserve
+   * @notice Configures the validator reward emission
+   * @param rps The rate of gMITO tokens to emit per second
+   * @param deductionRate The rate of gMITO tokens to deduct per second
+   * @param deductionPeriod The period of time to deduct the gMITO tokens
    */
-  function reserveValidatorReward(uint96 epoch, uint256 amount) external;
-
-  /**
-   * @notice Sets the validator reward recipient
-   * @param recipient New validator reward recipient
-   */
-  function setValidatorRewardRecipient(address recipient) external;
+  function configureValidatorRewardEmission(uint256 rps, uint160 deductionRate, uint48 deductionPeriod) external;
 }

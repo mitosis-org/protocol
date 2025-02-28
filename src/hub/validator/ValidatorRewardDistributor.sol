@@ -365,13 +365,18 @@ contract ValidatorRewardDistributor is
     (ValidatorWeight memory weight, bool exists) = $.validatorContributionFeed.weightOf(epoch, valAddr);
     if (!exists) return (0, 0);
 
+<<<<<<< Updated upstream
     uint256 totalReward;
     {
       (uint256 totalValidatorReward,) = $.govMITOEmission.validatorReward(epoch.toUint96());
       totalReward = (totalValidatorReward * weight.weight) / rewardSummary.totalWeight;
     }
 
+=======
+    uint256 totalReward = ($.govMITOEmission.validatorReward(epoch) * weight.weight) / rewardSummary.totalWeight;
+>>>>>>> Stashed changes
     uint256 totalRewardShare = weight.collateralRewardShare + weight.delegationRewardShare;
+
     uint256 stakerReward = (totalReward * weight.delegationRewardShare) / totalRewardShare;
     uint256 commission = (stakerReward * validatorInfo.commissionRate) / $.validatorManager.MAX_COMMISSION_RATE();
 
