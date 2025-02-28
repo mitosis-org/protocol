@@ -53,6 +53,8 @@ contract ValidatorManagerTest is Toolkit {
         )
       )
     );
+
+    IValidatorManager.GenesisValidatorSet[] memory genesisValidators = new IValidatorManager.GenesisValidatorSet[](0);
     manager = ValidatorManager(
       _proxy(
         address(new ValidatorManager()),
@@ -67,7 +69,8 @@ contract ValidatorManagerTest is Toolkit {
               collateralWithdrawalDelay: 1000 seconds,
               minimumCommissionRate: 100, // 1 %
               commissionRateUpdateDelay: 3 // 3 * 100 seconds
-             })
+             }),
+            genesisValidators
           )
         )
       )
@@ -99,7 +102,7 @@ contract ValidatorManagerTest is Toolkit {
     vm.prank(val.addr);
     manager.createValidator{ value: 1000 ether }(
       LibSecp256k1.compressPubkey(val.pubKey),
-      IValidatorManager.CreateValidatorRequest({ commissionRate: 100, metadata: metadata })
+      IValidatorManager.CreateValidatorRequest({ operator: val.addr, commissionRate: 100, metadata: metadata })
     );
 
     entrypoint.assertLastCall(
