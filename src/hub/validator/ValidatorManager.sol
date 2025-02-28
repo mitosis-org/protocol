@@ -198,23 +198,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       StdError.InvalidParameter('commissionRate')
     );
 
-    // start from 1
-    uint256 valIndex = $.validatorCount++;
-
-    uint96 epoch = $.epochFeeder.epoch();
-
-    Validator storage validator = $.validators[valIndex];
-    validator.valAddr = valAddr;
-    validator.operator = valAddr;
-    validator.rewardRecipient = valAddr;
-    validator.pubKey = valKey;
-    validator.rewardConfig.commissionRates.push(epoch, request.commissionRate.toUint160());
-    validator.metadata = request.metadata;
-
-    $.indexByValAddr[valAddr] = valIndex;
-    $.entrypoint.registerValidator{ value: msg.value }(valKey);
-
-    emit ValidatorCreated(valAddr, valKey);
+    _createValidator($, valAddr, valKey, request);
   }
 
   /// @inheritdoc IValidatorManager
@@ -261,13 +245,12 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   /// @inheritdoc IValidatorManager
   function updateOperator(bytes calldata valKey, address operator) external {
     require(operator != address(0), StdError.InvalidParameter('operator'));
-    address valAddr = _msgSender();
 
     StorageV1 storage $ = _getStorageV1();
     Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
-    if (validator.valAddr != operator) _assertValidatorNotExists($, operator);
+    _assertOperator(validator);
 
-    $.validators[$.indexByValAddr[valAddr]].operator = operator;
+    $.validators[$.indexByValAddr[validator.valAddr]].operator = operator;
 
     emit OperatorUpdated(validator.valAddr, operator);
   }
@@ -401,6 +384,31 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     uint256 index = $.indexByValAddr[valAddr];
     require(index != 0, StdError.InvalidParameter('valAddr'));
     return $.validators[index];
+  }
+
+  function _createValidator(
+    StorageV1 storage $,
+    address valAddr,
+    bytes calldata valKey,
+    CreateValidatorRequest calldata request
+  ) internal {
+    // start from 1
+    uint256 valIndex = $.validatorCount++;
+
+    uint96 epoch = $.epochFeeder.epoch();
+
+    Validator storage validator = $.validators[valIndex];
+    validator.valAddr = valAddr;
+    validator.operator = request.operator;
+    validator.rewardRecipient = valAddr;
+    validator.pubKey = valKey;
+    validator.rewardConfig.commissionRates.push(epoch, request.commissionRate.toUint160());
+    validator.metadata = request.metadata;
+
+    $.indexByValAddr[valAddr] = valIndex;
+    $.entrypoint.registerValidator{ value: msg.value }(valKey);
+
+    emit ValidatorCreated(valAddr, request.operator, valKey);
   }
 
   function _assertValidatorExists(StorageV1 storage $, address valAddr) internal view {

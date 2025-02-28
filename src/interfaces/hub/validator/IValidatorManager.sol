@@ -44,6 +44,7 @@ interface IValidatorManager {
   }
 
   struct CreateValidatorRequest {
+    address operator;
     uint256 commissionRate; // bp ex) 10000 = 100%
     bytes metadata;
   }
@@ -59,7 +60,7 @@ interface IValidatorManager {
     uint96 commissionRateUpdateDelay; // in epoch
   }
 
-  event ValidatorCreated(address indexed valAddr, bytes valKey);
+  event ValidatorCreated(address indexed valAddr, address indexed operator, bytes valKey);
   event CollateralDeposited(address indexed valAddr, uint256 amount);
   event CollateralWithdrawn(address indexed valAddr, uint256 amount);
   event ValidatorUnjailed(address indexed valAddr);
