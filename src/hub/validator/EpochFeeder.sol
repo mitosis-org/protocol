@@ -4,150 +4,178 @@ pragma solidity ^0.8.28;
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
+import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { IEpochFeeder } from '../../interfaces/hub/validator/IEpochFeeder.sol';
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
+
+contract EpochFeederStorageV1 {
+  using ERC7201Utils for string;
+
+  struct Checkpoint {
+    uint160 epoch;
+    uint48 interval;
+    uint48 timestamp;
+  }
+
+  struct StorageV1 {
+    Checkpoint[] history;
+  }
+
+  string private constant _NAMESPACE = 'mitosis.storage.EpochFeeder';
+  bytes32 private immutable _slot = _NAMESPACE.storageSlot();
+
+  function _getStorageV1() internal view returns (StorageV1 storage $) {
+    bytes32 slot = _slot;
+    // slither-disable-next-line assembly
+    assembly {
+      $.slot := slot
+    }
+  }
+}
 
 /**
  * @title EpochFeeder
  * @notice Manages epoch transitions and timing for the protocol
  * @dev This contract is upgradeable using UUPS pattern
  */
-contract EpochFeeder is IEpochFeeder, Ownable2StepUpgradeable, UUPSUpgradeable {
+contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradeable, UUPSUpgradeable {
   using SafeCast for uint256;
-
-  /// @dev Current epoch number
-  uint256 private _epoch;
-
-  /// @dev Array of epoch timestamps
-  uint256[] private _epochs;
-
-  /// @dev Time interval between epochs after the last scheduled epoch
-  uint256 private _interval;
 
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(address owner_, uint256 nextEpochTime_, uint256 interval_) external initializer {
-    require(0 < interval_ && interval_ < type(uint48).max, IEpochFeeder__InvalidInterval());
-    require(nextEpochTime_ > block.timestamp, StdError.InvalidParameter('nextEpochTime'));
+  function initialize(address owner_, uint48 initialEpochTime_, uint48 interval_) external initializer {
+    require(block.timestamp < initialEpochTime_, StdError.InvalidParameter('initialEpochTime'));
 
     __UUPSUpgradeable_init();
     __Ownable_init(owner_);
     __Ownable2Step_init();
 
-    _epoch = 0;
-    _epochs.push(block.timestamp); // first epoch
-    _epochs.push(nextEpochTime_); // next epoch
-    _interval = interval_;
+    StorageV1 storage $ = _getStorageV1();
+    $.history.push(Checkpoint({ epoch: 1, interval: interval_, timestamp: initialEpochTime_ }));
   }
 
   /// @inheritdoc IEpochFeeder
-  function clock() public view returns (uint48) {
-    return block.timestamp.toUint48();
+  function epoch() external view returns (uint256) {
+    return _epochAt(_getStorageV1(), Time.timestamp());
   }
 
   /// @inheritdoc IEpochFeeder
-  function epoch() public view returns (uint96) {
-    uint256 now_ = block.timestamp;
-    uint256 epoch_ = _epoch;
-
-    for (uint256 nextEpochTime = _epochs[epoch_ + 1]; nextEpochTime <= now_; epoch_++) {
-      uint256 nextEpoch = epoch_ + 1;
-      if (nextEpoch >= _epochs.length) nextEpochTime += _interval;
-      else nextEpochTime = _epochs[nextEpoch];
-    }
-    return epoch_.toUint96();
+  function epochAt(uint48 timestamp_) external view returns (uint256) {
+    return _epochAt(_getStorageV1(), timestamp_);
   }
 
   /// @inheritdoc IEpochFeeder
-  function epochAt(uint48 timestamp_) public view returns (uint96) {
-    require(timestamp_ != 0, IEpochFeeder__InvalidTimestamp());
-
-    {
-      uint256 lastEpoch = _epochs.length - 1;
-      uint256 lastEpochTime = _epochs[lastEpoch];
-      if (timestamp_ == lastEpochTime) return lastEpoch.toUint96();
-      if (timestamp_ > lastEpochTime) return ((timestamp_ - lastEpochTime) / _interval + lastEpoch).toUint96();
-    }
-
-    uint256 left = 0;
-    uint256 right = _epochs.length - 1;
-
-    while (left < right) {
-      uint256 mid = left + (right - left) / 2;
-      uint256 midTime = _epochs[mid];
-
-      if (midTime <= timestamp_) {
-        left = mid + 1;
-      } else {
-        right = mid;
-      }
-    }
-
-    if (_epochs[left] <= timestamp_) {
-      return left.toUint96();
-    }
-    return (left - 1).toUint96();
+  function time() external view returns (uint48) {
+    StorageV1 storage $ = _getStorageV1();
+    return _timeAt($, _epochAt($, Time.timestamp()));
   }
 
   /// @inheritdoc IEpochFeeder
-  function epochToTime(uint96 epoch_) public view returns (uint48) {
-    require(epoch_ >= 0, IEpochFeeder__InvalidEpoch());
-
-    uint256 lastEpoch = _epochs.length - 1;
-    if (lastEpoch < epoch_) {
-      return ((epoch_ - lastEpoch) * _interval + _epochs[lastEpoch]).toUint48();
-    } else {
-      return _epochs[epoch_].toUint48();
-    }
+  function timeAt(uint256 epoch_) public view returns (uint48) {
+    return _timeAt(_getStorageV1(), epoch_);
   }
 
   /// @inheritdoc IEpochFeeder
   function interval() public view returns (uint48) {
-    return _interval.toUint48();
+    StorageV1 storage $ = _getStorageV1();
+    return _intervalAt($, _epochAt($, Time.timestamp()));
   }
 
   /// @inheritdoc IEpochFeeder
-  function update() external {
-    _update();
+  function intervalAt(uint256 epoch_) public view returns (uint48) {
+    return _intervalAt(_getStorageV1(), epoch_);
   }
 
-  function setInterval(uint256 interval_) external onlyOwner {
-    require(0 < interval_ && interval_ < type(uint48).max, IEpochFeeder__InvalidInterval());
+  /// @inheritdoc IEpochFeeder
+  function setNextInterval(uint48 interval_) external onlyOwner {
+    uint48 now_ = Time.timestamp();
+    StorageV1 storage $ = _getStorageV1();
+    Checkpoint memory lastCheckpoint = $.history[$.history.length - 1];
 
-    _update();
+    (uint256 nextEpoch, uint48 nextEpochTime) = _calculateNextEpochAndTime(lastCheckpoint, now_);
 
-    _epochs.push(_epochs[_epochs.length - 1] + interval_);
-    _interval = interval_;
-
-    emit IntervalUpdated(interval_.toUint48());
-  }
-
-  /// @dev Updates the current epoch based on the current time
-  /// @notice This function will emit EpochRolled events for each epoch transition
-  function _update() internal {
-    uint256 now_ = clock();
-    uint256 epoch_ = _epoch;
-    uint256 nextEpochTime = _epochs[epoch_ + 1];
-
-    while (nextEpochTime <= now_) {
-      uint256 nextEpoch = epoch_ + 1;
-
-      if (nextEpoch >= _epochs.length) {
-        nextEpochTime += _interval;
-        _epochs.push(nextEpochTime);
-      } else {
-        nextEpochTime = _epochs[nextEpoch];
-      }
-
-      emit EpochRolled(epoch_.toUint96(), _epochs[epoch_].toUint48());
-      epoch_++;
+    if (lastCheckpoint.timestamp <= now_) {
+      $.history.push(Checkpoint({ epoch: nextEpoch.toUint160(), interval: interval_, timestamp: nextEpochTime }));
+    } else {
+      $.history[$.history.length - 1].interval = interval_;
     }
 
-    _epoch = epoch_;
+    emit NextIntervalSet(nextEpoch, interval_, nextEpochTime);
+  }
+
+  function _calculateNextEpochAndTime(Checkpoint memory lastCheckpoint, uint48 now_)
+    private
+    pure
+    returns (uint256 nextEpoch, uint48 nextEpochTime)
+  {
+    if (lastCheckpoint.timestamp <= now_) {
+      nextEpoch = ((now_ - lastCheckpoint.timestamp) / lastCheckpoint.interval) + 1;
+      nextEpochTime = lastCheckpoint.timestamp + (nextEpoch * lastCheckpoint.interval).toUint48();
+    } else {
+      nextEpoch = lastCheckpoint.epoch;
+      nextEpochTime = lastCheckpoint.timestamp;
+    }
+  }
+
+  function _epochAt(StorageV1 storage $, uint48 timestamp_) internal view returns (uint256) {
+    Checkpoint memory checkpoint = _lowerLookup($.history, _compareTimestamp, timestamp_);
+    if (timestamp_ <= checkpoint.timestamp) return checkpoint.epoch;
+    return checkpoint.epoch + (timestamp_ - checkpoint.timestamp) / checkpoint.interval;
+  }
+
+  function _timeAt(StorageV1 storage $, uint256 epoch_) internal view returns (uint48) {
+    Checkpoint memory checkpoint = _lowerLookup($.history, _compareEpoch, epoch_);
+    if (epoch_ == checkpoint.epoch) return checkpoint.timestamp;
+    return checkpoint.timestamp + ((epoch_ - checkpoint.epoch) * checkpoint.interval).toUint48();
+  }
+
+  function _intervalAt(StorageV1 storage $, uint256 epoch_) internal view returns (uint48) {
+    Checkpoint memory checkpoint = _lowerLookup($.history, _compareEpoch, epoch_);
+    if (epoch_ == checkpoint.epoch) return checkpoint.interval;
+    return checkpoint.interval;
+  }
+
+  function _lowerLookup(
+    Checkpoint[] storage self,
+    function(Checkpoint memory, uint256) pure returns (bool) compare,
+    uint256 key
+  ) internal view returns (Checkpoint memory) {
+    uint256 len = self.length;
+    uint256 pos = _lowerBinaryLookup(self, compare, key, 0, len);
+    if (pos == len) {
+      Checkpoint memory empty;
+      return empty;
+    }
+    return self[pos];
+  }
+
+  function _lowerBinaryLookup(
+    Checkpoint[] storage self,
+    function(Checkpoint memory, uint256) pure returns (bool) compare,
+    uint256 key,
+    uint256 low,
+    uint256 high
+  ) private view returns (uint256) {
+    while (low < high) {
+      uint256 mid = Math.average(low, high);
+      if (compare(self[mid], key)) low = mid + 1;
+      else high = mid;
+    }
+    return high;
+  }
+
+  function _compareTimestamp(Checkpoint memory self, uint256 key) private pure returns (bool) {
+    return self.timestamp < uint48(key);
+  }
+
+  function _compareEpoch(Checkpoint memory self, uint256 key) private pure returns (bool) {
+    return self.epoch < uint160(key);
   }
 
   // ================== UUPS ================== //
