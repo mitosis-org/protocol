@@ -316,17 +316,10 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       StdError.InvalidParameter('commissionRate')
     );
 
-    uint96 epoch = $.epochFeeder.epoch();
-    if (globalConfig.commissionRateUpdateDelay == 0) {
-      validator.rewardConfig.commissionRates.push(
-        EpochCheckpoint({ epoch: epoch, amount: request.commissionRate.toUint160() })
-      );
-    } else {
-      uint96 epochToUpdate = epoch + globalConfig.commissionRateUpdateDelay;
+    uint96 epochToUpdate = $.epochFeeder.epoch() + globalConfig.commissionRateUpdateDelay;
 
-      validator.rewardConfig.pendingCommissionRate = request.commissionRate;
-      validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate;
-    }
+    validator.rewardConfig.pendingCommissionRate = request.commissionRate;
+    validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate;
 
     emit RewardConfigUpdated(validator.valAddr, _msgSender());
   }
