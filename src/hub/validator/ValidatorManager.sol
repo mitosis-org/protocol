@@ -307,7 +307,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       StdError.InvalidParameter('commissionRate')
     );
 
-    uint96 epochToUpdate = $.epochFeeder.epoch() + globalConfig.commissionRateUpdateDelay;
+    uint256 epochToUpdate = $.epochFeeder.epoch() + globalConfig.commissionRateUpdateDelay;
 
     validator.rewardConfig.pendingCommissionRate = request.commissionRate;
     validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate;
@@ -339,7 +339,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   {
     Validator storage info = _validator($, valAddr);
 
-    uint256 commissionRate = info.rewardConfig.commissionRates.lowerLookup(epoch);
+    uint256 commissionRate = info.rewardConfig.commissionRates.lowerLookup(epoch.toUint96());
 
     ValidatorInfoResponse memory response = ValidatorInfoResponse({
       valAddr: info.valAddr,
@@ -356,7 +356,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
     // hard limit
     response.commissionRate =
-      Math.max(response.commissionRate, $.globalValidatorConfig.minimumCommissionRates.lowerLookup(epoch));
+      Math.max(response.commissionRate, $.globalValidatorConfig.minimumCommissionRates.lowerLookup(epoch.toUint96()));
 
     return response;
   }
@@ -384,8 +384,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     require(request.initialValidatorDeposit >= 0, StdError.InvalidParameter('initialValidatorDeposit'));
     require(request.collateralWithdrawalDelay >= 0, StdError.InvalidParameter('collateralWithdrawalDelay'));
 
-    uint96 epoch = $.epochFeeder.epoch();
-    $.globalValidatorConfig.minimumCommissionRates.push(epoch, request.minimumCommissionRate.toUint160());
+    uint256 epoch = $.epochFeeder.epoch();
+    $.globalValidatorConfig.minimumCommissionRates.push(epoch.toUint96(), request.minimumCommissionRate.toUint160());
     $.globalValidatorConfig.commissionRateUpdateDelay = request.commissionRateUpdateDelay;
     $.globalValidatorConfig.initialValidatorDeposit = request.initialValidatorDeposit;
     $.globalValidatorConfig.collateralWithdrawalDelay = request.collateralWithdrawalDelay;
@@ -419,14 +419,14 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     // start from 1
     uint256 valIndex = $.validatorCount++;
 
-    uint96 epoch = $.epochFeeder.epoch();
+    uint256 epoch = $.epochFeeder.epoch();
 
     Validator storage validator = $.validators[valIndex];
     validator.valAddr = valAddr;
     validator.operator = request.operator;
     validator.rewardRecipient = valAddr;
     validator.pubKey = valKey;
-    validator.rewardConfig.commissionRates.push(epoch, request.commissionRate.toUint160());
+    validator.rewardConfig.commissionRates.push(epoch.toUint96(), request.commissionRate.toUint160());
     validator.metadata = request.metadata;
 
     $.indexByValAddr[valAddr] = valIndex;
