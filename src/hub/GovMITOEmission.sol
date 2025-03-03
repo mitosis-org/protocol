@@ -169,6 +169,18 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
   }
 
   /// @inheritdoc IGovMITOEmission
+  function addValidatorRewardEmission() external payable onlyOwner {
+    require(msg.value > 0, StdError.InvalidParameter('msg.value'));
+
+    StorageV1 storage $ = _getStorageV1();
+
+    $.validatorReward.total += msg.value;
+    $.govMITO.mint{ value: msg.value }(address(this));
+
+    emit ValidatorRewardEmissionAdded(msg.value);
+  }
+
+  /// @inheritdoc IGovMITOEmission
   function configureValidatorRewardEmission(uint256 rps, uint160 deductionRate, uint48 deductionPeriod)
     external
     onlyOwner
@@ -226,8 +238,8 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     require(0 <= epoch, StdError.InvalidParameter('epoch'));
 
     IEpochFeeder ef = $.epochFeeder;
-    uint48 epochStartTime = ef.epochToTime(epoch);
-    uint48 epochEndTime = ef.epochToTime(epoch + 1) - 1;
+    uint48 epochStartTime = ef.timeAt(epoch);
+    uint48 epochEndTime = ef.timeAt(epoch + 1) - 1;
 
     ValidatorReward storage vr = $.validatorReward;
     ValidatorRewardEmission memory startLog = _lowerLookup(vr.emissions, epochStartTime);
