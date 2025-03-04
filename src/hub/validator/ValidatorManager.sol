@@ -108,8 +108,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _setEntrypoint($, entrypoint_);
     _setGlobalValidatorConfig($, initialGlobalValidatorConfig);
 
-    $.validatorCount = 1;
-
     // TODO(eddy): test me
     for (uint256 i = 0; i < genesisValidators.length; i++) {
       GenesisValidatorSet memory genVal = genesisValidators[i];
@@ -124,6 +122,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
         $,
         valAddr,
         genVal.valKey,
+        genVal.value,
         CreateValidatorRequest({
           operator: genVal.operator,
           commissionRate: genVal.commissionRate,
@@ -211,7 +210,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     // verify the valKey is valid and corresponds to the caller
     valKey.verifyCmpPubkeyWithAddress(valAddr);
 
-    _createValidator(_getStorageV1(), valAddr, valKey, request);
+    _createValidator(_getStorageV1(), valAddr, valKey, msg.value, request);
   }
 
   /// @inheritdoc IValidatorManager
@@ -403,13 +402,14 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     StorageV1 storage $,
     address valAddr,
     bytes memory valKey,
+    uint256 value,
     CreateValidatorRequest memory request
   ) internal {
     _assertValidatorNotExists($, valAddr);
 
     GlobalValidatorConfig storage globalConfig = $.globalValidatorConfig;
 
-    require(globalConfig.initialValidatorDeposit <= msg.value, StdError.InvalidParameter('msg.value'));
+    require(globalConfig.initialValidatorDeposit <= value, StdError.InvalidParameter('value'));
     require(
       globalConfig.minimumCommissionRates.latest() <= request.commissionRate
         && request.commissionRate <= MAX_COMMISSION_RATE,
@@ -430,7 +430,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     validator.metadata = request.metadata;
 
     $.indexByValAddr[valAddr] = valIndex;
-    $.entrypoint.registerValidator{ value: msg.value }(valKey);
+    $.entrypoint.registerValidator{ value: value }(valKey);
 
     emit ValidatorCreated(valAddr, request.operator, valKey);
   }
