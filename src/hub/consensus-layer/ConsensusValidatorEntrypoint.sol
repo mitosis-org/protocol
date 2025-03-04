@@ -119,7 +119,7 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
     onlyPermittedCaller
     verifyValkey(valkey)
   {
-    emit MsgUpdateExtraVotingPower(valkey, extraVotingPower);
+    emit MsgUpdateExtraVotingPower(valkey, extraVotingPower / 1 gwei);
   }
 
   // ============================ NOTE: OWNABLE FUNCTIONS ============================ //
