@@ -42,11 +42,11 @@ contract ConsensusGovernanceEntrypoint is IConsensusGovernanceEntrypoint, Ownabl
   }
 
   fallback() external payable {
-    revert StdError.Unauthorized();
+    revert StdError.NotSupported();
   }
 
   receive() external payable {
-    revert StdError.Unauthorized();
+    revert StdError.NotSupported();
   }
 
   function initialize(address owner_) external initializer {

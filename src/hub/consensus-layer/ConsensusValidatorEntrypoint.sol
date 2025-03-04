@@ -60,11 +60,11 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
   }
 
   fallback() external payable {
-    revert StdError.Unauthorized();
+    revert StdError.NotSupported();
   }
 
   receive() external payable {
-    revert StdError.Unauthorized();
+    revert StdError.NotSupported();
   }
 
   function initialize(address owner_) external initializer {
