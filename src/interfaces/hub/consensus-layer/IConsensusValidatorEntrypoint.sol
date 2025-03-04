@@ -4,9 +4,9 @@ pragma solidity ^0.8.28;
 interface IConsensusValidatorEntrypoint {
   event PermittedCallerSet(address caller, bool isPermitted);
 
-  event MsgRegisterValidator(bytes valkey, uint256 initialCollateralAmount);
-  event MsgDepositCollateral(bytes valkey, uint256 amount);
-  event MsgWithdrawCollateral(bytes valkey, uint256 amount, address receiver, uint48 receivesAt);
+  event MsgRegisterValidator(bytes valkey, uint256 initialCollateralAmountGwei);
+  event MsgDepositCollateral(bytes valkey, uint256 amountGwei);
+  event MsgWithdrawCollateral(bytes valkey, uint256 amountGwei, address receiver, uint48 receivesAt);
   event MsgUnjail(bytes valkey);
   event MsgUpdateExtraVotingPower(bytes valkey, uint256 extraVotingPower);
 
