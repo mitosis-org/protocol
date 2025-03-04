@@ -4,11 +4,11 @@ pragma solidity ^0.8.28;
 interface IConsensusValidatorEntrypoint {
   event PermittedCallerSet(address caller, bool isPermitted);
 
-  event MsgRegisterValidator(bytes valkey, uint256 initialCollateralAmount);
-  event MsgDepositCollateral(bytes valkey, uint256 amount);
-  event MsgWithdrawCollateral(bytes valkey, uint256 amount, address receiver, uint48 receivesAt);
+  event MsgRegisterValidator(bytes valkey, uint256 initialCollateralAmountGwei);
+  event MsgDepositCollateral(bytes valkey, uint256 amountGwei);
+  event MsgWithdrawCollateral(bytes valkey, uint256 amountGwei, address receiver, uint48 receivesAt);
   event MsgUnjail(bytes valkey);
-  event MsgUpdateExtraVotingPower(bytes valkey, uint256 extraVotingPower);
+  event MsgUpdateExtraVotingPower(bytes valkey, uint256 extraVotingPowerGwei);
 
   /**
    * @notice Register a validator in the consensus layer.
@@ -43,7 +43,7 @@ interface IConsensusValidatorEntrypoint {
   function unjail(bytes calldata valkey) external;
 
   /**
-   * @notice Update the extra voting power of a validator in the consensus layer.
+   * @notice Update (overwrite) the extra voting power of a validator in the consensus layer.
    * @dev Nothing happens if the validator is not registered in the consensus layer.
    * @param valkey The compressed 33-byte secp256k1 public key of the validator.
    * @param extraVotingPower The new extra voting power of the validator.
