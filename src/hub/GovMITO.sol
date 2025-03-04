@@ -63,11 +63,11 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   }
 
   fallback() external payable {
-    revert StdError.Unauthorized();
+    revert StdError.NotSupported();
   }
 
   receive() external payable {
-    revert StdError.Unauthorized();
+    revert StdError.NotSupported();
   }
 
   function initialize(address owner_, address minter_, uint256 redeemPeriod_) external initializer {

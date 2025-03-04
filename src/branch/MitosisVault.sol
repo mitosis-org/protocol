@@ -27,11 +27,11 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
   }
 
   fallback() external payable {
-    revert StdError.Unauthorized();
+    revert StdError.NotSupported();
   }
 
   receive() external payable {
-    revert StdError.Unauthorized();
+    revert StdError.NotSupported();
   }
 
   function initialize(address owner_) public initializer {
