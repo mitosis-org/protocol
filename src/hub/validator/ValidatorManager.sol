@@ -152,12 +152,12 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   /// @inheritdoc IValidatorManager
   function validatorCount() external view returns (uint256) {
-    return _getStorageV1().validatorCount - 1;
+    return _getStorageV1().validatorCount;
   }
 
   /// @inheritdoc IValidatorManager
   function validatorAt(uint256 index) external view returns (address) {
-    return _getStorageV1().validators[index + 1].valAddr;
+    return _getStorageV1().validators[index].valAddr;
   }
 
   /// @inheritdoc IValidatorManager
@@ -416,7 +416,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     );
 
     // start from 1
-    uint256 valIndex = $.validatorCount++;
+    uint256 valIndex = ++$.validatorCount;
 
     uint256 epoch = $.epochFeeder.epoch();
 
