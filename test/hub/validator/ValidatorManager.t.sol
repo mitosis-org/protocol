@@ -57,13 +57,11 @@ contract ValidatorManagerTest is Toolkit {
     IValidatorManager.GenesisValidatorSet[] memory genesisValidators = new IValidatorManager.GenesisValidatorSet[](0);
     manager = ValidatorManager(
       _proxy(
-        address(new ValidatorManager()),
+        address(new ValidatorManager(epochFeeder, IConsensusValidatorEntrypoint(address(entrypoint)))),
         abi.encodeCall(
           ValidatorManager.initialize,
           (
             owner,
-            epochFeeder,
-            IConsensusValidatorEntrypoint(address(entrypoint)),
             IValidatorManager.SetGlobalValidatorConfigRequest({
               initialValidatorDeposit: 1000 ether,
               collateralWithdrawalDelay: 1000 seconds,

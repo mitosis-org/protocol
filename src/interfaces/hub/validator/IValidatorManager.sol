@@ -124,6 +124,4 @@ interface IValidatorManager {
   // ========== CONTRACT MANAGEMENT ========== //
 
   function setGlobalValidatorConfig(SetGlobalValidatorConfigRequest calldata request) external;
-  function setEpochFeeder(IEpochFeeder epochFeeder) external;
-  function setEntrypoint(IConsensusValidatorEntrypoint entrypoint) external;
 }
