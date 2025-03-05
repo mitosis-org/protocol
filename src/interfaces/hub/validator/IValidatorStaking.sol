@@ -25,6 +25,7 @@ interface IValidatorStaking {
 
   // ========== VIEWS ========== //
 
+  function baseAsset() external view returns (address);
   function epochFeeder() external view returns (IEpochFeeder);
   function manager() external view returns (IValidatorManager);
   function hub() external view returns (IValidatorStakingHub);

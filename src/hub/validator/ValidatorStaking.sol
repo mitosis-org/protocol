@@ -23,8 +23,7 @@ contract ValidatorStakingStorageV1 {
   using ERC7201Utils for string;
 
   struct StorageV1 {
-    address baseAsset;
-    uint256 totalUnstaking;
+    uint160 totalUnstaking;
     uint48 unstakeCooldown;
     uint48 redelegationCooldown;
     LibCheckpoint.TraceTWAB totalStaked;
@@ -67,7 +66,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     IValidatorManager manager_,
     IConsensusValidatorEntrypoint entrypoint_
   ) {
-    _baseAsset = baseAsset_;
+    _baseAsset = baseAsset_ == address(0) ? NATIVE_TOKEN : baseAsset_;
     _epochFeeder = epochFeeder_;
     _manager = manager_;
     _entrypoint = entrypoint_;
@@ -83,6 +82,11 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
     _setUnstakeCooldown($, unstakeCooldown_);
     _setRedelegationCooldown($, redelegationCooldown_);
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function baseAsset() external view returns (address) {
+    return _baseAsset;
   }
 
   /// @inheritdoc IValidatorStaking
