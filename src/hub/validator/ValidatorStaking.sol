@@ -35,6 +35,7 @@ contract ValidatorStakingStorageV1 {
     uint160 padding; // FIXME(eddy): remove this or add a new field
     mapping(address staker => uint256) lastRedelegationTime;
     mapping(address valAddr => LibRedeemQueue.Queue) unstakeQueue;
+    mapping(address staker => TWABCheckpoint[]) totalDelegationsForStaker;
     mapping(address valAddr => TWABCheckpoint[]) totalDelegations;
     mapping(address valAddr => mapping(address staker => TWABCheckpoint[])) delegationLogs;
   }
@@ -182,6 +183,28 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   function totalDelegationTWABAt(address valAddr, uint48 timestamp) external view returns (uint256) {
     require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     return _totalDelegationTWAB(_getStorageV1(), valAddr, timestamp);
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function totalDelegationForStaker(address staker) external view returns (uint256) {
+    return _totalDelegationForStaker(_getStorageV1(), staker, Time.timestamp());
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function totalDelegationForStakerAt(address staker, uint48 timestamp) external view returns (uint256) {
+    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
+    return _totalDelegationForStaker(_getStorageV1(), staker, timestamp);
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function totalDelegationTWABForStaker(address staker) external view returns (uint256) {
+    return _totalDelegationTWABForStaker(_getStorageV1(), staker, Time.timestamp());
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function totalDelegationTWABForStakerAt(address staker, uint48 timestamp) external view returns (uint256) {
+    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
+    return _totalDelegationTWABForStaker(_getStorageV1(), staker, timestamp);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -374,16 +397,41 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     return last.twab + (last.amount * (timestamp - last.lastUpdate));
   }
 
+  function _totalDelegationForStaker(StorageV1 storage $, address staker, uint48 timestamp)
+    internal
+    view
+    returns (uint256)
+  {
+    TWABCheckpoint[] storage history = $.totalDelegationsForStaker[staker];
+    if (history.length == 0) return 0;
+
+    return _searchCheckpoint(history, timestamp).amount;
+  }
+
+  function _totalDelegationTWABForStaker(StorageV1 storage $, address staker, uint48 timestamp)
+    internal
+    view
+    returns (uint256)
+  {
+    TWABCheckpoint[] storage history = $.totalDelegationsForStaker[staker];
+    if (history.length == 0) return 0;
+
+    TWABCheckpoint memory last = _searchCheckpoint(history, timestamp);
+    return last.twab + (last.amount * (timestamp - last.lastUpdate));
+  }
+
   function _stake(StorageV1 storage $, address valAddr, address recipient, uint256 amount, uint48 now_) internal {
-    _pushTWABCheckpoint($.delegationLogs[valAddr][recipient], amount, now_, _addAmount);
+    _pushTWABCheckpoint($.totalDelegationsForStaker[recipient], amount, now_, _addAmount);
     _pushTWABCheckpoint($.totalDelegations[valAddr], amount, now_, _addAmount);
+    _pushTWABCheckpoint($.delegationLogs[valAddr][recipient], amount, now_, _addAmount);
   }
 
   function _unstake(StorageV1 storage $, address valAddr, address recipient, uint256 amount) internal {
     uint48 now_ = Time.timestamp();
 
-    _pushTWABCheckpoint($.delegationLogs[valAddr][recipient], amount, now_, _subAmount);
+    _pushTWABCheckpoint($.totalDelegationsForStaker[recipient], amount, now_, _subAmount);
     _pushTWABCheckpoint($.totalDelegations[valAddr], amount, now_, _subAmount);
+    _pushTWABCheckpoint($.delegationLogs[valAddr][recipient], amount, now_, _subAmount);
   }
 
   // ========== ADMIN ACTIONS ========== //
