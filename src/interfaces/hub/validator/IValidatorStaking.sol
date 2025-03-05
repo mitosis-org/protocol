@@ -47,11 +47,6 @@ interface IValidatorStaking {
   function totalDelegationTWAB(address valAddr) external view returns (uint256);
   function totalDelegationTWABAt(address valAddr, uint48 timestamp) external view returns (uint256);
 
-  function totalDelegationForStaker(address staker) external view returns (uint256);
-  function totalDelegationForStakerAt(address staker, uint48 timestamp) external view returns (uint256);
-  function totalDelegationTWABForStaker(address staker) external view returns (uint256);
-  function totalDelegationTWABForStakerAt(address staker, uint48 timestamp) external view returns (uint256);
-
   function lastRedelegationTime(address staker) external view returns (uint256);
 
   // ========== ACTIONS ========== //
