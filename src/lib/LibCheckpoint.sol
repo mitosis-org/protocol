@@ -3,6 +3,8 @@ pragma solidity ^0.8.28;
 
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
+import { StdError } from './StdError.sol';
+
 library LibCheckpoint {
   using SafeCast for uint256;
 
@@ -50,6 +52,19 @@ library LibCheckpoint {
         })
       );
     }
+  }
+
+  function findAmount(TraceTWAB storage self, uint48 timestamp) internal view returns (uint256) {
+    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
+    return len(self) == 0 ? 0 : search(self, timestamp).amount;
+  }
+
+  function findTWAB(TraceTWAB storage self, uint48 timestamp) internal view returns (uint256) {
+    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
+    if (len(self) == 0) return 0;
+
+    TWABCheckpoint memory checkpoint = search(self, timestamp);
+    return checkpoint.twab + (checkpoint.amount * (timestamp - checkpoint.lastUpdate));
   }
 
   // TODO(eddy): specify whether this search is lower_bound or upper_bound

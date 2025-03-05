@@ -17,8 +17,8 @@ contract ValidatorStakingHubStorage {
   struct StorageV1 {
     mapping(address notifier => bool) notifiers;
     mapping(address staker => LibCheckpoint.TraceTWAB) stakerTotal;
-    mapping(address valAddr => LibCheckpoint.TraceTWAB) totalStaked;
-    mapping(address valAddr => mapping(address staker => LibCheckpoint.TraceTWAB)) staked;
+    mapping(address valAddr => LibCheckpoint.TraceTWAB) validatorTotal;
+    mapping(address valAddr => mapping(address staker => LibCheckpoint.TraceTWAB)) validatorStakerTotal;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.ValidatorStakingHubStorage.v1';
@@ -63,49 +63,32 @@ contract ValidatorStakingHub is ValidatorStakingHubStorage, Ownable2StepUpgradea
     return _getStorageV1().notifiers[notifier];
   }
 
-  function staked(address valAddr, address staker) external view returns (uint256) {
-    require(staker != address(0), StdError.InvalidParameter('staker'));
-    return _staked(_getStorageV1(), valAddr, staker, Time.timestamp());
+  function stakerTotal(address staker, uint48 timestamp) external view returns (uint256) {
+    return _getStorageV1().stakerTotal[staker].findAmount(timestamp);
   }
 
-  function stakedAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
-    require(staker != address(0), StdError.InvalidParameter('staker'));
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    StorageV1 storage $ = _getStorageV1();
-    return _staked($, valAddr, staker, timestamp);
+  function stakerTotalTWAB(address staker, uint48 timestamp) external view returns (uint256) {
+    return _getStorageV1().stakerTotal[staker].findTWAB(timestamp);
   }
 
-  function stakedTWAB(address valAddr, address staker) external view returns (uint256) {
-    require(staker != address(0), StdError.InvalidParameter('staker'));
-    return _stakedTWAB(_getStorageV1(), valAddr, staker, Time.timestamp());
+  function validatorTotal(address valAddr, uint48 timestamp) external view returns (uint256) {
+    return _getStorageV1().validatorTotal[valAddr].findAmount(timestamp);
   }
 
-  function stakedTWABAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
-    require(staker != address(0), StdError.InvalidParameter('staker'));
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    return _stakedTWAB(_getStorageV1(), valAddr, staker, timestamp);
+  function validatorTotalTWAB(address valAddr, uint48 timestamp) external view returns (uint256) {
+    return _getStorageV1().validatorTotal[valAddr].findTWAB(timestamp);
   }
 
-  function totalStaked(address valAddr) external view returns (uint256) {
-    return _totalStaked(_getStorageV1(), valAddr, Time.timestamp());
+  function validatorStakerTotal(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
+    return _getStorageV1().validatorStakerTotal[valAddr][staker].findAmount(timestamp);
   }
 
-  function totalStakedAt(address valAddr, uint48 timestamp) external view returns (uint256) {
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    return _totalStaked(_getStorageV1(), valAddr, timestamp);
-  }
-
-  function totalStakedTWAB(address valAddr) external view returns (uint256) {
-    return _totalStakedTWAB(_getStorageV1(), valAddr, Time.timestamp());
-  }
-
-  function totalStakedTWABAt(address valAddr, uint48 timestamp) external view returns (uint256) {
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    return _totalStakedTWAB(_getStorageV1(), valAddr, timestamp);
+  function validatorStakerTotalTWAB(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
+    return _getStorageV1().validatorStakerTotal[valAddr][staker].findTWAB(timestamp);
   }
 
   function addNotifier(address notifier) external onlyOwner {
-    // TODO(eddy): We need to add calculation logic for each notifier
+    // TODO(eddy): Probably we need to add calculation logic for each notifier
     StorageV1 storage $ = _getStorageV1();
     $.notifiers[notifier] = true;
   }
@@ -139,60 +122,22 @@ contract ValidatorStakingHub is ValidatorStakingHubStorage, Ownable2StepUpgradea
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //
 
-  function _staked(StorageV1 storage $, address valAddr, address staker, uint48 timestamp)
-    internal
-    view
-    returns (uint256)
-  {
-    LibCheckpoint.TraceTWAB storage history = $.staked[valAddr][staker];
-    if (history.len() == 0) return 0;
-
-    LibCheckpoint.TWABCheckpoint memory last = history.search(timestamp);
-    return last.amount;
-  }
-
-  function _stakedTWAB(StorageV1 storage $, address valAddr, address staker, uint48 timestamp)
-    internal
-    view
-    returns (uint256)
-  {
-    LibCheckpoint.TraceTWAB storage history = $.staked[valAddr][staker];
-    if (history.len() == 0) return 0;
-
-    LibCheckpoint.TWABCheckpoint memory last = history.search(timestamp);
-    return (last.amount * (timestamp - last.lastUpdate));
-  }
-
-  function _totalStaked(StorageV1 storage $, address valAddr, uint48 timestamp) internal view returns (uint256) {
-    LibCheckpoint.TraceTWAB storage history = $.totalStaked[valAddr];
-    if (history.len() == 0) return 0;
-
-    LibCheckpoint.TWABCheckpoint memory last = history.search(timestamp);
-    return last.amount;
-  }
-
-  function _totalStakedTWAB(StorageV1 storage $, address valAddr, uint48 timestamp) internal view returns (uint256) {
-    LibCheckpoint.TraceTWAB storage history = $.totalStaked[valAddr];
-    if (history.len() == 0) return 0;
-
-    LibCheckpoint.TWABCheckpoint memory last = history.search(timestamp);
-    return last.twab + (last.amount * (timestamp - last.lastUpdate));
-  }
-
   function _stake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal {
     uint48 now_ = Time.timestamp();
-    $.staked[valAddr][staker].push(amount, now_, LibCheckpoint.add);
+
     $.stakerTotal[staker].push(amount, now_, LibCheckpoint.add);
-    $.totalStaked[valAddr].push(amount, now_, LibCheckpoint.add);
+    $.validatorTotal[valAddr].push(amount, now_, LibCheckpoint.add);
+    $.validatorStakerTotal[valAddr][staker].push(amount, now_, LibCheckpoint.add);
 
     _updateExtraVotingPower($, valAddr);
   }
 
   function _unstake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal {
     uint48 now_ = Time.timestamp();
-    $.staked[valAddr][staker].push(amount, now_, LibCheckpoint.sub);
+
     $.stakerTotal[staker].push(amount, now_, LibCheckpoint.sub);
-    $.totalStaked[valAddr].push(amount, now_, LibCheckpoint.sub);
+    $.validatorTotal[valAddr].push(amount, now_, LibCheckpoint.sub);
+    $.validatorStakerTotal[valAddr][staker].push(amount, now_, LibCheckpoint.sub);
 
     _updateExtraVotingPower($, valAddr);
   }
@@ -200,7 +145,7 @@ contract ValidatorStakingHub is ValidatorStakingHubStorage, Ownable2StepUpgradea
   function _updateExtraVotingPower(StorageV1 storage $, address valAddr) internal {
     _entrypoint.updateExtraVotingPower(
       _manager.validatorInfo(valAddr).valKey, //
-      $.totalStaked[valAddr].last().amount
+      $.validatorTotal[valAddr].last().amount
     );
   }
 }

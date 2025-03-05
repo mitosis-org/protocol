@@ -6,10 +6,11 @@ import { IGovMITOEmission } from '../IGovMITOEmission.sol';
 import { IEpochFeeder } from './IEpochFeeder.sol';
 import { IValidatorContributionFeed } from './IValidatorContributionFeed.sol';
 import { IValidatorManager } from './IValidatorManager.sol';
-import { IValidatorStaking } from './IValidatorStaking.sol';
+import { IValidatorStakingHub } from './IValidatorStakingHub.sol';
 
 /// @title IValidatorRewardDistributor
 /// @notice Interface for the ValidatorRewardDistributor contract that handles distribution of validator rewards
+
 interface IValidatorRewardDistributor {
   // Events
   event RewardsReported(address indexed valAddr, uint256 amount, uint256 epoch);
@@ -34,8 +35,8 @@ interface IValidatorRewardDistributor {
   /// @notice Returns the validator contribution feed contract
   function validatorContributionFeed() external view returns (IValidatorContributionFeed);
 
-  /// @notice Returns the validator delegation manager contract
-  function validatorStaking() external view returns (IValidatorStaking);
+  /// @notice Returns the validator staking hub contract
+  function validatorStakingHub() external view returns (IValidatorStakingHub);
 
   /// @notice Returns the gov MITO emission contract
   function govMITOEmission() external view returns (IGovMITOEmission);

@@ -36,23 +36,13 @@ interface IValidatorStaking {
   function totalStaked() external view returns (uint256);
   function totalUnstaking() external view returns (uint256);
 
-  function staked(address valAddr, address staker) external view returns (uint256);
-  function stakedAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
-  function stakedTWAB(address valAddr, address staker) external view returns (uint256);
-  function stakedTWABAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
-
-  function unstaking(address valAddr, address staker) external view returns (uint256, uint256);
-  function unstakingAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256);
-
-  function totalDelegation(address valAddr) external view returns (uint256);
-  function totalDelegationAt(address valAddr, uint48 timestamp) external view returns (uint256);
-  function totalDelegationTWAB(address valAddr) external view returns (uint256);
-  function totalDelegationTWABAt(address valAddr, uint48 timestamp) external view returns (uint256);
-
-  function totalDelegationForStaker(address staker) external view returns (uint256);
-  function totalDelegationForStakerAt(address staker, uint48 timestamp) external view returns (uint256);
-  function totalDelegationTWABForStaker(address staker) external view returns (uint256);
-  function totalDelegationTWABForStakerAt(address staker, uint48 timestamp) external view returns (uint256);
+  function staked(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
+  function stakedTWAB(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
+  function stakerTotal(address staker, uint48 timestamp) external view returns (uint256);
+  function stakerTotalTWAB(address staker, uint48 timestamp) external view returns (uint256);
+  function validatorTotal(address valAddr, uint48 timestamp) external view returns (uint256);
+  function validatorTotalTWAB(address valAddr, uint48 timestamp) external view returns (uint256);
+  function unstaking(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256);
 
   function lastRedelegationTime(address staker) external view returns (uint256);
 
