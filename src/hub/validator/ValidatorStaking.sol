@@ -27,6 +27,7 @@ contract ValidatorStakingStorageV1 {
   }
 
   struct StorageV1 {
+    address baseAsset;
     uint128 totalStaked;
     uint128 totalUnstaking;
     uint48 unstakeCooldown;
@@ -53,13 +54,23 @@ contract ValidatorStakingStorageV1 {
 
 contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownable2StepUpgradeable, UUPSUpgradeable {
   using SafeCast for uint256;
+  using SafeTransferLib for address;
   using LibRedeemQueue for LibRedeemQueue.Queue;
 
+  address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+  address private immutable _baseAsset;
   IEpochFeeder private immutable _epochFeeder;
   IValidatorManager private immutable _manager;
   IConsensusValidatorEntrypoint private immutable _entrypoint;
 
-  constructor(IEpochFeeder epochFeeder_, IValidatorManager manager_, IConsensusValidatorEntrypoint entrypoint_) {
+  constructor(
+    address baseAsset_,
+    IEpochFeeder epochFeeder_,
+    IValidatorManager manager_,
+    IConsensusValidatorEntrypoint entrypoint_
+  ) {
+    _baseAsset = baseAsset_;
     _epochFeeder = epochFeeder_;
     _manager = manager_;
     _entrypoint = entrypoint_;
@@ -202,23 +213,29 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorStaking
-  function stake(address valAddr, address recipient) external payable {
-    require(msg.value > 0, StdError.ZeroAmount());
+  function stake(address valAddr, address recipient, uint256 amount) external payable {
+    require(amount > 0, StdError.ZeroAmount());
+
+    require(_baseAsset == NATIVE_TOKEN && msg.value == amount, StdError.InvalidParameter('amount'));
     require(recipient != address(0), StdError.InvalidParameter('recipient'));
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
 
+    // If the base asset is not native, we need to transfer from the sender to the contract
+    if (_baseAsset != NATIVE_TOKEN) _baseAsset.safeTransferFrom(_msgSender(), address(this), amount);
+
     StorageV1 storage $ = _getStorageV1();
 
-    _stake($, valAddr, recipient, msg.value, Time.timestamp());
+    _stake($, valAddr, recipient, amount, Time.timestamp());
 
-    $.totalStaked += msg.value.toUint128();
+    $.totalStaked += amount.toUint128();
 
+    // FIXME(eddy): make this as a hook - for multiple staking contracts
     _entrypoint.updateExtraVotingPower(
       _manager.validatorInfo(valAddr).valKey, // can be optimized
       _last($.totalDelegations[valAddr]).amount
     );
 
-    emit Staked(valAddr, _msgSender(), recipient, msg.value);
+    emit Staked(valAddr, _msgSender(), recipient, amount);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -264,7 +281,8 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     queue.update(now_);
     uint256 claimed = queue.claim(receiver, now_);
 
-    SafeTransferLib.safeTransferETH(receiver, claimed);
+    if (_baseAsset == NATIVE_TOKEN) receiver.safeTransferETH(claimed);
+    else _baseAsset.safeTransfer(receiver, claimed);
 
     $.totalUnstaking -= claimed.toUint128();
 
