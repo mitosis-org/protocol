@@ -4,6 +4,13 @@ pragma solidity ^0.8.28;
 import { IConsensusValidatorEntrypoint } from '../consensus-layer/IConsensusValidatorEntrypoint.sol';
 import { IValidatorManager } from './IValidatorManager.sol';
 
+/// @title NotifierOracle
+/// @notice Interface for the NotifierOracle contract.
+/// @dev This interface defines the actions that notifiers can perform to track staking.
+interface NotifierOracle {
+  function feed(address notifier) external returns (uint256 numerator, uint256 denominator);
+}
+
 /// @title IValidatorStakingHub
 /// @notice Interface for the ValidatorStakingHub contract.
 /// @dev This interface defines the actions that notifiers can perform to track staking.
@@ -26,7 +33,7 @@ interface IValidatorStakingHub {
 
   // ========== ADMIN ACTIONS ========== //
 
-  function addNotifier(address notifier) external;
+  function addNotifier(address notifier, address oracle) external;
   function removeNotifier(address notifier) external;
 
   // ========== NOTIFIER ACTIONS ========== //
