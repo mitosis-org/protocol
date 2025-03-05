@@ -108,22 +108,16 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _setEntrypoint($, entrypoint_);
     _setGlobalValidatorConfig($, initialGlobalValidatorConfig);
 
-    $.validatorCount = 1;
-
-    // TODO(eddy): test me
     for (uint256 i = 0; i < genesisValidators.length; i++) {
       GenesisValidatorSet memory genVal = genesisValidators[i];
 
-      address valAddr = ECDSA.recover(
-        keccak256(abi.encodePacked(genVal.operator, genVal.commissionRate, genVal.metadata)), genVal.signature
-      );
-
-      genVal.valKey.verifyCmpPubkeyWithAddress(valAddr);
+      address valAddr = genVal.valKey.deriveAddressFromCmpPubkey();
 
       _createValidator(
         $,
         valAddr,
         genVal.valKey,
+        genVal.value,
         CreateValidatorRequest({
           operator: genVal.operator,
           commissionRate: genVal.commissionRate,
@@ -158,12 +152,12 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   /// @inheritdoc IValidatorManager
   function validatorCount() external view returns (uint256) {
-    return _getStorageV1().validatorCount - 1;
+    return _getStorageV1().validatorCount;
   }
 
   /// @inheritdoc IValidatorManager
   function validatorAt(uint256 index) external view returns (address) {
-    return _getStorageV1().validators[index + 1].valAddr;
+    return _getStorageV1().validators[index].valAddr;
   }
 
   /// @inheritdoc IValidatorManager
@@ -211,7 +205,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     // verify the valKey is valid and corresponds to the caller
     valKey.verifyCmpPubkeyWithAddress(valAddr);
 
-    _createValidator(_getStorageV1(), valAddr, valKey, request);
+    StorageV1 storage $ = _getStorageV1();
+
+    _createValidator($, valAddr, valKey, msg.value, request);
+
+    $.entrypoint.registerValidator{ value: msg.value }(valKey);
   }
 
   /// @inheritdoc IValidatorManager
@@ -404,13 +402,14 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     StorageV1 storage $,
     address valAddr,
     bytes memory valKey,
+    uint256 value,
     CreateValidatorRequest memory request
   ) internal {
     _assertValidatorNotExists($, valAddr);
 
     GlobalValidatorConfig storage globalConfig = $.globalValidatorConfig;
 
-    require(globalConfig.initialValidatorDeposit <= msg.value, StdError.InvalidParameter('msg.value'));
+    require(globalConfig.initialValidatorDeposit <= value, StdError.InvalidParameter('value'));
     require(
       globalConfig.minimumCommissionRates.latest() <= request.commissionRate
         && request.commissionRate <= MAX_COMMISSION_RATE,
@@ -418,7 +417,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     );
 
     // start from 1
-    uint256 valIndex = $.validatorCount++;
+    uint256 valIndex = ++$.validatorCount;
 
     uint256 epoch = $.epochFeeder.epoch();
 
@@ -431,7 +430,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     validator.metadata = request.metadata;
 
     $.indexByValAddr[valAddr] = valIndex;
-    $.entrypoint.registerValidator{ value: msg.value }(valKey);
 
     emit ValidatorCreated(valAddr, request.operator, valKey);
   }

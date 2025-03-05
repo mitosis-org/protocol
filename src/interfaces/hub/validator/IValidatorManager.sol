@@ -60,6 +60,7 @@ interface IValidatorManager {
     uint256 commissionRate;
     bytes metadata;
     bytes signature;
+    uint256 value;
   }
 
   struct SetGlobalValidatorConfigRequest {

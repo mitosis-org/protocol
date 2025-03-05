@@ -30,7 +30,7 @@ contract EpochFeederTest is Toolkit {
 
   function test_init() public view {
     assertEq(feeder.owner(), owner);
-    assertEq(feeder.epoch(), 0);
+    assertEq(feeder.epoch(), 1);
     assertEq(feeder.interval(), 1 days);
   }
 }
