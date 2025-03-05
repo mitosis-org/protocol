@@ -342,6 +342,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     uint256 commissionRate = info.rewardConfig.commissionRates.lowerLookup(epoch.toUint96());
 
     ValidatorInfoResponse memory response = ValidatorInfoResponse({
+      valKey: info.pubKey,
       valAddr: info.valAddr,
       operator: info.operator,
       rewardRecipient: info.rewardRecipient,

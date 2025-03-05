@@ -9,6 +9,7 @@ import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
+import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
 import { IEpochFeeder } from '../../interfaces/hub/validator/IEpochFeeder.sol';
 import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorStaking } from '../../interfaces/hub/validator/IValidatorStaking.sol';
@@ -55,10 +56,13 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
   IEpochFeeder private immutable _epochFeeder;
   IValidatorManager private immutable _manager;
+  IConsensusValidatorEntrypoint private immutable _entrypoint;
 
-  constructor(IEpochFeeder epochFeeder_, IValidatorManager manager_) {
+  constructor(IEpochFeeder epochFeeder_, IValidatorManager manager_, IConsensusValidatorEntrypoint entrypoint_) {
     _epochFeeder = epochFeeder_;
     _manager = manager_;
+    _entrypoint = entrypoint_;
+
     _disableInitializers();
   }
 
@@ -80,6 +84,11 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   /// @inheritdoc IValidatorStaking
   function registry() external view returns (IValidatorManager) {
     return _manager;
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function entrypoint() external view returns (IConsensusValidatorEntrypoint) {
+    return _entrypoint;
   }
 
   /// @inheritdoc IValidatorStaking
@@ -181,6 +190,11 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
     $.totalStaked += msg.value.toUint128();
 
+    _entrypoint.updateExtraVotingPower(
+      _manager.validatorInfo(valAddr).valKey, // can be optimized
+      _last($.totalDelegations[valAddr]).amount
+    );
+
     emit Staked(valAddr, _msgSender(), recipient, msg.value);
   }
 
@@ -202,6 +216,11 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
     $.totalStaked -= amount.toUint128();
     $.totalUnstaking += amount.toUint128();
+
+    _entrypoint.updateExtraVotingPower(
+      _manager.validatorInfo(valAddr).valKey, // can be optimized
+      _last($.totalDelegations[valAddr]).amount
+    );
 
     emit UnstakeRequested(valAddr, _msgSender(), receiver, amount, reqId);
 
@@ -389,6 +408,10 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     }
 
     return history[target];
+  }
+
+  function _last(TWABCheckpoint[] storage history) internal view returns (TWABCheckpoint memory) {
+    return history[history.length - 1];
   }
 
   function _pushTWABCheckpoint(

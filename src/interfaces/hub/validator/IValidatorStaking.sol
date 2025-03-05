@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { IConsensusValidatorEntrypoint } from '../consensus-layer/IConsensusValidatorEntrypoint.sol';
 import { IEpochFeeder } from './IEpochFeeder.sol';
 import { IValidatorManager } from './IValidatorManager.sol';
 
 /// @title IValidatorStaking
 /// @notice Interface for the ValidatorStaking contract.
 /// @dev This interface defines the actions that users and validators can perform.
+
 interface IValidatorStaking {
   event Staked(address indexed val, address indexed who, address indexed to, uint256 amount);
   event UnstakeRequested(address indexed val, address indexed who, address indexed to, uint256 amount, uint256 reqId);
@@ -24,6 +26,7 @@ interface IValidatorStaking {
 
   function epochFeeder() external view returns (IEpochFeeder);
   function registry() external view returns (IValidatorManager);
+  function entrypoint() external view returns (IConsensusValidatorEntrypoint);
 
   function unstakeCooldown() external view returns (uint48);
   function redelegationCooldown() external view returns (uint48);
