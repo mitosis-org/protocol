@@ -108,15 +108,10 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _setEntrypoint($, entrypoint_);
     _setGlobalValidatorConfig($, initialGlobalValidatorConfig);
 
-    // TODO(eddy): test me
     for (uint256 i = 0; i < genesisValidators.length; i++) {
       GenesisValidatorSet memory genVal = genesisValidators[i];
 
-      address valAddr = ECDSA.recover(
-        keccak256(abi.encodePacked(genVal.operator, genVal.commissionRate, genVal.metadata)), genVal.signature
-      );
-
-      genVal.valKey.verifyCmpPubkeyWithAddress(valAddr);
+      address valAddr = genVal.valKey.deriveAddressFromCmpPubkey();
 
       _createValidator(
         $,
@@ -210,7 +205,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     // verify the valKey is valid and corresponds to the caller
     valKey.verifyCmpPubkeyWithAddress(valAddr);
 
-    _createValidator(_getStorageV1(), valAddr, valKey, msg.value, request);
+    StorageV1 storage $ = _getStorageV1();
+
+    _createValidator($, valAddr, valKey, msg.value, request);
+
+    $.entrypoint.registerValidator{ value: msg.value }(valKey);
   }
 
   /// @inheritdoc IValidatorManager
@@ -430,7 +429,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     validator.metadata = request.metadata;
 
     $.indexByValAddr[valAddr] = valIndex;
-    $.entrypoint.registerValidator{ value: value }(valKey);
 
     emit ValidatorCreated(valAddr, request.operator, valKey);
   }
