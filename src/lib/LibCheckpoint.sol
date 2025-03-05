@@ -56,19 +56,20 @@ library LibCheckpoint {
 
   function findAmount(TraceTWAB storage self, uint48 timestamp) internal view returns (uint256) {
     require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    return len(self) == 0 ? 0 : search(self, timestamp).amount;
+    return len(self) == 0 ? 0 : lowerBound(self, timestamp).amount;
   }
 
   function findTWAB(TraceTWAB storage self, uint48 timestamp) internal view returns (uint256) {
     require(timestamp > 0, StdError.InvalidParameter('timestamp'));
     if (len(self) == 0) return 0;
 
-    TWABCheckpoint memory checkpoint = search(self, timestamp);
+    TWABCheckpoint memory checkpoint = lowerBound(self, timestamp);
     return checkpoint.twab + (checkpoint.amount * (timestamp - checkpoint.lastUpdate));
   }
 
-  // TODO(eddy): specify whether this search is lower_bound or upper_bound
-  function search(TraceTWAB storage self, uint48 timestamp) internal view returns (TWABCheckpoint memory) {
+  /// @notice Find the latest checkpoint with lastUpdate <= timestamp
+  /// @dev Uses binary search to find the lower bound checkpoint
+  function lowerBound(TraceTWAB storage self, uint48 timestamp) internal view returns (TWABCheckpoint memory) {
     TWABCheckpoint memory last_ = last(self);
     if (last_.lastUpdate <= timestamp) return last_;
 
@@ -83,6 +84,29 @@ library LibCheckpoint {
         left = mid + 1;
       } else {
         right = mid - 1;
+      }
+    }
+
+    return self.checkpoints[target];
+  }
+
+  /// @notice Find the earliest checkpoint with lastUpdate >= timestamp
+  /// @dev Uses binary search to find the upper bound checkpoint
+  function upperBound(TraceTWAB storage self, uint48 timestamp) internal view returns (TWABCheckpoint memory) {
+    TWABCheckpoint memory first_ = self.checkpoints[0];
+    if (first_.lastUpdate >= timestamp) return first_;
+
+    uint256 left = 0;
+    uint256 right = self.checkpoints.length - 1;
+    uint256 target = right;
+
+    while (left <= right) {
+      uint256 mid = left + (right - left) / 2;
+      if (self.checkpoints[mid].lastUpdate >= timestamp) {
+        target = mid;
+        right = mid - 1;
+      } else {
+        left = mid + 1;
       }
     }
 
