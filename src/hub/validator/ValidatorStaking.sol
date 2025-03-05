@@ -284,6 +284,16 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     _unstake($, fromValAddr, _msgSender(), amount);
     _stake($, toValAddr, _msgSender(), amount, now_);
 
+    _entrypoint.updateExtraVotingPower(
+      _manager.validatorInfo(fromValAddr).valKey, // can be optimized
+      _last($.totalDelegations[fromValAddr]).amount
+    );
+
+    _entrypoint.updateExtraVotingPower(
+      _manager.validatorInfo(toValAddr).valKey, // can be optimized
+      _last($.totalDelegations[toValAddr]).amount
+    );
+
     emit Redelegated(fromValAddr, toValAddr, _msgSender(), amount);
   }
 
