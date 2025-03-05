@@ -23,7 +23,7 @@ interface IGovMITOEmission {
   error NotEnoughBalance();
   error NotEnoughReserve();
 
-  event ValidatorRewardRequested(uint96 indexed epoch, uint256 amount);
+  event ValidatorRewardRequested(uint256 indexed epoch, uint256 amount);
   event ValidatorRewardEmissionAdded(uint256 amount);
   event ValidatorRewardEmissionConfigured(uint256 rps, uint160 deductionRate, uint48 deductionPeriod, uint48 timestamp);
 
@@ -42,7 +42,7 @@ interface IGovMITOEmission {
    * @param epoch Epoch number
    * @return amount The total amount of gMITO tokens reserved for the validator reward
    */
-  function validatorReward(uint96 epoch) external view returns (uint256 amount);
+  function validatorReward(uint256 epoch) external view returns (uint256 amount);
 
   /**
    * @notice Returns the total amount of gMITO tokens reserved for validator rewards
@@ -88,7 +88,7 @@ interface IGovMITOEmission {
    * @param recipient Address of the recipient
    * @param amount Amount of gMITO tokens to request
    */
-  function requestValidatorReward(uint96 epoch, address recipient, uint256 amount) external;
+  function requestValidatorReward(uint256 epoch, address recipient, uint256 amount) external;
 
   /**
    * @notice Adds a validator reward emission

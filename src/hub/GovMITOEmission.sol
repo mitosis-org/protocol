@@ -33,8 +33,6 @@ contract GovMITOEmissionStorageV1 {
   }
 
   struct StorageV1 {
-    IGovMITO govMITO;
-    IEpochFeeder epochFeeder;
     ValidatorReward validatorReward;
   }
 
@@ -59,16 +57,17 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
 
   uint256 public constant DEDUCTION_RATE_DENOMINATOR = 10000;
 
-  constructor() {
+  IGovMITO private immutable _govMITO;
+  IEpochFeeder private immutable _epochFeeder;
+
+  constructor(IGovMITO govMITO_, IEpochFeeder epochFeeder_) {
     _disableInitializers();
+
+    _govMITO = govMITO_;
+    _epochFeeder = epochFeeder_;
   }
 
-  function initialize(
-    address initialOwner,
-    IGovMITO govMITO_,
-    IEpochFeeder epochFeeder_,
-    ValidatorRewardConfig memory config
-  ) external payable initializer {
+  function initialize(address initialOwner, ValidatorRewardConfig memory config) external payable initializer {
     __UUPSUpgradeable_init();
     __Ownable_init(initialOwner);
     __Ownable2Step_init();
@@ -80,9 +79,6 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
 
     StorageV1 storage $ = _getStorageV1();
 
-    $.govMITO = govMITO_;
-    $.epochFeeder = epochFeeder_;
-
     _configureValidatorRewardEmission($, config.rps, config.deductionRate, config.deductionPeriod, config.startsFrom);
 
     $.validatorReward.total = config.total;
@@ -90,21 +86,21 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     $.validatorReward.recipient = config.recipient;
 
     // convert the total amount to gMITO
-    govMITO_.mint{ value: config.total }(address(this));
+    _govMITO.mint{ value: config.total }(address(this));
   }
 
   /// @inheritdoc IGovMITOEmission
   function govMITO() external view returns (IGovMITO) {
-    return _getStorageV1().govMITO;
+    return _govMITO;
   }
 
   /// @inheritdoc IGovMITOEmission
   function epochFeeder() external view returns (IEpochFeeder) {
-    return _getStorageV1().epochFeeder;
+    return _epochFeeder;
   }
 
   /// @inheritdoc IGovMITOEmission
-  function validatorReward(uint96 epoch) external view returns (uint256) {
+  function validatorReward(uint256 epoch) external view returns (uint256) {
     return _calcValidatorRewardForEpoch(_getStorageV1(), epoch);
   }
 
@@ -155,7 +151,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
   }
 
   /// @inheritdoc IGovMITOEmission
-  function requestValidatorReward(uint96 epoch, address recipient, uint256 amount) external {
+  function requestValidatorReward(uint256 epoch, address recipient, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
     require($.validatorReward.recipient == _msgSender(), StdError.Unauthorized());
 
@@ -163,7 +159,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     require($.validatorReward.total >= spent + amount, NotEnoughReserve());
 
     $.validatorReward.spent += amount;
-    $.govMITO.safeTransfer(recipient, amount);
+    _govMITO.safeTransfer(recipient, amount);
 
     emit ValidatorRewardRequested(epoch, amount);
   }
@@ -175,7 +171,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     StorageV1 storage $ = _getStorageV1();
 
     $.validatorReward.total += msg.value;
-    $.govMITO.mint{ value: msg.value }(address(this));
+    _govMITO.mint{ value: msg.value }(address(this));
 
     emit ValidatorRewardEmissionAdded(msg.value);
   }
@@ -234,12 +230,11 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     }
   }
 
-  function _calcValidatorRewardForEpoch(StorageV1 storage $, uint96 epoch) internal view returns (uint256) {
+  function _calcValidatorRewardForEpoch(StorageV1 storage $, uint256 epoch) internal view returns (uint256) {
     require(0 <= epoch, StdError.InvalidParameter('epoch'));
 
-    IEpochFeeder ef = $.epochFeeder;
-    uint48 epochStartTime = ef.timeAt(epoch);
-    uint48 epochEndTime = ef.timeAt(epoch + 1) - 1;
+    uint48 epochStartTime = _epochFeeder.timeAt(epoch);
+    uint48 epochEndTime = _epochFeeder.timeAt(epoch + 1) - 1;
 
     ValidatorReward storage vr = $.validatorReward;
     ValidatorRewardEmission memory startLog = _lowerLookup(vr.emissions, epochStartTime);
