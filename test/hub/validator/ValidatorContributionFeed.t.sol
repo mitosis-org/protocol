@@ -54,8 +54,8 @@ contract ValidatorContributionFeedTest is Toolkit {
     feed = ValidatorContributionFeed(
       address(
         new ERC1967Proxy(
-          address(new ValidatorContributionFeed()),
-          abi.encodeCall(ValidatorContributionFeed.initialize, (owner, address(epochFeeder)))
+          address(new ValidatorContributionFeed(IEpochFeeder(address(epochFeeder)))),
+          abi.encodeCall(ValidatorContributionFeed.initialize, (owner))
         )
       )
     );

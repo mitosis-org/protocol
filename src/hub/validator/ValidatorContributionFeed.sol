@@ -33,7 +33,6 @@ contract ValidatorContributionFeedStorageV1 {
   }
 
   struct StorageV1 {
-    IEpochFeeder epochFeeder;
     uint256 nextEpoch;
     ReportChecker checker;
     mapping(uint256 epoch => Reward reward) rewards;
@@ -64,11 +63,15 @@ contract ValidatorContributionFeed is
   /// @notice keccak256('mitosis.role.ValidatorContributionFeed.feeder')
   bytes32 public constant FEEDER_ROLE = 0xa33b22848ec080944b3c811b3fe6236387c5104ce69ccd386b545a980fbe6827;
 
-  constructor() {
+  IEpochFeeder private immutable _epochFeeder;
+
+  constructor(IEpochFeeder epochFeeder_) {
     _disableInitializers();
+
+    _epochFeeder = epochFeeder_;
   }
 
-  function initialize(address owner_, address epochFeeder_) external initializer {
+  function initialize(address owner_) external initializer {
     __UUPSUpgradeable_init();
     __Ownable_init(owner_);
     __Ownable2Step_init();
@@ -80,13 +83,11 @@ contract ValidatorContributionFeed is
     StorageV1 storage $ = _getStorageV1();
 
     $.nextEpoch = 1;
-
-    _setEpochFeeder($, epochFeeder_);
   }
 
   /// @inheritdoc IValidatorContributionFeed
   function epochFeeder() external view returns (IEpochFeeder) {
-    return _getStorageV1().epochFeeder;
+    return _epochFeeder;
   }
 
   /// @inheritdoc IValidatorContributionFeed
@@ -138,7 +139,7 @@ contract ValidatorContributionFeed is
 
     uint256 epoch = $.nextEpoch;
 
-    require(epoch < $.epochFeeder.epoch(), StdError.InvalidParameter('epoch'));
+    require(epoch < _epochFeeder.epoch(), StdError.InvalidParameter('epoch'));
 
     Reward storage reward = $.rewards[epoch];
     require(reward.status == ReportStatus.NONE, IValidatorContributionFeed__InvalidReportStatus());
@@ -200,15 +201,6 @@ contract ValidatorContributionFeed is
     delete $.checker;
 
     emit ReportFinalized(epoch);
-  }
-
-  function setEpochFeeder(IEpochFeeder epochFeeder_) external onlyOwner {
-    _setEpochFeeder(_getStorageV1(), address(epochFeeder_));
-  }
-
-  function _setEpochFeeder(StorageV1 storage $, address epochFeeder_) internal {
-    require(epochFeeder_.code.length > 0, StdError.InvalidParameter('epochFeeder'));
-    $.epochFeeder = IEpochFeeder(epochFeeder_);
   }
 
   // ================== UUPS ================== //

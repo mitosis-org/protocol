@@ -68,18 +68,16 @@ contract ValidatorRewardDistributorTest is Toolkit {
     );
     distributor = ValidatorRewardDistributor(
       _proxy(
-        address(new ValidatorRewardDistributor()),
-        abi.encodeCall(
-          ValidatorRewardDistributor.initialize,
-          (
-            owner,
+        address(
+          new ValidatorRewardDistributor(
             address(epochFeed),
             address(validatorManager),
             address(staking),
             address(contributionFeed),
             address(govMITOEmission)
           )
-        )
+        ),
+        abi.encodeCall(ValidatorRewardDistributor.initialize, (owner))
       )
     );
   }

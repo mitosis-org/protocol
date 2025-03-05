@@ -57,8 +57,6 @@ contract ValidatorManagerStorageV1 {
   }
 
   struct StorageV1 {
-    IEpochFeeder epochFeeder;
-    IConsensusValidatorEntrypoint entrypoint;
     GlobalValidatorConfig globalValidatorConfig;
     // validator
     uint256 validatorCount;
@@ -86,16 +84,20 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   using LibSecp256k1 for bytes;
   using Checkpoints for Checkpoints.Trace160;
 
+  IEpochFeeder private immutable _epochFeeder;
+  IConsensusValidatorEntrypoint private immutable _entrypoint;
+
   uint256 public constant MAX_COMMISSION_RATE = 10000; // 100% in bp
 
-  constructor() {
+  constructor(IEpochFeeder epochFeeder_, IConsensusValidatorEntrypoint entrypoint_) {
     _disableInitializers();
+
+    _epochFeeder = epochFeeder_;
+    _entrypoint = entrypoint_;
   }
 
   function initialize(
     address initialOwner,
-    IEpochFeeder epochFeeder_,
-    IConsensusValidatorEntrypoint entrypoint_,
     SetGlobalValidatorConfigRequest memory initialGlobalValidatorConfig,
     GenesisValidatorSet[] memory genesisValidators
   ) external initializer {
@@ -104,8 +106,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     __Ownable2Step_init();
 
     StorageV1 storage $ = _getStorageV1();
-    _setEpochFeeder($, epochFeeder_);
-    _setEntrypoint($, entrypoint_);
+
     _setGlobalValidatorConfig($, initialGlobalValidatorConfig);
 
     for (uint256 i = 0; i < genesisValidators.length; i++) {
@@ -129,12 +130,12 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   /// @inheritdoc IValidatorManager
   function entrypoint() external view returns (IConsensusValidatorEntrypoint) {
-    return _getStorageV1().entrypoint;
+    return _entrypoint;
   }
 
   /// @inheritdoc IValidatorManager
   function epochFeeder() external view returns (IEpochFeeder) {
-    return _getStorageV1().epochFeeder;
+    return _epochFeeder;
   }
 
   /// @inheritdoc IValidatorManager
@@ -173,13 +174,13 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   /// @inheritdoc IValidatorManager
   function validatorInfo(address valAddr) public view returns (ValidatorInfoResponse memory) {
     StorageV1 storage $ = _getStorageV1();
-    return _validatorInfoAt($, valAddr, $.epochFeeder.epoch());
+    return _validatorInfoAt($, valAddr, _epochFeeder.epoch());
   }
 
   /// @inheritdoc IValidatorManager
   function validatorInfoWithPubKey(bytes calldata valKey) public view returns (ValidatorInfoResponse memory) {
     StorageV1 storage $ = _getStorageV1();
-    return _validatorInfoAt($, valKey.deriveAddressFromCmpPubkey(), $.epochFeeder.epoch());
+    return _validatorInfoAt($, valKey.deriveAddressFromCmpPubkey(), _epochFeeder.epoch());
   }
 
   /// @inheritdoc IValidatorManager
@@ -209,7 +210,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
     _createValidator($, valAddr, valKey, msg.value, request);
 
-    $.entrypoint.registerValidator{ value: msg.value }(valKey);
+    _entrypoint.registerValidator{ value: msg.value }(valKey);
   }
 
   /// @inheritdoc IValidatorManager
@@ -219,7 +220,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
     Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
 
-    $.entrypoint.depositCollateral{ value: msg.value }(validator.pubKey);
+    _entrypoint.depositCollateral{ value: msg.value }(validator.pubKey);
 
     emit CollateralDeposited(validator.valAddr, msg.value);
   }
@@ -232,7 +233,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
     _assertOperator(validator);
 
-    $.entrypoint.withdrawCollateral(
+    _entrypoint.withdrawCollateral(
       validator.pubKey,
       amount,
       recipient,
@@ -248,7 +249,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
     _assertOperator(validator);
 
-    $.entrypoint.unjail(validator.pubKey);
+    _entrypoint.unjail(validator.pubKey);
 
     emit ValidatorUnjailed(validator.valAddr);
   }
@@ -305,7 +306,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       StdError.InvalidParameter('commissionRate')
     );
 
-    uint256 epochToUpdate = $.epochFeeder.epoch() + globalConfig.commissionRateUpdateDelay;
+    uint256 epochToUpdate = _epochFeeder.epoch() + globalConfig.commissionRateUpdateDelay;
 
     validator.rewardConfig.pendingCommissionRate = request.commissionRate;
     validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate;
@@ -316,16 +317,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   /// @inheritdoc IValidatorManager
   function setGlobalValidatorConfig(SetGlobalValidatorConfigRequest calldata request) external onlyOwner {
     _setGlobalValidatorConfig(_getStorageV1(), request);
-  }
-
-  /// @inheritdoc IValidatorManager
-  function setEpochFeeder(IEpochFeeder epochFeeder_) external onlyOwner {
-    _setEpochFeeder(_getStorageV1(), epochFeeder_);
-  }
-
-  /// @inheritdoc IValidatorManager
-  function setEntrypoint(IConsensusValidatorEntrypoint entrypoint_) external onlyOwner {
-    _setEntrypoint(_getStorageV1(), entrypoint_);
   }
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //
@@ -360,20 +351,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     return response;
   }
 
-  function _setEpochFeeder(StorageV1 storage $, IEpochFeeder epochFeeder_) internal {
-    require(address(epochFeeder_).code.length > 0, StdError.InvalidParameter('epochFeeder'));
-    $.epochFeeder = epochFeeder_;
-
-    emit EpochFeederUpdated(epochFeeder_);
-  }
-
-  function _setEntrypoint(StorageV1 storage $, IConsensusValidatorEntrypoint entrypoint_) internal {
-    require(address(entrypoint_).code.length > 0, StdError.InvalidParameter('entrypoint'));
-    $.entrypoint = entrypoint_;
-
-    emit EntrypointUpdated(entrypoint_);
-  }
-
   function _setGlobalValidatorConfig(StorageV1 storage $, SetGlobalValidatorConfigRequest memory request) internal {
     require(
       0 <= request.minimumCommissionRate && request.minimumCommissionRate <= MAX_COMMISSION_RATE,
@@ -383,7 +360,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     require(request.initialValidatorDeposit >= 0, StdError.InvalidParameter('initialValidatorDeposit'));
     require(request.collateralWithdrawalDelay >= 0, StdError.InvalidParameter('collateralWithdrawalDelay'));
 
-    uint256 epoch = $.epochFeeder.epoch();
+    uint256 epoch = _epochFeeder.epoch();
     $.globalValidatorConfig.minimumCommissionRates.push(epoch.toUint96(), request.minimumCommissionRate.toUint160());
     $.globalValidatorConfig.commissionRateUpdateDelay = request.commissionRateUpdateDelay;
     $.globalValidatorConfig.initialValidatorDeposit = request.initialValidatorDeposit;
@@ -419,7 +396,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     // start from 1
     uint256 valIndex = ++$.validatorCount;
 
-    uint256 epoch = $.epochFeeder.epoch();
+    uint256 epoch = _epochFeeder.epoch();
 
     Validator storage validator = $.validators[valIndex];
     validator.valAddr = valAddr;
