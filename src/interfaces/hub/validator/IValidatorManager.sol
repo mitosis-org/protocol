@@ -28,6 +28,7 @@ interface IValidatorManager {
   }
 
   struct ValidatorInfoResponse {
+    bytes valKey;
     address valAddr;
     address operator;
     address rewardRecipient;
