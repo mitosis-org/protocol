@@ -49,11 +49,16 @@ interface IValidatorStaking {
   function totalDelegationTWAB(address valAddr) external view returns (uint256);
   function totalDelegationTWABAt(address valAddr, uint48 timestamp) external view returns (uint256);
 
+  function totalDelegationForStaker(address staker) external view returns (uint256);
+  function totalDelegationForStakerAt(address staker, uint48 timestamp) external view returns (uint256);
+  function totalDelegationTWABForStaker(address staker) external view returns (uint256);
+  function totalDelegationTWABForStakerAt(address staker, uint48 timestamp) external view returns (uint256);
+
   function lastRedelegationTime(address staker) external view returns (uint256);
 
   // ========== ACTIONS ========== //
 
-  function stake(address valAddr, address recipient) external payable;
+  function stake(address valAddr, address recipient, uint256 amount) external payable;
   function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256);
   function claimUnstake(address valAddr, address receiver) external returns (uint256);
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external;

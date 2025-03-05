@@ -22,6 +22,7 @@ contract ValidatorStakingStorageV1 {
   using ERC7201Utils for string;
 
   struct StorageV1 {
+    address baseAsset;
     uint128 totalStaked;
     uint128 totalUnstaking;
     uint48 unstakeCooldown;
@@ -45,14 +46,24 @@ contract ValidatorStakingStorageV1 {
 
 contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownable2StepUpgradeable, UUPSUpgradeable {
   using SafeCast for uint256;
+  using SafeTransferLib for address;
   using LibRedeemQueue for LibRedeemQueue.Queue;
 
+  address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+  address private immutable _baseAsset;
   IEpochFeeder private immutable _epochFeeder;
   IValidatorManager private immutable _manager;
   IValidatorStakingHub private immutable _hub;
   IConsensusValidatorEntrypoint private immutable _entrypoint;
 
-  constructor(IEpochFeeder epochFeeder_, IValidatorManager manager_, IConsensusValidatorEntrypoint entrypoint_) {
+  constructor(
+    address baseAsset_,
+    IEpochFeeder epochFeeder_,
+    IValidatorManager manager_,
+    IConsensusValidatorEntrypoint entrypoint_
+  ) {
+    _baseAsset = baseAsset_;
     _epochFeeder = epochFeeder_;
     _manager = manager_;
     _entrypoint = entrypoint_;
@@ -124,23 +135,56 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorStaking
+  function totalDelegationForStaker(address staker) external view returns (uint256) {
+    return _totalDelegationForStaker(_getStorageV1(), staker, Time.timestamp());
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function totalDelegationForStakerAt(address staker, uint48 timestamp) external view returns (uint256) {
+    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
+    return _totalDelegationForStaker(_getStorageV1(), staker, timestamp);
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function totalDelegationTWABForStaker(address staker) external view returns (uint256) {
+    return _totalDelegationTWABForStaker(_getStorageV1(), staker, Time.timestamp());
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function totalDelegationTWABForStakerAt(address staker, uint48 timestamp) external view returns (uint256) {
+    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
+    return _totalDelegationTWABForStaker(_getStorageV1(), staker, timestamp);
+  }
+
+  /// @inheritdoc IValidatorStaking
   function lastRedelegationTime(address staker) external view returns (uint256) {
     return _getStorageV1().lastRedelegationTime[staker];
   }
 
   /// @inheritdoc IValidatorStaking
-  function stake(address valAddr, address recipient) external payable {
-    require(msg.value > 0, StdError.ZeroAmount());
+  function stake(address valAddr, address recipient, uint256 amount) external payable {
+    require(amount > 0, StdError.ZeroAmount());
+
+    require(_baseAsset == NATIVE_TOKEN && msg.value == amount, StdError.InvalidParameter('amount'));
     require(recipient != address(0), StdError.InvalidParameter('recipient'));
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
 
-    _hub.notifyStake(valAddr, _msgSender(), msg.value);
+    // If the base asset is not native, we need to transfer from the sender to the contract
+    if (_baseAsset != NATIVE_TOKEN) _baseAsset.safeTransferFrom(_msgSender(), address(this), amount);
 
     StorageV1 storage $ = _getStorageV1();
 
-    $.totalStaked += msg.value.toUint128();
+    _stake($, valAddr, recipient, amount, Time.timestamp());
 
-    emit Staked(valAddr, _msgSender(), recipient, msg.value);
+    $.totalStaked += amount.toUint128();
+
+    // FIXME(eddy): make this as a hook - for multiple staking contracts
+    _entrypoint.updateExtraVotingPower(
+      _manager.validatorInfo(valAddr).valKey, // can be optimized
+      _last($.totalDelegations[valAddr]).amount
+    );
+
+    emit Staked(valAddr, _msgSender(), recipient, amount);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -181,7 +225,8 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     queue.update(now_);
     uint256 claimed = queue.claim(receiver, now_);
 
-    SafeTransferLib.safeTransferETH(receiver, claimed);
+    if (_baseAsset == NATIVE_TOKEN) receiver.safeTransferETH(claimed);
+    else _baseAsset.safeTransfer(receiver, claimed);
 
     $.totalUnstaking -= claimed.toUint128();
 
@@ -204,6 +249,16 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     require(now_ >= lastRedelegationTime_ + $.redelegationCooldown, IValidatorStaking__CooldownNotPassed());
 
     _hub.notifyRedelegation(fromValAddr, toValAddr, _msgSender(), amount);
+
+    _entrypoint.updateExtraVotingPower(
+      _manager.validatorInfo(fromValAddr).valKey, // can be optimized
+      _last($.totalDelegations[fromValAddr]).amount
+    );
+
+    _entrypoint.updateExtraVotingPower(
+      _manager.validatorInfo(toValAddr).valKey, // can be optimized
+      _last($.totalDelegations[toValAddr]).amount
+    );
 
     emit Redelegated(fromValAddr, toValAddr, _msgSender(), amount);
   }
@@ -244,6 +299,58 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     }
 
     return (claimable, nonClaimable);
+  }
+
+  function _totalDelegation(StorageV1 storage $, address valAddr, uint48 timestamp) internal view returns (uint256) {
+    TWABCheckpoint[] storage history = $.totalDelegations[valAddr];
+    if (history.length == 0) return 0;
+
+    return _searchCheckpoint(history, timestamp).amount;
+  }
+
+  function _totalDelegationTWAB(StorageV1 storage $, address valAddr, uint48 timestamp) internal view returns (uint256) {
+    TWABCheckpoint[] storage history = $.totalDelegations[valAddr];
+    if (history.length == 0) return 0;
+
+    TWABCheckpoint memory last = _searchCheckpoint(history, timestamp);
+    return last.twab + (last.amount * (timestamp - last.lastUpdate));
+  }
+
+  function _totalDelegationForStaker(StorageV1 storage $, address staker, uint48 timestamp)
+    internal
+    view
+    returns (uint256)
+  {
+    TWABCheckpoint[] storage history = $.totalDelegationsForStaker[staker];
+    if (history.length == 0) return 0;
+
+    return _searchCheckpoint(history, timestamp).amount;
+  }
+
+  function _totalDelegationTWABForStaker(StorageV1 storage $, address staker, uint48 timestamp)
+    internal
+    view
+    returns (uint256)
+  {
+    TWABCheckpoint[] storage history = $.totalDelegationsForStaker[staker];
+    if (history.length == 0) return 0;
+
+    TWABCheckpoint memory last = _searchCheckpoint(history, timestamp);
+    return last.twab + (last.amount * (timestamp - last.lastUpdate));
+  }
+
+  function _stake(StorageV1 storage $, address valAddr, address recipient, uint256 amount, uint48 now_) internal {
+    _pushTWABCheckpoint($.totalDelegationsForStaker[recipient], amount, now_, _addAmount);
+    _pushTWABCheckpoint($.totalDelegations[valAddr], amount, now_, _addAmount);
+    _pushTWABCheckpoint($.delegationLogs[valAddr][recipient], amount, now_, _addAmount);
+  }
+
+  function _unstake(StorageV1 storage $, address valAddr, address recipient, uint256 amount) internal {
+    uint48 now_ = Time.timestamp();
+
+    _pushTWABCheckpoint($.totalDelegationsForStaker[recipient], amount, now_, _subAmount);
+    _pushTWABCheckpoint($.totalDelegations[valAddr], amount, now_, _subAmount);
+    _pushTWABCheckpoint($.delegationLogs[valAddr][recipient], amount, now_, _subAmount);
   }
 
   // ========== ADMIN ACTIONS ========== //
