@@ -13,18 +13,13 @@ import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-la
 import { IEpochFeeder } from '../../interfaces/hub/validator/IEpochFeeder.sol';
 import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorStaking } from '../../interfaces/hub/validator/IValidatorStaking.sol';
+import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 contract ValidatorStakingStorageV1 {
   using ERC7201Utils for string;
-
-  struct TWABCheckpoint {
-    uint256 twab;
-    uint208 amount;
-    uint48 lastUpdate;
-  }
 
   struct StorageV1 {
     uint128 totalStaked;
@@ -34,8 +29,6 @@ contract ValidatorStakingStorageV1 {
     uint160 padding; // FIXME(eddy): remove this or add a new field
     mapping(address staker => uint256) lastRedelegationTime;
     mapping(address valAddr => LibRedeemQueue.Queue) unstakeQueue;
-    mapping(address valAddr => TWABCheckpoint[]) totalDelegations;
-    mapping(address valAddr => mapping(address staker => TWABCheckpoint[])) delegationLogs;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.ValidatorStakingStorage.v1';
@@ -56,6 +49,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
   IEpochFeeder private immutable _epochFeeder;
   IValidatorManager private immutable _manager;
+  IValidatorStakingHub private immutable _hub;
   IConsensusValidatorEntrypoint private immutable _entrypoint;
 
   constructor(IEpochFeeder epochFeeder_, IValidatorManager manager_, IConsensusValidatorEntrypoint entrypoint_) {
@@ -82,23 +76,18 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorStaking
-  function registry() external view returns (IValidatorManager) {
+  function manager() external view returns (IValidatorManager) {
     return _manager;
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function hub() external view returns (IValidatorStakingHub) {
+    return _hub;
   }
 
   /// @inheritdoc IValidatorStaking
   function entrypoint() external view returns (IConsensusValidatorEntrypoint) {
     return _entrypoint;
-  }
-
-  /// @inheritdoc IValidatorStaking
-  function unstakeCooldown() external view returns (uint48) {
-    return _getStorageV1().unstakeCooldown;
-  }
-
-  /// @inheritdoc IValidatorStaking
-  function redelegationCooldown() external view returns (uint48) {
-    return _getStorageV1().redelegationCooldown;
   }
 
   /// @inheritdoc IValidatorStaking
@@ -109,33 +98,6 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   /// @inheritdoc IValidatorStaking
   function totalUnstaking() external view returns (uint256) {
     return _getStorageV1().totalUnstaking;
-  }
-
-  /// @inheritdoc IValidatorStaking
-  function staked(address valAddr, address staker) external view returns (uint256) {
-    require(staker != address(0), StdError.InvalidParameter('staker'));
-    return _staked(_getStorageV1(), valAddr, staker, Time.timestamp());
-  }
-
-  /// @inheritdoc IValidatorStaking
-  function stakedAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
-    require(staker != address(0), StdError.InvalidParameter('staker'));
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    StorageV1 storage $ = _getStorageV1();
-    return _staked($, valAddr, staker, timestamp);
-  }
-
-  /// @inheritdoc IValidatorStaking
-  function stakedTWAB(address valAddr, address staker) external view returns (uint256) {
-    require(staker != address(0), StdError.InvalidParameter('staker'));
-    return _stakedTWAB(_getStorageV1(), valAddr, staker, Time.timestamp());
-  }
-
-  /// @inheritdoc IValidatorStaking
-  function stakedTWABAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
-    require(staker != address(0), StdError.InvalidParameter('staker'));
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    return _stakedTWAB(_getStorageV1(), valAddr, staker, timestamp);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -152,25 +114,13 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorStaking
-  function totalDelegation(address valAddr) external view returns (uint256) {
-    return _totalDelegation(_getStorageV1(), valAddr, Time.timestamp());
+  function unstakeCooldown() external view returns (uint48) {
+    return _getStorageV1().unstakeCooldown;
   }
 
   /// @inheritdoc IValidatorStaking
-  function totalDelegationAt(address valAddr, uint48 timestamp) external view returns (uint256) {
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    return _totalDelegation(_getStorageV1(), valAddr, timestamp);
-  }
-
-  /// @inheritdoc IValidatorStaking
-  function totalDelegationTWAB(address valAddr) external view returns (uint256) {
-    return _totalDelegationTWAB(_getStorageV1(), valAddr, Time.timestamp());
-  }
-
-  /// @inheritdoc IValidatorStaking
-  function totalDelegationTWABAt(address valAddr, uint48 timestamp) external view returns (uint256) {
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    return _totalDelegationTWAB(_getStorageV1(), valAddr, timestamp);
+  function redelegationCooldown() external view returns (uint48) {
+    return _getStorageV1().redelegationCooldown;
   }
 
   /// @inheritdoc IValidatorStaking
@@ -184,16 +134,11 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     require(recipient != address(0), StdError.InvalidParameter('recipient'));
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
 
+    _hub.notifyStake(valAddr, _msgSender(), msg.value);
+
     StorageV1 storage $ = _getStorageV1();
 
-    _stake($, valAddr, recipient, msg.value, Time.timestamp());
-
     $.totalStaked += msg.value.toUint128();
-
-    _entrypoint.updateExtraVotingPower(
-      _manager.validatorInfo(valAddr).valKey, // can be optimized
-      _last($.totalDelegations[valAddr]).amount
-    );
 
     emit Staked(valAddr, _msgSender(), recipient, msg.value);
   }
@@ -203,9 +148,9 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     require(amount > 0, StdError.ZeroAmount());
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
 
-    StorageV1 storage $ = _getStorageV1();
+    _hub.notifyUnstake(valAddr, _msgSender(), amount);
 
-    _unstake($, valAddr, _msgSender(), amount);
+    StorageV1 storage $ = _getStorageV1();
 
     LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
 
@@ -216,11 +161,6 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
     $.totalStaked -= amount.toUint128();
     $.totalUnstaking += amount.toUint128();
-
-    _entrypoint.updateExtraVotingPower(
-      _manager.validatorInfo(valAddr).valKey, // can be optimized
-      _last($.totalDelegations[valAddr]).amount
-    );
 
     emit UnstakeRequested(valAddr, _msgSender(), receiver, amount, reqId);
 
@@ -263,8 +203,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     uint256 lastRedelegationTime_ = $.lastRedelegationTime[_msgSender()];
     require(now_ >= lastRedelegationTime_ + $.redelegationCooldown, IValidatorStaking__CooldownNotPassed());
 
-    _unstake($, fromValAddr, _msgSender(), amount);
-    _stake($, toValAddr, _msgSender(), amount, now_);
+    _hub.notifyRedelegation(fromValAddr, toValAddr, _msgSender(), amount);
 
     emit Redelegated(fromValAddr, toValAddr, _msgSender(), amount);
   }
@@ -280,30 +219,6 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //
-
-  function _staked(StorageV1 storage $, address valAddr, address staker, uint48 timestamp)
-    internal
-    view
-    returns (uint256)
-  {
-    TWABCheckpoint[] storage history = $.delegationLogs[valAddr][staker];
-    if (history.length == 0) return 0;
-
-    TWABCheckpoint memory last = _searchCheckpoint(history, timestamp);
-    return last.amount;
-  }
-
-  function _stakedTWAB(StorageV1 storage $, address valAddr, address staker, uint48 timestamp)
-    internal
-    view
-    returns (uint256)
-  {
-    TWABCheckpoint[] storage history = $.delegationLogs[valAddr][staker];
-    if (history.length == 0) return 0;
-
-    TWABCheckpoint memory last = _searchCheckpoint(history, timestamp);
-    return (last.amount * (timestamp - last.lastUpdate));
-  }
 
   function _unstaking(StorageV1 storage $, address valAddr, address staker, uint48 timestamp)
     internal
@@ -331,33 +246,6 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     return (claimable, nonClaimable);
   }
 
-  function _totalDelegation(StorageV1 storage $, address valAddr, uint48 timestamp) internal view returns (uint256) {
-    TWABCheckpoint[] storage history = $.totalDelegations[valAddr];
-    if (history.length == 0) return 0;
-
-    return _searchCheckpoint(history, timestamp).amount;
-  }
-
-  function _totalDelegationTWAB(StorageV1 storage $, address valAddr, uint48 timestamp) internal view returns (uint256) {
-    TWABCheckpoint[] storage history = $.totalDelegations[valAddr];
-    if (history.length == 0) return 0;
-
-    TWABCheckpoint memory last = _searchCheckpoint(history, timestamp);
-    return last.twab + (last.amount * (timestamp - last.lastUpdate));
-  }
-
-  function _stake(StorageV1 storage $, address valAddr, address recipient, uint256 amount, uint48 now_) internal {
-    _pushTWABCheckpoint($.delegationLogs[valAddr][recipient], amount, now_, _addAmount);
-    _pushTWABCheckpoint($.totalDelegations[valAddr], amount, now_, _addAmount);
-  }
-
-  function _unstake(StorageV1 storage $, address valAddr, address recipient, uint256 amount) internal {
-    uint48 now_ = Time.timestamp();
-
-    _pushTWABCheckpoint($.delegationLogs[valAddr][recipient], amount, now_, _subAmount);
-    _pushTWABCheckpoint($.totalDelegations[valAddr], amount, now_, _subAmount);
-  }
-
   // ========== ADMIN ACTIONS ========== //
 
   function _setUnstakeCooldown(StorageV1 storage $, uint48 unstakeCooldown_) internal {
@@ -374,64 +262,6 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     $.redelegationCooldown = redelegationCooldown_;
 
     emit RedelegationCooldownUpdated(redelegationCooldown_);
-  }
-
-  // ========== HELPER FUNCTIONS ========== //
-  function _addAmount(uint256 x, uint256 y) internal pure returns (uint256) {
-    return x + y;
-  }
-
-  function _subAmount(uint256 x, uint256 y) internal pure returns (uint256) {
-    return x - y;
-  }
-
-  function _searchCheckpoint(TWABCheckpoint[] storage history, uint48 timestamp)
-    internal
-    view
-    returns (TWABCheckpoint memory)
-  {
-    TWABCheckpoint memory last = history[history.length - 1];
-    if (last.lastUpdate <= timestamp) return last;
-
-    uint256 left = 0;
-    uint256 right = history.length - 1;
-    uint256 target = 0;
-
-    while (left <= right) {
-      uint256 mid = left + (right - left) / 2;
-      if (history[mid].lastUpdate <= timestamp) {
-        target = mid;
-        left = mid + 1;
-      } else {
-        right = mid - 1;
-      }
-    }
-
-    return history[target];
-  }
-
-  function _last(TWABCheckpoint[] storage history) internal view returns (TWABCheckpoint memory) {
-    return history[history.length - 1];
-  }
-
-  function _pushTWABCheckpoint(
-    TWABCheckpoint[] storage history,
-    uint256 amount,
-    uint48 now_,
-    function (uint256, uint256) returns (uint256) nextAmountFunc
-  ) internal {
-    if (history.length == 0) {
-      history.push(TWABCheckpoint({ twab: 0, amount: amount.toUint208(), lastUpdate: now_ }));
-    } else {
-      TWABCheckpoint memory last = history[history.length - 1];
-      history.push(
-        TWABCheckpoint({
-          twab: last.amount * (now_ - last.lastUpdate),
-          amount: nextAmountFunc(last.amount, amount).toUint208(),
-          lastUpdate: now_
-        })
-      );
-    }
   }
 
   // ========== UUPS ========== //

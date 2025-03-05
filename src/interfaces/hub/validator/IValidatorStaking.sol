@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import { IConsensusValidatorEntrypoint } from '../consensus-layer/IConsensusValidatorEntrypoint.sol';
 import { IEpochFeeder } from './IEpochFeeder.sol';
 import { IValidatorManager } from './IValidatorManager.sol';
+import { IValidatorStakingHub } from './IValidatorStakingHub.sol';
 
 /// @title IValidatorStaking
 /// @notice Interface for the ValidatorStaking contract.
@@ -25,7 +26,8 @@ interface IValidatorStaking {
   // ========== VIEWS ========== //
 
   function epochFeeder() external view returns (IEpochFeeder);
-  function registry() external view returns (IValidatorManager);
+  function manager() external view returns (IValidatorManager);
+  function hub() external view returns (IValidatorStakingHub);
   function entrypoint() external view returns (IConsensusValidatorEntrypoint);
 
   function unstakeCooldown() external view returns (uint48);
