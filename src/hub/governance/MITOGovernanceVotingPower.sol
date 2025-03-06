@@ -41,15 +41,21 @@ contract MITOGovernanceVotingPower is IERC5805, UUPSUpgradeable, Ownable2StepUpg
   }
 
   function getVotes(address account) external view returns (uint256) {
+    // return 0 for staking contract
+    if (account == address(_govMITOStaking)) return 0;
+
     return _govMITO.getVotes(account) + _govMITOStaking.stakerTotal(account, clock());
   }
 
   function getPastVotes(address account, uint256 timestamp) external view returns (uint256) {
+    // return 0 for staking contract
+    if (account == address(_govMITOStaking)) return 0;
+
     return _govMITO.getPastVotes(account, timestamp) + _govMITOStaking.stakerTotal(account, timestamp.toUint48());
   }
 
   function getPastTotalSupply(uint256 timestamp) external view returns (uint256) {
-    return _govMITO.getPastTotalSupply(timestamp) + _govMITOStaking.totalStaked(timestamp.toUint48());
+    return _govMITO.getPastTotalSupply(timestamp);
   }
 
   function delegates(address account) external view returns (address) {
