@@ -16,7 +16,7 @@ import {
 } from '../../interfaces/hub/validator/IValidatorContributionFeed.sol';
 import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorRewardDistributor } from '../../interfaces/hub/validator/IValidatorRewardDistributor.sol';
-import { IValidatorStaking } from '../../interfaces/hub/validator/IValidatorStaking.sol';
+import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
@@ -55,7 +55,7 @@ contract ValidatorRewardDistributor is
 
   IEpochFeeder private immutable _epochFeeder;
   IValidatorManager private immutable _validatorManager;
-  IValidatorStaking private immutable _validatorStaking;
+  IValidatorStakingHub private immutable _validatorStakingHub;
   IValidatorContributionFeed private immutable _validatorContributionFeed;
   IGovMITOEmission private immutable _govMITOEmission;
 
@@ -66,7 +66,7 @@ contract ValidatorRewardDistributor is
   constructor(
     address epochFeeder_,
     address validatorManager_,
-    address validatorStaking_,
+    address validatorStakingHub_,
     address validatorContributionFeed_,
     address govMITOEmission_
   ) {
@@ -74,7 +74,7 @@ contract ValidatorRewardDistributor is
 
     _epochFeeder = IEpochFeeder(epochFeeder_);
     _validatorManager = IValidatorManager(validatorManager_);
-    _validatorStaking = IValidatorStaking(validatorStaking_);
+    _validatorStakingHub = IValidatorStakingHub(validatorStakingHub_);
     _validatorContributionFeed = IValidatorContributionFeed(validatorContributionFeed_);
     _govMITOEmission = IGovMITOEmission(govMITOEmission_);
   }
@@ -101,8 +101,8 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function validatorStaking() external view returns (IValidatorStaking) {
-    return _validatorStaking;
+  function validatorStakingHub() external view returns (IValidatorStakingHub) {
+    return _validatorStakingHub;
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -275,13 +275,13 @@ contract ValidatorRewardDistributor is
     uint256 totalDelegation;
     uint256 stakerDelegation;
     {
-      uint256 startTWAB = _validatorStaking.totalDelegationTWABAt(valAddr, epochTime);
-      uint256 endTWAB = _validatorStaking.totalDelegationTWABAt(valAddr, nextEpochTime);
+      uint256 startTWAB = _validatorStakingHub.validatorTotalTWAB(valAddr, epochTime);
+      uint256 endTWAB = _validatorStakingHub.validatorTotalTWAB(valAddr, nextEpochTime);
       totalDelegation = (endTWAB - startTWAB) * 1e18 / (nextEpochTime - epochTime) / 1e18;
     }
     {
-      uint256 startTWAB = _validatorStaking.stakedTWABAt(valAddr, staker, epochTime);
-      uint256 endTWAB = _validatorStaking.stakedTWABAt(valAddr, staker, nextEpochTime);
+      uint256 startTWAB = _validatorStakingHub.validatorStakerTotalTWAB(valAddr, staker, epochTime);
+      uint256 endTWAB = _validatorStakingHub.validatorStakerTotalTWAB(valAddr, staker, nextEpochTime);
       stakerDelegation = (endTWAB - startTWAB) * 1e18 / (nextEpochTime - epochTime) / 1e18;
     }
 

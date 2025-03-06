@@ -32,7 +32,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   MockContract govMITO;
   MockContract govMITOEmission;
   MockContract validatorManager;
-  MockContract staking;
+  MockContract stakingHub;
   EpochFeeder epochFeed;
   MockContract contributionFeed;
   ValidatorRewardDistributor distributor;
@@ -49,9 +49,9 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorManager.setStatic(IValidatorManager.validatorInfoAt.selector, true);
     validatorManager.setStatic(IValidatorManager.MAX_COMMISSION_RATE.selector, true);
 
-    staking = new MockContract();
-    staking.setStatic(IValidatorStaking.totalDelegationTWABAt.selector, true);
-    staking.setStatic(IValidatorStaking.stakedTWABAt.selector, true);
+    stakingHub = new MockContract();
+    // staking.setStatic(IValidatorStaking.totalDelegationTWABAt.selector, true);
+    // staking.setStatic(IValidatorStaking.stakedTWABAt.selector, true);
 
     contributionFeed = new MockContract();
     contributionFeed.setStatic(IValidatorContributionFeed.available.selector, true);
@@ -72,7 +72,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
           new ValidatorRewardDistributor(
             address(epochFeed),
             address(validatorManager),
-            address(staking),
+            address(stakingHub),
             address(contributionFeed),
             address(govMITOEmission)
           )
@@ -86,7 +86,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(distributor.owner(), owner);
     assertEq(address(distributor.epochFeeder()), address(epochFeed));
     assertEq(address(distributor.validatorManager()), address(validatorManager));
-    assertEq(address(distributor.validatorStaking()), address(staking));
+    assertEq(address(distributor.validatorStakingHub()), address(stakingHub));
     assertEq(address(distributor.validatorContributionFeed()), address(contributionFeed));
     assertEq(address(distributor.govMITOEmission()), address(govMITOEmission));
   }

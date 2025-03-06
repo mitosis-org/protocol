@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import { IConsensusValidatorEntrypoint } from '../consensus-layer/IConsensusValidatorEntrypoint.sol';
 import { IEpochFeeder } from './IEpochFeeder.sol';
 import { IValidatorManager } from './IValidatorManager.sol';
+import { IValidatorStakingHub } from './IValidatorStakingHub.sol';
 
 /// @title IValidatorStaking
 /// @notice Interface for the ValidatorStaking contract.
@@ -24,33 +25,22 @@ interface IValidatorStaking {
 
   // ========== VIEWS ========== //
 
+  function baseAsset() external view returns (address);
   function epochFeeder() external view returns (IEpochFeeder);
-  function registry() external view returns (IValidatorManager);
+  function manager() external view returns (IValidatorManager);
+  function hub() external view returns (IValidatorStakingHub);
   function entrypoint() external view returns (IConsensusValidatorEntrypoint);
 
   function unstakeCooldown() external view returns (uint48);
   function redelegationCooldown() external view returns (uint48);
 
-  function totalStaked() external view returns (uint256);
+  function totalStaked(uint48 timestamp) external view returns (uint256);
   function totalUnstaking() external view returns (uint256);
 
-  function staked(address valAddr, address staker) external view returns (uint256);
-  function stakedAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
-  function stakedTWAB(address valAddr, address staker) external view returns (uint256);
-  function stakedTWABAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
-
-  function unstaking(address valAddr, address staker) external view returns (uint256, uint256);
-  function unstakingAt(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256);
-
-  function totalDelegation(address valAddr) external view returns (uint256);
-  function totalDelegationAt(address valAddr, uint48 timestamp) external view returns (uint256);
-  function totalDelegationTWAB(address valAddr) external view returns (uint256);
-  function totalDelegationTWABAt(address valAddr, uint48 timestamp) external view returns (uint256);
-
-  function totalDelegationForStaker(address staker) external view returns (uint256);
-  function totalDelegationForStakerAt(address staker, uint48 timestamp) external view returns (uint256);
-  function totalDelegationTWABForStaker(address staker) external view returns (uint256);
-  function totalDelegationTWABForStakerAt(address staker, uint48 timestamp) external view returns (uint256);
+  function staked(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
+  function stakerTotal(address staker, uint48 timestamp) external view returns (uint256);
+  function validatorTotal(address valAddr, uint48 timestamp) external view returns (uint256);
+  function unstaking(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256);
 
   function lastRedelegationTime(address staker) external view returns (uint256);
 
