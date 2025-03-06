@@ -3,6 +3,7 @@
 pragma solidity ^0.8.28;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { Address } from '@openzeppelin/contracts/utils/Address.sol';
 
@@ -19,6 +20,7 @@ contract ManagerWithMerkleVerification is
   IManagerWithMerkleVerification,
   Pausable,
   Ownable2StepUpgradeable,
+  UUPSUpgradeable,
   ManagerWithMerkleVerificationStorageV1
 {
   using Address for address;
@@ -31,6 +33,7 @@ contract ManagerWithMerkleVerification is
     __Pausable_init();
     __Ownable2Step_init();
     __Ownable_init(owner_);
+    __UUPSUpgradeable_init();
   }
 
   function manageRoot(address strategyExecutor, address strategist) external view returns (bytes32) {
@@ -125,4 +128,6 @@ contract ManagerWithMerkleVerification is
       keccak256(abi.encodePacked(decoderAndSanitizer, target, valueNonZero, selector, packedArgumentAddresses));
     return MerkleProofLib.verify(proof, root, leaf);
   }
+
+  function _authorizeUpgrade(address) internal override onlyOwner { }
 }
