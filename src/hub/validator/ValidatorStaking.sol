@@ -173,7 +173,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   function stake(address valAddr, address recipient, uint256 amount) external payable {
     require(amount > 0, StdError.ZeroAmount());
 
-    require(_baseAsset == NATIVE_TOKEN && msg.value == amount, StdError.InvalidParameter('amount'));
+    require(_baseAsset != NATIVE_TOKEN || msg.value == amount, StdError.InvalidParameter('amount'));
     require(recipient != address(0), StdError.InvalidParameter('recipient'));
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
 
