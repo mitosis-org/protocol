@@ -8,7 +8,7 @@ interface IConsensusValidatorEntrypoint {
   event MsgDepositCollateral(bytes valkey, uint256 amountGwei);
   event MsgWithdrawCollateral(bytes valkey, uint256 amountGwei, address receiver, uint48 receivesAt);
   event MsgUnjail(bytes valkey);
-  event MsgUpdateExtraVotingPower(bytes valkey, uint256 extraVotingPowerGwei);
+  event MsgUpdateExtraVotingPower(bytes valkey, uint256 extraVotingPower);
 
   /**
    * @notice Register a validator in the consensus layer.
