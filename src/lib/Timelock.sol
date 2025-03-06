@@ -11,6 +11,16 @@ contract Timelock is TimelockControllerUpgradeable, AccessControlEnumerableUpgra
     _disableInitializers();
   }
 
+  function initialize(uint256 minDelay, address[] memory proposers, address[] memory executors, address admin)
+    public
+    override
+    initializer
+  {
+    __UUPSUpgradeable_init();
+    __TimelockController_init(minDelay, proposers, executors, admin);
+    __AccessControlEnumerable_init();
+  }
+
   function supportsInterface(bytes4 interfaceId)
     public
     view
