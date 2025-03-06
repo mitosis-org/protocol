@@ -8,7 +8,7 @@ import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
 import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
-import { IValidatorStakingHub, NotifierOracle } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
+import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibCheckpoint } from '../../lib/LibCheckpoint.sol';
 import { StdError } from '../../lib/StdError.sol';
@@ -18,7 +18,6 @@ contract ValidatorStakingHubStorage {
 
   struct Notifier {
     bool enabled;
-    address oracle;
   }
 
   struct StorageV1 {
@@ -104,16 +103,16 @@ contract ValidatorStakingHub is IValidatorStakingHub, ValidatorStakingHubStorage
   }
 
   /// @inheritdoc IValidatorStakingHub
-  function addNotifier(address notifier, address oracle) external onlyOwner {
+  function addNotifier(address notifier) external onlyOwner {
     // TODO(eddy): Probably we need to add calculation logic for each notifier
     StorageV1 storage $ = _getStorageV1();
-    $.notifiers[notifier] = Notifier({ enabled: true, oracle: oracle });
+    $.notifiers[notifier] = Notifier({ enabled: true });
   }
 
   /// @inheritdoc IValidatorStakingHub
   function removeNotifier(address notifier) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    $.notifiers[notifier] = Notifier({ enabled: false, oracle: address(0) });
+    $.notifiers[notifier] = Notifier({ enabled: false });
   }
 
   /// @inheritdoc IValidatorStakingHub
@@ -122,11 +121,6 @@ contract ValidatorStakingHub is IValidatorStakingHub, ValidatorStakingHubStorage
 
     Notifier memory notifier = $.notifiers[_msgSender()];
     require(notifier.enabled, StdError.Unauthorized());
-
-    if (notifier.oracle != address(0)) {
-      (uint256 numerator, uint256 denominator) = NotifierOracle(notifier.oracle).feed(valAddr);
-      amount = Math.mulDiv(amount, numerator, denominator);
-    }
 
     _stake($, valAddr, staker, amount);
   }
@@ -138,11 +132,6 @@ contract ValidatorStakingHub is IValidatorStakingHub, ValidatorStakingHubStorage
     Notifier memory notifier = $.notifiers[_msgSender()];
     require(notifier.enabled, StdError.Unauthorized());
 
-    if (notifier.oracle != address(0)) {
-      (uint256 numerator, uint256 denominator) = NotifierOracle(notifier.oracle).feed(valAddr);
-      amount = Math.mulDiv(amount, numerator, denominator);
-    }
-
     _unstake($, valAddr, staker, amount);
   }
 
@@ -152,11 +141,6 @@ contract ValidatorStakingHub is IValidatorStakingHub, ValidatorStakingHubStorage
 
     Notifier memory notifier = $.notifiers[_msgSender()];
     require(notifier.enabled, StdError.Unauthorized());
-
-    if (notifier.oracle != address(0)) {
-      (uint256 numerator, uint256 denominator) = NotifierOracle(notifier.oracle).feed(fromValAddr);
-      amount = Math.mulDiv(amount, numerator, denominator);
-    }
 
     _unstake($, fromValAddr, staker, amount);
     _stake($, toValAddr, staker, amount);
