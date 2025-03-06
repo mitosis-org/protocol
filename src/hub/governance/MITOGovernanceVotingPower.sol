@@ -8,13 +8,13 @@ import { Time } from '@oz-v5/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
-import { IGovMITO } from '../interfaces/hub/IGovMITO.sol';
-import { IValidatorStaking } from '../interfaces/hub/validator/IValidatorStaking.sol';
-import { StdError } from '../lib/StdError.sol';
+import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
+import { IValidatorStaking } from '../../interfaces/hub/validator/IValidatorStaking.sol';
+import { StdError } from '../../lib/StdError.sol';
 
-/// @title GovMITOProxy
+/// @title MITOGovernanceVotingPower
 /// @notice VotingPower proxy that combines GovMITO + ValidatorStaking(GovMITO)
-contract GovMITOProxy is IERC5805, UUPSUpgradeable, Ownable2StepUpgradeable {
+contract MITOGovernanceVotingPower is IERC5805, UUPSUpgradeable, Ownable2StepUpgradeable {
   using SafeCast for uint256;
 
   IGovMITO private immutable _govMITO;
