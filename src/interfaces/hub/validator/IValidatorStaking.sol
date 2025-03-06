@@ -34,15 +34,12 @@ interface IValidatorStaking {
   function unstakeCooldown() external view returns (uint48);
   function redelegationCooldown() external view returns (uint48);
 
-  function totalStaked() external view returns (uint256);
+  function totalStaked(uint48 timestamp) external view returns (uint256);
   function totalUnstaking() external view returns (uint256);
 
   function staked(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
-  function stakedTWAB(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
   function stakerTotal(address staker, uint48 timestamp) external view returns (uint256);
-  function stakerTotalTWAB(address staker, uint48 timestamp) external view returns (uint256);
   function validatorTotal(address valAddr, uint48 timestamp) external view returns (uint256);
-  function validatorTotalTWAB(address valAddr, uint48 timestamp) external view returns (uint256);
   function unstaking(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256);
 
   function lastRedelegationTime(address staker) external view returns (uint256);
