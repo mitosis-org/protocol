@@ -247,6 +247,8 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     uint256 lastRedelegationTime_ = $.lastRedelegationTime[_msgSender()];
     require(now_ >= lastRedelegationTime_ + $.redelegationCooldown, IValidatorStaking__CooldownNotPassed());
 
+    _unstake($, fromValAddr, _msgSender(), amount);
+    _stake($, toValAddr, _msgSender(), amount);
     _hub.notifyRedelegation(fromValAddr, toValAddr, _msgSender(), amount);
 
     emit Redelegated(fromValAddr, toValAddr, _msgSender(), amount);
