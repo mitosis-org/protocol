@@ -9,18 +9,18 @@ import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
 import { IGovernanceEntrypoint } from '../../interfaces/branch/governance/IGovernanceEntrypoint.sol';
 import { Conv } from '../../lib/Conv.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Timelock } from '../../lib/Timelock.sol';
 import '../../message/Message.sol';
-import { BranchTimelock } from './BranchTimelock.sol';
 
 contract GovernanceEntrypoint is IGovernanceEntrypoint, GasRouter, UUPSUpgradeable, AccessControlEnumerableUpgradeable {
   using Message for *;
   using Conv for *;
 
-  BranchTimelock internal immutable _timelock;
+  Timelock internal immutable _timelock;
   uint32 internal immutable _mitosisDomain;
   bytes32 internal immutable _mitosisAddr; // Hub.BranchGovernanceEntrypoint
 
-  constructor(address mailbox, BranchTimelock timelock_, uint32 mitosisDomain_, bytes32 mitosisAddr_)
+  constructor(address mailbox, Timelock timelock_, uint32 mitosisDomain_, bytes32 mitosisAddr_)
     GasRouter(mailbox)
     initializer
   {

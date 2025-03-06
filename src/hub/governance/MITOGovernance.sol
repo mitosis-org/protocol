@@ -14,9 +14,9 @@ import { GovernorVotesQuorumFractionUpgradeable } from
   '@ozu-v5/governance/extensions/GovernorVotesQuorumFractionUpgradeable.sol';
 import { GovernorVotesUpgradeable } from '@ozu-v5/governance/extensions/GovernorVotesUpgradeable.sol';
 import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
-import { TimelockControllerUpgradeable } from '@ozu-v5/governance/TimelockControllerUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
+import { Timelock } from '../../lib/Timelock.sol';
 import { GovernorCountingBravoUpgradeable } from './GovernorCountingBravoUpgradeable.sol';
 
 contract MITOGovernance is
@@ -48,7 +48,7 @@ contract MITOGovernance is
 
   function initialize(
     IVotes token_,
-    TimelockControllerUpgradeable timelock_,
+    Timelock timelock_,
     uint32 votingDelay_,
     uint32 votingPeriod_,
     uint32 proposalThreshold_,
