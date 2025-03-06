@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { console } from '@std/console.sol';
-import { stdJson } from '@std/stdJson.sol';
+import { stdJson } from '@std/StdJson.sol';
 import { Vm } from '@std/Vm.sol';
 
 import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
