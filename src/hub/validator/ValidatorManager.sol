@@ -313,9 +313,9 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
         validator.rewardConfig.pendingCommissionRateUpdateEpoch.toUint96(),
         // check for global minimum commission rate modified
         Math.max(
-          globalConfig.minimumCommissionRates.lowerLookup(currentEpoch.toUint96()),
-          validator.rewardConfig.pendingCommissionRate.toUint160()
-        )
+          uint256(globalConfig.minimumCommissionRates.lowerLookup(currentEpoch.toUint96())),
+          validator.rewardConfig.pendingCommissionRate
+        ).toUint160()
       );
     }
 
