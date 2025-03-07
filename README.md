@@ -47,11 +47,3 @@ forge doc --build --serve
 ## License
 
 MIT
-
-## Support
-
-Please reach out to the following team members for support:
-
-- @byeongsu-hong
-- @taeguk
-- @dbadoy
