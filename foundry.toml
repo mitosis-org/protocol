@@ -30,7 +30,7 @@ remappings = [
     "openzeppelin-foundry-upgrades-0.3.1/=dependencies/openzeppelin-foundry-upgrades-0.3.1/",
     "solady-0.0.230/=dependencies/solady-0.0.230/",
 ]
-fs_permissions = [{ access = "read-write", path = "./TemporaryLeafs.json"}]
+fs_permissions = [{ access = "read-write", path = "./TemporaryLeafs.json" }]
 
 [doc]
 ignore = [
@@ -52,9 +52,7 @@ ignore = ['./src/external/**/*']
 
 [soldeer]
 remappings_generate = false
-
 remappings_regenerate = false
-
 remappings_location = "config"
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
