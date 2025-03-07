@@ -171,11 +171,11 @@ contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradea
   }
 
   function _compareTimestamp(Checkpoint memory self, uint256 key) private pure returns (bool) {
-    return self.timestamp < uint48(key);
+    return self.timestamp < key;
   }
 
   function _compareEpoch(Checkpoint memory self, uint256 key) private pure returns (bool) {
-    return self.epoch < uint160(key);
+    return self.epoch < key;
   }
 
   // ================== UUPS ================== //
