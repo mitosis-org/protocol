@@ -94,10 +94,10 @@ contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradea
 
   /// @inheritdoc IEpochFeeder
   function setNextInterval(uint48 interval_) external onlyOwner {
-    uint48 now_ = Time.timestamp();
     StorageV1 storage $ = _getStorageV1();
     Checkpoint memory lastCheckpoint = $.history[$.history.length - 1];
 
+    uint48 now_ = Time.timestamp();
     (uint256 nextEpoch, uint48 nextEpochTime) = _calculateNextEpochAndTime(lastCheckpoint, now_);
 
     if (lastCheckpoint.timestamp <= now_) {
