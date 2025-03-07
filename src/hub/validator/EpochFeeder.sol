@@ -57,6 +57,7 @@ contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradea
     __Ownable2Step_init();
 
     StorageV1 storage $ = _getStorageV1();
+    $.history.push(Checkpoint({ epoch: 0, interval: 0, timestamp: 0 }));
     $.history.push(Checkpoint({ epoch: 1, interval: interval_, timestamp: initialEpochTime_ }));
   }
 
@@ -98,7 +99,7 @@ contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradea
     Checkpoint memory lastCheckpoint = $.history[$.history.length - 1];
 
     uint48 now_ = Time.timestamp();
-    (uint256 nextEpoch, uint48 nextEpochTime) = _calculateNextEpochAndTime(lastCheckpoint, now_);
+    (uint256 nextEpoch, uint48 nextEpochTime) = _calculateNextEpochAndTime($, lastCheckpoint, now_);
 
     if (lastCheckpoint.timestamp <= now_) {
       $.history.push(Checkpoint({ epoch: nextEpoch.toUint160(), interval: interval_, timestamp: nextEpochTime }));
@@ -106,17 +107,18 @@ contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradea
       $.history[$.history.length - 1].interval = interval_;
     }
 
-    emit NextIntervalSet(nextEpoch, interval_, nextEpochTime);
+    emit NextIntervalSet(nextEpoch, nextEpochTime, interval_);
   }
 
-  function _calculateNextEpochAndTime(Checkpoint memory lastCheckpoint, uint48 now_)
+  function _calculateNextEpochAndTime(StorageV1 storage $, Checkpoint memory lastCheckpoint, uint48 now_)
     private
-    pure
+    view
     returns (uint256 nextEpoch, uint48 nextEpochTime)
   {
     if (lastCheckpoint.timestamp <= now_) {
-      nextEpoch = ((now_ - lastCheckpoint.timestamp) / lastCheckpoint.interval) + 1;
-      nextEpochTime = lastCheckpoint.timestamp + (nextEpoch * lastCheckpoint.interval).toUint48();
+      uint256 currentEpoch = _epochAt($, now_);
+      nextEpoch = currentEpoch + 1;
+      nextEpochTime = lastCheckpoint.timestamp + (currentEpoch * lastCheckpoint.interval).toUint48();
     } else {
       nextEpoch = lastCheckpoint.epoch;
       nextEpochTime = lastCheckpoint.timestamp;
@@ -125,17 +127,21 @@ contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradea
 
   function _epochAt(StorageV1 storage $, uint48 timestamp_) internal view returns (uint256) {
     Checkpoint memory checkpoint = _lowerLookup($.history, _compareTimestamp, timestamp_);
-    if (timestamp_ <= checkpoint.timestamp) return checkpoint.epoch;
+    if (checkpoint.epoch == 0) return 0;
     return checkpoint.epoch + (timestamp_ - checkpoint.timestamp) / checkpoint.interval;
   }
 
   function _timeAt(StorageV1 storage $, uint256 epoch_) internal view returns (uint48) {
+    if (epoch_ == 0) return 0;
+
     Checkpoint memory checkpoint = _lowerLookup($.history, _compareEpoch, epoch_);
     if (epoch_ == checkpoint.epoch) return checkpoint.timestamp;
     return checkpoint.timestamp + ((epoch_ - checkpoint.epoch) * checkpoint.interval).toUint48();
   }
 
   function _intervalAt(StorageV1 storage $, uint256 epoch_) internal view returns (uint48) {
+    if (epoch_ == 0) return 0;
+
     Checkpoint memory checkpoint = _lowerLookup($.history, _compareEpoch, epoch_);
     if (epoch_ == checkpoint.epoch) return checkpoint.interval;
     return checkpoint.interval;
@@ -145,37 +151,29 @@ contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradea
     Checkpoint[] storage self,
     function(Checkpoint memory, uint256) pure returns (bool) compare,
     uint256 key
-  ) internal view returns (Checkpoint memory) {
-    uint256 len = self.length;
-    uint256 pos = _lowerBinaryLookup(self, compare, key, 0, len);
-    if (pos == len) {
-      Checkpoint memory empty;
-      return empty;
-    }
-    return self[pos];
-  }
+  ) private view returns (Checkpoint memory) {
+    uint256 left = 0;
+    uint256 right = self.length - 1;
+    uint256 target = 0;
 
-  function _lowerBinaryLookup(
-    Checkpoint[] storage self,
-    function(Checkpoint memory, uint256) pure returns (bool) compare,
-    uint256 key,
-    uint256 low,
-    uint256 high
-  ) private view returns (uint256) {
-    while (low < high) {
-      uint256 mid = Math.average(low, high);
-      if (compare(self[mid], key)) low = mid + 1;
-      else high = mid;
+    while (left <= right) {
+      uint256 mid = left + (right - left) / 2;
+      if (compare(self[mid], key)) {
+        target = mid;
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
     }
-    return high;
+    return self[target];
   }
 
   function _compareTimestamp(Checkpoint memory self, uint256 key) private pure returns (bool) {
-    return self.timestamp < key;
+    return self.timestamp <= key;
   }
 
   function _compareEpoch(Checkpoint memory self, uint256 key) private pure returns (bool) {
-    return self.epoch < key;
+    return self.epoch <= key;
   }
 
   // ================== UUPS ================== //

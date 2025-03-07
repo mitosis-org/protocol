@@ -6,9 +6,9 @@ pragma solidity ^0.8.28;
 interface IEpochFeeder {
   /// @notice Emitted when the next interval is set
   /// @param appliedEpoch The epoch number when the interval was set
-  /// @param nextInterval The new interval in seconds
   /// @param appliedTimestamp The timestamp when the interval will be applied
-  event NextIntervalSet(uint256 indexed appliedEpoch, uint48 nextInterval, uint48 appliedTimestamp);
+  /// @param nextInterval The new interval in seconds
+  event NextIntervalSet(uint256 indexed appliedEpoch, uint48 appliedTimestamp, uint48 nextInterval);
 
   /// @notice Returns current epoch number
   /// @return Current epoch number
