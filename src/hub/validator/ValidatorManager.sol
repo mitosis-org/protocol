@@ -305,9 +305,23 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
         && request.commissionRate <= MAX_COMMISSION_RATE,
       StdError.InvalidParameter('commissionRate')
     );
+    uint256 currentEpoch = _epochFeeder.epoch();
 
-    uint256 epochToUpdate = _epochFeeder.epoch() + globalConfig.commissionRateUpdateDelay;
+    // update previous pending rate
+    if (validator.rewardConfig.pendingCommissionRateUpdateEpoch >= currentEpoch) {
+      validator.rewardConfig.commissionRates.push(
+        validator.rewardConfig.pendingCommissionRateUpdateEpoch.toUint96(),
+        // check for global minimum commission rate modified
+        Math.max(
+          uint256(globalConfig.minimumCommissionRates.lowerLookup(currentEpoch.toUint96())),
+          validator.rewardConfig.pendingCommissionRate
+        ).toUint160()
+      );
+    }
 
+    uint256 epochToUpdate = currentEpoch + globalConfig.commissionRateUpdateDelay;
+
+    // update pending commision rate
     validator.rewardConfig.pendingCommissionRate = request.commissionRate;
     validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate;
 
