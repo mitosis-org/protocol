@@ -42,8 +42,8 @@ contract TheoTally is StdTally {
 
   function _pendingWithdrawBalance(bytes memory) internal view override returns (uint256 pendingWithdrawBalance_) {
     uint256 decimals = _theo.decimals();
-    uint256 assetPerShare = _pricePerShare(_theo.totalSupply(), _theo.totalBalance(), _theo.totalPending(), decimals);
-    return _sharesToAsset(_theo.withdrawals(msg.sender).shares, assetPerShare, decimals);
+    ITheoDepositVault.Withdrawal memory withdrawal = _theo.withdrawals(msg.sender);
+    return _sharesToAsset(withdrawal.shares, _theo.roundPricePerShare(withdrawal.round), decimals);
   }
 
   function _previewDeposit(uint256 amount, bytes memory) internal pure override returns (uint256) {
