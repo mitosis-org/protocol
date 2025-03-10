@@ -42,10 +42,11 @@ contract ValidatorRewardDistributorTest is Toolkit {
   uint256 snapshotId;
 
   function setUp() public {
+    _govMITO = new MockContract();
+    _govMITOEmission = new MockContract();
     _validatorManager = new MockContract();
-    _validatorManager.setStatic(IValidatorManager.validatorInfo.selector, true);
-    _validatorManager.setStatic(IValidatorManager.validatorInfoAt.selector, true);
-    _validatorManager.setStatic(IValidatorManager.MAX_COMMISSION_RATE.selector, true);
+    _epochFeed = new MockContract();
+    _contributionFeed = new MockContract();
 
     _stakingHub = ValidatorStakingHub(
       _proxy(
@@ -57,20 +58,6 @@ contract ValidatorRewardDistributorTest is Toolkit {
         abi.encodeCall(ValidatorStakingHub.initialize, (_owner))
       )
     );
-
-    vm.prank(_owner);
-    _stakingHub.addNotifier(address(this));
-
-    _contributionFeed = new MockContract();
-    _contributionFeed.setStatic(IValidatorContributionFeed.available.selector, true);
-    _contributionFeed.setStatic(IValidatorContributionFeed.weightOf.selector, true);
-    _contributionFeed.setStatic(IValidatorContributionFeed.summary.selector, true);
-
-    _govMITO = new MockContract();
-
-    _epochFeed = new MockContract();
-
-    _govMITOEmission = new MockContract();
 
     _distributor = ValidatorRewardDistributor(
       _proxy(
@@ -86,6 +73,9 @@ contract ValidatorRewardDistributorTest is Toolkit {
         abi.encodeCall(ValidatorRewardDistributor.initialize, (_owner))
       )
     );
+
+    vm.prank(_owner);
+    _stakingHub.addNotifier(address(this));
 
     snapshotId = vm.snapshot();
   }
