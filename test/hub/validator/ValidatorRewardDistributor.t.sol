@@ -99,12 +99,15 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   struct ValidatorParam {
+    // ValidatorManager
     address valAddr;
     address operatorAddr;
     address rewardRecipient;
     uint256 comissionRate;
+    // ValidatorStakingHub
     address[] stakers;
     uint256[] amounts;
+    // ValidatorContributionFeed
     uint96 weight;
     uint128 collateralRewardShare;
     uint128 delegationRewardShare;
