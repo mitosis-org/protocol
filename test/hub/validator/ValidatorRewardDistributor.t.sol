@@ -96,9 +96,6 @@ contract ValidatorRewardDistributorTest is Toolkit {
     bool available;
     uint256 totalReward;
     ValidatorParam[] validatorParams;
-    uint96[] validatorWeights;
-    uint128[] validatorCollateralRewardShare;
-    uint128[] validatorDelegationRewardShare;
   }
 
   struct ValidatorParam {
@@ -107,7 +104,10 @@ contract ValidatorRewardDistributorTest is Toolkit {
     address rewardRecipient;
     uint256 comissionRate;
     address[] stakers;
-    uint256[] twabs;
+    uint256[] amounts;
+    uint96 weight;
+    uint128 collateralRewardShare;
+    uint128 delegationRewardShare;
   }
 
   function test_claim_rewards() public {
@@ -120,18 +120,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
       endsAt: 200,
       available: true,
       totalReward: 100 ether,
-      validatorParams: new ValidatorParam[](0), // init
-      validatorWeights: new uint96[](0), // init
-      validatorCollateralRewardShare: new uint128[](0),
-      validatorDelegationRewardShare: new uint128[](0)
-    });
-
-    uint96[] memory validatorWeights = new uint96[](1);
-    validatorWeights[0] = 100;
-    uint128[] memory validatorCollateralRewardShare = new uint128[](1);
-    validatorCollateralRewardShare[0] = 50;
-    uint128[] memory validatorDelegationRewardShare = new uint128[](1);
-    validatorDelegationRewardShare[0] = 50;
+      validatorParams: new ValidatorParam[](0) // init
+     });
 
     ValidatorParam[] memory validatorParams = new ValidatorParam[](1);
 
@@ -141,19 +131,19 @@ contract ValidatorRewardDistributorTest is Toolkit {
       rewardRecipient: makeAddr('rewardRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
-      twabs: new uint256[](0) // init
-     });
+      amounts: new uint256[](0), // init
+      weight: 100,
+      collateralRewardShare: 50,
+      delegationRewardShare: 50
+    });
     address[] memory stakers = new address[](1);
-    uint256[] memory twabs = new uint256[](1);
+    uint256[] memory amounts = new uint256[](1);
     stakers[0] = makeAddr('staker-1');
-    twabs[0] = 100;
+    amounts[0] = 100;
     validatorParams[0].stakers = stakers;
-    validatorParams[0].twabs = twabs;
+    validatorParams[0].amounts = amounts;
 
     epochParams[0].validatorParams = validatorParams;
-    epochParams[0].validatorWeights = validatorWeights;
-    epochParams[0].validatorCollateralRewardShare = validatorCollateralRewardShare;
-    epochParams[0].validatorDelegationRewardShare = validatorDelegationRewardShare;
 
     _setUpEpochs(epochParams);
 
@@ -174,21 +164,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
       endsAt: 200,
       available: true,
       totalReward: 100 ether,
-      validatorParams: new ValidatorParam[](0), // init
-      validatorWeights: new uint96[](0), // init
-      validatorCollateralRewardShare: new uint128[](0),
-      validatorDelegationRewardShare: new uint128[](0)
-    });
-
-    uint96[] memory validatorWeights = new uint96[](2);
-    validatorWeights[0] = 50;
-    validatorWeights[1] = 50;
-    uint128[] memory validatorCollateralRewardShare = new uint128[](2);
-    validatorCollateralRewardShare[0] = 80;
-    validatorCollateralRewardShare[1] = 50;
-    uint128[] memory validatorDelegationRewardShare = new uint128[](2);
-    validatorDelegationRewardShare[0] = 20;
-    validatorDelegationRewardShare[1] = 50;
+      validatorParams: new ValidatorParam[](0) // init
+     });
 
     ValidatorParam[] memory validatorParams = new ValidatorParam[](2);
 
@@ -198,31 +175,34 @@ contract ValidatorRewardDistributorTest is Toolkit {
       rewardRecipient: makeAddr('rewardRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
-      twabs: new uint256[](0) // init
-     });
+      amounts: new uint256[](0), // init
+      weight: 50,
+      collateralRewardShare: 80,
+      delegationRewardShare: 20
+    });
     validatorParams[1] = ValidatorParam({
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
       rewardRecipient: makeAddr('rewardRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
-      twabs: new uint256[](0) // init
-     });
+      amounts: new uint256[](0), // init
+      weight: 50,
+      collateralRewardShare: 50,
+      delegationRewardShare: 50
+    });
     address[] memory stakers = new address[](1);
-    uint256[] memory twabs = new uint256[](1);
+    uint256[] memory amounts = new uint256[](1);
     stakers[0] = makeAddr('staker-1');
-    twabs[0] = 100;
+    amounts[0] = 100;
 
     validatorParams[0].stakers = stakers;
-    validatorParams[0].twabs = twabs;
+    validatorParams[0].amounts = amounts;
 
     validatorParams[1].stakers = stakers;
-    validatorParams[1].twabs = twabs;
+    validatorParams[1].amounts = amounts;
 
     epochParams[0].validatorParams = validatorParams;
-    epochParams[0].validatorWeights = validatorWeights;
-    epochParams[0].validatorCollateralRewardShare = validatorCollateralRewardShare;
-    epochParams[0].validatorDelegationRewardShare = validatorDelegationRewardShare;
 
     _setUpEpochs(epochParams);
 
@@ -250,21 +230,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
       endsAt: 200,
       available: true,
       totalReward: 100 ether,
-      validatorParams: new ValidatorParam[](0), // init
-      validatorWeights: new uint96[](0), // init
-      validatorCollateralRewardShare: new uint128[](0),
-      validatorDelegationRewardShare: new uint128[](0)
-    });
-
-    uint96[] memory validatorWeights = new uint96[](2);
-    validatorWeights[0] = 70;
-    validatorWeights[1] = 30;
-    uint128[] memory validatorCollateralRewardShare = new uint128[](2);
-    validatorCollateralRewardShare[0] = 50;
-    validatorCollateralRewardShare[1] = 50;
-    uint128[] memory validatorDelegationRewardShare = new uint128[](2);
-    validatorDelegationRewardShare[0] = 50;
-    validatorDelegationRewardShare[1] = 50;
+      validatorParams: new ValidatorParam[](0) // init
+     });
 
     ValidatorParam[] memory validatorParams = new ValidatorParam[](2);
 
@@ -274,31 +241,34 @@ contract ValidatorRewardDistributorTest is Toolkit {
       rewardRecipient: makeAddr('rewardRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
-      twabs: new uint256[](0) // init
-     });
+      amounts: new uint256[](0), // init
+      weight: 70,
+      collateralRewardShare: 50,
+      delegationRewardShare: 50
+    });
     validatorParams[1] = ValidatorParam({
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
       rewardRecipient: makeAddr('rewardRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
-      twabs: new uint256[](0) // init
-     });
+      amounts: new uint256[](0), // init
+      weight: 30,
+      collateralRewardShare: 50,
+      delegationRewardShare: 50
+    });
     address[] memory stakers = new address[](1);
-    uint256[] memory twabs = new uint256[](1);
+    uint256[] memory amounts = new uint256[](1);
     stakers[0] = makeAddr('staker-1');
-    twabs[0] = 100;
+    amounts[0] = 100;
 
     validatorParams[0].stakers = stakers;
-    validatorParams[0].twabs = twabs;
+    validatorParams[0].amounts = amounts;
 
     validatorParams[1].stakers = stakers;
-    validatorParams[1].twabs = twabs;
+    validatorParams[1].amounts = amounts;
 
     epochParams[0].validatorParams = validatorParams;
-    epochParams[0].validatorWeights = validatorWeights;
-    epochParams[0].validatorCollateralRewardShare = validatorCollateralRewardShare;
-    epochParams[0].validatorDelegationRewardShare = validatorDelegationRewardShare;
 
     _setUpEpochs(epochParams);
 
@@ -327,11 +297,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
       endsAt: 200,
       available: true,
       totalReward: 100 ether,
-      validatorParams: new ValidatorParam[](0), // init
-      validatorWeights: new uint96[](0), // init
-      validatorCollateralRewardShare: new uint128[](0),
-      validatorDelegationRewardShare: new uint128[](0)
-    });
+      validatorParams: new ValidatorParam[](0) // init
+     });
 
     uint96[] memory validatorWeights = new uint96[](1);
     validatorWeights[0] = 100;
@@ -348,23 +315,24 @@ contract ValidatorRewardDistributorTest is Toolkit {
       rewardRecipient: makeAddr('rewardRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
-      twabs: new uint256[](0) // init
-     });
+      amounts: new uint256[](0), // init
+      weight: 100,
+      collateralRewardShare: 50,
+      delegationRewardShare: 50
+    });
+
     address[] memory stakers = new address[](3);
-    uint256[] memory twabs = new uint256[](3);
+    uint256[] memory amounts = new uint256[](3);
     stakers[0] = makeAddr('staker-1');
-    twabs[0] = 50;
+    amounts[0] = 50;
     stakers[1] = makeAddr('staker-2');
-    twabs[1] = 25;
+    amounts[1] = 25;
     stakers[2] = makeAddr('staker-3');
-    twabs[2] = 25;
+    amounts[2] = 25;
     validatorParams[0].stakers = stakers;
-    validatorParams[0].twabs = twabs;
+    validatorParams[0].amounts = amounts;
 
     epochParams[0].validatorParams = validatorParams;
-    epochParams[0].validatorWeights = validatorWeights;
-    epochParams[0].validatorCollateralRewardShare = validatorCollateralRewardShare;
-    epochParams[0].validatorDelegationRewardShare = validatorDelegationRewardShare;
 
     _setUpEpochs(epochParams);
 
@@ -392,18 +360,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
       endsAt: 200,
       available: true,
       totalReward: 100 ether,
-      validatorParams: new ValidatorParam[](0), // init
-      validatorWeights: new uint96[](0), // init
-      validatorCollateralRewardShare: new uint128[](0),
-      validatorDelegationRewardShare: new uint128[](0)
-    });
-
-    uint96[] memory validatorWeights = new uint96[](1);
-    validatorWeights[0] = 100;
-    uint128[] memory validatorCollateralRewardShare = new uint128[](1);
-    validatorCollateralRewardShare[0] = 80;
-    uint128[] memory validatorDelegationRewardShare = new uint128[](1);
-    validatorDelegationRewardShare[0] = 20;
+      validatorParams: new ValidatorParam[](0) // init
+     });
 
     ValidatorParam[] memory validatorParams = new ValidatorParam[](1);
 
@@ -413,19 +371,19 @@ contract ValidatorRewardDistributorTest is Toolkit {
       rewardRecipient: makeAddr('rewardRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
-      twabs: new uint256[](0) // init
-     });
+      amounts: new uint256[](0), // init
+      weight: 100,
+      collateralRewardShare: 80,
+      delegationRewardShare: 20
+    });
     address[] memory stakers = new address[](1);
-    uint256[] memory twabs = new uint256[](1);
+    uint256[] memory amounts = new uint256[](1);
     stakers[0] = makeAddr('staker-1');
-    twabs[0] = 100;
+    amounts[0] = 100;
     validatorParams[0].stakers = stakers;
-    validatorParams[0].twabs = twabs;
+    validatorParams[0].amounts = amounts;
 
     epochParams[0].validatorParams = validatorParams;
-    epochParams[0].validatorWeights = validatorWeights;
-    epochParams[0].validatorCollateralRewardShare = validatorCollateralRewardShare;
-    epochParams[0].validatorDelegationRewardShare = validatorDelegationRewardShare;
 
     _setUpEpochs(epochParams);
 
@@ -446,29 +404,16 @@ contract ValidatorRewardDistributorTest is Toolkit {
       endsAt: 200,
       available: true,
       totalReward: 100 ether,
-      validatorParams: new ValidatorParam[](0), // init
-      validatorWeights: new uint96[](0), // init
-      validatorCollateralRewardShare: new uint128[](0),
-      validatorDelegationRewardShare: new uint128[](0)
-    });
+      validatorParams: new ValidatorParam[](0) // init
+     });
     epochParams[1] = EpochParam({
       epoch: 2,
       startsAt: 200,
       endsAt: 300,
       available: true,
       totalReward: 100 ether,
-      validatorParams: new ValidatorParam[](0), // init
-      validatorWeights: new uint96[](0), // init
-      validatorCollateralRewardShare: new uint128[](0),
-      validatorDelegationRewardShare: new uint128[](0)
-    });
-
-    uint96[] memory validatorWeights = new uint96[](1);
-    validatorWeights[0] = 100;
-    uint128[] memory validatorCollateralRewardShare = new uint128[](1);
-    validatorCollateralRewardShare[0] = 50;
-    uint128[] memory validatorDelegationRewardShare = new uint128[](1);
-    validatorDelegationRewardShare[0] = 50;
+      validatorParams: new ValidatorParam[](0) // init
+     });
 
     ValidatorParam[] memory validatorParams = new ValidatorParam[](1);
 
@@ -478,24 +423,20 @@ contract ValidatorRewardDistributorTest is Toolkit {
       rewardRecipient: makeAddr('rewardRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
-      twabs: new uint256[](0) // init
-     });
+      amounts: new uint256[](0), // init
+      weight: 100,
+      collateralRewardShare: 50,
+      delegationRewardShare: 50
+    });
     address[] memory stakers = new address[](1);
-    uint256[] memory twabs = new uint256[](1);
+    uint256[] memory amounts = new uint256[](1);
     stakers[0] = makeAddr('staker-1');
-    twabs[0] = 100;
+    amounts[0] = 100;
     validatorParams[0].stakers = stakers;
-    validatorParams[0].twabs = twabs;
+    validatorParams[0].amounts = amounts;
 
     epochParams[0].validatorParams = validatorParams;
-    epochParams[0].validatorWeights = validatorWeights;
-    epochParams[0].validatorCollateralRewardShare = validatorCollateralRewardShare;
-    epochParams[0].validatorDelegationRewardShare = validatorDelegationRewardShare;
-
     epochParams[1].validatorParams = validatorParams;
-    epochParams[1].validatorWeights = validatorWeights;
-    epochParams[1].validatorCollateralRewardShare = validatorCollateralRewardShare;
-    epochParams[1].validatorDelegationRewardShare = validatorDelegationRewardShare;
 
     _setUpEpochs(epochParams);
 
@@ -518,82 +459,91 @@ contract ValidatorRewardDistributorTest is Toolkit {
       endsAt: 200,
       available: true,
       totalReward: 100 ether,
-      validatorParams: new ValidatorParam[](0), // init
-      validatorWeights: new uint96[](0), // init
-      validatorCollateralRewardShare: new uint128[](0),
-      validatorDelegationRewardShare: new uint128[](0)
-    });
+      validatorParams: new ValidatorParam[](0) // init
+     });
     epochParams[1] = EpochParam({
       epoch: 2,
       startsAt: 200,
       endsAt: 300,
       available: true,
       totalReward: 100 ether,
-      validatorParams: new ValidatorParam[](0), // init
-      validatorWeights: new uint96[](0), // init
-      validatorCollateralRewardShare: new uint128[](0),
-      validatorDelegationRewardShare: new uint128[](0)
-    });
+      validatorParams: new ValidatorParam[](0) // init
+     });
 
-    uint96[] memory validatorWeights = new uint96[](2);
-    validatorWeights[0] = 50;
-    validatorWeights[1] = 50;
-    uint128[] memory epoch1_validatorCollateralRewardShare = new uint128[](2);
-    epoch1_validatorCollateralRewardShare[0] = 80;
-    epoch1_validatorCollateralRewardShare[1] = 50;
-    uint128[] memory epoch1_validatorDelegationRewardShare = new uint128[](2);
-    epoch1_validatorDelegationRewardShare[0] = 20;
-    epoch1_validatorDelegationRewardShare[1] = 50;
+    ValidatorParam[] memory epoch1_validatorParams = new ValidatorParam[](2);
+    ValidatorParam[] memory epoch2_validatorParams = new ValidatorParam[](2);
 
-    uint128[] memory epoch2_validatorCollateralRewardShare = new uint128[](2);
-    epoch2_validatorCollateralRewardShare[0] = 50;
-    epoch2_validatorCollateralRewardShare[1] = 50;
-    uint128[] memory epoch2_validatorDelegationRewardShare = new uint128[](2);
-    epoch2_validatorDelegationRewardShare[0] = 50;
-    epoch2_validatorDelegationRewardShare[1] = 50;
-
-    ValidatorParam[] memory validatorParams = new ValidatorParam[](2);
-
-    validatorParams[0] = ValidatorParam({
+    epoch1_validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
-      twabs: new uint256[](0) // init
-     });
-    validatorParams[1] = ValidatorParam({
+      amounts: new uint256[](0), // init
+      weight: 50,
+      collateralRewardShare: 80,
+      delegationRewardShare: 20
+    });
+    epoch1_validatorParams[1] = ValidatorParam({
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
       rewardRecipient: makeAddr('rewardRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
-      twabs: new uint256[](0) // init
-     });
+      amounts: new uint256[](0), // init
+      weight: 50,
+      collateralRewardShare: 50,
+      delegationRewardShare: 50
+    });
+
+    epoch2_validatorParams[0] = ValidatorParam({
+      valAddr: makeAddr('val-1'),
+      operatorAddr: makeAddr('operator-1'),
+      rewardRecipient: makeAddr('rewardRecipient-1'),
+      comissionRate: 1000,
+      stakers: new address[](0), // init
+      amounts: new uint256[](0), // init
+      weight: 50,
+      collateralRewardShare: 50,
+      delegationRewardShare: 50
+    });
+    epoch2_validatorParams[1] = ValidatorParam({
+      valAddr: makeAddr('val-2'),
+      operatorAddr: makeAddr('operator-2'),
+      rewardRecipient: makeAddr('rewardRecipient-2'),
+      comissionRate: 1000,
+      stakers: new address[](0), // init
+      amounts: new uint256[](0), // init
+      weight: 50,
+      collateralRewardShare: 50,
+      delegationRewardShare: 50
+    });
+
     address[] memory stakers = new address[](1);
-    uint256[] memory twabs = new uint256[](1);
+    uint256[] memory amounts = new uint256[](1);
     stakers[0] = makeAddr('staker-1');
-    twabs[0] = 100;
+    amounts[0] = 100;
 
-    validatorParams[0].stakers = stakers;
-    validatorParams[0].twabs = twabs;
+    epoch1_validatorParams[0].stakers = stakers;
+    epoch1_validatorParams[0].amounts = amounts;
+    epoch1_validatorParams[1].stakers = stakers;
+    epoch1_validatorParams[1].amounts = amounts;
 
-    validatorParams[1].stakers = stakers;
-    validatorParams[1].twabs = twabs;
+    epoch2_validatorParams[0].stakers = stakers;
+    epoch2_validatorParams[0].amounts = amounts;
+    epoch2_validatorParams[1].stakers = stakers;
+    epoch2_validatorParams[1].amounts = amounts;
 
-    epochParams[0].validatorParams = validatorParams;
-    epochParams[0].validatorWeights = validatorWeights;
-    epochParams[0].validatorCollateralRewardShare = epoch1_validatorCollateralRewardShare;
-    epochParams[0].validatorDelegationRewardShare = epoch1_validatorDelegationRewardShare;
-
-    epochParams[1].validatorParams = validatorParams;
-    epochParams[1].validatorWeights = validatorWeights;
-    epochParams[1].validatorCollateralRewardShare = epoch2_validatorCollateralRewardShare;
-    epochParams[1].validatorDelegationRewardShare = epoch2_validatorDelegationRewardShare;
+    epochParams[0].validatorParams = epoch1_validatorParams;
+    epochParams[1].validatorParams = epoch2_validatorParams;
 
     _setUpEpochs(epochParams);
 
     // epoch1: 100, epoch2: 100
+    // epoch1) operator: 80%, delegator: 20%, comission: 10%
+    //
+    //
+    //
     // epoch1) val1) operator: 80%, delegators: 20%, comission: 10%
     // epoch1) val2) operator: 50%, delegators: 50%, comission: 10%
     // epoch2) val1) operator: 50%, delegators: 50%, comission: 10%
@@ -619,11 +569,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
       endsAt: 200,
       available: true,
       totalReward: 100 ether,
-      validatorParams: new ValidatorParam[](0), // init
-      validatorWeights: new uint96[](0), // init
-      validatorCollateralRewardShare: new uint128[](0),
-      validatorDelegationRewardShare: new uint128[](0)
-    });
+      validatorParams: new ValidatorParam[](0) // init
+     });
 
     uint96[] memory validatorWeights = new uint96[](2);
     validatorWeights[0] = 50;
@@ -643,35 +590,38 @@ contract ValidatorRewardDistributorTest is Toolkit {
       rewardRecipient: makeAddr('rewardRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
-      twabs: new uint256[](0) // init
-     });
+      amounts: new uint256[](0), // init
+      weight: 50,
+      collateralRewardShare: 80,
+      delegationRewardShare: 20
+    });
     validatorParams[1] = ValidatorParam({
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
       rewardRecipient: makeAddr('rewardRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
-      twabs: new uint256[](0) // init
-     });
+      amounts: new uint256[](0), // init
+      weight: 50,
+      collateralRewardShare: 50,
+      delegationRewardShare: 50
+    });
     address[] memory stakers = new address[](3);
-    uint256[] memory twabs = new uint256[](3);
+    uint256[] memory amounts = new uint256[](3);
     stakers[0] = makeAddr('staker-1');
     stakers[1] = makeAddr('staker-2');
     stakers[2] = makeAddr('staker-3');
-    twabs[0] = 50;
-    twabs[1] = 25;
-    twabs[2] = 25;
+    amounts[0] = 50;
+    amounts[1] = 25;
+    amounts[2] = 25;
 
     validatorParams[0].stakers = stakers;
-    validatorParams[0].twabs = twabs;
+    validatorParams[0].amounts = amounts;
 
     validatorParams[1].stakers = stakers;
-    validatorParams[1].twabs = twabs;
+    validatorParams[1].amounts = amounts;
 
     epochParams[0].validatorParams = validatorParams;
-    epochParams[0].validatorWeights = validatorWeights;
-    epochParams[0].validatorCollateralRewardShare = validatorCollateralRewardShare;
-    epochParams[0].validatorDelegationRewardShare = validatorDelegationRewardShare;
 
     _setUpEpochs(epochParams);
 
@@ -692,7 +642,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       // ========== epoch setup ==========
       EpochParam memory epochParam = params[i];
 
-      // For TWAB calculating
+      // For amount calculating
       vm.warp(epochParam.startsAt);
 
       _epochFeed.setRet(
@@ -759,18 +709,18 @@ contract ValidatorRewardDistributorTest is Toolkit {
           abi.encode(
             ValidatorWeight(
               validatorParam.valAddr, // address addr;
-              epochParam.validatorWeights[j], // uint96 weight; // max 79 billion * 1e18
-              epochParam.validatorCollateralRewardShare[j], // uint128 collateralRewardShare;
-              epochParam.validatorDelegationRewardShare[j] // uint128 delegationRewardShare;
+              validatorParam.weight, // uint96 weight; // max 79 billion * 1e18
+              validatorParam.collateralRewardShare, // uint128 collateralRewardShare;
+              validatorParam.delegationRewardShare // uint128 delegationRewardShare;
             ),
             true
           )
         );
-        totalWeight += epochParam.validatorWeights[j];
+        totalWeight += validatorParam.weight;
 
         for (uint256 k = 0; k < validatorParam.stakers.length; k++) {
           address staker = validatorParam.stakers[k];
-          uint256 amount = validatorParam.twabs[k];
+          uint256 amount = validatorParam.amounts[k];
           _stakingHub.notifyStake(validatorParam.valAddr, staker, amount);
         }
       }
