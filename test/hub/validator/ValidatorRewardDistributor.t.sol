@@ -147,7 +147,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 50, delegators: 50, comission: 10%
+    // operator: 50, stakers: 50, comission: 10%
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 55 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 45 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
@@ -207,8 +207,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
     _setUpEpochs(epochParams);
 
     // total reward: 100 => val-1 50, val-2 50
-    // val-1: operator 80 %, delegators 20%, comission: 10%
-    // val-2: operator 50 %, delegators 50%, comission: 10%
+    // val-1: operator 80 %, stakers 20%, comission: 10%
+    // val-2: operator 50 %, stakers 50%, comission: 10%
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 41 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 9 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
@@ -274,8 +274,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     // total reward: 100 => val-1 70, val-2 30
     //
-    // val-1: operator 80 %, delegators 20%, comission: 10%
-    // val-2: operator 50 %, delegators 50%, comission: 10%
+    // val-1: operator 80 %, stakers 20%, comission: 10%
+    // val-2: operator 50 %, stakers 50%, comission: 10%
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 38.5 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 31.5 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
@@ -336,7 +336,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 50, delegators: 50, comission: 10%
+    // operator: 50, stakers: 50, comission: 10%
     //
     // staker1: 50%, staker2: 25%, staker3: 25%
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 55 ether);
@@ -387,7 +387,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 80, delegators: 20, comission: 10%
+    // operator: 80, stakers: 20, comission: 10%
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 82 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 18 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
@@ -441,8 +441,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
     _setUpEpochs(epochParams);
 
     // epoch1: 100, epoch1: 100
-    // epoch1) val1) operator: 50, delegators: 50, comission: 10%
-    // epoch2) val1) operator: 50, delegators: 50, comission: 10%
+    // epoch1) val1) operator: 50, stakers: 50, comission: 10%
+    // epoch2) val1) operator: 50, stakers: 50, comission: 10%
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 110 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 90 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
@@ -540,14 +540,14 @@ contract ValidatorRewardDistributorTest is Toolkit {
     _setUpEpochs(epochParams);
 
     // epoch1: 100, epoch2: 100
-    // epoch1) operator: 80%, delegator: 20%, comission: 10%
+    // epoch1) operator: 80%, staker: 20%, comission: 10%
     //
     //
     //
-    // epoch1) val1) operator: 80%, delegators: 20%, comission: 10%
-    // epoch1) val2) operator: 50%, delegators: 50%, comission: 10%
-    // epoch2) val1) operator: 50%, delegators: 50%, comission: 10%
-    // epoch2) val2) operator: 50%, delegators: 50%, comission: 10%
+    // epoch1) val1) operator: 80%, stakers: 20%, comission: 10%
+    // epoch1) val2) operator: 50%, stakers: 50%, comission: 10%
+    // epoch2) val1) operator: 50%, stakers: 50%, comission: 10%
+    // epoch2) val2) operator: 50%, stakers: 50%, comission: 10%
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 68.5 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 31.5 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
