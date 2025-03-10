@@ -6,7 +6,7 @@ interface IConsensusValidatorEntrypoint {
 
   event MsgRegisterValidator(address valAddr, bytes valkey, uint256 initialCollateralAmountGwei);
   event MsgDepositCollateral(address valAddr, uint256 amountGwei);
-  event MsgWithdrawCollateral(address valAddr, uint256 amountGwei, address receiver, uint48 receivesAt);
+  event MsgWithdrawCollateral(address valAddr, uint256 amountGwei, address receiver, uint48 maturesAt);
   event MsgUnjail(address valAddr);
   event MsgUpdateExtraVotingPower(address valAddr, uint256 extraVotingPowerGwei);
 
@@ -26,15 +26,15 @@ interface IConsensusValidatorEntrypoint {
   function depositCollateral(address valAddr) external payable;
 
   /**
-   * @notice Withdraw collateral from the validator in the consensus layer.
-   * The collateral is sent to the receiver address at the specified time.
+   * @notice Request a withdrawal of collateral from the validator in the consensus layer.
+   * The collateral is sent to the receiver address after the request matures.
    * @dev Nothing happens if the validator is not registered in the consensus layer or has insufficient collateral.
    * @param valAddr The address of the validator.
    * @param amount The amount of collateral to withdraw.
    * @param receiver The address to receive the withdrawn collateral.
-   * @param receivesAt The time at which the collateral will be transferred to the receiver.
+   * @param maturesAt The time when the withdrawal request matures. After this time, the collateral will be sent to the receiver.
    */
-  function withdrawCollateral(address valAddr, uint256 amount, address receiver, uint48 receivesAt) external;
+  function withdrawCollateral(address valAddr, uint256 amount, address receiver, uint48 maturesAt) external;
 
   /**
    * @notice Unjail a validator in the consensus layer.

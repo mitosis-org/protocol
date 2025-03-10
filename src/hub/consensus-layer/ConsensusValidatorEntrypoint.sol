@@ -104,14 +104,14 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
     emit MsgDepositCollateral(valAddr, msg.value / 1 gwei);
   }
 
-  function withdrawCollateral(address valAddr, uint256 amount, address receiver, uint48 receivesAt)
+  function withdrawCollateral(address valAddr, uint256 amount, address receiver, uint48 maturesAt)
     external
     onlyPermittedCaller
   {
     require(amount > 0, StdError.InvalidParameter('amount'));
     require(amount % 1 gwei == 0, StdError.InvalidParameter('amount'));
 
-    emit MsgWithdrawCollateral(valAddr, amount / 1 gwei, receiver, receivesAt);
+    emit MsgWithdrawCollateral(valAddr, amount / 1 gwei, receiver, maturesAt);
   }
 
   function unjail(address valAddr) external onlyPermittedCaller {
