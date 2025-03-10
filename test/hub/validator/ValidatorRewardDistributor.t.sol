@@ -641,6 +641,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function _setUpEpochs(EpochParam[] memory params) internal {
+    _validatorManager.setRet(IValidatorManager.MAX_COMMISSION_RATE.selector, '', false, abi.encode(10000));
+
     for (uint256 i = 0; i < params.length; i++) {
       // ========== epoch setup ==========
       EpochParam memory epochParam = params[i];
@@ -650,9 +652,6 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
       _epochFeed.setRet(
         IEpochFeeder.timeAt.selector, abi.encode(epochParam.epoch), false, abi.encode(epochParam.startsAt)
-      );
-      _epochFeed.setRet(
-        IEpochFeeder.timeAt.selector, abi.encode(epochParam.epoch + 1), false, abi.encode(epochParam.endsAt - 1)
       );
 
       if (epochParam.available) {
@@ -668,42 +667,31 @@ contract ValidatorRewardDistributorTest is Toolkit {
         abi.encode(epochParam.totalReward)
       );
 
-      _validatorManager.setRet(IValidatorManager.MAX_COMMISSION_RATE.selector, '', false, abi.encode(10000));
-
       // ========== validator setup ==========
       uint128 totalWeight = 0;
       for (uint256 j = 0; j < epochParam.validatorParams.length; j++) {
         ValidatorParam memory validatorParam = epochParam.validatorParams[j];
 
+        IValidatorManager.ValidatorInfoResponse memory validatorInfoResponse = IValidatorManager.ValidatorInfoResponse(
+          '', // bytes valKey;
+          validatorParam.valAddr, // address valAddr;
+          validatorParam.operatorAddr, // address operator;
+          validatorParam.rewardRecipient, // address rewardRecipient;
+          validatorParam.comissionRate, // uint256 commissionRate;
+          '' // bytes metadata;
+        );
+
         _validatorManager.setRet(
           IValidatorManager.validatorInfo.selector,
           abi.encode(validatorParam.valAddr),
           false,
-          abi.encode(
-            IValidatorManager.ValidatorInfoResponse(
-              '', // bytes valKey;
-              validatorParam.valAddr, // address valAddr;
-              validatorParam.operatorAddr, // address operator;
-              validatorParam.rewardRecipient, // address rewardRecipient;
-              validatorParam.comissionRate, // uint256 commissionRate;
-              '' // bytes metadata;
-            )
-          )
+          abi.encode(validatorInfoResponse)
         );
         _validatorManager.setRet(
           IValidatorManager.validatorInfoAt.selector,
           abi.encode(epochParam.epoch, validatorParam.valAddr),
           false,
-          abi.encode(
-            IValidatorManager.ValidatorInfoResponse(
-              '', // bytes valKey;
-              validatorParam.valAddr, // address valAddr;
-              validatorParam.operatorAddr, // address operator;
-              validatorParam.rewardRecipient, // address rewardRecipient;
-              validatorParam.comissionRate, // uint256 commissionRate;
-              '' // bytes metadata;
-            )
-          )
+          abi.encode(validatorInfoResponse)
         );
         _contributionFeed.setRet(
           IValidatorContributionFeed.weightOf.selector,
