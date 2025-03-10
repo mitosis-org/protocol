@@ -30,8 +30,6 @@ contract ValidatorRewardDistributorTest is Toolkit {
   using LibString for *;
 
   address _owner = makeAddr('owner');
-  uint256 _initialTimestamp = 100;
-  uint256 _epochInterval = 100 seconds;
 
   MockContract _govMITO;
   MockContract _govMITOEmission;
@@ -44,8 +42,6 @@ contract ValidatorRewardDistributorTest is Toolkit {
   uint256 snapshotId;
 
   function setUp() public {
-    vm.warp(_initialTimestamp);
-
     _validatorManager = new MockContract();
     _validatorManager.setStatic(IValidatorManager.validatorInfo.selector, true);
     _validatorManager.setStatic(IValidatorManager.validatorInfoAt.selector, true);
