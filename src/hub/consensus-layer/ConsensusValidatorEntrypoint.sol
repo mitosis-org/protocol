@@ -27,16 +27,16 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
   /**
    * @notice Verifies that the given validator key is valid format which is a compressed 33-byte secp256k1 public key.
    */
-  modifier verifyValkey(bytes memory valkey) {
-    LibSecp256k1.verifyCmpPubkey(valkey);
+  modifier verifyPubKey(bytes memory pubKey) {
+    LibSecp256k1.verifyCmpPubkey(pubKey);
     _;
   }
 
   /**
    * @notice Verifies that the given validator key is valid format and corresponds to the expected address.
    */
-  modifier verifyValkeyWithAddress(bytes memory valkey, address expectedAddress) {
-    LibSecp256k1.verifyCmpPubkeyWithAddress(valkey, expectedAddress);
+  modifier verifyPubKeyWithAddress(bytes memory pubKey, address expectedAddress) {
+    LibSecp256k1.verifyCmpPubkeyWithAddress(pubKey, expectedAddress);
     _;
   }
 
@@ -81,18 +81,18 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  function registerValidator(address valAddr, bytes calldata valkey)
+  function registerValidator(address valAddr, bytes calldata pubKey)
     external
     payable
     onlyPermittedCaller
-    verifyValkeyWithAddress(valkey, valAddr)
+    verifyPubKeyWithAddress(pubKey, valAddr)
   {
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
     require(msg.value % 1 gwei == 0, StdError.InvalidParameter('msg.value'));
 
     payable(address(0)).transfer(msg.value);
 
-    emit MsgRegisterValidator(valAddr, valkey, msg.value / 1 gwei);
+    emit MsgRegisterValidator(valAddr, pubKey, msg.value / 1 gwei);
   }
 
   function depositCollateral(address valAddr) external payable onlyPermittedCaller {

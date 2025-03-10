@@ -28,8 +28,8 @@ interface IValidatorManager {
   }
 
   struct ValidatorInfoResponse {
-    bytes valKey;
     address valAddr;
+    bytes pubKey;
     address operator;
     address rewardRecipient;
     uint256 commissionRate;
@@ -55,7 +55,7 @@ interface IValidatorManager {
   }
 
   struct GenesisValidatorSet {
-    bytes valKey;
+    bytes pubKey;
     address operator;
     uint256 commissionRate;
     bytes metadata;
@@ -70,7 +70,7 @@ interface IValidatorManager {
     uint96 commissionRateUpdateDelay; // in epoch
   }
 
-  event ValidatorCreated(address indexed valAddr, address indexed operator, bytes valKey);
+  event ValidatorCreated(address indexed valAddr, address indexed operator, bytes pubKey);
   event CollateralDeposited(address indexed valAddr, uint256 amount);
   event CollateralWithdrawn(address indexed valAddr, uint256 amount);
   event ValidatorUnjailed(address indexed valAddr);
@@ -94,12 +94,12 @@ interface IValidatorManager {
   function validatorCount() external view returns (uint256);
   function validatorAt(uint256 index) external view returns (address);
   function isValidator(address valAddr) external view returns (bool);
-  function isValidatorWithPubKey(bytes calldata valKey) external view returns (bool);
+  function isValidatorWithPubKey(bytes calldata pubKey) external view returns (bool);
 
   function validatorInfo(address valAddr) external view returns (ValidatorInfoResponse memory);
-  function validatorInfoWithPubKey(bytes calldata valKey) external view returns (ValidatorInfoResponse memory);
+  function validatorInfoWithPubKey(bytes calldata pubKey) external view returns (ValidatorInfoResponse memory);
   function validatorInfoAt(uint256 epoch, address valAddr) external view returns (ValidatorInfoResponse memory);
-  function validatorInfoAtWithPubKey(uint256 epoch, bytes calldata valKey)
+  function validatorInfoAtWithPubKey(uint256 epoch, bytes calldata pubKey)
     external
     view
     returns (ValidatorInfoResponse memory);
@@ -107,19 +107,19 @@ interface IValidatorManager {
   // ========== VALIDATOR ACTIONS ========== //
 
   // validator actions
-  /// @param valKey The compressed 33-byte secp256k1 public key of the valAddr.
-  function createValidator(bytes calldata valKey, CreateValidatorRequest calldata request) external payable;
-  function updateOperator(bytes calldata valKey, address operator) external; // sender must be valAddr
+  /// @param pubKey The compressed 33-byte secp256k1 public key of the valAddr.
+  function createValidator(bytes calldata pubKey, CreateValidatorRequest calldata request) external payable;
+  function updateOperator(address valAddr, address operator) external; // sender must be valAddr
 
   // operator actions
-  function depositCollateral(bytes calldata valKey) external payable;
-  function withdrawCollateral(bytes calldata valKey, address recipient, uint256 amount) external;
-  function unjailValidator(bytes calldata valKey) external;
+  function depositCollateral(address valAddr) external payable;
+  function withdrawCollateral(address valAddr, address recipient, uint256 amount) external;
+  function unjailValidator(address valAddr) external;
 
   // validator configurations
-  function updateRewardRecipient(bytes calldata valKey, address rewardRecipient) external;
-  function updateMetadata(bytes calldata valKey, bytes calldata metadata) external;
-  function updateRewardConfig(bytes calldata valKey, UpdateRewardConfigRequest calldata request) external;
+  function updateRewardRecipient(address valAddr, address rewardRecipient) external;
+  function updateMetadata(address valAddr, bytes calldata metadata) external;
+  function updateRewardConfig(address valAddr, UpdateRewardConfigRequest calldata request) external;
 
   // ========== CONTRACT MANAGEMENT ========== //
 

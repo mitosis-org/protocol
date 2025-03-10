@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 interface IConsensusValidatorEntrypoint {
   event PermittedCallerSet(address caller, bool isPermitted);
 
-  event MsgRegisterValidator(address valAddr, bytes valkey, uint256 initialCollateralAmountGwei);
+  event MsgRegisterValidator(address valAddr, bytes pubKey, uint256 initialCollateralAmountGwei);
   event MsgDepositCollateral(address valAddr, uint256 amountGwei);
   event MsgWithdrawCollateral(address valAddr, uint256 amountGwei, address receiver, uint48 maturesAt);
   event MsgUnjail(address valAddr);
@@ -14,9 +14,9 @@ interface IConsensusValidatorEntrypoint {
    * @notice Register a validator in the consensus layer.
    * @dev Nothing happens if the validator is already registered in the consensus layer.
    * @param valAddr The address of the validator.
-   * @param valkey The compressed 33-byte secp256k1 public key of the validator.
+   * @param pubKey The compressed 33-byte secp256k1 public key of the validator.
    */
-  function registerValidator(address valAddr, bytes calldata valkey) external payable;
+  function registerValidator(address valAddr, bytes calldata pubKey) external payable;
 
   /**
    * @notice Deposit collateral to the validator in the consensus layer.

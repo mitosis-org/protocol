@@ -10,7 +10,6 @@ import { IValidatorManager } from './IValidatorManager.sol';
 interface IValidatorStakingHub {
   // ========== VIEWS ========== //
 
-  function manager() external view returns (IValidatorManager);
   function entrypoint() external view returns (IConsensusValidatorEntrypoint);
 
   function isNotifier(address notifier) external view returns (bool);

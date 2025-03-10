@@ -42,24 +42,16 @@ contract ValidatorStakingHubStorage {
 contract ValidatorStakingHub is IValidatorStakingHub, ValidatorStakingHubStorage, Ownable2StepUpgradeable {
   using LibCheckpoint for LibCheckpoint.TraceTWAB;
 
-  IValidatorManager private immutable _manager;
   IConsensusValidatorEntrypoint private immutable _entrypoint;
 
-  constructor(IConsensusValidatorEntrypoint entrypoint_, IValidatorManager manager_) {
+  constructor(IConsensusValidatorEntrypoint entrypoint_) {
     _disableInitializers();
-
-    _manager = manager_;
     _entrypoint = entrypoint_;
   }
 
   function initialize(address initialOwner) external initializer {
     __Ownable2Step_init();
     __Ownable_init(initialOwner);
-  }
-
-  /// @inheritdoc IValidatorStakingHub
-  function manager() public view returns (IValidatorManager) {
-    return _manager;
   }
 
   /// @inheritdoc IValidatorStakingHub
@@ -169,9 +161,6 @@ contract ValidatorStakingHub is IValidatorStakingHub, ValidatorStakingHubStorage
   }
 
   function _updateExtraVotingPower(StorageV1 storage $, address valAddr) internal {
-    _entrypoint.updateExtraVotingPower(
-      _manager.validatorInfo(valAddr).valKey, //
-      $.validatorTotal[valAddr].last().amount
-    );
+    _entrypoint.updateExtraVotingPower(valAddr, $.validatorTotal[valAddr].last().amount);
   }
 }
