@@ -152,6 +152,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
+  function validatorPubKeyToAddress(bytes calldata pubKey) external pure returns (address) {
+    return pubKey.deriveAddressFromCmpPubkey();
+  }
+
+  /// @inheritdoc IValidatorManager
   function validatorCount() external view returns (uint256) {
     return _getStorageV1().validatorCount;
   }
@@ -167,34 +172,14 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function isValidatorWithPubKey(bytes calldata pubKey) external view returns (bool) {
-    return _getStorageV1().indexByValAddr[pubKey.deriveAddressFromCmpPubkey()] != 0;
-  }
-
-  /// @inheritdoc IValidatorManager
   function validatorInfo(address valAddr) public view returns (ValidatorInfoResponse memory) {
     StorageV1 storage $ = _getStorageV1();
     return _validatorInfoAt($, valAddr, _epochFeeder.epoch());
   }
 
   /// @inheritdoc IValidatorManager
-  function validatorInfoWithPubKey(bytes calldata pubKey) public view returns (ValidatorInfoResponse memory) {
-    StorageV1 storage $ = _getStorageV1();
-    return _validatorInfoAt($, pubKey.deriveAddressFromCmpPubkey(), _epochFeeder.epoch());
-  }
-
-  /// @inheritdoc IValidatorManager
   function validatorInfoAt(uint256 epoch, address valAddr) public view returns (ValidatorInfoResponse memory) {
     return _validatorInfoAt(_getStorageV1(), valAddr, epoch);
-  }
-
-  /// @inheritdoc IValidatorManager
-  function validatorInfoAtWithPubKey(uint256 epoch, bytes calldata pubKey)
-    public
-    view
-    returns (ValidatorInfoResponse memory)
-  {
-    return _validatorInfoAt(_getStorageV1(), pubKey.deriveAddressFromCmpPubkey(), epoch);
   }
 
   /// @inheritdoc IValidatorManager

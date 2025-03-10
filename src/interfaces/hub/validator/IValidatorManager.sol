@@ -91,18 +91,14 @@ interface IValidatorManager {
   function epochFeeder() external view returns (IEpochFeeder);
   function globalValidatorConfig() external view returns (GlobalValidatorConfigResponse memory);
 
+  function validatorPubKeyToAddress(bytes calldata pubKey) external pure returns (address);
+
   function validatorCount() external view returns (uint256);
   function validatorAt(uint256 index) external view returns (address);
   function isValidator(address valAddr) external view returns (bool);
-  function isValidatorWithPubKey(bytes calldata pubKey) external view returns (bool);
 
   function validatorInfo(address valAddr) external view returns (ValidatorInfoResponse memory);
-  function validatorInfoWithPubKey(bytes calldata pubKey) external view returns (ValidatorInfoResponse memory);
   function validatorInfoAt(uint256 epoch, address valAddr) external view returns (ValidatorInfoResponse memory);
-  function validatorInfoAtWithPubKey(uint256 epoch, bytes calldata pubKey)
-    external
-    view
-    returns (ValidatorInfoResponse memory);
 
   // ========== VALIDATOR ACTIONS ========== //
 
