@@ -117,6 +117,9 @@ interface IValidatorManager {
 
   // operator actions
   function depositCollateral(address valAddr) external payable;
+  /**
+   * @dev Be careful, as the withdrawal recipient, not msg.sender, will receive the collateral.
+   */
   function withdrawCollateral(address valAddr, uint256 amount) external;
 
   // operator actions - validator configurations
