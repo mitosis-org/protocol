@@ -242,7 +242,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
     StorageV1 storage $ = _getStorageV1();
     Validator storage validator = _validator($, valAddr);
-    _assertOperator(validator);
+    _assertOperatorOrValidator(validator);
 
     $.validators[$.indexByValAddr[valAddr]].operator = operator;
 
@@ -416,7 +416,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function _assertOperator(Validator storage validator) internal view {
-    require(validator.operator == _msgSender(), StdError.Unauthorized());
+    require(_msgSender() == validator.operator, StdError.Unauthorized());
+  }
+
+  function _assertOperatorOrValidator(Validator storage validator) internal view {
+    require(_msgSender() == validator.operator || _msgSender() == validator.valAddr, StdError.Unauthorized());
   }
 
   // ========== UUPS ========== //
