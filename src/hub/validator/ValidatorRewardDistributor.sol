@@ -174,16 +174,16 @@ contract ValidatorRewardDistributor is
     returns (uint256, uint256)
   {
     (uint256 start, uint256 end) = _claimRange($.staker[staker][valAddr], _epochFeeder.epoch(), epochCount);
-    if (start == end) return (0, 0);
+    if (start == end) return (0, start);
 
     uint256 totalClaimable;
 
-    for (uint256 epoch = start; epoch < end; epoch++) {
-      if (!_validatorContributionFeed.available(epoch)) break;
+    for (uint256 epoch = start; epoch <= end; epoch++) {
+      if (!_validatorContributionFeed.available(epoch)) return (totalClaimable, epoch);
       totalClaimable += _calculateStakerRewardForEpoch(valAddr, staker, epoch);
     }
 
-    return (totalClaimable, end);
+    return (totalClaimable, end + 1);
   }
 
   function _claimableOperatorRewards(StorageV1 storage $, address valAddr, uint256 epochCount)
@@ -192,17 +192,17 @@ contract ValidatorRewardDistributor is
     returns (uint256, uint256)
   {
     (uint256 start, uint256 end) = _claimRange($.operator[valAddr], _epochFeeder.epoch(), epochCount);
-    if (start == end) return (0, 0);
+    if (start == end) return (0, start);
 
     uint256 totalOperatorReward;
 
-    for (uint256 epoch = start; epoch < end; epoch++) {
-      if (!_validatorContributionFeed.available(epoch)) break;
+    for (uint256 epoch = start; epoch <= end; epoch++) {
+      if (!_validatorContributionFeed.available(epoch)) return (totalOperatorReward, epoch);
       (uint256 operatorReward,) = _rewardForEpoch(valAddr, epoch);
       totalOperatorReward += operatorReward;
     }
 
-    return (totalOperatorReward, end);
+    return (totalOperatorReward, end + 1);
   }
 
   function _claimStakerRewards(StorageV1 storage $, address staker, address valAddr) internal returns (uint256) {
@@ -210,19 +210,23 @@ contract ValidatorRewardDistributor is
     if (start == end) return 0;
 
     uint256 totalClaimed;
+    uint256 lastClaimedEpoch = start - 1;
 
-    for (uint256 epoch = start; epoch < end; epoch++) {
+    for (uint256 epoch = start; epoch <= end; epoch++) {
       if (!_validatorContributionFeed.available(epoch)) break;
+
       uint256 claimable = _calculateStakerRewardForEpoch(valAddr, staker, epoch);
 
       // NOTE(eddy): reentrancy guard?
-      if (claimable > 0) _govMITOEmission.requestValidatorReward(epoch.toUint96(), staker, claimable);
+      if (claimable > 0) {
+        _govMITOEmission.requestValidatorReward(epoch.toUint96(), staker, claimable);
+        totalClaimed += claimable;
+      }
 
-      totalClaimed += claimable;
+      lastClaimedEpoch = epoch;
     }
 
-    $.staker[staker][valAddr] = end;
-
+    $.staker[staker][valAddr] = lastClaimedEpoch;
     return totalClaimed;
   }
 
@@ -231,20 +235,24 @@ contract ValidatorRewardDistributor is
     if (start == end) return 0;
 
     address recipient = _validatorManager.validatorInfo(valAddr).rewardRecipient;
-    uint256 totalClaimed;
 
-    for (uint256 epoch = start; epoch < end; epoch++) {
+    uint256 totalClaimed;
+    uint256 lastClaimedEpoch = start - 1;
+
+    for (uint256 epoch = start; epoch <= end; epoch++) {
       if (!_validatorContributionFeed.available(epoch)) break;
       (uint256 claimable,) = _rewardForEpoch(valAddr, epoch);
 
       // NOTE(eddy): reentrancy guard?
-      if (claimable > 0) _govMITOEmission.requestValidatorReward(epoch.toUint96(), recipient, claimable);
+      if (claimable > 0) {
+        _govMITOEmission.requestValidatorReward(epoch.toUint96(), recipient, claimable);
+        totalClaimed += claimable;
+      }
 
-      totalClaimed += claimable;
+      lastClaimedEpoch = epoch;
     }
 
-    $.operator[valAddr] = end;
-
+    $.operator[valAddr] = lastClaimedEpoch;
     return totalClaimed;
   }
 
@@ -253,11 +261,9 @@ contract ValidatorRewardDistributor is
     pure
     returns (uint256, uint256)
   {
-    uint256 startEpoch = lastClaimedEpoch;
-    startEpoch = startEpoch == 0 ? 1 : startEpoch; // min epoch is 1
+    uint256 startEpoch = lastClaimedEpoch + 1; // min epoch is 1
     // do not claim rewards for current epoch
     uint256 endEpoch = (Math.min(currentEpoch, startEpoch + epochCount - 1)).toUint96();
-
     return (startEpoch, endEpoch);
   }
 
