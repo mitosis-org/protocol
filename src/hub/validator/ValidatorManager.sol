@@ -195,7 +195,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
     _createValidator($, valAddr, pubKey, msg.value, request);
 
-    _entrypoint.registerValidator{ value: msg.value }(valAddr, pubKey);
+    _entrypoint.registerValidator{ value: msg.value }(valAddr, pubKey, request.operator);
   }
 
   /// @inheritdoc IValidatorManager
@@ -203,9 +203,9 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     require(msg.value > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
-    _validator($, valAddr); // ensure validator exists
+    Validator storage validator = _validator($, valAddr);
 
-    _entrypoint.depositCollateral{ value: msg.value }(valAddr);
+    _entrypoint.depositCollateral{ value: msg.value }(valAddr, validator.operator);
 
     emit CollateralDeposited(valAddr, msg.value);
   }

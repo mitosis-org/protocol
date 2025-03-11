@@ -105,7 +105,7 @@ contract ValidatorManagerTest is Toolkit {
 
     entrypoint.assertLastCall(
       IConsensusValidatorEntrypoint.registerValidator.selector,
-      abi.encode(val.addr, LibSecp256k1.compressPubkey(val.pubKey)),
+      abi.encode(val.addr, LibSecp256k1.compressPubkey(val.pubKey), val.addr),
       1000 ether
     );
 
@@ -135,7 +135,7 @@ contract ValidatorManagerTest is Toolkit {
     manager.depositCollateral{ value: 1000 ether }(val.addr);
 
     entrypoint.assertLastCall(
-      IConsensusValidatorEntrypoint.depositCollateral.selector, abi.encode(val.addr), 1000 ether
+      IConsensusValidatorEntrypoint.depositCollateral.selector, abi.encode(val.addr, operator), 1000 ether
     );
   }
 
