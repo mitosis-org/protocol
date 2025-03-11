@@ -105,11 +105,11 @@ interface IValidatorManager {
   // validator actions
   /// @param pubKey The compressed 33-byte secp256k1 public key of the valAddr.
   function createValidator(bytes calldata pubKey, CreateValidatorRequest calldata request) external payable;
+  function unjailValidator(address valAddr) external;
 
   // operator actions
   function depositCollateral(address valAddr) external payable;
   function withdrawCollateral(address valAddr, address recipient, uint256 amount) external;
-  function unjailValidator(address valAddr) external;
 
   // operator actions - validator configurations
   function updateOperator(address valAddr, address operator) external;

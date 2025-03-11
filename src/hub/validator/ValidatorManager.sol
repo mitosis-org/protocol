@@ -229,7 +229,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   function unjailValidator(address valAddr) external {
     StorageV1 storage $ = _getStorageV1();
     Validator storage validator = _validator($, valAddr);
-    _assertOperator(validator);
+    _assertOperatorOrValidator(validator);
 
     _entrypoint.unjail(valAddr);
 
@@ -417,6 +417,10 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   function _assertOperator(Validator storage validator) internal view {
     require(validator.operator == _msgSender(), StdError.Unauthorized());
+  }
+
+  function _assertOperatorOrValidator(Validator storage validator) internal view {
+    require(validator.operator == _msgSender() || validator.valAddr == _msgSender(), StdError.Unauthorized());
   }
 
   // ========== UUPS ========== //
