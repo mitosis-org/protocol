@@ -50,11 +50,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _stakingHub = ValidatorStakingHub(
       _proxy(
-        address(
-          new ValidatorStakingHub(
-            IConsensusValidatorEntrypoint(address(new MockContract())), IValidatorManager(address(_validatorManager))
-          )
-        ),
+        address(new ValidatorStakingHub(IConsensusValidatorEntrypoint(address(new MockContract())))),
         abi.encodeCall(ValidatorStakingHub.initialize, (_owner))
       )
     );
@@ -1297,12 +1293,12 @@ contract ValidatorRewardDistributorTest is Toolkit {
         ValidatorParam memory validatorParam = epochParam.validatorParams[j];
 
         IValidatorManager.ValidatorInfoResponse memory validatorInfoResponse = IValidatorManager.ValidatorInfoResponse(
-          '', // bytes valKey;
           validatorParam.valAddr, // address valAddr;
+          bytes(''), // bytes valKey;
           validatorParam.operatorAddr, // address operator;
           validatorParam.rewardRecipient, // address rewardRecipient;
           validatorParam.comissionRate, // uint256 commissionRate;
-          '' // bytes metadata;
+          bytes('') // bytes metadata;
         );
 
         _validatorManager.setRet(
