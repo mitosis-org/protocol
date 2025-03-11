@@ -39,6 +39,8 @@ contract GovernanceEntrypoint is IGovernanceEntrypoint, GasRouter, UUPSUpgradeab
     _enrollRemoteRouter(_mitosisDomain, _mitosisAddr);
   }
 
+  receive() external payable { }
+
   //=========== NOTE: HANDLER FUNCTIONS ===========//
 
   function _handle(uint32 origin, bytes32 sender, bytes calldata msg_) internal override {
