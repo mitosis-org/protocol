@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { Math } from '@oz-v5/utils/math/Math.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
@@ -39,7 +40,12 @@ contract ValidatorStakingHubStorage {
   }
 }
 
-contract ValidatorStakingHub is IValidatorStakingHub, ValidatorStakingHubStorage, Ownable2StepUpgradeable {
+contract ValidatorStakingHub is
+  IValidatorStakingHub,
+  ValidatorStakingHubStorage,
+  Ownable2StepUpgradeable,
+  UUPSUpgradeable
+{
   using LibCheckpoint for LibCheckpoint.TraceTWAB;
 
   IConsensusValidatorEntrypoint private immutable _entrypoint;
@@ -52,6 +58,7 @@ contract ValidatorStakingHub is IValidatorStakingHub, ValidatorStakingHubStorage
   function initialize(address initialOwner) external initializer {
     __Ownable2Step_init();
     __Ownable_init(initialOwner);
+    __UUPSUpgradeable_init();
   }
 
   /// @inheritdoc IValidatorStakingHub
@@ -163,4 +170,8 @@ contract ValidatorStakingHub is IValidatorStakingHub, ValidatorStakingHubStorage
   function _updateExtraVotingPower(StorageV1 storage $, address valAddr) internal {
     _entrypoint.updateExtraVotingPower(valAddr, $.validatorTotal[valAddr].last().amount);
   }
+
+  // ========== UUPS ========== //
+
+  function _authorizeUpgrade(address) internal override onlyOwner { }
 }

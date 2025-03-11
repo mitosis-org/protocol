@@ -7,12 +7,13 @@ import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
 import { BeaconBase } from '../../lib/proxy/BeaconBase.sol';
 import { MatrixStrategyExecutor } from './MatrixStrategyExecutor.sol';
 
-contract MatrixStrategyExecutorFactory is BeaconBase, Ownable2StepUpgradeable {
+contract MatrixStrategyExecutorFactory is BeaconBase, Ownable2StepUpgradeable, UUPSUpgradeable {
   constructor() {
     _disableInitializers();
   }
@@ -21,6 +22,7 @@ contract MatrixStrategyExecutorFactory is BeaconBase, Ownable2StepUpgradeable {
     __Ownable2Step_init();
     __Ownable_init(owner_);
     __BeaconBase_init(new UpgradeableBeacon(address(this), address(initialImpl)));
+    __UUPSUpgradeable_init();
   }
 
   function create(
@@ -42,4 +44,6 @@ contract MatrixStrategyExecutorFactory is BeaconBase, Ownable2StepUpgradeable {
   function callBeacon(bytes calldata data) external onlyOwner returns (bytes memory) {
     return _callBeacon(data);
   }
+
+  function _authorizeUpgrade(address) internal override onlyOwner { }
 }
