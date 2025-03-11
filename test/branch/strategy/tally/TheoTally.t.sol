@@ -164,4 +164,42 @@ contract TheoTallyTest is Toolkit {
   function test_pendingDepositBalance() public {
     assertEq(_theoTally.pendingDepositBalance(''), 0);
   }
+
+  // NOTE(ray): Here is the code for testing the actual Ethereum-deployed ETH TheoVault.
+  // It is dependent on an external RPC URL, so it has been commented out. Uncomment it
+  // when needed for use.
+
+  //   ITheoDepositVault _theoDepositVault;
+  //   TheoTally _theoTally;
+
+  //   function setUp() public {
+  //     vm.createSelectFork('https://eth.llamarpc.com', 22019034);
+  //     _theoDepositVault = ITheoDepositVault(0x18e0C17bbbdf792925C2Af863570e0e6709DCdB0);
+  //     _theoTally = new TheoTally(_theoDepositVault);
+  //   }
+
+  //   function test() public {
+  //     address user = address(0xbd9b8258F3f89142411877e9fD45e06cEF130997);
+
+  //     uint256 accountVaultBalance = _theoDepositVault.accountVaultBalance(user);
+  //     (uint256 heldByAccount, uint256 heldByVault) = _theoDepositVault.shareBalances(user);
+  //     ITheoDepositVault.Withdrawal memory withdrawal = _theoDepositVault.withdrawals(user);
+
+  //     assertEq(accountVaultBalance, 19496127942764624280);
+  //     assertEq(heldByAccount, 19353040688900328464);
+  //     assertEq(heldByVault, 0);
+  //     assertEq(withdrawal.round, 41);
+  //     assertEq(withdrawal.shares, 10420868063254023019);
+
+  //     vm.startPrank(user);
+  //     uint256 totalAmount = _theoTally.totalBalance('');
+  //     uint256 withdrawableBalance = _theoTally.withdrawableBalance('');
+  //     uint256 pendingWithdrawalBalance = _theoTally.pendingWithdrawBalance('');
+
+  //     assertEq(totalAmount, accountVaultBalance);
+  //     assertEq(withdrawableBalance, 0);
+  //     assertEq(pendingWithdrawalBalance, 10497915046104028458);
+
+  //     vm.stopPrank();
+  //   }
 }
