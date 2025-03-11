@@ -100,6 +100,12 @@ interface IGovMITOEmission {
    * @param rps The rate of gMITO tokens to emit per second
    * @param deductionRate The rate of gMITO tokens to deduct per second
    * @param deductionPeriod The period of time to deduct the gMITO tokens
+   * @param applyFrom The timestamp to apply the emission from
    */
-  function configureValidatorRewardEmission(uint256 rps, uint160 deductionRate, uint48 deductionPeriod) external;
+  function configureValidatorRewardEmission(
+    uint256 rps,
+    uint160 deductionRate,
+    uint48 deductionPeriod,
+    uint48 applyFrom
+  ) external;
 }
