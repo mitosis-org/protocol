@@ -165,7 +165,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
   }
 
   /// @inheritdoc IGovMITOEmission
-  function addValidatorRewardEmission() external payable onlyOwner {
+  function addValidatorRewardEmission() external payable {
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
 
     StorageV1 storage $ = _getStorageV1();
