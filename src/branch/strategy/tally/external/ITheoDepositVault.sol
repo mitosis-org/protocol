@@ -41,6 +41,11 @@ interface ITheoDepositVault {
   function shareBalances(address account) external view returns (uint256 heldByAccount, uint256 heldByVault);
 
   /**
+   * @notice Returns the pricePerShare value of the vault token at the time of each round's closure.
+   */
+  function roundPricePerShare(uint256 round) external view returns (uint256 assetPerShare);
+
+  /**
    * @notice Returns the token decimals
    */
   function decimals() external view returns (uint8);

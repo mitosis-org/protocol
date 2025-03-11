@@ -27,16 +27,16 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
   /**
    * @notice Verifies that the given validator key is valid format which is a compressed 33-byte secp256k1 public key.
    */
-  modifier verifyValkey(bytes memory valkey) {
-    LibSecp256k1.verifyCmpPubkey(valkey);
+  modifier verifyPubKey(bytes memory pubKey) {
+    LibSecp256k1.verifyCmpPubkey(pubKey);
     _;
   }
 
   /**
    * @notice Verifies that the given validator key is valid format and corresponds to the expected address.
    */
-  modifier verifyValkeyWithAddress(bytes memory valkey, address expectedAddress) {
-    LibSecp256k1.verifyCmpPubkeyWithAddress(valkey, expectedAddress);
+  modifier verifyPubKeyWithAddress(bytes memory pubKey, address expectedAddress) {
+    LibSecp256k1.verifyCmpPubkeyWithAddress(pubKey, expectedAddress);
     _;
   }
 
@@ -81,45 +81,45 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  function registerValidator(bytes calldata valkey) external payable onlyPermittedCaller verifyValkey(valkey) {
+  function registerValidator(address valAddr, bytes calldata pubKey)
+    external
+    payable
+    onlyPermittedCaller
+    verifyPubKeyWithAddress(pubKey, valAddr)
+  {
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
     require(msg.value % 1 gwei == 0, StdError.InvalidParameter('msg.value'));
 
     payable(address(0)).transfer(msg.value);
 
-    emit MsgRegisterValidator(valkey, msg.value / 1 gwei);
+    emit MsgRegisterValidator(valAddr, pubKey, msg.value / 1 gwei);
   }
 
-  function depositCollateral(bytes calldata valkey) external payable onlyPermittedCaller verifyValkey(valkey) {
+  function depositCollateral(address valAddr) external payable onlyPermittedCaller {
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
     require(msg.value % 1 gwei == 0, StdError.InvalidParameter('msg.value'));
 
     payable(address(0)).transfer(msg.value);
 
-    emit MsgDepositCollateral(valkey, msg.value / 1 gwei);
+    emit MsgDepositCollateral(valAddr, msg.value / 1 gwei);
   }
 
-  function withdrawCollateral(bytes calldata valkey, uint256 amount, address receiver, uint48 receivesAt)
+  function withdrawCollateral(address valAddr, uint256 amount, address receiver, uint48 maturesAt)
     external
     onlyPermittedCaller
-    verifyValkey(valkey)
   {
     require(amount > 0, StdError.InvalidParameter('amount'));
     require(amount % 1 gwei == 0, StdError.InvalidParameter('amount'));
 
-    emit MsgWithdrawCollateral(valkey, amount / 1 gwei, receiver, receivesAt);
+    emit MsgWithdrawCollateral(valAddr, amount / 1 gwei, receiver, maturesAt);
   }
 
-  function unjail(bytes calldata valkey) external onlyPermittedCaller verifyValkey(valkey) {
-    emit MsgUnjail(valkey);
+  function unjail(address valAddr) external onlyPermittedCaller {
+    emit MsgUnjail(valAddr);
   }
 
-  function updateExtraVotingPower(bytes calldata valkey, uint256 extraVotingPower)
-    external
-    onlyPermittedCaller
-    verifyValkey(valkey)
-  {
-    emit MsgUpdateExtraVotingPower(valkey, extraVotingPower / 1 gwei);
+  function updateExtraVotingPower(address valAddr, uint256 extraVotingPower) external onlyPermittedCaller {
+    emit MsgUpdateExtraVotingPower(valAddr, extraVotingPower / 1 gwei);
   }
 
   // ============================ NOTE: OWNABLE FUNCTIONS ============================ //

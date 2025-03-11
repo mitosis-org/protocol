@@ -90,7 +90,7 @@ contract ValidatorManagerTest is Toolkit {
   }
 
   function test_createValidator(string memory name) public returns (ValidatorKey memory) {
-    ValidatorKey memory val = _makeValKey(name);
+    ValidatorKey memory val = _makePubKey(name);
     vm.deal(val.addr, 1000 ether);
 
     bytes memory metadata = _buildMetadata(name, 'test-val', 'test validator of mitosis');
@@ -105,7 +105,7 @@ contract ValidatorManagerTest is Toolkit {
 
     entrypoint.assertLastCall(
       IConsensusValidatorEntrypoint.registerValidator.selector,
-      abi.encode(LibSecp256k1.compressPubkey(val.pubKey)),
+      abi.encode(val.addr, LibSecp256k1.compressPubkey(val.pubKey)),
       1000 ether
     );
 
@@ -128,14 +128,14 @@ contract ValidatorManagerTest is Toolkit {
     address operator = makeAddr('operator');
 
     vm.prank(val.addr);
-    manager.updateOperator(val.pubKey.compressPubkey(), operator);
+    manager.updateOperator(val.addr, operator);
 
     vm.deal(operator, 1000 ether);
     vm.prank(operator);
-    manager.depositCollateral{ value: 1000 ether }(val.pubKey.compressPubkey());
+    manager.depositCollateral{ value: 1000 ether }(val.addr);
 
     entrypoint.assertLastCall(
-      IConsensusValidatorEntrypoint.depositCollateral.selector, abi.encode(val.pubKey.compressPubkey()), 1000 ether
+      IConsensusValidatorEntrypoint.depositCollateral.selector, abi.encode(val.addr), 1000 ether
     );
   }
 
@@ -145,14 +145,14 @@ contract ValidatorManagerTest is Toolkit {
     address recipient = makeAddr('recipient');
 
     vm.prank(val.addr);
-    manager.updateOperator(val.pubKey.compressPubkey(), operator);
+    manager.updateOperator(val.addr, operator);
 
     vm.prank(operator);
-    manager.withdrawCollateral(val.pubKey.compressPubkey(), recipient, 1000 ether);
+    manager.withdrawCollateral(val.addr, recipient, 1000 ether);
 
     entrypoint.assertLastCall(
       IConsensusValidatorEntrypoint.withdrawCollateral.selector,
-      abi.encode(LibSecp256k1.compressPubkey(val.pubKey), 1000 ether, recipient, block.timestamp + 1000 seconds)
+      abi.encode(val.addr, 1000 ether, recipient, block.timestamp + 1000 seconds)
     );
   }
 
@@ -161,14 +161,12 @@ contract ValidatorManagerTest is Toolkit {
     address operator = makeAddr('operator');
 
     vm.prank(val.addr);
-    manager.updateOperator(val.pubKey.compressPubkey(), operator);
+    manager.updateOperator(val.addr, operator);
 
     vm.prank(operator);
-    manager.unjailValidator(val.pubKey.compressPubkey());
+    manager.unjailValidator(val.addr);
 
-    entrypoint.assertLastCall(
-      IConsensusValidatorEntrypoint.unjail.selector, abi.encode(LibSecp256k1.compressPubkey(val.pubKey))
-    );
+    entrypoint.assertLastCall(IConsensusValidatorEntrypoint.unjail.selector, abi.encode(val.addr));
   }
 
   function test_updateOperator() public {
@@ -176,7 +174,7 @@ contract ValidatorManagerTest is Toolkit {
     address newOperator = makeAddr('newOperator');
 
     vm.prank(val.addr);
-    manager.updateOperator(val.pubKey.compressPubkey(), newOperator);
+    manager.updateOperator(val.addr, newOperator);
 
     assertEq(manager.validatorInfo(val.addr).operator, newOperator);
   }
@@ -187,10 +185,10 @@ contract ValidatorManagerTest is Toolkit {
     address newRecipient = makeAddr('newRecipient');
 
     vm.prank(val.addr);
-    manager.updateOperator(val.pubKey.compressPubkey(), newOperator);
+    manager.updateOperator(val.addr, newOperator);
 
     vm.prank(newOperator);
-    manager.updateRewardRecipient(val.pubKey.compressPubkey(), newRecipient);
+    manager.updateRewardRecipient(val.addr, newRecipient);
 
     assertEq(manager.validatorInfo(val.addr).rewardRecipient, newRecipient);
   }
@@ -201,10 +199,10 @@ contract ValidatorManagerTest is Toolkit {
     bytes memory newMetadata = _buildMetadata('val-2', 'test-val-2', 'test validator of mitosis-2');
 
     vm.prank(val.addr);
-    manager.updateOperator(val.pubKey.compressPubkey(), newOperator);
+    manager.updateOperator(val.addr, newOperator);
 
     vm.prank(newOperator);
-    manager.updateMetadata(val.pubKey.compressPubkey(), newMetadata);
+    manager.updateMetadata(val.addr, newMetadata);
 
     assertEq(manager.validatorInfo(val.addr).metadata, newMetadata);
   }
@@ -215,17 +213,17 @@ contract ValidatorManagerTest is Toolkit {
     uint256 newCommissionRate = 200;
 
     vm.prank(val.addr);
-    manager.updateOperator(val.pubKey.compressPubkey(), newOperator);
+    manager.updateOperator(val.addr, newOperator);
 
     vm.prank(newOperator);
     manager.updateRewardConfig(
-      val.pubKey.compressPubkey(), IValidatorManager.UpdateRewardConfigRequest({ commissionRate: newCommissionRate })
+      val.addr, IValidatorManager.UpdateRewardConfigRequest({ commissionRate: newCommissionRate })
     );
 
     assertEq(manager.validatorInfo(val.addr).commissionRate, newCommissionRate);
   }
 
-  function _makeValKey(string memory name) internal returns (ValidatorKey memory) {
+  function _makePubKey(string memory name) internal returns (ValidatorKey memory) {
     (address addr, uint256 privKey) = makeAddrAndKey(name);
     Vm.Wallet memory wallet = vm.createWallet(privKey);
     bytes memory pubKey = abi.encodePacked(hex'04', wallet.publicKeyX, wallet.publicKeyY);

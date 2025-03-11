@@ -112,12 +112,12 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     for (uint256 i = 0; i < genesisValidators.length; i++) {
       GenesisValidatorSet memory genVal = genesisValidators[i];
 
-      address valAddr = genVal.valKey.deriveAddressFromCmpPubkey();
+      address valAddr = genVal.pubKey.deriveAddressFromCmpPubkey();
 
       _createValidator(
         $,
         valAddr,
-        genVal.valKey,
+        genVal.pubKey,
         genVal.value,
         CreateValidatorRequest({
           operator: genVal.operator,
@@ -152,6 +152,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
+  function validatorPubKeyToAddress(bytes calldata pubKey) external pure returns (address) {
+    return pubKey.deriveAddressFromCmpPubkey();
+  }
+
+  /// @inheritdoc IValidatorManager
   function validatorCount() external view returns (uint256) {
     return _getStorageV1().validatorCount;
   }
@@ -167,20 +172,9 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function isValidatorWithPubKey(bytes calldata valKey) external view returns (bool) {
-    return _getStorageV1().indexByValAddr[valKey.deriveAddressFromCmpPubkey()] != 0;
-  }
-
-  /// @inheritdoc IValidatorManager
   function validatorInfo(address valAddr) public view returns (ValidatorInfoResponse memory) {
     StorageV1 storage $ = _getStorageV1();
     return _validatorInfoAt($, valAddr, _epochFeeder.epoch());
-  }
-
-  /// @inheritdoc IValidatorManager
-  function validatorInfoWithPubKey(bytes calldata valKey) public view returns (ValidatorInfoResponse memory) {
-    StorageV1 storage $ = _getStorageV1();
-    return _validatorInfoAt($, valKey.deriveAddressFromCmpPubkey(), _epochFeeder.epoch());
   }
 
   /// @inheritdoc IValidatorManager
@@ -189,114 +183,102 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function validatorInfoAtWithPubKey(uint256 epoch, bytes calldata valKey)
-    public
-    view
-    returns (ValidatorInfoResponse memory)
-  {
-    return _validatorInfoAt(_getStorageV1(), valKey.deriveAddressFromCmpPubkey(), epoch);
-  }
-
-  /// @inheritdoc IValidatorManager
-  function createValidator(bytes calldata valKey, CreateValidatorRequest calldata request) external payable {
-    require(valKey.length > 0, StdError.InvalidParameter('valKey'));
+  function createValidator(bytes calldata pubKey, CreateValidatorRequest calldata request) external payable {
+    require(pubKey.length > 0, StdError.InvalidParameter('pubKey'));
 
     address valAddr = _msgSender();
 
-    // verify the valKey is valid and corresponds to the caller
-    valKey.verifyCmpPubkeyWithAddress(valAddr);
+    // verify the pubKey is valid and corresponds to the caller
+    pubKey.verifyCmpPubkeyWithAddress(valAddr);
 
     StorageV1 storage $ = _getStorageV1();
 
-    _createValidator($, valAddr, valKey, msg.value, request);
+    _createValidator($, valAddr, pubKey, msg.value, request);
 
-    _entrypoint.registerValidator{ value: msg.value }(valKey);
+    _entrypoint.registerValidator{ value: msg.value }(valAddr, pubKey);
   }
 
   /// @inheritdoc IValidatorManager
-  function depositCollateral(bytes calldata valKey) external payable {
+  function depositCollateral(address valAddr) external payable {
     require(msg.value > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
+    _validator($, valAddr); // ensure validator exists
 
-    _entrypoint.depositCollateral{ value: msg.value }(validator.pubKey);
+    _entrypoint.depositCollateral{ value: msg.value }(valAddr);
 
-    emit CollateralDeposited(validator.valAddr, msg.value);
+    emit CollateralDeposited(valAddr, msg.value);
   }
 
   /// @inheritdoc IValidatorManager
-  function withdrawCollateral(bytes calldata valKey, address recipient, uint256 amount) external {
+  function withdrawCollateral(address valAddr, address recipient, uint256 amount) external {
     require(amount > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
+    Validator storage validator = _validator($, valAddr);
     _assertOperator(validator);
 
     _entrypoint.withdrawCollateral(
-      validator.pubKey,
-      amount,
-      recipient,
-      Time.timestamp() + $.globalValidatorConfig.collateralWithdrawalDelay.toUint48()
+      valAddr, amount, recipient, Time.timestamp() + $.globalValidatorConfig.collateralWithdrawalDelay.toUint48()
     );
 
-    emit CollateralWithdrawn(validator.valAddr, amount);
+    emit CollateralWithdrawn(valAddr, amount);
   }
 
   /// @inheritdoc IValidatorManager
-  function unjailValidator(bytes calldata valKey) external {
+  function unjailValidator(address valAddr) external {
     StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
-    _assertOperator(validator);
+    Validator storage validator = _validator($, valAddr);
+    _assertOperatorOrValidator(validator);
 
-    _entrypoint.unjail(validator.pubKey);
+    _entrypoint.unjail(valAddr);
 
-    emit ValidatorUnjailed(validator.valAddr);
+    emit ValidatorUnjailed(valAddr);
   }
 
   /// @inheritdoc IValidatorManager
-  function updateOperator(bytes calldata valKey, address operator) external {
+  function updateOperator(address valAddr, address operator) external {
     require(operator != address(0), StdError.InvalidParameter('operator'));
 
     StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
+    Validator storage validator = _validator($, valAddr);
     _assertOperator(validator);
 
-    $.validators[$.indexByValAddr[validator.valAddr]].operator = operator;
+    $.validators[$.indexByValAddr[valAddr]].operator = operator;
 
-    emit OperatorUpdated(validator.valAddr, operator);
+    emit OperatorUpdated(valAddr, operator);
   }
 
   /// @inheritdoc IValidatorManager
-  function updateRewardRecipient(bytes calldata valKey, address rewardRecipient) external {
+  function updateRewardRecipient(address valAddr, address rewardRecipient) external {
     require(rewardRecipient != address(0), StdError.InvalidParameter('rewardRecipient'));
 
     StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
+    Validator storage validator = _validator($, valAddr);
     _assertOperator(validator);
 
-    $.validators[$.indexByValAddr[validator.valAddr]].rewardRecipient = rewardRecipient;
+    $.validators[$.indexByValAddr[valAddr]].rewardRecipient = rewardRecipient;
 
-    emit RewardRecipientUpdated(validator.valAddr, _msgSender(), rewardRecipient);
+    emit RewardRecipientUpdated(valAddr, _msgSender(), rewardRecipient);
   }
 
   /// @inheritdoc IValidatorManager
-  function updateMetadata(bytes calldata valKey, bytes calldata metadata) external {
+  function updateMetadata(address valAddr, bytes calldata metadata) external {
     require(metadata.length > 0, StdError.InvalidParameter('metadata'));
 
     StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
+    Validator storage validator = _validator($, valAddr);
     _assertOperator(validator);
 
-    $.validators[$.indexByValAddr[validator.valAddr]].metadata = metadata;
+    $.validators[$.indexByValAddr[valAddr]].metadata = metadata;
 
-    emit MetadataUpdated(validator.valAddr, _msgSender(), metadata);
+    emit MetadataUpdated(valAddr, _msgSender(), metadata);
   }
 
   /// @inheritdoc IValidatorManager
-  function updateRewardConfig(bytes calldata valKey, UpdateRewardConfigRequest calldata request) external {
+  function updateRewardConfig(address valAddr, UpdateRewardConfigRequest calldata request) external {
     StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valKey.deriveAddressFromCmpPubkey());
+    Validator storage validator = _validator($, valAddr);
     _assertOperator(validator);
 
     GlobalValidatorConfig storage globalConfig = $.globalValidatorConfig;
@@ -325,7 +307,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     validator.rewardConfig.pendingCommissionRate = request.commissionRate;
     validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate;
 
-    emit RewardConfigUpdated(validator.valAddr, _msgSender());
+    emit RewardConfigUpdated(valAddr, _msgSender());
   }
 
   /// @inheritdoc IValidatorManager
@@ -345,8 +327,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     uint256 commissionRate = info.rewardConfig.commissionRates.lowerLookup(epoch.toUint96());
 
     ValidatorInfoResponse memory response = ValidatorInfoResponse({
-      valKey: info.pubKey,
       valAddr: info.valAddr,
+      pubKey: info.pubKey,
       operator: info.operator,
       rewardRecipient: info.rewardRecipient,
       commissionRate: commissionRate,
@@ -392,7 +374,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   function _createValidator(
     StorageV1 storage $,
     address valAddr,
-    bytes memory valKey,
+    bytes memory pubKey,
     uint256 value,
     CreateValidatorRequest memory request
   ) internal {
@@ -416,13 +398,13 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     validator.valAddr = valAddr;
     validator.operator = request.operator;
     validator.rewardRecipient = valAddr;
-    validator.pubKey = valKey;
+    validator.pubKey = pubKey;
     validator.rewardConfig.commissionRates.push(epoch.toUint96(), request.commissionRate.toUint160());
     validator.metadata = request.metadata;
 
     $.indexByValAddr[valAddr] = valIndex;
 
-    emit ValidatorCreated(valAddr, request.operator, valKey);
+    emit ValidatorCreated(valAddr, request.operator, pubKey);
   }
 
   function _assertValidatorExists(StorageV1 storage $, address valAddr) internal view {
@@ -435,6 +417,10 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   function _assertOperator(Validator storage validator) internal view {
     require(validator.operator == _msgSender(), StdError.Unauthorized());
+  }
+
+  function _assertOperatorOrValidator(Validator storage validator) internal view {
+    require(validator.operator == _msgSender() || validator.valAddr == _msgSender(), StdError.Unauthorized());
   }
 
   // ========== UUPS ========== //
