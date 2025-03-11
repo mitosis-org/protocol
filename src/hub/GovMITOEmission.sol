@@ -20,8 +20,8 @@ contract GovMITOEmissionStorageV1 {
 
   struct ValidatorRewardEmission {
     uint256 rps;
-    uint160 deductionRate; // 10000 = 100%
-    uint48 deductionPeriod;
+    uint160 rateMultiplier; // 10000 = 100%
+    uint48 renewalPeriod;
     uint48 timestamp;
   }
 
@@ -55,7 +55,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
   using SafeERC20 for IGovMITO;
   using SafeCast for uint256;
 
-  uint256 public constant DEDUCTION_RATE_DENOMINATOR = 10000;
+  uint256 public constant RATE_DENOMINATOR = 10000;
 
   IGovMITO private immutable _govMITO;
   IEpochFeeder private immutable _epochFeeder;
@@ -79,7 +79,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
 
     StorageV1 storage $ = _getStorageV1();
 
-    _configureValidatorRewardEmission($, config.rps, config.deductionRate, config.deductionPeriod, config.startsFrom);
+    _configureValidatorRewardEmission($, config.rps, config.rateMultiplier, config.renewalPeriod, config.startsFrom);
 
     $.validatorReward.total = config.total;
     $.validatorReward.spent = 0;
@@ -122,7 +122,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
   /// @inheritdoc IGovMITOEmission
   function validatorRewardEmissionsByIndex(uint256 index) external view returns (uint256, uint160, uint48) {
     ValidatorRewardEmission memory emission = _getStorageV1().validatorReward.emissions[index];
-    return (emission.rps, emission.deductionRate, emission.deductionPeriod);
+    return (emission.rps, emission.rateMultiplier, emission.renewalPeriod);
   }
 
   /// @inheritdoc IGovMITOEmission
@@ -133,19 +133,19 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     ValidatorRewardEmission memory emission = _getStorageV1().validatorReward.emissions[index];
 
     uint256 rps = emission.rps;
-    uint160 deductionRate = emission.deductionRate;
-    uint48 deductionPeriod = emission.deductionPeriod;
+    uint160 rateMultiplier = emission.rateMultiplier;
+    uint48 renewalPeriod = emission.renewalPeriod;
 
     uint48 lastDeducted = emission.timestamp;
     uint48 endTime = Time.timestamp();
 
     while (lastDeducted < endTime) {
-      uint48 nextDeduction = lastDeducted + deductionPeriod;
-      rps = Math.mulDiv(rps, DEDUCTION_RATE_DENOMINATOR - deductionRate, DEDUCTION_RATE_DENOMINATOR);
+      uint48 nextDeduction = lastDeducted + renewalPeriod;
+      rps = Math.mulDiv(rps, rateMultiplier, RATE_DENOMINATOR);
       lastDeducted = nextDeduction;
     }
 
-    return (rps, deductionRate, deductionPeriod);
+    return (rps, rateMultiplier, renewalPeriod);
   }
 
   /// @inheritdoc IGovMITOEmission
@@ -180,27 +180,22 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
   }
 
   /// @inheritdoc IGovMITOEmission
-  function configureValidatorRewardEmission(
-    uint256 rps,
-    uint160 deductionRate,
-    uint48 deductionPeriod,
-    uint48 applyFrom
-  ) external onlyOwner {
-    _configureValidatorRewardEmission(_getStorageV1(), rps, deductionRate, deductionPeriod, applyFrom);
+  function configureValidatorRewardEmission(uint256 rps, uint160 rateMultiplier, uint48 renewalPeriod, uint48 applyFrom)
+    external
+    onlyOwner
+  {
+    _configureValidatorRewardEmission(_getStorageV1(), rps, rateMultiplier, renewalPeriod, applyFrom);
   }
 
   function _configureValidatorRewardEmission(
     StorageV1 storage $,
     uint256 rps,
-    uint160 deductionRate,
-    uint48 deductionPeriod,
+    uint160 rateMultiplier,
+    uint48 renewalPeriod,
     uint48 timestamp
   ) internal {
     uint48 now_ = Time.timestamp();
 
-    require(rps > 0, StdError.InvalidParameter('rps'));
-    require(deductionRate <= DEDUCTION_RATE_DENOMINATOR, StdError.InvalidParameter('deductionRate'));
-    require(deductionPeriod > 0, StdError.InvalidParameter('deductionPeriod'));
     require(now_ <= timestamp, StdError.InvalidParameter('timestamp'));
     require(
       $.validatorReward.emissions.length == 0 || timestamp > _latest($.validatorReward.emissions).timestamp,
@@ -210,31 +205,34 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     $.validatorReward.emissions.push(
       ValidatorRewardEmission({
         rps: rps,
-        deductionRate: deductionRate,
-        deductionPeriod: deductionPeriod,
+        rateMultiplier: rateMultiplier,
+        renewalPeriod: renewalPeriod,
         timestamp: timestamp
       })
     );
 
-    emit ValidatorRewardEmissionConfigured(rps, deductionRate, deductionPeriod, timestamp);
+    emit ValidatorRewardEmissionConfigured(rps, rateMultiplier, renewalPeriod, timestamp);
   }
 
   function _calcRewardForPeriod(
     uint256 rps,
-    uint256 deductionRate,
-    uint48 deductionPeriod,
+    uint256 rateMultiplier,
+    uint48 renewalPeriod,
     uint48 lastDeducted,
     uint48 lastUpdated,
     uint48 endTime
   ) internal pure returns (uint256 reward) {
+    if (rps == 0) return 0;
+    if (renewalPeriod == 0) return rps * (endTime - lastUpdated);
+
     while (lastDeducted < endTime) {
-      uint48 nextDeduction = lastDeducted + deductionPeriod;
+      uint48 nextDeduction = lastDeducted + renewalPeriod;
       if (lastUpdated < nextDeduction) {
         uint48 rewardEndTime = Math.min(endTime, nextDeduction).toUint48();
         reward += rps * (rewardEndTime - lastUpdated);
         lastUpdated = rewardEndTime;
       }
-      rps = Math.mulDiv(rps, DEDUCTION_RATE_DENOMINATOR - deductionRate, DEDUCTION_RATE_DENOMINATOR);
+      rps = Math.mulDiv(rps, rateMultiplier, RATE_DENOMINATOR);
       lastDeducted = nextDeduction;
     }
   }
@@ -261,8 +259,8 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
 
       reward += _calcRewardForPeriod(
         activeLog.rps,
-        activeLog.deductionRate,
-        activeLog.deductionPeriod,
+        activeLog.rateMultiplier,
+        activeLog.renewalPeriod,
         activeLog.timestamp,
         startTime,
         nextLog.timestamp
@@ -274,8 +272,8 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
 
     reward += _calcRewardForPeriod(
       activeLog.rps, //
-      activeLog.deductionRate,
-      activeLog.deductionPeriod,
+      activeLog.rateMultiplier,
+      activeLog.renewalPeriod,
       activeLog.timestamp,
       startTime,
       epochEndTime

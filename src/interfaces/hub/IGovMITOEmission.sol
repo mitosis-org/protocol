@@ -8,16 +8,16 @@ interface IGovMITOEmission {
   struct ValidatorRewardConfig {
     uint256 rps;
     uint256 total;
-    uint160 deductionRate; // 10000 = 100%
-    uint48 deductionPeriod;
+    uint160 rateMultiplier; // 10000 = 100%
+    uint48 renewalPeriod;
     uint48 startsFrom;
     address recipient;
   }
 
   struct ConfigureValidatorRewardEmissionRequest {
     uint256 rps;
-    uint160 deductionRate;
-    uint48 deductionPeriod;
+    uint160 rateMultiplier;
+    uint48 renewalPeriod;
   }
 
   error NotEnoughBalance();
@@ -25,7 +25,7 @@ interface IGovMITOEmission {
 
   event ValidatorRewardRequested(uint256 indexed epoch, uint256 amount);
   event ValidatorRewardEmissionAdded(uint256 amount);
-  event ValidatorRewardEmissionConfigured(uint256 rps, uint160 deductionRate, uint48 deductionPeriod, uint48 timestamp);
+  event ValidatorRewardEmissionConfigured(uint256 rps, uint160 rateMultiplier, uint48 renewalPeriod, uint48 timestamp);
 
   /**
    * @notice Returns the GovMITO token contract
@@ -66,7 +66,7 @@ interface IGovMITOEmission {
   function validatorRewardEmissionsByIndex(uint256 index)
     external
     view
-    returns (uint256 rps, uint160 deductionRate, uint48 deductionPeriod);
+    returns (uint256 rps, uint160 rateMultiplier, uint48 renewalPeriod);
 
   /**
    * @notice Returns the validator reward emission at the given timestamp
@@ -75,7 +75,7 @@ interface IGovMITOEmission {
   function validatorRewardEmissionsByTime(uint48 timestamp)
     external
     view
-    returns (uint256 rps, uint160 deductionRate, uint48 deductionPeriod);
+    returns (uint256 rps, uint160 rateMultiplier, uint48 renewalPeriod);
 
   /**
    * @notice Returns the validator reward recipient
@@ -98,14 +98,10 @@ interface IGovMITOEmission {
   /**
    * @notice Configures the validator reward emission
    * @param rps The rate of gMITO tokens to emit per second
-   * @param deductionRate The rate of gMITO tokens to deduct per second
-   * @param deductionPeriod The period of time to deduct the gMITO tokens
+   * @param rateMultiplier The rate of gMITO tokens to deduct per second
+   * @param renewalPeriod The period of time to deduct the gMITO tokens
    * @param applyFrom The timestamp to apply the emission from
    */
-  function configureValidatorRewardEmission(
-    uint256 rps,
-    uint160 deductionRate,
-    uint48 deductionPeriod,
-    uint48 applyFrom
-  ) external;
+  function configureValidatorRewardEmission(uint256 rps, uint160 rateMultiplier, uint48 renewalPeriod, uint48 applyFrom)
+    external;
 }
