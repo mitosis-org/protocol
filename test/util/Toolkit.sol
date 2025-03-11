@@ -41,6 +41,10 @@ contract Toolkit is Test {
     return address(new ERC1967Proxy(impl, data));
   }
 
+  function _proxy(address impl, bytes memory data, uint256 value) internal returns (address) {
+    return address(new ERC1967Proxy{ value: value }(impl, data));
+  }
+
   // time
 
   function _now() internal view returns (uint256) {
