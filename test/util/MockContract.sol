@@ -13,20 +13,21 @@ contract MockContract {
     bytes data;
   }
 
-  mapping(bytes4 => bool) public isStaticCall;
-  mapping(bytes4 => Ret) public rets;
+  mapping(bytes4 => bool) public isCall;
+  mapping(bytes => Ret) public rets;
+
   mapping(bytes4 => uint256) public calls;
   mapping(bytes4 => Log[]) public callLogs;
 
   receive() external payable { }
 
   fallback() external payable {
-    if (!isStaticCall[msg.sig]) {
+    if (isCall[msg.sig]) {
       calls[msg.sig]++;
       callLogs[msg.sig].push(Log({ sig: msg.sig, args: msg.data[4:], value: msg.value }));
     }
 
-    Ret memory ret = rets[msg.sig];
+    Ret memory ret = rets[msg.data];
     bytes memory data = ret.data;
     if (ret.revert_) {
       assembly {
@@ -41,17 +42,18 @@ contract MockContract {
 
   /// @notice Sets a return value for a function call
   /// @param sig The function selector
-  /// @param revert_ Whether the function should revert
-  /// @param data The return data - this will be revertdata if revert_ is true
-  function setRet(bytes4 sig, bool revert_, bytes memory data) external {
-    rets[sig] = Ret({ revert_: revert_, data: data });
+  /// @param data The calldata for the function call
+  /// @param revert_ Whether the function call should revert
+  /// @param returnData The return data to be used if the call does not revert
+  function setRet(bytes4 sig, bytes memory data, bool revert_, bytes memory returnData) external {
+    rets[abi.encodePacked(sig, data)] = Ret({ revert_: revert_, data: returnData });
   }
 
   /// @notice Sets whether a function call is static
   /// @param sig The function selector
   /// @param isStatic Whether the function call is static
   function setStatic(bytes4 sig, bool isStatic) external {
-    isStaticCall[sig] = isStatic;
+    isCall[sig] = !isStatic;
   }
 
   function lastCallLog(bytes4 sig) external view returns (Log memory) {
