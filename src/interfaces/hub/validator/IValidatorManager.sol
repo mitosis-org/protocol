@@ -31,6 +31,7 @@ interface IValidatorManager {
     address valAddr;
     bytes pubKey;
     address operator;
+    address withdrawalRecipient;
     address rewardRecipient;
     uint256 commissionRate;
     bytes metadata;
@@ -46,6 +47,8 @@ interface IValidatorManager {
 
   struct CreateValidatorRequest {
     address operator;
+    address withdrawalRecipient;
+    address rewardRecipient;
     uint256 commissionRate; // bp ex) 10000 = 100%
     bytes metadata;
   }
@@ -57,6 +60,8 @@ interface IValidatorManager {
   struct GenesisValidatorSet {
     bytes pubKey;
     address operator;
+    address withdrawalRecipient;
+    address rewardRecipient;
     uint256 commissionRate;
     bytes metadata;
     bytes signature;
@@ -75,6 +80,9 @@ interface IValidatorManager {
   event CollateralWithdrawn(address indexed valAddr, uint256 amount);
   event ValidatorUnjailed(address indexed valAddr);
   event OperatorUpdated(address indexed valAddr, address indexed operator);
+  event WithdrawalRecipientUpdated(
+    address indexed valAddr, address indexed operator, address indexed withdrawalRecipient
+  );
   event RewardRecipientUpdated(address indexed valAddr, address indexed operator, address indexed rewardRecipient);
   event MetadataUpdated(address indexed valAddr, address indexed operator, bytes metadata);
   event RewardConfigUpdated(address indexed valAddr, address indexed operator);
@@ -109,10 +117,11 @@ interface IValidatorManager {
 
   // operator actions
   function depositCollateral(address valAddr) external payable;
-  function withdrawCollateral(address valAddr, address recipient, uint256 amount) external;
+  function withdrawCollateral(address valAddr, uint256 amount) external;
 
   // operator actions - validator configurations
   function updateOperator(address valAddr, address operator) external;
+  function updateWithdrawalRecipient(address valAddr, address withdrawalRecipient) external;
   function updateRewardRecipient(address valAddr, address rewardRecipient) external;
   function updateMetadata(address valAddr, bytes calldata metadata) external;
   function updateRewardConfig(address valAddr, UpdateRewardConfigRequest calldata request) external;
