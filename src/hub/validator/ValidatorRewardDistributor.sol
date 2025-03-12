@@ -231,11 +231,11 @@ contract ValidatorRewardDistributor is
     return (totalOperatorReward, end);
   }
 
-  function _claimStakerRewards(StorageV1 storage $, address staker, address valAddr, address claimer)
+  function _claimStakerRewards(StorageV1 storage $, address staker, address valAddr, address recipient)
     internal
     returns (uint256)
   {
-    _assertStakerClaimApproval($, staker, valAddr, claimer);
+    _assertStakerClaimApproval($, staker, valAddr, recipient);
 
     (uint256 start, uint256 end) = _claimRange($.staker[staker][valAddr], _epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
     if (start == end) return 0;
@@ -247,19 +247,19 @@ contract ValidatorRewardDistributor is
       uint256 claimable = _calculateStakerRewardForEpoch(valAddr, staker, epoch);
 
       // NOTE(eddy): reentrancy guard?
-      if (claimable > 0) _govMITOEmission.requestValidatorReward(epoch.toUint96(), claimer, claimable);
+      if (claimable > 0) _govMITOEmission.requestValidatorReward(epoch.toUint96(), recipient, claimable);
 
       totalClaimed += claimable;
     }
 
     $.staker[staker][valAddr] = end;
-    emit StakerRewardsClaimed(staker, valAddr, claimer, totalClaimed, start, end);
+    emit StakerRewardsClaimed(staker, valAddr, recipient, totalClaimed, start, end);
 
     return totalClaimed;
   }
 
-  function _claimOperatorRewards(StorageV1 storage $, address valAddr, address claimer) internal returns (uint256) {
-    _assertOperatorClaimApproval($, _validatorManager.validatorInfo(valAddr).rewardManager, valAddr, claimer);
+  function _claimOperatorRewards(StorageV1 storage $, address valAddr, address recipient) internal returns (uint256) {
+    _assertOperatorClaimApproval($, _validatorManager.validatorInfo(valAddr).rewardManager, valAddr, recipient);
 
     (uint256 start, uint256 end) = _claimRange($.operator[valAddr], _epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
     if (start == end) return 0;
@@ -271,13 +271,13 @@ contract ValidatorRewardDistributor is
       (uint256 claimable,) = _rewardForEpoch(valAddr, epoch);
 
       // NOTE(eddy): reentrancy guard?
-      if (claimable > 0) _govMITOEmission.requestValidatorReward(epoch.toUint96(), claimer, claimable);
+      if (claimable > 0) _govMITOEmission.requestValidatorReward(epoch.toUint96(), recipient, claimable);
 
       totalClaimed += claimable;
     }
 
     $.operator[valAddr] = end;
-    emit OperatorRewardsClaimed(valAddr, claimer, totalClaimed, start, end);
+    emit OperatorRewardsClaimed(valAddr, recipient, totalClaimed, start, end);
 
     return totalClaimed;
   }
@@ -343,18 +343,18 @@ contract ValidatorRewardDistributor is
     return ((totalReward - stakerReward) + commission, stakerReward - commission);
   }
 
-  function _assertStakerClaimApproval(StorageV1 storage $, address account, address valAddr, address claimer)
+  function _assertStakerClaimApproval(StorageV1 storage $, address account, address valAddr, address recipient)
     internal
     view
   {
-    require($.stakerClaimApprovals[account][valAddr][claimer], StdError.Unauthorized());
+    require($.stakerClaimApprovals[account][valAddr][recipient], StdError.Unauthorized());
   }
 
-  function _assertOperatorClaimApproval(StorageV1 storage $, address account, address valAddr, address claimer)
+  function _assertOperatorClaimApproval(StorageV1 storage $, address account, address valAddr, address recipient)
     internal
     view
   {
-    require($.operatorClaimApprovals[account][valAddr][claimer], StdError.Unauthorized());
+    require($.operatorClaimApprovals[account][valAddr][recipient], StdError.Unauthorized());
   }
 
   // ====================== UUPS ======================
