@@ -41,10 +41,33 @@ interface IGovMITO is IERC20, IERC5805 {
   event WhiltelistedSenderSet(address indexed sender, bool whitelisted);
 
   /**
+   * @notice Emitted when a proxy is set.
+   * @param sender The address of the sender
+   * @param isProxied Whether the sender is a proxy
+   */
+  event SetProxy(address indexed sender, bool isProxied);
+
+  /**
    * @notice Emitted when the redeem period is set.
    * @param redeemPeriod The new redeem period
    */
   event RedeemPeriodSet(uint256 redeemPeriod);
+
+  /**
+   * @notice Emitted when a proxied deposit is notified.
+   * @param notifier The address that notified the contract
+   * @param sender The address of the sender
+   * @param amount The amount of tokens deposited
+   */
+  event ProxiedDepositNotified(address indexed notifier, address indexed sender, uint256 amount);
+
+  /**
+   * @notice Emitted when a proxied withdraw is notified.
+   * @param notifier The address that notified the contract
+   * @param sender The address of the sender
+   * @param amount The amount of tokens withdrawn
+   */
+  event ProxiedWithdrawNotified(address indexed notifier, address indexed sender, uint256 amount);
 
   /**
    * @notice Mint tokens to an address with corresponding MITO.
@@ -69,4 +92,18 @@ interface IGovMITO is IERC20, IERC5805 {
    * @return claimed The amount of assets claimed
    */
   function claimRedeem(address receiver) external returns (uint256 claimed);
+
+  /**
+   * @notice Notify the contract that a proxied sender has deposited tokens.
+   * @param sender The address of the sender
+   * @param amount The amount of tokens deposited
+   */
+  function notifyProxiedDeposit(address sender, uint256 amount) external;
+
+  /**
+   * @notice Notify the contract that a proxied sender has withdrawn tokens.
+   * @param sender The address of the sender
+   * @param amount The amount of tokens withdrawn
+   */
+  function notifyProxiedWithdraw(address sender, uint256 amount) external;
 }
