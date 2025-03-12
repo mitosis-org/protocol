@@ -13,10 +13,21 @@ import { IValidatorStakingHub } from './IValidatorStakingHub.sol';
 
 interface IValidatorRewardDistributor {
   // Events
-  event RewardsReported(address indexed valAddr, uint256 amount, uint256 epoch);
-  event RewardsClaimed(
-    address indexed staker, address indexed valAddr, uint256 amount, uint256 fromEpoch, uint256 toEpoch
+  event StakerRewardsClaimed(
+    address indexed staker,
+    address indexed valAddr,
+    address indexed recipient,
+    uint256 amount,
+    uint256 fromEpoch,
+    uint256 toEpoch
   );
+  event OperatorRewardsClaimed(
+    address indexed valAddr, address indexed recipient, uint256 amount, uint256 fromEpoch, uint256 toEpoch
+  );
+
+  event StakerRewardClaimApprovalUpdated(address account, address valAddr, address claimer, bool approval);
+  event OperatorRewardClaimApprovalUpdated(address account, address valAddr, address claimer, bool approval);
+
   event EpochFeederSet(address indexed epochFeeder);
   event ValidatorManagerSet(address indexed validatorManager);
 
@@ -41,6 +52,12 @@ interface IValidatorRewardDistributor {
   /// @notice Returns the gov MITO emission contract
   function govMITOEmission() external view returns (IGovMITOEmission);
 
+  /// @notice Checks if the claimer can claim staker rewards for the validator on behalf of the account
+  function stakerClaimAllowed(address account, address valAddr, address claimer) external view returns (bool);
+
+  /// @notice Checks if the claimer can claim operator rewards for the validator on behalf of the account
+  function operatorClaimAllowed(address account, address valAddr, address claimer) external view returns (bool);
+
   /// @notice Returns the last claimed staker rewards epoch for a validator
   /// @param staker The staker address to check rewards for
   /// @param valAddr The validator address to check rewards for
@@ -64,6 +81,18 @@ interface IValidatorRewardDistributor {
   /// @return amount The total amount of rewards that can be claimed
   /// @return nextEpoch The next epoch to claim rewards from
   function claimableOperatorRewards(address valAddr) external view returns (uint256, uint256);
+
+  /// @notice Sets the approval status for an operator to claim rewards on behalf of msg.sender.
+  /// @param valAddr The address of the target validator
+  /// @param claimer The address to be approved
+  /// @param approval A boolean indicating whether the claim is approved or not
+  function setStakerClaimApprovalStatus(address valAddr, address claimer, bool approval) external;
+
+  /// @notice Sets the approval status for an operator to claim rewards
+  /// @param valAddr The address of the target validator
+  /// @param claimer The address to be approved
+  /// @param approval A boolean indicating whether the claim is approved or not
+  function setOperatorClaimApprovalStatus(address valAddr, address claimer, bool approval) external;
 
   /// @notice Claims rewards for multiple validators over a range of epochs
   /// @param staker The staker address to claim rewards for
