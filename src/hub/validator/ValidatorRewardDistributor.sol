@@ -235,7 +235,7 @@ contract ValidatorRewardDistributor is
     internal
     returns (uint256)
   {
-    _assertStakerClaimApproval($, staker, valAddr, recipient);
+    _assertClaimApproval(staker, valAddr, recipient, $.stakerClaimApprovals);
 
     (uint256 start, uint256 end) = _claimRange($.staker[staker][valAddr], _epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
     if (start == end) return 0;
@@ -259,7 +259,9 @@ contract ValidatorRewardDistributor is
   }
 
   function _claimOperatorRewards(StorageV1 storage $, address valAddr, address recipient) internal returns (uint256) {
-    _assertOperatorClaimApproval($, _validatorManager.validatorInfo(valAddr).rewardManager, valAddr, recipient);
+    _assertClaimApproval(
+      _validatorManager.validatorInfo(valAddr).rewardManager, valAddr, recipient, $.operatorClaimApprovals
+    );
 
     (uint256 start, uint256 end) = _claimRange($.operator[valAddr], _epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
     if (start == end) return 0;
@@ -343,18 +345,13 @@ contract ValidatorRewardDistributor is
     return ((totalReward - stakerReward) + commission, stakerReward - commission);
   }
 
-  function _assertStakerClaimApproval(StorageV1 storage $, address account, address valAddr, address recipient)
-    internal
-    view
-  {
-    require($.stakerClaimApprovals[account][valAddr][recipient], StdError.Unauthorized());
-  }
-
-  function _assertOperatorClaimApproval(StorageV1 storage $, address account, address valAddr, address recipient)
-    internal
-    view
-  {
-    require($.operatorClaimApprovals[account][valAddr][recipient], StdError.Unauthorized());
+  function _assertClaimApproval(
+    address account,
+    address valAddr,
+    address recipient,
+    mapping(address account => mapping(address valAddr => mapping(address claimer => bool))) storage claimApprovals
+  ) internal view {
+    require(claimApprovals[account][valAddr][recipient], StdError.Unauthorized());
   }
 
   // ====================== UUPS ======================
