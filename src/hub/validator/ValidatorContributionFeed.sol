@@ -171,7 +171,7 @@ contract ValidatorContributionFeed is
       require(index == 0, IValidatorContributionFeed__InvalidWeightAddress());
 
       reward.weights.push(weight);
-      reward.weightByValAddr[weight.addr] = i;
+      reward.weightByValAddr[weight.addr] = i + 1;
       checker.totalWeight += weight.weight;
     }
 
