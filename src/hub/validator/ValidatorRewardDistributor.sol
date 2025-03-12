@@ -250,6 +250,7 @@ contract ValidatorRewardDistributor is
 
     $.staker[staker][valAddr] = end;
     emit StakerRewardsClaimed(staker, valAddr, claimer, totalClaimed, start, end);
+
     return totalClaimed;
   }
 
@@ -273,6 +274,7 @@ contract ValidatorRewardDistributor is
 
     $.operator[valAddr] = end;
     emit OperatorRewardsClaimed(valAddr, claimer, totalClaimed, start, end);
+
     return totalClaimed;
   }
 
