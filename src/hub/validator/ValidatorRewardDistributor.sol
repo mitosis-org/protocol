@@ -114,10 +114,12 @@ contract ValidatorRewardDistributor is
     return _govMITOEmission;
   }
 
+  /// @inheritdoc IValidatorRewardDistributor
   function stakerClaimAllowed(address account, address valAddr, address claimer) external view returns (bool) {
     return _getStorageV1().stakerClaimApprovals[account][valAddr][claimer];
   }
 
+  /// @inheritdoc IValidatorRewardDistributor
   function operatorClaimAllowed(address account, address valAddr, address claimer) external view returns (bool) {
     return _getStorageV1().operatorClaimApprovals[account][valAddr][claimer];
   }
@@ -142,11 +144,13 @@ contract ValidatorRewardDistributor is
     return _claimableOperatorRewards(_getStorageV1(), valAddr, MAX_CLAIM_EPOCHS);
   }
 
+  /// @inheritdoc IValidatorRewardDistributor
   function setStakerClaimApprovalStatus(address valAddr, address claimer, bool approval) external {
     _getStorageV1().stakerClaimApprovals[_msgSender()][valAddr][claimer] = approval;
     emit StakerRewardClaimApprovalUpdated(_msgSender(), valAddr, claimer, approval);
   }
 
+  /// @inheritdoc IValidatorRewardDistributor
   function setOperatorClaimApprovalStatus(address valAddr, address claimer, bool approval) external {
     _getStorageV1().operatorClaimApprovals[_msgSender()][valAddr][claimer] = approval;
     emit OperatorRewardClaimApprovalUpdated(_msgSender(), valAddr, claimer, approval);
