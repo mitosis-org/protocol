@@ -349,7 +349,7 @@ contract ValidatorRewardDistributor is
     address account,
     address valAddr,
     address recipient,
-    mapping(address account => mapping(address valAddr => mapping(address claimer => bool))) storage claimApprovals
+    mapping(address => mapping(address => mapping(address => bool))) storage claimApprovals
   ) internal view {
     require(claimApprovals[account][valAddr][recipient], StdError.Unauthorized());
   }
