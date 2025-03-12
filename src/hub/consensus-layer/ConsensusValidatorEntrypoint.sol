@@ -81,7 +81,7 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  function registerValidator(address valAddr, bytes calldata pubKey, address collateralReturnAddr)
+  function registerValidator(address valAddr, bytes calldata pubKey, address collateralRefundAddr)
     external
     payable
     onlyPermittedCaller
@@ -92,16 +92,16 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
 
     payable(address(0)).transfer(msg.value);
 
-    emit MsgRegisterValidator(valAddr, pubKey, msg.value / 1 gwei, collateralReturnAddr);
+    emit MsgRegisterValidator(valAddr, pubKey, msg.value / 1 gwei, collateralRefundAddr);
   }
 
-  function depositCollateral(address valAddr, address collateralReturnAddr) external payable onlyPermittedCaller {
+  function depositCollateral(address valAddr, address collateralRefundAddr) external payable onlyPermittedCaller {
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
     require(msg.value % 1 gwei == 0, StdError.InvalidParameter('msg.value'));
 
     payable(address(0)).transfer(msg.value);
 
-    emit MsgDepositCollateral(valAddr, msg.value / 1 gwei, collateralReturnAddr);
+    emit MsgDepositCollateral(valAddr, msg.value / 1 gwei, collateralRefundAddr);
   }
 
   function withdrawCollateral(address valAddr, uint256 amount, address receiver, uint48 maturesAt)
