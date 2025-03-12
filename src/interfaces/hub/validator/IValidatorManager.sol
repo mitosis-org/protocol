@@ -31,7 +31,7 @@ interface IValidatorManager {
     address valAddr;
     bytes pubKey;
     address operator;
-    address rewardRecipient;
+    address rewardManager;
     uint256 commissionRate;
     bytes metadata;
   }
@@ -75,7 +75,7 @@ interface IValidatorManager {
   event CollateralWithdrawn(address indexed valAddr, uint256 amount);
   event ValidatorUnjailed(address indexed valAddr);
   event OperatorUpdated(address indexed valAddr, address indexed operator);
-  event RewardRecipientUpdated(address indexed valAddr, address indexed operator, address indexed rewardRecipient);
+  event RewardManagerUpdated(address indexed valAddr, address indexed operator, address indexed rewardManager);
   event MetadataUpdated(address indexed valAddr, address indexed operator, bytes metadata);
   event RewardConfigUpdated(address indexed valAddr, address indexed operator);
 
@@ -113,7 +113,7 @@ interface IValidatorManager {
 
   // operator actions - validator configurations
   function updateOperator(address valAddr, address operator) external;
-  function updateRewardRecipient(address valAddr, address rewardRecipient) external;
+  function updateRewardManager(address valAddr, address rewardManager) external;
   function updateMetadata(address valAddr, bytes calldata metadata) external;
   function updateRewardConfig(address valAddr, UpdateRewardConfigRequest calldata request) external;
 

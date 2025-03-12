@@ -42,7 +42,7 @@ contract ValidatorManagerStorageV1 {
   struct Validator {
     address valAddr;
     address operator;
-    address rewardRecipient;
+    address rewardManager;
     bytes pubKey;
     ValidatorRewardConfig rewardConfig;
     // TBD: Metadata format
@@ -250,16 +250,16 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function updateRewardRecipient(address valAddr, address rewardRecipient) external {
-    require(rewardRecipient != address(0), StdError.InvalidParameter('rewardRecipient'));
+  function updateRewardManager(address valAddr, address rewardManager) external {
+    require(rewardManager != address(0), StdError.InvalidParameter('rewardManager'));
 
     StorageV1 storage $ = _getStorageV1();
     Validator storage validator = _validator($, valAddr);
     _assertOperator(validator);
 
-    $.validators[$.indexByValAddr[valAddr]].rewardRecipient = rewardRecipient;
+    $.validators[$.indexByValAddr[valAddr]].rewardManager = rewardManager;
 
-    emit RewardRecipientUpdated(valAddr, _msgSender(), rewardRecipient);
+    emit RewardManagerUpdated(valAddr, _msgSender(), rewardManager);
   }
 
   /// @inheritdoc IValidatorManager
@@ -330,7 +330,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       valAddr: info.valAddr,
       pubKey: info.pubKey,
       operator: info.operator,
-      rewardRecipient: info.rewardRecipient,
+      rewardManager: info.rewardManager,
       commissionRate: commissionRate,
       metadata: info.metadata
     });
@@ -397,7 +397,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     Validator storage validator = $.validators[valIndex];
     validator.valAddr = valAddr;
     validator.operator = request.operator;
-    validator.rewardRecipient = valAddr;
+    validator.rewardManager = valAddr;
     validator.pubKey = pubKey;
     validator.rewardConfig.commissionRates.push(epoch.toUint96(), request.commissionRate.toUint160());
     validator.metadata = request.metadata;
