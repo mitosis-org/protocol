@@ -28,9 +28,6 @@ interface IValidatorRewardDistributor {
   event StakerRewardClaimApprovalUpdated(address account, address valAddr, address claimer, bool approval);
   event OperatorRewardClaimApprovalUpdated(address account, address valAddr, address claimer, bool approval);
 
-  event EpochFeederSet(address indexed epochFeeder);
-  event ValidatorManagerSet(address indexed validatorManager);
-
   // Custom errors
   error IValidatorRewardDistributor__NotValidator();
   error IValidatorRewardDistributor__ArrayLengthMismatch();
