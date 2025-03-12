@@ -86,27 +86,27 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorStaking
-  function baseAsset() external view returns (address) {
+  function baseAsset() public view returns (address) {
     return _baseAsset;
   }
 
   /// @inheritdoc IValidatorStaking
-  function epochFeeder() external view returns (IEpochFeeder) {
+  function epochFeeder() public view returns (IEpochFeeder) {
     return _epochFeeder;
   }
 
   /// @inheritdoc IValidatorStaking
-  function manager() external view returns (IValidatorManager) {
+  function manager() public view returns (IValidatorManager) {
     return _manager;
   }
 
   /// @inheritdoc IValidatorStaking
-  function hub() external view returns (IValidatorStakingHub) {
+  function hub() public view returns (IValidatorStakingHub) {
     return _hub;
   }
 
   /// @inheritdoc IValidatorStaking
-  function entrypoint() external view returns (IConsensusValidatorEntrypoint) {
+  function entrypoint() public view returns (IConsensusValidatorEntrypoint) {
     return _entrypoint;
   }
 
@@ -156,7 +156,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorStaking
-  function stake(address valAddr, address recipient, uint256 amount) external payable {
+  function stake(address valAddr, address recipient, uint256 amount) public payable virtual {
     require(amount > 0, StdError.ZeroAmount());
 
     require(_baseAsset != NATIVE_TOKEN || msg.value == amount, StdError.InvalidParameter('amount'));
@@ -173,7 +173,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorStaking
-  function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256) {
+  function requestUnstake(address valAddr, address receiver, uint256 amount) public virtual returns (uint256) {
     require(amount > 0, StdError.ZeroAmount());
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
 
@@ -197,7 +197,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorStaking
-  function claimUnstake(address valAddr, address receiver) external returns (uint256) {
+  function claimUnstake(address valAddr, address receiver) public virtual returns (uint256) {
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
 
     StorageV1 storage $ = _getStorageV1();
@@ -221,7 +221,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorStaking
-  function redelegate(address fromValAddr, address toValAddr, uint256 amount) external {
+  function redelegate(address fromValAddr, address toValAddr, uint256 amount) public virtual {
     require(amount > 0, StdError.ZeroAmount());
     require(fromValAddr != toValAddr, IValidatorStaking__RedelegateToSameValidator());
 
