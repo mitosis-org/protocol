@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 
 import { console } from '@std/console.sol';
-import { Test } from '@std/Test.sol';
 import { Vm } from '@std/Vm.sol';
 
 import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
@@ -10,14 +9,16 @@ import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 import { GovMITO } from '../../src/hub/GovMITO.sol';
 import { IGovMITO } from '../../src/interfaces/hub/IGovMITO.sol';
 import { StdError } from '../../src/lib/StdError.sol';
+import { Toolkit } from '../util/Toolkit.sol';
 
-contract GovMITOTest is Test {
+contract GovMITOTest is Toolkit {
   GovMITO govMITO;
 
   address immutable owner = makeAddr('owner');
   address immutable minter = makeAddr('minter');
   address immutable user1 = makeAddr('user1');
   address immutable user2 = makeAddr('user2');
+  address immutable proxy = makeAddr('proxy');
 
   uint48 constant REDEEM_PERIOD = 21 days;
 
@@ -49,7 +50,7 @@ contract GovMITOTest is Test {
   function test_mint_NotMinter() public {
     payable(user1).transfer(100);
     vm.prank(user1);
-    vm.expectRevert(StdError.Unauthorized.selector);
+    vm.expectRevert(_errUnauthorized());
     govMITO.mint{ value: 100 }(user1);
   }
 
@@ -306,6 +307,12 @@ contract GovMITOTest is Test {
 
     vm.prank(user1);
     govMITO.approve(user2, 20);
+
+    assertFalse(govMITO.isWhitelistedSender(user2));
+    vm.prank(owner);
+    govMITO.setWhitelistedSender(user2, true);
+    assertTrue(govMITO.isWhitelistedSender(user2));
+
     vm.prank(user2);
     govMITO.transferFrom(user1, user2, 20);
     assertEq(govMITO.balanceOf(user1), 50);
@@ -324,18 +331,108 @@ contract GovMITOTest is Test {
     assertFalse(govMITO.isWhitelistedSender(user2));
 
     vm.prank(user1);
-    vm.expectRevert(StdError.Unauthorized.selector);
+    vm.expectRevert(_errUnauthorized());
     govMITO.transfer(user2, 30);
 
     vm.prank(user1);
-    vm.expectRevert(StdError.Unauthorized.selector);
+    vm.expectRevert(_errUnauthorized());
     govMITO.approve(user2, 20);
 
+    vm.prank(user1);
+    vm.expectRevert(_errUnauthorized());
+    govMITO.transferFrom(user1, user2, 20); // user1 is not whitelisted. It is not important that user2 is whitelisted
+  }
+
+  function test_proxied() public {
+    vm.deal(minter, 100);
+    vm.prank(minter);
+    govMITO.mint{ value: 100 }(user1);
+
+    assertFalse(govMITO.isProxied(proxy));
     vm.prank(owner);
-    govMITO.setWhitelistedSender(user2, true);
-    assertTrue(govMITO.isWhitelistedSender(user2));
+    govMITO.setProxied(proxy, true);
+    assertTrue(govMITO.isProxied(proxy));
+
+    vm.prank(user1);
+    govMITO.approve(proxy, 100);
+    assertEq(govMITO.allowance(user1, proxy), 100);
+
+    vm.prank(proxy);
+    govMITO.transferFrom(user1, user2, 50);
+    assertEq(govMITO.balanceOf(user1), 50);
+    assertEq(govMITO.balanceOf(user2), 50);
+  }
+
+  function test_proxied_NotProxied() public {
+    vm.deal(minter, 100);
+    vm.prank(minter);
+    govMITO.mint{ value: 100 }(user1);
+
+    vm.prank(user1);
+    vm.expectRevert(_errUnauthorized());
+    govMITO.approve(proxy, 100);
+
+    vm.prank(proxy);
+    vm.expectRevert(_errUnauthorized());
+    govMITO.transferFrom(user1, user2, 50);
+  }
+
+  function test_delegate() public {
+    vm.deal(minter, 200);
+    vm.startPrank(minter);
+    govMITO.mint{ value: 100 }(user1);
+    govMITO.mint{ value: 100 }(user2);
+    vm.stopPrank();
+
+    vm.prank(owner);
+    govMITO.setProxied(proxy, true);
+
+    // after proxy deposit
+    vm.prank(user1);
+    govMITO.approve(proxy, 50);
+
+    vm.startPrank(proxy);
+    govMITO.transferFrom(user1, proxy, 50);
+    govMITO.notifyProxiedDeposit(user1, 50);
+    vm.stopPrank();
+
+    vm.prank(user1);
+    govMITO.delegate(user1);
+    assertEq(govMITO.getVotes(user1), 100);
+
+    vm.startPrank(proxy);
+    govMITO.transfer(user1, 50);
+    govMITO.notifyProxiedWithdraw(user1, 50);
+    vm.stopPrank();
+
+    vm.prank(user1);
+    govMITO.delegate(user1);
+    assertEq(govMITO.getVotes(user1), 100);
+
+    // before proxy deposit
     vm.prank(user2);
-    vm.expectRevert(StdError.Unauthorized.selector);
-    govMITO.transferFrom(user1, user2, 20); // user1 is not whitelisted. It is not important that user2 is whitelisted.
+    govMITO.delegate(user2);
+    assertEq(govMITO.getVotes(user2), 100);
+
+    vm.prank(user2);
+    govMITO.approve(proxy, 50);
+
+    vm.startPrank(proxy);
+    govMITO.transferFrom(user2, proxy, 50);
+    govMITO.notifyProxiedDeposit(user2, 50);
+    vm.stopPrank();
+
+    vm.prank(user2);
+    govMITO.delegate(user2);
+    assertEq(govMITO.getVotes(user2), 100);
+
+    vm.startPrank(proxy);
+    govMITO.transfer(user2, 50);
+    govMITO.notifyProxiedWithdraw(user2, 50);
+    vm.stopPrank();
+
+    vm.prank(user2);
+    govMITO.delegate(user2);
+    assertEq(govMITO.getVotes(user2), 100);
   }
 }

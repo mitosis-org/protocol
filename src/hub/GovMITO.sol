@@ -199,30 +199,31 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
 
   // =========================== NOTE: ERC20 OVERRIDES =========================== //
 
-  function approve(address spender, uint256 amount)
-    public
-    override(IERC20, ERC20Upgradeable)
-    onlyWhitelistedSender(_msgSender())
-    returns (bool)
-  {
+  function approve(address spender, uint256 amount) public override(IERC20, ERC20Upgradeable) returns (bool) {
+    GovMITOStorage storage $ = _getGovMITOStorage();
+
+    require($.isProxied[spender] || $.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
+
     return super.approve(spender, amount);
   }
 
-  function transfer(address to, uint256 amount)
-    public
-    override(IERC20, ERC20Upgradeable)
-    onlyWhitelistedSender(_msgSender())
-    returns (bool)
-  {
+  function transfer(address to, uint256 amount) public override(IERC20, ERC20Upgradeable) returns (bool) {
+    GovMITOStorage storage $ = _getGovMITOStorage();
+
+    require($.isProxied[_msgSender()] || $.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
+
     return super.transfer(to, amount);
   }
 
   function transferFrom(address from, address to, uint256 amount)
     public
     override(IERC20, ERC20Upgradeable)
-    onlyWhitelistedSender(from)
     returns (bool)
   {
+    GovMITOStorage storage $ = _getGovMITOStorage();
+
+    require($.isProxied[_msgSender()] || $.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
+
     return super.transferFrom(from, to, amount);
   }
 
