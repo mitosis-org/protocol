@@ -90,6 +90,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   uint256 public constant MAX_COMMISSION_RATE = 10000; // 100% in bp
 
+  /**
+   * @notice Static fee for methods that need to communicate with the consensus layer.
+   */
+  uint256 public constant FEE = 0.1 ether;
+
   constructor(IEpochFeeder epochFeeder_, IConsensusValidatorEntrypoint entrypoint_) {
     _disableInitializers();
 
@@ -194,19 +199,18 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     // verify the pubKey is valid and corresponds to the caller
     pubKey.verifyCmpPubkeyWithAddress(valAddr);
 
-    StorageV1 storage $ = _getStorageV1();
-
-    _createValidator($, valAddr, pubKey, msg.value, request);
+    _burnFee();
+    _createValidator(_getStorageV1(), valAddr, pubKey, msg.value, request);
 
     _entrypoint.registerValidator{ value: msg.value }(valAddr, pubKey, request.withdrawalRecipient);
   }
 
   /// @inheritdoc IValidatorManager
   function depositCollateral(address valAddr) external payable {
-    require(msg.value > 0, StdError.ZeroAmount());
+    require(msg.value - FEE > 0, StdError.ZeroAmount());
 
-    StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valAddr);
+    _burnFee();
+    Validator storage validator = _validator(_getStorageV1(), valAddr);
 
     _entrypoint.depositCollateral{ value: msg.value }(valAddr, validator.withdrawalRecipient);
 
@@ -216,6 +220,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   /// @inheritdoc IValidatorManager
   function withdrawCollateral(address valAddr, uint256 amount) external {
     require(amount > 0, StdError.ZeroAmount());
+
+    _burnFee();
 
     StorageV1 storage $ = _getStorageV1();
     Validator storage validator = _validator($, valAddr);
@@ -233,8 +239,9 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   /// @inheritdoc IValidatorManager
   function unjailValidator(address valAddr) external {
-    StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valAddr);
+    _burnFee();
+
+    Validator storage validator = _validator(_getStorageV1(), valAddr);
     _assertOperatorOrValidator(validator);
 
     _entrypoint.unjail(valAddr);
@@ -426,6 +433,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     $.indexByValAddr[valAddr] = valIndex;
 
     emit ValidatorCreated(valAddr, request.operator, pubKey);
+  }
+
+  function _burnFee() internal {
+    require(msg.value >= FEE, IValidatorManager__InsufficientFee(msg.value));
+    payable(0x000000000000000000000000000000000000dEaD).transfer(FEE);
   }
 
   function _assertValidatorExists(StorageV1 storage $, address valAddr) internal view {

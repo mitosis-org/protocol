@@ -91,6 +91,8 @@ interface IValidatorManager {
   event EpochFeederUpdated(IEpochFeeder indexed epochFeeder);
   event EntrypointUpdated(IConsensusValidatorEntrypoint indexed entrypoint);
 
+  error IValidatorManager__InsufficientFee(uint256 msgValue);
+
   // ========== VIEWS ========== //
 
   function MAX_COMMISSION_RATE() external view returns (uint256);
