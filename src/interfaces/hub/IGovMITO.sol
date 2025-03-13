@@ -41,11 +41,11 @@ interface IGovMITO is IERC20, IERC5805 {
   event WhiltelistedSenderSet(address indexed sender, bool whitelisted);
 
   /**
-   * @notice Emitted when a proxy is set.
+   * @notice Emitted when a voting power notifier is set.
    * @param sender The address of the sender
-   * @param isProxied Whether the sender is a proxy
+   * @param isVotingPowerNotifier Whether the sender is a voting power notifier
    */
-  event SetProxy(address indexed sender, bool isProxied);
+  event VotingPowerNotifierSet(address indexed sender, bool isVotingPowerNotifier);
 
   /**
    * @notice Emitted when the redeem period is set.
@@ -54,20 +54,20 @@ interface IGovMITO is IERC20, IERC5805 {
   event RedeemPeriodSet(uint256 redeemPeriod);
 
   /**
-   * @notice Emitted when a proxied deposit is notified.
+   * @notice Emitted when a voting power delegation is notified.
    * @param notifier The address that notified the contract
-   * @param sender The address of the sender
-   * @param amount The amount of tokens deposited
+   * @param delegate The address of the delegate
+   * @param amount The amount of tokens delegated
    */
-  event ProxiedDepositNotified(address indexed notifier, address indexed sender, uint256 amount);
+  event VotingPowerDelegated(address indexed notifier, address indexed delegate, uint256 amount);
 
   /**
-   * @notice Emitted when a proxied withdraw is notified.
+   * @notice Emitted when a voting power undelegation is notified.
    * @param notifier The address that notified the contract
-   * @param sender The address of the sender
-   * @param amount The amount of tokens withdrawn
+   * @param delegate The address of the delegate
+   * @param amount The amount of tokens undelegated
    */
-  event ProxiedWithdrawNotified(address indexed notifier, address indexed sender, uint256 amount);
+  event VotingPowerUndelegated(address indexed notifier, address indexed delegate, uint256 amount);
 
   /**
    * @notice Mint tokens to an address with corresponding MITO.

@@ -29,8 +29,8 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   struct GovMITOStorage {
     address minter;
     LibRedeemQueue.Queue redeemQueue;
-    mapping(address sender => bool) isProxied; // TODO(eddy): better naming
-    mapping(address account => uint256) proxiedBalances;
+    mapping(address notifier => bool) isVotingPowerNotifier;
+    mapping(address account => uint256) totalNotifiedVotingPower;
     mapping(address sender => bool) isWhitelistedSender;
   }
 
@@ -97,12 +97,12 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
     return _getGovMITOStorage().isWhitelistedSender[sender];
   }
 
-  function isProxied(address sender) external view returns (bool) {
-    return _getGovMITOStorage().isProxied[sender];
+  function isVotingPowerNotifier(address sender) external view returns (bool) {
+    return _getGovMITOStorage().isVotingPowerNotifier[sender];
   }
 
-  function proxiedBalances(address account) external view returns (uint256) {
-    return _getGovMITOStorage().proxiedBalances[account];
+  function totalNotifiedVotingPower(address account) external view returns (uint256) {
+    return _getGovMITOStorage().totalNotifiedVotingPower[account];
   }
 
   function redeemPeriod() external view returns (uint256) {
@@ -145,27 +145,27 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   // ============================ NOTE: PROXY FUNCTIONS ============================ //
 
   function _getVotingUnits(address account) internal view override returns (uint256) {
-    return super._getVotingUnits(account) + _getGovMITOStorage().proxiedBalances[account];
+    return super._getVotingUnits(account) + _getGovMITOStorage().totalNotifiedVotingPower[account];
   }
 
-  function notifyProxiedDeposit(address sender, uint256 amount) external {
+  function notifyVotingPowerDelegation(address delegate, uint256 amount) external {
     GovMITOStorage storage $ = _getGovMITOStorage();
-    require($.isProxied[_msgSender()], StdError.Unauthorized());
+    require($.isVotingPowerNotifier[_msgSender()], StdError.Unauthorized());
 
-    $.proxiedBalances[sender] += amount;
-    _transferVotingUnits(_msgSender(), sender, amount);
+    $.totalNotifiedVotingPower[delegate] += amount;
+    _transferVotingUnits(_msgSender(), delegate, amount);
 
-    emit ProxiedDepositNotified(_msgSender(), sender, amount);
+    emit VotingPowerDelegated(_msgSender(), delegate, amount);
   }
 
-  function notifyProxiedWithdraw(address sender, uint256 amount) external {
+  function notifyVotingPowerUndelegation(address delegate, uint256 amount) external {
     GovMITOStorage storage $ = _getGovMITOStorage();
-    require($.isProxied[_msgSender()], StdError.Unauthorized());
+    require($.isVotingPowerNotifier[_msgSender()], StdError.Unauthorized());
 
-    $.proxiedBalances[sender] -= amount;
-    _transferVotingUnits(sender, _msgSender(), amount);
+    $.totalNotifiedVotingPower[delegate] -= amount;
+    _transferVotingUnits(delegate, _msgSender(), amount);
 
-    emit ProxiedWithdrawNotified(_msgSender(), sender, amount);
+    emit VotingPowerUndelegated(_msgSender(), delegate, amount);
   }
 
   // ============================ NOTE: OWNABLE FUNCTIONS ============================ //
@@ -180,8 +180,8 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
     _setWhitelistedSender(_getGovMITOStorage(), sender, isWhitelisted);
   }
 
-  function setProxied(address sender, bool isProxied_) external onlyOwner {
-    _setProxied(_getGovMITOStorage(), sender, isProxied_);
+  function setVotingPowerNotifier(address sender, bool isVotingPowerNotifier_) external onlyOwner {
+    _setVotingPowerNotifier(_getGovMITOStorage(), sender, isVotingPowerNotifier_);
   }
 
   // ============================ NOTE: IERC6372 OVERRIDES ============================ //
@@ -201,7 +201,7 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   function approve(address spender, uint256 amount) public override(IERC20, ERC20Upgradeable) returns (bool) {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    require($.isProxied[spender] || $.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
+    require($.isVotingPowerNotifier[spender] || $.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
 
     return super.approve(spender, amount);
   }
@@ -209,7 +209,7 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   function transfer(address to, uint256 amount) public override(IERC20, ERC20Upgradeable) returns (bool) {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    require($.isProxied[_msgSender()] || $.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
+    require($.isVotingPowerNotifier[_msgSender()] || $.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
 
     return super.transfer(to, amount);
   }
@@ -221,7 +221,7 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    require($.isProxied[_msgSender()] || $.isWhitelistedSender[from], StdError.Unauthorized());
+    require($.isVotingPowerNotifier[_msgSender()] || $.isWhitelistedSender[from], StdError.Unauthorized());
 
     return super.transferFrom(from, to, amount);
   }
@@ -245,9 +245,9 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
     emit WhiltelistedSenderSet(sender, isWhitelisted);
   }
 
-  function _setProxied(GovMITOStorage storage $, address sender, bool isProxied_) internal {
-    $.isProxied[sender] = isProxied_;
-    emit SetProxy(sender, isProxied_);
+  function _setVotingPowerNotifier(GovMITOStorage storage $, address sender, bool isVotingPowerNotifier_) internal {
+    $.isVotingPowerNotifier[sender] = isVotingPowerNotifier_;
+    emit VotingPowerNotifierSet(sender, isVotingPowerNotifier_);
   }
 
   function _setRedeemPeriod(GovMITOStorage storage $, uint256 redeemPeriod_) internal {
