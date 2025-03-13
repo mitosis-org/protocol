@@ -22,6 +22,7 @@ interface IValidatorStaking {
   error IValidatorStaking__NotValidator();
   error IValidatorStaking__RedelegateToSameValidator();
   error IValidatorStaking__CooldownNotPassed();
+  error IValidatorStaking__InsufficientMinimumAmount();
 
   // ========== VIEWS ========== //
 
@@ -47,6 +48,7 @@ interface IValidatorStaking {
   // ========== ACTIONS ========== //
 
   function stake(address valAddr, address recipient, uint256 amount) external payable;
+  function requestUnstake(address valAddr, address receiver) external returns (uint256);
   function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256);
   function claimUnstake(address valAddr, address receiver) external returns (uint256);
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external;

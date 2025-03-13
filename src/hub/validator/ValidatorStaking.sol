@@ -55,6 +55,8 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
   address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+  uint256 public constant MIN_AMOUNT = 100 ether;
+
   address private immutable _baseAsset;
   IEpochFeeder private immutable _epochFeeder;
   IValidatorManager private immutable _manager;
@@ -173,27 +175,15 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorStaking
-  function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256) {
-    require(amount > 0, StdError.ZeroAmount());
-    require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
-
+  function requestUnstake(address valAddr, address receiver) external returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
+    address staker = _msgSender();
+    return _requestUnstake($, staker, valAddr, receiver, $.staked[valAddr][staker].latest());
+  }
 
-    LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
-
-    // FIXME(eddy): shorten the enqueue + reserve flow
-    uint48 now_ = Time.timestamp();
-    uint256 reqId = queue.enqueue(receiver, amount, now_, bytes(''));
-    queue.reserve(valAddr, amount, now_, bytes(''));
-
-    _unstake($, valAddr, _msgSender(), amount);
-    _hub.notifyUnstake(valAddr, _msgSender(), amount);
-
-    $.totalUnstaking += amount.toUint128();
-
-    emit UnstakeRequested(valAddr, _msgSender(), receiver, amount, reqId);
-
-    return reqId;
+  /// @inheritdoc IValidatorStaking
+  function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256) {
+    return _requestUnstake(_getStorageV1(), _msgSender(), valAddr, receiver, amount);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -252,6 +242,30 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //
 
+  function _requestUnstake(StorageV1 storage $, address staker, address valAddr, address receiver, uint256 amount)
+    internal
+    returns (uint256)
+  {
+    require(amount > 0, StdError.ZeroAmount());
+    require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
+
+    LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
+
+    // FIXME(eddy): shorten the enqueue + reserve flow
+    uint48 now_ = Time.timestamp();
+    uint256 reqId = queue.enqueue(receiver, amount, now_, bytes(''));
+    queue.reserve(valAddr, amount, now_, bytes(''));
+
+    _unstake($, valAddr, staker, amount);
+    _hub.notifyUnstake(valAddr, staker, amount);
+
+    $.totalUnstaking += amount.toUint128();
+
+    emit UnstakeRequested(valAddr, staker, receiver, amount, reqId);
+
+    return reqId;
+  }
+
   function _unstaking(StorageV1 storage $, address valAddr, address staker, uint48 timestamp)
     internal
     view
@@ -279,6 +293,8 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   function _stake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal {
+    require(amount >= MIN_AMOUNT, IValidatorStaking__InsufficientMinimumAmount());
+
     uint48 now_ = Time.timestamp();
 
     $.totalStaked.push(now_, ($.totalStaked.latest() + amount).toUint208());
@@ -288,6 +304,8 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   function _unstake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal {
+    require(amount >= MIN_AMOUNT, IValidatorStaking__InsufficientMinimumAmount());
+
     uint48 now_ = Time.timestamp();
 
     $.totalStaked.push(now_, ($.totalStaked.latest() - amount).toUint208());
