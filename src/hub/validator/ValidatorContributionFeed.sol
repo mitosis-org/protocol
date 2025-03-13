@@ -95,7 +95,7 @@ contract ValidatorContributionFeed is
     Reward storage reward = _getStorageV1().rewards[epoch];
     require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__ReportNotReady());
 
-    return reward.weights.length - 1;
+    return _weightCount(reward);
   }
 
   /// @inheritdoc IValidatorContributionFeed
@@ -131,7 +131,7 @@ contract ValidatorContributionFeed is
 
     return Summary({
       totalWeight: uint256(reward.totalWeight).toUint128(),
-      numOfValidators: reward.weights.length.toUint128()
+      numOfValidators: _weightCount(reward).toUint128()
     });
   }
 
@@ -196,7 +196,7 @@ contract ValidatorContributionFeed is
 
     ReportChecker memory checker = $.checker;
     require(checker.totalWeight == reward.totalWeight, IValidatorContributionFeed__InvalidTotalWeight());
-    require(checker.numOfValidators == reward.weights.length - 1, IValidatorContributionFeed__InvalidValidatorCount());
+    require(checker.numOfValidators == _weightCount(reward), IValidatorContributionFeed__InvalidValidatorCount());
 
     reward.status = ReportStatus.FINALIZED;
 
@@ -204,6 +204,12 @@ contract ValidatorContributionFeed is
     delete $.checker;
 
     emit ReportFinalized(epoch);
+  }
+
+  // ================== INTERNAL FUNCTIONS ================== //
+
+  function _weightCount(Reward storage reward) internal view returns (uint256) {
+    return reward.weights.length - 1;
   }
 
   // ================== UUPS ================== //
