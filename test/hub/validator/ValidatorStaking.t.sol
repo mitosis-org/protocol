@@ -361,7 +361,7 @@ contract ValidatorStakingTest is Toolkit {
       vault.stake(val, recipient, amount);
     }
 
-    hub.assertLastCall(IValidatorStakingHub.notifyStake.selector, abi.encode(val, recipient, amount));
+    hub.assertLastCall(abi.encodeCall(IValidatorStakingHub.notifyStake, (val, recipient, amount)));
 
     if (vault.baseAsset() == vault.NATIVE_TOKEN()) assertEq(address(vault).balance, balanceBefore + amount);
     else assertEq(weth.balanceOf(address(vault)), balanceBefore + amount);
@@ -375,7 +375,7 @@ contract ValidatorStakingTest is Toolkit {
     emit IValidatorStaking.UnstakeRequested(val, sender, recipient, amount, globalReqId[address(vault)][val]++);
     vault.requestUnstake(val, recipient, amount);
 
-    hub.assertLastCall(IValidatorStakingHub.notifyUnstake.selector, abi.encode(val, recipient, amount));
+    hub.assertLastCall(abi.encodeCall(IValidatorStakingHub.notifyUnstake, (val, recipient, amount)));
   }
 
   function _claimUnstake(ValidatorStaking vault, address val, address recipient) internal {
@@ -397,7 +397,7 @@ contract ValidatorStakingTest is Toolkit {
     emit IValidatorStaking.Redelegated(fromVal, toVal, sender, amount);
     vault.redelegate(fromVal, toVal, amount);
 
-    hub.assertLastCall(IValidatorStakingHub.notifyRedelegation.selector, abi.encode(fromVal, toVal, sender, amount));
+    hub.assertLastCall(abi.encodeCall(IValidatorStakingHub.notifyRedelegation, (fromVal, toVal, sender, amount)));
   }
 
   function _assertUnstaking(
@@ -414,6 +414,6 @@ contract ValidatorStakingTest is Toolkit {
   }
 
   function _regVal(address val, bool ok) internal {
-    manager.setRet(IValidatorManager.isValidator.selector, abi.encode(val), false, abi.encode(ok));
+    manager.setRet(abi.encodeCall(IValidatorManager.isValidator, (val)), false, abi.encode(ok));
   }
 }

@@ -32,7 +32,6 @@ contract ValidatorContributionFeedTest is Toolkit {
 
   function setUp() public {
     epochFeeder = new MockContract();
-    epochFeeder.setStatic(IEpochFeeder.epoch.selector);
 
     feed = ValidatorContributionFeed(
       address(
@@ -54,7 +53,7 @@ contract ValidatorContributionFeedTest is Toolkit {
   }
 
   function test_report() public {
-    epochFeeder.setRet(IEpochFeeder.epoch.selector, '', false, abi.encode(uint256(2)));
+    _mockEpoch(2);
 
     bytes32 feederRole = feed.FEEDER_ROLE();
 
@@ -123,7 +122,7 @@ contract ValidatorContributionFeedTest is Toolkit {
   }
 
   function test_finalizeReport_InvalidReportStatus() public {
-    epochFeeder.setRet(IEpochFeeder.epoch.selector, '', false, abi.encode(uint256(2)));
+    _mockEpoch(2);
 
     vm.prank(feeder);
     vm.expectRevert(IValidatorContributionFeed.IValidatorContributionFeed__InvalidReportStatus.selector);
@@ -131,7 +130,7 @@ contract ValidatorContributionFeedTest is Toolkit {
   }
 
   function test_finalizeReport_InvalidTotalWeight() public {
-    epochFeeder.setRet(IEpochFeeder.epoch.selector, '', false, abi.encode(uint256(2)));
+    _mockEpoch(2);
 
     vm.prank(feeder);
     feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300e18, numOfValidators: 300 }));
@@ -153,7 +152,7 @@ contract ValidatorContributionFeedTest is Toolkit {
   }
 
   function test_finalizeReport_InvalidValidatorCount() public {
-    epochFeeder.setRet(IEpochFeeder.epoch.selector, '', false, abi.encode(uint256(2)));
+    _mockEpoch(2);
 
     vm.prank(feeder);
     feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300e18, numOfValidators: 300 }));
@@ -175,7 +174,7 @@ contract ValidatorContributionFeedTest is Toolkit {
   }
 
   function test_revokeReport() public {
-    epochFeeder.setRet(IEpochFeeder.epoch.selector, '', false, abi.encode(uint256(2)));
+    _mockEpoch(2);
 
     vm.prank(feeder);
     feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300e18, numOfValidators: 300 }));
@@ -215,5 +214,9 @@ contract ValidatorContributionFeedTest is Toolkit {
   function _eq(ValidatorWeight memory a, ValidatorWeight memory b) internal pure returns (bool) {
     return a.addr == b.addr && a.weight == b.weight && a.collateralRewardShare == b.collateralRewardShare
       && a.delegationRewardShare == b.delegationRewardShare;
+  }
+
+  function _mockEpoch(uint256 epoch) internal {
+    epochFeeder.setRet(abi.encodeCall(IEpochFeeder.epoch, ()), false, abi.encode(epoch));
   }
 }
