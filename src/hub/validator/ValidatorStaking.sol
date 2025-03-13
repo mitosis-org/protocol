@@ -51,6 +51,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   using SafeCast for uint256;
   using SafeTransferLib for address;
   using LibRedeemQueue for LibRedeemQueue.Queue;
+  using LibRedeemQueue for LibRedeemQueue.Index;
   using Checkpoints for Checkpoints.Trace208;
 
   address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -162,6 +163,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
 
     LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
+    if (queue.redeemPeriod != $.unstakeCooldown) queue.redeemPeriod = $.unstakeCooldown;
 
     // FIXME(eddy): shorten the enqueue + reserve flow
     uint48 now_ = Time.timestamp();
@@ -185,8 +187,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
 
     LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
-
-    queue.redeemPeriod = $.unstakeCooldown;
+    if (queue.redeemPeriod != $.unstakeCooldown) queue.redeemPeriod = $.unstakeCooldown;
 
     uint48 now_ = Time.timestamp();
     queue.update(now_);
@@ -219,6 +220,8 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     _stake($, toValAddr, _msgSender(), amount);
     _hub.notifyRedelegation(fromValAddr, toValAddr, _msgSender(), amount);
 
+    $.lastRedelegationTime[_msgSender()] = now_;
+
     emit Redelegated(fromValAddr, toValAddr, _msgSender(), amount);
   }
 
@@ -247,14 +250,16 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     uint256 claimable = 0;
     uint256 nonClaimable = 0;
 
+    LibRedeemQueue.Index storage index = queue.indexes[staker];
+
     if (found) {
       for (uint256 i = offset; i < newOffset; i++) {
-        claimable += queue.requestAmount(i);
+        claimable += queue.requestAmount(index.get(i));
       }
     }
 
-    for (uint256 i = found ? newOffset : offset; i < queue.indexes[staker].size; i++) {
-      nonClaimable += queue.requestAmount(i);
+    for (uint256 i = found ? newOffset : offset; i < index.size; i++) {
+      nonClaimable += queue.requestAmount(index.get(i));
     }
 
     return (claimable, nonClaimable);
