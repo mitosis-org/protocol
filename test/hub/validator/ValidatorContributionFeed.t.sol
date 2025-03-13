@@ -16,8 +16,8 @@ import {
   ValidatorWeight
 } from '../../../src/interfaces/hub/validator/IValidatorContributionFeed.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
-import { Toolkit } from '../../util/Toolkit.sol';
 import { MockContract } from '../../util/MockContract.sol';
+import { Toolkit } from '../../util/Toolkit.sol';
 
 contract ValidatorContributionFeedTest is Toolkit {
   using SafeCast for uint256;
@@ -25,6 +25,7 @@ contract ValidatorContributionFeedTest is Toolkit {
 
   address owner = makeAddr('owner');
   address feeder = makeAddr('feeder');
+  address abuser = makeAddr('abuser');
 
   MockContract epochFeeder;
   ValidatorContributionFeed feed;
@@ -53,25 +54,166 @@ contract ValidatorContributionFeedTest is Toolkit {
   }
 
   function test_report() public {
-    epochFeeder.setRet(IEpochFeeder.epoch.selector, abi.encode(uint256(2)), false, abi.encode(uint256(2)));
+    epochFeeder.setRet(IEpochFeeder.epoch.selector, '', false, abi.encode(uint256(2)));
 
-    vm.startPrank(feeder);
-    feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300, numOfValidators: 300 }));
+    bytes32 feederRole = feed.FEEDER_ROLE();
+
+    vm.prank(abuser);
+    vm.expectRevert(_errAccessControlUnauthorized(abuser, feederRole));
+    feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300e18, numOfValidators: 300 }));
+
+    vm.prank(feeder);
+    vm.expectEmit();
+    emit IValidatorContributionFeed.ReportInitialized(1, 300e18, 300);
+    feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300e18, numOfValidators: 300 }));
 
     for (uint256 i = 0; i < 6; i++) {
       ValidatorWeight[] memory weights = new ValidatorWeight[](50);
       for (uint256 j = 0; j < 50; j++) {
-        weights[j] = ValidatorWeight({
-          addr: makeAddr(string.concat('val-', ((i * 50) + j).toString())),
-          weight: 1,
-          collateralRewardShare: 1e18,
-          delegationRewardShare: 1e18
-        });
+        address addr = makeAddr(string.concat('val-', ((i * 50) + j).toString()));
+        weights[j] = ValidatorWeight(addr, 1e18, 1e18, 1e18);
       }
+
+      vm.prank(abuser);
+      vm.expectRevert(_errAccessControlUnauthorized(abuser, feederRole));
+      feed.pushValidatorWeights(weights);
+
+      vm.prank(feeder);
+      vm.expectEmit();
+      emit IValidatorContributionFeed.WeightsPushed(1, 50e18, 50);
       feed.pushValidatorWeights(weights);
     }
 
+    vm.prank(abuser);
+    vm.expectRevert(_errAccessControlUnauthorized(abuser, feederRole));
     feed.finalizeReport();
-    vm.stopPrank();
+
+    vm.prank(feeder);
+    vm.expectEmit();
+    emit IValidatorContributionFeed.ReportFinalized(1);
+    feed.finalizeReport();
+
+    // check weight query
+    assertEq(feed.weightCount(1), 300);
+    for (uint256 i = 0; i < 6; i++) {
+      for (uint256 j = 0; j < 50; j++) {
+        address addr = makeAddr(string.concat('val-', ((i * 50) + j).toString()));
+        assertTrue(_eq(feed.weightAt(1, (i * 50) + j), ValidatorWeight(addr, 1e18, 1e18, 1e18)));
+
+        (ValidatorWeight memory w, bool exists) = feed.weightOf(1, addr);
+        assertTrue(exists);
+        assertTrue(_eq(w, ValidatorWeight(addr, 1e18, 1e18, 1e18)));
+      }
+    }
+
+    // check weight query for non-existent weight
+    {
+      (ValidatorWeight memory w, bool exists) = feed.weightOf(1, makeAddr('random'));
+      assertFalse(exists);
+      assertTrue(_eq(w, ValidatorWeight(address(0), 0, 0, 0)));
+    }
+
+    // check report availability
+    assertTrue(feed.available(1));
+    assertFalse(feed.available(2));
+
+    // check report summary
+    assertEq(feed.summary(1).totalWeight, 300e18);
+    assertEq(feed.summary(1).numOfValidators, 300);
+  }
+
+  function test_finalizeReport_InvalidReportStatus() public {
+    epochFeeder.setRet(IEpochFeeder.epoch.selector, '', false, abi.encode(uint256(2)));
+
+    vm.prank(feeder);
+    vm.expectRevert(IValidatorContributionFeed.IValidatorContributionFeed__InvalidReportStatus.selector);
+    feed.finalizeReport();
+  }
+
+  function test_finalizeReport_InvalidTotalWeight() public {
+    epochFeeder.setRet(IEpochFeeder.epoch.selector, '', false, abi.encode(uint256(2)));
+
+    vm.prank(feeder);
+    feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300e18, numOfValidators: 300 }));
+
+    for (uint256 i = 0; i < 6; i++) {
+      ValidatorWeight[] memory weights = new ValidatorWeight[](50);
+      for (uint256 j = 0; j < 50; j++) {
+        address addr = makeAddr(string.concat('val-', ((i * 50) + j).toString()));
+        weights[j] = ValidatorWeight(addr, 2e18, 1e18, 1e18);
+      }
+
+      vm.prank(feeder);
+      feed.pushValidatorWeights(weights);
+    }
+
+    vm.prank(feeder);
+    vm.expectRevert(IValidatorContributionFeed.IValidatorContributionFeed__InvalidTotalWeight.selector);
+    feed.finalizeReport();
+  }
+
+  function test_finalizeReport_InvalidValidatorCount() public {
+    epochFeeder.setRet(IEpochFeeder.epoch.selector, '', false, abi.encode(uint256(2)));
+
+    vm.prank(feeder);
+    feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300e18, numOfValidators: 300 }));
+
+    for (uint256 i = 0; i < 10; i++) {
+      ValidatorWeight[] memory weights = new ValidatorWeight[](50);
+      for (uint256 j = 0; j < 50; j++) {
+        address addr = makeAddr(string.concat('val-', ((i * 50) + j).toString()));
+        weights[j] = ValidatorWeight(addr, 0.6e18, 1e18, 1e18);
+      }
+
+      vm.prank(feeder);
+      feed.pushValidatorWeights(weights);
+    }
+
+    vm.prank(feeder);
+    vm.expectRevert(IValidatorContributionFeed.IValidatorContributionFeed__InvalidValidatorCount.selector);
+    feed.finalizeReport();
+  }
+
+  function test_revokeReport() public {
+    epochFeeder.setRet(IEpochFeeder.epoch.selector, '', false, abi.encode(uint256(2)));
+
+    vm.prank(feeder);
+    feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300e18, numOfValidators: 300 }));
+
+    for (uint256 i = 0; i < 10; i++) {
+      ValidatorWeight[] memory weights = new ValidatorWeight[](50);
+      for (uint256 j = 0; j < 50; j++) {
+        address addr = makeAddr(string.concat('val-', ((i * 50) + j).toString()));
+        weights[j] = ValidatorWeight(addr, 0.6e18, 1e18, 1e18);
+      }
+
+      vm.prank(feeder);
+      feed.pushValidatorWeights(weights);
+    }
+
+    vm.prank(feeder);
+    feed.revokeReport();
+
+    // check report is revoked
+    test_report();
+  }
+
+  function test_assertReportReady() public {
+    vm.expectRevert(IValidatorContributionFeed.IValidatorContributionFeed__ReportNotReady.selector);
+    feed.weightCount(1);
+
+    vm.expectRevert(IValidatorContributionFeed.IValidatorContributionFeed__ReportNotReady.selector);
+    feed.weightAt(1, 0);
+
+    vm.expectRevert(IValidatorContributionFeed.IValidatorContributionFeed__ReportNotReady.selector);
+    feed.weightOf(1, makeAddr('random'));
+
+    vm.expectRevert(IValidatorContributionFeed.IValidatorContributionFeed__ReportNotReady.selector);
+    feed.summary(1);
+  }
+
+  function _eq(ValidatorWeight memory a, ValidatorWeight memory b) internal pure returns (bool) {
+    return a.addr == b.addr && a.weight == b.weight && a.collateralRewardShare == b.collateralRewardShare
+      && a.delegationRewardShare == b.delegationRewardShare;
   }
 }

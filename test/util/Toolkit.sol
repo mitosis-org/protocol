@@ -7,6 +7,7 @@ import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 
+import { IAccessControl } from '@oz-v5/access/IAccessControl.sol';
 import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 import { ERC1967Utils } from '@oz-v5/proxy/ERC1967/ERC1967Utils.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
@@ -91,5 +92,9 @@ contract Toolkit is Test {
 
   function _errNotFound(string memory context) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(StdError.NotFound.selector, context);
+  }
+
+  function _errAccessControlUnauthorized(address account, bytes32 role) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, account, role);
   }
 }
