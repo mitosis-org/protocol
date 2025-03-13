@@ -73,6 +73,7 @@ contract MockContract {
   }
 
   function _assertLastCall(bytes4 sig, bytes memory args, uint256 value) internal view {
+    require(callLogs[sig].length > 0, 'no calls');
     Log memory log = _lastCallLog(sig);
     require(log.sig == sig, 'sig mismatch');
     require(keccak256(log.args) == keccak256(args), 'args mismatch');

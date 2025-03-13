@@ -100,12 +100,18 @@ contract ValidatorManagerTest is Toolkit {
     vm.prank(val.addr);
     manager.createValidator{ value: 1000 ether }(
       LibSecp256k1.compressPubkey(val.pubKey),
-      IValidatorManager.CreateValidatorRequest({ operator: val.addr, commissionRate: 100, metadata: metadata })
+      IValidatorManager.CreateValidatorRequest({
+        operator: val.addr,
+        withdrawalRecipient: val.addr,
+        rewardRecipient: val.addr,
+        commissionRate: 100,
+        metadata: metadata
+      })
     );
 
     entrypoint.assertLastCall(
       IConsensusValidatorEntrypoint.registerValidator.selector,
-      abi.encode(val.addr, LibSecp256k1.compressPubkey(val.pubKey)),
+      abi.encode(val.addr, LibSecp256k1.compressPubkey(val.pubKey), val.addr),
       1000 ether
     );
 
@@ -126,33 +132,38 @@ contract ValidatorManagerTest is Toolkit {
   function test_depositCollateral() public {
     ValidatorKey memory val = test_createValidator('val-1');
     address operator = makeAddr('operator');
+    address withdrawalRecipient = makeAddr('withdrawalRecipient');
 
     vm.prank(val.addr);
     manager.updateOperator(val.addr, operator);
+    vm.prank(operator);
+    manager.updateWithdrawalRecipient(val.addr, withdrawalRecipient);
 
     vm.deal(operator, 1000 ether);
     vm.prank(operator);
     manager.depositCollateral{ value: 1000 ether }(val.addr);
 
     entrypoint.assertLastCall(
-      IConsensusValidatorEntrypoint.depositCollateral.selector, abi.encode(val.addr), 1000 ether
+      IConsensusValidatorEntrypoint.depositCollateral.selector, abi.encode(val.addr, withdrawalRecipient), 1000 ether
     );
   }
 
   function test_withdrawCollateral() public {
     ValidatorKey memory val = test_createValidator('val-1');
     address operator = makeAddr('operator');
-    address recipient = makeAddr('recipient');
+    address withdrawalRecipient = makeAddr('withdrawalRecipient');
 
     vm.prank(val.addr);
     manager.updateOperator(val.addr, operator);
+    vm.prank(operator);
+    manager.updateWithdrawalRecipient(val.addr, withdrawalRecipient);
 
     vm.prank(operator);
-    manager.withdrawCollateral(val.addr, recipient, 1000 ether);
+    manager.withdrawCollateral(val.addr, 1000 ether);
 
     entrypoint.assertLastCall(
       IConsensusValidatorEntrypoint.withdrawCollateral.selector,
-      abi.encode(val.addr, 1000 ether, recipient, block.timestamp + 1000 seconds)
+      abi.encode(val.addr, 1000 ether, withdrawalRecipient, block.timestamp + 1000 seconds)
     );
   }
 
