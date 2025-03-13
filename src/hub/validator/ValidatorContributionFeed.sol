@@ -213,8 +213,11 @@ contract ValidatorContributionFeed is
     Reward storage reward = $.rewards[epoch];
     require(reward.status == ReportStatus.INITIALIZED, IValidatorContributionFeed__InvalidReportStatus());
 
-    reward.status = ReportStatus.NONE;
-
+    // NOTICE: we need to separate revoke sequence because of the gas limit
+    for (uint256 i = 0; i < reward.weights.length; i++) {
+      delete reward.weightByValAddr[reward.weights[i].addr];
+    }
+    delete $.rewards[epoch].weights;
     delete $.rewards[epoch];
     delete $.checker;
 
