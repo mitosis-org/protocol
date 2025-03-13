@@ -222,7 +222,7 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    require($.isProxied[_msgSender()] || $.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
+    require($.isProxied[_msgSender()] || $.isWhitelistedSender[from], StdError.Unauthorized());
 
     return super.transferFrom(from, to, amount);
   }
