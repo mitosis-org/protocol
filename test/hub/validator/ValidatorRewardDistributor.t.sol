@@ -50,11 +50,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _stakingHub = ValidatorStakingHub(
       _proxy(
-        address(
-          new ValidatorStakingHub(
-            IConsensusValidatorEntrypoint(address(new MockContract())), IValidatorManager(address(_validatorManager))
-          )
-        ),
+        address(new ValidatorStakingHub(IConsensusValidatorEntrypoint(address(new MockContract())))),
         abi.encodeCall(ValidatorStakingHub.initialize, (_owner))
       )
     );
@@ -103,6 +99,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     address valAddr;
     address operatorAddr;
     address rewardRecipient;
+    address withdrawalRecipient;
     uint256 comissionRate;
     // ValidatorStakingHub
     address[] stakers;
@@ -132,6 +129,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -197,6 +195,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -208,6 +207,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
       rewardRecipient: makeAddr('rewardRecipient-2'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -303,6 +303,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -314,6 +315,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
       rewardRecipient: makeAddr('rewardRecipient-2'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -417,6 +419,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -509,6 +512,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -582,6 +586,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -659,6 +664,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -670,6 +676,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
       rewardRecipient: makeAddr('rewardRecipient-2'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -682,6 +689,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -693,6 +701,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
       rewardRecipient: makeAddr('rewardRecipient-2'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -806,6 +815,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -817,6 +827,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
       rewardRecipient: makeAddr('rewardRecipient-2'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -940,6 +951,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -1002,6 +1014,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -1064,6 +1077,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -1117,6 +1131,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -1128,6 +1143,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
       rewardRecipient: makeAddr('rewardRecipient-2'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -1207,6 +1223,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
       rewardRecipient: makeAddr('rewardRecipient-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
@@ -1297,9 +1314,10 @@ contract ValidatorRewardDistributorTest is Toolkit {
         ValidatorParam memory validatorParam = epochParam.validatorParams[j];
 
         IValidatorManager.ValidatorInfoResponse memory validatorInfoResponse = IValidatorManager.ValidatorInfoResponse(
-          '', // bytes valKey;
           validatorParam.valAddr, // address valAddr;
+          '', // bytes valKey;
           validatorParam.operatorAddr, // address operator;
+          validatorParam.withdrawalRecipient, // address withdrawalRecipient;
           validatorParam.rewardRecipient, // address rewardRecipient;
           validatorParam.comissionRate, // uint256 commissionRate;
           '' // bytes metadata;
