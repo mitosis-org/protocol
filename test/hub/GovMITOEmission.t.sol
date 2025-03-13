@@ -24,7 +24,7 @@ contract GovMITOEmissionTest is Toolkit {
     feeder = new MockContract();
 
     govMITO = new MockContract();
-    govMITO.setStatic(IGovMITO.mint.selector, false);
+    govMITO.setCall(IGovMITO.mint.selector);
 
     emissionImpl = new GovMITOEmission(IGovMITO(address(govMITO)), IEpochFeeder(address(feeder)));
   }
