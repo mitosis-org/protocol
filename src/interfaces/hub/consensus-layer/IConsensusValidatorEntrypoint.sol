@@ -4,26 +4,30 @@ pragma solidity ^0.8.28;
 interface IConsensusValidatorEntrypoint {
   event PermittedCallerSet(address caller, bool isPermitted);
 
-  event MsgRegisterValidator(address valAddr, bytes pubKey, uint256 initialCollateralAmountGwei);
-  event MsgDepositCollateral(address valAddr, uint256 amountGwei);
+  event MsgRegisterValidator(
+    address valAddr, bytes pubKey, uint256 initialCollateralAmountGwei, address collateralRefundAddr
+  );
+  event MsgDepositCollateral(address valAddr, uint256 amountGwei, address collateralRefundAddr);
   event MsgWithdrawCollateral(address valAddr, uint256 amountGwei, address receiver, uint48 maturesAt);
   event MsgUnjail(address valAddr);
   event MsgUpdateExtraVotingPower(address valAddr, uint256 extraVotingPowerGwei);
 
   /**
    * @notice Register a validator in the consensus layer.
-   * @dev Nothing happens if the validator is already registered in the consensus layer.
+   * @dev The collateral might be returned if the validator is not registered in the consensus layer.
    * @param valAddr The address of the validator.
    * @param pubKey The compressed 33-byte secp256k1 public key of the validator.
+   * @param collateralRefundAddr The address to receive the collateral if registration fails.
    */
-  function registerValidator(address valAddr, bytes calldata pubKey) external payable;
+  function registerValidator(address valAddr, bytes calldata pubKey, address collateralRefundAddr) external payable;
 
   /**
    * @notice Deposit collateral to the validator in the consensus layer.
-   * @dev Nothing happens if the validator is not registered in the consensus layer.
+   * @dev The collateral might be returned if the validator is not registered in the consensus layer.
    * @param valAddr The address of the validator.
+   * @param collateralRefundAddr The address to receive the deposited collateral if deposit fails.
    */
-  function depositCollateral(address valAddr) external payable;
+  function depositCollateral(address valAddr, address collateralRefundAddr) external payable;
 
   /**
    * @notice Request a withdrawal of collateral from the validator in the consensus layer.

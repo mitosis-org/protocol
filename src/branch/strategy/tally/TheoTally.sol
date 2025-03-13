@@ -28,22 +28,28 @@ contract TheoTally is StdTally {
 
   function _totalBalance(bytes memory) internal view override returns (uint256 totalBalance_) {
     uint256 decimals = _theo.decimals();
-    uint256 assetPerShare = _pricePerShare(_theo.totalSupply(), _theo.totalBalance(), _theo.totalPending(), decimals);
     (uint256 heldByAccount, uint256 heldByVault) = _theo.shareBalances(msg.sender);
-    return _sharesToAsset(heldByAccount + heldByVault, assetPerShare, decimals);
+    return _sharesToAsset(heldByAccount + heldByVault, _theo.pricePerShare(), decimals);
   }
 
   function _withdrawableBalance(bytes memory) internal view override returns (uint256 withdrawableBalance_) {
     uint256 decimals = _theo.decimals();
-    uint256 assetPerShare = _pricePerShare(_theo.totalSupply(), _theo.totalBalance(), _theo.totalPending(), decimals);
     (, uint256 unredeemedShares) = _theo.shareBalances(msg.sender);
-    return _sharesToAsset(unredeemedShares, assetPerShare, decimals);
+    return _sharesToAsset(unredeemedShares, _theo.pricePerShare(), decimals);
   }
 
   function _pendingWithdrawBalance(bytes memory) internal view override returns (uint256 pendingWithdrawBalance_) {
     uint256 decimals = _theo.decimals();
     ITheoDepositVault.Withdrawal memory withdrawal = _theo.withdrawals(msg.sender);
-    return _sharesToAsset(withdrawal.shares, _theo.roundPricePerShare(withdrawal.round), decimals);
+
+    uint256 currentRound = _theo.round();
+    uint256 pricePerShare;
+    if (currentRound == withdrawal.round) {
+      pricePerShare = _theo.pricePerShare();
+    } else {
+      pricePerShare = _theo.roundPricePerShare(withdrawal.round);
+    }
+    return _sharesToAsset(withdrawal.shares, pricePerShare, decimals);
   }
 
   function _previewDeposit(uint256 amount, bytes memory) internal pure override returns (uint256) {
@@ -63,14 +69,5 @@ contract TheoTally is StdTally {
     require(assetPerShare > 1, 'Invalid assetPerShare');
 
     return (shares * assetPerShare) / (10 ** decimals);
-  }
-
-  function _pricePerShare(uint256 totalSupply, uint256 totalBalance_, uint256 pendingAmount, uint256 decimals)
-    internal
-    pure
-    returns (uint256)
-  {
-    uint256 singleShare = 10 ** decimals;
-    return totalSupply > 0 ? (singleShare * (totalBalance_ - pendingAmount)) / totalSupply : singleShare;
   }
 }

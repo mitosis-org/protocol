@@ -42,6 +42,7 @@ contract ValidatorManagerStorageV1 {
   struct Validator {
     address valAddr;
     address operator;
+    address withdrawalRecipient;
     address rewardRecipient;
     bytes pubKey;
     ValidatorRewardConfig rewardConfig;
@@ -121,6 +122,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
         genVal.value,
         CreateValidatorRequest({
           operator: genVal.operator,
+          withdrawalRecipient: genVal.withdrawalRecipient,
+          rewardRecipient: genVal.rewardRecipient,
           commissionRate: genVal.commissionRate,
           metadata: genVal.metadata
         })
@@ -195,7 +198,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
     _createValidator($, valAddr, pubKey, msg.value, request);
 
-    _entrypoint.registerValidator{ value: msg.value }(valAddr, pubKey);
+    _entrypoint.registerValidator{ value: msg.value }(valAddr, pubKey, request.withdrawalRecipient);
   }
 
   /// @inheritdoc IValidatorManager
@@ -203,15 +206,15 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     require(msg.value > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
-    _validator($, valAddr); // ensure validator exists
+    Validator storage validator = _validator($, valAddr);
 
-    _entrypoint.depositCollateral{ value: msg.value }(valAddr);
+    _entrypoint.depositCollateral{ value: msg.value }(valAddr, validator.withdrawalRecipient);
 
     emit CollateralDeposited(valAddr, msg.value);
   }
 
   /// @inheritdoc IValidatorManager
-  function withdrawCollateral(address valAddr, address recipient, uint256 amount) external {
+  function withdrawCollateral(address valAddr, uint256 amount) external {
     require(amount > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
@@ -219,7 +222,10 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     _assertOperator(validator);
 
     _entrypoint.withdrawCollateral(
-      valAddr, amount, recipient, Time.timestamp() + $.globalValidatorConfig.collateralWithdrawalDelay.toUint48()
+      valAddr,
+      amount,
+      validator.withdrawalRecipient,
+      Time.timestamp() + $.globalValidatorConfig.collateralWithdrawalDelay.toUint48()
     );
 
     emit CollateralWithdrawn(valAddr, amount);
@@ -247,6 +253,19 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     $.validators[$.indexByValAddr[valAddr]].operator = operator;
 
     emit OperatorUpdated(valAddr, operator);
+  }
+
+  /// @inheritdoc IValidatorManager
+  function updateWithdrawalRecipient(address valAddr, address withdrawalRecipient) external {
+    require(withdrawalRecipient != address(0), StdError.InvalidParameter('withdrawalRecipient'));
+
+    StorageV1 storage $ = _getStorageV1();
+    Validator storage validator = _validator($, valAddr);
+    _assertOperator(validator);
+
+    $.validators[$.indexByValAddr[valAddr]].withdrawalRecipient = withdrawalRecipient;
+
+    emit WithdrawalRecipientUpdated(valAddr, _msgSender(), withdrawalRecipient);
   }
 
   /// @inheritdoc IValidatorManager
@@ -330,6 +349,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       valAddr: info.valAddr,
       pubKey: info.pubKey,
       operator: info.operator,
+      withdrawalRecipient: info.withdrawalRecipient,
       rewardRecipient: info.rewardRecipient,
       commissionRate: commissionRate,
       metadata: info.metadata
@@ -397,7 +417,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     Validator storage validator = $.validators[valIndex];
     validator.valAddr = valAddr;
     validator.operator = request.operator;
-    validator.rewardRecipient = valAddr;
+    validator.withdrawalRecipient = request.withdrawalRecipient;
+    validator.rewardRecipient = request.rewardRecipient;
     validator.pubKey = pubKey;
     validator.rewardConfig.commissionRates.push(epoch.toUint96(), request.commissionRate.toUint160());
     validator.metadata = request.metadata;
