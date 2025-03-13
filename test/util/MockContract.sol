@@ -41,12 +41,11 @@ contract MockContract {
   }
 
   /// @notice Sets a return value for a function call
-  /// @param sig The function selector
   /// @param data The calldata for the function call
   /// @param revert_ Whether the function call should revert
   /// @param returnData The return data to be used if the call does not revert
-  function setRet(bytes4 sig, bytes memory data, bool revert_, bytes memory returnData) external {
-    rets[abi.encodePacked(sig, data)] = Ret({ revert_: revert_, data: returnData });
+  function setRet(bytes calldata data, bool revert_, bytes calldata returnData) external {
+    rets[data] = Ret({ revert_: revert_, data: returnData });
   }
 
   /// @notice Sets whether a function call is mutative
@@ -65,12 +64,12 @@ contract MockContract {
     return _lastCallLog(sig);
   }
 
-  function assertLastCall(bytes4 sig, bytes memory args) external view {
-    _assertLastCall(sig, args, 0);
+  function assertLastCall(bytes calldata args) external view {
+    _assertLastCall(bytes4(args[0:4]), args[4:], 0);
   }
 
-  function assertLastCall(bytes4 sig, bytes memory args, uint256 value) external view {
-    _assertLastCall(sig, args, value);
+  function assertLastCall(bytes calldata args, uint256 value) external view {
+    _assertLastCall(bytes4(args[0:4]), args[4:], value);
   }
 
   function _lastCallLog(bytes4 sig) internal view returns (Log memory) {

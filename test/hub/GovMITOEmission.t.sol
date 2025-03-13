@@ -45,7 +45,7 @@ contract GovMITOEmissionTest is Toolkit {
       })
     );
 
-    govMITO.assertLastCall(IGovMITO.mint.selector, abi.encode(address(emission)), total);
+    govMITO.assertLastCall(abi.encodeCall(IGovMITO.mint, (address(emission))), total);
 
     assertEq(address(emission.govMITO()), address(govMITO));
     assertEq(address(emission.epochFeeder()), address(feeder));
@@ -160,7 +160,7 @@ contract GovMITOEmissionTest is Toolkit {
     );
 
     for (uint256 i = 1; i <= 20; i++) {
-      feeder.setRet(IEpochFeeder.timeAt.selector, abi.encode(i), false, abi.encode((2 * i - 1) * 1 days));
+      feeder.setRet(abi.encodeCall(IEpochFeeder.timeAt, (i)), false, abi.encode((2 * i - 1) * 1 days));
     }
 
     vm.expectEmit();
@@ -189,7 +189,7 @@ contract GovMITOEmissionTest is Toolkit {
     );
 
     for (uint256 i = 1; i <= 20; i++) {
-      feeder.setRet(IEpochFeeder.timeAt.selector, abi.encode(i), false, abi.encode((2 * i - 1) * 1 days));
+      feeder.setRet(abi.encodeCall(IEpochFeeder.timeAt, (i)), false, abi.encode((2 * i - 1) * 1 days));
     }
 
     assertEq(emission.validatorReward(1), 1 gwei * 2 days, 'epoch 1-2');
@@ -228,7 +228,7 @@ contract GovMITOEmissionTest is Toolkit {
     emission.configureValidatorRewardEmission(1 gwei, 10000, 1 days, 17 days);
 
     for (uint256 i = 1; i <= 20; i++) {
-      feeder.setRet(IEpochFeeder.timeAt.selector, abi.encode(i), false, abi.encode((2 * i - 1) * 1 days));
+      feeder.setRet(abi.encodeCall(IEpochFeeder.timeAt, (i)), false, abi.encode((2 * i - 1) * 1 days));
     }
 
     assertEq(emission.validatorReward(1), 1 gwei * 2 days, 'epoch 1-2');
