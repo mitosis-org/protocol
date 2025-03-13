@@ -94,7 +94,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
   /// @inheritdoc IValidatorStaking
   function totalStaked(uint48 timestamp) external view returns (uint256) {
-    return _getStorageV1().totalStaked.lowerLookup(timestamp);
+    return _getStorageV1().totalStaked.upperLookup(timestamp);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -104,17 +104,17 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
   /// @inheritdoc IValidatorStaking
   function staked(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
-    return _getStorageV1().staked[valAddr][staker].lowerLookup(timestamp);
+    return _getStorageV1().staked[valAddr][staker].upperLookup(timestamp);
   }
 
   /// @inheritdoc IValidatorStaking
   function stakerTotal(address staker, uint48 timestamp) external view returns (uint256) {
-    return _getStorageV1().stakerTotal[staker].lowerLookup(timestamp);
+    return _getStorageV1().stakerTotal[staker].upperLookup(timestamp);
   }
 
   /// @inheritdoc IValidatorStaking
   function validatorTotal(address valAddr, uint48 timestamp) external view returns (uint256) {
-    return _getStorageV1().validatorTotal[valAddr].lowerLookup(timestamp);
+    return _getStorageV1().validatorTotal[valAddr].upperLookup(timestamp);
   }
 
   /// @inheritdoc IValidatorStaking
