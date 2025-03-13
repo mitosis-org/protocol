@@ -149,19 +149,19 @@ contract TheoTallyTest is Toolkit {
     assertEq(_theoTally.pendingWithdrawBalance(''), 200 ether);
   }
 
-  function test_protocolAddress() public {
+  function test_protocolAddress() public view {
     assertEq(_theoTally.protocolAddress(), address(_theoDepositVault));
   }
 
-  function test_previewDeposit() public {
+  function test_previewDeposit() public view {
     assertEq(_theoTally.previewDeposit(100 ether, ''), 100 ether);
   }
 
-  function test_previewWithdraw() public {
+  function test_previewWithdraw() public view {
     assertEq(_theoTally.previewWithdraw(100 ether, ''), 0);
   }
 
-  function test_pendingDepositBalance() public {
+  function test_pendingDepositBalance() public view {
     assertEq(_theoTally.pendingDepositBalance(''), 0);
   }
 
