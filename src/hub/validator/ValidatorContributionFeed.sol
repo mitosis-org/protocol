@@ -148,6 +148,7 @@ contract ValidatorContributionFeed is
 
     reward.status = ReportStatus.INITIALIZED;
     reward.totalWeight = request.totalWeight;
+    $.checker.numOfValidators = request.numOfValidators;
     // 0 index is reserved for empty slot
     {
       ValidatorWeight memory empty;
@@ -178,8 +179,6 @@ contract ValidatorContributionFeed is
       checker.totalWeight += weight.weight;
     }
 
-    checker.numOfValidators += uint16(weights.length);
-
     uint128 prevTotalWeight = $.checker.totalWeight;
     $.checker = checker;
 
@@ -204,6 +203,22 @@ contract ValidatorContributionFeed is
     delete $.checker;
 
     emit ReportFinalized(epoch);
+  }
+
+  /// @inheritdoc IValidatorContributionFeed
+  function revokeReport() external onlyRole(FEEDER_ROLE) {
+    StorageV1 storage $ = _getStorageV1();
+    uint256 epoch = $.nextEpoch;
+
+    Reward storage reward = $.rewards[epoch];
+    require(reward.status == ReportStatus.INITIALIZED, IValidatorContributionFeed__InvalidReportStatus());
+
+    reward.status = ReportStatus.NONE;
+
+    delete $.rewards[epoch];
+    delete $.checker;
+
+    emit ReportRevoked(epoch);
   }
 
   // ================== INTERNAL FUNCTIONS ================== //

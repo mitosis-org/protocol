@@ -24,7 +24,7 @@ interface IValidatorContributionFeed {
 
   struct InitReportRequest {
     uint128 totalWeight;
-    uint128 numOfValidators;
+    uint16 numOfValidators;
   }
 
   struct Summary {
@@ -35,6 +35,7 @@ interface IValidatorContributionFeed {
   event ReportInitialized(uint256 epoch, uint128 totalWeight, uint128 numOfValidators);
   event WeightsPushed(uint256 epoch, uint128 totalWeight, uint128 numOfValidators);
   event ReportFinalized(uint256 epoch);
+  event ReportRevoked(uint256 epoch);
 
   error IValidatorContributionFeed__InvalidReportStatus();
   error IValidatorContributionFeed__InvalidWeightAddress();
@@ -59,4 +60,6 @@ interface IValidatorContributionFeed {
   function pushValidatorWeights(ValidatorWeight[] calldata weights) external;
 
   function finalizeReport() external;
+
+  function revokeReport() external;
 }
