@@ -49,11 +49,16 @@ contract MockContract {
     rets[abi.encodePacked(sig, data)] = Ret({ revert_: revert_, data: returnData });
   }
 
+  /// @notice Sets whether a function call is mutative
+  /// @param sig The function selector
+  function setCall(bytes4 sig) external {
+    isCall[sig] = true;
+  }
+
   /// @notice Sets whether a function call is static
   /// @param sig The function selector
-  /// @param isStatic Whether the function call is static
-  function setStatic(bytes4 sig, bool isStatic) external {
-    isCall[sig] = !isStatic;
+  function setStatic(bytes4 sig) external {
+    isCall[sig] = false;
   }
 
   function lastCallLog(bytes4 sig) external view returns (Log memory) {

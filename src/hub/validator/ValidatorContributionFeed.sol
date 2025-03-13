@@ -92,20 +92,24 @@ contract ValidatorContributionFeed is
 
   /// @inheritdoc IValidatorContributionFeed
   function weightCount(uint256 epoch) external view returns (uint256) {
-    return _getStorageV1().rewards[epoch].weights.length - 1;
+    Reward storage reward = _getStorageV1().rewards[epoch];
+    _assertReportReady(reward);
+
+    return _weightCount(reward);
   }
 
   /// @inheritdoc IValidatorContributionFeed
   function weightAt(uint256 epoch, uint256 index) external view returns (ValidatorWeight memory) {
-    return _getStorageV1().rewards[epoch].weights[index + 1];
+    Reward storage reward = _getStorageV1().rewards[epoch];
+    _assertReportReady(reward);
+
+    return reward.weights[index + 1];
   }
 
   /// @inheritdoc IValidatorContributionFeed
   function weightOf(uint256 epoch, address valAddr) external view returns (ValidatorWeight memory, bool) {
-    StorageV1 storage $ = _getStorageV1();
-    Reward storage reward = $.rewards[epoch];
-
-    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__EpochNotFinalized());
+    Reward storage reward = _getStorageV1().rewards[epoch];
+    _assertReportReady(reward);
 
     uint256 index = reward.weightByValAddr[valAddr];
     if (index == 0) {
@@ -122,14 +126,12 @@ contract ValidatorContributionFeed is
 
   /// @inheritdoc IValidatorContributionFeed
   function summary(uint256 epoch) external view returns (Summary memory) {
-    StorageV1 storage $ = _getStorageV1();
-    Reward storage reward = $.rewards[epoch];
-
-    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__EpochNotFinalized());
+    Reward storage reward = _getStorageV1().rewards[epoch];
+    _assertReportReady(reward);
 
     return Summary({
       totalWeight: uint256(reward.totalWeight).toUint128(),
-      numOfValidators: reward.weights.length.toUint128()
+      numOfValidators: _weightCount(reward).toUint128()
     });
   }
 
@@ -146,6 +148,7 @@ contract ValidatorContributionFeed is
 
     reward.status = ReportStatus.INITIALIZED;
     reward.totalWeight = request.totalWeight;
+    $.checker.numOfValidators = request.numOfValidators;
     // 0 index is reserved for empty slot
     {
       ValidatorWeight memory empty;
@@ -165,17 +168,16 @@ contract ValidatorContributionFeed is
 
     ReportChecker memory checker = $.checker;
 
+    uint256 weightsLen = reward.weights.length;
     for (uint256 i = 0; i < weights.length; i++) {
       ValidatorWeight memory weight = weights[i];
       uint256 index = reward.weightByValAddr[weight.addr];
       require(index == 0, IValidatorContributionFeed__InvalidWeightAddress());
 
       reward.weights.push(weight);
-      reward.weightByValAddr[weight.addr] = i;
+      reward.weightByValAddr[weight.addr] = weightsLen + i;
       checker.totalWeight += weight.weight;
     }
-
-    checker.numOfValidators += uint16(weights.length);
 
     uint128 prevTotalWeight = $.checker.totalWeight;
     $.checker = checker;
@@ -193,7 +195,7 @@ contract ValidatorContributionFeed is
 
     ReportChecker memory checker = $.checker;
     require(checker.totalWeight == reward.totalWeight, IValidatorContributionFeed__InvalidTotalWeight());
-    require(checker.numOfValidators == reward.weights.length - 1, IValidatorContributionFeed__InvalidValidatorCount());
+    require(checker.numOfValidators == _weightCount(reward), IValidatorContributionFeed__InvalidValidatorCount());
 
     reward.status = ReportStatus.FINALIZED;
 
@@ -201,6 +203,35 @@ contract ValidatorContributionFeed is
     delete $.checker;
 
     emit ReportFinalized(epoch);
+  }
+
+  /// @inheritdoc IValidatorContributionFeed
+  function revokeReport() external onlyRole(FEEDER_ROLE) {
+    StorageV1 storage $ = _getStorageV1();
+    uint256 epoch = $.nextEpoch;
+
+    Reward storage reward = $.rewards[epoch];
+    require(reward.status == ReportStatus.INITIALIZED, IValidatorContributionFeed__InvalidReportStatus());
+
+    // NOTICE: we need to separate revoke sequence because of the gas limit
+    for (uint256 i = 0; i < reward.weights.length; i++) {
+      delete reward.weightByValAddr[reward.weights[i].addr];
+    }
+    delete $.rewards[epoch].weights;
+    delete $.rewards[epoch];
+    delete $.checker;
+
+    emit ReportRevoked(epoch);
+  }
+
+  // ================== INTERNAL FUNCTIONS ================== //
+
+  function _weightCount(Reward storage reward) internal view returns (uint256) {
+    return reward.weights.length - 1;
+  }
+
+  function _assertReportReady(Reward storage reward) internal view {
+    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__ReportNotReady());
   }
 
   // ================== UUPS ================== //
