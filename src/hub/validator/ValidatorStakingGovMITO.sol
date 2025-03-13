@@ -31,9 +31,8 @@ contract ValidatorStakingGovMITO is ValidatorStaking {
   }
 
   function claimUnstake(address valAddr, address receiver) public override returns (uint256) {
-    require(_msgSender() == receiver, ValidatorStakingGovMITO__NonTransferrable());
     uint256 claimed = super.claimUnstake(valAddr, receiver);
-    IGovMITO(baseAsset()).notifyProxiedWithdraw(_msgSender(), claimed);
+    IGovMITO(baseAsset()).notifyProxiedWithdraw(receiver, claimed);
     return claimed;
   }
 }
