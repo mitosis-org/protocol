@@ -93,7 +93,7 @@ contract ValidatorContributionFeed is
   /// @inheritdoc IValidatorContributionFeed
   function weightCount(uint256 epoch) external view returns (uint256) {
     Reward storage reward = _getStorageV1().rewards[epoch];
-    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__ReportNotReady());
+    _assertReportReady(reward);
 
     return _weightCount(reward);
   }
@@ -101,7 +101,7 @@ contract ValidatorContributionFeed is
   /// @inheritdoc IValidatorContributionFeed
   function weightAt(uint256 epoch, uint256 index) external view returns (ValidatorWeight memory) {
     Reward storage reward = _getStorageV1().rewards[epoch];
-    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__ReportNotReady());
+    _assertReportReady(reward);
 
     return reward.weights[index + 1];
   }
@@ -109,7 +109,7 @@ contract ValidatorContributionFeed is
   /// @inheritdoc IValidatorContributionFeed
   function weightOf(uint256 epoch, address valAddr) external view returns (ValidatorWeight memory, bool) {
     Reward storage reward = _getStorageV1().rewards[epoch];
-    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__ReportNotReady());
+    _assertReportReady(reward);
 
     uint256 index = reward.weightByValAddr[valAddr];
     if (index == 0) {
@@ -127,7 +127,7 @@ contract ValidatorContributionFeed is
   /// @inheritdoc IValidatorContributionFeed
   function summary(uint256 epoch) external view returns (Summary memory) {
     Reward storage reward = _getStorageV1().rewards[epoch];
-    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__ReportNotReady());
+    _assertReportReady(reward);
 
     return Summary({
       totalWeight: uint256(reward.totalWeight).toUint128(),
@@ -210,6 +210,10 @@ contract ValidatorContributionFeed is
 
   function _weightCount(Reward storage reward) internal view returns (uint256) {
     return reward.weights.length - 1;
+  }
+
+  function _assertReportReady(Reward storage reward) internal view {
+    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__ReportNotReady());
   }
 
   // ================== UUPS ================== //
