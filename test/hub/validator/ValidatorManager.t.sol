@@ -110,8 +110,9 @@ contract ValidatorManagerTest is Toolkit {
     );
 
     entrypoint.assertLastCall(
-      IConsensusValidatorEntrypoint.registerValidator.selector,
-      abi.encode(val.addr, LibSecp256k1.compressPubkey(val.pubKey), val.addr),
+      abi.encodeCall(
+        IConsensusValidatorEntrypoint.registerValidator, (val.addr, LibSecp256k1.compressPubkey(val.pubKey), val.addr)
+      ),
       1000 ether
     );
 
@@ -144,7 +145,7 @@ contract ValidatorManagerTest is Toolkit {
     manager.depositCollateral{ value: 1000 ether }(val.addr);
 
     entrypoint.assertLastCall(
-      IConsensusValidatorEntrypoint.depositCollateral.selector, abi.encode(val.addr, withdrawalRecipient), 1000 ether
+      abi.encodeCall(IConsensusValidatorEntrypoint.depositCollateral, (val.addr, withdrawalRecipient)), 1000 ether
     );
   }
 
@@ -162,8 +163,10 @@ contract ValidatorManagerTest is Toolkit {
     manager.withdrawCollateral(val.addr, 1000 ether);
 
     entrypoint.assertLastCall(
-      IConsensusValidatorEntrypoint.withdrawCollateral.selector,
-      abi.encode(val.addr, 1000 ether, withdrawalRecipient, block.timestamp + 1000 seconds)
+      abi.encodeCall(
+        IConsensusValidatorEntrypoint.withdrawCollateral,
+        (val.addr, 1000 ether, withdrawalRecipient, _now48() + 1000 seconds)
+      )
     );
   }
 
@@ -177,7 +180,7 @@ contract ValidatorManagerTest is Toolkit {
     vm.prank(operator);
     manager.unjailValidator(val.addr);
 
-    entrypoint.assertLastCall(IConsensusValidatorEntrypoint.unjail.selector, abi.encode(val.addr));
+    entrypoint.assertLastCall(abi.encodeCall(IConsensusValidatorEntrypoint.unjail, (val.addr)));
   }
 
   function test_updateOperator() public {
