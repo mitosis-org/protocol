@@ -21,7 +21,6 @@ import { LibRedeemQueue } from '../lib/LibRedeemQueue.sol';
 import { StdError } from '../lib/StdError.sol';
 
 // TODO(thai): Add more view functions. (Check ReclaimQueueStorageV1.sol as a reference)
-
 contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUpgradeable {
   using ERC7201Utils for string;
   using LibRedeemQueue for *;
@@ -30,7 +29,7 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   struct GovMITOStorage {
     address minter;
     LibRedeemQueue.Queue redeemQueue;
-    mapping(address sender => bool) isProxied;
+    mapping(address sender => bool) isProxied; // TODO(eddy): better naming
     mapping(address account => uint256) proxiedBalances;
     mapping(address sender => bool) isWhitelistedSender;
   }
