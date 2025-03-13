@@ -21,6 +21,15 @@ contract ValidatorStakingGovMITO is ValidatorStaking {
     IGovMITO(baseAsset()).notifyProxiedDeposit(_msgSender(), amount);
   }
 
+  function requestUnstake(address valAddr, address receiver, uint256 amount) public override returns (uint256) {
+    uint256 reqId = super.requestUnstake(valAddr, receiver, amount);
+    if (_msgSender() != receiver) {
+      IGovMITO(baseAsset()).notifyProxiedWithdraw(_msgSender(), amount);
+      IGovMITO(baseAsset()).notifyProxiedDeposit(receiver, amount);
+    }
+    return reqId;
+  }
+
   function claimUnstake(address valAddr, address receiver) public override returns (uint256) {
     uint256 claimed = super.claimUnstake(valAddr, receiver);
     IGovMITO(baseAsset()).notifyProxiedWithdraw(_msgSender(), claimed);
