@@ -40,7 +40,7 @@ interface IValidatorContributionFeed {
   error IValidatorContributionFeed__InvalidWeightAddress();
   error IValidatorContributionFeed__InvalidTotalWeight();
   error IValidatorContributionFeed__InvalidValidatorCount();
-  error IValidatorContributionFeed__EpochNotFinalized();
+  error IValidatorContributionFeed__ReportNotReady();
 
   function epochFeeder() external view returns (IEpochFeeder);
 

@@ -92,20 +92,24 @@ contract ValidatorContributionFeed is
 
   /// @inheritdoc IValidatorContributionFeed
   function weightCount(uint256 epoch) external view returns (uint256) {
-    return _getStorageV1().rewards[epoch].weights.length - 1;
+    Reward storage reward = _getStorageV1().rewards[epoch];
+    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__ReportNotReady());
+
+    return reward.weights.length - 1;
   }
 
   /// @inheritdoc IValidatorContributionFeed
   function weightAt(uint256 epoch, uint256 index) external view returns (ValidatorWeight memory) {
-    return _getStorageV1().rewards[epoch].weights[index + 1];
+    Reward storage reward = _getStorageV1().rewards[epoch];
+    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__ReportNotReady());
+
+    return reward.weights[index + 1];
   }
 
   /// @inheritdoc IValidatorContributionFeed
   function weightOf(uint256 epoch, address valAddr) external view returns (ValidatorWeight memory, bool) {
-    StorageV1 storage $ = _getStorageV1();
-    Reward storage reward = $.rewards[epoch];
-
-    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__EpochNotFinalized());
+    Reward storage reward = _getStorageV1().rewards[epoch];
+    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__ReportNotReady());
 
     uint256 index = reward.weightByValAddr[valAddr];
     if (index == 0) {
@@ -122,10 +126,8 @@ contract ValidatorContributionFeed is
 
   /// @inheritdoc IValidatorContributionFeed
   function summary(uint256 epoch) external view returns (Summary memory) {
-    StorageV1 storage $ = _getStorageV1();
-    Reward storage reward = $.rewards[epoch];
-
-    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__EpochNotFinalized());
+    Reward storage reward = _getStorageV1().rewards[epoch];
+    require(reward.status == ReportStatus.FINALIZED, IValidatorContributionFeed__ReportNotReady());
 
     return Summary({
       totalWeight: uint256(reward.totalWeight).toUint128(),
@@ -165,13 +167,14 @@ contract ValidatorContributionFeed is
 
     ReportChecker memory checker = $.checker;
 
+    uint256 weightsLen = reward.weights.length;
     for (uint256 i = 0; i < weights.length; i++) {
       ValidatorWeight memory weight = weights[i];
       uint256 index = reward.weightByValAddr[weight.addr];
       require(index == 0, IValidatorContributionFeed__InvalidWeightAddress());
 
       reward.weights.push(weight);
-      reward.weightByValAddr[weight.addr] = i;
+      reward.weightByValAddr[weight.addr] = weightsLen + i;
       checker.totalWeight += weight.weight;
     }
 
