@@ -26,10 +26,8 @@ interface IValidatorStaking {
   // ========== VIEWS ========== //
 
   function baseAsset() external view returns (address);
-  function epochFeeder() external view returns (IEpochFeeder);
   function manager() external view returns (IValidatorManager);
   function hub() external view returns (IValidatorStakingHub);
-  function entrypoint() external view returns (IConsensusValidatorEntrypoint);
 
   function unstakeCooldown() external view returns (uint48);
   function redelegationCooldown() external view returns (uint48);
