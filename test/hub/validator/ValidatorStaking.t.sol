@@ -3,14 +3,12 @@ pragma solidity ^0.8.28;
 
 import { WETH } from '@solady/tokens/WETH.sol';
 
-import { Toolkit } from '../../util/Toolkit.sol';
-import { MockContract } from '../../util/MockContract.sol';
-
+import { ValidatorStaking } from '../../../src/hub/validator/ValidatorStaking.sol';
 import { IValidatorManager } from '../../../src/interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorStaking } from '../../../src/interfaces/hub/validator/IValidatorStaking.sol';
 import { IValidatorStakingHub } from '../../../src/interfaces/hub/validator/IValidatorStakingHub.sol';
-
-import { ValidatorStaking } from '../../../src/hub/validator/ValidatorStaking.sol';
+import { MockContract } from '../../util/MockContract.sol';
+import { Toolkit } from '../../util/Toolkit.sol';
 
 contract ValidatorStakingTest is Toolkit {
   address owner = makeAddr('owner');
