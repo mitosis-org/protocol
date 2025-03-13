@@ -17,26 +17,7 @@ import {
 } from '../../../src/interfaces/hub/validator/IValidatorContributionFeed.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
-
-contract MockEpochFeeder {
-  uint96 epoch_ = 1;
-
-  function epoch() external view returns (uint96) {
-    return epoch_;
-  }
-
-  function setEpoch(uint96 newEpoch) external {
-    epoch_ = newEpoch;
-  }
-}
-
-contract MockNotifier {
-  uint256 public callCount;
-
-  function notifyReportFinalized(uint96) external {
-    callCount++;
-  }
-}
+import { MockContract } from '../../util/MockContract.sol';
 
 contract ValidatorContributionFeedTest is Toolkit {
   using SafeCast for uint256;
@@ -45,11 +26,12 @@ contract ValidatorContributionFeedTest is Toolkit {
   address owner = makeAddr('owner');
   address feeder = makeAddr('feeder');
 
-  MockEpochFeeder epochFeeder;
+  MockContract epochFeeder;
   ValidatorContributionFeed feed;
 
   function setUp() public {
-    epochFeeder = new MockEpochFeeder();
+    epochFeeder = new MockContract();
+    epochFeeder.setStatic(IEpochFeeder.epoch.selector);
 
     feed = ValidatorContributionFeed(
       address(
@@ -71,7 +53,7 @@ contract ValidatorContributionFeedTest is Toolkit {
   }
 
   function test_report() public {
-    epochFeeder.setEpoch(2);
+    epochFeeder.setRet(IEpochFeeder.epoch.selector, abi.encode(uint256(2)), false, abi.encode(uint256(2)));
 
     vm.startPrank(feeder);
     feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300, numOfValidators: 300 }));
