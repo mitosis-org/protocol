@@ -9,6 +9,8 @@ import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { ValidatorStaking } from './ValidatorStaking.sol';
 
 contract ValidatorStakingGovMITO is ValidatorStaking {
+  error ValidatorStakingGovMITO__NonTransferrable();
+
   constructor(
     address baseAsset_,
     IEpochFeeder epochFeeder_,
@@ -17,20 +19,19 @@ contract ValidatorStakingGovMITO is ValidatorStaking {
   ) ValidatorStaking(baseAsset_, epochFeeder_, manager_, entrypoint_) { }
 
   function stake(address valAddr, address recipient, uint256 amount) public payable override {
+    require(_msgSender() == recipient, ValidatorStakingGovMITO__NonTransferrable());
     super.stake(valAddr, recipient, amount);
     IGovMITO(baseAsset()).notifyProxiedDeposit(_msgSender(), amount);
   }
 
   function requestUnstake(address valAddr, address receiver, uint256 amount) public override returns (uint256) {
+    require(_msgSender() == receiver, ValidatorStakingGovMITO__NonTransferrable());
     uint256 reqId = super.requestUnstake(valAddr, receiver, amount);
-    if (_msgSender() != receiver) {
-      IGovMITO(baseAsset()).notifyProxiedWithdraw(_msgSender(), amount);
-      IGovMITO(baseAsset()).notifyProxiedDeposit(receiver, amount);
-    }
     return reqId;
   }
 
   function claimUnstake(address valAddr, address receiver) public override returns (uint256) {
+    require(_msgSender() == receiver, ValidatorStakingGovMITO__NonTransferrable());
     uint256 claimed = super.claimUnstake(valAddr, receiver);
     IGovMITO(baseAsset()).notifyProxiedWithdraw(_msgSender(), claimed);
     return claimed;
