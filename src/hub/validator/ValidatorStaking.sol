@@ -56,21 +56,13 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   address private immutable _baseAsset;
-  IEpochFeeder private immutable _epochFeeder;
   IValidatorManager private immutable _manager;
   IValidatorStakingHub private immutable _hub;
-  IConsensusValidatorEntrypoint private immutable _entrypoint;
 
-  constructor(
-    address baseAsset_,
-    IEpochFeeder epochFeeder_,
-    IValidatorManager manager_,
-    IConsensusValidatorEntrypoint entrypoint_
-  ) {
+  constructor(address baseAsset_, IValidatorManager manager_, IValidatorStakingHub hub_) {
     _baseAsset = baseAsset_ == address(0) ? NATIVE_TOKEN : baseAsset_;
-    _epochFeeder = epochFeeder_;
     _manager = manager_;
-    _entrypoint = entrypoint_;
+    _hub = hub_;
 
     _disableInitializers();
   }
@@ -91,11 +83,6 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorStaking
-  function epochFeeder() external view returns (IEpochFeeder) {
-    return _epochFeeder;
-  }
-
-  /// @inheritdoc IValidatorStaking
   function manager() external view returns (IValidatorManager) {
     return _manager;
   }
@@ -103,11 +90,6 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   /// @inheritdoc IValidatorStaking
   function hub() external view returns (IValidatorStakingHub) {
     return _hub;
-  }
-
-  /// @inheritdoc IValidatorStaking
-  function entrypoint() external view returns (IConsensusValidatorEntrypoint) {
-    return _entrypoint;
   }
 
   /// @inheritdoc IValidatorStaking
@@ -166,8 +148,8 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     // If the base asset is not native, we need to transfer from the sender to the contract
     if (_baseAsset != NATIVE_TOKEN) _baseAsset.safeTransferFrom(_msgSender(), address(this), amount);
 
-    _stake(_getStorageV1(), valAddr, _msgSender(), amount);
-    _hub.notifyStake(valAddr, _msgSender(), amount);
+    _stake(_getStorageV1(), valAddr, recipient, amount);
+    _hub.notifyStake(valAddr, recipient, amount);
 
     emit Staked(valAddr, _msgSender(), recipient, amount);
   }
