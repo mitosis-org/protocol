@@ -51,26 +51,19 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   using SafeCast for uint256;
   using SafeTransferLib for address;
   using LibRedeemQueue for LibRedeemQueue.Queue;
+  using LibRedeemQueue for LibRedeemQueue.Index;
   using Checkpoints for Checkpoints.Trace208;
 
   address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   address private immutable _baseAsset;
-  IEpochFeeder private immutable _epochFeeder;
   IValidatorManager private immutable _manager;
   IValidatorStakingHub private immutable _hub;
-  IConsensusValidatorEntrypoint private immutable _entrypoint;
 
-  constructor(
-    address baseAsset_,
-    IEpochFeeder epochFeeder_,
-    IValidatorManager manager_,
-    IConsensusValidatorEntrypoint entrypoint_
-  ) {
+  constructor(address baseAsset_, IValidatorManager manager_, IValidatorStakingHub hub_) {
     _baseAsset = baseAsset_ == address(0) ? NATIVE_TOKEN : baseAsset_;
-    _epochFeeder = epochFeeder_;
     _manager = manager_;
-    _entrypoint = entrypoint_;
+    _hub = hub_;
 
     _disableInitializers();
   }
@@ -91,11 +84,6 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorStaking
-  function epochFeeder() external view returns (IEpochFeeder) {
-    return _epochFeeder;
-  }
-
-  /// @inheritdoc IValidatorStaking
   function manager() external view returns (IValidatorManager) {
     return _manager;
   }
@@ -106,13 +94,8 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorStaking
-  function entrypoint() external view returns (IConsensusValidatorEntrypoint) {
-    return _entrypoint;
-  }
-
-  /// @inheritdoc IValidatorStaking
   function totalStaked(uint48 timestamp) external view returns (uint256) {
-    return _getStorageV1().totalStaked.lowerLookup(timestamp);
+    return _getStorageV1().totalStaked.upperLookup(timestamp);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -122,17 +105,17 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
   /// @inheritdoc IValidatorStaking
   function staked(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
-    return _getStorageV1().staked[valAddr][staker].lowerLookup(timestamp);
+    return _getStorageV1().staked[valAddr][staker].upperLookup(timestamp);
   }
 
   /// @inheritdoc IValidatorStaking
   function stakerTotal(address staker, uint48 timestamp) external view returns (uint256) {
-    return _getStorageV1().stakerTotal[staker].lowerLookup(timestamp);
+    return _getStorageV1().stakerTotal[staker].upperLookup(timestamp);
   }
 
   /// @inheritdoc IValidatorStaking
   function validatorTotal(address valAddr, uint48 timestamp) external view returns (uint256) {
-    return _getStorageV1().validatorTotal[valAddr].lowerLookup(timestamp);
+    return _getStorageV1().validatorTotal[valAddr].upperLookup(timestamp);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -166,8 +149,8 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     // If the base asset is not native, we need to transfer from the sender to the contract
     if (_baseAsset != NATIVE_TOKEN) _baseAsset.safeTransferFrom(_msgSender(), address(this), amount);
 
-    _stake(_getStorageV1(), valAddr, _msgSender(), amount);
-    _hub.notifyStake(valAddr, _msgSender(), amount);
+    _stake(_getStorageV1(), valAddr, recipient, amount);
+    _hub.notifyStake(valAddr, recipient, amount);
 
     emit Staked(valAddr, _msgSender(), recipient, amount);
   }
@@ -180,6 +163,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
 
     LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
+    if (queue.redeemPeriod != $.unstakeCooldown) queue.redeemPeriod = $.unstakeCooldown;
 
     // FIXME(eddy): shorten the enqueue + reserve flow
     uint48 now_ = Time.timestamp();
@@ -203,8 +187,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     StorageV1 storage $ = _getStorageV1();
 
     LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
-
-    queue.redeemPeriod = $.unstakeCooldown;
+    if (queue.redeemPeriod != $.unstakeCooldown) queue.redeemPeriod = $.unstakeCooldown;
 
     uint48 now_ = Time.timestamp();
     queue.update(now_);
@@ -237,6 +220,8 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     _stake($, toValAddr, _msgSender(), amount);
     _hub.notifyRedelegation(fromValAddr, toValAddr, _msgSender(), amount);
 
+    $.lastRedelegationTime[_msgSender()] = now_;
+
     emit Redelegated(fromValAddr, toValAddr, _msgSender(), amount);
   }
 
@@ -265,14 +250,16 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     uint256 claimable = 0;
     uint256 nonClaimable = 0;
 
+    LibRedeemQueue.Index storage index = queue.indexes[staker];
+
     if (found) {
       for (uint256 i = offset; i < newOffset; i++) {
-        claimable += queue.requestAmount(i);
+        claimable += queue.requestAmount(index.get(i));
       }
     }
 
-    for (uint256 i = found ? newOffset : offset; i < queue.indexes[staker].size; i++) {
-      nonClaimable += queue.requestAmount(i);
+    for (uint256 i = found ? newOffset : offset; i < index.size; i++) {
+      nonClaimable += queue.requestAmount(index.get(i));
     }
 
     return (claimable, nonClaimable);
