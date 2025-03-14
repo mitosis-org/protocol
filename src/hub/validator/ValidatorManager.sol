@@ -199,22 +199,22 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     // verify the pubKey is valid and corresponds to the caller
     pubKey.verifyCmpPubkeyWithAddress(valAddr);
 
-    _burnFee();
-    _createValidator(_getStorageV1(), valAddr, pubKey, msg.value, request);
+    uint256 netMsgValue = _burnFee();
+    _createValidator(_getStorageV1(), valAddr, pubKey, netMsgValue, request);
 
-    _entrypoint.registerValidator{ value: msg.value }(valAddr, pubKey, request.withdrawalRecipient);
+    _entrypoint.registerValidator{ value: netMsgValue }(valAddr, pubKey, request.withdrawalRecipient);
   }
 
   /// @inheritdoc IValidatorManager
   function depositCollateral(address valAddr) external payable {
-    _burnFee();
+    uint256 netMsgValue = _burnFee();
 
-    require(msg.value > 0, StdError.ZeroAmount());
+    require(netMsgValue > 0, StdError.ZeroAmount());
 
     Validator storage validator = _validator(_getStorageV1(), valAddr);
-    _entrypoint.depositCollateral{ value: msg.value }(valAddr, validator.withdrawalRecipient);
+    _entrypoint.depositCollateral{ value: netMsgValue }(valAddr, validator.withdrawalRecipient);
 
-    emit CollateralDeposited(valAddr, msg.value);
+    emit CollateralDeposited(valAddr, netMsgValue);
   }
 
   /// @inheritdoc IValidatorManager
@@ -436,9 +436,10 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit ValidatorCreated(valAddr, request.operator, pubKey);
   }
 
-  function _burnFee() internal {
+  function _burnFee() internal returns (uint256 netMsgValue) {
     require(msg.value >= FEE, IValidatorManager__InsufficientFee(msg.value));
     payable(0x0000000000000000000000000000000000000000).transfer(FEE);
+    return msg.value - FEE;
   }
 
   function _assertValidatorExists(StorageV1 storage $, address valAddr) internal view {
