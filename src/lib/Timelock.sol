@@ -6,7 +6,9 @@ import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/Ac
 import { TimelockControllerUpgradeable } from '@ozu-v5/governance/TimelockControllerUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
-contract Timelock is TimelockControllerUpgradeable, AccessControlEnumerableUpgradeable, UUPSUpgradeable {
+import { Pausable } from './Pausable.sol';
+
+contract Timelock is TimelockControllerUpgradeable, AccessControlEnumerableUpgradeable, UUPSUpgradeable, Pausable {
   constructor() {
     _disableInitializers();
   }
@@ -16,9 +18,46 @@ contract Timelock is TimelockControllerUpgradeable, AccessControlEnumerableUpgra
     override
     initializer
   {
+    __Pausable_init();
     __UUPSUpgradeable_init();
     __TimelockController_init(minDelay, proposers, executors, admin);
     __AccessControlEnumerable_init();
+  }
+
+  function execute(address target, uint256 value, bytes calldata payload, bytes32 predecessor, bytes32 salt)
+    public
+    payable
+    override
+    notPaused
+    onlyRoleOrOpenRole(EXECUTOR_ROLE)
+  {
+    super.execute(target, value, payload, predecessor, salt);
+  }
+
+  function executeBatch(
+    address[] calldata targets,
+    uint256[] calldata values,
+    bytes[] calldata payloads,
+    bytes32 predecessor,
+    bytes32 salt
+  ) public payable override notPaused onlyRoleOrOpenRole(EXECUTOR_ROLE) {
+    super.executeBatch(targets, values, payloads, predecessor, salt);
+  }
+
+  function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+    _pause();
+  }
+
+  function pause(bytes4 sig) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    _pause(sig);
+  }
+
+  function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+    _unpause();
+  }
+
+  function unpause(bytes4 sig) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    _unpause(sig);
   }
 
   function supportsInterface(bytes4 interfaceId)

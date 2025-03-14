@@ -20,6 +20,7 @@ import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorMana
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { LibSecp256k1 } from '../../lib/LibSecp256k1.sol';
+import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 contract ValidatorManagerStorageV1 {
@@ -77,7 +78,13 @@ contract ValidatorManagerStorageV1 {
   }
 }
 
-contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownable2StepUpgradeable, UUPSUpgradeable {
+contract ValidatorManager is
+  IValidatorManager,
+  ValidatorManagerStorageV1,
+  Ownable2StepUpgradeable,
+  UUPSUpgradeable,
+  Pausable
+{
   using SafeCast for uint256;
   using EnumerableMap for EnumerableMap.AddressToUintMap;
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -105,6 +112,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     __UUPSUpgradeable_init();
     __Ownable_init(initialOwner);
     __Ownable2Step_init();
+    __Pausable_init();
 
     StorageV1 storage $ = _getStorageV1();
 
@@ -186,7 +194,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function createValidator(bytes calldata pubKey, CreateValidatorRequest calldata request) external payable {
+  function createValidator(bytes calldata pubKey, CreateValidatorRequest calldata request) external payable notPaused {
     require(pubKey.length > 0, StdError.InvalidParameter('pubKey'));
 
     address valAddr = _msgSender();
@@ -202,7 +210,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function depositCollateral(address valAddr) external payable {
+  function depositCollateral(address valAddr) external payable notPaused {
     require(msg.value > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
@@ -214,7 +222,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function withdrawCollateral(address valAddr, uint256 amount) external {
+  function withdrawCollateral(address valAddr, uint256 amount) external notPaused {
     require(amount > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
@@ -332,6 +340,22 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   /// @inheritdoc IValidatorManager
   function setGlobalValidatorConfig(SetGlobalValidatorConfigRequest calldata request) external onlyOwner {
     _setGlobalValidatorConfig(_getStorageV1(), request);
+  }
+
+  function pause() external onlyOwner {
+    _pause();
+  }
+
+  function pause(bytes4 sig) external onlyOwner {
+    _pause(sig);
+  }
+
+  function unpause() external onlyOwner {
+    _unpause();
+  }
+
+  function unpause(bytes4 sig) external onlyOwner {
+    _unpause(sig);
   }
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //

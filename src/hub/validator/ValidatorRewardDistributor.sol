@@ -18,6 +18,7 @@ import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorMana
 import { IValidatorRewardDistributor } from '../../interfaces/hub/validator/IValidatorRewardDistributor.sol';
 import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 /// @title ValidatorRewardDistributor Storage Contract
@@ -52,7 +53,8 @@ contract ValidatorRewardDistributor is
   IValidatorRewardDistributor,
   ValidatorRewardDistributorStorageV1,
   Ownable2StepUpgradeable,
-  UUPSUpgradeable
+  UUPSUpgradeable,
+  Pausable
 {
   using SafeCast for uint256;
   using SafeERC20 for IGovMITO;
@@ -87,6 +89,7 @@ contract ValidatorRewardDistributor is
     __UUPSUpgradeable_init();
     __Ownable_init(initialOwner_);
     __Ownable2Step_init();
+    __Pausable_init();
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -157,13 +160,14 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function claimStakerRewards(address staker, address valAddr) external returns (uint256) {
+  function claimStakerRewards(address staker, address valAddr) external notPaused returns (uint256) {
     return _claimStakerRewards(_getStorageV1(), staker, valAddr, _msgSender());
   }
 
   /// @inheritdoc IValidatorRewardDistributor
   function batchClaimStakerRewards(address[] calldata stakers, address[][] calldata valAddrs)
     external
+    notPaused
     returns (uint256)
   {
     require(stakers.length == valAddrs.length, IValidatorRewardDistributor__ArrayLengthMismatch());
@@ -179,12 +183,12 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function claimOperatorRewards(address valAddr) external returns (uint256) {
+  function claimOperatorRewards(address valAddr) external notPaused returns (uint256) {
     return _claimOperatorRewards(_getStorageV1(), valAddr, _msgSender());
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function batchClaimOperatorRewards(address[] calldata valAddrs) external returns (uint256) {
+  function batchClaimOperatorRewards(address[] calldata valAddrs) external notPaused returns (uint256) {
     uint256 totalClaimed;
 
     for (uint256 i = 0; i < valAddrs.length; i++) {
@@ -287,6 +291,22 @@ contract ValidatorRewardDistributor is
 
     $.operator[valAddr] = lastClaimedEpoch;
     return totalClaimed;
+  }
+
+  function pause() external onlyOwner {
+    _pause();
+  }
+
+  function pause(bytes4 sig) external onlyOwner {
+    _pause(sig);
+  }
+
+  function unpause() external onlyOwner {
+    _unpause();
+  }
+
+  function unpause(bytes4 sig) external onlyOwner {
+    _unpause(sig);
   }
 
   function _claimRange(uint256 lastClaimedEpoch, uint256 currentEpoch, uint256 epochCount)

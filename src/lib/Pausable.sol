@@ -28,6 +28,11 @@ contract Pausable {
     }
   }
 
+  modifier notPaused() {
+    _assertNotPaused();
+    _;
+  }
+
   // =========================== NOTE: INITIALIZE HELPERS =========================== //
 
   function __Pausable_init() internal {
