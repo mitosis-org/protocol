@@ -32,7 +32,7 @@ interface IValidatorManager {
     bytes pubKey;
     address operator;
     address withdrawalRecipient;
-    address rewardRecipient;
+    address rewardManager;
     uint256 commissionRate;
     bytes metadata;
   }
@@ -48,7 +48,7 @@ interface IValidatorManager {
   struct CreateValidatorRequest {
     address operator;
     address withdrawalRecipient;
-    address rewardRecipient;
+    address rewardManager;
     uint256 commissionRate; // bp ex) 10000 = 100%
     bytes metadata;
   }
@@ -61,7 +61,7 @@ interface IValidatorManager {
     bytes pubKey;
     address operator;
     address withdrawalRecipient;
-    address rewardRecipient;
+    address rewardManager;
     uint256 commissionRate;
     bytes metadata;
     bytes signature;
@@ -83,7 +83,7 @@ interface IValidatorManager {
   event WithdrawalRecipientUpdated(
     address indexed valAddr, address indexed operator, address indexed withdrawalRecipient
   );
-  event RewardRecipientUpdated(address indexed valAddr, address indexed operator, address indexed rewardRecipient);
+  event RewardManagerUpdated(address indexed valAddr, address indexed operator, address indexed rewardManager);
   event MetadataUpdated(address indexed valAddr, address indexed operator, bytes metadata);
   event RewardConfigUpdated(address indexed valAddr, address indexed operator);
 
@@ -125,7 +125,7 @@ interface IValidatorManager {
   // operator actions - validator configurations
   function updateOperator(address valAddr, address operator) external;
   function updateWithdrawalRecipient(address valAddr, address withdrawalRecipient) external;
-  function updateRewardRecipient(address valAddr, address rewardRecipient) external;
+  function updateRewardManager(address valAddr, address rewardManager) external;
   function updateMetadata(address valAddr, bytes calldata metadata) external;
   function updateRewardConfig(address valAddr, UpdateRewardConfigRequest calldata request) external;
 
