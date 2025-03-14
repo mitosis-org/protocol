@@ -1831,7 +1831,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function _setUpEpochs(EpochParam[] memory params) internal {
-    _validatorManager.setRet(IValidatorManager.MAX_COMMISSION_RATE.selector, '', false, abi.encode(10000));
+    _validatorManager.setRet(abi.encodeCall(IValidatorManager.MAX_COMMISSION_RATE, ()), false, abi.encode(10000));
 
     for (uint256 i = 0; i < params.length; i++) {
       // ========== epoch setup ==========
@@ -1840,22 +1840,16 @@ contract ValidatorRewardDistributorTest is Toolkit {
       // For amount calculating
       vm.warp(epochParam.startsAt);
 
-      _epochFeed.setRet(
-        IEpochFeeder.timeAt.selector, abi.encode(epochParam.epoch), false, abi.encode(epochParam.startsAt)
-      );
+      _epochFeed.setRet(abi.encodeCall(IEpochFeeder.timeAt, (epochParam.epoch)), false, abi.encode(epochParam.startsAt));
 
       _contributionFeed.setRet(
-        IValidatorContributionFeed.available.selector,
-        abi.encode(epochParam.epoch),
+        abi.encodeCall(IValidatorContributionFeed.available, (epochParam.epoch)),
         false,
         abi.encode(epochParam.available)
       );
 
       _govMITOEmission.setRet(
-        IGovMITOEmission.validatorReward.selector,
-        abi.encode(epochParam.epoch),
-        false,
-        abi.encode(epochParam.totalReward)
+        abi.encodeCall(IGovMITOEmission.validatorReward, (epochParam.epoch)), false, abi.encode(epochParam.totalReward)
       );
 
       // ========== validator setup ==========
@@ -1874,20 +1868,17 @@ contract ValidatorRewardDistributorTest is Toolkit {
         );
 
         _validatorManager.setRet(
-          IValidatorManager.validatorInfo.selector,
-          abi.encode(validatorParam.valAddr),
+          abi.encodeCall(IValidatorManager.validatorInfo, (validatorParam.valAddr)),
           false,
           abi.encode(validatorInfoResponse)
         );
         _validatorManager.setRet(
-          IValidatorManager.validatorInfoAt.selector,
-          abi.encode(epochParam.epoch, validatorParam.valAddr),
+          abi.encodeCall(IValidatorManager.validatorInfoAt, (epochParam.epoch, validatorParam.valAddr)),
           false,
           abi.encode(validatorInfoResponse)
         );
         _contributionFeed.setRet(
-          IValidatorContributionFeed.weightOf.selector,
-          abi.encode(epochParam.epoch, validatorParam.valAddr),
+          abi.encodeCall(IValidatorContributionFeed.weightOf, (epochParam.epoch, validatorParam.valAddr)),
           false,
           abi.encode(
             ValidatorWeight(
@@ -1909,8 +1900,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       }
 
       _contributionFeed.setRet(
-        IValidatorContributionFeed.summary.selector,
-        abi.encode(epochParam.epoch),
+        abi.encodeCall(IValidatorContributionFeed.summary, (epochParam.epoch)),
         false,
         abi.encode(
           totalWeight, // uint128 totalWeight;
@@ -1921,10 +1911,11 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     uint256 lastEpoch = params[params.length - 1].epoch + 1;
     uint256 lastEpochTime = params[params.length - 1].endsAt;
-    _epochFeed.setRet(IEpochFeeder.epoch.selector, '', false, abi.encode(lastEpoch));
-    _epochFeed.setRet(IEpochFeeder.timeAt.selector, abi.encode(lastEpoch), false, abi.encode(lastEpochTime));
+    _epochFeed.setRet(abi.encodeCall(IEpochFeeder.epoch, ()), false, abi.encode(lastEpoch));
+    _epochFeed.setRet(abi.encodeCall(IEpochFeeder.timeAt, (lastEpoch)), false, abi.encode(lastEpochTime));
+
     _contributionFeed.setRet(
-      IValidatorContributionFeed.available.selector, abi.encode(lastEpoch), false, abi.encode(false)
+      abi.encodeCall(IValidatorContributionFeed.available, (lastEpoch)), false, abi.encode(false)
     );
 
     vm.warp(lastEpochTime);
