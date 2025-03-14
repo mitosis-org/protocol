@@ -60,8 +60,8 @@ interface IValidatorManager {
   struct GenesisValidatorSet {
     bytes pubKey;
     address operator;
-    address withdrawalRecipient;
     address rewardManager;
+    address withdrawalRecipient;
     uint256 commissionRate;
     bytes metadata;
     bytes signature;

@@ -42,8 +42,8 @@ contract ValidatorManagerStorageV1 {
   struct Validator {
     address valAddr;
     address operator;
-    address withdrawalRecipient;
     address rewardManager;
+    address withdrawalRecipient;
     bytes pubKey;
     ValidatorRewardConfig rewardConfig;
     // TBD: Metadata format
