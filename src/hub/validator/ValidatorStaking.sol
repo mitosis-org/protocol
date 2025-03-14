@@ -55,7 +55,9 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
   address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-  uint256 public constant MIN_AMOUNT = 100 ether;
+  uint256 public constant MIN_STAKING_AMOUNT = 100 ether;
+
+  uint256 public constant MIN_UNSTAKING_AMOUNT = 100 ether;
 
   address private immutable _baseAsset;
   IEpochFeeder private immutable _epochFeeder;
@@ -293,7 +295,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   function _stake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal {
-    require(amount >= MIN_AMOUNT, IValidatorStaking__InsufficientMinimumAmount());
+    require(amount >= MIN_STAKING_AMOUNT, IValidatorStaking__InsufficientMinimumAmount());
 
     uint48 now_ = Time.timestamp();
 
@@ -304,14 +306,17 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   function _unstake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal {
-    require(amount >= MIN_AMOUNT, IValidatorStaking__InsufficientMinimumAmount());
+    uint256 stakerAmount = $.staked[valAddr][staker].latest();
+    if (stakerAmount != amount) {
+      require(amount >= MIN_UNSTAKING_AMOUNT, IValidatorStaking__InsufficientMinimumAmount());
+    }
 
     uint48 now_ = Time.timestamp();
 
     $.totalStaked.push(now_, ($.totalStaked.latest() - amount).toUint208());
     $.stakerTotal[staker].push(now_, ($.stakerTotal[staker].latest() - amount).toUint208());
     $.validatorTotal[valAddr].push(now_, ($.validatorTotal[valAddr].latest() - amount).toUint208());
-    $.staked[valAddr][staker].push(now_, ($.staked[valAddr][staker].latest() - amount).toUint208());
+    $.staked[valAddr][staker].push(now_, (stakerAmount - amount).toUint208());
   }
 
   // ========== ADMIN ACTIONS ========== //
