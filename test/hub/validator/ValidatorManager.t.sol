@@ -62,6 +62,7 @@ contract ValidatorManagerTest is Toolkit {
           ValidatorManager.initialize,
           (
             owner,
+            0,
             IValidatorManager.SetGlobalValidatorConfigRequest({
               initialValidatorDeposit: 1000 ether,
               collateralWithdrawalDelay: 1000 seconds,

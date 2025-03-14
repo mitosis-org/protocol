@@ -75,6 +75,8 @@ interface IValidatorManager {
     uint96 commissionRateUpdateDelay; // in epoch
   }
 
+  event FeeSet(uint256 previousFee, uint256 newFee);
+
   event ValidatorCreated(address indexed valAddr, address indexed operator, bytes pubKey);
   event CollateralDeposited(address indexed valAddr, uint256 amount);
   event CollateralWithdrawn(address indexed valAddr, uint256 amount);
@@ -99,6 +101,8 @@ interface IValidatorManager {
 
   function entrypoint() external view returns (IConsensusValidatorEntrypoint);
   function epochFeeder() external view returns (IEpochFeeder);
+
+  function fee() external view returns (uint256);
   function globalValidatorConfig() external view returns (GlobalValidatorConfigResponse memory);
 
   function validatorPubKeyToAddress(bytes calldata pubKey) external pure returns (address);
@@ -133,5 +137,6 @@ interface IValidatorManager {
 
   // ========== CONTRACT MANAGEMENT ========== //
 
+  function setFee(uint256 fee) external;
   function setGlobalValidatorConfig(SetGlobalValidatorConfigRequest calldata request) external;
 }

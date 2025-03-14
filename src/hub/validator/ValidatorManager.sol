@@ -58,6 +58,7 @@ contract ValidatorManagerStorageV1 {
   }
 
   struct StorageV1 {
+    uint256 fee; // Fee for methods that need to communicate with the consensus layer.
     GlobalValidatorConfig globalValidatorConfig;
     // validator
     uint256 validatorCount;
@@ -90,11 +91,6 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   uint256 public constant MAX_COMMISSION_RATE = 10000; // 100% in bp
 
-  /**
-   * @notice Static fee for methods that need to communicate with the consensus layer.
-   */
-  uint256 public constant FEE = 0.1 ether;
-
   constructor(IEpochFeeder epochFeeder_, IConsensusValidatorEntrypoint entrypoint_) {
     _disableInitializers();
 
@@ -104,6 +100,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   function initialize(
     address initialOwner,
+    uint256 initialFee,
     SetGlobalValidatorConfigRequest memory initialGlobalValidatorConfig,
     GenesisValidatorSet[] memory genesisValidators
   ) external initializer {
@@ -113,6 +110,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
     StorageV1 storage $ = _getStorageV1();
 
+    _setFee($, initialFee);
     _setGlobalValidatorConfig($, initialGlobalValidatorConfig);
 
     for (uint256 i = 0; i < genesisValidators.length; i++) {
@@ -144,6 +142,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   /// @inheritdoc IValidatorManager
   function epochFeeder() external view returns (IEpochFeeder) {
     return _epochFeeder;
+  }
+
+  /// @inheritdoc IValidatorManager
+  function fee() external view returns (uint256) {
+    return _getStorageV1().fee;
   }
 
   /// @inheritdoc IValidatorManager
@@ -199,19 +202,22 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     // verify the pubKey is valid and corresponds to the caller
     pubKey.verifyCmpPubkeyWithAddress(valAddr);
 
-    uint256 netMsgValue = _burnFee();
-    _createValidator(_getStorageV1(), valAddr, pubKey, netMsgValue, request);
+    StorageV1 storage $ = _getStorageV1();
+
+    uint256 netMsgValue = _burnFee($);
+    _createValidator($, valAddr, pubKey, netMsgValue, request);
 
     _entrypoint.registerValidator{ value: netMsgValue }(valAddr, pubKey, request.withdrawalRecipient);
   }
 
   /// @inheritdoc IValidatorManager
   function depositCollateral(address valAddr) external payable {
-    uint256 netMsgValue = _burnFee();
+    StorageV1 storage $ = _getStorageV1();
 
+    uint256 netMsgValue = _burnFee($);
     require(netMsgValue > 0, StdError.ZeroAmount());
 
-    Validator storage validator = _validator(_getStorageV1(), valAddr);
+    Validator storage validator = _validator($, valAddr);
     _entrypoint.depositCollateral{ value: netMsgValue }(valAddr, validator.withdrawalRecipient);
 
     emit CollateralDeposited(valAddr, netMsgValue);
@@ -221,9 +227,9 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   function withdrawCollateral(address valAddr, uint256 amount) external {
     require(amount > 0, StdError.ZeroAmount());
 
-    _burnFee();
-
     StorageV1 storage $ = _getStorageV1();
+
+    _burnFee($);
     Validator storage validator = _validator($, valAddr);
 
     _assertOperator(validator);
@@ -240,9 +246,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   /// @inheritdoc IValidatorManager
   function unjailValidator(address valAddr) external {
-    _burnFee();
+    StorageV1 storage $ = _getStorageV1();
 
-    Validator storage validator = _validator(_getStorageV1(), valAddr);
+    _burnFee($);
+
+    Validator storage validator = _validator($, valAddr);
     _assertOperatorOrValidator(validator);
 
     _entrypoint.unjail(valAddr);
@@ -337,6 +345,10 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit RewardConfigUpdated(valAddr, _msgSender());
   }
 
+  function setFee(uint256 fee_) external onlyOwner {
+    _setFee(_getStorageV1(), fee_);
+  }
+
   /// @inheritdoc IValidatorManager
   function setGlobalValidatorConfig(SetGlobalValidatorConfigRequest calldata request) external onlyOwner {
     _setGlobalValidatorConfig(_getStorageV1(), request);
@@ -373,6 +385,12 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       Math.max(response.commissionRate, $.globalValidatorConfig.minimumCommissionRates.lowerLookup(epoch.toUint96()));
 
     return response;
+  }
+
+  function _setFee(StorageV1 storage $, uint256 fee_) internal {
+    uint256 previousFee = $.fee;
+    $.fee = fee_;
+    emit FeeSet(previousFee, fee_);
   }
 
   function _setGlobalValidatorConfig(StorageV1 storage $, SetGlobalValidatorConfigRequest memory request) internal {
@@ -436,10 +454,15 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit ValidatorCreated(valAddr, request.operator, pubKey);
   }
 
-  function _burnFee() internal returns (uint256 netMsgValue) {
-    require(msg.value >= FEE, IValidatorManager__InsufficientFee(msg.value));
-    payable(0x0000000000000000000000000000000000000000).transfer(FEE);
-    return msg.value - FEE;
+  function _burnFee(StorageV1 storage $) internal returns (uint256 netMsgValue) {
+    uint256 _fee = $.fee;
+    require(msg.value >= _fee, IValidatorManager__InsufficientFee(msg.value));
+
+    if (_fee > 0) {
+      payable(0x0000000000000000000000000000000000000000).transfer(_fee);
+    }
+
+    return msg.value - _fee;
   }
 
   function _assertValidatorExists(StorageV1 storage $, address valAddr) internal view {
