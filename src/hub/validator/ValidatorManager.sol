@@ -438,7 +438,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   function _burnFee() internal {
     require(msg.value >= FEE, IValidatorManager__InsufficientFee(msg.value));
-    payable(0x000000000000000000000000000000000000dEaD).transfer(FEE);
+    payable(0x0000000000000000000000000000000000000000).transfer(FEE);
   }
 
   function _assertValidatorExists(StorageV1 storage $, address valAddr) internal view {
