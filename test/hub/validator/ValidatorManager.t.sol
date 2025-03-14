@@ -103,7 +103,7 @@ contract ValidatorManagerTest is Toolkit {
       IValidatorManager.CreateValidatorRequest({
         operator: val.addr,
         withdrawalRecipient: val.addr,
-        rewardRecipient: val.addr,
+        rewardManager: val.addr,
         commissionRate: 100,
         metadata: metadata
       })
@@ -122,7 +122,7 @@ contract ValidatorManagerTest is Toolkit {
     IValidatorManager.ValidatorInfoResponse memory info = manager.validatorInfo(val.addr);
     assertEq(info.valAddr, val.addr);
     assertEq(info.operator, val.addr);
-    assertEq(info.rewardRecipient, val.addr);
+    assertEq(info.rewardManager, val.addr);
     assertEq(info.commissionRate, 100);
     assertEq(info.metadata, metadata);
 
@@ -190,18 +190,18 @@ contract ValidatorManagerTest is Toolkit {
     assertEq(manager.validatorInfo(val.addr).operator, newOperator);
   }
 
-  function test_updateRewardRecipient() public {
+  function test_updateRewardManager() public {
     ValidatorKey memory val = test_createValidator('val-1');
     address newOperator = makeAddr('newOperator');
-    address newRecipient = makeAddr('newRecipient');
+    address newManager = makeAddr('newManager');
 
     vm.prank(val.addr);
     manager.updateOperator(val.addr, newOperator);
 
     vm.prank(newOperator);
-    manager.updateRewardRecipient(val.addr, newRecipient);
+    manager.updateRewardManager(val.addr, newManager);
 
-    assertEq(manager.validatorInfo(val.addr).rewardRecipient, newRecipient);
+    assertEq(manager.validatorInfo(val.addr).rewardManager, newManager);
   }
 
   function test_updateMetadata() public {

@@ -43,7 +43,7 @@ contract ValidatorManagerStorageV1 {
     address valAddr;
     address operator;
     address withdrawalRecipient;
-    address rewardRecipient;
+    address rewardManager;
     bytes pubKey;
     ValidatorRewardConfig rewardConfig;
     // TBD: Metadata format
@@ -123,7 +123,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
         CreateValidatorRequest({
           operator: genVal.operator,
           withdrawalRecipient: genVal.withdrawalRecipient,
-          rewardRecipient: genVal.rewardRecipient,
+          rewardManager: genVal.rewardManager,
           commissionRate: genVal.commissionRate,
           metadata: genVal.metadata
         })
@@ -269,16 +269,16 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function updateRewardRecipient(address valAddr, address rewardRecipient) external {
-    require(rewardRecipient != address(0), StdError.InvalidParameter('rewardRecipient'));
+  function updateRewardManager(address valAddr, address rewardManager) external {
+    require(rewardManager != address(0), StdError.InvalidParameter('rewardManager'));
 
     StorageV1 storage $ = _getStorageV1();
     Validator storage validator = _validator($, valAddr);
     _assertOperator(validator);
 
-    $.validators[$.indexByValAddr[valAddr]].rewardRecipient = rewardRecipient;
+    $.validators[$.indexByValAddr[valAddr]].rewardManager = rewardManager;
 
-    emit RewardRecipientUpdated(valAddr, _msgSender(), rewardRecipient);
+    emit RewardManagerUpdated(valAddr, _msgSender(), rewardManager);
   }
 
   /// @inheritdoc IValidatorManager
@@ -350,7 +350,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
       pubKey: info.pubKey,
       operator: info.operator,
       withdrawalRecipient: info.withdrawalRecipient,
-      rewardRecipient: info.rewardRecipient,
+      rewardManager: info.rewardManager,
       commissionRate: commissionRate,
       metadata: info.metadata
     });
@@ -418,7 +418,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     validator.valAddr = valAddr;
     validator.operator = request.operator;
     validator.withdrawalRecipient = request.withdrawalRecipient;
-    validator.rewardRecipient = request.rewardRecipient;
+    validator.rewardManager = request.rewardManager;
     validator.pubKey = pubKey;
     validator.rewardConfig.commissionRates.push(epoch.toUint96(), request.commissionRate.toUint160());
     validator.metadata = request.metadata;
