@@ -455,14 +455,14 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   function _burnFee(StorageV1 storage $) internal returns (uint256 netMsgValue) {
-    uint256 _fee = $.fee;
-    require(msg.value >= _fee, IValidatorManager__InsufficientFee(msg.value));
+    uint256 fee_ = $.fee;
+    require(msg.value >= fee_, IValidatorManager__InsufficientFee(msg.value));
 
-    if (_fee > 0) {
-      payable(0x0000000000000000000000000000000000000000).transfer(_fee);
+    if (fee_ > 0) {
+      payable(0x0000000000000000000000000000000000000000).transfer(fee_);
     }
 
-    return msg.value - _fee;
+    return msg.value - fee_;
   }
 
   function _assertValidatorExists(StorageV1 storage $, address valAddr) internal view {
