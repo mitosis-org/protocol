@@ -57,6 +57,7 @@ interface IValidatorStaking {
   function requestUnstake(address valAddr, address receiver) external returns (uint256);
   function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256);
   function claimUnstake(address valAddr, address receiver) external returns (uint256);
+  function redelegate(address fromValAddr, address toValAddr) external;
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external;
 
   // ========== ADMIN ACTIONS ========== //
