@@ -207,11 +207,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   /// @inheritdoc IValidatorManager
   function depositCollateral(address valAddr) external payable {
-    require(msg.value - FEE > 0, StdError.ZeroAmount());
-
     _burnFee();
-    Validator storage validator = _validator(_getStorageV1(), valAddr);
 
+    require(msg.value > 0, StdError.ZeroAmount());
+
+    Validator storage validator = _validator(_getStorageV1(), valAddr);
     _entrypoint.depositCollateral{ value: msg.value }(valAddr, validator.withdrawalRecipient);
 
     emit CollateralDeposited(valAddr, msg.value);
@@ -225,6 +225,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
     StorageV1 storage $ = _getStorageV1();
     Validator storage validator = _validator($, valAddr);
+
     _assertOperator(validator);
 
     _entrypoint.withdrawCollateral(
