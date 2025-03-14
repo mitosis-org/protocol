@@ -170,7 +170,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     // If the base asset is not native, we need to transfer from the sender to the contract
     if (_baseAsset != NATIVE_TOKEN) _baseAsset.safeTransferFrom(_msgSender(), address(this), amount);
 
-    _stake(_getStorageV1(), valAddr, _msgSender(), amount);
+    _stake(_getStorageV1(), valAddr, _msgSender(), amount, MIN_STAKING_AMOUNT);
     _hub.notifyStake(valAddr, _msgSender(), amount);
 
     emit Staked(valAddr, _msgSender(), recipient, amount);
@@ -226,7 +226,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     require(now_ >= lastRedelegationTime_ + $.redelegationCooldown, IValidatorStaking__CooldownNotPassed());
 
     _unstake($, fromValAddr, _msgSender(), amount);
-    _stake($, toValAddr, _msgSender(), amount);
+    _stake($, toValAddr, _msgSender(), amount, MIN_STAKING_AMOUNT);
     _hub.notifyRedelegation(fromValAddr, toValAddr, _msgSender(), amount);
 
     emit Redelegated(fromValAddr, toValAddr, _msgSender(), amount);
@@ -258,7 +258,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     uint256 reqId = queue.enqueue(receiver, amount, now_, bytes(''));
     queue.reserve(valAddr, amount, now_, bytes(''));
 
-    _unstake($, valAddr, staker, amount);
+    _unstake($, valAddr, staker, amount, MIN_UNSTAKING_AMOUNT);
     _hub.notifyUnstake(valAddr, staker, amount);
 
     $.totalUnstaking += amount.toUint128();
@@ -294,9 +294,12 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     return (claimable, nonClaimable);
   }
 
-  function _stake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal {
-    require(amount >= MIN_STAKING_AMOUNT, IValidatorStaking__InsufficientMinimumAmount());
+  function _stake(StorageV1 storage $, address valAddr, address staker, uint256 amount, uint256 minAmount) internal {
+    require(amount >= minAmount, IValidatorStaking__InsufficientMinimumAmount());
+    _stake($, valAddr, staker, amount);
+  }
 
+  function _stake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal {
     uint48 now_ = Time.timestamp();
 
     $.totalStaked.push(now_, ($.totalStaked.latest() + amount).toUint208());
@@ -305,18 +308,18 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     $.staked[valAddr][staker].push(now_, ($.staked[valAddr][staker].latest() + amount).toUint208());
   }
 
-  function _unstake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal {
-    uint256 stakerAmount = $.staked[valAddr][staker].latest();
-    if (stakerAmount != amount) {
-      require(amount >= MIN_UNSTAKING_AMOUNT, IValidatorStaking__InsufficientMinimumAmount());
-    }
+  function _unstake(StorageV1 storage $, address valAddr, address staker, uint256 amount, uint256 minAmount) internal {
+    require(amount >= minAmount, IValidatorStaking__InsufficientMinimumAmount());
+    _unstake($, valAddr, staker, amount);
+  }
 
+  function _unstake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal {
     uint48 now_ = Time.timestamp();
 
     $.totalStaked.push(now_, ($.totalStaked.latest() - amount).toUint208());
     $.stakerTotal[staker].push(now_, ($.stakerTotal[staker].latest() - amount).toUint208());
     $.validatorTotal[valAddr].push(now_, ($.validatorTotal[valAddr].latest() - amount).toUint208());
-    $.staked[valAddr][staker].push(now_, (stakerAmount - amount).toUint208());
+    $.staked[valAddr][staker].push(now_, ($.staked[valAddr][staker].latest() - amount).toUint208());
   }
 
   // ========== ADMIN ACTIONS ========== //
