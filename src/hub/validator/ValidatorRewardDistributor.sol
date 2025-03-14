@@ -363,7 +363,7 @@ contract ValidatorRewardDistributor is
     address recipient,
     mapping(address => mapping(address => mapping(address => bool))) storage claimApprovals
   ) internal view returns (bool) {
-    return recipient == account || claimApprovals[account][valAddr][recipient];
+    return account == recipient || claimApprovals[account][valAddr][recipient];
   }
 
   // ====================== UUPS ======================
