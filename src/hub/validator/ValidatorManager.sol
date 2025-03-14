@@ -459,7 +459,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     require(msg.value >= fee_, IValidatorManager__InsufficientFee(msg.value));
 
     if (fee_ > 0) {
-      payable(0x0000000000000000000000000000000000000000).transfer(fee_);
+      payable(address(0)).transfer(fee_);
     }
 
     return msg.value - fee_;
