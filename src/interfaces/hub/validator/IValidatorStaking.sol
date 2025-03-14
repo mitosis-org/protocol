@@ -16,6 +16,9 @@ interface IValidatorStaking {
   event UnstakeClaimed(address indexed val, address indexed who, uint256 amount);
   event Redelegated(address indexed from, address indexed to, address indexed who, uint256 amount);
 
+  event MinimumStakingAmountSet(uint256 previousAmount, uint256 newAmount);
+  event MinimumUnstakingAmountSet(uint256 previousAmount, uint256 newAmount);
+
   event UnstakeCooldownUpdated(uint48 unstakeCooldown);
   event RedelegationCooldownUpdated(uint48 redelegationCooldown);
 
@@ -31,6 +34,9 @@ interface IValidatorStaking {
   function manager() external view returns (IValidatorManager);
   function hub() external view returns (IValidatorStakingHub);
   function entrypoint() external view returns (IConsensusValidatorEntrypoint);
+
+  function minStakingAmount() external view returns (uint256);
+  function minUnstakingAmount() external view returns (uint256);
 
   function unstakeCooldown() external view returns (uint48);
   function redelegationCooldown() external view returns (uint48);
@@ -54,6 +60,9 @@ interface IValidatorStaking {
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external;
 
   // ========== ADMIN ACTIONS ========== //
+
+  function setMinStakingAmount(uint256 minAmount) external;
+  function setMinUnstakingAmount(uint256 minAmount) external;
 
   function setUnstakeCooldown(uint48 unstakeCooldown_) external;
   function setRedelegationCooldown(uint48 redelegationCooldown_) external;
