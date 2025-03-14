@@ -48,7 +48,7 @@ interface IValidatorManager {
   struct CreateValidatorRequest {
     address operator;
     address withdrawalRecipient;
-    address rewardRecipient;
+    address rewardManager;
     uint256 commissionRate; // bp ex) 10000 = 100%
     bytes metadata;
   }
@@ -61,7 +61,7 @@ interface IValidatorManager {
     bytes pubKey;
     address operator;
     address withdrawalRecipient;
-    address rewardRecipient;
+    address rewardManager;
     uint256 commissionRate;
     bytes metadata;
     bytes signature;

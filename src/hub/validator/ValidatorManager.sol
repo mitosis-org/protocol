@@ -123,7 +123,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
         CreateValidatorRequest({
           operator: genVal.operator,
           withdrawalRecipient: genVal.withdrawalRecipient,
-          rewardRecipient: genVal.rewardRecipient,
+          rewardManager: genVal.rewardManager,
           commissionRate: genVal.commissionRate,
           metadata: genVal.metadata
         })
@@ -253,6 +253,19 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     $.validators[$.indexByValAddr[valAddr]].operator = operator;
 
     emit OperatorUpdated(valAddr, operator);
+  }
+
+  /// @inheritdoc IValidatorManager
+  function updateWithdrawalRecipient(address valAddr, address withdrawalRecipient) external {
+    require(withdrawalRecipient != address(0), StdError.InvalidParameter('withdrawalRecipient'));
+
+    StorageV1 storage $ = _getStorageV1();
+    Validator storage validator = _validator($, valAddr);
+    _assertOperator(validator);
+
+    $.validators[$.indexByValAddr[valAddr]].withdrawalRecipient = withdrawalRecipient;
+
+    emit WithdrawalRecipientUpdated(valAddr, _msgSender(), withdrawalRecipient);
   }
 
   /// @inheritdoc IValidatorManager

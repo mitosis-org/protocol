@@ -103,7 +103,7 @@ contract ValidatorManagerTest is Toolkit {
       IValidatorManager.CreateValidatorRequest({
         operator: val.addr,
         withdrawalRecipient: val.addr,
-        rewardRecipient: val.addr,
+        rewardManager: val.addr,
         commissionRate: 100,
         metadata: metadata
       })
