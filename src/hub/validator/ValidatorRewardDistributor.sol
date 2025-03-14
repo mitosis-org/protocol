@@ -116,12 +116,12 @@ contract ValidatorRewardDistributor is
 
   /// @inheritdoc IValidatorRewardDistributor
   function stakerClaimAllowed(address account, address valAddr, address claimer) external view returns (bool) {
-    return _getStorageV1().stakerClaimApprovals[account][valAddr][claimer];
+    return _isClaimable(account, valAddr, claimer, _getStorageV1().stakerClaimApprovals);
   }
 
   /// @inheritdoc IValidatorRewardDistributor
   function operatorClaimAllowed(address account, address valAddr, address claimer) external view returns (bool) {
-    return _getStorageV1().operatorClaimApprovals[account][valAddr][claimer];
+    return _isClaimable(account, valAddr, claimer, _getStorageV1().operatorClaimApprovals);
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -269,8 +269,6 @@ contract ValidatorRewardDistributor is
     (uint256 start, uint256 end) = _claimRange($.operator[valAddr], _epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
     if (start == end) return 0;
 
-    address recipient = _validatorManager.validatorInfo(valAddr).rewardRecipient;
-
     uint256 totalClaimed;
     uint256 lastClaimedEpoch = start - 1;
 
@@ -356,7 +354,16 @@ contract ValidatorRewardDistributor is
     address recipient,
     mapping(address => mapping(address => mapping(address => bool))) storage claimApprovals
   ) internal view {
-    require(claimApprovals[account][valAddr][recipient], StdError.Unauthorized());
+    require(_isClaimable(account, valAddr, recipient, claimApprovals), StdError.Unauthorized());
+  }
+
+  function _isClaimable(
+    address account,
+    address valAddr,
+    address recipient,
+    mapping(address => mapping(address => mapping(address => bool))) storage claimApprovals
+  ) internal view returns (bool) {
+    return recipient == account || claimApprovals[account][valAddr][recipient];
   }
 
   // ====================== UUPS ======================
