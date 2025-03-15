@@ -74,32 +74,33 @@ contract ValidatorStakingHubTest is Toolkit {
     hub.notifyStake(val1, user2, 10 ether);
     vm.stopPrank();
 
-    vm.warp(_now48() + 2);
+    vm.warp(_now48() + 1 days);
 
     vm.startPrank(notifier2);
     hub.notifyStake(val2, user1, 10 ether);
     hub.notifyStake(val2, user2, 10 ether);
+
     vm.stopPrank();
 
-    assertEq(hub.stakerTotal(user1, _now48()), 20 ether);
-    assertEq(hub.stakerTotal(user2, _now48()), 20 ether);
-    assertEq(hub.stakerTotal(user1, _now48() - 1), 10 ether);
-    assertEq(hub.stakerTotal(user2, _now48() - 1), 10 ether);
+    assertEq(hub.stakerTotal(user1, _now48()), 20 ether, 'user1 total now');
+    assertEq(hub.stakerTotal(user2, _now48()), 20 ether, 'user2 total now');
+    assertEq(hub.stakerTotal(user1, _now48() - 1), 10 ether, 'user1 total before');
+    assertEq(hub.stakerTotal(user2, _now48() - 1), 10 ether, 'user2 total before');
 
-    assertEq(hub.validatorTotal(val1, _now48()), 20 ether);
-    assertEq(hub.validatorTotal(val2, _now48()), 20 ether);
-    assertEq(hub.validatorTotal(val1, _now48() - 1), 20 ether);
-    assertEq(hub.validatorTotal(val2, _now48() - 1), 0);
+    assertEq(hub.validatorTotal(val1, _now48()), 20 ether, 'val1 total now');
+    assertEq(hub.validatorTotal(val2, _now48()), 20 ether, 'val2 total now');
+    assertEq(hub.validatorTotal(val1, _now48() - 1), 20 ether, 'val1 total before');
+    assertEq(hub.validatorTotal(val2, _now48() - 1), 0, 'val2 total before');
 
-    assertEq(hub.validatorStakerTotal(val1, user1, _now48()), 10 ether);
-    assertEq(hub.validatorStakerTotal(val1, user2, _now48()), 10 ether);
-    assertEq(hub.validatorStakerTotal(val2, user1, _now48()), 10 ether);
-    assertEq(hub.validatorStakerTotal(val2, user2, _now48()), 10 ether);
+    assertEq(hub.validatorStakerTotal(val1, user1, _now48()), 10 ether, 'val1 user1 total now');
+    assertEq(hub.validatorStakerTotal(val1, user2, _now48()), 10 ether, 'val1 user2 total now');
+    assertEq(hub.validatorStakerTotal(val2, user1, _now48()), 10 ether, 'val2 user1 total now');
+    assertEq(hub.validatorStakerTotal(val2, user2, _now48()), 10 ether, 'val2 user2 total now');
 
-    assertEq(hub.validatorStakerTotal(val1, user1, _now48() - 1), 10 ether);
-    assertEq(hub.validatorStakerTotal(val1, user2, _now48() - 1), 0);
-    assertEq(hub.validatorStakerTotal(val2, user1, _now48() - 1), 10 ether);
-    assertEq(hub.validatorStakerTotal(val2, user2, _now48() - 1), 0);
+    assertEq(hub.validatorStakerTotal(val1, user1, _now48() - 1), 10 ether, 'val1 user1 total before');
+    assertEq(hub.validatorStakerTotal(val1, user2, _now48() - 1), 0, 'val1 user2 total before');
+    assertEq(hub.validatorStakerTotal(val2, user1, _now48() - 1), 10 ether, 'val2 user1 total before');
+    assertEq(hub.validatorStakerTotal(val2, user2, _now48() - 1), 0, 'val2 user2 total before');
   }
 
   function test_notifyUnstake() public {
