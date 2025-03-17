@@ -142,7 +142,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
 
   /// @dev only strategist
   function reserveMatrix(address matrixVault, uint256 amount) external {
-    _assertNotPaused(); // TODO
+    _assertNotPaused();
 
     StorageV1 storage $ = _getStorageV1();
 
