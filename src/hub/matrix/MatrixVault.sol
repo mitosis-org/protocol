@@ -7,6 +7,7 @@ import { Math } from '@oz-v5/utils/math/Math.sol';
 import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
+import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { MatrixVaultStorageV1 } from './MatrixVaultStorageV1.sol';
 
@@ -14,12 +15,14 @@ import { MatrixVaultStorageV1 } from './MatrixVaultStorageV1.sol';
  * @title MatrixVault
  * @notice Base implementation of an MatrixVault
  */
-abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626 {
+abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable {
   using Math for uint256;
 
   function __MatrixVault_init(address assetManager_, IERC20Metadata asset_, string memory name_, string memory symbol_)
     internal
   {
+    __Pausable_init();
+
     if (bytes(name_).length == 0 || bytes(symbol_).length == 0) {
       name_ = string.concat('Mitosis Matrix ', asset_.name());
       symbol_ = string.concat('ma', asset_.symbol());
@@ -55,6 +58,8 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626 {
   // Mutative functions
 
   function deposit(uint256 assets, address receiver) public virtual override returns (uint256) {
+    _assertNotPaused();
+
     uint256 maxAssets = maxDeposit(receiver);
     require(assets <= maxAssets, DepositMoreThanMax());
 
@@ -65,6 +70,8 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626 {
   }
 
   function mint(uint256 shares, address receiver) public virtual override returns (uint256) {
+    _assertNotPaused();
+
     uint256 maxShares = maxMint(receiver);
     require(shares <= maxShares, MintMoreThanMax());
 
@@ -75,6 +82,8 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626 {
   }
 
   function withdraw(uint256 assets, address receiver, address owner) public override returns (uint256) {
+    _assertNotPaused();
+
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyReclaimQueue($);
@@ -89,6 +98,8 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626 {
   }
 
   function redeem(uint256 shares, address receiver, address owner) public override returns (uint256) {
+    _assertNotPaused();
+
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyReclaimQueue($);
@@ -100,5 +111,16 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626 {
     _withdraw(_msgSender(), receiver, owner, assets, shares);
 
     return assets;
+  }
+
+  //
+  function pause() external {
+    _assertOnlyAssetManager(_getStorageV1());
+    _pause();
+  }
+
+  function unpause() external {
+    _assertOnlyAssetManager(_getStorageV1());
+    _unpause();
   }
 }
