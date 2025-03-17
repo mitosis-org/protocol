@@ -79,7 +79,9 @@ contract AssetManagerTest is Toolkit {
     _matrixVault = MatrixVaultBasic(
       _proxy(
         address(new MatrixVaultBasic()),
-        abi.encodeCall(MatrixVaultBasic.initialize, (owner, address(_assetManager), IERC20Metadata(address(_token)), '', ''))
+        abi.encodeCall(
+          MatrixVaultBasic.initialize, (owner, address(_assetManager), IERC20Metadata(address(_token)), '', '')
+        )
       )
     );
 
@@ -164,7 +166,9 @@ contract AssetManagerTest is Toolkit {
     MatrixVaultBasic incorrectMatrixVault = MatrixVaultBasic(
       _proxy(
         address(new MatrixVaultBasic()),
-        abi.encodeCall(MatrixVaultBasic.initialize, (owner, address(_assetManager), IERC20Metadata(address(myToken)), '', ''))
+        abi.encodeCall(
+          MatrixVaultBasic.initialize, (owner, address(_assetManager), IERC20Metadata(address(myToken)), '', '')
+        )
       )
     );
 

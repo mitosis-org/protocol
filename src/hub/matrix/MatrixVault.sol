@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+
 import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
@@ -15,12 +17,18 @@ import { MatrixVaultStorageV1 } from './MatrixVaultStorageV1.sol';
  * @title MatrixVault
  * @notice Base implementation of an MatrixVault
  */
-abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable {
+abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgradeable, Pausable {
   using Math for uint256;
 
-  function __MatrixVault_init(address assetManager_, IERC20Metadata asset_, string memory name_, string memory symbol_)
-    internal
-  {
+  function __MatrixVault_init(
+    address owner_,
+    address assetManager_,
+    IERC20Metadata asset_,
+    string memory name_,
+    string memory symbol_
+  ) internal {
+    __Ownable2Step_init();
+    __Ownable_init(owner_);
     __Pausable_init();
 
     if (bytes(name_).length == 0 || bytes(symbol_).length == 0) {
@@ -113,14 +121,11 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable {
     return assets;
   }
 
-  //
-  function pause() external {
-    _assertOnlyAssetManager(_getStorageV1());
+  function pause() external onlyOwner {
     _pause();
   }
 
-  function unpause() external {
-    _assertOnlyAssetManager(_getStorageV1());
+  function unpause() external onlyOwner {
     _unpause();
   }
 }
