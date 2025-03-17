@@ -243,7 +243,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external {
     _assertNotPaused();
-    
+
     StorageV1 storage $ = _getStorageV1();
 
     _assertMatrixInitialized($, hubMatrixVault);
