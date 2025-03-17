@@ -200,13 +200,22 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   /// @inheritdoc IValidatorStaking
   function requestUnstake(address valAddr, address receiver) external returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
+
     address staker = _msgSender();
-    return _requestUnstake($, staker, valAddr, receiver, $.staked[valAddr][staker].latest());
+    uint256 amount = $.staked[valAddr][staker].latest();
+    _assertUnstakeAmountCondition($, valAddr, staker, amount);
+
+    return _requestUnstake($, staker, valAddr, receiver, amount);
   }
 
   /// @inheritdoc IValidatorStaking
   function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256) {
-    return _requestUnstake(_getStorageV1(), _msgSender(), valAddr, receiver, amount);
+    StorageV1 storage $ = _getStorageV1();
+
+    address staker = _msgSender();
+    _assertUnstakeAmountCondition($, valAddr, staker, amount);
+
+    return _requestUnstake($, staker, valAddr, receiver, amount);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -236,12 +245,22 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   /// @inheritdoc IValidatorStaking
   function redelegate(address fromValAddr, address toValAddr) external {
     StorageV1 storage $ = _getStorageV1();
-    _redelegate($, fromValAddr, toValAddr, $.staked[fromValAddr][_msgSender()].latest());
+
+    address delegator = _msgSender();
+    uint256 amount = $.staked[fromValAddr][delegator].latest();
+    _assertUnstakeAmountCondition($, fromValAddr, delegator, amount);
+
+    _redelegate($, delegator, fromValAddr, toValAddr, amount);
   }
 
   /// @inheritdoc IValidatorStaking
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external {
-    _redelegate(_getStorageV1(), fromValAddr, toValAddr, amount);
+    StorageV1 storage $ = _getStorageV1();
+
+    address delegator = _msgSender();
+    _assertUnstakeAmountCondition($, fromValAddr, delegator, amount);
+
+    _redelegate($, delegator, fromValAddr, toValAddr, amount);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -316,7 +335,6 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     uint256 reqId = queue.enqueue(receiver, amount, now_, bytes(''));
     queue.reserve(valAddr, amount, now_, bytes(''));
 
-    _assertUnstakeAmountCondition($, valAddr, _msgSender(), amount);
     _unstake($, valAddr, staker, amount);
 
     _hub.notifyUnstake(valAddr, staker, amount);
@@ -327,7 +345,9 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     return reqId;
   }
 
-  function _redelegate(StorageV1 storage $, address fromValAddr, address toValAddr, uint256 amount) internal {
+  function _redelegate(StorageV1 storage $, address delegator, address fromValAddr, address toValAddr, uint256 amount)
+    internal
+  {
     require(amount > 0, StdError.ZeroAmount());
     require(fromValAddr != toValAddr, IValidatorStaking__RedelegateToSameValidator());
 
@@ -335,17 +355,15 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     require(_manager.isValidator(toValAddr), IValidatorStaking__NotValidator());
 
     uint48 now_ = Time.timestamp();
-    uint256 lastRedelegationTime_ = $.lastRedelegationTime[_msgSender()];
+    uint256 lastRedelegationTime_ = $.lastRedelegationTime[delegator];
     require(now_ >= lastRedelegationTime_ + $.redelegationCooldown, IValidatorStaking__CooldownNotPassed());
 
-    _assertUnstakeAmountCondition($, fromValAddr, _msgSender(), amount);
+    _unstake($, fromValAddr, delegator, amount);
+    _stake($, toValAddr, delegator, amount);
 
-    _unstake($, fromValAddr, _msgSender(), amount);
-    _stake($, toValAddr, _msgSender(), amount);
+    _hub.notifyRedelegation(fromValAddr, toValAddr, delegator, amount);
 
-    _hub.notifyRedelegation(fromValAddr, toValAddr, _msgSender(), amount);
-
-    emit Redelegated(fromValAddr, toValAddr, _msgSender(), amount);
+    emit Redelegated(fromValAddr, toValAddr, delegator, amount);
   }
 
   function _stake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal {
