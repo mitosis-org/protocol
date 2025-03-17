@@ -50,7 +50,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
       payable(
         _proxy(
           address(new MatrixStrategyExecutor()),
-          abi.encodeCall(MatrixStrategyExecutor.initialize, (_mitosisVault, _token, hubMatrixVault, owner, owner))
+          abi.encodeCall(MatrixStrategyExecutor.initialize, (_mitosisVault, _token, hubMatrixVault, owner))
         )
       )
     );

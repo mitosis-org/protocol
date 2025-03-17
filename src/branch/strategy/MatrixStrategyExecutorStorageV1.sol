@@ -16,7 +16,6 @@ abstract contract MatrixStrategyExecutorStorageV1 {
     address hubMatrixVault;
     address strategist;
     address executor;
-    address emergencyManager;
     uint256 storedTotalBalance;
     ITally tally;
   }

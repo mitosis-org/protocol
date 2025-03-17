@@ -9,8 +9,6 @@ interface IStrategyExecutor {
   //=========== NOTE: EVENT DEFINITIONS ===========//
 
   event TallySet(address indexed implementation);
-
-  event EmergencyManagerSet(address indexed emergencyManager);
   event StrategistSet(address indexed strategist);
   event ExecutorSet(address indexed executor);
 

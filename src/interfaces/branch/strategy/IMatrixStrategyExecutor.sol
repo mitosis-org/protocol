@@ -21,7 +21,6 @@ interface IMatrixStrategyExecutor is IStrategyExecutor {
   // TODO(ray): Move methods to IStrategyExecutor for shared use.
   function strategist() external view returns (address);
   function executor() external view returns (address);
-  function emergencyManager() external view returns (address);
   function tally() external view returns (ITally);
   function totalBalance() external view returns (uint256);
   function storedTotalBalance() external view returns (uint256);
@@ -33,11 +32,8 @@ interface IMatrixStrategyExecutor is IStrategyExecutor {
   function settleExtraRewards(address reward, uint256 amount) external;
 
   function setTally(address implementation) external;
-  function setEmergencyManager(address emergencyManager_) external;
   function setStrategist(address strategist_) external;
   function setExecutor(address executor_) external;
   function unsetStrategist() external;
   function unsetExecutor() external;
-  function pause() external;
-  function unpause() external;
 }
