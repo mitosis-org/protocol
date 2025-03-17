@@ -96,7 +96,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
     _haltAsset($, asset, AssetAction.Deposit);
   }
 
-  function deposit(address asset, address to, uint256 amount) external notPaused {
+  function deposit(address asset, address to, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
     _deposit($, asset, to, amount);
 
@@ -104,10 +104,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
     emit Deposited(asset, to, amount);
   }
 
-  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount)
-    external
-    notPaused
-  {
+  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
     _deposit($, asset, to, amount);
 
@@ -157,7 +154,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
     emit MatrixAllocated(hubMatrixVault, amount);
   }
 
-  function deallocateMatrix(address hubMatrixVault, uint256 amount) external notPaused {
+  function deallocateMatrix(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertMatrixInitialized($, hubMatrixVault);
@@ -200,7 +197,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
     emit MatrixReturned(hubMatrixVault, amount);
   }
 
-  function settleMatrixYield(address hubMatrixVault, uint256 amount) external notPaused {
+  function settleMatrixYield(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertMatrixInitialized($, hubMatrixVault);
@@ -211,7 +208,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
     emit MatrixYieldSettled(hubMatrixVault, amount);
   }
 
-  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external notPaused {
+  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertMatrixInitialized($, hubMatrixVault);
@@ -222,7 +219,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
     emit MatrixLossSettled(hubMatrixVault, amount);
   }
 
-  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external notPaused {
+  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertMatrixInitialized($, hubMatrixVault);
@@ -310,16 +307,8 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
     _pause();
   }
 
-  function pause(bytes4 sig) external onlyOwner {
-    _pause(sig);
-  }
-
   function unpause() external onlyOwner {
     _unpause();
-  }
-
-  function unpause(bytes4 sig) external onlyOwner {
-    _unpause(sig);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//

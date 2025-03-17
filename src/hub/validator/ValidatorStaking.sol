@@ -18,7 +18,6 @@ import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorS
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibCheckpoint } from '../../lib/LibCheckpoint.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
-import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 contract ValidatorStakingStorageV1 {
@@ -48,13 +47,7 @@ contract ValidatorStakingStorageV1 {
   }
 }
 
-contract ValidatorStaking is
-  IValidatorStaking,
-  ValidatorStakingStorageV1,
-  Ownable2StepUpgradeable,
-  UUPSUpgradeable,
-  Pausable
-{
+contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownable2StepUpgradeable, UUPSUpgradeable {
   using SafeCast for uint256;
   using SafeTransferLib for address;
   using LibRedeemQueue for LibRedeemQueue.Queue;
@@ -86,7 +79,6 @@ contract ValidatorStaking is
     __UUPSUpgradeable_init();
     __Ownable_init(initialOwner);
     __Ownable2Step_init();
-    __Pausable_init();
 
     StorageV1 storage $ = _getStorageV1();
     _setUnstakeCooldown($, unstakeCooldown_);
@@ -164,7 +156,7 @@ contract ValidatorStaking is
   }
 
   /// @inheritdoc IValidatorStaking
-  function stake(address valAddr, address recipient, uint256 amount) external payable notPaused {
+  function stake(address valAddr, address recipient, uint256 amount) external payable {
     require(amount > 0, StdError.ZeroAmount());
 
     require(_baseAsset != NATIVE_TOKEN || msg.value == amount, StdError.InvalidParameter('amount'));
@@ -181,7 +173,7 @@ contract ValidatorStaking is
   }
 
   /// @inheritdoc IValidatorStaking
-  function requestUnstake(address valAddr, address receiver, uint256 amount) external notPaused returns (uint256) {
+  function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256) {
     require(amount > 0, StdError.ZeroAmount());
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
 
@@ -205,7 +197,7 @@ contract ValidatorStaking is
   }
 
   /// @inheritdoc IValidatorStaking
-  function claimUnstake(address valAddr, address receiver) external notPaused returns (uint256) {
+  function claimUnstake(address valAddr, address receiver) external returns (uint256) {
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
 
     StorageV1 storage $ = _getStorageV1();
@@ -229,7 +221,7 @@ contract ValidatorStaking is
   }
 
   /// @inheritdoc IValidatorStaking
-  function redelegate(address fromValAddr, address toValAddr, uint256 amount) external notPaused {
+  function redelegate(address fromValAddr, address toValAddr, uint256 amount) external {
     require(amount > 0, StdError.ZeroAmount());
     require(fromValAddr != toValAddr, IValidatorStaking__RedelegateToSameValidator());
 
@@ -256,22 +248,6 @@ contract ValidatorStaking is
   /// @inheritdoc IValidatorStaking
   function setRedelegationCooldown(uint48 redelegationCooldown_) external onlyOwner {
     _setRedelegationCooldown(_getStorageV1(), redelegationCooldown_);
-  }
-
-  function pause() external onlyOwner {
-    _pause();
-  }
-
-  function pause(bytes4 sig) external onlyOwner {
-    _pause(sig);
-  }
-
-  function unpause() external onlyOwner {
-    _unpause();
-  }
-
-  function unpause(bytes4 sig) external onlyOwner {
-    _unpause(sig);
   }
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //

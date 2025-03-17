@@ -99,26 +99,29 @@ contract MatrixStrategyExecutor is
 
   //=========== NOTE: STRATEGIST FUNCTIONS ===========//
 
-  function deallocateLiquidity(uint256 amount) external notPaused {
+  function deallocateLiquidity(uint256 amount) external {
     StorageV1 memory $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
 
     $.vault.deallocateMatrix($.hubMatrixVault, amount);
   }
 
-  function fetchLiquidity(uint256 amount) external notPaused {
+  function fetchLiquidity(uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
 
     $.vault.fetchMatrix($.hubMatrixVault, amount);
     $.storedTotalBalance += amount;
   }
 
-  function returnLiquidity(uint256 amount) external notPaused {
+  function returnLiquidity(uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
 
     $.asset.approve(address($.vault), amount);
@@ -126,9 +129,10 @@ contract MatrixStrategyExecutor is
     $.storedTotalBalance -= amount;
   }
 
-  function settle() external notPaused {
+  function settle() external {
     StorageV1 storage $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
 
     uint256 totalBalance_ = _totalBalance($);
@@ -143,9 +147,10 @@ contract MatrixStrategyExecutor is
     }
   }
 
-  function settleExtraRewards(address reward, uint256 amount) external notPaused {
+  function settleExtraRewards(address reward, uint256 amount) external {
     StorageV1 memory $ = _getStorageV1();
 
+    _assertNotPaused();
     _assertOnlyStrategist($);
     require(reward != address($.asset), StdError.InvalidAddress('reward'));
 
@@ -155,7 +160,7 @@ contract MatrixStrategyExecutor is
 
   //=========== NOTE: EXECUTOR FUNCTIONS ===========//
 
-  function execute(address target, bytes calldata data, uint256 value) external notPaused returns (bytes memory result) {
+  function execute(address target, bytes calldata data, uint256 value) external returns (bytes memory result) {
     StorageV1 memory $ = _getStorageV1();
     _assertOnlyExecutor($);
     _assertOnlyTallyRegisteredProtocol($, target);
@@ -165,7 +170,6 @@ contract MatrixStrategyExecutor is
 
   function execute(address[] calldata targets, bytes[] calldata data, uint256[] calldata values)
     external
-    notPaused
     returns (bytes[] memory results)
   {
     StorageV1 memory $ = _getStorageV1();
@@ -228,18 +232,8 @@ contract MatrixStrategyExecutor is
     _pause();
   }
 
-  function pause(bytes4 sig) external {
-    StorageV1 memory $ = _getStorageV1();
-    require(_msgSender() == owner() || _msgSender() == $.emergencyManager, StdError.Unauthorized());
-    _pause(sig);
-  }
-
   function unpause() external onlyOwner {
     _unpause();
-  }
-
-  function unpause(bytes4 sig) external onlyOwner {
-    _unpause(sig);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//

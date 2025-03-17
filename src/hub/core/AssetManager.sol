@@ -77,7 +77,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     emit DepositedWithSupplyMatrix(chainId, hubAsset, to, matrixVault, amount, supplyAmount);
   }
 
-  function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external notPaused {
+  function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     require(to != address(0), StdError.ZeroAddress('to'));
@@ -98,7 +98,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
   //=========== NOTE: MATRIX FUNCTIONS ===========//
 
   /// @dev only strategist
-  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external notPaused {
+  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($, matrixVault);
@@ -131,7 +131,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
   }
 
   /// @dev only strategist
-  function reserveMatrix(address matrixVault, uint256 amount) external notPaused {
+  function reserveMatrix(address matrixVault, uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($, matrixVault);
@@ -196,7 +196,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function _authorizeUpgrade(address) internal override onlyOwner { }
 
-  function initializeAsset(uint256 chainId, address hubAsset) external onlyOwner notPaused {
+  function initializeAsset(uint256 chainId, address hubAsset) external onlyOwner {
     _assertOnlyContract(hubAsset, 'hubAsset');
 
     StorageV1 storage $ = _getStorageV1();
@@ -226,7 +226,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     }
   }
 
-  function initializeMatrix(uint256 chainId, address matrixVault) external onlyOwner notPaused {
+  function initializeMatrix(uint256 chainId, address matrixVault) external onlyOwner {
     _assertOnlyContract(matrixVault, 'matrixVault');
 
     StorageV1 storage $ = _getStorageV1();
@@ -274,16 +274,8 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     _pause();
   }
 
-  function pause(bytes4 sig) external onlyOwner {
-    _pause(sig);
-  }
-
   function unpause() external onlyOwner {
     _unpause();
-  }
-
-  function unpause(bytes4 sig) external onlyOwner {
-    _unpause(sig);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//

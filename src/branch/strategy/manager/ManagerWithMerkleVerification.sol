@@ -51,16 +51,8 @@ contract ManagerWithMerkleVerification is
     _pause();
   }
 
-  function pause(bytes4 sig) external onlyOwner {
-    _pause(sig);
-  }
-
   function unpause() external onlyOwner {
     _unpause();
-  }
-
-  function unpause(bytes4 sig) external onlyOwner {
-    _unpause(sig);
   }
 
   function manageVaultWithMerkleVerification(
@@ -70,7 +62,9 @@ contract ManagerWithMerkleVerification is
     address[] calldata targets,
     bytes[] calldata targetData,
     uint256[] calldata values
-  ) external notPaused {
+  ) external {
+    _assertNotPaused();
+
     StorageV1 storage $ = _getStorageV1();
 
     uint256 targetsLength = targets.length;
