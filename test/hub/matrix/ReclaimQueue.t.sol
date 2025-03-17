@@ -37,14 +37,14 @@ contract ReclaimQueueTest is Toolkit {
     _hubAsset = HubAsset(
       _proxy(
         address(new HubAsset()),
-        abi.encodeCall(HubAsset.initialize, (address(_owner), address(_assetManager), 'Test', 'TT', 18)) //
+        abi.encodeCall(HubAsset.initialize, (_owner, address(_assetManager), 'Test', 'TT', 18)) //
       )
     );
     _matrixVault = MatrixVaultBasic(
       _proxy(
         address(new MatrixVaultBasic()),
         abi.encodeCall(
-          MatrixVaultBasic.initialize, (address(_assetManager), IERC20Metadata(address(_hubAsset)), 'miTest', 'miTT')
+          MatrixVaultBasic.initialize, (_owner, address(_assetManager), IERC20Metadata(address(_hubAsset)), 'miTest', 'miTT')
         ) //
       )
     );
