@@ -69,38 +69,54 @@ contract ValidatorStakingHubTest is Toolkit {
     vm.expectRevert(_errUnauthorized());
     hub.notifyStake(val1, user1, 10 ether);
 
-    vm.startPrank(notifier1);
+    vm.prank(notifier1);
     hub.notifyStake(val1, user1, 10 ether);
-    hub.notifyStake(val1, user2, 10 ether);
-    vm.stopPrank();
 
     vm.warp(_now48() + 1 days);
 
-    vm.startPrank(notifier2);
+    vm.prank(notifier2);
     hub.notifyStake(val2, user1, 10 ether);
-    hub.notifyStake(val2, user2, 10 ether);
 
-    vm.stopPrank();
+    vm.warp(_now48() + 1 days);
 
-    assertEq(hub.stakerTotal(user1, _now48()), 20 ether, 'user1 total now');
-    assertEq(hub.stakerTotal(user2, _now48()), 20 ether, 'user2 total now');
-    assertEq(hub.stakerTotal(user1, _now48() - 1), 10 ether, 'user1 total before');
-    assertEq(hub.stakerTotal(user2, _now48() - 1), 10 ether, 'user2 total before');
+    uint48 offset = 1 days + 1;
 
-    assertEq(hub.validatorTotal(val1, _now48()), 20 ether, 'val1 total now');
-    assertEq(hub.validatorTotal(val2, _now48()), 20 ether, 'val2 total now');
-    assertEq(hub.validatorTotal(val1, _now48() - 1), 20 ether, 'val1 total before');
-    assertEq(hub.validatorTotal(val2, _now48() - 1), 0, 'val2 total before');
+    uint256 expectedStakerTwabDay2 = (20 ether * 1 days) + (10 ether * 1 days);
+    uint256 expectedStakerTwabDay1 = 10 ether * (1 days - 1);
+    uint256 expectedValidatorTwabVal1Day2 = 10 ether * 2 days;
+    uint256 expectedValidatorTwabVal1Day1 = 10 ether * (1 days - 1);
+    uint256 expectedValidatorTwabVal2Day2 = 10 ether * 1 days;
+    uint256 expectedValidatorTwabVal2Day1 = 0;
 
-    assertEq(hub.validatorStakerTotal(val1, user1, _now48()), 10 ether, 'val1 user1 total now');
-    assertEq(hub.validatorStakerTotal(val1, user2, _now48()), 10 ether, 'val1 user2 total now');
-    assertEq(hub.validatorStakerTotal(val2, user1, _now48()), 10 ether, 'val2 user1 total now');
-    assertEq(hub.validatorStakerTotal(val2, user2, _now48()), 10 ether, 'val2 user2 total now');
+    // present
 
-    assertEq(hub.validatorStakerTotal(val1, user1, _now48() - 1), 10 ether, 'val1 user1 total before');
-    assertEq(hub.validatorStakerTotal(val1, user2, _now48() - 1), 0, 'val1 user2 total before');
-    assertEq(hub.validatorStakerTotal(val2, user1, _now48() - 1), 10 ether, 'val2 user1 total before');
-    assertEq(hub.validatorStakerTotal(val2, user2, _now48() - 1), 0, 'val2 user2 total before');
+    assertEq(hub.stakerTotal(user1, _now48()), 20 ether);
+    assertEq(hub.stakerTotal(user1, _now48() - offset), 10 ether);
+
+    assertEq(hub.validatorTotal(val1, _now48()), 10 ether);
+    assertEq(hub.validatorTotal(val2, _now48()), 10 ether);
+    assertEq(hub.validatorTotal(val1, _now48() - offset), 10 ether);
+    assertEq(hub.validatorTotal(val2, _now48() - offset), 0);
+
+    assertEq(hub.validatorStakerTotal(val1, user1, _now48()), 10 ether);
+    assertEq(hub.validatorStakerTotal(val2, user1, _now48()), 10 ether);
+    assertEq(hub.validatorStakerTotal(val1, user1, _now48() - offset), 10 ether);
+    assertEq(hub.validatorStakerTotal(val2, user1, _now48() - offset), 0);
+
+    // twab
+
+    assertEq(hub.stakerTotalTWAB(user1, _now48()), expectedStakerTwabDay2);
+    assertEq(hub.stakerTotalTWAB(user1, _now48() - offset), expectedStakerTwabDay1);
+
+    assertEq(hub.validatorTotalTWAB(val1, _now48()), expectedValidatorTwabVal1Day2);
+    assertEq(hub.validatorTotalTWAB(val2, _now48()), expectedValidatorTwabVal2Day2);
+    assertEq(hub.validatorTotalTWAB(val1, _now48() - offset), expectedValidatorTwabVal1Day1);
+    assertEq(hub.validatorTotalTWAB(val2, _now48() - offset), expectedValidatorTwabVal2Day1);
+
+    assertEq(hub.validatorStakerTotalTWAB(val1, user1, _now48()), expectedValidatorTwabVal1Day2);
+    assertEq(hub.validatorStakerTotalTWAB(val2, user1, _now48()), expectedValidatorTwabVal2Day2);
+    assertEq(hub.validatorStakerTotalTWAB(val1, user1, _now48() - offset), expectedValidatorTwabVal1Day1);
+    assertEq(hub.validatorStakerTotalTWAB(val2, user1, _now48() - offset), expectedValidatorTwabVal2Day1);
   }
 
   function test_notifyUnstake() public {
@@ -109,6 +125,44 @@ contract ValidatorStakingHubTest is Toolkit {
     vm.prank(makeAddr('wrong'));
     vm.expectRevert(_errUnauthorized());
     hub.notifyUnstake(val1, user1, 10 ether);
+    // First stake 20 ether
+    vm.prank(notifier1);
+    hub.notifyStake(val1, user1, 20 ether);
+
+    vm.warp(_now48() + 1 days);
+
+    // Then unstake 10 ether
+    vm.prank(notifier2);
+    hub.notifyUnstake(val1, user1, 10 ether);
+
+    vm.warp(_now48() + 1 days);
+
+    uint48 offset = 1 days + 1;
+
+    uint256 expectedStakerTwabDay2 = (10 ether * 1 days) + (20 ether * 1 days);
+    uint256 expectedStakerTwabDay1 = 20 ether * (1 days - 1);
+    uint256 expectedValidatorTwabDay2 = (10 ether * 1 days) + (20 ether * 1 days);
+    uint256 expectedValidatorTwabDay1 = 20 ether * (1 days - 1);
+
+    // present
+    assertEq(hub.stakerTotal(user1, _now48()), 10 ether);
+    assertEq(hub.stakerTotal(user1, _now48() - offset), 20 ether);
+
+    assertEq(hub.validatorTotal(val1, _now48()), 10 ether);
+    assertEq(hub.validatorTotal(val1, _now48() - offset), 20 ether);
+
+    assertEq(hub.validatorStakerTotal(val1, user1, _now48()), 10 ether);
+    assertEq(hub.validatorStakerTotal(val1, user1, _now48() - offset), 20 ether);
+
+    // twab
+    assertEq(hub.stakerTotalTWAB(user1, _now48()), expectedStakerTwabDay2);
+    assertEq(hub.stakerTotalTWAB(user1, _now48() - offset), expectedStakerTwabDay1);
+
+    assertEq(hub.validatorTotalTWAB(val1, _now48()), expectedValidatorTwabDay2);
+    assertEq(hub.validatorTotalTWAB(val1, _now48() - offset), expectedValidatorTwabDay1);
+
+    assertEq(hub.validatorStakerTotalTWAB(val1, user1, _now48()), expectedValidatorTwabDay2);
+    assertEq(hub.validatorStakerTotalTWAB(val1, user1, _now48() - offset), expectedValidatorTwabDay1);
   }
 
   function test_notifyRedelegation() public {
@@ -117,5 +171,53 @@ contract ValidatorStakingHubTest is Toolkit {
     vm.prank(makeAddr('wrong'));
     vm.expectRevert(_errUnauthorized());
     hub.notifyRedelegation(val1, val2, user1, 10 ether);
+
+    // First stake 20 ether to val1
+    vm.prank(notifier1);
+    hub.notifyStake(val1, user1, 20 ether);
+
+    vm.warp(_now48() + 1 days);
+
+    // Then redelegate 10 ether from val1 to val2
+    vm.prank(notifier2);
+    hub.notifyRedelegation(val1, val2, user1, 10 ether);
+
+    vm.warp(_now48() + 1 days);
+
+    uint48 offset = 1 days + 1;
+
+    uint256 expectedVal1StakerTwabDay2 = (10 ether * 1 days) + (20 ether * 1 days);
+    uint256 expectedVal1StakerTwabDay1 = 20 ether * (1 days - 1);
+    uint256 expectedVal2StakerTwabDay2 = 10 ether * 1 days;
+    uint256 expectedVal2StakerTwabDay1 = 0;
+
+    // present - val1
+    assertEq(hub.stakerTotal(user1, _now48()), 20 ether); // Total stake remains 20 ether
+    assertEq(hub.validatorTotal(val1, _now48()), 10 ether); // val1 now has 10 ether
+    assertEq(hub.validatorStakerTotal(val1, user1, _now48()), 10 ether);
+
+    // present - val2
+    assertEq(hub.validatorTotal(val2, _now48()), 10 ether); // val2 now has 10 ether
+    assertEq(hub.validatorStakerTotal(val2, user1, _now48()), 10 ether);
+
+    // past - val1
+    assertEq(hub.validatorTotal(val1, _now48() - offset), 20 ether);
+    assertEq(hub.validatorStakerTotal(val1, user1, _now48() - offset), 20 ether);
+
+    // past - val2
+    assertEq(hub.validatorTotal(val2, _now48() - offset), 0);
+    assertEq(hub.validatorStakerTotal(val2, user1, _now48() - offset), 0);
+
+    // twab - val1
+    assertEq(hub.validatorTotalTWAB(val1, _now48()), expectedVal1StakerTwabDay2);
+    assertEq(hub.validatorStakerTotalTWAB(val1, user1, _now48()), expectedVal1StakerTwabDay2);
+    assertEq(hub.validatorTotalTWAB(val1, _now48() - offset), expectedVal1StakerTwabDay1);
+    assertEq(hub.validatorStakerTotalTWAB(val1, user1, _now48() - offset), expectedVal1StakerTwabDay1);
+
+    // twab - val2
+    assertEq(hub.validatorTotalTWAB(val2, _now48()), expectedVal2StakerTwabDay2);
+    assertEq(hub.validatorStakerTotalTWAB(val2, user1, _now48()), expectedVal2StakerTwabDay2);
+    assertEq(hub.validatorTotalTWAB(val2, _now48() - offset), expectedVal2StakerTwabDay1);
+    assertEq(hub.validatorStakerTotalTWAB(val2, user1, _now48() - offset), expectedVal2StakerTwabDay1);
   }
 }

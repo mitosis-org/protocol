@@ -46,7 +46,7 @@ contract ValidatorStakingTest is Toolkit {
               IValidatorStakingHub(address(hub))
             )
           ),
-          abi.encodeCall(ValidatorStaking.initialize, (owner, 1 days, 1 days))
+          abi.encodeCall(ValidatorStaking.initialize, (owner, 10 ether, 10 ether, 1 days, 1 days))
         )
       )
     );
@@ -61,7 +61,7 @@ contract ValidatorStakingTest is Toolkit {
               IValidatorStakingHub(address(hub))
             )
           ),
-          abi.encodeCall(ValidatorStaking.initialize, (owner, 1 days, 1 days))
+          abi.encodeCall(ValidatorStaking.initialize, (owner, 10 ether, 10 ether, 1 days, 1 days))
         )
       )
     );

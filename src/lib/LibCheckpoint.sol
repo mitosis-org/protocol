@@ -55,19 +55,6 @@ library LibCheckpoint {
     }
   }
 
-  function findAmount(TraceTWAB storage self, uint48 timestamp) internal view returns (uint256) {
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    return len(self) == 0 ? 0 : upperLookup(self, timestamp).amount;
-  }
-
-  function findTWAB(TraceTWAB storage self, uint48 timestamp) internal view returns (uint256) {
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    if (len(self) == 0) return 0;
-
-    TWABCheckpoint memory checkpoint = upperLookup(self, timestamp);
-    return checkpoint.twab + (checkpoint.amount * (timestamp - checkpoint.lastUpdate));
-  }
-
   /**
    * @dev Returns the value in the first (oldest) checkpoint with key greater or equal than the search key, or zero if
    * there is none.
@@ -182,8 +169,12 @@ library LibCheckpoint {
     returns (TWABCheckpoint storage result)
   {
     assembly {
+      // Get the array's storage slot
       mstore(0, self.slot)
-      result.slot := add(keccak256(0, 0x20), pos)
+      // Multiply position by 2 (since each element takes 2 storage slots)
+      let slotOffset := shl(1, pos)
+      // Add the offset to the base storage location
+      result.slot := add(keccak256(0, 0x20), slotOffset)
     }
   }
 }
