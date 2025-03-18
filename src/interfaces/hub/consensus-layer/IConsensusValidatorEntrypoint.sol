@@ -10,7 +10,7 @@ interface IConsensusValidatorEntrypoint {
   event MsgDepositCollateral(address valAddr, uint256 amountGwei, address collateralRefundAddr);
   event MsgWithdrawCollateral(address valAddr, uint256 amountGwei, address receiver, uint48 maturesAt);
   event MsgUnjail(address valAddr);
-  event MsgUpdateExtraVotingPower(address valAddr, uint256 extraVotingPowerGwei);
+  event MsgUpdateExtraVotingPower(address valAddr, uint256 extraVotingPowerWei);
 
   /**
    * @notice Register a validator in the consensus layer.
