@@ -41,33 +41,10 @@ interface IGovMITO is IERC20, IERC5805 {
   event WhiltelistedSenderSet(address indexed sender, bool whitelisted);
 
   /**
-   * @notice Emitted when a voting power notifier is set.
-   * @param sender The address of the sender
-   * @param isVotingPowerNotifier Whether the sender is a voting power notifier
-   */
-  event VotingPowerNotifierSet(address indexed sender, bool isVotingPowerNotifier);
-
-  /**
    * @notice Emitted when the redeem period is set.
    * @param redeemPeriod The new redeem period
    */
   event RedeemPeriodSet(uint256 redeemPeriod);
-
-  /**
-   * @notice Emitted when a voting power delegation is notified.
-   * @param notifier The address that notified the contract
-   * @param delegate The address of the delegate
-   * @param amount The amount of tokens delegated
-   */
-  event VotingPowerDelegated(address indexed notifier, address indexed delegate, uint256 amount);
-
-  /**
-   * @notice Emitted when a voting power undelegation is notified.
-   * @param notifier The address that notified the contract
-   * @param delegate The address of the delegate
-   * @param amount The amount of tokens undelegated
-   */
-  event VotingPowerUndelegated(address indexed notifier, address indexed delegate, uint256 amount);
 
   /**
    * @notice Mint tokens to an address with corresponding MITO.
@@ -92,18 +69,4 @@ interface IGovMITO is IERC20, IERC5805 {
    * @return claimed The amount of assets claimed
    */
   function claimRedeem(address receiver) external returns (uint256 claimed);
-
-  /**
-   * @notice Notify the contract that a proxied sender has deposited tokens.
-   * @param sender The address of the sender
-   * @param amount The amount of tokens deposited
-   */
-  function notifyProxiedDeposit(address sender, uint256 amount) external;
-
-  /**
-   * @notice Notify the contract that a proxied sender has withdrawn tokens.
-   * @param sender The address of the sender
-   * @param amount The amount of tokens withdrawn
-   */
-  function notifyProxiedWithdraw(address sender, uint256 amount) external;
 }
