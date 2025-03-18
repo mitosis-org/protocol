@@ -16,13 +16,6 @@ contract DeployConsensusEntrypoints is Script {
 
     address owner = msg.sender;
 
-    ConsensusValidatorEntrypoint val = ConsensusValidatorEntrypoint(
-      payable(
-        new ERC1967Proxy(
-          address(new ConsensusValidatorEntrypoint()), abi.encodeCall(ConsensusValidatorEntrypoint.initialize, (owner))
-        )
-      )
-    );
     ConsensusGovernanceEntrypoint gov = ConsensusGovernanceEntrypoint(
       payable(
         new ERC1967Proxy(
@@ -31,15 +24,22 @@ contract DeployConsensusEntrypoints is Script {
         )
       )
     );
+    ConsensusValidatorEntrypoint val = ConsensusValidatorEntrypoint(
+      payable(
+        new ERC1967Proxy(
+          address(new ConsensusValidatorEntrypoint()), abi.encodeCall(ConsensusValidatorEntrypoint.initialize, (owner))
+        )
+      )
+    );
 
-    val.setPermittedCaller(owner, true);
     gov.setPermittedCaller(owner, true);
+    val.setPermittedCaller(owner, true);
 
     console.log('====================== Result ======================');
     console.log('Owner                        : ', address(owner));
     console.log('Permitted Caller             : ', address(owner));
-    console.log('ConsensusValidatorEntrypoint : ', address(val));
     console.log('ConsensusGovernanceEntrypoint: ', address(gov));
+    console.log('ConsensusValidatorEntrypoint : ', address(val));
     console.log('====================================================');
 
     vm.stopBroadcast();
