@@ -10,21 +10,7 @@ contract PausableContract is Pausable {
     __Pausable_init();
   }
 
-  function pause() external {
-    _pause();
-  }
-
-  function pause(bytes4 sig) external {
-    _pause(sig);
-  }
-
-  function unpause() external {
-    _unpause();
-  }
-
-  function unpause(bytes4 sig) external {
-    _unpause(sig);
-  }
+  function _authorizePause(address) internal view override { }
 
   function assertNotPaused() external view {
     _assertNotPaused();
