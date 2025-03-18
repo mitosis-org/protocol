@@ -22,6 +22,8 @@ contract ValidatorStakingHubTest is Toolkit {
 
   function setUp() public {
     entrypoint = new MockContract();
+    entrypoint.setCall(IConsensusValidatorEntrypoint.updateExtraVotingPower.selector);
+
     hub = ValidatorStakingHub(
       _proxy(
         address(new ValidatorStakingHub(IConsensusValidatorEntrypoint(address(entrypoint)))),
@@ -71,11 +73,13 @@ contract ValidatorStakingHubTest is Toolkit {
 
     vm.prank(notifier1);
     hub.notifyStake(val1, user1, 10 ether);
+    entrypoint.assertLastCall(abi.encodeCall(IConsensusValidatorEntrypoint.updateExtraVotingPower, (val1, 10 ether)));
 
     vm.warp(_now48() + 1 days);
 
     vm.prank(notifier2);
     hub.notifyStake(val2, user1, 10 ether);
+    entrypoint.assertLastCall(abi.encodeCall(IConsensusValidatorEntrypoint.updateExtraVotingPower, (val2, 10 ether)));
 
     vm.warp(_now48() + 1 days);
 
@@ -125,15 +129,18 @@ contract ValidatorStakingHubTest is Toolkit {
     vm.prank(makeAddr('wrong'));
     vm.expectRevert(_errUnauthorized());
     hub.notifyUnstake(val1, user1, 10 ether);
+
     // First stake 20 ether
     vm.prank(notifier1);
     hub.notifyStake(val1, user1, 20 ether);
+    entrypoint.assertLastCall(abi.encodeCall(IConsensusValidatorEntrypoint.updateExtraVotingPower, (val1, 20 ether)));
 
     vm.warp(_now48() + 1 days);
 
     // Then unstake 10 ether
     vm.prank(notifier2);
     hub.notifyUnstake(val1, user1, 10 ether);
+    entrypoint.assertLastCall(abi.encodeCall(IConsensusValidatorEntrypoint.updateExtraVotingPower, (val1, 10 ether)));
 
     vm.warp(_now48() + 1 days);
 
@@ -175,12 +182,15 @@ contract ValidatorStakingHubTest is Toolkit {
     // First stake 20 ether to val1
     vm.prank(notifier1);
     hub.notifyStake(val1, user1, 20 ether);
+    entrypoint.assertLastCall(abi.encodeCall(IConsensusValidatorEntrypoint.updateExtraVotingPower, (val1, 20 ether)));
 
     vm.warp(_now48() + 1 days);
 
     // Then redelegate 10 ether from val1 to val2
     vm.prank(notifier2);
     hub.notifyRedelegation(val1, val2, user1, 10 ether);
+    entrypoint.assertCall(abi.encodeCall(IConsensusValidatorEntrypoint.updateExtraVotingPower, (val2, 10 ether)), 0);
+    entrypoint.assertCall(abi.encodeCall(IConsensusValidatorEntrypoint.updateExtraVotingPower, (val1, 10 ether)), 1);
 
     vm.warp(_now48() + 1 days);
 
