@@ -121,7 +121,11 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgr
     return assets;
   }
 
-  // general overrides
+  function pause() external onlyOwner {
+    _pause();
+  }
 
-  function _authorizePause(address) internal view override onlyOwner { }
+  function unpause() external onlyOwner {
+    _unpause();
+  }
 }

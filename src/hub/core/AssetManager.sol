@@ -214,8 +214,6 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function _authorizeUpgrade(address) internal override onlyOwner { }
 
-  function _authorizePause(address) internal view override onlyOwner { }
-
   function initializeAsset(uint256 chainId, address hubAsset) external onlyOwner {
     _assertNotPaused();
 
@@ -291,6 +289,14 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function setStrategist(address matrixVault, address strategist) external onlyOwner {
     _setStrategist(_getStorageV1(), matrixVault, strategist);
+  }
+
+  function pause() external onlyOwner {
+    _pause();
+  }
+
+  function unpause() external onlyOwner {
+    _unpause();
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//

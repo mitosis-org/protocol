@@ -261,8 +261,6 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function _authorizeUpgrade(address) internal override onlyOwner { }
 
-  function _authorizePause(address) internal view override onlyOwner { }
-
   function setEntrypoint(address entrypoint_) external onlyOwner {
     _getStorageV1().entrypoint = IMitosisVaultEntrypoint(entrypoint_);
     emit EntrypointSet(address(entrypoint_));
@@ -327,6 +325,14 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
     StorageV1 storage $ = _getStorageV1();
     _assertMatrixInitialized($, hubMatrixVault);
     return _resumeMatrix($, hubMatrixVault, action);
+  }
+
+  function pause() external onlyOwner {
+    _pause();
+  }
+
+  function unpause() external onlyOwner {
+    _unpause();
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//

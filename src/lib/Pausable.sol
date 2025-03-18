@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
-
 import { ERC7201Utils } from './ERC7201Utils.sol';
-import { StdError } from './StdError.sol';
 
-abstract contract Pausable is ContextUpgradeable {
+contract Pausable {
   using ERC7201Utils for string;
 
   /// @custom:storage-location mitosis.storage.Pausable
@@ -39,27 +36,6 @@ abstract contract Pausable is ContextUpgradeable {
     $.global_ = false;
   }
 
-  // =========================== NOTE: MODIFIERS =========================== //
-
-  modifier whenNotPaused() {
-    _assertNotPaused();
-    _;
-  }
-
-  modifier whenPaused() {
-    _assertPaused();
-    _;
-  }
-
-  modifier onlyPauseManager() {
-    _authorizePause(_msgSender());
-    _;
-  }
-
-  // =========================== NOTE: VIRTUAL FUNCTIONS =========================== //
-
-  function _authorizePause(address) internal view virtual;
-
   // =========================== NOTE: MAIN FUNCTIONS =========================== //
 
   function isPaused(bytes4 sig) external view returns (bool) {
@@ -69,24 +45,6 @@ abstract contract Pausable is ContextUpgradeable {
   function isPausedGlobally() external view returns (bool) {
     return _isPausedGlobally();
   }
-
-  function pause() external onlyPauseManager {
-    _pause();
-  }
-
-  function pause(bytes4 sig) external onlyPauseManager {
-    _pause(sig);
-  }
-
-  function unpause() external onlyPauseManager {
-    _unpause();
-  }
-
-  function unpause(bytes4 sig) external onlyPauseManager {
-    _unpause(sig);
-  }
-
-  // =========================== NOTE: INTERNAL FUNCTIONS =========================== //
 
   function _pause() internal virtual {
     _getPausableStorage().global_ = true;

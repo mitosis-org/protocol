@@ -111,7 +111,21 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function _authorizeUpgrade(address) internal override onlyOwner { }
 
-  function _authorizePause(address) internal view override onlyOwner { }
+  function pause() external onlyOwner {
+    _pause();
+  }
+
+  function pause(bytes4 sig) external onlyOwner {
+    _pause(sig);
+  }
+
+  function unpause() external onlyOwner {
+    _unpause();
+  }
+
+  function unpause(bytes4 sig) external onlyOwner {
+    _unpause(sig);
+  }
 
   function enable(address matrixVault) external onlyOwner {
     _enableQueue(_getStorageV1(), matrixVault);
