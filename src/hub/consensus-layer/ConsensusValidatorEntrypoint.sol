@@ -119,6 +119,8 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
   }
 
   function updateExtraVotingPower(address valAddr, uint256 extraVotingPower) external onlyPermittedCaller {
+    require(extraVotingPower % 1 gwei == 0, StdError.InvalidParameter('extraVotingPower'));
+
     emit MsgUpdateExtraVotingPower(valAddr, extraVotingPower / 1 gwei);
   }
 
