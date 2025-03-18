@@ -26,6 +26,10 @@ contract ValidatorRewardDistributorStorageV1 {
   using ERC7201Utils for string;
 
   struct StorageV1 {
+    // Approvals
+    mapping(address account => mapping(address valAddr => mapping(address claimer => bool))) stakerClaimApprovals;
+    mapping(address account => mapping(address valAddr => mapping(address claimer => bool))) operatorClaimApprovals;
+    // LastClaimedEpochs
     mapping(address staker => mapping(address valAddr => uint256)) staker;
     mapping(address valAddr => uint256) operator;
   }
@@ -111,6 +115,16 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
+  function stakerClaimAllowed(address account, address valAddr, address claimer) external view returns (bool) {
+    return _isClaimable(account, valAddr, claimer, _getStorageV1().stakerClaimApprovals);
+  }
+
+  /// @inheritdoc IValidatorRewardDistributor
+  function operatorClaimAllowed(address account, address valAddr, address claimer) external view returns (bool) {
+    return _isClaimable(account, valAddr, claimer, _getStorageV1().operatorClaimApprovals);
+  }
+
+  /// @inheritdoc IValidatorRewardDistributor
   function lastClaimedStakerRewardsEpoch(address staker, address valAddr) external view returns (uint256) {
     return _getStorageV1().staker[staker][valAddr];
   }
@@ -131,8 +145,20 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
+  function setStakerClaimApprovalStatus(address valAddr, address claimer, bool approval) external {
+    _getStorageV1().stakerClaimApprovals[_msgSender()][valAddr][claimer] = approval;
+    emit StakerRewardClaimApprovalUpdated(_msgSender(), valAddr, claimer, approval);
+  }
+
+  /// @inheritdoc IValidatorRewardDistributor
+  function setOperatorClaimApprovalStatus(address valAddr, address claimer, bool approval) external {
+    _getStorageV1().operatorClaimApprovals[_msgSender()][valAddr][claimer] = approval;
+    emit OperatorRewardClaimApprovalUpdated(_msgSender(), valAddr, claimer, approval);
+  }
+
+  /// @inheritdoc IValidatorRewardDistributor
   function claimStakerRewards(address staker, address valAddr) external returns (uint256) {
-    return _claimStakerRewards(_getStorageV1(), staker, valAddr);
+    return _claimStakerRewards(_getStorageV1(), staker, valAddr, _msgSender());
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -145,7 +171,7 @@ contract ValidatorRewardDistributor is
     uint256 totalClaimed;
     for (uint256 i = 0; i < stakers.length; i++) {
       for (uint256 j = 0; j < valAddrs[i].length; j++) {
-        totalClaimed += _claimStakerRewards(_getStorageV1(), stakers[i], valAddrs[i][j]);
+        totalClaimed += _claimStakerRewards(_getStorageV1(), stakers[i], valAddrs[i][j], _msgSender());
       }
     }
 
@@ -154,7 +180,7 @@ contract ValidatorRewardDistributor is
 
   /// @inheritdoc IValidatorRewardDistributor
   function claimOperatorRewards(address valAddr) external returns (uint256) {
-    return _claimOperatorRewards(_getStorageV1(), valAddr);
+    return _claimOperatorRewards(_getStorageV1(), valAddr, _msgSender());
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -162,7 +188,7 @@ contract ValidatorRewardDistributor is
     uint256 totalClaimed;
 
     for (uint256 i = 0; i < valAddrs.length; i++) {
-      totalClaimed += _claimOperatorRewards(_getStorageV1(), valAddrs[i]);
+      totalClaimed += _claimOperatorRewards(_getStorageV1(), valAddrs[i], _msgSender());
     }
 
     return totalClaimed;
@@ -205,7 +231,12 @@ contract ValidatorRewardDistributor is
     return (totalOperatorReward, end + 1);
   }
 
-  function _claimStakerRewards(StorageV1 storage $, address staker, address valAddr) internal returns (uint256) {
+  function _claimStakerRewards(StorageV1 storage $, address staker, address valAddr, address recipient)
+    internal
+    returns (uint256)
+  {
+    _assertClaimApproval(staker, valAddr, recipient, $.stakerClaimApprovals);
+
     (uint256 start, uint256 end) = _claimRange($.staker[staker][valAddr], _epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
     if (start == end) return 0;
 
@@ -230,11 +261,13 @@ contract ValidatorRewardDistributor is
     return totalClaimed;
   }
 
-  function _claimOperatorRewards(StorageV1 storage $, address valAddr) internal returns (uint256) {
+  function _claimOperatorRewards(StorageV1 storage $, address valAddr, address recipient) internal returns (uint256) {
+    _assertClaimApproval(
+      _validatorManager.validatorInfo(valAddr).rewardManager, valAddr, recipient, $.operatorClaimApprovals
+    );
+
     (uint256 start, uint256 end) = _claimRange($.operator[valAddr], _epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
     if (start == end) return 0;
-
-    address recipient = _validatorManager.validatorInfo(valAddr).rewardRecipient;
 
     uint256 totalClaimed;
     uint256 lastClaimedEpoch = start - 1;
@@ -313,6 +346,24 @@ contract ValidatorRewardDistributor is
     uint256 commission = (stakerReward * validatorInfo.commissionRate) / _validatorManager.MAX_COMMISSION_RATE();
 
     return ((totalReward - stakerReward) + commission, stakerReward - commission);
+  }
+
+  function _assertClaimApproval(
+    address account,
+    address valAddr,
+    address recipient,
+    mapping(address => mapping(address => mapping(address => bool))) storage claimApprovals
+  ) internal view {
+    require(_isClaimable(account, valAddr, recipient, claimApprovals), StdError.Unauthorized());
+  }
+
+  function _isClaimable(
+    address account,
+    address valAddr,
+    address recipient,
+    mapping(address => mapping(address => mapping(address => bool))) storage claimApprovals
+  ) internal view returns (bool) {
+    return account == recipient || claimApprovals[account][valAddr][recipient];
   }
 
   // ====================== UUPS ======================

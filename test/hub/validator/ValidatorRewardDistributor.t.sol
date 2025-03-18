@@ -98,7 +98,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     // ValidatorManager
     address valAddr;
     address operatorAddr;
-    address rewardRecipient;
+    address rewardManager;
     address withdrawalRecipient;
     uint256 comissionRate;
     // ValidatorStakingHub
@@ -128,7 +128,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
-      rewardRecipient: makeAddr('rewardRecipient-1'),
+      rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -159,10 +159,15 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(claimable, 45 ether);
     assertEq(nextEpoch, 2);
 
+    vm.startPrank(makeAddr('rewardManager-1'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 55 ether);
-    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 45 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-1'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 45 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 0);
+    vm.stopPrank();
 
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
     assertEq(claimable, 0);
@@ -194,7 +199,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
-      rewardRecipient: makeAddr('rewardRecipient-1'),
+      rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -206,7 +211,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[1] = ValidatorParam({
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
-      rewardRecipient: makeAddr('rewardRecipient-2'),
+      rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -243,10 +248,15 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(claimable, 9 ether);
     assertEq(nextEpoch, 2);
 
+    vm.startPrank(makeAddr('rewardManager-1'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 41 ether);
-    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 9 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-1'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 9 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 0);
+    vm.stopPrank();
 
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
     assertEq(claimable, 0);
@@ -267,10 +277,15 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(claimable, 22.5 ether);
     assertEq(nextEpoch, 2);
 
+    vm.startPrank(makeAddr('rewardManager-2'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-2')), 27.5 ether);
-    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-2')), 22.5 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-2')), 0);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-1'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-2')), 22.5 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-2')), 0);
+    vm.stopPrank();
 
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-2'));
     assertEq(claimable, 0);
@@ -302,7 +317,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
-      rewardRecipient: makeAddr('rewardRecipient-1'),
+      rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -314,7 +329,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[1] = ValidatorParam({
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
-      rewardRecipient: makeAddr('rewardRecipient-2'),
+      rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -352,10 +367,15 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(claimable, 31.5 ether);
     assertEq(nextEpoch, 2);
 
+    vm.startPrank(makeAddr('rewardManager-1'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 38.5 ether);
-    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 31.5 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-1'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 31.5 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 0);
+    vm.stopPrank();
 
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
     assertEq(claimable, 0);
@@ -376,10 +396,15 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(claimable, 13.5 ether);
     assertEq(nextEpoch, 2);
 
+    vm.startPrank(makeAddr('rewardManager-2'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-2')), 16.5 ether);
-    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-2')), 13.5 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-2')), 0);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-1'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-2')), 13.5 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-2')), 0);
+    vm.stopPrank();
 
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-2'));
     assertEq(claimable, 0);
@@ -418,7 +443,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
-      rewardRecipient: makeAddr('rewardRecipient-1'),
+      rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -462,15 +487,25 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(claimable, 11.25 ether);
     assertEq(nextEpoch, 2);
 
+    vm.startPrank(makeAddr('rewardManager-1'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 55 ether);
-    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 22.5 ether);
-    assertEq(_distributor.claimStakerRewards(makeAddr('staker-2'), makeAddr('val-1')), 11.25 ether);
-    assertEq(_distributor.claimStakerRewards(makeAddr('staker-3'), makeAddr('val-1')), 11.25 ether);
-
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-1'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 22.5 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 0);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-2'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-2'), makeAddr('val-1')), 11.25 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-2'), makeAddr('val-1')), 0);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-3'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-3'), makeAddr('val-1')), 11.25 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-3'), makeAddr('val-1')), 0);
+    vm.stopPrank();
 
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
     assertEq(claimable, 0);
@@ -511,7 +546,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
-      rewardRecipient: makeAddr('rewardRecipient-1'),
+      rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -542,10 +577,15 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(claimable, 18 ether);
     assertEq(nextEpoch, 2);
 
+    vm.startPrank(makeAddr('rewardManager-1'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 82 ether);
-    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 18 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-1'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 18 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 0);
+    vm.stopPrank();
 
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
     assertEq(claimable, 0);
@@ -585,7 +625,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
-      rewardRecipient: makeAddr('rewardRecipient-1'),
+      rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -619,10 +659,15 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(claimable, 90 ether);
     assertEq(nextEpoch, 3);
 
+    vm.startPrank(makeAddr('rewardManager-1'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 110 ether);
-    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 90 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-1'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 90 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 0);
+    vm.stopPrank();
 
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
     assertEq(claimable, 0);
@@ -663,7 +708,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     epoch1_validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
-      rewardRecipient: makeAddr('rewardRecipient-1'),
+      rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -675,7 +720,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     epoch1_validatorParams[1] = ValidatorParam({
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
-      rewardRecipient: makeAddr('rewardRecipient-2'),
+      rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -688,7 +733,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     epoch2_validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
-      rewardRecipient: makeAddr('rewardRecipient-1'),
+      rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -700,7 +745,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     epoch2_validatorParams[1] = ValidatorParam({
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
-      rewardRecipient: makeAddr('rewardRecipient-2'),
+      rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -755,10 +800,15 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(claimable, 45 ether);
     assertEq(nextEpoch, 3);
 
+    vm.startPrank(makeAddr('rewardManager-1'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 68.5 ether);
-    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 31.5 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-1'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 31.5 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 0);
+    vm.stopPrank();
 
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
     assertEq(claimable, 0);
@@ -770,10 +820,15 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(_distributor.lastClaimedOperatorRewardsEpoch(makeAddr('val-1')), 2);
     assertEq(_distributor.lastClaimedStakerRewardsEpoch(makeAddr('staker-1'), makeAddr('val-1')), 2);
 
+    vm.startPrank(makeAddr('rewardManager-2'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-2')), 55 ether);
-    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-2')), 45 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-2')), 0);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-1'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-2')), 45 ether);
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-2')), 0);
+    vm.stopPrank();
 
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-2'));
     assertEq(claimable, 0);
@@ -814,7 +869,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
-      rewardRecipient: makeAddr('rewardRecipient-1'),
+      rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -826,7 +881,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[1] = ValidatorParam({
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
-      rewardRecipient: makeAddr('rewardRecipient-2'),
+      rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -885,6 +940,15 @@ contract ValidatorRewardDistributorTest is Toolkit {
     address[] memory valAddrs = new address[](2);
     valAddrs[0] = makeAddr('val-1');
     valAddrs[1] = makeAddr('val-2');
+
+    // approve operator claim
+    address operatorBatchClaimer = makeAddr('operatorBatchClaimer');
+    vm.prank(makeAddr('rewardManager-1'));
+    _distributor.setOperatorClaimApprovalStatus(valAddrs[0], operatorBatchClaimer, true);
+    vm.prank(makeAddr('rewardManager-2'));
+    _distributor.setOperatorClaimApprovalStatus(valAddrs[1], operatorBatchClaimer, true);
+
+    vm.prank(makeAddr('operatorBatchClaimer'));
     assertEq(_distributor.batchClaimOperatorRewards(valAddrs), 41 ether + 27.5 ether);
 
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -902,6 +966,26 @@ contract ValidatorRewardDistributorTest is Toolkit {
     valAddrsArr[0] = valAddrs;
     valAddrsArr[1] = valAddrs;
     valAddrsArr[2] = valAddrs;
+
+    // approve staker claim
+    address stakerBatchClaimer = makeAddr('stakerBatchClaimer');
+
+    vm.startPrank(makeAddr('staker-1'));
+    _distributor.setStakerClaimApprovalStatus(valAddrs[0], stakerBatchClaimer, true);
+    _distributor.setStakerClaimApprovalStatus(valAddrs[1], stakerBatchClaimer, true);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-2'));
+    _distributor.setStakerClaimApprovalStatus(valAddrs[0], stakerBatchClaimer, true);
+    _distributor.setStakerClaimApprovalStatus(valAddrs[1], stakerBatchClaimer, true);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-3'));
+    _distributor.setStakerClaimApprovalStatus(valAddrs[0], stakerBatchClaimer, true);
+    _distributor.setStakerClaimApprovalStatus(valAddrs[1], stakerBatchClaimer, true);
+    vm.stopPrank();
+
+    vm.prank(stakerBatchClaimer);
     assertEq(_distributor.batchClaimStakerRewards(stakers, valAddrsArr), 31.5 ether);
 
     (claimable, nextEpoch) = _distributor.claimableStakerRewards(makeAddr('staker-1'), makeAddr('val-1'));
@@ -950,7 +1034,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
-      rewardRecipient: makeAddr('rewardRecipient-1'),
+      rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -980,9 +1064,15 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(claimable, 90 ether);
     assertEq(nextEpoch, 2);
 
+    vm.startPrank(makeAddr('rewardManager-1'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 10 ether);
-    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 90 ether);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-1'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 90 ether);
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 0);
+    vm.stopPrank();
 
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
     assertEq(claimable, 0);
@@ -1013,7 +1103,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
-      rewardRecipient: makeAddr('rewardRecipient-1'),
+      rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -1043,9 +1133,13 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(claimable, 0);
     assertEq(nextEpoch, 2);
 
+    vm.startPrank(makeAddr('rewardManager-1'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 100 ether);
-    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 0);
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
+    vm.stopPrank();
+
+    vm.prank(makeAddr('staker-1'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 0);
 
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
     assertEq(claimable, 0);
@@ -1076,7 +1170,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
-      rewardRecipient: makeAddr('rewardRecipient-1'),
+      rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -1105,7 +1199,9 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(claimable, 0);
     assertEq(nextEpoch, 1);
 
+    vm.prank(makeAddr('rewardManager-1'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
+    vm.prank(makeAddr('staker-1'));
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 0);
 
     assertEq(_distributor.lastClaimedOperatorRewardsEpoch(makeAddr('val-1')), 0);
@@ -1130,7 +1226,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
-      rewardRecipient: makeAddr('rewardRecipient-1'),
+      rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -1142,7 +1238,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[1] = ValidatorParam({
       valAddr: makeAddr('val-2'),
       operatorAddr: makeAddr('operator-2'),
-      rewardRecipient: makeAddr('rewardRecipient-2'),
+      rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -1151,6 +1247,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       collateralRewardShare: 50,
       delegationRewardShare: 50
     });
+
     address[] memory stakers = new address[](1);
     uint256[] memory amounts = new uint256[](1);
     stakers[0] = makeAddr('staker-1');
@@ -1184,6 +1281,14 @@ contract ValidatorRewardDistributorTest is Toolkit {
     address[] memory valAddrs = new address[](2);
     valAddrs[0] = makeAddr('val-1');
     valAddrs[1] = makeAddr('val-2');
+
+    address operatorBatchClaimer = makeAddr('operatorBatchClaimer');
+    vm.prank(makeAddr('rewardManager-1'));
+    _distributor.setOperatorClaimApprovalStatus(valAddrs[0], operatorBatchClaimer, true);
+    vm.prank(makeAddr('rewardManager-2'));
+    _distributor.setOperatorClaimApprovalStatus(valAddrs[1], operatorBatchClaimer, true);
+
+    vm.prank(operatorBatchClaimer);
     assertEq(_distributor.batchClaimOperatorRewards(valAddrs), 0);
 
     assertEq(_distributor.lastClaimedOperatorRewardsEpoch(makeAddr('val-1')), 0);
@@ -1191,6 +1296,14 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     address[][] memory valAddrsArr = new address[][](1);
     valAddrsArr[0] = valAddrs;
+
+    address stakerBatchClaimer = makeAddr('stakerBatchClaimer');
+    vm.startPrank(makeAddr('staker-1'));
+    _distributor.setStakerClaimApprovalStatus(valAddrs[0], stakerBatchClaimer, true);
+    _distributor.setStakerClaimApprovalStatus(valAddrs[1], stakerBatchClaimer, true);
+    vm.stopPrank();
+
+    vm.prank(stakerBatchClaimer);
     assertEq(_distributor.batchClaimStakerRewards(stakers, valAddrsArr), 0);
 
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -1222,7 +1335,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     validatorParams[0] = ValidatorParam({
       valAddr: makeAddr('val-1'),
       operatorAddr: makeAddr('operator-1'),
-      rewardRecipient: makeAddr('rewardRecipient-1'),
+      rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
       comissionRate: 1000,
       stakers: new address[](0), // init
@@ -1260,7 +1373,10 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(claimable, 1440 ether);
     assertEq(nextEpoch, 33);
 
+    vm.prank(makeAddr('rewardManager-1'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 1760 ether);
+
+    vm.prank(makeAddr('staker-1'));
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 1440 ether);
 
     assertEq(_distributor.lastClaimedOperatorRewardsEpoch(makeAddr('val-1')), 32);
@@ -1273,11 +1389,445 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(claimable, 135 ether);
     assertEq(nextEpoch, 36);
 
+    vm.prank(makeAddr('rewardManager-1'));
     assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 165 ether);
+
+    vm.prank(makeAddr('staker-1'));
     assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 135 ether);
 
     assertEq(_distributor.lastClaimedOperatorRewardsEpoch(makeAddr('val-1')), 35);
     assertEq(_distributor.lastClaimedStakerRewardsEpoch(makeAddr('staker-1'), makeAddr('val-1')), 35);
+  }
+
+  function test_claim_approval_own() public {
+    vm.revertTo(snapshotId);
+
+    EpochParam[] memory epochParams = new EpochParam[](1);
+    epochParams[0] = EpochParam({
+      epoch: 1,
+      startsAt: 100,
+      endsAt: 200,
+      available: true,
+      totalReward: 100 ether,
+      validatorParams: new ValidatorParam[](0) // init
+     });
+
+    ValidatorParam[] memory validatorParams = new ValidatorParam[](1);
+
+    validatorParams[0] = ValidatorParam({
+      valAddr: makeAddr('val-1'),
+      operatorAddr: makeAddr('operator-1'),
+      rewardManager: makeAddr('rewardManager-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
+      comissionRate: 1000,
+      stakers: new address[](0), // init
+      amounts: new uint256[](0), // init
+      weight: 100,
+      collateralRewardShare: 50,
+      delegationRewardShare: 50
+    });
+    address[] memory stakers = new address[](1);
+    uint256[] memory amounts = new uint256[](1);
+    stakers[0] = makeAddr('staker-1');
+    amounts[0] = 100;
+    validatorParams[0].stakers = stakers;
+    validatorParams[0].amounts = amounts;
+
+    epochParams[0].validatorParams = validatorParams;
+
+    _setUpEpochs(epochParams);
+
+    // operator: 50, stakers: 50, comission: 10%
+    uint256 claimable;
+    uint256 nextEpoch;
+    (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
+    assertEq(claimable, 55 ether);
+    assertEq(nextEpoch, 2);
+
+    (claimable, nextEpoch) = _distributor.claimableStakerRewards(makeAddr('staker-1'), makeAddr('val-1'));
+    assertEq(claimable, 45 ether);
+    assertEq(nextEpoch, 2);
+
+    // The rewardManager and staker are inherently eligible to claim.
+    vm.startPrank(makeAddr('rewardManager-1'));
+    assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 55 ether);
+    assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 0);
+    vm.stopPrank();
+
+    vm.startPrank(makeAddr('staker-1'));
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 45 ether);
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 0);
+    vm.stopPrank();
+
+    (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
+    assertEq(claimable, 0);
+    assertEq(nextEpoch, 2);
+
+    (claimable, nextEpoch) = _distributor.claimableStakerRewards(makeAddr('staker-1'), makeAddr('val-1'));
+    assertEq(claimable, 0);
+    assertEq(nextEpoch, 2);
+
+    assertEq(_distributor.lastClaimedOperatorRewardsEpoch(makeAddr('val-1')), 1);
+    assertEq(_distributor.lastClaimedStakerRewardsEpoch(makeAddr('staker-1'), makeAddr('val-1')), 1);
+  }
+
+  function test_claim_approval_delegate() public {
+    vm.revertTo(snapshotId);
+
+    EpochParam[] memory epochParams = new EpochParam[](1);
+    epochParams[0] = EpochParam({
+      epoch: 1,
+      startsAt: 100,
+      endsAt: 200,
+      available: true,
+      totalReward: 100 ether,
+      validatorParams: new ValidatorParam[](0) // init
+     });
+
+    ValidatorParam[] memory validatorParams = new ValidatorParam[](1);
+
+    validatorParams[0] = ValidatorParam({
+      valAddr: makeAddr('val-1'),
+      operatorAddr: makeAddr('operator-1'),
+      rewardManager: makeAddr('rewardManager-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
+      comissionRate: 1000,
+      stakers: new address[](0), // init
+      amounts: new uint256[](0), // init
+      weight: 100,
+      collateralRewardShare: 50,
+      delegationRewardShare: 50
+    });
+    address[] memory stakers = new address[](1);
+    uint256[] memory amounts = new uint256[](1);
+    stakers[0] = makeAddr('staker-1');
+    amounts[0] = 100;
+    validatorParams[0].stakers = stakers;
+    validatorParams[0].amounts = amounts;
+
+    epochParams[0].validatorParams = validatorParams;
+
+    _setUpEpochs(epochParams);
+
+    // operator: 50, stakers: 50, comission: 10%
+    uint256 claimable;
+    uint256 nextEpoch;
+    (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
+    assertEq(claimable, 55 ether);
+    assertEq(nextEpoch, 2);
+
+    (claimable, nextEpoch) = _distributor.claimableStakerRewards(makeAddr('staker-1'), makeAddr('val-1'));
+    assertEq(claimable, 45 ether);
+    assertEq(nextEpoch, 2);
+
+    address claimer = makeAddr('claimer');
+
+    // operator
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(claimer);
+    _distributor.claimOperatorRewards(makeAddr('val-1'));
+
+    vm.prank(makeAddr('rewardManager-1'));
+    _distributor.setOperatorClaimApprovalStatus(makeAddr('val-1'), claimer, true);
+
+    vm.prank(claimer);
+    assertEq(_distributor.claimOperatorRewards(makeAddr('val-1')), 55 ether);
+
+    // staker
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(claimer);
+    _distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1'));
+
+    vm.prank(makeAddr('staker-1'));
+    _distributor.setStakerClaimApprovalStatus(makeAddr('val-1'), claimer, true);
+
+    vm.prank(claimer);
+    assertEq(_distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1')), 45 ether);
+
+    (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
+    assertEq(claimable, 0);
+    assertEq(nextEpoch, 2);
+
+    (claimable, nextEpoch) = _distributor.claimableStakerRewards(makeAddr('staker-1'), makeAddr('val-1'));
+    assertEq(claimable, 0);
+    assertEq(nextEpoch, 2);
+
+    assertEq(_distributor.lastClaimedOperatorRewardsEpoch(makeAddr('val-1')), 1);
+    assertEq(_distributor.lastClaimedStakerRewardsEpoch(makeAddr('staker-1'), makeAddr('val-1')), 1);
+  }
+
+  function test_claim_approval_false() public {
+    vm.revertTo(snapshotId);
+
+    EpochParam[] memory epochParams = new EpochParam[](1);
+    epochParams[0] = EpochParam({
+      epoch: 1,
+      startsAt: 100,
+      endsAt: 200,
+      available: true,
+      totalReward: 100 ether,
+      validatorParams: new ValidatorParam[](0) // init
+     });
+
+    ValidatorParam[] memory validatorParams = new ValidatorParam[](1);
+
+    validatorParams[0] = ValidatorParam({
+      valAddr: makeAddr('val-1'),
+      operatorAddr: makeAddr('operator-1'),
+      rewardManager: makeAddr('rewardManager-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
+      comissionRate: 1000,
+      stakers: new address[](0), // init
+      amounts: new uint256[](0), // init
+      weight: 100,
+      collateralRewardShare: 50,
+      delegationRewardShare: 50
+    });
+    address[] memory stakers = new address[](1);
+    uint256[] memory amounts = new uint256[](1);
+    stakers[0] = makeAddr('staker-1');
+    amounts[0] = 100;
+    validatorParams[0].stakers = stakers;
+    validatorParams[0].amounts = amounts;
+
+    epochParams[0].validatorParams = validatorParams;
+
+    _setUpEpochs(epochParams);
+
+    // operator: 50, stakers: 50, comission: 10%
+    uint256 claimable;
+    uint256 nextEpoch;
+    (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
+    assertEq(claimable, 55 ether);
+    assertEq(nextEpoch, 2);
+
+    (claimable, nextEpoch) = _distributor.claimableStakerRewards(makeAddr('staker-1'), makeAddr('val-1'));
+    assertEq(claimable, 45 ether);
+    assertEq(nextEpoch, 2);
+
+    address claimer = makeAddr('claimer');
+
+    // operator
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(claimer);
+    _distributor.claimOperatorRewards(makeAddr('val-1'));
+
+    vm.prank(makeAddr('rewardManager-1'));
+    _distributor.setOperatorClaimApprovalStatus(makeAddr('val-1'), claimer, true);
+
+    vm.prank(makeAddr('rewardManager-1'));
+    _distributor.setOperatorClaimApprovalStatus(makeAddr('val-1'), claimer, false);
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(claimer);
+    _distributor.claimOperatorRewards(makeAddr('val-1'));
+
+    // staker
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(claimer);
+    _distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1'));
+
+    vm.prank(makeAddr('staker-1'));
+    _distributor.setStakerClaimApprovalStatus(makeAddr('val-1'), claimer, true);
+
+    vm.prank(makeAddr('staker-1'));
+    _distributor.setStakerClaimApprovalStatus(makeAddr('val-1'), claimer, false);
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(claimer);
+    _distributor.claimStakerRewards(makeAddr('staker-1'), makeAddr('val-1'));
+  }
+
+  function test_batch_claim_approval() public {
+    vm.revertTo(snapshotId);
+
+    EpochParam[] memory epochParams = new EpochParam[](1);
+    epochParams[0] = EpochParam({
+      epoch: 1,
+      startsAt: 100,
+      endsAt: 200,
+      available: true,
+      totalReward: 100 ether,
+      validatorParams: new ValidatorParam[](0) // init
+     });
+
+    uint96[] memory validatorWeights = new uint96[](2);
+    validatorWeights[0] = 50;
+    validatorWeights[1] = 50;
+    uint128[] memory validatorCollateralRewardShare = new uint128[](2);
+    validatorCollateralRewardShare[0] = 80;
+    validatorCollateralRewardShare[1] = 50;
+    uint128[] memory validatorDelegationRewardShare = new uint128[](2);
+    validatorDelegationRewardShare[0] = 20;
+    validatorDelegationRewardShare[1] = 50;
+
+    ValidatorParam[] memory validatorParams = new ValidatorParam[](2);
+
+    validatorParams[0] = ValidatorParam({
+      valAddr: makeAddr('val-1'),
+      operatorAddr: makeAddr('operator-1'),
+      rewardManager: makeAddr('rewardManager-1'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
+      comissionRate: 1000,
+      stakers: new address[](0), // init
+      amounts: new uint256[](0), // init
+      weight: 50,
+      collateralRewardShare: 80,
+      delegationRewardShare: 20
+    });
+    validatorParams[1] = ValidatorParam({
+      valAddr: makeAddr('val-2'),
+      operatorAddr: makeAddr('operator-2'),
+      rewardManager: makeAddr('rewardManager-2'),
+      withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
+      comissionRate: 1000,
+      stakers: new address[](0), // init
+      amounts: new uint256[](0), // init
+      weight: 50,
+      collateralRewardShare: 50,
+      delegationRewardShare: 50
+    });
+    address[] memory stakers = new address[](3);
+    uint256[] memory amounts = new uint256[](3);
+    stakers[0] = makeAddr('staker-1');
+    stakers[1] = makeAddr('staker-2');
+    stakers[2] = makeAddr('staker-3');
+    amounts[0] = 50;
+    amounts[1] = 25;
+    amounts[2] = 25;
+
+    validatorParams[0].stakers = stakers;
+    validatorParams[0].amounts = amounts;
+
+    validatorParams[1].stakers = stakers;
+    validatorParams[1].amounts = amounts;
+
+    epochParams[0].validatorParams = validatorParams;
+
+    _setUpEpochs(epochParams);
+
+    address[] memory valAddrs = new address[](2);
+    valAddrs[0] = makeAddr('val-1');
+    valAddrs[1] = makeAddr('val-2');
+
+    // approve operator batch claim
+
+    address operatorBatchClaimer = makeAddr('operatorBatchClaimer');
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(makeAddr('operatorBatchClaimer'));
+    _distributor.batchClaimOperatorRewards(valAddrs);
+
+    vm.prank(makeAddr('rewardManager-1'));
+    _distributor.setOperatorClaimApprovalStatus(valAddrs[0], operatorBatchClaimer, true);
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(makeAddr('operatorBatchClaimer'));
+    _distributor.batchClaimOperatorRewards(valAddrs);
+
+    vm.prank(makeAddr('rewardManager-2'));
+    _distributor.setOperatorClaimApprovalStatus(valAddrs[1], operatorBatchClaimer, true);
+
+    vm.prank(makeAddr('operatorBatchClaimer'));
+    assertEq(_distributor.batchClaimOperatorRewards(valAddrs), 41 ether + 27.5 ether);
+
+    // approve staker batch claim
+
+    address[][] memory valAddrsArr = new address[][](3);
+    valAddrsArr[0] = valAddrs;
+    valAddrsArr[1] = valAddrs;
+    valAddrsArr[2] = valAddrs;
+
+    address stakerBatchClaimer = makeAddr('stakerBatchClaimer');
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(stakerBatchClaimer);
+    _distributor.batchClaimStakerRewards(stakers, valAddrsArr);
+
+    vm.prank(makeAddr('staker-1'));
+    _distributor.setStakerClaimApprovalStatus(valAddrs[0], stakerBatchClaimer, true);
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(stakerBatchClaimer);
+    _distributor.batchClaimStakerRewards(stakers, valAddrsArr);
+
+    vm.prank(makeAddr('staker-1'));
+    _distributor.setStakerClaimApprovalStatus(valAddrs[1], stakerBatchClaimer, true);
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(stakerBatchClaimer);
+    _distributor.batchClaimStakerRewards(stakers, valAddrsArr);
+
+    vm.prank(makeAddr('staker-2'));
+    _distributor.setStakerClaimApprovalStatus(valAddrs[0], stakerBatchClaimer, true);
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(stakerBatchClaimer);
+    _distributor.batchClaimStakerRewards(stakers, valAddrsArr);
+
+    vm.prank(makeAddr('staker-2'));
+    _distributor.setStakerClaimApprovalStatus(valAddrs[1], stakerBatchClaimer, true);
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(stakerBatchClaimer);
+    _distributor.batchClaimStakerRewards(stakers, valAddrsArr);
+
+    vm.prank(makeAddr('staker-3'));
+    _distributor.setStakerClaimApprovalStatus(valAddrs[0], stakerBatchClaimer, true);
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(stakerBatchClaimer);
+    _distributor.batchClaimStakerRewards(stakers, valAddrsArr);
+
+    vm.prank(makeAddr('staker-3'));
+    _distributor.setStakerClaimApprovalStatus(valAddrs[1], stakerBatchClaimer, true);
+
+    vm.prank(stakerBatchClaimer);
+    assertEq(_distributor.batchClaimStakerRewards(stakers, valAddrsArr), 31.5 ether);
+  }
+
+  function test_setOperatorClaimApprovalStatus() public {
+    address valAddr = makeAddr('val-1');
+    address rewardManager = makeAddr('rewardManager-1');
+    address claimer = makeAddr('claimer');
+
+    assertEq(_distributor.operatorClaimAllowed(rewardManager, valAddr, rewardManager), true);
+
+    assertEq(_distributor.operatorClaimAllowed(rewardManager, valAddr, claimer), false);
+
+    vm.prank(rewardManager);
+    _distributor.setOperatorClaimApprovalStatus(valAddr, claimer, true);
+
+    assertEq(_distributor.operatorClaimAllowed(rewardManager, valAddr, claimer), true);
+
+    vm.prank(rewardManager);
+    _distributor.setOperatorClaimApprovalStatus(valAddr, claimer, false);
+
+    assertEq(_distributor.operatorClaimAllowed(rewardManager, valAddr, claimer), false);
+  }
+
+  function test_setStakerClaimApprovalStatus() public {
+    address valAddr = makeAddr('val-1');
+    address staker = makeAddr('staker-1');
+    address claimer = makeAddr('claimer');
+
+    assertEq(_distributor.stakerClaimAllowed(staker, valAddr, staker), true);
+
+    assertEq(_distributor.stakerClaimAllowed(staker, valAddr, claimer), false);
+
+    vm.prank(staker);
+    _distributor.setStakerClaimApprovalStatus(valAddr, claimer, true);
+
+    assertEq(_distributor.stakerClaimAllowed(staker, valAddr, claimer), true);
+
+    vm.prank(staker);
+    _distributor.setStakerClaimApprovalStatus(valAddr, claimer, false);
+
+    assertEq(_distributor.stakerClaimAllowed(staker, valAddr, claimer), false);
   }
 
   function _setUpEpochs(EpochParam[] memory params) internal {
@@ -1311,8 +1861,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
           validatorParam.valAddr, // address valAddr;
           '', // bytes valKey;
           validatorParam.operatorAddr, // address operator;
-          validatorParam.withdrawalRecipient, // address withdrawalRecipient;
-          validatorParam.rewardRecipient, // address rewardRecipient;
+          validatorParam.rewardManager, // address rewardManager;
+          validatorParam.withdrawalRecipient, // withdrawalRecipient
           validatorParam.comissionRate, // uint256 commissionRate;
           bytes('') // bytes metadata;
         );
@@ -1363,6 +1913,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     uint256 lastEpochTime = params[params.length - 1].endsAt;
     _epochFeed.setRet(abi.encodeCall(IEpochFeeder.epoch, ()), false, abi.encode(lastEpoch));
     _epochFeed.setRet(abi.encodeCall(IEpochFeeder.timeAt, (lastEpoch)), false, abi.encode(lastEpochTime));
+
     _contributionFeed.setRet(
       abi.encodeCall(IValidatorContributionFeed.available, (lastEpoch)), false, abi.encode(false)
     );

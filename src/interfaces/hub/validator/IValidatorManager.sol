@@ -31,8 +31,8 @@ interface IValidatorManager {
     address valAddr;
     bytes pubKey;
     address operator;
+    address rewardManager;
     address withdrawalRecipient;
-    address rewardRecipient;
     uint256 commissionRate;
     bytes metadata;
   }
@@ -47,8 +47,8 @@ interface IValidatorManager {
 
   struct CreateValidatorRequest {
     address operator;
+    address rewardManager;
     address withdrawalRecipient;
-    address rewardRecipient;
     uint256 commissionRate; // bp ex) 10000 = 100%
     bytes metadata;
   }
@@ -60,8 +60,8 @@ interface IValidatorManager {
   struct GenesisValidatorSet {
     bytes pubKey;
     address operator;
+    address rewardManager;
     address withdrawalRecipient;
-    address rewardRecipient;
     uint256 commissionRate;
     bytes metadata;
     bytes signature;
@@ -75,6 +75,8 @@ interface IValidatorManager {
     uint96 commissionRateUpdateDelay; // in epoch
   }
 
+  event FeeSet(uint256 previousFee, uint256 newFee);
+
   event ValidatorCreated(address indexed valAddr, address indexed operator, bytes pubKey);
   event CollateralDeposited(address indexed valAddr, uint256 amount);
   event CollateralWithdrawn(address indexed valAddr, uint256 amount);
@@ -83,7 +85,7 @@ interface IValidatorManager {
   event WithdrawalRecipientUpdated(
     address indexed valAddr, address indexed operator, address indexed withdrawalRecipient
   );
-  event RewardRecipientUpdated(address indexed valAddr, address indexed operator, address indexed rewardRecipient);
+  event RewardManagerUpdated(address indexed valAddr, address indexed operator, address indexed rewardManager);
   event MetadataUpdated(address indexed valAddr, address indexed operator, bytes metadata);
   event RewardConfigUpdated(address indexed valAddr, address indexed operator);
 
@@ -91,12 +93,16 @@ interface IValidatorManager {
   event EpochFeederUpdated(IEpochFeeder indexed epochFeeder);
   event EntrypointUpdated(IConsensusValidatorEntrypoint indexed entrypoint);
 
+  error IValidatorManager__InsufficientFee(uint256 msgValue);
+
   // ========== VIEWS ========== //
 
   function MAX_COMMISSION_RATE() external view returns (uint256);
 
   function entrypoint() external view returns (IConsensusValidatorEntrypoint);
   function epochFeeder() external view returns (IEpochFeeder);
+
+  function fee() external view returns (uint256);
   function globalValidatorConfig() external view returns (GlobalValidatorConfigResponse memory);
 
   function validatorPubKeyToAddress(bytes calldata pubKey) external pure returns (address);
@@ -125,11 +131,12 @@ interface IValidatorManager {
   // operator actions - validator configurations
   function updateOperator(address valAddr, address operator) external;
   function updateWithdrawalRecipient(address valAddr, address withdrawalRecipient) external;
-  function updateRewardRecipient(address valAddr, address rewardRecipient) external;
+  function updateRewardManager(address valAddr, address rewardManager) external;
   function updateMetadata(address valAddr, bytes calldata metadata) external;
   function updateRewardConfig(address valAddr, UpdateRewardConfigRequest calldata request) external;
 
   // ========== CONTRACT MANAGEMENT ========== //
 
+  function setFee(uint256 fee) external;
   function setGlobalValidatorConfig(SetGlobalValidatorConfigRequest calldata request) external;
 }

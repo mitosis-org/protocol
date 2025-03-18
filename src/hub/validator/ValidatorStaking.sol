@@ -16,7 +16,6 @@ import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorMana
 import { IValidatorStaking } from '../../interfaces/hub/validator/IValidatorStaking.sol';
 import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import { LibCheckpoint } from '../../lib/LibCheckpoint.sol';
 import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { StdError } from '../../lib/StdError.sol';
 
@@ -24,9 +23,13 @@ contract ValidatorStakingStorageV1 {
   using ERC7201Utils for string;
 
   struct StorageV1 {
-    uint160 totalUnstaking;
+    // configs
+    uint256 minStakingAmount;
+    uint256 minUnstakingAmount;
     uint48 unstakeCooldown;
     uint48 redelegationCooldown;
+    // states
+    uint160 totalUnstaking;
     Checkpoints.Trace208 totalStaked;
     mapping(address staker => uint256) lastRedelegationTime;
     mapping(address valAddr => LibRedeemQueue.Queue) unstakeQueue;
@@ -68,12 +71,20 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     _disableInitializers();
   }
 
-  function initialize(address initialOwner, uint48 unstakeCooldown_, uint48 redelegationCooldown_) external initializer {
+  function initialize(
+    address initialOwner,
+    uint256 initialMinStakingAmount,
+    uint256 initialMinUnstakingAmount,
+    uint48 unstakeCooldown_,
+    uint48 redelegationCooldown_
+  ) external initializer {
     __UUPSUpgradeable_init();
     __Ownable_init(initialOwner);
     __Ownable2Step_init();
 
     StorageV1 storage $ = _getStorageV1();
+    _setMinStakingAmount($, initialMinStakingAmount);
+    _setMinUnstakingAmount($, initialMinUnstakingAmount);
     _setUnstakeCooldown($, unstakeCooldown_);
     _setRedelegationCooldown($, redelegationCooldown_);
   }
@@ -123,6 +134,16 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorStaking
+  function minStakingAmount() external view returns (uint256) {
+    return _getStorageV1().minStakingAmount;
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function minUnstakingAmount() external view returns (uint256) {
+    return _getStorageV1().minUnstakingAmount;
+  }
+
+  /// @inheritdoc IValidatorStaking
   function unstakeCooldown() external view returns (uint48) {
     return _getStorageV1().unstakeCooldown;
   }
@@ -141,6 +162,9 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   function stake(address valAddr, address recipient, uint256 amount) public payable virtual {
     require(amount > 0, StdError.ZeroAmount());
 
+    StorageV1 storage $ = _getStorageV1();
+    require(amount >= $.minStakingAmount, IValidatorStaking__InsufficientMinimumAmount());
+
     require(_baseAsset != NATIVE_TOKEN || msg.value == amount, StdError.InvalidParameter('amount'));
     require(recipient != address(0), StdError.InvalidParameter('recipient'));
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
@@ -148,8 +172,8 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     // If the base asset is not native, we need to transfer from the sender to the contract
     if (_baseAsset != NATIVE_TOKEN) _baseAsset.safeTransferFrom(_msgSender(), address(this), amount);
 
-    _stake(_getStorageV1(), valAddr, recipient, amount);
-    _hub.notifyStake(valAddr, recipient, amount);
+    _stake($, valAddr, _msgSender(), amount);
+    _hub.notifyStake(valAddr, _msgSender(), amount);
 
     emit Staked(valAddr, _msgSender(), recipient, amount);
   }
@@ -161,22 +185,10 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
 
     StorageV1 storage $ = _getStorageV1();
 
-    LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
-    if (queue.redeemPeriod != $.unstakeCooldown) queue.redeemPeriod = $.unstakeCooldown;
+    address staker = _msgSender();
+    _assertUnstakeAmountCondition($, valAddr, staker, amount);
 
-    // FIXME(eddy): shorten the enqueue + reserve flow
-    uint48 now_ = Time.timestamp();
-    uint256 reqId = queue.enqueue(receiver, amount, now_, bytes(''));
-    queue.reserve(valAddr, amount, now_, bytes(''));
-
-    _unstake($, valAddr, _msgSender(), amount);
-    _hub.notifyUnstake(valAddr, _msgSender(), amount);
-
-    $.totalUnstaking += amount.toUint128();
-
-    emit UnstakeRequested(valAddr, _msgSender(), receiver, amount, reqId);
-
-    return reqId;
+    return _requestUnstake($, staker, valAddr, receiver, amount);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -208,20 +220,21 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     require(fromValAddr != toValAddr, IValidatorStaking__RedelegateToSameValidator());
 
     StorageV1 storage $ = _getStorageV1();
-    require(_manager.isValidator(fromValAddr), IValidatorStaking__NotValidator());
-    require(_manager.isValidator(toValAddr), IValidatorStaking__NotValidator());
 
-    uint48 now_ = Time.timestamp();
-    uint256 lastRedelegationTime_ = $.lastRedelegationTime[_msgSender()];
-    require(now_ >= lastRedelegationTime_ + $.redelegationCooldown, IValidatorStaking__CooldownNotPassed());
+    address delegator = _msgSender();
+    _assertUnstakeAmountCondition($, fromValAddr, delegator, amount);
 
-    _unstake($, fromValAddr, _msgSender(), amount);
-    _stake($, toValAddr, _msgSender(), amount);
-    _hub.notifyRedelegation(fromValAddr, toValAddr, _msgSender(), amount);
+    _redelegate($, delegator, fromValAddr, toValAddr, amount);
+  }
 
-    $.lastRedelegationTime[_msgSender()] = now_;
+  /// @inheritdoc IValidatorStaking
+  function setMinStakingAmount(uint256 minAmount) external onlyOwner {
+    _setMinStakingAmount(_getStorageV1(), minAmount);
+  }
 
-    emit Redelegated(fromValAddr, toValAddr, _msgSender(), amount);
+  /// @inheritdoc IValidatorStaking
+  function setMinUnstakingAmount(uint256 minAmount) external onlyOwner {
+    _setMinUnstakingAmount(_getStorageV1(), minAmount);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -235,6 +248,16 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //
+
+  function _assertUnstakeAmountCondition(StorageV1 storage $, address valAddr, address staker, uint256 amount)
+    internal
+    view
+  {
+    // We allow unstaking for the entire amount even if the minAmount is not met.
+    if (amount != $.staked[valAddr][staker].latest()) {
+      require(amount >= $.minUnstakingAmount, IValidatorStaking__InsufficientMinimumAmount());
+    }
+  }
 
   function _unstaking(StorageV1 storage $, address valAddr, address staker, uint48 timestamp)
     internal
@@ -264,6 +287,51 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     return (claimable, nonClaimable);
   }
 
+  function _requestUnstake(StorageV1 storage $, address staker, address valAddr, address receiver, uint256 amount)
+    internal
+    returns (uint256)
+  {
+    require(amount > 0, StdError.ZeroAmount());
+    require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
+
+    LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
+
+    // FIXME(eddy): shorten the enqueue + reserve flow
+    uint48 now_ = Time.timestamp();
+    uint256 reqId = queue.enqueue(receiver, amount, now_, bytes(''));
+    queue.reserve(valAddr, amount, now_, bytes(''));
+
+    _unstake($, valAddr, staker, amount);
+
+    _hub.notifyUnstake(valAddr, staker, amount);
+    $.totalUnstaking += amount.toUint128();
+
+    emit UnstakeRequested(valAddr, staker, receiver, amount, reqId);
+
+    return reqId;
+  }
+
+  function _redelegate(StorageV1 storage $, address delegator, address fromValAddr, address toValAddr, uint256 amount)
+    internal
+  {
+    require(amount > 0, StdError.ZeroAmount());
+    require(fromValAddr != toValAddr, IValidatorStaking__RedelegateToSameValidator());
+
+    require(_manager.isValidator(fromValAddr), IValidatorStaking__NotValidator());
+    require(_manager.isValidator(toValAddr), IValidatorStaking__NotValidator());
+
+    uint48 now_ = Time.timestamp();
+    uint256 lastRedelegationTime_ = $.lastRedelegationTime[delegator];
+    require(now_ >= lastRedelegationTime_ + $.redelegationCooldown, IValidatorStaking__CooldownNotPassed());
+
+    _unstake($, fromValAddr, delegator, amount);
+    _stake($, toValAddr, delegator, amount);
+
+    _hub.notifyRedelegation(fromValAddr, toValAddr, delegator, amount);
+
+    emit Redelegated(fromValAddr, toValAddr, delegator, amount);
+  }
+
   function _stake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal {
     uint48 now_ = Time.timestamp();
 
@@ -283,6 +351,18 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
   }
 
   // ========== ADMIN ACTIONS ========== //
+
+  function _setMinStakingAmount(StorageV1 storage $, uint256 minAmount) internal {
+    uint256 previous = $.minStakingAmount;
+    $.minStakingAmount = minAmount;
+    emit MinimumStakingAmountSet(previous, minAmount);
+  }
+
+  function _setMinUnstakingAmount(StorageV1 storage $, uint256 minAmount) internal {
+    uint256 previous = $.minUnstakingAmount;
+    $.minUnstakingAmount = minAmount;
+    emit MinimumUnstakingAmountSet(previous, minAmount);
+  }
 
   function _setUnstakeCooldown(StorageV1 storage $, uint48 unstakeCooldown_) internal {
     require(unstakeCooldown_ > 0, StdError.InvalidParameter('unstakeCooldown'));
