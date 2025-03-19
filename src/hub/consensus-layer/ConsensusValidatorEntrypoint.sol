@@ -119,7 +119,7 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
   }
 
   function updateExtraVotingPower(address valAddr, uint256 extraVotingPower) external onlyPermittedCaller {
-    emit MsgUpdateExtraVotingPower(valAddr, extraVotingPower / 1 gwei);
+    emit MsgUpdateExtraVotingPower(valAddr, extraVotingPower);
   }
 
   // ============================ NOTE: OWNABLE FUNCTIONS ============================ //

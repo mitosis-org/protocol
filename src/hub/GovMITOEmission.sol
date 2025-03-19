@@ -75,15 +75,14 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     uint48 currentTime = Time.timestamp();
     require(config.total == msg.value, StdError.InvalidParameter('config.total'));
     require(config.startsFrom > currentTime, StdError.InvalidParameter('config.ssf'));
-    require(config.recipient != address(0), StdError.InvalidParameter('config.rcp'));
 
     StorageV1 storage $ = _getStorageV1();
 
-    _configureValidatorRewardEmission($, config.rps, config.rateMultiplier, config.renewalPeriod, config.startsFrom);
+    _configureValidatorRewardEmission($, config.rps, config.deductionRate, config.deductionPeriod, config.startsFrom);
+    _setValidatorRewardRecipient($, config.recipient);
 
     $.validatorReward.total = config.total;
     $.validatorReward.spent = 0;
-    $.validatorReward.recipient = config.recipient;
 
     // convert the total amount to gMITO
     _govMITO.mint{ value: config.total }(address(this));
@@ -187,6 +186,11 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     _configureValidatorRewardEmission(_getStorageV1(), rps, rateMultiplier, renewalPeriod, applyFrom);
   }
 
+  /// @inheritdoc IGovMITOEmission
+  function setValidatorRewardRecipient(address recipient) external onlyOwner {
+    _setValidatorRewardRecipient(_getStorageV1(), recipient);
+  }
+
   function _configureValidatorRewardEmission(
     StorageV1 storage $,
     uint256 rps,
@@ -212,6 +216,12 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     );
 
     emit ValidatorRewardEmissionConfigured(rps, rateMultiplier, renewalPeriod, timestamp);
+  }
+
+  function _setValidatorRewardRecipient(StorageV1 storage $, address recipient) internal {
+    address prevRecipient = $.validatorReward.recipient;
+    $.validatorReward.recipient = recipient;
+    emit ValidatorRewardRecipientSet(prevRecipient, recipient);
   }
 
   function _calcRewardForPeriod(
