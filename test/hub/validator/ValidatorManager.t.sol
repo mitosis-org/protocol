@@ -62,7 +62,7 @@ contract ValidatorManagerTest is Toolkit {
           ValidatorManager.initialize,
           (
             owner,
-            0,
+            1 ether,
             IValidatorManager.SetGlobalValidatorConfigRequest({
               initialValidatorDeposit: 1000 ether,
               collateralWithdrawalDelay: 1000 seconds,
@@ -87,20 +87,31 @@ contract ValidatorManagerTest is Toolkit {
     assertEq(config.minimumCommissionRate, 100);
     assertEq(config.commissionRateUpdateDelay, 3);
 
+    assertEq(manager.fee(), 1 ether);
     assertEq(manager.validatorCount(), 0);
   }
 
   function test_createValidator(string memory name) public returns (ValidatorKey memory) {
     ValidatorKey memory val = _makePubKey(name);
-    vm.deal(val.addr, 1000 ether);
+
+    uint256 fee = manager.fee();
+    uint256 amount = 1000 ether;
+
+    vm.deal(val.addr, amount + fee);
 
     bytes memory metadata = _buildMetadata(name, 'test-val', 'test validator of mitosis');
 
     uint256 validatorCount = manager.validatorCount();
+    bytes memory compPubKey = LibSecp256k1.compressPubkey(val.pubKey);
+
+    entrypoint.setCall(IConsensusValidatorEntrypoint.registerValidator.selector);
+    entrypoint.setRet(
+      abi.encodeCall(IConsensusValidatorEntrypoint.registerValidator, (val.addr, compPubKey, val.addr)), false, ''
+    );
 
     vm.prank(val.addr);
-    manager.createValidator{ value: 1000 ether }(
-      LibSecp256k1.compressPubkey(val.pubKey),
+    manager.createValidator{ value: amount + fee }(
+      compPubKey,
       IValidatorManager.CreateValidatorRequest({
         operator: val.addr,
         withdrawalRecipient: val.addr,
@@ -111,10 +122,7 @@ contract ValidatorManagerTest is Toolkit {
     );
 
     entrypoint.assertLastCall(
-      abi.encodeCall(
-        IConsensusValidatorEntrypoint.registerValidator, (val.addr, LibSecp256k1.compressPubkey(val.pubKey), val.addr)
-      ),
-      1000 ether
+      abi.encodeCall(IConsensusValidatorEntrypoint.registerValidator, (val.addr, compPubKey, val.addr)), amount
     );
 
     assertEq(manager.validatorCount(), validatorCount + 1);
@@ -131,23 +139,55 @@ contract ValidatorManagerTest is Toolkit {
     return val;
   }
 
+  function test_createValidator_with_zero_fee() public {
+    uint256 prevFee = manager.fee();
+
+    vm.prank(owner);
+    manager.setFee(0);
+
+    test_createValidator('zero_fee');
+
+    vm.prank(owner);
+    manager.setFee(prevFee);
+  }
+
   function test_depositCollateral() public {
     ValidatorKey memory val = test_createValidator('val-1');
     address operator = makeAddr('operator');
     address withdrawalRecipient = makeAddr('withdrawalRecipient');
+
+    entrypoint.setCall(IConsensusValidatorEntrypoint.depositCollateral.selector);
+    entrypoint.setRet(
+      abi.encodeCall(IConsensusValidatorEntrypoint.depositCollateral, (val.addr, withdrawalRecipient)), false, ''
+    );
 
     vm.prank(val.addr);
     manager.updateOperator(val.addr, operator);
     vm.prank(operator);
     manager.updateWithdrawalRecipient(val.addr, withdrawalRecipient);
 
-    vm.deal(operator, 1000 ether);
+    uint256 fee = manager.fee();
+    uint256 amount = 1000 ether;
+
+    vm.deal(operator, amount + fee);
     vm.prank(operator);
-    manager.depositCollateral{ value: 1000 ether }(val.addr);
+    manager.depositCollateral{ value: amount + fee }(val.addr);
 
     entrypoint.assertLastCall(
-      abi.encodeCall(IConsensusValidatorEntrypoint.depositCollateral, (val.addr, withdrawalRecipient)), 1000 ether
+      abi.encodeCall(IConsensusValidatorEntrypoint.depositCollateral, (val.addr, withdrawalRecipient)), amount
     );
+  }
+
+  function test_depositCollateral_with_zero_fee() public {
+    uint256 prevFee = manager.fee();
+
+    vm.prank(owner);
+    manager.setFee(0);
+
+    test_depositCollateral();
+
+    vm.prank(owner);
+    manager.setFee(prevFee);
   }
 
   function test_withdrawCollateral() public {
@@ -155,33 +195,109 @@ contract ValidatorManagerTest is Toolkit {
     address operator = makeAddr('operator');
     address withdrawalRecipient = makeAddr('withdrawalRecipient');
 
+    uint256 fee = manager.fee();
+    uint256 amount = 1000 ether;
+
+    entrypoint.setCall(IConsensusValidatorEntrypoint.withdrawCollateral.selector);
+    entrypoint.setRet(
+      abi.encodeCall(
+        IConsensusValidatorEntrypoint.withdrawCollateral,
+        (val.addr, amount, withdrawalRecipient, _now48() + 1000 seconds)
+      ),
+      false,
+      ''
+    );
+
     vm.prank(val.addr);
     manager.updateOperator(val.addr, operator);
     vm.prank(operator);
     manager.updateWithdrawalRecipient(val.addr, withdrawalRecipient);
 
     vm.prank(operator);
-    manager.withdrawCollateral(val.addr, 1000 ether);
+    if (fee != 0) {
+      vm.expectRevert(IValidatorManager.IValidatorManager__InsufficientFee.selector);
+    }
+    manager.withdrawCollateral(val.addr, amount);
+
+    vm.deal(operator, fee);
+
+    vm.prank(operator);
+    manager.withdrawCollateral{ value: fee }(val.addr, amount);
 
     entrypoint.assertLastCall(
       abi.encodeCall(
         IConsensusValidatorEntrypoint.withdrawCollateral,
-        (val.addr, 1000 ether, withdrawalRecipient, _now48() + 1000 seconds)
+        (val.addr, amount, withdrawalRecipient, _now48() + 1000 seconds)
       )
     );
+  }
+
+  function test_withdrawCollateral_with_zero_fee() public {
+    uint256 prevFee = manager.fee();
+
+    vm.prank(owner);
+    manager.setFee(0);
+
+    test_withdrawCollateral();
+
+    vm.prank(owner);
+    manager.setFee(prevFee);
   }
 
   function test_unjailValidator() public {
     ValidatorKey memory val = test_createValidator('val-1');
     address operator = makeAddr('operator');
 
+    entrypoint.setCall(IConsensusValidatorEntrypoint.unjail.selector);
+    entrypoint.setRet(abi.encodeCall(IConsensusValidatorEntrypoint.unjail, (val.addr)), false, '');
+
     vm.prank(val.addr);
     manager.updateOperator(val.addr, operator);
 
+    uint256 fee = manager.fee();
+
     vm.prank(operator);
+    if (fee != 0) {
+      vm.expectRevert(IValidatorManager.IValidatorManager__InsufficientFee.selector);
+    }
     manager.unjailValidator(val.addr);
 
+    vm.deal(operator, fee);
+
+    vm.prank(operator);
+    manager.unjailValidator{ value: fee }(val.addr);
+
     entrypoint.assertLastCall(abi.encodeCall(IConsensusValidatorEntrypoint.unjail, (val.addr)));
+  }
+
+  function test_unjailValidator_with_zero_fee() public {
+    uint256 prevFee = manager.fee();
+
+    vm.prank(owner);
+    manager.setFee(0);
+
+    test_unjailValidator();
+
+    vm.prank(owner);
+    manager.setFee(prevFee);
+  }
+
+  function test_setFee() public {
+    assertEq(manager.fee(), 1 ether);
+
+    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
+    manager.setFee(5 ether);
+
+    vm.prank(owner);
+    manager.setFee(5 ether);
+    assertEq(manager.fee(), 5 ether);
+
+    vm.prank(owner);
+    manager.setFee(0);
+    assertEq(manager.fee(), 0);
+
+    vm.prank(owner);
+    manager.setFee(1 ether);
   }
 
   function test_updateOperator() public {
