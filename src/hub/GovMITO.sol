@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
+import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
@@ -24,10 +26,12 @@ import { StdError } from '../lib/StdError.sol';
 contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUpgradeable {
   using ERC7201Utils for string;
   using LibRedeemQueue for *;
+  using SafeCast for uint256;
 
   /// @custom:storage-location mitosis.storage.GovMITO
   struct GovMITOStorage {
     address minter;
+    address delegationManager;
     LibRedeemQueue.Queue redeemQueue;
     mapping(address sender => bool) isWhitelistedSender;
   }
@@ -91,6 +95,10 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
     return _getGovMITOStorage().minter;
   }
 
+  function delegationManager() external view returns (address) {
+    return _getGovMITOStorage().delegationManager;
+  }
+
   function isWhitelistedSender(address sender) external view returns (bool) {
     return _getGovMITOStorage().isWhitelistedSender[sender];
   }
@@ -100,6 +108,20 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
+
+  /// @dev Disabled: make only the delegation manager can delegate
+  function delegate(address) public pure override(IVotes, VotesUpgradeable) {
+    revert StdError.NotSupported();
+  }
+
+  /// @dev Disabled: make only the delegation manager can delegate
+  function delegateBySig(address, uint256, uint256, uint8, bytes32, bytes32)
+    public
+    pure
+    override(IVotes, VotesUpgradeable)
+  {
+    revert StdError.NotSupported();
+  }
 
   function mint(address to) external payable onlyMinter {
     require(msg.value > 0, StdError.ZeroAmount());
@@ -136,8 +158,19 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
 
   function _authorizeUpgrade(address) internal override onlyOwner { }
 
+  /// @dev Only the delegation manager can perform delegate
+  function sudoDelegate(address account, address delegatee) public {
+    require(_getGovMITOStorage().delegationManager == _msgSender(), StdError.Unauthorized());
+
+    _delegate(account, delegatee);
+  }
+
   function setMinter(address minter_) external onlyOwner {
     _setMinter(_getGovMITOStorage(), minter_);
+  }
+
+  function setDelegationManager(address delegationManager_) external onlyOwner {
+    _setDelegationManager(_getGovMITOStorage(), delegationManager_);
   }
 
   function setWhitelistedSender(address sender, bool isWhitelisted) external onlyOwner {
@@ -195,9 +228,15 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   }
 
   // =========================== NOTE: INTERNAL FUNCTIONS =========================== //
+
   function _setMinter(GovMITOStorage storage $, address minter_) internal {
     $.minter = minter_;
     emit MinterSet(minter_);
+  }
+
+  function _setDelegationManager(GovMITOStorage storage $, address delegationManager_) internal {
+    $.delegationManager = delegationManager_;
+    emit DelegationManagerSet(delegationManager_);
   }
 
   function _setWhitelistedSender(GovMITOStorage storage $, address sender, bool isWhitelisted) internal {

@@ -34,6 +34,12 @@ interface IGovMITO is IERC20, IERC5805 {
   event MinterSet(address indexed minter);
 
   /**
+   * @notice Emitted when the delegation manager is set.
+   * @param delegationManager The address of the new delegation manager
+   */
+  event DelegationManagerSet(address indexed delegationManager);
+
+  /**
    * @notice Emitted when a whitelist status for a sender is set.
    * @param sender The address of the sender
    * @param whitelisted Whether the sender is whitelisted
@@ -45,6 +51,13 @@ interface IGovMITO is IERC20, IERC5805 {
    * @param redeemPeriod The new redeem period
    */
   event RedeemPeriodSet(uint256 redeemPeriod);
+
+  /**
+   * @notice Only the delegation manager can perform delegate
+   * @param account The address of the account
+   * @param delegatee The address of the delegatee
+   */
+  function sudoDelegate(address account, address delegatee) external;
 
   /**
    * @notice Mint tokens to an address with corresponding MITO.

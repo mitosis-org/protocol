@@ -44,6 +44,7 @@ interface IValidatorStaking {
 
   function staked(address valAddr, address staker, uint48 timestamp) external view returns (uint256);
   function stakerTotal(address staker, uint48 timestamp) external view returns (uint256);
+  function unstakingTotal(address staker, uint48 timestamp) external view returns (uint256);
   function validatorTotal(address valAddr, uint48 timestamp) external view returns (uint256);
   function unstaking(address valAddr, address staker, uint48 timestamp) external view returns (uint256, uint256);
 
@@ -51,10 +52,10 @@ interface IValidatorStaking {
 
   // ========== ACTIONS ========== //
 
-  function stake(address valAddr, address recipient, uint256 amount) external payable;
+  function stake(address valAddr, address recipient, uint256 amount) external payable returns (uint256);
   function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256);
   function claimUnstake(address valAddr, address receiver) external returns (uint256);
-  function redelegate(address fromValAddr, address toValAddr, uint256 amount) external;
+  function redelegate(address fromValAddr, address toValAddr, uint256 amount) external returns (uint256);
 
   // ========== ADMIN ACTIONS ========== //
 
