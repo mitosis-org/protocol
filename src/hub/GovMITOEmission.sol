@@ -78,7 +78,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
 
     StorageV1 storage $ = _getStorageV1();
 
-    _configureValidatorRewardEmission($, config.rps, config.deductionRate, config.deductionPeriod, config.startsFrom);
+    _configureValidatorRewardEmission($, config.rps, config.rateMultiplier, config.renewalPeriod, config.startsFrom);
     _setValidatorRewardRecipient($, config.recipient);
 
     $.validatorReward.total = config.total;
