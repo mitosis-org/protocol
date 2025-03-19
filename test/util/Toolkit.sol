@@ -94,6 +94,10 @@ contract Toolkit is Test {
     return abi.encodeWithSelector(StdError.NotFound.selector, context);
   }
 
+  function _errNotSupported() internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(StdError.NotSupported.selector);
+  }
+
   function _errAccessControlUnauthorized(address account, bytes32 role) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, account, role);
   }

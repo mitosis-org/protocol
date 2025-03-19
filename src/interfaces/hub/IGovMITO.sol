@@ -35,9 +35,10 @@ interface IGovMITO is IERC20, IERC5805 {
 
   /**
    * @notice Emitted when the delegation manager is set.
-   * @param delegationManager The address of the new delegation manager
+   * @param previous The address of the previous delegation manager
+   * @param next The address of the new delegation manager
    */
-  event DelegationManagerSet(address indexed delegationManager);
+  event DelegationManagerSet(address indexed previous, address indexed next);
 
   /**
    * @notice Emitted when a whitelist status for a sender is set.

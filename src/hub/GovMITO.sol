@@ -235,8 +235,9 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   }
 
   function _setDelegationManager(GovMITOStorage storage $, address delegationManager_) internal {
+    address previous = $.delegationManager;
     $.delegationManager = delegationManager_;
-    emit DelegationManagerSet(delegationManager_);
+    emit DelegationManagerSet(previous, delegationManager_);
   }
 
   function _setWhitelistedSender(GovMITOStorage storage $, address sender, bool isWhitelisted) internal {

@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import { console } from '@std/console.sol';
 import { Vm } from '@std/Vm.sol';
 
+import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
 import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { GovMITO } from '../../src/hub/GovMITO.sol';
@@ -19,6 +20,7 @@ contract GovMITOTest is Toolkit {
   address immutable user1 = makeAddr('user1');
   address immutable user2 = makeAddr('user2');
   address immutable proxy = makeAddr('proxy');
+  address immutable delegationManager = makeAddr('delegationManager');
 
   uint48 constant REDEEM_PERIOD = 21 days;
 
@@ -28,6 +30,13 @@ contract GovMITOTest is Toolkit {
         new ERC1967Proxy(address(new GovMITO()), abi.encodeCall(GovMITO.initialize, (owner, minter, REDEEM_PERIOD)))
       )
     );
+  }
+
+  function test_init() public view {
+    assertEq(govMITO.owner(), owner);
+    assertEq(govMITO.minter(), minter);
+    assertEq(govMITO.delegationManager(), address(0));
+    assertEq(govMITO.redeemPeriod(), REDEEM_PERIOD);
   }
 
   function test_metadata() public view {
@@ -341,5 +350,46 @@ contract GovMITOTest is Toolkit {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
     govMITO.transferFrom(user1, user2, 20); // user1 is not whitelisted. It is not important that user2 is whitelisted
+  }
+
+  function test_delegate() public {
+    vm.expectRevert(_errNotSupported());
+    vm.prank(user1);
+    govMITO.delegate(user1);
+  }
+
+  function test_delegateBySig() public {
+    vm.expectRevert(_errNotSupported());
+    vm.prank(user1);
+    govMITO.delegateBySig(user1, 0, 0, 0, bytes32(0), bytes32(0));
+  }
+
+  function test_setDelegationManager() public {
+    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
+    vm.prank(user1);
+    govMITO.setDelegationManager(delegationManager);
+
+    vm.prank(owner);
+    vm.expectEmit();
+    emit IGovMITO.DelegationManagerSet(address(0), delegationManager);
+    govMITO.setDelegationManager(delegationManager);
+
+    assertEq(govMITO.delegationManager(), delegationManager);
+  }
+
+  function test_sudoDelegate() public {
+    test_setDelegationManager();
+    test_mint();
+
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(user1);
+    govMITO.sudoDelegate(user1, user1);
+
+    vm.prank(delegationManager);
+    vm.expectEmit();
+    emit IVotes.DelegateChanged(user1, address(0), user1);
+    vm.expectEmit();
+    emit IVotes.DelegateVotesChanged(user1, 0, 100);
+    govMITO.sudoDelegate(user1, user1);
   }
 }
