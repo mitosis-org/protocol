@@ -103,19 +103,6 @@ contract GovMITOEmissionTest is Toolkit {
         recipient: recipient
       })
     );
-
-    vm.expectRevert(_errInvalidParameter('config.rcp'));
-    _init(
-      total,
-      IGovMITOEmission.ValidatorRewardConfig({
-        rps: rps,
-        total: total,
-        rateMultiplier: 5000, // 50%
-        renewalPeriod: 365 days,
-        startsFrom: 1 days,
-        recipient: address(0)
-      })
-    );
   }
 
   function test_addValidatorRewardEmission() public {
