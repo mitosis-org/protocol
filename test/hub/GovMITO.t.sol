@@ -9,6 +9,7 @@ import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { GovMITO } from '../../src/hub/GovMITO.sol';
 import { IGovMITO } from '../../src/interfaces/hub/IGovMITO.sol';
+import { ISudoVotes } from '../../src/interfaces/lib/ISudoVotes.sol';
 import { StdError } from '../../src/lib/StdError.sol';
 import { Toolkit } from '../util/Toolkit.sol';
 
@@ -365,13 +366,13 @@ contract GovMITOTest is Toolkit {
   }
 
   function test_setDelegationManager() public {
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
+    vm.expectRevert(_errUnauthorized());
     vm.prank(user1);
     govMITO.setDelegationManager(delegationManager);
 
     vm.prank(owner);
     vm.expectEmit();
-    emit IGovMITO.DelegationManagerSet(address(0), delegationManager);
+    emit ISudoVotes.DelegationManagerSet(address(0), delegationManager);
     govMITO.setDelegationManager(delegationManager);
 
     assertEq(govMITO.delegationManager(), delegationManager);

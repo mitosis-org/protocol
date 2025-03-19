@@ -2,15 +2,17 @@
 pragma solidity ^0.8.28;
 
 import { console } from '@std/console.sol';
+
 import { WETH } from '@solady/tokens/WETH.sol';
 
 import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
+
+import { ValidatorStakingGovMITO } from '../../../src/hub/validator/ValidatorStakingGovMITO.sol';
 import { IValidatorManager } from '../../../src/interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorStakingHub } from '../../../src/interfaces/hub/validator/IValidatorStakingHub.sol';
-
-import { Toolkit } from '../../util/Toolkit.sol';
+import { ISudoVotes } from '../../../src/interfaces/lib/ISudoVotes.sol';
 import { MockContract } from '../../util/MockContract.sol';
-import { ValidatorStakingGovMITO } from '../../../src/hub/validator/ValidatorStakingGovMITO.sol';
+import { Toolkit } from '../../util/Toolkit.sol';
 
 contract ValidatorStakingGovMITOTest is Toolkit {
   address owner = makeAddr('owner');
@@ -69,13 +71,13 @@ contract ValidatorStakingGovMITOTest is Toolkit {
   }
 
   function test_setDelegationManager() public {
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
+    vm.expectRevert(_errUnauthorized());
     vm.prank(user1);
     vault.setDelegationManager(delegationManager);
 
     vm.prank(owner);
     vm.expectEmit();
-    emit ValidatorStakingGovMITO.DelegationManagerSet(address(0), delegationManager);
+    emit ISudoVotes.DelegationManagerSet(address(0), delegationManager);
     vault.setDelegationManager(delegationManager);
 
     assertEq(vault.delegationManager(), delegationManager);

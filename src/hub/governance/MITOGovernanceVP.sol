@@ -9,26 +9,21 @@ import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 import { EIP712Upgradeable } from '@ozu-v5/utils/cryptography/EIP712Upgradeable.sol';
 import { NoncesUpgradeable } from '@ozu-v5/utils/NoncesUpgradeable.sol';
 
-import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
-import { IValidatorStaking } from '../../interfaces/hub/validator/IValidatorStaking.sol';
+import { ISudoVotes } from '../../interfaces/lib/ISudoVotes.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-interface ISudoDelegate {
-  function sudoDelegate(address account, address delegatee) external;
-}
-
 contract MITOGovernanceVP is IVotes, OwnableUpgradeable, UUPSUpgradeable, EIP712Upgradeable, NoncesUpgradeable {
-  event TokensUpdated(IVotes[] oldTokens, IVotes[] newTokens);
+  event TokensUpdated(ISudoVotes[] oldTokens, ISudoVotes[] newTokens);
 
   bytes32 private constant DELEGATION_TYPEHASH = keccak256('Delegation(address delegatee,uint256 nonce,uint256 expiry)');
 
-  IVotes[] private _tokens;
+  ISudoVotes[] private _tokens;
 
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(address owner_, IVotes[] calldata tokens_) external initializer {
+  function initialize(address owner_, ISudoVotes[] calldata tokens_) external initializer {
     __Ownable_init(owner_);
     __UUPSUpgradeable_init();
     __EIP712_init('Mitosis Governance VP', '1');
@@ -37,12 +32,12 @@ contract MITOGovernanceVP is IVotes, OwnableUpgradeable, UUPSUpgradeable, EIP712
     _tokens = tokens_;
   }
 
-  function tokens() external view returns (IVotes[] memory) {
+  function tokens() external view returns (ISudoVotes[] memory) {
     return _tokens;
   }
 
-  function updateTokens(IVotes[] calldata newTokens_) external onlyOwner {
-    IVotes[] memory oldTokens = _tokens;
+  function updateTokens(ISudoVotes[] calldata newTokens_) external onlyOwner {
+    ISudoVotes[] memory oldTokens = _tokens;
     _tokens = newTokens_;
 
     emit TokensUpdated(oldTokens, newTokens_);
@@ -93,7 +88,7 @@ contract MITOGovernanceVP is IVotes, OwnableUpgradeable, UUPSUpgradeable, EIP712
 
   function _delegate(address account, address delegatee) internal virtual {
     for (uint256 i = 0; i < _tokens.length; i++) {
-      ISudoDelegate(address(_tokens[i])).sudoDelegate(account, delegatee);
+      _tokens[i].sudoDelegate(account, delegatee);
     }
   }
 

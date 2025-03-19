@@ -3,38 +3,14 @@ pragma solidity ^0.8.28;
 
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
-import { VotesUpgradeable } from '@ozu-v5/governance/utils/VotesUpgradeable.sol';
+import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 
 import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
-import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import { StdError } from '../../lib/StdError.sol';
+import { SudoVotes } from '../../lib/SudoVotes.sol';
 import { ValidatorStaking } from './ValidatorStaking.sol';
 
-contract ValidatorStakingGovMITO is ValidatorStaking, VotesUpgradeable {
-  using ERC7201Utils for string;
-
-  // ========= begin storage ========= //
-
-  struct GovMITOStorageV1 {
-    address delegationManager;
-  }
-
-  string private constant _NAMESPACE = 'mitosis.storage.ValidatorStakingGovMITO.v1';
-  bytes32 private immutable _slot = _NAMESPACE.storageSlot();
-
-  function _getGovMITOStorageV1() internal view returns (GovMITOStorageV1 storage $) {
-    bytes32 slot = _slot;
-    // slither-disable-next-line assembly
-    assembly {
-      $.slot := slot
-    }
-  }
-
-  // ========= end storage ========= //
-
-  event DelegationManagerSet(address indexed previous, address indexed next);
-
+contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
   error ValidatorStakingGovMITO__NonTransferable();
 
   constructor(address baseAsset_, IValidatorManager manager_, IValidatorStakingHub hub_)
@@ -61,8 +37,8 @@ contract ValidatorStakingGovMITO is ValidatorStaking, VotesUpgradeable {
     __Votes_init();
   }
 
-  function delegationManager() public view returns (address) {
-    return _getGovMITOStorageV1().delegationManager;
+  function owner() public view override(OwnableUpgradeable, SudoVotes) returns (address) {
+    return super.owner();
   }
 
   function clock() public view override returns (uint48) {
@@ -73,31 +49,6 @@ contract ValidatorStakingGovMITO is ValidatorStaking, VotesUpgradeable {
     // Check that the clock was not modified
     require(clock() == Time.timestamp(), ERC6372InconsistentClock());
     return 'mode=timestamp';
-  }
-
-  /// @dev Disabled: make only the delegation manager can delegate
-  function delegate(address) public pure override {
-    revert StdError.NotSupported();
-  }
-
-  /// @dev Disabled: make only the delegation manager can delegate
-  function delegateBySig(address, uint256, uint256, uint8, bytes32, bytes32) public pure override {
-    revert StdError.NotSupported();
-  }
-
-  /// @dev Only the delegation manager can perform delegate
-  function sudoDelegate(address account, address delegatee) public {
-    require(_getGovMITOStorageV1().delegationManager == _msgSender(), StdError.Unauthorized());
-
-    _delegate(account, delegatee);
-  }
-
-  /// @dev Only the owner can set the delegation manager
-  function setDelegationManager(address delegationManager_) public onlyOwner {
-    address previous = _getGovMITOStorageV1().delegationManager;
-    _getGovMITOStorageV1().delegationManager = delegationManager_;
-
-    emit DelegationManagerSet(previous, delegationManager_);
   }
 
   function _getVotingUnits(address account) internal view override returns (uint256) {

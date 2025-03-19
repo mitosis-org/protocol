@@ -8,6 +8,7 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 import { VotesUpgradeable } from '@ozu-v5/governance/utils/VotesUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
@@ -21,9 +22,17 @@ import { IGovMITO } from '../interfaces/hub/IGovMITO.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { LibRedeemQueue } from '../lib/LibRedeemQueue.sol';
 import { StdError } from '../lib/StdError.sol';
+import { SudoVotes } from '../lib/SudoVotes.sol';
 
 // TODO(thai): Add more view functions. (Check ReclaimQueueStorageV1.sol as a reference)
-contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUpgradeable {
+contract GovMITO is
+  IGovMITO,
+  ERC20PermitUpgradeable,
+  ERC20VotesUpgradeable,
+  Ownable2StepUpgradeable,
+  UUPSUpgradeable,
+  SudoVotes
+{
   using ERC7201Utils for string;
   using LibRedeemQueue for *;
   using SafeCast for uint256;
@@ -31,7 +40,6 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   /// @custom:storage-location mitosis.storage.GovMITO
   struct GovMITOStorage {
     address minter;
-    address delegationManager;
     LibRedeemQueue.Queue redeemQueue;
     mapping(address sender => bool) isWhitelistedSender;
   }
@@ -91,12 +99,12 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
-  function minter() external view returns (address) {
-    return _getGovMITOStorage().minter;
+  function owner() public view override(OwnableUpgradeable, SudoVotes) returns (address) {
+    return super.owner();
   }
 
-  function delegationManager() external view returns (address) {
-    return _getGovMITOStorage().delegationManager;
+  function minter() external view returns (address) {
+    return _getGovMITOStorage().minter;
   }
 
   function isWhitelistedSender(address sender) external view returns (bool) {
@@ -109,18 +117,16 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  /// @dev Disabled: make only the delegation manager can delegate
-  function delegate(address) public pure override(IVotes, VotesUpgradeable) {
-    revert StdError.NotSupported();
+  function delegate(address delegatee) public pure override(IVotes, VotesUpgradeable, SudoVotes) {
+    super.delegate(delegatee);
   }
 
-  /// @dev Disabled: make only the delegation manager can delegate
-  function delegateBySig(address, uint256, uint256, uint8, bytes32, bytes32)
+  function delegateBySig(address delegatee, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s)
     public
     pure
-    override(IVotes, VotesUpgradeable)
+    override(IVotes, VotesUpgradeable, SudoVotes)
   {
-    revert StdError.NotSupported();
+    super.delegateBySig(delegatee, nonce, expiry, v, r, s);
   }
 
   function mint(address to) external payable onlyMinter {
@@ -158,19 +164,8 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
 
   function _authorizeUpgrade(address) internal override onlyOwner { }
 
-  /// @dev Only the delegation manager can perform delegate
-  function sudoDelegate(address account, address delegatee) public {
-    require(_getGovMITOStorage().delegationManager == _msgSender(), StdError.Unauthorized());
-
-    _delegate(account, delegatee);
-  }
-
   function setMinter(address minter_) external onlyOwner {
     _setMinter(_getGovMITOStorage(), minter_);
-  }
-
-  function setDelegationManager(address delegationManager_) external onlyOwner {
-    _setDelegationManager(_getGovMITOStorage(), delegationManager_);
   }
 
   function setWhitelistedSender(address sender, bool isWhitelisted) external onlyOwner {
@@ -219,8 +214,8 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
     return super.transferFrom(from, to, amount);
   }
 
-  function nonces(address owner) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
-    return super.nonces(owner);
+  function nonces(address owner_) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
+    return super.nonces(owner_);
   }
 
   function _update(address from, address to, uint256 amount) internal override(ERC20Upgradeable, ERC20VotesUpgradeable) {
@@ -232,12 +227,6 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   function _setMinter(GovMITOStorage storage $, address minter_) internal {
     $.minter = minter_;
     emit MinterSet(minter_);
-  }
-
-  function _setDelegationManager(GovMITOStorage storage $, address delegationManager_) internal {
-    address previous = $.delegationManager;
-    $.delegationManager = delegationManager_;
-    emit DelegationManagerSet(previous, delegationManager_);
   }
 
   function _setWhitelistedSender(GovMITOStorage storage $, address sender, bool isWhitelisted) internal {
