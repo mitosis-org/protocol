@@ -33,9 +33,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
 
   //=========== NOTE: ASSET FUNCTIONS ===========//
 
-  function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external {
-    _assertNotPaused();
-
+  function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -53,9 +51,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     address to,
     address matrixVault,
     uint256 amount
-  ) external {
-    _assertNotPaused();
-
+  ) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -81,9 +77,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     emit DepositedWithSupplyMatrix(chainId, hubAsset, to, matrixVault, amount, supplyAmount);
   }
 
-  function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external {
-    _assertNotPaused();
-
+  function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     require(to != address(0), StdError.ZeroAddress('to'));
@@ -104,9 +98,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
   //=========== NOTE: MATRIX FUNCTIONS ===========//
 
   /// @dev only strategist
-  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external {
-    _assertNotPaused();
-
+  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($, matrixVault);
@@ -126,9 +118,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
   }
 
   /// @dev only entrypoint
-  function deallocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external {
-    _assertNotPaused();
-
+  function deallocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -141,9 +131,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
   }
 
   /// @dev only strategist
-  function reserveMatrix(address matrixVault, uint256 amount) external {
-    _assertNotPaused();
-
+  function reserveMatrix(address matrixVault, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($, matrixVault);
@@ -155,9 +143,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
   }
 
   /// @dev only entrypoint
-  function settleMatrixYield(uint256 chainId, address matrixVault, uint256 amount) external {
-    _assertNotPaused();
-
+  function settleMatrixYield(uint256 chainId, address matrixVault, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -173,9 +159,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
   }
 
   /// @dev only entrypoint
-  function settleMatrixLoss(uint256 chainId, address matrixVault, uint256 amount) external {
-    _assertNotPaused();
-
+  function settleMatrixLoss(uint256 chainId, address matrixVault, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -193,9 +177,8 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
   /// @dev only entrypoint
   function settleMatrixExtraRewards(uint256 chainId, address matrixVault, address branchReward, uint256 amount)
     external
+    whenNotPaused
   {
-    _assertNotPaused();
-
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -216,9 +199,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function _authorizePause(address) internal view override onlyOwner { }
 
-  function initializeAsset(uint256 chainId, address hubAsset) external onlyOwner {
-    _assertNotPaused();
-
+  function initializeAsset(uint256 chainId, address hubAsset) external onlyOwner whenNotPaused {
     _assertOnlyContract(hubAsset, 'hubAsset');
 
     StorageV1 storage $ = _getStorageV1();
@@ -248,8 +229,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     }
   }
 
-  function initializeMatrix(uint256 chainId, address matrixVault) external onlyOwner {
-    _assertNotPaused();
+  function initializeMatrix(uint256 chainId, address matrixVault) external onlyOwner whenNotPaused {
     _assertOnlyContract(matrixVault, 'matrixVault');
 
     StorageV1 storage $ = _getStorageV1();

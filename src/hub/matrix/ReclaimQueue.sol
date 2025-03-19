@@ -40,10 +40,9 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
   // =========================== NOTE: QUEUE FUNCTIONS =========================== //
 
-  function request(uint256 shares, address receiver, address matrixVault) external returns (uint256) {
+  function request(uint256 shares, address receiver, address matrixVault) external whenNotPaused returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertNotPaused();
     _assertQueueEnabled($, matrixVault);
 
     IMatrixVault(matrixVault).safeTransferFrom(_msgSender(), address(this), shares);
@@ -62,10 +61,9 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     return reqId;
   }
 
-  function claim(address receiver, address matrixVault) external returns (uint256) {
+  function claim(address receiver, address matrixVault) external whenNotPaused returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertNotPaused();
     _assertQueueEnabled($, matrixVault);
 
     LibRedeemQueue.Queue storage queue = $.states[matrixVault].queue;
@@ -97,10 +95,9 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     return totalClaimed_;
   }
 
-  function sync(address executor, address matrixVault, uint256 claimCount) external {
+  function sync(address executor, address matrixVault, uint256 claimCount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertNotPaused();
     _assertOnlyAssetManager($);
     _assertQueueEnabled($, matrixVault);
 

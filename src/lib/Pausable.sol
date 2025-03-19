@@ -42,12 +42,12 @@ abstract contract Pausable is ContextUpgradeable {
   // =========================== NOTE: MODIFIERS =========================== //
 
   modifier whenNotPaused() {
-    _assertNotPaused();
+    require(!_isPaused(msg.sig), Pausable__Paused(msg.sig));
     _;
   }
 
   modifier whenPaused() {
-    _assertPaused();
+    require(_isPaused(msg.sig), Pausable__NotPaused(msg.sig));
     _;
   }
 
@@ -112,21 +112,5 @@ abstract contract Pausable is ContextUpgradeable {
 
   function _isPausedGlobally() internal view virtual returns (bool) {
     return _getPausableStorage().global_;
-  }
-
-  function _assertNotPaused() internal view virtual {
-    _assertNotPaused(msg.sig);
-  }
-
-  function _assertNotPaused(bytes4 sig) internal view virtual {
-    require(!_isPaused(sig), Pausable__Paused(sig));
-  }
-
-  function _assertPaused() internal view virtual {
-    _assertPaused(msg.sig);
-  }
-
-  function _assertPaused(bytes4 sig) internal view virtual {
-    require(_isPaused(sig), Pausable__NotPaused(sig));
   }
 }
