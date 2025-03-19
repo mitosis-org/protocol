@@ -311,6 +311,9 @@ contract ValidatorStakingTest is Toolkit {
     assertEq(vault.stakerTotal(user1, now_), 10 ether);
     assertEq(vault.stakerTotal(user2, now_), 10 ether);
 
+    assertEq(vault.unstakingTotal(user1, now_), 10 ether);
+    assertEq(vault.unstakingTotal(user2, now_), 10 ether);
+
     assertEq(vault.validatorTotal(val1, now_), 15 ether);
     assertEq(vault.validatorTotal(val3, now_), 5 ether);
 

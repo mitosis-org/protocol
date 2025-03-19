@@ -224,7 +224,12 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
 
     uint256 offset = queue.indexes[staker].offset;
-    (uint256 newOffset, bool found) = queue.searchIndexOffset(staker, type(uint256).max, timestamp);
+    (uint256 newOffset, bool found) = queue.searchIndexOffset(
+      staker,
+      type(uint256).max,
+      timestamp,
+      queue.redeemPeriod != $.unstakeCooldown ? $.unstakeCooldown : queue.redeemPeriod
+    );
 
     uint256 claimable = 0;
     uint256 nonClaimable = 0;
@@ -256,6 +261,9 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     require(recipient != address(0), StdError.InvalidParameter('recipient'));
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
 
+    LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
+    _updateRedeemPeriod(queue, $.unstakeCooldown);
+
     // If the base asset is not native, we need to transfer from the sender to the contract
     if (_baseAsset != NATIVE_TOKEN) _baseAsset.safeTransferFrom(_msgSender(), address(this), amount);
 
@@ -279,6 +287,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     _assertUnstakeAmountCondition($, valAddr, staker, amount);
 
     LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
+    _updateRedeemPeriod(queue, $.unstakeCooldown);
 
     // FIXME(eddy): shorten the enqueue + reserve flow
     uint48 now_ = Time.timestamp();
@@ -300,7 +309,7 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator());
 
     LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
-    if (queue.redeemPeriod != $.unstakeCooldown) queue.redeemPeriod = $.unstakeCooldown;
+    _updateRedeemPeriod(queue, $.unstakeCooldown);
 
     uint48 now_ = Time.timestamp();
     queue.update(now_);
@@ -330,6 +339,12 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     require(_manager.isValidator(fromValAddr), IValidatorStaking__NotValidator());
     require(_manager.isValidator(toValAddr), IValidatorStaking__NotValidator());
 
+    {
+      uint256 unstakeCooldown_ = $.unstakeCooldown;
+      _updateRedeemPeriod($.unstakeQueue[fromValAddr], unstakeCooldown_);
+      _updateRedeemPeriod($.unstakeQueue[toValAddr], unstakeCooldown_);
+    }
+
     uint48 now_ = Time.timestamp();
     uint256 lastRedelegationTime_ = $.lastRedelegationTime[delegator];
     require(now_ >= lastRedelegationTime_ + $.redelegationCooldown, IValidatorStaking__CooldownNotPassed());
@@ -342,6 +357,10 @@ contract ValidatorStaking is IValidatorStaking, ValidatorStakingStorageV1, Ownab
     emit Redelegated(fromValAddr, toValAddr, delegator, amount);
 
     return amount;
+  }
+
+  function _updateRedeemPeriod(LibRedeemQueue.Queue storage queue, uint256 cooldown) internal virtual {
+    if (queue.redeemPeriod != cooldown) queue.redeemPeriod = cooldown;
   }
 
   function _storeStake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal virtual {
