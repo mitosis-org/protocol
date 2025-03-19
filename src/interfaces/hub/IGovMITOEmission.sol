@@ -26,6 +26,7 @@ interface IGovMITOEmission {
   event ValidatorRewardRequested(uint256 indexed epoch, uint256 amount);
   event ValidatorRewardEmissionAdded(uint256 amount);
   event ValidatorRewardEmissionConfigured(uint256 rps, uint160 deductionRate, uint48 deductionPeriod, uint48 timestamp);
+  event ValidatorRewardRecipientSet(address previousRecipient, address newRecipient);
 
   /**
    * @notice Returns the GovMITO token contract
@@ -102,4 +103,11 @@ interface IGovMITOEmission {
    * @param deductionPeriod The period of time to deduct the gMITO tokens
    */
   function configureValidatorRewardEmission(uint256 rps, uint160 deductionRate, uint48 deductionPeriod) external;
+
+  /**
+   * @notice Sets the recipient address for the validator reward.
+   * @dev This function sets the address that will receive the validator reward.
+   * @param recipient The address of the validator reward recipient.
+   */
+  function setValidatorRewardRecipient(address recipient) external;
 }
