@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
+import { MessageHashUtils } from '@oz-v5/utils/cryptography/MessageHashUtils.sol';
+
 import { MITOGovernanceVP } from '../../../src/hub/governance/MITOGovernanceVP.sol';
+import { ISudoVotes } from '../../../src/interfaces/lib/ISudoVotes.sol';
 import { MockContract } from '../../util/MockContract.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
-import { MessageHashUtils } from '@oz-v5/utils/cryptography/MessageHashUtils.sol';
-import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
-import { ISudoVotes } from '../../../src/interfaces/lib/ISudoVotes.sol';
 
 contract MITOGovernanceVPTest is Toolkit {
   address owner = makeAddr('owner');
