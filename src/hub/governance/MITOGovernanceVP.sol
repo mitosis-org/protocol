@@ -18,62 +18,62 @@ interface ISudoDelegate {
 }
 
 contract MITOGovernanceVP is IVotes, OwnableUpgradeable, UUPSUpgradeable, EIP712Upgradeable, NoncesUpgradeable {
-  event VpsUpdated(IVotes[] oldVps, IVotes[] newVps);
+  event TokensUpdated(IVotes[] oldTokens, IVotes[] newTokens);
 
   bytes32 private constant DELEGATION_TYPEHASH = keccak256('Delegation(address delegatee,uint256 nonce,uint256 expiry)');
 
-  IVotes[] private _vps;
+  IVotes[] private _tokens;
 
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(address owner_, IVotes[] calldata vps_) external initializer {
+  function initialize(address owner_, IVotes[] calldata tokens_) external initializer {
     __Ownable_init(owner_);
     __UUPSUpgradeable_init();
     __EIP712_init('Mitosis Governance VP', '1');
     __Nonces_init();
 
-    _vps = vps_;
+    _tokens = tokens_;
   }
 
-  function vps() external view returns (IVotes[] memory) {
-    return _vps;
+  function tokens() external view returns (IVotes[] memory) {
+    return _tokens;
   }
 
-  function updateVps(IVotes[] calldata newVps_) external onlyOwner {
-    IVotes[] memory oldVps = _vps;
-    _vps = newVps_;
+  function updateTokens(IVotes[] calldata newTokens_) external onlyOwner {
+    IVotes[] memory oldTokens = _tokens;
+    _tokens = newTokens_;
 
-    emit VpsUpdated(oldVps, newVps_);
+    emit TokensUpdated(oldTokens, newTokens_);
   }
 
   function getVotes(address account) external view returns (uint256) {
     uint256 votes = 0;
-    for (uint256 i = 0; i < _vps.length; i++) {
-      votes += _vps[i].getVotes(account);
+    for (uint256 i = 0; i < _tokens.length; i++) {
+      votes += _tokens[i].getVotes(account);
     }
     return votes;
   }
 
   function getPastVotes(address account, uint256 timepoint) external view returns (uint256) {
     uint256 votes = 0;
-    for (uint256 i = 0; i < _vps.length; i++) {
-      votes += _vps[i].getPastVotes(account, timepoint);
+    for (uint256 i = 0; i < _tokens.length; i++) {
+      votes += _tokens[i].getPastVotes(account, timepoint);
     }
     return votes;
   }
 
   function getPastTotalSupply(uint256 timepoint) external view returns (uint256) {
     uint256 totalSupply = 0;
-    for (uint256 i = 0; i < _vps.length; i++) {
-      totalSupply += _vps[i].getPastTotalSupply(timepoint);
+    for (uint256 i = 0; i < _tokens.length; i++) {
+      totalSupply += _tokens[i].getPastTotalSupply(timepoint);
     }
     return totalSupply;
   }
 
   function delegates(address account) external view returns (address) {
-    return _vps[0].delegates(account);
+    return _tokens[0].delegates(account);
   }
 
   function delegate(address delegatee) external {
@@ -92,8 +92,8 @@ contract MITOGovernanceVP is IVotes, OwnableUpgradeable, UUPSUpgradeable, EIP712
   }
 
   function _delegate(address account, address delegatee) internal virtual {
-    for (uint256 i = 0; i < _vps.length; i++) {
-      ISudoDelegate(address(_vps[i])).sudoDelegate(account, delegatee);
+    for (uint256 i = 0; i < _tokens.length; i++) {
+      ISudoDelegate(address(_tokens[i])).sudoDelegate(account, delegatee);
     }
   }
 
