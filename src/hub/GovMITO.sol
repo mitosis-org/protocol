@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
+import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 import { VotesUpgradeable } from '@ozu-v5/governance/utils/VotesUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
@@ -19,12 +22,20 @@ import { IGovMITO } from '../interfaces/hub/IGovMITO.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { LibRedeemQueue } from '../lib/LibRedeemQueue.sol';
 import { StdError } from '../lib/StdError.sol';
+import { SudoVotes } from '../lib/SudoVotes.sol';
 
 // TODO(thai): Add more view functions. (Check ReclaimQueueStorageV1.sol as a reference)
-
-contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Ownable2StepUpgradeable, UUPSUpgradeable {
+contract GovMITO is
+  IGovMITO,
+  ERC20PermitUpgradeable,
+  ERC20VotesUpgradeable,
+  Ownable2StepUpgradeable,
+  UUPSUpgradeable,
+  SudoVotes
+{
   using ERC7201Utils for string;
   using LibRedeemQueue for *;
+  using SafeCast for uint256;
 
   /// @custom:storage-location mitosis.storage.GovMITO
   struct GovMITOStorage {
@@ -88,6 +99,10 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
+  function owner() public view override(OwnableUpgradeable, SudoVotes) returns (address) {
+    return super.owner();
+  }
+
   function minter() external view returns (address) {
     return _getGovMITOStorage().minter;
   }
@@ -101,6 +116,18 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
+
+  function delegate(address delegatee) public pure override(IVotes, VotesUpgradeable, SudoVotes) {
+    super.delegate(delegatee);
+  }
+
+  function delegateBySig(address delegatee, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s)
+    public
+    pure
+    override(IVotes, VotesUpgradeable, SudoVotes)
+  {
+    super.delegateBySig(delegatee, nonce, expiry, v, r, s);
+  }
 
   function mint(address to) external payable onlyMinter {
     require(msg.value > 0, StdError.ZeroAmount());
@@ -159,35 +186,36 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
 
   // =========================== NOTE: ERC20 OVERRIDES =========================== //
 
-  function approve(address spender, uint256 amount)
-    public
-    override(IERC20, ERC20Upgradeable)
-    onlyWhitelistedSender(_msgSender())
-    returns (bool)
-  {
+  function approve(address spender, uint256 amount) public override(IERC20, ERC20Upgradeable) returns (bool) {
+    GovMITOStorage storage $ = _getGovMITOStorage();
+
+    require($.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
+
     return super.approve(spender, amount);
   }
 
-  function transfer(address to, uint256 amount)
-    public
-    override(IERC20, ERC20Upgradeable)
-    onlyWhitelistedSender(_msgSender())
-    returns (bool)
-  {
+  function transfer(address to, uint256 amount) public override(IERC20, ERC20Upgradeable) returns (bool) {
+    GovMITOStorage storage $ = _getGovMITOStorage();
+
+    require($.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
+
     return super.transfer(to, amount);
   }
 
   function transferFrom(address from, address to, uint256 amount)
     public
     override(IERC20, ERC20Upgradeable)
-    onlyWhitelistedSender(from)
     returns (bool)
   {
+    GovMITOStorage storage $ = _getGovMITOStorage();
+
+    require($.isWhitelistedSender[from], StdError.Unauthorized());
+
     return super.transferFrom(from, to, amount);
   }
 
-  function nonces(address owner) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
-    return super.nonces(owner);
+  function nonces(address owner_) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
+    return super.nonces(owner_);
   }
 
   function _update(address from, address to, uint256 amount) internal override(ERC20Upgradeable, ERC20VotesUpgradeable) {
@@ -195,6 +223,7 @@ contract GovMITO is IGovMITO, ERC20PermitUpgradeable, ERC20VotesUpgradeable, Own
   }
 
   // =========================== NOTE: INTERNAL FUNCTIONS =========================== //
+
   function _setMinter(GovMITOStorage storage $, address minter_) internal {
     $.minter = minter_;
     emit MinterSet(minter_);
