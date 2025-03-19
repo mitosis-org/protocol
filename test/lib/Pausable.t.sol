@@ -10,36 +10,22 @@ contract PausableContract is Pausable {
     __Pausable_init();
   }
 
-  function pause() external {
-    _pause();
-  }
-
-  function pause(bytes4 sig) external {
-    _pause(sig);
-  }
-
-  function unpause() external {
-    _unpause();
-  }
-
-  function unpause(bytes4 sig) external {
-    _unpause(sig);
-  }
+  function _authorizePause(address) internal view override { }
 
   function assertNotPaused() external view {
-    _assertNotPaused();
+    require(!_isPaused(msg.sig), Pausable__Paused(msg.sig));
   }
 
   function assertNotPaused(bytes4 sig) external view {
-    _assertNotPaused(sig);
+    require(!_isPaused(sig), Pausable__Paused(sig));
   }
 
   function assertPaused() external view {
-    _assertPaused();
+    require(_isPaused(msg.sig), Pausable__NotPaused(msg.sig));
   }
 
   function assertPaused(bytes4 sig) external view {
-    _assertPaused(sig);
+    require(_isPaused(sig), Pausable__NotPaused(sig));
   }
 }
 

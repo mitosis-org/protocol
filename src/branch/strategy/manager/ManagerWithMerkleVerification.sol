@@ -12,13 +12,11 @@ import { MerkleProofLib } from '@solmate/utils/MerkleProofLib.sol';
 import { IStrategyExecutor } from '../../../interfaces/branch/strategy/IStrategyExecutor.sol';
 import { IManagerWithMerkleVerification } from
   '../../../interfaces/branch/strategy/manager/IManagerWithMerkleVerification.sol';
-import { Pausable } from '../../../lib/Pausable.sol';
 import { StdError } from '../../../lib/StdError.sol';
 import { ManagerWithMerkleVerificationStorageV1 } from './ManagerWithMerkleVerificationStorageV1.sol';
 
 contract ManagerWithMerkleVerification is
   IManagerWithMerkleVerification,
-  Pausable,
   Ownable2StepUpgradeable,
   UUPSUpgradeable,
   ManagerWithMerkleVerificationStorageV1
@@ -30,7 +28,6 @@ contract ManagerWithMerkleVerification is
   }
 
   function initialize(address owner_) public initializer {
-    __Pausable_init();
     __Ownable2Step_init();
     __Ownable_init(owner_);
     __UUPSUpgradeable_init();
@@ -47,14 +44,6 @@ contract ManagerWithMerkleVerification is
     emit ManageRootUpdated(strategyExecutor, strategist, oldRoot, _manageRoot);
   }
 
-  function pause() external onlyOwner {
-    _pause();
-  }
-
-  function unpause() external onlyOwner {
-    _unpause();
-  }
-
   function manageVaultWithMerkleVerification(
     address strategyExecutor,
     bytes32[][] calldata manageProofs,
@@ -63,8 +52,6 @@ contract ManagerWithMerkleVerification is
     bytes[] calldata targetData,
     uint256[] calldata values
   ) external {
-    _assertNotPaused();
-
     StorageV1 storage $ = _getStorageV1();
 
     uint256 targetsLength = targets.length;

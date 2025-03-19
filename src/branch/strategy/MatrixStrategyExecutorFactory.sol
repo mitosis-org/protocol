@@ -25,15 +25,12 @@ contract MatrixStrategyExecutorFactory is BeaconBase, Ownable2StepUpgradeable, U
     __UUPSUpgradeable_init();
   }
 
-  function create(
-    IMitosisVault vault_,
-    IERC20 asset_,
-    address hubMatrixVault_,
-    address owner_,
-    address emergencyManager_
-  ) external onlyOwner returns (address) {
-    bytes memory args =
-      abi.encodeCall(MatrixStrategyExecutor.initialize, (vault_, asset_, hubMatrixVault_, owner_, emergencyManager_));
+  function create(IMitosisVault vault_, IERC20 asset_, address hubMatrixVault_, address owner_)
+    external
+    onlyOwner
+    returns (address)
+  {
+    bytes memory args = abi.encodeCall(MatrixStrategyExecutor.initialize, (vault_, asset_, hubMatrixVault_, owner_));
     address instance = address(new BeaconProxy(address(beacon()), args));
 
     _pushInstance(instance);

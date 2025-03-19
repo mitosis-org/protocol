@@ -17,7 +17,7 @@ contract Empty { }
 
 contract MatrixVaultFactoryTest is Toolkit {
   address public contractOwner = makeAddr('owner');
-  address public supplyManager = address(new Empty());
+  address public assetManager = address(new Empty());
 
   ERC1967Factory public proxyFactory;
 
@@ -63,7 +63,8 @@ contract MatrixVaultFactoryTest is Toolkit {
     address instance = _createBasic(
       contractOwner,
       MatrixVaultFactory.BasicVaultInitArgs({
-        supplyManager: supplyManager,
+        owner: contractOwner,
+        assetManager: assetManager,
         asset: IERC20Metadata(address(new WETH())),
         name: 'Basic Vault',
         symbol: 'BV'
@@ -87,7 +88,8 @@ contract MatrixVaultFactoryTest is Toolkit {
     address instance = _createCapped(
       contractOwner,
       MatrixVaultFactory.CappedVaultInitArgs({
-        supplyManager: supplyManager,
+        owner: contractOwner,
+        assetManager: assetManager,
         asset: IERC20Metadata(address(new WETH())),
         name: 'Capped Vault',
         symbol: 'CV'

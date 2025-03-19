@@ -14,10 +14,13 @@ contract MatrixVaultBasic is MatrixVault {
     _disableInitializers();
   }
 
-  function initialize(address assetManager_, IERC20Metadata asset_, string memory name, string memory symbol)
-    external
-    initializer
-  {
-    __MatrixVault_init(assetManager_, asset_, name, symbol);
+  function initialize(
+    address owner_,
+    address assetManager_,
+    IERC20Metadata asset_,
+    string memory name,
+    string memory symbol
+  ) external initializer {
+    __MatrixVault_init(owner_, assetManager_, asset_, name, symbol);
   }
 }

@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+
 import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 
 import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
+import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { MatrixVaultStorageV1 } from './MatrixVaultStorageV1.sol';
 
@@ -14,12 +17,20 @@ import { MatrixVaultStorageV1 } from './MatrixVaultStorageV1.sol';
  * @title MatrixVault
  * @notice Base implementation of an MatrixVault
  */
-abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626 {
+abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgradeable, Pausable {
   using Math for uint256;
 
-  function __MatrixVault_init(address assetManager_, IERC20Metadata asset_, string memory name_, string memory symbol_)
-    internal
-  {
+  function __MatrixVault_init(
+    address owner_,
+    address assetManager_,
+    IERC20Metadata asset_,
+    string memory name_,
+    string memory symbol_
+  ) internal {
+    __Ownable2Step_init();
+    __Ownable_init(owner_);
+    __Pausable_init();
+
     if (bytes(name_).length == 0 || bytes(symbol_).length == 0) {
       name_ = string.concat('Mitosis Matrix ', asset_.name());
       symbol_ = string.concat('ma', asset_.symbol());
@@ -54,7 +65,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626 {
 
   // Mutative functions
 
-  function deposit(uint256 assets, address receiver) public virtual override returns (uint256) {
+  function deposit(uint256 assets, address receiver) public virtual override whenNotPaused returns (uint256) {
     uint256 maxAssets = maxDeposit(receiver);
     require(assets <= maxAssets, DepositMoreThanMax());
 
@@ -64,7 +75,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626 {
     return shares;
   }
 
-  function mint(uint256 shares, address receiver) public virtual override returns (uint256) {
+  function mint(uint256 shares, address receiver) public virtual override whenNotPaused returns (uint256) {
     uint256 maxShares = maxMint(receiver);
     require(shares <= maxShares, MintMoreThanMax());
 
@@ -74,7 +85,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626 {
     return assets;
   }
 
-  function withdraw(uint256 assets, address receiver, address owner) public override returns (uint256) {
+  function withdraw(uint256 assets, address receiver, address owner) public override whenNotPaused returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyReclaimQueue($);
@@ -88,7 +99,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626 {
     return shares;
   }
 
-  function redeem(uint256 shares, address receiver, address owner) public override returns (uint256) {
+  function redeem(uint256 shares, address receiver, address owner) public override whenNotPaused returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyReclaimQueue($);
@@ -101,4 +112,8 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626 {
 
     return assets;
   }
+
+  // general overrides
+
+  function _authorizePause(address) internal view override onlyOwner { }
 }

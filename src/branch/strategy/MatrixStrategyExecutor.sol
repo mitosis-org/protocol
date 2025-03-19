@@ -12,14 +12,12 @@ import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
 import { IMatrixStrategyExecutor } from '../../interfaces/branch/strategy/IMatrixStrategyExecutor.sol';
 import { IStrategyExecutor } from '../../interfaces/branch/strategy/IStrategyExecutor.sol';
 import { ITally } from '../../interfaces/branch/strategy/tally/ITally.sol';
-import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { MatrixStrategyExecutorStorageV1 } from './MatrixStrategyExecutorStorageV1.sol';
 
 contract MatrixStrategyExecutor is
   IStrategyExecutor,
   IMatrixStrategyExecutor,
-  Pausable,
   Ownable2StepUpgradeable,
   MatrixStrategyExecutorStorageV1
 {
@@ -40,14 +38,7 @@ contract MatrixStrategyExecutor is
     revert StdError.NotSupported();
   }
 
-  function initialize(
-    IMitosisVault vault_,
-    IERC20 asset_,
-    address hubMatrixVault_,
-    address owner_,
-    address emergencyManager_
-  ) public initializer {
-    __Pausable_init();
+  function initialize(IMitosisVault vault_, IERC20 asset_, address hubMatrixVault_, address owner_) public initializer {
     __Ownable2Step_init();
     __Ownable_init(owner_);
 
@@ -56,7 +47,6 @@ contract MatrixStrategyExecutor is
     $.vault = vault_;
     $.asset = asset_;
     $.hubMatrixVault = hubMatrixVault_;
-    $.emergencyManager = emergencyManager_;
   }
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
@@ -81,10 +71,6 @@ contract MatrixStrategyExecutor is
     return _getStorageV1().executor;
   }
 
-  function emergencyManager() external view returns (address) {
-    return _getStorageV1().emergencyManager;
-  }
-
   function tally() external view returns (ITally) {
     return _getStorageV1().tally;
   }
@@ -102,7 +88,6 @@ contract MatrixStrategyExecutor is
   function deallocateLiquidity(uint256 amount) external {
     StorageV1 memory $ = _getStorageV1();
 
-    _assertNotPaused();
     _assertOnlyStrategist($);
 
     $.vault.deallocateMatrix($.hubMatrixVault, amount);
@@ -111,7 +96,6 @@ contract MatrixStrategyExecutor is
   function fetchLiquidity(uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertNotPaused();
     _assertOnlyStrategist($);
 
     $.vault.fetchMatrix($.hubMatrixVault, amount);
@@ -121,7 +105,6 @@ contract MatrixStrategyExecutor is
   function returnLiquidity(uint256 amount) external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertNotPaused();
     _assertOnlyStrategist($);
 
     $.asset.approve(address($.vault), amount);
@@ -132,7 +115,6 @@ contract MatrixStrategyExecutor is
   function settle() external {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertNotPaused();
     _assertOnlyStrategist($);
 
     uint256 totalBalance_ = _totalBalance($);
@@ -150,7 +132,6 @@ contract MatrixStrategyExecutor is
   function settleExtraRewards(address reward, uint256 amount) external {
     StorageV1 memory $ = _getStorageV1();
 
-    _assertNotPaused();
     _assertOnlyStrategist($);
     require(reward != address($.asset), StdError.InvalidAddress('reward'));
 
@@ -198,12 +179,6 @@ contract MatrixStrategyExecutor is
     emit TallySet(implementation);
   }
 
-  function setEmergencyManager(address emergencyManager_) external onlyOwner {
-    require(emergencyManager_ != address(0), StdError.InvalidAddress('emergencyManager'));
-    _getStorageV1().emergencyManager = emergencyManager_;
-    emit EmergencyManagerSet(emergencyManager_);
-  }
-
   function setStrategist(address strategist_) external onlyOwner {
     require(strategist_ != address(0), StdError.InvalidAddress('strategist'));
     _getStorageV1().strategist = strategist_;
@@ -224,16 +199,6 @@ contract MatrixStrategyExecutor is
   function unsetExecutor() external onlyOwner {
     _getStorageV1().executor = address(0);
     emit ExecutorSet(address(0));
-  }
-
-  function pause() external {
-    StorageV1 memory $ = _getStorageV1();
-    require(_msgSender() == owner() || _msgSender() == $.emergencyManager, StdError.Unauthorized());
-    _pause();
-  }
-
-  function unpause() external onlyOwner {
-    _unpause();
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//

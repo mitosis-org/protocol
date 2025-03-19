@@ -23,14 +23,16 @@ contract MatrixVaultFactory is Ownable2StepUpgradeable, UUPSUpgradeable {
   }
 
   struct BasicVaultInitArgs {
-    address supplyManager;
+    address owner;
+    address assetManager;
     IERC20Metadata asset;
     string name;
     string symbol;
   }
 
   struct CappedVaultInitArgs {
-    address supplyManager;
+    address owner;
+    address assetManager;
     IERC20Metadata asset;
     string name;
     string symbol;
@@ -187,7 +189,7 @@ contract MatrixVaultFactory is Ownable2StepUpgradeable, UUPSUpgradeable {
 
     bytes memory data = abi.encodeCall(
       MatrixVaultBasic.initialize, //
-      (args.supplyManager, args.asset, args.name, args.symbol)
+      (args.owner, args.assetManager, args.asset, args.name, args.symbol)
     );
     address instance = address(new BeaconProxy(address(info.beacon), data));
 
@@ -202,7 +204,7 @@ contract MatrixVaultFactory is Ownable2StepUpgradeable, UUPSUpgradeable {
 
     bytes memory data = abi.encodeCall(
       MatrixVaultCapped.initialize, //
-      (args.supplyManager, args.asset, args.name, args.symbol)
+      (args.owner, args.assetManager, args.asset, args.name, args.symbol)
     );
     address instance = address(new BeaconProxy(address(info.beacon), data));
 
