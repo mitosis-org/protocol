@@ -93,7 +93,7 @@ interface IValidatorManager {
   event EpochFeederUpdated(IEpochFeeder indexed epochFeeder);
   event EntrypointUpdated(IConsensusValidatorEntrypoint indexed entrypoint);
 
-  error IValidatorManager__InsufficientFee(uint256 msgValue);
+  error IValidatorManager__InsufficientFee();
 
   // ========== VIEWS ========== //
 
@@ -119,14 +119,14 @@ interface IValidatorManager {
   // validator actions
   /// @param pubKey The compressed 33-byte secp256k1 public key of the valAddr.
   function createValidator(bytes calldata pubKey, CreateValidatorRequest calldata request) external payable;
-  function unjailValidator(address valAddr) external;
+  function unjailValidator(address valAddr) external payable;
 
   // operator actions
   function depositCollateral(address valAddr) external payable;
   /**
    * @dev Be careful, as the withdrawal recipient, not msg.sender, will receive the collateral.
    */
-  function withdrawCollateral(address valAddr, uint256 amount) external;
+  function withdrawCollateral(address valAddr, uint256 amount) external payable;
 
   // operator actions - validator configurations
   function updateOperator(address valAddr, address operator) external;
