@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { StdError } from './StdError.sol';
@@ -54,62 +55,126 @@ library LibCheckpoint {
     }
   }
 
-  function findAmount(TraceTWAB storage self, uint48 timestamp) internal view returns (uint256) {
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    return len(self) == 0 ? 0 : lowerBound(self, timestamp).amount;
+  /**
+   * @dev Returns the value in the first (oldest) checkpoint with key greater or equal than the search key, or zero if
+   * there is none.
+   */
+  function lowerLookup(TraceTWAB storage self, uint48 key) internal view returns (TWABCheckpoint memory) {
+    uint256 len_ = len(self);
+    uint256 pos = _lowerBinaryLookup(self, key, 0, len_);
+    if (pos == len_) {
+      TWABCheckpoint memory empty;
+      return empty;
+    }
+    return _unsafeAccess(self.checkpoints, pos);
   }
 
-  function findTWAB(TraceTWAB storage self, uint48 timestamp) internal view returns (uint256) {
-    require(timestamp > 0, StdError.InvalidParameter('timestamp'));
-    if (len(self) == 0) return 0;
-
-    TWABCheckpoint memory checkpoint = lowerBound(self, timestamp);
-    return checkpoint.twab + (checkpoint.amount * (timestamp - checkpoint.lastUpdate));
+  /**
+   * @dev Returns the value in the last (most recent) checkpoint with key lower or equal than the search key, or zero
+   * if there is none.
+   */
+  function upperLookup(TraceTWAB storage self, uint48 key) internal view returns (TWABCheckpoint memory) {
+    uint256 len_ = len(self);
+    uint256 pos = _upperBinaryLookup(self, key, 0, len_);
+    if (pos == 0) {
+      TWABCheckpoint memory empty;
+      return empty;
+    }
+    return _unsafeAccess(self.checkpoints, pos - 1);
   }
 
-  /// @notice Find the latest checkpoint with lastUpdate <= timestamp
-  /// @dev Uses binary search to find the lower bound checkpoint
-  function lowerBound(TraceTWAB storage self, uint48 timestamp) internal view returns (TWABCheckpoint memory) {
-    TWABCheckpoint memory last_ = last(self);
-    if (last_.lastUpdate <= timestamp) return last_;
+  /**
+   * @dev Returns the value in the last (most recent) checkpoint with key lower or equal than the search key, or zero
+   * if there is none.
+   *
+   * NOTE: This is a variant of {upperLookup} that is optimised to find "recent" checkpoint (checkpoints with high
+   * keys).
+   */
+  function upperLookupRecent(TraceTWAB storage self, uint48 key) internal view returns (TWABCheckpoint memory) {
+    uint256 len_ = len(self);
 
-    uint256 left = 0;
-    uint256 right = self.checkpoints.length - 1;
-    uint256 target = 0;
+    uint256 low = 0;
+    uint256 high = len_;
 
-    while (left <= right) {
-      uint256 mid = left + (right - left) / 2;
-      if (self.checkpoints[mid].lastUpdate <= timestamp) {
-        target = mid;
-        left = mid + 1;
+    if (len_ > 5) {
+      uint256 mid = len_ - Math.sqrt(len_);
+      if (key < _unsafeAccess(self.checkpoints, mid).lastUpdate) {
+        high = mid;
       } else {
-        right = mid - 1;
+        low = mid + 1;
       }
     }
 
-    return self.checkpoints[target];
-  }
-
-  /// @notice Find the earliest checkpoint with lastUpdate >= timestamp
-  /// @dev Uses binary search to find the upper bound checkpoint
-  function upperBound(TraceTWAB storage self, uint48 timestamp) internal view returns (TWABCheckpoint memory) {
-    TWABCheckpoint memory first_ = self.checkpoints[0];
-    if (first_.lastUpdate >= timestamp) return first_;
-
-    uint256 left = 0;
-    uint256 right = self.checkpoints.length - 1;
-    uint256 target = right;
-
-    while (left <= right) {
-      uint256 mid = left + (right - left) / 2;
-      if (self.checkpoints[mid].lastUpdate >= timestamp) {
-        target = mid;
-        right = mid - 1;
-      } else {
-        left = mid + 1;
-      }
+    uint256 pos = _upperBinaryLookup(self, key, low, high);
+    if (pos == 0) {
+      TWABCheckpoint memory empty;
+      return empty;
     }
 
-    return self.checkpoints[target];
+    return _unsafeAccess(self.checkpoints, pos - 1);
+  }
+
+  /**
+   * @dev Return the index of the first (oldest) checkpoint with key greater or equal than the search key, or `high`
+   * if there is none. `low` and `high` define a section where to do the search, with inclusive `low` and exclusive
+   * `high`.
+   *
+   * WARNING: `high` should not be greater than the array's length.
+   */
+  function _lowerBinaryLookup(TraceTWAB storage self, uint48 key, uint256 low, uint256 high)
+    private
+    view
+    returns (uint256)
+  {
+    while (low < high) {
+      uint256 mid = Math.average(low, high);
+      if (_unsafeAccess(self.checkpoints, mid).lastUpdate < key) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+    return high;
+  }
+
+  /**
+   * @dev Return the index of the first (oldest) checkpoint with key strictly bigger than the search key, or `high`
+   * if there is none. `low` and `high` define a section where to do the search, with inclusive `low` and exclusive
+   * `high`.
+   *
+   * WARNING: `high` should not be greater than the array's length.
+   */
+  function _upperBinaryLookup(TraceTWAB storage self, uint48 key, uint256 low, uint256 high)
+    private
+    view
+    returns (uint256)
+  {
+    while (low < high) {
+      uint256 mid = Math.average(low, high);
+      if (_unsafeAccess(self.checkpoints, mid).lastUpdate > key) {
+        high = mid;
+      } else {
+        low = mid + 1;
+      }
+    }
+    return high;
+  }
+
+  /**
+   * @dev Access an element of the array without performing bounds check. The position is assumed to be within bounds.
+   */
+  function _unsafeAccess(TWABCheckpoint[] storage self, uint256 pos)
+    private
+    pure
+    returns (TWABCheckpoint storage result)
+  {
+    assembly {
+      // Get the array's storage slot
+      mstore(0, self.slot)
+      // Multiply position by 2 (since each element takes 2 storage slots)
+      let slotOffset := shl(1, pos)
+      // Add the offset to the base storage location
+      result.slot := add(keccak256(0, 0x20), slotOffset)
+    }
   }
 }

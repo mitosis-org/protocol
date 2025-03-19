@@ -64,6 +64,16 @@ contract MockContract {
     return _lastCallLog(sig);
   }
 
+  function assertCall(bytes calldata args, uint256 offset) external view {
+    bytes4 sig = bytes4(args[0:4]);
+    _assertCall(sig, args[4:], 0, callLogs[sig][callLogs[sig].length - 1 - offset]);
+  }
+
+  function assertCall(bytes calldata args, uint256 offset, uint256 value) external view {
+    bytes4 sig = bytes4(args[0:4]);
+    _assertCall(sig, args[4:], value, callLogs[sig][callLogs[sig].length - 1 - offset]);
+  }
+
   function assertLastCall(bytes calldata args) external view {
     _assertLastCall(bytes4(args[0:4]), args[4:], 0);
   }
@@ -78,9 +88,13 @@ contract MockContract {
 
   function _assertLastCall(bytes4 sig, bytes memory args, uint256 value) internal view {
     require(callLogs[sig].length > 0, 'no calls');
-    Log memory log = _lastCallLog(sig);
+    _assertCall(sig, args, value, _lastCallLog(sig));
+  }
+
+  function _assertCall(bytes4 sig, bytes memory args, uint256 value, Log memory log) internal view {
+    require(callLogs[sig].length > 0, 'no calls');
     require(log.sig == sig, 'sig mismatch');
-    require(keccak256(log.args) == keccak256(args), 'args mismatch');
     require(log.value == value, 'value mismatch');
+    require(keccak256(log.args) == keccak256(args), 'args mismatch');
   }
 }

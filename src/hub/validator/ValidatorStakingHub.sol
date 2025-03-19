@@ -73,32 +73,41 @@ contract ValidatorStakingHub is
 
   /// @inheritdoc IValidatorStakingHub
   function stakerTotal(address staker, uint48 timestamp) external view returns (uint256) {
-    return _getStorageV1().stakerTotal[staker].findAmount(timestamp);
+    LibCheckpoint.TraceTWAB storage trace = _getStorageV1().stakerTotal[staker];
+    return trace.upperLookupRecent(timestamp).amount;
   }
 
   /// @inheritdoc IValidatorStakingHub
   function stakerTotalTWAB(address staker, uint48 timestamp) external view returns (uint256) {
-    return _getStorageV1().stakerTotal[staker].findTWAB(timestamp);
+    LibCheckpoint.TraceTWAB storage trace = _getStorageV1().stakerTotal[staker];
+    LibCheckpoint.TWABCheckpoint memory twab = trace.upperLookupRecent(timestamp);
+    return twab.amount * (timestamp - twab.lastUpdate) + twab.twab;
   }
 
   /// @inheritdoc IValidatorStakingHub
   function validatorTotal(address valAddr, uint48 timestamp) external view returns (uint256) {
-    return _getStorageV1().validatorTotal[valAddr].findAmount(timestamp);
+    LibCheckpoint.TraceTWAB storage trace = _getStorageV1().validatorTotal[valAddr];
+    return trace.upperLookupRecent(timestamp).amount;
   }
 
   /// @inheritdoc IValidatorStakingHub
   function validatorTotalTWAB(address valAddr, uint48 timestamp) external view returns (uint256) {
-    return _getStorageV1().validatorTotal[valAddr].findTWAB(timestamp);
+    LibCheckpoint.TraceTWAB storage trace = _getStorageV1().validatorTotal[valAddr];
+    LibCheckpoint.TWABCheckpoint memory twab = trace.upperLookupRecent(timestamp);
+    return twab.amount * (timestamp - twab.lastUpdate) + twab.twab;
   }
 
   /// @inheritdoc IValidatorStakingHub
   function validatorStakerTotal(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
-    return _getStorageV1().validatorStakerTotal[valAddr][staker].findAmount(timestamp);
+    LibCheckpoint.TraceTWAB storage trace = _getStorageV1().validatorStakerTotal[valAddr][staker];
+    return trace.upperLookupRecent(timestamp).amount;
   }
 
   /// @inheritdoc IValidatorStakingHub
   function validatorStakerTotalTWAB(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
-    return _getStorageV1().validatorStakerTotal[valAddr][staker].findTWAB(timestamp);
+    LibCheckpoint.TraceTWAB storage trace = _getStorageV1().validatorStakerTotal[valAddr][staker];
+    LibCheckpoint.TWABCheckpoint memory twab = trace.upperLookupRecent(timestamp);
+    return twab.amount * (timestamp - twab.lastUpdate) + twab.twab;
   }
 
   /// @inheritdoc IValidatorStakingHub
