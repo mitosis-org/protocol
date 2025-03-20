@@ -65,7 +65,7 @@ contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
     require(recipient == _msgSender(), ValidatorStakingGovMITO__NonTransferable());
 
     // mint the voting units
-    _moveDelegateVotes(delegates(address(0)), delegates(recipient), amount);
+    _moveDelegateVotes(address(0), delegates(recipient), amount);
 
     return super._stake($, valAddr, recipient, amount);
   }
@@ -85,7 +85,7 @@ contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
     uint256 claimed = super._claimUnstake($, valAddr, receiver);
 
     // burn the voting units
-    _moveDelegateVotes(delegates(receiver), delegates(address(0)), claimed);
+    _moveDelegateVotes(delegates(receiver), address(0), claimed);
 
     return claimed;
   }
