@@ -41,31 +41,45 @@ contract MockContract {
   }
 
   /// @notice Sets a return value for a function call
-  /// @param sig The function selector
   /// @param data The calldata for the function call
   /// @param revert_ Whether the function call should revert
   /// @param returnData The return data to be used if the call does not revert
-  function setRet(bytes4 sig, bytes memory data, bool revert_, bytes memory returnData) external {
-    rets[abi.encodePacked(sig, data)] = Ret({ revert_: revert_, data: returnData });
+  function setRet(bytes calldata data, bool revert_, bytes calldata returnData) external {
+    rets[data] = Ret({ revert_: revert_, data: returnData });
+  }
+
+  /// @notice Sets whether a function call is mutative
+  /// @param sig The function selector
+  function setCall(bytes4 sig) external {
+    isCall[sig] = true;
   }
 
   /// @notice Sets whether a function call is static
   /// @param sig The function selector
-  /// @param isStatic Whether the function call is static
-  function setStatic(bytes4 sig, bool isStatic) external {
-    isCall[sig] = !isStatic;
+  function setStatic(bytes4 sig) external {
+    isCall[sig] = false;
   }
 
   function lastCallLog(bytes4 sig) external view returns (Log memory) {
     return _lastCallLog(sig);
   }
 
-  function assertLastCall(bytes4 sig, bytes memory args) external view {
-    _assertLastCall(sig, args, 0);
+  function assertCall(bytes calldata args, uint256 offset) external view {
+    bytes4 sig = bytes4(args[0:4]);
+    _assertCall(sig, args[4:], 0, callLogs[sig][callLogs[sig].length - 1 - offset]);
   }
 
-  function assertLastCall(bytes4 sig, bytes memory args, uint256 value) external view {
-    _assertLastCall(sig, args, value);
+  function assertCall(bytes calldata args, uint256 offset, uint256 value) external view {
+    bytes4 sig = bytes4(args[0:4]);
+    _assertCall(sig, args[4:], value, callLogs[sig][callLogs[sig].length - 1 - offset]);
+  }
+
+  function assertLastCall(bytes calldata args) external view {
+    _assertLastCall(bytes4(args[0:4]), args[4:], 0);
+  }
+
+  function assertLastCall(bytes calldata args, uint256 value) external view {
+    _assertLastCall(bytes4(args[0:4]), args[4:], value);
   }
 
   function _lastCallLog(bytes4 sig) internal view returns (Log memory) {
@@ -73,9 +87,14 @@ contract MockContract {
   }
 
   function _assertLastCall(bytes4 sig, bytes memory args, uint256 value) internal view {
-    Log memory log = _lastCallLog(sig);
+    require(callLogs[sig].length > 0, 'no calls');
+    _assertCall(sig, args, value, _lastCallLog(sig));
+  }
+
+  function _assertCall(bytes4 sig, bytes memory args, uint256 value, Log memory log) internal view {
+    require(callLogs[sig].length > 0, 'no calls');
     require(log.sig == sig, 'sig mismatch');
-    require(keccak256(log.args) == keccak256(args), 'args mismatch');
     require(log.value == value, 'value mismatch');
+    require(keccak256(log.args) == keccak256(args), 'args mismatch');
   }
 }

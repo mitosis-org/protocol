@@ -24,7 +24,7 @@ interface IValidatorContributionFeed {
 
   struct InitReportRequest {
     uint128 totalWeight;
-    uint128 numOfValidators;
+    uint16 numOfValidators;
   }
 
   struct Summary {
@@ -35,12 +35,13 @@ interface IValidatorContributionFeed {
   event ReportInitialized(uint256 epoch, uint128 totalWeight, uint128 numOfValidators);
   event WeightsPushed(uint256 epoch, uint128 totalWeight, uint128 numOfValidators);
   event ReportFinalized(uint256 epoch);
+  event ReportRevoked(uint256 epoch);
 
   error IValidatorContributionFeed__InvalidReportStatus();
   error IValidatorContributionFeed__InvalidWeightAddress();
   error IValidatorContributionFeed__InvalidTotalWeight();
   error IValidatorContributionFeed__InvalidValidatorCount();
-  error IValidatorContributionFeed__EpochNotFinalized();
+  error IValidatorContributionFeed__ReportNotReady();
 
   function epochFeeder() external view returns (IEpochFeeder);
 
@@ -59,4 +60,6 @@ interface IValidatorContributionFeed {
   function pushValidatorWeights(ValidatorWeight[] calldata weights) external;
 
   function finalizeReport() external;
+
+  function revokeReport() external;
 }

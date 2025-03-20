@@ -42,8 +42,8 @@ contract ValidatorManagerStorageV1 {
   struct Validator {
     address valAddr;
     address operator;
-    address withdrawalRecipient;
     address rewardManager;
+    address withdrawalRecipient;
     bytes pubKey;
     ValidatorRewardConfig rewardConfig;
     // TBD: Metadata format
@@ -224,7 +224,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function withdrawCollateral(address valAddr, uint256 amount) external {
+  function withdrawCollateral(address valAddr, uint256 amount) external payable {
     require(amount > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
@@ -245,7 +245,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function unjailValidator(address valAddr) external {
+  function unjailValidator(address valAddr) external payable {
     StorageV1 storage $ = _getStorageV1();
 
     _burnFee($);
@@ -456,7 +456,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   function _burnFee(StorageV1 storage $) internal returns (uint256 netMsgValue) {
     uint256 fee_ = $.fee;
-    require(msg.value >= fee_, IValidatorManager__InsufficientFee(msg.value));
+    require(msg.value >= fee_, IValidatorManager__InsufficientFee());
 
     if (fee_ > 0) {
       payable(address(0)).transfer(fee_);

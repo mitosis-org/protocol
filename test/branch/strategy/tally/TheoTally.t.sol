@@ -18,15 +18,13 @@ contract TheoTallyTest is Toolkit {
     _theoDepositVault = new MockContract();
     _theoTally = new TheoTally(ITheoDepositVault(address(_theoDepositVault)));
 
-    _theoDepositVault.setRet(ITheoDepositVault.decimals.selector, '', false, abi.encode(18));
+    _mockDecimals(18);
   }
 
   function test_totalBalance() public {
-    _theoDepositVault.setRet(ITheoDepositVault.round.selector, '', false, abi.encode(10));
-    _theoDepositVault.setRet(
-      ITheoDepositVault.shareBalances.selector, abi.encode(_user), false, abi.encode(80 ether, 20 ether)
-    );
-    _theoDepositVault.setRet(ITheoDepositVault.pricePerShare.selector, '', false, abi.encode(1 ether));
+    _mockRound(10);
+    _mockShareBalances(_user, 80 ether, 20 ether);
+    _mockPricePerShare(1 ether);
 
     vm.prank(_user);
     uint256 totalBalance = _theoTally.totalBalance('');
@@ -35,89 +33,69 @@ contract TheoTallyTest is Toolkit {
   }
 
   function test_totalBalance_per_price() public {
-    _theoDepositVault.setRet(ITheoDepositVault.round.selector, '', false, abi.encode(10));
-    _theoDepositVault.setRet(
-      ITheoDepositVault.shareBalances.selector, abi.encode(_user), false, abi.encode(80 ether, 20 ether)
-    );
+    _mockRound(10);
+    _mockShareBalances(_user, 80 ether, 20 ether);
 
-    _theoDepositVault.setRet(ITheoDepositVault.pricePerShare.selector, '', false, abi.encode(1 ether));
+    _mockPricePerShare(1 ether);
 
     vm.prank(_user);
     assertEq(_theoTally.totalBalance(''), 100 ether);
 
-    _theoDepositVault.setRet(ITheoDepositVault.pricePerShare.selector, '', false, abi.encode(1.5 ether));
+    _mockPricePerShare(1.5 ether);
 
     vm.prank(_user);
     assertEq(_theoTally.totalBalance(''), 150 ether);
 
-    _theoDepositVault.setRet(ITheoDepositVault.pricePerShare.selector, '', false, abi.encode(0.5 ether));
+    _mockPricePerShare(0.5 ether);
 
     vm.prank(_user);
     assertEq(_theoTally.totalBalance(''), 50 ether);
   }
 
   function test_withdrawableBalance() public {
-    _theoDepositVault.setRet(ITheoDepositVault.round.selector, '', false, abi.encode(10));
-    _theoDepositVault.setRet(
-      ITheoDepositVault.shareBalances.selector, abi.encode(_user), false, abi.encode(80 ether, 20 ether)
-    );
-    _theoDepositVault.setRet(ITheoDepositVault.pricePerShare.selector, '', false, abi.encode(1 ether));
+    _mockRound(10);
+    _mockShareBalances(_user, 80 ether, 20 ether);
+    _mockPricePerShare(1 ether);
 
     vm.prank(_user);
     assertEq(_theoTally.withdrawableBalance(''), 20 ether);
 
-    _theoDepositVault.setRet(ITheoDepositVault.pricePerShare.selector, '', false, abi.encode(1.5 ether));
+    _mockPricePerShare(1.5 ether);
 
     vm.prank(_user);
     assertEq(_theoTally.withdrawableBalance(''), 30 ether);
 
-    _theoDepositVault.setRet(ITheoDepositVault.pricePerShare.selector, '', false, abi.encode(0.5 ether));
+    _mockPricePerShare(0.5 ether);
 
     vm.prank(_user);
     assertEq(_theoTally.withdrawableBalance(''), 10 ether);
   }
 
   function test_pendingWithdrawBalance() public {
-    _theoDepositVault.setRet(ITheoDepositVault.round.selector, '', false, abi.encode(10));
-    _theoDepositVault.setRet(ITheoDepositVault.pricePerShare.selector, '', false, abi.encode(1 ether));
-
-    _theoDepositVault.setRet(
-      ITheoDepositVault.withdrawals.selector,
-      abi.encode(_user),
-      false,
-      abi.encode(ITheoDepositVault.Withdrawal({ round: 10, shares: 100 ether }))
-    );
+    _mockRound(10);
+    _mockPricePerShare(1 ether);
+    _mockWithdrawal(_user, 10, 100 ether);
 
     vm.prank(_user);
     assertEq(_theoTally.pendingWithdrawBalance(''), 100 ether);
   }
 
   function test_pendingWithdrawBalance_past_round() public {
-    _theoDepositVault.setRet(ITheoDepositVault.round.selector, '', false, abi.encode(10));
+    _mockRound(10);
 
     // round 10: 1 ether (current)
     // round 9: 0.5 ether
     // round 8 : 0.1 ether
-    _theoDepositVault.setRet(ITheoDepositVault.pricePerShare.selector, '', false, abi.encode(1 ether));
-    _theoDepositVault.setRet(ITheoDepositVault.roundPricePerShare.selector, abi.encode(9), false, abi.encode(0.5 ether));
-    _theoDepositVault.setRet(ITheoDepositVault.roundPricePerShare.selector, abi.encode(8), false, abi.encode(0.1 ether));
+    _mockPricePerShare(1 ether);
+    _mockRoundPricePerShare(9, 0.5 ether);
+    _mockRoundPricePerShare(8, 0.1 ether);
 
-    _theoDepositVault.setRet(
-      ITheoDepositVault.withdrawals.selector,
-      abi.encode(_user),
-      false,
-      abi.encode(ITheoDepositVault.Withdrawal({ round: 9, shares: 100 ether }))
-    );
+    _mockWithdrawal(_user, 9, 100 ether);
 
     vm.prank(_user);
     assertEq(_theoTally.pendingWithdrawBalance(''), 50 ether);
 
-    _theoDepositVault.setRet(
-      ITheoDepositVault.withdrawals.selector,
-      abi.encode(_user),
-      false,
-      abi.encode(ITheoDepositVault.Withdrawal({ round: 8, shares: 100 ether }))
-    );
+    _mockWithdrawal(_user, 8, 100 ether);
 
     vm.prank(_user);
     assertEq(_theoTally.pendingWithdrawBalance(''), 10 ether);
@@ -125,43 +103,33 @@ contract TheoTallyTest is Toolkit {
     // round 10: 1 ether (current)
     // round 9: 1.5 ether
     // round 8 : 2 ether
-    _theoDepositVault.setRet(ITheoDepositVault.roundPricePerShare.selector, abi.encode(9), false, abi.encode(1.5 ether));
-    _theoDepositVault.setRet(ITheoDepositVault.roundPricePerShare.selector, abi.encode(8), false, abi.encode(2 ether));
+    _mockRoundPricePerShare(9, 1.5 ether);
+    _mockRoundPricePerShare(8, 2 ether);
 
-    _theoDepositVault.setRet(
-      ITheoDepositVault.withdrawals.selector,
-      abi.encode(_user),
-      false,
-      abi.encode(ITheoDepositVault.Withdrawal({ round: 9, shares: 100 ether }))
-    );
+    _mockWithdrawal(_user, 9, 100 ether);
 
     vm.prank(_user);
     assertEq(_theoTally.pendingWithdrawBalance(''), 150 ether);
 
-    _theoDepositVault.setRet(
-      ITheoDepositVault.withdrawals.selector,
-      abi.encode(_user),
-      false,
-      abi.encode(ITheoDepositVault.Withdrawal({ round: 8, shares: 100 ether }))
-    );
+    _mockWithdrawal(_user, 8, 100 ether);
 
     vm.prank(_user);
     assertEq(_theoTally.pendingWithdrawBalance(''), 200 ether);
   }
 
-  function test_protocolAddress() public {
+  function test_protocolAddress() public view {
     assertEq(_theoTally.protocolAddress(), address(_theoDepositVault));
   }
 
-  function test_previewDeposit() public {
+  function test_previewDeposit() public view {
     assertEq(_theoTally.previewDeposit(100 ether, ''), 100 ether);
   }
 
-  function test_previewWithdraw() public {
+  function test_previewWithdraw() public view {
     assertEq(_theoTally.previewWithdraw(100 ether, ''), 0);
   }
 
-  function test_pendingDepositBalance() public {
+  function test_pendingDepositBalance() public view {
     assertEq(_theoTally.pendingDepositBalance(''), 0);
   }
 
@@ -202,4 +170,34 @@ contract TheoTallyTest is Toolkit {
 
   //     vm.stopPrank();
   //   }
+
+  function _mockDecimals(uint8 decimals) internal {
+    _theoDepositVault.setRet(abi.encodeCall(ITheoDepositVault.decimals, ()), false, abi.encode(decimals));
+  }
+
+  function _mockRound(uint256 round) internal {
+    _theoDepositVault.setRet(abi.encodeCall(ITheoDepositVault.round, ()), false, abi.encode(round));
+  }
+
+  function _mockShareBalances(address user, uint256 heldByAccount, uint256 heldByVault) internal {
+    _theoDepositVault.setRet(
+      abi.encodeCall(ITheoDepositVault.shareBalances, (user)), false, abi.encode(heldByAccount, heldByVault)
+    );
+  }
+
+  function _mockPricePerShare(uint256 price) internal {
+    _theoDepositVault.setRet(abi.encodeCall(ITheoDepositVault.pricePerShare, ()), false, abi.encode(price));
+  }
+
+  function _mockRoundPricePerShare(uint256 round, uint256 price) internal {
+    _theoDepositVault.setRet(abi.encodeCall(ITheoDepositVault.roundPricePerShare, (round)), false, abi.encode(price));
+  }
+
+  function _mockWithdrawal(address user, uint256 round, uint256 shares) internal {
+    _theoDepositVault.setRet(
+      abi.encodeCall(ITheoDepositVault.withdrawals, (user)),
+      false,
+      abi.encode(ITheoDepositVault.Withdrawal({ round: uint16(round), shares: uint128(shares) }))
+    );
+  }
 }

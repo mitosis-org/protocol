@@ -20,8 +20,8 @@ contract GovMITOEmissionStorageV1 {
 
   struct ValidatorRewardEmission {
     uint256 rps;
-    uint160 deductionRate; // 10000 = 100%
-    uint48 deductionPeriod;
+    uint160 rateMultiplier; // 10000 = 100%
+    uint48 renewalPeriod;
     uint48 timestamp;
   }
 
@@ -55,7 +55,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
   using SafeERC20 for IGovMITO;
   using SafeCast for uint256;
 
-  uint256 public constant DEDUCTION_RATE_DENOMINATOR = 10000;
+  uint256 public constant RATE_DENOMINATOR = 10000;
 
   IGovMITO private immutable _govMITO;
   IEpochFeeder private immutable _epochFeeder;
@@ -78,7 +78,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
 
     StorageV1 storage $ = _getStorageV1();
 
-    _configureValidatorRewardEmission($, config.rps, config.deductionRate, config.deductionPeriod, config.startsFrom);
+    _configureValidatorRewardEmission($, config.rps, config.rateMultiplier, config.renewalPeriod, config.startsFrom);
     _setValidatorRewardRecipient($, config.recipient);
 
     $.validatorReward.total = config.total;
@@ -121,27 +121,30 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
   /// @inheritdoc IGovMITOEmission
   function validatorRewardEmissionsByIndex(uint256 index) external view returns (uint256, uint160, uint48) {
     ValidatorRewardEmission memory emission = _getStorageV1().validatorReward.emissions[index];
-    return (emission.rps, emission.deductionRate, emission.deductionPeriod);
+    return (emission.rps, emission.rateMultiplier, emission.renewalPeriod);
   }
 
   /// @inheritdoc IGovMITOEmission
   function validatorRewardEmissionsByTime(uint48 timestamp) external view returns (uint256, uint160, uint48) {
-    ValidatorRewardEmission memory emission = _lowerLookup(_getStorageV1().validatorReward.emissions, timestamp);
+    (uint256 index, bool found) = _lowerLookup(_getStorageV1().validatorReward.emissions, timestamp);
+    require(found, StdError.InvalidParameter('emission.timestamp'));
+
+    ValidatorRewardEmission memory emission = _getStorageV1().validatorReward.emissions[index];
 
     uint256 rps = emission.rps;
-    uint160 deductionRate = emission.deductionRate;
-    uint48 deductionPeriod = emission.deductionPeriod;
+    uint160 rateMultiplier = emission.rateMultiplier;
+    uint48 renewalPeriod = emission.renewalPeriod;
 
     uint48 lastDeducted = emission.timestamp;
     uint48 endTime = Time.timestamp();
 
     while (lastDeducted < endTime) {
-      uint48 nextDeduction = lastDeducted + deductionPeriod;
-      rps = Math.mulDiv(rps, DEDUCTION_RATE_DENOMINATOR - deductionRate, DEDUCTION_RATE_DENOMINATOR);
+      uint48 nextDeduction = lastDeducted + renewalPeriod;
+      rps = Math.mulDiv(rps, rateMultiplier, RATE_DENOMINATOR);
       lastDeducted = nextDeduction;
     }
 
-    return (rps, deductionRate, deductionPeriod);
+    return (rps, rateMultiplier, renewalPeriod);
   }
 
   /// @inheritdoc IGovMITOEmission
@@ -164,7 +167,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
   }
 
   /// @inheritdoc IGovMITOEmission
-  function addValidatorRewardEmission() external payable onlyOwner {
+  function addValidatorRewardEmission() external payable {
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
 
     StorageV1 storage $ = _getStorageV1();
@@ -176,11 +179,11 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
   }
 
   /// @inheritdoc IGovMITOEmission
-  function configureValidatorRewardEmission(uint256 rps, uint160 deductionRate, uint48 deductionPeriod)
+  function configureValidatorRewardEmission(uint256 rps, uint160 rateMultiplier, uint48 renewalPeriod, uint48 applyFrom)
     external
     onlyOwner
   {
-    _configureValidatorRewardEmission(_getStorageV1(), rps, deductionRate, deductionPeriod, Time.timestamp());
+    _configureValidatorRewardEmission(_getStorageV1(), rps, rateMultiplier, renewalPeriod, applyFrom);
   }
 
   /// @inheritdoc IGovMITOEmission
@@ -191,27 +194,28 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
   function _configureValidatorRewardEmission(
     StorageV1 storage $,
     uint256 rps,
-    uint160 deductionRate,
-    uint48 deductionPeriod,
+    uint160 rateMultiplier,
+    uint48 renewalPeriod,
     uint48 timestamp
   ) internal {
     uint48 now_ = Time.timestamp();
 
-    require(rps > 0, StdError.InvalidParameter('rps'));
-    require(deductionRate <= DEDUCTION_RATE_DENOMINATOR, StdError.InvalidParameter('deductionRate'));
-    require(deductionPeriod > 0, StdError.InvalidParameter('deductionPeriod'));
     require(now_ <= timestamp, StdError.InvalidParameter('timestamp'));
+    require(
+      $.validatorReward.emissions.length == 0 || timestamp > _latest($.validatorReward.emissions).timestamp,
+      StdError.InvalidParameter('timestamp')
+    );
 
     $.validatorReward.emissions.push(
       ValidatorRewardEmission({
         rps: rps,
-        deductionRate: deductionRate,
-        deductionPeriod: deductionPeriod,
+        rateMultiplier: rateMultiplier,
+        renewalPeriod: renewalPeriod,
         timestamp: timestamp
       })
     );
 
-    emit ValidatorRewardEmissionConfigured(rps, deductionRate, deductionPeriod, timestamp);
+    emit ValidatorRewardEmissionConfigured(rps, rateMultiplier, renewalPeriod, timestamp);
   }
 
   function _setValidatorRewardRecipient(StorageV1 storage $, address recipient) internal {
@@ -222,20 +226,23 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
 
   function _calcRewardForPeriod(
     uint256 rps,
-    uint256 deductionRate,
-    uint48 deductionPeriod,
+    uint256 rateMultiplier,
+    uint48 renewalPeriod,
     uint48 lastDeducted,
     uint48 lastUpdated,
     uint48 endTime
   ) internal pure returns (uint256 reward) {
+    if (rps == 0) return 0;
+    if (renewalPeriod == 0) return rps * (endTime - lastUpdated);
+
     while (lastDeducted < endTime) {
-      uint48 nextDeduction = lastDeducted + deductionPeriod;
+      uint48 nextDeduction = lastDeducted + renewalPeriod;
       if (lastUpdated < nextDeduction) {
         uint48 rewardEndTime = Math.min(endTime, nextDeduction).toUint48();
         reward += rps * (rewardEndTime - lastUpdated);
         lastUpdated = rewardEndTime;
       }
-      rps = Math.mulDiv(rps, DEDUCTION_RATE_DENOMINATOR - deductionRate, DEDUCTION_RATE_DENOMINATOR);
+      rps = Math.mulDiv(rps, rateMultiplier, RATE_DENOMINATOR);
       lastDeducted = nextDeduction;
     }
   }
@@ -244,38 +251,43 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     require(0 <= epoch, StdError.InvalidParameter('epoch'));
 
     uint48 epochStartTime = _epochFeeder.timeAt(epoch);
-    uint48 epochEndTime = _epochFeeder.timeAt(epoch + 1) - 1;
+    uint48 epochEndTime = _epochFeeder.timeAt(epoch + 1);
 
-    ValidatorReward storage vr = $.validatorReward;
-    ValidatorRewardEmission memory startLog = _lowerLookup(vr.emissions, epochStartTime);
-    ValidatorRewardEmission memory endLog = _lowerLookup(vr.emissions, epochEndTime);
-    if (endLog.timestamp == 0) return 0;
+    ValidatorRewardEmission[] storage emissions = $.validatorReward.emissions;
 
-    // Determine which log to use based on timestamps
-    ValidatorRewardEmission memory activeLog = startLog.timestamp == 0 ? endLog : startLog;
-    uint48 startTime = startLog.timestamp == 0 ? endLog.timestamp : epochStartTime;
+    uint256 emissionLen = emissions.length;
+    (uint256 emissionIndex, bool found) = _lowerLookup(emissions, epochStartTime);
+    ValidatorRewardEmission memory activeLog = emissions[found ? emissionIndex : 0];
+    if (epochEndTime < activeLog.timestamp) return 0; // no hope
 
-    // Calculate initial reward period
-    uint256 reward = _calcRewardForPeriod(
-      activeLog.rps,
-      activeLog.deductionRate,
-      activeLog.deductionPeriod,
+    uint48 startTime = activeLog.timestamp < epochStartTime ? epochStartTime : activeLog.timestamp;
+    uint256 reward = 0;
+
+    for (; emissionIndex < emissionLen - 1; emissionIndex++) {
+      ValidatorRewardEmission memory nextLog = emissions[emissionIndex + 1];
+      if (nextLog.timestamp >= epochEndTime) break;
+
+      reward += _calcRewardForPeriod(
+        activeLog.rps,
+        activeLog.rateMultiplier,
+        activeLog.renewalPeriod,
+        activeLog.timestamp,
+        startTime,
+        nextLog.timestamp
+      );
+
+      startTime = nextLog.timestamp;
+      activeLog = nextLog;
+    }
+
+    reward += _calcRewardForPeriod(
+      activeLog.rps, //
+      activeLog.rateMultiplier,
+      activeLog.renewalPeriod,
       activeLog.timestamp,
       startTime,
-      startLog.timestamp == endLog.timestamp ? epochEndTime : endLog.timestamp - 1
+      epochEndTime
     );
-
-    // Add second period if logs are different
-    if (startLog.timestamp != endLog.timestamp && startLog.timestamp != 0) {
-      reward += _calcRewardForPeriod(
-        endLog.rps, //
-        endLog.deductionRate,
-        endLog.deductionPeriod,
-        endLog.timestamp,
-        endLog.timestamp,
-        epochEndTime
-      );
-    }
 
     return reward;
   }
@@ -284,34 +296,24 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     return self[self.length - 1];
   }
 
-  function _lowerLookup(ValidatorRewardEmission[] storage self, uint48 timestamp)
-    internal
-    view
-    returns (ValidatorRewardEmission memory)
-  {
-    uint256 len = self.length;
-    uint256 pos = _lowerBinaryLookup(self, timestamp, 0, len);
-    if (pos == len) {
-      ValidatorRewardEmission memory empty;
-      return empty;
-    }
-    return self[pos];
-  }
+  function _lowerLookup(ValidatorRewardEmission[] storage self, uint48 key) private view returns (uint256, bool) {
+    if (key < self[0].timestamp) return (0, false);
 
-  function _lowerBinaryLookup(ValidatorRewardEmission[] storage self, uint48 key, uint256 low, uint256 high)
-    private
-    view
-    returns (uint256)
-  {
-    while (low < high) {
-      uint256 mid = Math.average(low, high);
-      if (self[mid].timestamp < key) {
-        low = mid + 1;
+    uint256 left = 0;
+    uint256 right = self.length - 1;
+    uint256 target = 0;
+
+    while (left <= right) {
+      uint256 mid = left + (right - left) / 2;
+      if (self[mid].timestamp <= key) {
+        target = mid;
+        left = mid + 1;
       } else {
-        high = mid;
+        right = mid - 1;
       }
     }
-    return high;
+
+    return (target, true);
   }
 
   // ================== UUPS ================== //

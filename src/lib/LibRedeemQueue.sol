@@ -150,7 +150,7 @@ library LibRedeemQueue {
     Index storage idx = index(q, recipient);
 
     uint256 offset = idx.offset;
-    (uint256 queueOffset,) = _searchQueueOffset(q, accumulated, timestamp);
+    (uint256 queueOffset,) = _searchQueueOffset(q, accumulated, timestamp, q.redeemPeriod);
     (uint256 newOffset,) = _searchIndexOffset(idx, queueOffset);
 
     uint256 count = 0;
@@ -175,7 +175,7 @@ library LibRedeemQueue {
     view
     returns (uint256 offset, bool found)
   {
-    return _searchQueueOffset(q, accumulated, timestamp);
+    return _searchQueueOffset(q, accumulated, timestamp, q.redeemPeriod);
   }
 
   function searchIndexOffset(Queue storage q, address recipient, uint256 accumulated, uint256 timestamp)
@@ -183,7 +183,17 @@ library LibRedeemQueue {
     view
     returns (uint256 offset, bool found)
   {
-    (uint256 queueOffset,) = _searchQueueOffset(q, accumulated, timestamp);
+    return searchIndexOffset(q, recipient, accumulated, timestamp, q.redeemPeriod);
+  }
+
+  function searchIndexOffset(
+    Queue storage q,
+    address recipient,
+    uint256 accumulated,
+    uint256 timestamp,
+    uint256 redeemPeriod
+  ) internal view returns (uint256 offset, bool found) {
+    (uint256 queueOffset,) = _searchQueueOffset(q, accumulated, timestamp, redeemPeriod);
     return _searchIndexOffset(q.indexes[recipient], queueOffset);
   }
 
@@ -238,7 +248,7 @@ library LibRedeemQueue {
     internal
     returns (uint256 totalClaimed_)
   {
-    _updateQueueOffset(q, totalReservedAmount(q), timestamp);
+    _updateQueueOffset(q, totalReservedAmount(q), timestamp, q.redeemPeriod);
 
     Index storage idx = q.indexes[recipient];
 
@@ -282,7 +292,7 @@ library LibRedeemQueue {
 
     q.reserveHistory.push(log);
 
-    _updateQueueOffset(q, log.accumulated, timestamp);
+    _updateQueueOffset(q, log.accumulated, timestamp, q.redeemPeriod);
 
     emit Reserved(executor, amount, historyIndex);
 
@@ -290,7 +300,7 @@ library LibRedeemQueue {
   }
 
   function update(Queue storage q, uint48 timestamp) internal returns (uint256 offset, bool updated) {
-    return _updateQueueOffset(q, totalRequestAmount(q), timestamp);
+    return _updateQueueOffset(q, totalRequestAmount(q), timestamp, q.redeemPeriod);
   }
 
   function _reservedAt(Queue storage q, Request memory req)
@@ -306,11 +316,11 @@ library LibRedeemQueue {
     return (log.reservedAt, true);
   }
 
-  function _updateQueueOffset(Queue storage q, uint256 accumulated, uint256 timestamp)
+  function _updateQueueOffset(Queue storage q, uint256 accumulated, uint256 timestamp, uint256 redeemPeriod)
     private
     returns (uint256 offset, bool updated)
   {
-    (offset, updated) = _searchQueueOffset(q, accumulated, timestamp);
+    (offset, updated) = _searchQueueOffset(q, accumulated, timestamp, redeemPeriod);
 
     // assign
     if (updated) {
@@ -334,7 +344,7 @@ library LibRedeemQueue {
     return (offset, updated);
   }
 
-  function _searchQueueOffset(Queue storage q, uint256 accumulated, uint256 timestamp)
+  function _searchQueueOffset(Queue storage q, uint256 accumulated, uint256 timestamp, uint256 redeemPeriod)
     private
     view
     returns (uint256 offset, bool found)
@@ -345,7 +355,6 @@ library LibRedeemQueue {
     uint256 high = q.size;
     if (low == high) return (low, false);
 
-    uint256 redeemPeriod = q.redeemPeriod;
     while (low < high) {
       uint256 mid = Math.average(low, high);
       Request memory req = q.data[mid];
