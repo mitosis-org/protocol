@@ -47,6 +47,25 @@ interface IGovMITO is IERC20, IERC5805 {
   event RedeemPeriodSet(uint256 redeemPeriod);
 
   /**
+   * @notice Returns the address of the minter.
+   * @return The address of the minter
+   */
+  function minter() external view returns (address);
+
+  /**
+   * @notice Checks if an address is a whitelisted sender.
+   * @param sender The address to check
+   * @return Whether the address is a whitelisted sender
+   */
+  function isWhitelistedSender(address sender) external view returns (bool);
+
+  /**
+   * @notice Returns the redeem period.
+   * @return The redeem period
+   */
+  function redeemPeriod() external view returns (uint256);
+
+  /**
    * @notice Mint tokens to an address with corresponding MITO.
    * @dev Only the minter can call this function.
    * @param to The address to mint tokens to
@@ -69,4 +88,23 @@ interface IGovMITO is IERC20, IERC5805 {
    * @return claimed The amount of assets claimed
    */
   function claimRedeem(address receiver) external returns (uint256 claimed);
+
+  /**
+   * @notice Set the minter.
+   * @param minter The address of the new minter
+   */
+  function setMinter(address minter) external;
+
+  /**
+   * @notice Set the whitelist status for a sender.
+   * @param sender The address of the sender
+   * @param isWhitelisted Whether the sender is whitelisted
+   */
+  function setWhitelistedSender(address sender, bool isWhitelisted) external;
+
+  /**
+   * @notice Set the redeem period.
+   * @param redeemPeriod The new redeem period
+   */
+  function setRedeemPeriod(uint256 redeemPeriod) external;
 }
