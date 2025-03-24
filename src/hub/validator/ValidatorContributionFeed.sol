@@ -232,7 +232,7 @@ contract ValidatorContributionFeed is
 
     if ($.rewards[epoch].weights.length > 0) {
       reward.status = ReportStatus.REVOKING;
-      emit ReportRevoing(epoch);
+      emit ReportRevoking(epoch);
       return;
     }
 

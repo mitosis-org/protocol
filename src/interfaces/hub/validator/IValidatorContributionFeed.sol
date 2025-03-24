@@ -36,7 +36,7 @@ interface IValidatorContributionFeed {
   event ReportInitialized(uint256 epoch, uint128 totalWeight, uint128 numOfValidators);
   event WeightsPushed(uint256 epoch, uint128 totalWeight, uint128 numOfValidators);
   event ReportFinalized(uint256 epoch);
-  event ReportRevoing(uint256 epoch);
+  event ReportRevoking(uint256 epoch);
   event ReportRevoked(uint256 epoch);
 
   error IValidatorContributionFeed__InvalidReportStatus();
