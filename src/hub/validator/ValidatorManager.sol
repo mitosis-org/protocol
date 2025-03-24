@@ -4,11 +4,9 @@ pragma solidity ^0.8.28;
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
-import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { ReentrancyGuardTransient } from '@oz-v5/utils/ReentrancyGuardTransient.sol';
 import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
-import { EnumerableMap } from '@oz-v5/utils/structs/EnumerableMap.sol';
-import { EnumerableSet } from '@oz-v5/utils/structs/EnumerableSet.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { ECDSA } from '@solady/utils/ECDSA.sol';
@@ -22,6 +20,8 @@ import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { LibSecp256k1 } from '../../lib/LibSecp256k1.sol';
 import { StdError } from '../../lib/StdError.sol';
 
+/// @notice Storage layout for ValidatorManager
+/// @dev Uses ERC7201 for storage slot management
 contract ValidatorManagerStorageV1 {
   using ERC7201Utils for string;
 
@@ -78,10 +78,14 @@ contract ValidatorManagerStorageV1 {
   }
 }
 
-contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownable2StepUpgradeable, UUPSUpgradeable {
+contract ValidatorManager is
+  IValidatorManager,
+  ValidatorManagerStorageV1,
+  Ownable2StepUpgradeable,
+  ReentrancyGuardTransient,
+  UUPSUpgradeable
+{
   using SafeCast for uint256;
-  using EnumerableMap for EnumerableMap.AddressToUintMap;
-  using EnumerableSet for EnumerableSet.AddressSet;
   using LibRedeemQueue for LibRedeemQueue.Queue;
   using LibSecp256k1 for bytes;
   using Checkpoints for Checkpoints.Trace160;
@@ -89,7 +93,8 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   IEpochFeeder private immutable _epochFeeder;
   IConsensusValidatorEntrypoint private immutable _entrypoint;
 
-  uint256 public constant MAX_COMMISSION_RATE = 10000; // 100% in bp
+  /// @notice Maximum commission rate in basis points (10000 = 100%)
+  uint256 public constant MAX_COMMISSION_RATE = 10000;
 
   constructor(IEpochFeeder epochFeeder_, IConsensusValidatorEntrypoint entrypoint_) {
     _disableInitializers();
@@ -184,8 +189,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
 
   /// @inheritdoc IValidatorManager
   function validatorInfo(address valAddr) public view returns (ValidatorInfoResponse memory) {
-    StorageV1 storage $ = _getStorageV1();
-    return _validatorInfoAt($, valAddr, _epochFeeder.epoch());
+    return _validatorInfoAt(_getStorageV1(), valAddr, _epochFeeder.epoch());
   }
 
   /// @inheritdoc IValidatorManager
@@ -194,7 +198,11 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function createValidator(bytes calldata pubKey, CreateValidatorRequest calldata request) external payable {
+  function createValidator(bytes calldata pubKey, CreateValidatorRequest calldata request)
+    external
+    payable
+    nonReentrant
+  {
     require(pubKey.length > 0, StdError.InvalidParameter('pubKey'));
 
     address valAddr = _msgSender();
@@ -211,7 +219,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function depositCollateral(address valAddr) external payable {
+  function depositCollateral(address valAddr) external payable nonReentrant {
     StorageV1 storage $ = _getStorageV1();
 
     uint256 netMsgValue = _burnFee($);
@@ -224,7 +232,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function withdrawCollateral(address valAddr, uint256 amount) external payable {
+  function withdrawCollateral(address valAddr, uint256 amount) external payable nonReentrant {
     require(amount > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
@@ -245,7 +253,7 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
   }
 
   /// @inheritdoc IValidatorManager
-  function unjailValidator(address valAddr) external payable {
+  function unjailValidator(address valAddr) external payable nonReentrant {
     StorageV1 storage $ = _getStorageV1();
 
     _burnFee($);
@@ -454,19 +462,18 @@ contract ValidatorManager is IValidatorManager, ValidatorManagerStorageV1, Ownab
     emit ValidatorCreated(valAddr, request.operator, pubKey);
   }
 
+  /// @notice Burns the fee amount of ETH
+  /// @param $ The storage pointer
+  /// @return netMsgValue The remaining ETH after fee burn
   function _burnFee(StorageV1 storage $) internal returns (uint256 netMsgValue) {
     uint256 fee_ = $.fee;
     require(msg.value >= fee_, IValidatorManager__InsufficientFee());
 
-    if (fee_ > 0) {
-      payable(address(0)).transfer(fee_);
+    if (fee_ > 0) SafeTransferLib.safeTransferETH(payable(address(0)), fee_);
+
+    unchecked {
+      return msg.value - fee_;
     }
-
-    return msg.value - fee_;
-  }
-
-  function _assertValidatorExists(StorageV1 storage $, address valAddr) internal view {
-    require($.indexByValAddr[valAddr] != 0, StdError.InvalidParameter('valAddr'));
   }
 
   function _assertValidatorNotExists(StorageV1 storage $, address valAddr) internal view {
