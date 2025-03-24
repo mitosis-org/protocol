@@ -45,7 +45,8 @@ contract MITOGovernanceVP is IVotes, OwnableUpgradeable, UUPSUpgradeable, EIP712
 
   function getVotes(address account) external view returns (uint256) {
     uint256 votes = 0;
-    for (uint256 i = 0; i < _tokens.length; i++) {
+    uint256 tokensLen = _tokens.length;
+    for (uint256 i = 0; i < tokensLen; i++) {
       votes += _tokens[i].getVotes(account);
     }
     return votes;
@@ -53,7 +54,8 @@ contract MITOGovernanceVP is IVotes, OwnableUpgradeable, UUPSUpgradeable, EIP712
 
   function getPastVotes(address account, uint256 timepoint) external view returns (uint256) {
     uint256 votes = 0;
-    for (uint256 i = 0; i < _tokens.length; i++) {
+    uint256 tokensLen = _tokens.length;
+    for (uint256 i = 0; i < tokensLen; i++) {
       votes += _tokens[i].getPastVotes(account, timepoint);
     }
     return votes;
@@ -61,7 +63,8 @@ contract MITOGovernanceVP is IVotes, OwnableUpgradeable, UUPSUpgradeable, EIP712
 
   function getPastTotalSupply(uint256 timepoint) external view returns (uint256) {
     uint256 totalSupply = 0;
-    for (uint256 i = 0; i < _tokens.length; i++) {
+    uint256 tokensLen = _tokens.length;
+    for (uint256 i = 0; i < tokensLen; i++) {
       totalSupply += _tokens[i].getPastTotalSupply(timepoint);
     }
     return totalSupply;
@@ -87,7 +90,8 @@ contract MITOGovernanceVP is IVotes, OwnableUpgradeable, UUPSUpgradeable, EIP712
   }
 
   function _delegate(address account, address delegatee) internal virtual {
-    for (uint256 i = 0; i < _tokens.length; i++) {
+    uint256 tokensLen = _tokens.length;
+    for (uint256 i = 0; i < tokensLen; i++) {
       _tokens[i].sudoDelegate(account, delegatee);
     }
   }
