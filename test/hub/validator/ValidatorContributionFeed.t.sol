@@ -50,6 +50,7 @@ contract ValidatorContributionFeedTest is Toolkit {
   function test_init() public view {
     assertEq(feed.owner(), owner);
     assertEq(address(feed.epochFeeder()), address(epochFeeder));
+    assertEq(feed.FEEDER_ROLE(), keccak256('mitosis.role.ValidatorContributionFeed.feeder'));
   }
 
   function test_report() public {
