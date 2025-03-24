@@ -37,7 +37,7 @@ abstract contract GovernorCountingBravoUpgradeable is Initializable, GovernorUpg
     mapping(uint256 proposalId => ProposalVote) _proposalVotes;
   }
 
-  string constant _GovernorCountingBravoStorageNamespace = 'mitosis.storage.GovernorCountingBravo';
+  string private constant _GovernorCountingBravoStorageNamespace = 'mitosis.storage.GovernorCountingBravo';
   bytes32 private immutable _GovernorCountingBravoStorageLocation = _GovernorCountingBravoStorageNamespace.storageSlot();
 
   function _getGovernorCountingBravoStorage() private view returns (GovernorCountingBravoStorage storage $) {
