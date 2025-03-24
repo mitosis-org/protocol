@@ -7,6 +7,9 @@ import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
+import { ReentrancyGuardTransient } from '@solady/utils/ReentrancyGuardTransient.sol';
+import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
+
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
 import { VotesUpgradeable } from '@ozu-v5/governance/utils/VotesUpgradeable.sol';
@@ -15,8 +18,6 @@ import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
 import { ERC20PermitUpgradeable } from '@ozu-v5/token/ERC20/extensions/ERC20PermitUpgradeable.sol';
 import { ERC20VotesUpgradeable } from '@ozu-v5/token/ERC20/extensions/ERC20VotesUpgradeable.sol';
 import { NoncesUpgradeable } from '@ozu-v5/utils/NoncesUpgradeable.sol';
-
-import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
 import { IGovMITO } from '../interfaces/hub/IGovMITO.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
@@ -31,7 +32,8 @@ contract GovMITO is
   ERC20VotesUpgradeable,
   Ownable2StepUpgradeable,
   UUPSUpgradeable,
-  SudoVotes
+  SudoVotes,
+  ReentrancyGuardTransient
 {
   using ERC7201Utils for string;
   using LibRedeemQueue for *;
@@ -82,6 +84,10 @@ contract GovMITO is
   }
 
   function initialize(address owner_, address minter_, uint256 redeemPeriod_) external initializer {
+    require(owner_ != address(0), StdError.ZeroAddress('owner'));
+    require(minter_ != address(0), StdError.ZeroAddress('minter'));
+    require(redeemPeriod_ > 0, StdError.InvalidParameter('redeemPeriod'));
+
     // TODO(thai): not fixed yet. could be modified before launching.
     __ERC20_init('Mitosis Governance Token', 'gMITO');
     __ERC20Permit_init('Mitosis Governance Token');
@@ -147,7 +153,7 @@ contract GovMITO is
     return reqId;
   }
 
-  function claimRedeem(address receiver) external returns (uint256 claimed) {
+  function claimRedeem(address receiver) external nonReentrant returns (uint256 claimed) {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
     $.redeemQueue.update(clock());
@@ -165,11 +171,18 @@ contract GovMITO is
   function _authorizeUpgrade(address) internal override onlyOwner { }
 
   function setMinter(address minter_) external onlyOwner {
+    require(minter_ != address(0), StdError.ZeroAddress('minter'));
     _setMinter(_getGovMITOStorage(), minter_);
   }
 
   function setWhitelistedSender(address sender, bool isWhitelisted) external onlyOwner {
+    require(sender != address(0), StdError.ZeroAddress('sender'));
     _setWhitelistedSender(_getGovMITOStorage(), sender, isWhitelisted);
+  }
+
+  function setRedeemPeriod(uint256 redeemPeriod_) external onlyOwner {
+    require(redeemPeriod_ > 0, StdError.InvalidParameter('redeemPeriod'));
+    _setRedeemPeriod(_getGovMITOStorage(), redeemPeriod_);
   }
 
   // ============================ NOTE: IERC6372 OVERRIDES ============================ //
