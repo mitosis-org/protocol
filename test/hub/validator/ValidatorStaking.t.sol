@@ -128,11 +128,11 @@ contract ValidatorStakingTest is Toolkit {
     _regVal(val1, true);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector, 1));
     erc20Vault.stake(val1, user1, 1);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector, 1));
     erc20Vault.stake(val1, user1, 999999999999999999);
 
     vm.prank(user1);
@@ -141,11 +141,11 @@ contract ValidatorStakingTest is Toolkit {
     // NativeVault
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector, 1));
     nativeVault.stake{ value: 1 }(val1, user1, 1);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector, 1));
     nativeVault.stake{ value: 999999999999999999 }(val1, user1, 999999999999999999);
 
     vm.prank(user1);
@@ -167,7 +167,7 @@ contract ValidatorStakingTest is Toolkit {
       vault.stake{ value: 0 }(val1, user1, 0);
 
       vm.prank(user1);
-      vm.expectRevert(IValidatorStaking.IValidatorStaking__NotValidator.selector);
+      vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__NotValidator.selector, val2));
       vault.stake{ value: 10 ether }(val2, user1, 10 ether);
     } else {
       vm.prank(user1);
@@ -175,7 +175,7 @@ contract ValidatorStakingTest is Toolkit {
       vault.stake(val1, user1, 0);
 
       vm.prank(user1);
-      vm.expectRevert(IValidatorStaking.IValidatorStaking__NotValidator.selector);
+      vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__NotValidator.selector, val2));
       vault.stake(val2, user1, 10 ether);
     }
 
@@ -244,11 +244,11 @@ contract ValidatorStakingTest is Toolkit {
     _stake(nativeVault, val1, user1, user1, 1 ether);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector, 1));
     erc20Vault.requestUnstake(val1, user1, 1);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector, 1));
     erc20Vault.requestUnstake(val1, user1, 999999999999999999);
 
     vm.prank(user1);
@@ -257,11 +257,11 @@ contract ValidatorStakingTest is Toolkit {
     // NativeVault
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector, 1));
     nativeVault.requestUnstake(val1, user1, 1);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector, 1));
     nativeVault.requestUnstake(val1, user1, 999999999999999999);
 
     vm.prank(user1);
@@ -280,11 +280,11 @@ contract ValidatorStakingTest is Toolkit {
     vault.requestUnstake(val1, user1, 0);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__NotValidator.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__NotValidator.selector, val2));
     vault.requestUnstake(val2, user1, 10 ether);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__NotValidator.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__NotValidator.selector, val2));
     vault.claimUnstake(val2, user1);
 
     _stake(vault, val1, user1, user1, 10 ether);
@@ -371,11 +371,11 @@ contract ValidatorStakingTest is Toolkit {
     vm.warp(block.timestamp + 1 days);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector, 1));
     erc20Vault.redelegate(val1, val2, 1);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector, 1));
     erc20Vault.redelegate(val1, val2, 999999999999999999);
 
     vm.prank(user1);
@@ -384,11 +384,11 @@ contract ValidatorStakingTest is Toolkit {
     // NativeVault
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector, 1));
     nativeVault.redelegate(val1, val2, 1);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector, 1));
     nativeVault.redelegate(val1, val2, 999999999999999999);
 
     vm.prank(user1);
@@ -403,15 +403,17 @@ contract ValidatorStakingTest is Toolkit {
     _regVal(val3, true);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__RedelegateToSameValidator.selector);
+    vm.expectRevert(
+      abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__RedelegateToSameValidator.selector, val1)
+    );
     vault.redelegate(val1, val1, 10 ether);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__NotValidator.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__NotValidator.selector, val2));
     vault.redelegate(val2, val1, 10 ether);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__NotValidator.selector);
+    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__NotValidator.selector, val2));
     vault.redelegate(val1, val2, 10 ether);
 
     _stake(vault, val1, user1, user1, 10 ether);
@@ -447,11 +449,15 @@ contract ValidatorStakingTest is Toolkit {
     assertEq(vault.validatorTotal(val3, now_), 10 ether);
 
     vm.prank(user1);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__CooldownNotPassed.selector);
+    vm.expectRevert(
+      abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__CooldownNotPassed.selector, now_ - 1, now_, 1)
+    );
     vault.redelegate(val3, val1, 10 ether);
 
     vm.prank(user2);
-    vm.expectRevert(IValidatorStaking.IValidatorStaking__CooldownNotPassed.selector);
+    vm.expectRevert(
+      abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__CooldownNotPassed.selector, now_ - 1, now_, 1)
+    );
     vault.redelegate(val1, val3, 10 ether);
 
     vm.warp(block.timestamp + 1);

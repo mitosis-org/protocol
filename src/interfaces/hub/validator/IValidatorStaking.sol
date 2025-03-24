@@ -22,10 +22,10 @@ interface IValidatorStaking {
   event UnstakeCooldownUpdated(uint48 unstakeCooldown);
   event RedelegationCooldownUpdated(uint48 redelegationCooldown);
 
-  error IValidatorStaking__NotValidator();
-  error IValidatorStaking__RedelegateToSameValidator();
-  error IValidatorStaking__CooldownNotPassed();
-  error IValidatorStaking__InsufficientMinimumAmount();
+  error IValidatorStaking__NotValidator(address valAddr);
+  error IValidatorStaking__RedelegateToSameValidator(address valAddr);
+  error IValidatorStaking__CooldownNotPassed(uint48 lastTime, uint48 currentTime, uint48 requiredCooldown);
+  error IValidatorStaking__InsufficientMinimumAmount(uint256 minAmount);
 
   // ========== VIEWS ========== //
 
