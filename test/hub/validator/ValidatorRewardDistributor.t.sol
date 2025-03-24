@@ -25,6 +25,12 @@ import { IValidatorStaking } from '../../../src/interfaces/hub/validator/IValida
 import { MockContract } from '../../util/MockContract.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
+contract MockGovMITOEmission is MockContract {
+  function requestValidatorReward(uint256, address, uint256 amount) external pure returns (uint256) {
+    return amount;
+  }
+}
+
 contract ValidatorRewardDistributorTest is Toolkit {
   using SafeCast for uint256;
   using LibString for *;
@@ -32,7 +38,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   address _owner = makeAddr('owner');
 
   MockContract _govMITO;
-  MockContract _govMITOEmission;
+  MockGovMITOEmission _govMITOEmission;
   MockContract _validatorManager;
   MockContract _epochFeed;
   MockContract _contributionFeed;
@@ -43,7 +49,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
   function setUp() public {
     _govMITO = new MockContract();
-    _govMITOEmission = new MockContract();
+    _govMITOEmission = new MockGovMITOEmission();
     _validatorManager = new MockContract();
     _epochFeed = new MockContract();
     _contributionFeed = new MockContract();
@@ -66,14 +72,22 @@ contract ValidatorRewardDistributorTest is Toolkit {
             address(_govMITOEmission)
           )
         ),
-        abi.encodeCall(ValidatorRewardDistributor.initialize, (_owner))
+        abi.encodeCall(
+          ValidatorRewardDistributor.initialize,
+          (
+            _owner,
+            32, // maxClaimEpochs
+            1000, // maxStakerBatchSize
+            1000 // maxOperatorBatchSize
+          )
+        )
       )
     );
 
     vm.prank(_owner);
     _stakingHub.addNotifier(address(this));
 
-    snapshotId = vm.snapshot();
+    snapshotId = vm.snapshotState();
   }
 
   function test_init() public view {
@@ -83,6 +97,11 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(address(_distributor.validatorStakingHub()), address(_stakingHub));
     assertEq(address(_distributor.validatorContributionFeed()), address(_contributionFeed));
     assertEq(address(_distributor.govMITOEmission()), address(_govMITOEmission));
+
+    IValidatorRewardDistributor.ClaimConfigResponse memory claimConfig = _distributor.claimConfig();
+    assertEq(claimConfig.maxClaimEpochs, 32);
+    assertEq(claimConfig.maxStakerBatchSize, 1000);
+    assertEq(claimConfig.maxOperatorBatchSize, 1000);
   }
 
   struct EpochParam {
@@ -111,7 +130,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -182,7 +201,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_by_multiple_validator() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -300,7 +319,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_by_multiple_validator_diff_weight() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -419,7 +438,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_by_multiple_stakers() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -529,7 +548,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_by_diff_collateral() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -600,7 +619,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_multiple_epoch() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](2);
     epochParams[0] = EpochParam({
@@ -682,7 +701,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_multiple_epoch_multiple_validator() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](2);
     epochParams[0] = EpochParam({
@@ -842,7 +861,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_batch_claim_rewards_by_multiple_stakers() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1017,7 +1036,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_validator_collateral_zero() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1086,7 +1105,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_validator_delegation_zero() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1153,7 +1172,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_unavailable() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1209,7 +1228,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_batch_rewards_unavailable() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1325,7 +1344,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_gt_32_epochs() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     uint256 epochCount = 35;
 
@@ -1400,7 +1419,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_approval_own() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1472,7 +1491,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_approval_delegate() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1559,7 +1578,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_approval_false() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1643,7 +1662,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_batch_claim_approval() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({

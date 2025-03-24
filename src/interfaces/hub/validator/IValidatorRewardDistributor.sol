@@ -12,6 +12,14 @@ import { IValidatorStakingHub } from './IValidatorStakingHub.sol';
 /// @notice Interface for the ValidatorRewardDistributor contract that handles distribution of validator rewards
 
 interface IValidatorRewardDistributor {
+  // Structs
+  struct ClaimConfigResponse {
+    uint8 version;
+    uint32 maxClaimEpochs;
+    uint32 maxStakerBatchSize;
+    uint32 maxOperatorBatchSize;
+  }
+
   // Events
   event StakerRewardsClaimed(
     address indexed staker,
@@ -27,11 +35,11 @@ interface IValidatorRewardDistributor {
 
   event StakerRewardClaimApprovalUpdated(address account, address valAddr, address claimer, bool approval);
   event OperatorRewardClaimApprovalUpdated(address account, address valAddr, address claimer, bool approval);
+  event ClaimConfigUpdated(uint8 version, bytes encodedConfig);
 
   // Custom errors
   error IValidatorRewardDistributor__MaxStakerBatchSizeExceeded();
   error IValidatorRewardDistributor__MaxOperatorBatchSizeExceeded();
-  error IValidatorRewardDistributor__NotValidator();
   error IValidatorRewardDistributor__ArrayLengthMismatch();
 
   // ========== VIEWS ========== //
@@ -50,6 +58,9 @@ interface IValidatorRewardDistributor {
 
   /// @notice Returns the gov MITO emission contract
   function govMITOEmission() external view returns (IGovMITOEmission);
+
+  /// @notice Returns the claim config
+  function claimConfig() external view returns (ClaimConfigResponse memory);
 
   /// @notice Checks if the claimer can claim staker rewards for the validator on behalf of the account
   function stakerClaimAllowed(address account, address valAddr, address claimer) external view returns (bool);
@@ -116,4 +127,10 @@ interface IValidatorRewardDistributor {
   /// @param valAddrs The validator addresses to claim rewards for
   /// @return amount The total amount of rewards that were claimed
   function batchClaimOperatorRewards(address[] calldata valAddrs) external returns (uint256);
+
+  /// @notice Sets the claim config
+  /// @param maxClaimEpochs The maximum number of epochs that can be claimed at once
+  /// @param maxStakerBatchSize The maximum number of stakers that can be processed in a batch operation
+  /// @param maxOperatorBatchSize The maximum number of operators that can be processed in a batch operation
+  function setClaimConfig(uint32 maxClaimEpochs, uint32 maxStakerBatchSize, uint32 maxOperatorBatchSize) external;
 }
