@@ -1,0 +1,60 @@
+name: Analyze
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  CI: true
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+
+    name: analyze
+    runs-on: arc-runner-set
+    container: node:20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Yarn Install
+        run: yarn install
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run Soldeer install
+        run: |
+          forge soldeer install
+
+      - name: Show Forge version
+        run: |
+          forge --version
+
+      - name: Run Slither
+        uses: crytic/slither-action@v0.4.1
+        id: slither
+        with:
+          slither-version: 0.11.0
+          slither-config: slither.config.json
+          sarif: results.sarif
+          fail-on: none
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.slither.outputs.sarif }}
