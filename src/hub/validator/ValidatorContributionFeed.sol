@@ -5,6 +5,7 @@ import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/Ac
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
+import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { EnumerableMap } from '@oz-v5/utils/structs/EnumerableMap.sol';
 
@@ -62,6 +63,7 @@ contract ValidatorContributionFeed is
 
   /// @notice keccak256('mitosis.role.ValidatorContributionFeed.feeder')
   bytes32 public constant FEEDER_ROLE = 0xa33b22848ec080944b3c811b3fe6236387c5104ce69ccd386b545a980fbe6827;
+  uint256 public constant MAX_WEIGHTS_PER_ACTION = 1000;
 
   IEpochFeeder private immutable _epochFeeder;
 
@@ -160,6 +162,9 @@ contract ValidatorContributionFeed is
 
   /// @inheritdoc IValidatorContributionFeed
   function pushValidatorWeights(ValidatorWeight[] calldata weights) external onlyRole(FEEDER_ROLE) {
+    require(weights.length > 0, IValidatorContributionFeed__InvalidWeightCount());
+    require(weights.length <= MAX_WEIGHTS_PER_ACTION, IValidatorContributionFeed__InvalidWeightCount());
+
     StorageV1 storage $ = _getStorageV1();
     uint256 epoch = $.nextEpoch;
 
@@ -169,7 +174,8 @@ contract ValidatorContributionFeed is
     ReportChecker memory checker = $.checker;
 
     uint256 weightsLen = reward.weights.length;
-    for (uint256 i = 0; i < weights.length; i++) {
+    uint256 pushWeightsLen = weights.length;
+    for (uint256 i = 0; i < pushWeightsLen; i++) {
       ValidatorWeight memory weight = weights[i];
       uint256 index = reward.weightByValAddr[weight.addr];
       require(index == 0, IValidatorContributionFeed__InvalidWeightAddress());
@@ -182,7 +188,7 @@ contract ValidatorContributionFeed is
     uint128 prevTotalWeight = $.checker.totalWeight;
     $.checker = checker;
 
-    emit WeightsPushed(epoch, checker.totalWeight - prevTotalWeight, weights.length.toUint16());
+    emit WeightsPushed(epoch, checker.totalWeight - prevTotalWeight, pushWeightsLen.toUint16());
   }
 
   /// @inheritdoc IValidatorContributionFeed
@@ -211,12 +217,25 @@ contract ValidatorContributionFeed is
     uint256 epoch = $.nextEpoch;
 
     Reward storage reward = $.rewards[epoch];
-    require(reward.status == ReportStatus.INITIALIZED, IValidatorContributionFeed__InvalidReportStatus());
+    require(
+      reward.status == ReportStatus.INITIALIZED || reward.status == ReportStatus.REVOKING,
+      IValidatorContributionFeed__InvalidReportStatus()
+    );
 
     // NOTICE: we need to separate revoke sequence because of the gas limit
-    for (uint256 i = 0; i < reward.weights.length; i++) {
-      delete reward.weightByValAddr[reward.weights[i].addr];
+    uint256 removeCount = Math.min(MAX_WEIGHTS_PER_ACTION, reward.weights.length);
+    for (uint256 i = 0; i < removeCount; i++) {
+      ValidatorWeight memory weight = reward.weights[reward.weights.length - 1];
+      delete reward.weightByValAddr[weight.addr];
+      reward.weights.pop();
     }
+
+    if ($.rewards[epoch].weights.length > 0) {
+      reward.status = ReportStatus.REVOKING;
+      emit ReportRevoing(epoch);
+      return;
+    }
+
     delete $.rewards[epoch].weights;
     delete $.rewards[epoch];
     delete $.checker;

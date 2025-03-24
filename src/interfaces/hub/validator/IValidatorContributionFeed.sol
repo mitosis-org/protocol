@@ -13,6 +13,7 @@ struct ValidatorWeight {
 enum ReportStatus {
   NONE,
   INITIALIZED,
+  REVOKING,
   FINALIZED
 }
 
@@ -35,10 +36,12 @@ interface IValidatorContributionFeed {
   event ReportInitialized(uint256 epoch, uint128 totalWeight, uint128 numOfValidators);
   event WeightsPushed(uint256 epoch, uint128 totalWeight, uint128 numOfValidators);
   event ReportFinalized(uint256 epoch);
+  event ReportRevoing(uint256 epoch);
   event ReportRevoked(uint256 epoch);
 
   error IValidatorContributionFeed__InvalidReportStatus();
   error IValidatorContributionFeed__InvalidWeightAddress();
+  error IValidatorContributionFeed__InvalidWeightCount();
   error IValidatorContributionFeed__InvalidTotalWeight();
   error IValidatorContributionFeed__InvalidValidatorCount();
   error IValidatorContributionFeed__ReportNotReady();
