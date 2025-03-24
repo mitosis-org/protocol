@@ -1,0 +1,29 @@
+{
+  "optimizer": {
+    "enabled": true,
+    "runs": 99999
+  },
+  "remappings": [
+    "@elliptic-curve-solidity=dependencies/@elliptic-curve-solidity-0.2.5/",
+    "@hpl-v5=node_modules/hpl-v5/contracts",
+    "@murky=dependencies/@murky-0.0.1/src",
+    "@murky-0.0.1/=dependencies/@murky-0.0.1/",
+    "@openzeppelin/contracts=dependencies/@openzeppelin-contracts-5.1.0",
+    "@openzeppelin/contracts-upgradeable=dependencies/@openzeppelin-contracts-upgradeable-5.1.0",
+    "@openzeppelin-contracts-5.1.0/=dependencies/@openzeppelin-contracts-5.1.0/",
+    "@openzeppelin-contracts-upgradeable-5.1.0/=dependencies/@openzeppelin-contracts-upgradeable-5.1.0/",
+    "@openzeppelin-contracts-upgradeable-v4-4.9.6/=dependencies/@openzeppelin-contracts-upgradeable-v4-4.9.6/",
+    "@openzeppelin-contracts-v4-4.9.6/=dependencies/@openzeppelin-contracts-v4-4.9.6/",
+    "@oz-v5=dependencies/@openzeppelin-contracts-5.1.0",
+    "@ozfu-v5=dependencies/openzeppelin-foundry-upgrades-0.3.1/src",
+    "@ozu-v5=dependencies/@openzeppelin-contracts-upgradeable-5.1.0",
+    "@oz-v4=dependencies/@openzeppelin-contracts-v4-4.9.6/contracts",
+    "@ozu-v4=dependencies/@openzeppelin-contracts-upgradeable-v4-4.9.6/contracts",
+    "@solady=dependencies/solady-0.0.230/src",
+    "@std=dependencies/forge-std-1.9.6/src",
+    "@solmate=dependencies/solmate-6.8.0/src",
+    "forge-std-1.9.6/=dependencies/forge-std-1.9.6/",
+    "openzeppelin-foundry-upgrades-0.3.1/=dependencies/openzeppelin-foundry-upgrades-0.3.1/",
+    "solady-0.0.230/=dependencies/solady-0.0.230/"
+  ]
+}
