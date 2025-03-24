@@ -18,6 +18,9 @@ jobs:
       fail-fast: true
 
     name: analyze
+    permissions:
+      security-events: write
+      contents: read
     runs-on: ubuntu-latest
 
     steps:
