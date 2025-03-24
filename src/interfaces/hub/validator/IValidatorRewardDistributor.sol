@@ -29,6 +29,8 @@ interface IValidatorRewardDistributor {
   event OperatorRewardClaimApprovalUpdated(address account, address valAddr, address claimer, bool approval);
 
   // Custom errors
+  error IValidatorRewardDistributor__MaxStakerBatchSizeExceeded();
+  error IValidatorRewardDistributor__MaxOperatorBatchSizeExceeded();
   error IValidatorRewardDistributor__NotValidator();
   error IValidatorRewardDistributor__ArrayLengthMismatch();
 
