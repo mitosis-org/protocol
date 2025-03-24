@@ -153,7 +153,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
   }
 
   /// @inheritdoc IGovMITOEmission
-  function requestValidatorReward(uint256 epoch, address recipient, uint256 amount) external {
+  function requestValidatorReward(uint256 epoch, address recipient, uint256 amount) external returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
     require($.validatorReward.recipient == _msgSender(), StdError.Unauthorized());
 
@@ -164,6 +164,8 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     _govMITO.safeTransfer(recipient, amount);
 
     emit ValidatorRewardRequested(epoch, amount);
+
+    return amount;
   }
 
   /// @inheritdoc IGovMITOEmission
