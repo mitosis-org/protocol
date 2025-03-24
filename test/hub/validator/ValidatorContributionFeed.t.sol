@@ -180,10 +180,11 @@ contract ValidatorContributionFeedTest is Toolkit {
     vm.prank(feeder);
     feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300e18, numOfValidators: 300 }));
 
-    for (uint256 i = 0; i < 10; i++) {
-      ValidatorWeight[] memory weights = new ValidatorWeight[](50);
-      for (uint256 j = 0; j < 50; j++) {
-        address addr = makeAddr(string.concat('val-', ((i * 50) + j).toString()));
+    // Push 500 validators (5 batches of 100)
+    for (uint256 i = 0; i < 19; i++) {
+      ValidatorWeight[] memory weights = new ValidatorWeight[](100);
+      for (uint256 j = 0; j < 100; j++) {
+        address addr = makeAddr(string.concat('val-', ((i * 100) + j).toString()));
         weights[j] = ValidatorWeight(addr, 0.6e18, 1e18, 1e18);
       }
 
@@ -191,11 +192,41 @@ contract ValidatorContributionFeedTest is Toolkit {
       feed.pushValidatorWeights(weights);
     }
 
+    // First revoke call should emit ReportRevoking event
     vm.prank(feeder);
+    vm.expectEmit();
+    emit IValidatorContributionFeed.ReportRevoking(1);
     feed.revokeReport();
 
-    // check report is revoked
-    test_report();
+    // Second revoke call should emit ReportRevoked event
+    vm.prank(feeder);
+    vm.expectEmit();
+    emit IValidatorContributionFeed.ReportRevoked(1);
+    feed.revokeReport();
+
+    // Verify the report is completely removed
+    vm.expectRevert(IValidatorContributionFeed.IValidatorContributionFeed__ReportNotReady.selector);
+    feed.weightCount(1);
+  }
+
+  function test_revokeReport_InvalidReportStatus() public {
+    _mockEpoch(2);
+
+    vm.prank(feeder);
+    vm.expectRevert(IValidatorContributionFeed.IValidatorContributionFeed__InvalidReportStatus.selector);
+    feed.revokeReport();
+  }
+
+  function test_revokeReport_NotFeeder() public {
+    _mockEpoch(2);
+
+    vm.prank(feeder);
+    feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300e18, numOfValidators: 300 }));
+
+    bytes32 role = feed.FEEDER_ROLE();
+    vm.prank(abuser);
+    vm.expectRevert(_errAccessControlUnauthorized(abuser, role));
+    feed.revokeReport();
   }
 
   function test_assertReportReady() public {
