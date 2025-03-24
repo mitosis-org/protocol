@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
+import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { ReentrancyGuardTransient } from '@oz-v5/utils/ReentrancyGuardTransient.sol';
 import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';

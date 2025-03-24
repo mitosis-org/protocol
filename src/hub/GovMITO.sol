@@ -5,9 +5,9 @@ import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { ReentrancyGuardTransient } from '@oz-v5/utils/ReentrancyGuardTransient.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
-import { ReentrancyGuardTransient } from '@solady/utils/ReentrancyGuardTransient.sol';
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';

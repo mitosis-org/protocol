@@ -85,7 +85,8 @@ contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradea
   /// @inheritdoc IEpochFeeder
   function interval() public view returns (uint48) {
     StorageV1 storage $ = _getStorageV1();
-    return _intervalAt($, _epochAt($, Time.timestamp()));
+    uint256 currentEpoch = _epochAt($, Time.timestamp());
+    return _intervalAt($, currentEpoch);
   }
 
   /// @inheritdoc IEpochFeeder
@@ -126,7 +127,7 @@ contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradea
   }
 
   function _epochAt(StorageV1 storage $, uint48 timestamp_) internal view returns (uint256) {
-    Checkpoint memory checkpoint = _lowerLookup($.history, _compareTimestamp, timestamp_);
+    Checkpoint memory checkpoint = _upperLookup($.history, _compareTimestamp, timestamp_);
     if (checkpoint.epoch == 0) return 0;
     return checkpoint.epoch + (timestamp_ - checkpoint.timestamp) / checkpoint.interval;
   }
@@ -134,7 +135,7 @@ contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradea
   function _timeAt(StorageV1 storage $, uint256 epoch_) internal view returns (uint48) {
     if (epoch_ == 0) return 0;
 
-    Checkpoint memory checkpoint = _lowerLookup($.history, _compareEpoch, epoch_);
+    Checkpoint memory checkpoint = _upperLookup($.history, _compareEpoch, epoch_);
     if (epoch_ == checkpoint.epoch) return checkpoint.timestamp;
     return checkpoint.timestamp + ((epoch_ - checkpoint.epoch) * checkpoint.interval).toUint48();
   }
@@ -142,30 +143,33 @@ contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradea
   function _intervalAt(StorageV1 storage $, uint256 epoch_) internal view returns (uint48) {
     if (epoch_ == 0) return 0;
 
-    Checkpoint memory checkpoint = _lowerLookup($.history, _compareEpoch, epoch_);
+    Checkpoint memory checkpoint = _upperLookup($.history, _compareEpoch, epoch_);
     if (epoch_ == checkpoint.epoch) return checkpoint.interval;
     return checkpoint.interval;
   }
 
-  function _lowerLookup(
+  function _upperLookup(
     Checkpoint[] storage self,
     function(Checkpoint memory, uint256) pure returns (bool) compare,
     uint256 key
   ) private view returns (Checkpoint memory) {
-    uint256 left = 0;
-    uint256 right = self.length - 1;
-    uint256 target = 0;
+    uint256 len = self.length;
+    if (len == 0) return Checkpoint(0, 0, 0);
 
-    while (left <= right) {
-      uint256 mid = left + (right - left) / 2;
+    uint256 low = 0;
+    uint256 high = len;
+
+    while (low < high) {
+      uint256 mid = Math.average(low, high);
       if (compare(self[mid], key)) {
-        target = mid;
-        left = mid + 1;
+        low = mid + 1;
       } else {
-        right = mid - 1;
+        high = mid;
       }
     }
-    return self[target];
+
+    if (low == 0) return Checkpoint(0, 0, 0);
+    return self[low - 1];
   }
 
   function _compareTimestamp(Checkpoint memory self, uint256 key) private pure returns (bool) {
@@ -178,9 +182,5 @@ contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradea
 
   // ================== UUPS ================== //
 
-  /**
-   * @notice Authorizes an upgrade to a new implementation
-   * @param newImplementation Address of new implementation
-   */
-  function _authorizeUpgrade(address newImplementation) internal view override onlyOwner { }
+  function _authorizeUpgrade(address) internal view override onlyOwner { }
 }
