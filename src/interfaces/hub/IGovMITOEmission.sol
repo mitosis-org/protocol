@@ -87,8 +87,9 @@ interface IGovMITOEmission {
    * @param epoch Epoch number
    * @param recipient Address of the recipient
    * @param amount Amount of gMITO tokens to request
+   * @return amount The amount of gMITO tokens transferred to the recipient
    */
-  function requestValidatorReward(uint256 epoch, address recipient, uint256 amount) external;
+  function requestValidatorReward(uint256 epoch, address recipient, uint256 amount) external returns (uint256);
 
   /**
    * @notice Adds a validator reward emission
