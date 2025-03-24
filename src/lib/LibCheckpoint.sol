@@ -20,11 +20,15 @@ library LibCheckpoint {
   }
 
   function add(uint256 x, uint256 y) internal pure returns (uint256) {
-    return x + y;
+    unchecked {
+      return x + y;
+    }
   }
 
   function sub(uint256 x, uint256 y) internal pure returns (uint256) {
-    return x - y;
+    unchecked {
+      return x - y;
+    }
   }
 
   function len(TraceTWAB storage self) internal view returns (uint256) {
@@ -45,9 +49,11 @@ library LibCheckpoint {
       self.checkpoints.push(TWABCheckpoint({ twab: 0, amount: amount.toUint208(), lastUpdate: now_ }));
     } else {
       TWABCheckpoint memory last_ = last(self);
+
       self.checkpoints.push(
         TWABCheckpoint({
-          twab: last_.amount * (now_ - last_.lastUpdate),
+          // we assume `now` is always greater than `last_.lastUpdate`
+          twab: last_.amount * sub(now_, last_.lastUpdate),
           amount: nextAmountFunc(last_.amount, amount).toUint208(),
           lastUpdate: now_
         })
