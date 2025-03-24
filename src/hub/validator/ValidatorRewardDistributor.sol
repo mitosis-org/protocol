@@ -7,6 +7,7 @@ import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { ReentrancyGuardTransient } from '@oz-v5/utils/ReentrancyGuardTransient.sol';
 
 import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
 import { IGovMITOEmission } from '../../interfaces/hub/IGovMITOEmission.sol';
@@ -52,6 +53,7 @@ contract ValidatorRewardDistributor is
   IValidatorRewardDistributor,
   ValidatorRewardDistributorStorageV1,
   Ownable2StepUpgradeable,
+  ReentrancyGuardTransient,
   UUPSUpgradeable
 {
   using SafeCast for uint256;
@@ -66,6 +68,12 @@ contract ValidatorRewardDistributor is
   // Maximum number of epochs that can be claimed at once
   // Set to 32 based on gas cost analysis and typical usage patterns
   uint256 public constant MAX_CLAIM_EPOCHS = 32;
+
+  // Maximum number of stakers that can be claimed at once
+  uint256 public constant MAX_STAKER_BATCH_SIZE = 100;
+
+  // Maximum number of operators that can be claimed at once
+  uint256 public constant MAX_OPERATOR_BATCH_SIZE = 100;
 
   constructor(
     address epochFeeder_,
@@ -157,15 +165,17 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function claimStakerRewards(address staker, address valAddr) external returns (uint256) {
+  function claimStakerRewards(address staker, address valAddr) external nonReentrant returns (uint256) {
     return _claimStakerRewards(_getStorageV1(), staker, valAddr, _msgSender());
   }
 
   /// @inheritdoc IValidatorRewardDistributor
   function batchClaimStakerRewards(address[] calldata stakers, address[][] calldata valAddrs)
     external
+    nonReentrant
     returns (uint256)
   {
+    require(stakers.length <= MAX_STAKER_BATCH_SIZE, IValidatorRewardDistributor__MaxStakerBatchSizeExceeded());
     require(stakers.length == valAddrs.length, IValidatorRewardDistributor__ArrayLengthMismatch());
 
     uint256 totalClaimed;
@@ -179,12 +189,14 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function claimOperatorRewards(address valAddr) external returns (uint256) {
+  function claimOperatorRewards(address valAddr) external nonReentrant returns (uint256) {
     return _claimOperatorRewards(_getStorageV1(), valAddr, _msgSender());
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function batchClaimOperatorRewards(address[] calldata valAddrs) external returns (uint256) {
+  function batchClaimOperatorRewards(address[] calldata valAddrs) external nonReentrant returns (uint256) {
+    require(valAddrs.length <= MAX_OPERATOR_BATCH_SIZE, IValidatorRewardDistributor__MaxOperatorBatchSizeExceeded());
+
     uint256 totalClaimed;
 
     for (uint256 i = 0; i < valAddrs.length; i++) {
@@ -248,7 +260,6 @@ contract ValidatorRewardDistributor is
 
       uint256 claimable = _calculateStakerRewardForEpoch(valAddr, staker, epoch);
 
-      // NOTE(eddy): reentrancy guard?
       if (claimable > 0) {
         _govMITOEmission.requestValidatorReward(epoch.toUint96(), staker, claimable);
         totalClaimed += claimable;
@@ -258,6 +269,9 @@ contract ValidatorRewardDistributor is
     }
 
     $.staker[staker][valAddr] = lastClaimedEpoch;
+
+    emit StakerRewardsClaimed(staker, valAddr, recipient, totalClaimed, start, lastClaimedEpoch);
+
     return totalClaimed;
   }
 
@@ -286,6 +300,9 @@ contract ValidatorRewardDistributor is
     }
 
     $.operator[valAddr] = lastClaimedEpoch;
+
+    emit OperatorRewardsClaimed(valAddr, recipient, totalClaimed, start, lastClaimedEpoch);
+
     return totalClaimed;
   }
 
@@ -316,12 +333,12 @@ contract ValidatorRewardDistributor is
     {
       uint256 startTWAB = _validatorStakingHub.validatorTotalTWAB(valAddr, epochTime);
       uint256 endTWAB = _validatorStakingHub.validatorTotalTWAB(valAddr, nextEpochTime);
-      totalDelegation = (endTWAB - startTWAB) * 1e18 / (nextEpochTime - epochTime) / 1e18;
+      totalDelegation = Math.mulDiv(endTWAB - startTWAB, 1e18, nextEpochTime - epochTime);
     }
     {
       uint256 startTWAB = _validatorStakingHub.validatorStakerTotalTWAB(valAddr, staker, epochTime);
       uint256 endTWAB = _validatorStakingHub.validatorStakerTotalTWAB(valAddr, staker, nextEpochTime);
-      stakerDelegation = (endTWAB - startTWAB) * 1e18 / (nextEpochTime - epochTime) / 1e18;
+      stakerDelegation = Math.mulDiv(endTWAB - startTWAB, 1e18, nextEpochTime - epochTime);
     }
 
     if (totalDelegation == 0) return 0;
