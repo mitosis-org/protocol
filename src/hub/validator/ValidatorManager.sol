@@ -10,7 +10,6 @@ import { ReentrancyGuardTransient } from '@oz-v5/utils/ReentrancyGuardTransient.
 import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
-import { ECDSA } from '@solady/utils/ECDSA.sol';
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
 import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
@@ -189,12 +188,12 @@ contract ValidatorManager is
   }
 
   /// @inheritdoc IValidatorManager
-  function validatorInfo(address valAddr) public view returns (ValidatorInfoResponse memory) {
+  function validatorInfo(address valAddr) external view returns (ValidatorInfoResponse memory) {
     return _validatorInfoAt(_getStorageV1(), valAddr, _epochFeeder.epoch());
   }
 
   /// @inheritdoc IValidatorManager
-  function validatorInfoAt(uint256 epoch, address valAddr) public view returns (ValidatorInfoResponse memory) {
+  function validatorInfoAt(uint256 epoch, address valAddr) external view returns (ValidatorInfoResponse memory) {
     return _validatorInfoAt(_getStorageV1(), valAddr, epoch);
   }
 
@@ -408,8 +407,6 @@ contract ValidatorManager is
       StdError.InvalidParameter('minimumCommissionRate')
     );
     require(request.commissionRateUpdateDelay > 0, StdError.InvalidParameter('commissionRateUpdateDelay'));
-    require(request.initialValidatorDeposit >= 0, StdError.InvalidParameter('initialValidatorDeposit'));
-    require(request.collateralWithdrawalDelay >= 0, StdError.InvalidParameter('collateralWithdrawalDelay'));
 
     uint256 epoch = _epochFeeder.epoch();
     $.globalValidatorConfig.minimumCommissionRates.push(epoch.toUint96(), request.minimumCommissionRate.toUint160());
