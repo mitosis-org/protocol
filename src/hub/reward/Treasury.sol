@@ -33,6 +33,7 @@ contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradea
   }
 
   function initialize(address admin) external initializer {
+    require(admin != address(0), StdError.ZeroAddress('admin'));
     __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
 
@@ -47,6 +48,10 @@ contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradea
    * @inheritdoc ITreasury
    */
   function storeRewards(address matrixVault, address reward, uint256 amount) external onlyRole(TREASURY_MANAGER_ROLE) {
+    require(matrixVault != address(0), StdError.ZeroAddress('matrixVault'));
+    require(reward != address(0), StdError.ZeroAddress('reward'));
+    require(amount > 0, StdError.ZeroAmount());
+
     _storeRewards(matrixVault, reward, amount);
   }
 
@@ -57,6 +62,10 @@ contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradea
     external
     onlyRole(DISPATCHER_ROLE)
   {
+    require(matrixVault != address(0), StdError.ZeroAddress('matrixVault'));
+    require(reward != address(0), StdError.ZeroAddress('reward'));
+    require(distributor != address(0), StdError.ZeroAddress('distributor'));
+    require(amount > 0, StdError.ZeroAmount());
     StorageV1 storage $ = _getStorageV1();
 
     uint256 balance = _balances($, matrixVault, reward);
@@ -71,7 +80,7 @@ contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradea
        })
     );
 
-    IERC20(reward).transfer(distributor, amount);
+    IERC20(reward).safeTransfer(distributor, amount);
     emit RewardDispatched(matrixVault, reward, distributor, amount);
   }
 
