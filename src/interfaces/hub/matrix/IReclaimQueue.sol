@@ -253,6 +253,15 @@ interface IReclaimQueue is IReclaimQueueStorageV1 {
   error IReclaimQueue__NothingToClaim();
 
   /**
+   * @notice Preview the total reserved shares and assets for an MatrixVault
+   * @param matrixVault Address of the MatrixVault to preview
+   * @param claimCount Number of claims to preview
+   * @return totalReservedShares Simulated total shares that will be affected
+   * @return totalReservedAssets Simulated total assets that will be affected
+   */
+  function previewSync(address matrixVault, uint256 claimCount) external view returns (uint256, uint256);
+
+  /**
    * @notice Submits a new reclaim request
    * @param shares Number of shares to opt out
    * @param receiver Address that will receive the assets
@@ -274,9 +283,13 @@ interface IReclaimQueue is IReclaimQueueStorageV1 {
    * @dev Can only be called by the asset manager
    * @param executor Address of the executor calling the function
    * @param matrixVault Address of the MatrixVault to update
-   * @param assets Amount of idle assets to allocate to pending requests
+   * @param claimCount Amount of claim requests to resolve
+   * @return totalReservedShares Total shares affected by this sync
+   * @return totalReservedAssets Total assets affected by this sync
    */
-  function sync(address executor, address matrixVault, uint256 assets) external;
+  function sync(address executor, address matrixVault, uint256 claimCount)
+    external
+    returns (uint256 totalReservedShares, uint256 totalReservedAssets);
 
   /**
    * @notice Activates the reclaim queue for an MatrixVault

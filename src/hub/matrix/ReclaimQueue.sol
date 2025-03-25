@@ -32,6 +32,15 @@ contract ReclaimQueue is
   using Math for uint256;
   using LibRedeemQueue for *;
 
+  struct SyncState {
+    uint256 queueOffset;
+    uint256 queueSize;
+    uint256 totalReservedShares;
+    uint256 totalReservedAssets;
+    uint256 totalShares;
+    uint256 totalAssets;
+  }
+
   constructor() {
     _disableInitializers();
   }
@@ -44,6 +53,13 @@ contract ReclaimQueue is
 
     StorageV1 storage $ = _getStorageV1();
     _setAssetManager($, assetManager);
+  }
+
+  // =========================== NOTE: QUERY FUNCTIONS =========================== //
+
+  function previewSync(address matrixVault, uint256 claimCount) external view returns (uint256, uint256) {
+    SyncState memory state = _calcSync(_getStorageV1(), IMatrixVault(matrixVault), claimCount);
+    return (state.totalReservedShares, state.totalReservedAssets);
   }
 
   // =========================== NOTE: QUEUE FUNCTIONS =========================== //
@@ -106,13 +122,19 @@ contract ReclaimQueue is
     return totalClaimed_;
   }
 
-  function sync(address executor, address matrixVault, uint256 claimCount) external whenNotPaused {
+  function sync(address executor, address matrixVault, uint256 claimCount)
+    external
+    whenNotPaused
+    returns (uint256, uint256)
+  {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyAssetManager($);
     _assertQueueEnabled($, matrixVault);
 
-    _sync($, executor, IMatrixVault(matrixVault), claimCount);
+    SyncState memory state = _sync($, executor, IMatrixVault(matrixVault), claimCount);
+
+    return (state.totalReservedShares, state.totalReservedAssets);
   }
 
   // =========================== NOTE: OWNABLE FUNCTIONS =========================== //
@@ -203,16 +225,11 @@ contract ReclaimQueue is
     return totalClaimed_;
   }
 
-  struct SyncState {
-    uint256 queueOffset;
-    uint256 queueSize;
-    uint256 totalReservedShares;
-    uint256 totalReservedAssets;
-    uint256 totalShares;
-    uint256 totalAssets;
-  }
-
-  function _sync(StorageV1 storage $, address executor, IMatrixVault matrixVault, uint256 claimCount) internal {
+  function _calcSync(StorageV1 storage $, IMatrixVault matrixVault, uint256 claimCount)
+    internal
+    view
+    returns (SyncState memory)
+  {
     LibRedeemQueue.Queue storage q = $.states[address(matrixVault)].queue;
 
     SyncState memory state = SyncState({
@@ -242,6 +259,15 @@ contract ReclaimQueue is
       } // Use unchecked for gas savings
     }
 
+    return state;
+  }
+
+  function _sync(StorageV1 storage $, address executor, IMatrixVault matrixVault, uint256 claimCount)
+    internal
+    returns (SyncState memory)
+  {
+    SyncState memory state = _calcSync($, matrixVault, claimCount);
+
     IMatrixVault(matrixVault).withdraw(state.totalReservedAssets, address(this), address(this));
 
     $.states[address(matrixVault)].queue.reserve(
@@ -253,6 +279,8 @@ contract ReclaimQueue is
     );
 
     emit ReserveSynced(executor, address(matrixVault), claimCount, state.totalReservedShares, state.totalReservedAssets);
+
+    return state;
   }
 
   // =========================== NOTE: ASSERTIONS =========================== //

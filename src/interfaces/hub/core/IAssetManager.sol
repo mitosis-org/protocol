@@ -245,6 +245,17 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event MatrixDeallocated(uint256 indexed chainId, address indexed matrixVault, uint256 amount);
 
   /**
+   * @notice Emitted when a claim request is reserved from the reclaim queue
+   * @param matrixVault The address of the MatrixVault to be reported the claim request
+   * @param claimCount The amount of the claim request
+   * @param totalReservedShares The total amount of shares reserved
+   * @param totalReservedAssets The total amount of assets reserved
+   */
+  event MatrixReclaimQueueReserved(
+    address indexed matrixVault, uint256 claimCount, uint256 totalReservedShares, uint256 totalReservedAssets
+  );
+
+  /**
    * @notice Emitted when an asset pair is set
    * @param hubAsset The address of the hub asset
    * @param branchChainId The ID of the branch chain
@@ -324,9 +335,9 @@ interface IAssetManager is IAssetManagerStorageV1 {
   /**
    * @notice Resolves the pending reclaim request amount from the reclaim queue using the idle balance of a MatrixVault
    * @param matrixVault The address of the MatrixVault
-   * @param amount The amount to reserve
+   * @param claimCount The amount of claim requests to resolve
    */
-  function reserveMatrix(address matrixVault, uint256 amount) external;
+  function reserveMatrix(address matrixVault, uint256 claimCount) external;
 
   /**
    * @notice Settles an yield generated from Matrix Protocol
