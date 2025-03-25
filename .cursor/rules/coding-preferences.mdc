@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+We're using `remappings` globally on our codebase. So You must take care of configurations about remappings in [foundry.toml](mdc:foundry.toml) before searching specific files that imported by our contracts.

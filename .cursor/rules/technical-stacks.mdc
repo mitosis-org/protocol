@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+This project is using Solidity to writing smart contracts.
+And also, Using Foundry to test / build / deploy thoses contracts.
+Besides of that, We're using Soldeer + Yarn as package manager. Thanks for Foundry integration, We're using Soldeer with `forge soldeer` command.
+
+For the other things, This project is using Typescript for tooling like sorting imports or publish interfaces to the public, etc...
