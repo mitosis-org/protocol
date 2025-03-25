@@ -142,6 +142,9 @@ contract GovMITO is
   }
 
   function requestRedeem(address receiver, uint256 amount) external returns (uint256 reqId) {
+    require(receiver != address(0), StdError.ZeroAddress('receiver'));
+    require(amount > 0, StdError.ZeroAmount());
+
     GovMITOStorage storage $ = _getGovMITOStorage();
 
     _burn(_msgSender(), amount);
