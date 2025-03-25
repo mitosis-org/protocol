@@ -62,7 +62,7 @@ contract ValidatorStakingHub is
   }
 
   /// @inheritdoc IValidatorStakingHub
-  function entrypoint() public view returns (IConsensusValidatorEntrypoint) {
+  function entrypoint() external view returns (IConsensusValidatorEntrypoint) {
     return _entrypoint;
   }
 
@@ -81,7 +81,9 @@ contract ValidatorStakingHub is
   function stakerTotalTWAB(address staker, uint48 timestamp) external view returns (uint256) {
     LibCheckpoint.TraceTWAB storage trace = _getStorageV1().stakerTotal[staker];
     LibCheckpoint.TWABCheckpoint memory twab = trace.upperLookupRecent(timestamp);
-    return twab.amount * (timestamp - twab.lastUpdate) + twab.twab;
+    unchecked {
+      return twab.amount * (timestamp - twab.lastUpdate) + twab.twab;
+    }
   }
 
   /// @inheritdoc IValidatorStakingHub
@@ -94,7 +96,9 @@ contract ValidatorStakingHub is
   function validatorTotalTWAB(address valAddr, uint48 timestamp) external view returns (uint256) {
     LibCheckpoint.TraceTWAB storage trace = _getStorageV1().validatorTotal[valAddr];
     LibCheckpoint.TWABCheckpoint memory twab = trace.upperLookupRecent(timestamp);
-    return twab.amount * (timestamp - twab.lastUpdate) + twab.twab;
+    unchecked {
+      return twab.amount * (timestamp - twab.lastUpdate) + twab.twab;
+    }
   }
 
   /// @inheritdoc IValidatorStakingHub
@@ -107,51 +111,77 @@ contract ValidatorStakingHub is
   function validatorStakerTotalTWAB(address valAddr, address staker, uint48 timestamp) external view returns (uint256) {
     LibCheckpoint.TraceTWAB storage trace = _getStorageV1().validatorStakerTotal[valAddr][staker];
     LibCheckpoint.TWABCheckpoint memory twab = trace.upperLookupRecent(timestamp);
-    return twab.amount * (timestamp - twab.lastUpdate) + twab.twab;
+    unchecked {
+      return twab.amount * (timestamp - twab.lastUpdate) + twab.twab;
+    }
   }
 
   /// @inheritdoc IValidatorStakingHub
   function addNotifier(address notifier) external onlyOwner {
-    // TODO(eddy): Probably we need to add calculation logic for each notifier
+    require(notifier != address(0), IValidatorStakingHub__InvalidNotifier(notifier));
+
     StorageV1 storage $ = _getStorageV1();
+    require(!$.notifiers[notifier].enabled, IValidatorStakingHub__NotifierAlreadyRegistered(notifier));
+
     $.notifiers[notifier] = Notifier({ enabled: true });
+
+    emit NotifierAdded(notifier);
   }
 
   /// @inheritdoc IValidatorStakingHub
   function removeNotifier(address notifier) external onlyOwner {
+    require(notifier != address(0), IValidatorStakingHub__InvalidNotifier(notifier));
+
     StorageV1 storage $ = _getStorageV1();
+    require($.notifiers[notifier].enabled, IValidatorStakingHub__NotifierNotRegistered(notifier));
+
     $.notifiers[notifier] = Notifier({ enabled: false });
+
+    emit NotifierRemoved(notifier);
   }
 
   /// @inheritdoc IValidatorStakingHub
   function notifyStake(address valAddr, address staker, uint256 amount) external {
+    require(amount > 0, StdError.ZeroAmount());
+
     StorageV1 storage $ = _getStorageV1();
 
     Notifier memory notifier = $.notifiers[_msgSender()];
-    require(notifier.enabled, StdError.Unauthorized());
+    require(notifier.enabled, IValidatorStakingHub__NotifierNotRegistered(_msgSender()));
 
     _stake($, valAddr, staker, amount);
+
+    emit NotifiedStake(valAddr, staker, amount);
   }
 
   /// @inheritdoc IValidatorStakingHub
   function notifyUnstake(address valAddr, address staker, uint256 amount) external {
+    require(amount > 0, StdError.ZeroAmount());
+
     StorageV1 storage $ = _getStorageV1();
 
     Notifier memory notifier = $.notifiers[_msgSender()];
-    require(notifier.enabled, StdError.Unauthorized());
+    require(notifier.enabled, IValidatorStakingHub__NotifierNotRegistered(_msgSender()));
 
     _unstake($, valAddr, staker, amount);
+
+    emit NotifiedUnstake(valAddr, staker, amount);
   }
 
   /// @inheritdoc IValidatorStakingHub
   function notifyRedelegation(address fromValAddr, address toValAddr, address staker, uint256 amount) external {
+    require(fromValAddr != toValAddr, IValidatorStakingHub__RedelegatedFromSelf(fromValAddr));
+    require(amount > 0, StdError.ZeroAmount());
+
     StorageV1 storage $ = _getStorageV1();
 
     Notifier memory notifier = $.notifiers[_msgSender()];
-    require(notifier.enabled, StdError.Unauthorized());
+    require(notifier.enabled, IValidatorStakingHub__NotifierNotRegistered(_msgSender()));
 
     _unstake($, fromValAddr, staker, amount);
     _stake($, toValAddr, staker, amount);
+
+    emit NotifiedRedelegation(fromValAddr, toValAddr, staker, amount);
   }
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //

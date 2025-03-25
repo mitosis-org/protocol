@@ -83,7 +83,7 @@ contract ValidatorStaking is
     uint256 initialMinUnstakingAmount,
     uint48 unstakeCooldown_,
     uint48 redelegationCooldown_
-  ) external virtual initializer {
+  ) public virtual initializer {
     __Ownable_init(initialOwner);
     __Ownable2Step_init();
     __UUPSUpgradeable_init();
