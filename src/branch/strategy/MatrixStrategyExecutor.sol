@@ -228,8 +228,9 @@ contract MatrixStrategyExecutor is
   }
 
   function _tallyTotalBalance(StorageV1 storage $) internal view returns (uint256) {
-    bytes memory temp;
-    return $.tally.totalBalance(temp) + $.tally.pendingWithdrawBalance(temp);
+    bytes memory context;
+    return
+      $.tally.pendingDepositBalance(context) + $.tally.totalBalance(context) + $.tally.pendingWithdrawBalance(context);
   }
 
   function _totalBalance(StorageV1 storage $) internal view returns (uint256) {
