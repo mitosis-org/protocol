@@ -7,7 +7,7 @@ import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
 import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
-import { Address } from '@oz-v5/utils/Address.sol';
+import { ReentrancyGuardTransient } from '@oz-v5/utils/ReentrancyGuardTransient.sol';
 
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 import { IBranchGovernanceEntrypoint } from '../../interfaces/hub/governance/IBranchGovernanceEntrypoint.sol';
@@ -19,6 +19,7 @@ contract BranchGovernanceEntrypoint is
   IBranchGovernanceEntrypoint,
   GasRouter,
   UUPSUpgradeable,
+  ReentrancyGuardTransient,
   AccessControlEnumerableUpgradeable
 {
   using Message for *;
@@ -39,6 +40,8 @@ contract BranchGovernanceEntrypoint is
   }
 
   constructor(address mailbox, address ccRegistry_) GasRouter(mailbox) initializer {
+    require(ccRegistry_.code.length > 0, StdError.InvalidAddress('ccRegistry'));
+
     _ccRegistry = ICrossChainRegistry(ccRegistry_);
   }
 
@@ -52,7 +55,7 @@ contract BranchGovernanceEntrypoint is
     }
   }
 
-  receive() external payable { }
+  receive() external payable nonReentrant { }
 
   function dispatchGovernanceExecution(
     uint256 chainId,
@@ -69,7 +72,10 @@ contract BranchGovernanceEntrypoint is
       predecessor: predecessor,
       salt: salt
     }).encode();
+
     _dispatchToBranch(chainId, enc);
+
+    emit ExecutionDispatched(chainId, targets, values, data, predecessor, salt);
   }
 
   function _dispatchToBranch(uint256 chainId, bytes memory enc) internal {
