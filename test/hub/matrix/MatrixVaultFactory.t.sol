@@ -8,12 +8,12 @@ import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
 import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
-import { IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
 import { MatrixVaultCapped } from '../../../src/hub/matrix/MatrixVaultCapped.sol';
 import { MatrixVaultFactory } from '../../../src/hub/matrix/MatrixVaultFactory.sol';
-import { Toolkit } from '../../util/Toolkit.sol';
+import { IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { MockContract } from '../../util/MockContract.sol';
+import { Toolkit } from '../../util/Toolkit.sol';
 
 contract MatrixVaultFactoryTest is Toolkit {
   address public contractOwner = makeAddr('owner');
