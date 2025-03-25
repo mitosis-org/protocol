@@ -226,6 +226,22 @@ interface IReclaimQueue is IReclaimQueueStorageV1 {
   event ReclaimRequestClaimed(address indexed receiver, address indexed matrixVault, uint256 claimed);
 
   /**
+   * @notice Emitted when the reserve is synced for an MatrixVault
+   * @param executor Address of the executor calling the function
+   * @param matrixVault Address of the MatrixVault
+   * @param claimCount Number of claims in the queue
+   * @param totalReservedShares Total shares affected by this sync
+   * @param totalReservedAssets Total assets affected by this sync
+   */
+  event ReserveSynced(
+    address indexed executor,
+    address indexed matrixVault,
+    uint256 claimCount,
+    uint256 totalReservedShares,
+    uint256 totalReservedAssets
+  );
+
+  /**
    * @notice Error thrown when trying to interact with a disabled queue
    * @param matrixVault Address of the MatrixVault with the disabled queue
    */

@@ -78,10 +78,11 @@ abstract contract ReclaimQueueStorageV1 is IReclaimQueueStorageV1, ContextUpgrad
   {
     StorageV1 storage $ = _getStorageV1();
     LibRedeemQueue.Queue storage queue = _queue($, matrixVault);
+    uint256 len = reqIds.length; // Cache array length
 
-    IReclaimQueueStorageV1.GetRequestResponse[] memory resp =
-      new IReclaimQueueStorageV1.GetRequestResponse[](reqIds.length);
-    for (uint256 i = 0; i < reqIds.length; i++) {
+    IReclaimQueueStorageV1.GetRequestResponse[] memory resp = new IReclaimQueueStorageV1.GetRequestResponse[](len);
+    for (uint256 i; i < len;) {
+      // Remove initialization
       LibRedeemQueue.Request memory req = queue.get(reqIds[i]);
 
       resp[i] = GetRequestResponse({
@@ -91,6 +92,9 @@ abstract contract ReclaimQueueStorageV1 is IReclaimQueueStorageV1, ContextUpgrad
         createdAt: req.createdAt,
         claimedAt: req.claimedAt
       });
+      unchecked {
+        ++i;
+      } // Unchecked increment
     }
     return resp;
   }
