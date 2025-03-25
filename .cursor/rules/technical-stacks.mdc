@@ -6,10 +6,12 @@ alwaysApply: true
 # Technical Stacks
 
 ## Overview
+
 - Contract
   - Solidity
   - Foundry
   - Soldeer
+
 - Scripting
   - Typescript
   - Yarn

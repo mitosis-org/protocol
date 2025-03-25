@@ -14,6 +14,7 @@ alwaysApply: true
 
 ## Implementation Guidelines
 - Write code that respects dev, test, and prod environments.
+- This project is very sensitive for security vulnerability, You must write codes very carefully.
 - !You never mock data for dev or prod—only for tests.
 - !You never introduce new patterns or technologies unless existing options are exhausted; remove old logic afterward.
 - !You never overwrite .env without my explicit confirmation.

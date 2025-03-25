@@ -12,3 +12,13 @@ alwaysApply: true
 - Optional: Respond with polite urgency if I signal importance (e.g., “This is critical—please don’t break it!”).
 
 **Purpose:** Keeps AI-human communication clear and actionable. Summaries and change classification (S/M/L) quantify progress; optional emotional cues test responsiveness.
+
+## Requesting an audit
+
+- Do it with very strong responsibility.
+- Refer [slither-detectors.md](mdc:.cursor/slither-detectors.md) to review smart contracts.
+- Read most relevant interface file while reviewing. (e.g., GovMITO.sol -> IGovMITO.sol)
+- Not to miss anything, Read entire files while reviewing.
+- Make a detailed report in severity order with suggestions.
+- Skip with random emoji if you think there's no problem on the line. (e.g., ✅,✨)
+- Detect unused variables and functions, imports.
