@@ -36,10 +36,18 @@ contract MatrixVaultStorageV1 is IMatrixVaultStorageV1, ContextUpgradeable {
     return address(_getStorageV1().assetManager);
   }
 
+  function reclaimQueue() external view returns (address) {
+    return address(_getStorageV1().assetManager.reclaimQueue());
+  }
+
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   function _setAssetManager(StorageV1 storage $, address assetManager_) internal {
     require(assetManager_.code.length > 0, StdError.InvalidAddress('AssetManager'));
+
+    // Verify ReclaimQueue exists
+    address reclaimQueueAddr = IAssetManager(assetManager_).reclaimQueue();
+    require(reclaimQueueAddr.code.length > 0, StdError.InvalidAddress('ReclaimQueue'));
 
     $.assetManager = IAssetManager(assetManager_);
 
