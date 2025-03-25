@@ -255,7 +255,7 @@ contract MerkleRewardDistributor is
     ITreasury oldTreasury = $.treasury;
     $.treasury = ITreasury(treasury_);
 
-    emit TreasuryUpdated(oldTreasury, ITreasury(treasury_));
+    emit TreasuryUpdated(address(oldTreasury), treasury_);
   }
 
   function _fetchRewards(StorageV1 storage $, uint256 stage, address matrixVault, address reward, uint256 amount)
