@@ -42,5 +42,5 @@
     "toml": "^3.0.0",
     "viem": "^2.18.7"
   },
-  "packageManager": "yarn@4.4.0"
+  "packageManager": "yarn@4.7.0"
 }
