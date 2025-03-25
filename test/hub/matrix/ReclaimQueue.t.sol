@@ -34,6 +34,18 @@ contract ReclaimQueueTest is Toolkit {
   function setUp() public {
     _assetManager = new MockAssetManager();
 
+    _reclaimQueue = ReclaimQueue(
+      payable(
+        new ERC1967Proxy(
+          address(new ReclaimQueue()),
+          abi.encodeCall(ReclaimQueue.initialize, (_owner, address(_assetManager))) //
+        )
+      )
+    );
+
+    vm.prank(_owner);
+    _assetManager.setReclaimQueue(address(_reclaimQueue));
+
     _hubAsset = HubAsset(
       _proxy(
         address(new HubAsset()),
@@ -49,20 +61,11 @@ contract ReclaimQueueTest is Toolkit {
         ) //
       )
     );
-    _reclaimQueue = ReclaimQueue(
-      payable(
-        new ERC1967Proxy(
-          address(new ReclaimQueue()),
-          abi.encodeCall(ReclaimQueue.initialize, (_owner, address(_assetManager))) //
-        )
-      )
-    );
 
     // configure
 
     vm.startPrank(_owner);
 
-    _assetManager.setReclaimQueue(address(_reclaimQueue));
     _reclaimQueue.enable(address(_matrixVault));
     _reclaimQueue.setRedeemPeriod(address(_matrixVault), 1 days);
 

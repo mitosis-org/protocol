@@ -8,25 +8,33 @@ import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
 import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
+import { IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
 import { MatrixVaultCapped } from '../../../src/hub/matrix/MatrixVaultCapped.sol';
 import { MatrixVaultFactory } from '../../../src/hub/matrix/MatrixVaultFactory.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
-
-contract Empty { }
+import { MockContract } from '../../util/MockContract.sol';
 
 contract MatrixVaultFactoryTest is Toolkit {
   address public contractOwner = makeAddr('owner');
-  address public assetManager = address(new Empty());
+  MockContract public assetManager;
+  MockContract public reclaimQueue;
 
   ERC1967Factory public proxyFactory;
 
   MatrixVaultBasic public basicImpl;
   MatrixVaultCapped public cappedImpl;
   MatrixVaultFactory public factoryImpl;
+
   MatrixVaultFactory public base;
 
   function setUp() public {
+    assetManager = new MockContract();
+    reclaimQueue = new MockContract();
+    assetManager.setRet(
+      abi.encodeCall(IAssetManagerStorageV1.reclaimQueue, ()), false, abi.encode(address(reclaimQueue))
+    );
+
     proxyFactory = new ERC1967Factory();
 
     basicImpl = new MatrixVaultBasic();
@@ -64,7 +72,7 @@ contract MatrixVaultFactoryTest is Toolkit {
       contractOwner,
       MatrixVaultFactory.BasicVaultInitArgs({
         owner: contractOwner,
-        assetManager: assetManager,
+        assetManager: address(assetManager),
         asset: IERC20Metadata(address(new WETH())),
         name: 'Basic Vault',
         symbol: 'BV'
@@ -89,7 +97,7 @@ contract MatrixVaultFactoryTest is Toolkit {
       contractOwner,
       MatrixVaultFactory.CappedVaultInitArgs({
         owner: contractOwner,
-        assetManager: assetManager,
+        assetManager: address(assetManager),
         asset: IERC20Metadata(address(new WETH())),
         name: 'Capped Vault',
         symbol: 'CV'
