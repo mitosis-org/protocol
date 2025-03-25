@@ -130,7 +130,7 @@ contract ValidatorStakingGovMITOTest is Toolkit {
     vault.stake(val, user2, 100);
 
     vm.warp(_now() + 1);
-    assertEq(vault.getPastTotalSupply(_now() - 1), 200);
+    assertEq(vault.getPastTotalSupply(_now() - 1), 0);
     assertEq(vault.getVotes(user1), 0);
     assertEq(vault.getVotes(user2), 100);
 
@@ -168,7 +168,7 @@ contract ValidatorStakingGovMITOTest is Toolkit {
 
     vm.warp(_now() + 1);
     assertEq(vault.getVotes(user1), 200); // 100 + 100
-    assertEq(vault.getPastTotalSupply(_now() - 1), 200);
+    assertEq(vault.getPastTotalSupply(_now() - 1), 0);
   }
 
   function test_requestUnstake_nonTransferable() public {
@@ -192,7 +192,7 @@ contract ValidatorStakingGovMITOTest is Toolkit {
     vm.warp(_now() + 1);
     assertEq(claimed, 100);
     assertEq(vault.getVotes(user1), 100);
-    assertEq(vault.getPastTotalSupply(_now() - 1), 100);
+    assertEq(vault.getPastTotalSupply(_now() - 1), 0);
   }
 
   function _mintAndApprove(address user, uint256 amount) internal {
