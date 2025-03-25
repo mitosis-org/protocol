@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { ReentrancyGuardTransient } from '@oz-v5/utils/ReentrancyGuardTransient.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
@@ -17,7 +18,14 @@ import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { ReclaimQueueStorageV1 } from './ReclaimQueueStorageV1.sol';
 
-contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSUpgradeable, ReclaimQueueStorageV1 {
+contract ReclaimQueue is
+  IReclaimQueue,
+  Pausable,
+  Ownable2StepUpgradeable,
+  UUPSUpgradeable,
+  ReclaimQueueStorageV1,
+  ReentrancyGuardTransient
+{
   using SafeERC20 for IMatrixVault;
   using SafeERC20 for IHubAsset;
   using SafeCast for uint256;
@@ -46,6 +54,9 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     _assertQueueEnabled($, matrixVault);
 
     IMatrixVault(matrixVault).safeTransferFrom(_msgSender(), address(this), shares);
+
+    // We're subtracting 1 because of the rounding error
+    // If there's better way to handle this, We can apply it
     uint256 assets = IMatrixVault(matrixVault).previewRedeem(shares) - 1;
 
     uint256 reqId = $.states[matrixVault].queue.enqueue(
@@ -61,7 +72,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     return reqId;
   }
 
-  function claim(address receiver, address matrixVault) external whenNotPaused returns (uint256) {
+  function claim(address receiver, address matrixVault) external nonReentrant whenNotPaused returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
 
     _assertQueueEnabled($, matrixVault);
@@ -87,10 +98,10 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     uint256 totalClaimed_ = _claim(queue, index, cfg);
     require(totalClaimed_ > 0, IReclaimQueue__NothingToClaim());
 
+    emit ReclaimRequestClaimed(receiver, matrixVault, totalClaimed_);
+
     // send total claim amount to receiver
     cfg.hubAsset.safeTransfer(receiver, totalClaimed_);
-
-    emit ReclaimRequestClaimed(receiver, matrixVault, totalClaimed_);
 
     return totalClaimed_;
   }
@@ -192,39 +203,56 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     return totalClaimed_;
   }
 
+  struct SyncState {
+    uint256 queueOffset;
+    uint256 queueSize;
+    uint256 totalReservedShares;
+    uint256 totalReservedAssets;
+    uint256 totalShares;
+    uint256 totalAssets;
+  }
+
   function _sync(StorageV1 storage $, address executor, IMatrixVault matrixVault, uint256 claimCount) internal {
     LibRedeemQueue.Queue storage q = $.states[address(matrixVault)].queue;
 
-    uint256 totalReservedShares = 0;
-    uint256 totalReservedAssets = 0;
-    uint256 totalShares = matrixVault.totalSupply();
-    uint256 totalAssets = matrixVault.totalAssets();
+    SyncState memory state = SyncState({
+      queueOffset: q.offset,
+      queueSize: q.size,
+      totalReservedShares: 0,
+      totalReservedAssets: 0,
+      totalShares: matrixVault.totalSupply(),
+      totalAssets: matrixVault.totalAssets()
+    });
 
-    uint256 i = q.offset;
-    for (; i < q.offset + claimCount; i++) {
-      if (i >= q.size) break;
+    // Use cached values from SyncState
+    for (uint256 i = state.queueOffset; i < state.queueOffset + claimCount && i < state.queueSize;) {
       LibRedeemQueue.Request memory req = q.data[i];
-
       uint256 shares = i == 0 ? req.accumulated : req.accumulated - q.data[i - 1].accumulated;
 
       uint256 assetsOnRequest = _decodeRequestMetadata(req.metadata);
       uint256 assetsOnReserve = _convertToAssets(
-        shares, $.states[address(matrixVault)].decimalsOffset, totalAssets, totalShares, Math.Rounding.Floor
+        shares, $.states[address(matrixVault)].decimalsOffset, state.totalAssets, state.totalShares, Math.Rounding.Floor
       );
 
-      totalReservedShares += shares;
-      totalReservedAssets += Math.min(assetsOnRequest, assetsOnReserve);
+      state.totalReservedShares += shares;
+      state.totalReservedAssets += Math.min(assetsOnRequest, assetsOnReserve);
+
+      unchecked {
+        ++i;
+      } // Use unchecked for gas savings
     }
 
-    IMatrixVault(matrixVault).withdraw(totalReservedAssets, address(this), address(this));
+    IMatrixVault(matrixVault).withdraw(state.totalReservedAssets, address(this), address(this));
 
     $.states[address(matrixVault)].queue.reserve(
       executor,
-      totalReservedShares,
+      state.totalReservedShares,
       block.timestamp.toUint48(),
       /// METADATA
-      _encodeReserveMetadata(totalShares, totalAssets)
+      _encodeReserveMetadata(state.totalShares, state.totalAssets)
     );
+
+    emit ReserveSynced(executor, address(matrixVault), claimCount, state.totalReservedShares, state.totalReservedAssets);
   }
 
   // =========================== NOTE: ASSERTIONS =========================== //
