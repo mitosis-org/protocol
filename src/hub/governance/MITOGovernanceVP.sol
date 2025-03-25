@@ -15,6 +15,12 @@ import { StdError } from '../../lib/StdError.sol';
 contract MITOGovernanceVP is IVotes, OwnableUpgradeable, UUPSUpgradeable, EIP712Upgradeable, NoncesUpgradeable {
   event TokensUpdated(ISudoVotes[] oldTokens, ISudoVotes[] newTokens);
 
+  error MITOGovernanceVP__ZeroLengthTokens();
+  error MITOGovernanceVP__InvalidToken(address token);
+  error MITOGoverannceVP__MaxTokensLengthExceeded(uint256 max, uint256 actual);
+
+  uint256 public constant MAX_TOKENS = 25;
+
   bytes32 private constant DELEGATION_TYPEHASH = keccak256('Delegation(address delegatee,uint256 nonce,uint256 expiry)');
 
   ISudoVotes[] private _tokens;
@@ -37,6 +43,21 @@ contract MITOGovernanceVP is IVotes, OwnableUpgradeable, UUPSUpgradeable, EIP712
   }
 
   function updateTokens(ISudoVotes[] calldata newTokens_) external onlyOwner {
+    require(newTokens_.length > 0, MITOGovernanceVP__ZeroLengthTokens());
+    require(newTokens_.length <= MAX_TOKENS, MITOGoverannceVP__MaxTokensLengthExceeded(MAX_TOKENS, newTokens_.length));
+
+    uint256 newTokensLen = newTokens_.length;
+    for (uint256 i = 0; i < newTokensLen;) {
+      require(
+        address(newTokens_[i]).code.length > 0, //
+        MITOGovernanceVP__InvalidToken(address(newTokens_[i]))
+      );
+
+      unchecked {
+        i++;
+      }
+    }
+
     ISudoVotes[] memory oldTokens = _tokens;
     _tokens = newTokens_;
 
