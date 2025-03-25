@@ -1,0 +1,37 @@
+# Dependencies - allow Solidity files
+!dependencies
+dependencies/*
+
+!dependencies/@openzeppelin-contracts-5.1.0
+dependencies/@openzeppelin-contracts-5.1.0/build
+
+!dependencies/@openzeppelin-contracts-upgradeable-5.1.0
+dependencies/@openzeppelin-contracts-upgradeable-5.1.0/build
+
+!dependencies/@elliptic-curve-solidity-0.2.5
+dependencies/@elliptic-curve-solidity-0.2.5/*
+!dependencies/@elliptic-curve-solidity-0.2.5/contracts
+
+!dependencies/solady-0.0.230
+dependencies/solady-0.0.230/*
+!dependencies/solady-0.0.230/src
+
+!dependencies/forge-std-1.9.6
+dependencies/forge-std-1.9.6/*
+!dependencies/forge-std-1.9.6/src
+
+!dependencies/solmate-6.8.0
+dependencies/solmate-6.8.0/*
+!dependencies/solmate-6.8.0/src
+
+# dependencies/@murky-0.0.1
+# dependencies/solmate-6.8.0
+# dependencies/@openzeppelin-contracts-v4-4.9.6
+# dependencies/@openzeppelin-contracts-upgradeable-v4-4.9.6
+# dependencies/openzeppelin-foundry-upgrades-0.3.1
+
+!node_modules
+node_modules/*
+
+!node_modules/hpl-v5
+node_modules/hpl-v5/*
