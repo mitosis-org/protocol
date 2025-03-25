@@ -25,6 +25,12 @@ contract MerkleRewardDistributor is
   /// @notice Role for manager (keccak256("MANAGER_ROLE"))
   bytes32 public constant MANAGER_ROLE = 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08;
 
+  /// @notice Maximum number of rewards that can be claimed in a single call.
+  uint256 public constant MAX_CLAIM_VAULT_SIZE = 100;
+
+  /// @notice Maximum number of batch claims that can be made in a single call.
+  uint256 public constant MAX_CLAIM_STAGES_SIZE = 10;
+
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
   constructor() {
@@ -32,6 +38,8 @@ contract MerkleRewardDistributor is
   }
 
   function initialize(address admin, address treasury_) public initializer {
+    require(admin != address(0), StdError.ZeroAddress('admin'));
+
     __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
 
@@ -129,6 +137,7 @@ contract MerkleRewardDistributor is
     require(matrixVaults.length == rewards.length, StdError.InvalidParameter('rewards.length'));
     require(matrixVaults.length == amounts.length, StdError.InvalidParameter('amounts.length'));
     require(matrixVaults.length == proofs.length, StdError.InvalidParameter('proofs.length'));
+    require(matrixVaults.length <= MAX_CLAIM_VAULT_SIZE, StdError.InvalidParameter('matrixVaults.length'));
 
     for (uint256 i = 0; i < matrixVaults.length; i++) {
       claim(receiver, stage, matrixVaults[i], rewards[i], amounts[i], proofs[i]);
@@ -150,6 +159,7 @@ contract MerkleRewardDistributor is
     require(stages.length == rewards.length, StdError.InvalidParameter('rewards.length'));
     require(stages.length == amounts.length, StdError.InvalidParameter('amounts.length'));
     require(stages.length == proofs.length, StdError.InvalidParameter('proofs.length'));
+    require(stages.length <= MAX_CLAIM_STAGES_SIZE, StdError.InvalidParameter('stages.length'));
 
     for (uint256 i = 0; i < stages.length; i++) {
       claimMultiple(receiver, stages[i], matrixVaults[i], rewards[i], amounts[i], proofs[i]);
@@ -240,18 +250,23 @@ contract MerkleRewardDistributor is
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
   function _setTreasury(StorageV1 storage $, address treasury_) internal {
-    require(treasury_.code.length > 0, StdError.InvalidAddress('Treasury'));
+    require(treasury_.code.length > 0, StdError.InvalidAddress('treasury'));
+
+    ITreasury oldTreasury = $.treasury;
     $.treasury = ITreasury(treasury_);
+
+    emit TreasuryUpdated(oldTreasury, ITreasury(treasury_));
   }
 
   function _fetchRewards(StorageV1 storage $, uint256 stage, address matrixVault, address reward, uint256 amount)
     internal
   {
+    Stage storage s = _stage($, stage);
+    uint256 nonce = s.nonce++;
+
     $.treasury.dispatch(matrixVault, reward, amount, address(this));
 
-    Stage storage s = _stage($, stage);
-    emit RewardsFetched(stage, s.nonce, matrixVault, reward, amount);
-    s.nonce++;
+    emit RewardsFetched(stage, nonce, matrixVault, reward, amount);
   }
 
   function _addStage(StorageV1 storage $, bytes32 root_, address[] calldata rewards, uint256[] calldata amounts)
@@ -300,19 +315,20 @@ contract MerkleRewardDistributor is
   ) internal {
     StorageV1 storage $ = _getStorageV1();
     Stage storage s = _stage($, stage);
-
     require(!s.claimed[receiver][matrixVault], IMerkleRewardDistributor__AlreadyClaimed());
-    s.claimed[receiver][matrixVault] = true;
 
+    uint256 rewardsLen = rewards.length;
     bytes32 leaf = _leaf(receiver, stage, matrixVault, rewards, amounts);
     require(proof.verify(s.root, leaf), IMerkleRewardDistributor__InvalidProof());
+    require(rewardsLen == amounts.length, StdError.InvalidParameter('amounts.length'));
 
-    require(rewards.length == amounts.length, StdError.InvalidParameter('amounts.length'));
-    for (uint256 i = 0; i < rewards.length; i++) {
-      address reward = rewards[i];
-      uint256 amount = amounts[i];
-      IERC20(reward).safeTransfer(receiver, amount);
-      $.reservedRewardAmounts[reward] -= amount;
+    s.claimed[receiver][matrixVault] = true;
+    for (uint256 i = 0; i < rewardsLen; i++) {
+      $.reservedRewardAmounts[rewards[i]] -= amounts[i];
+    }
+
+    for (uint256 i = 0; i < rewardsLen; i++) {
+      IERC20(rewards[i]).safeTransfer(receiver, amounts[i]);
     }
 
     emit Claimed(receiver, stage, matrixVault, rewards, amounts);
