@@ -131,15 +131,19 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
   }
 
   /// @dev only strategist
-  function reserveMatrix(address matrixVault, uint256 amount) external whenNotPaused {
+  function reserveMatrix(address matrixVault, uint256 claimCount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($, matrixVault);
 
     uint256 idle = _matrixIdle($, matrixVault);
-    require(amount <= idle, IAssetManager__MatrixInsufficient(matrixVault));
+    (, uint256 simulatedTotalReservedAssets) = $.reclaimQueue.previewSync(matrixVault, claimCount);
+    require(simulatedTotalReservedAssets <= idle, IAssetManager__MatrixInsufficient(matrixVault));
 
-    $.reclaimQueue.sync(_msgSender(), matrixVault, amount);
+    (uint256 totalReservedShares, uint256 totalReservedAssets) =
+      $.reclaimQueue.sync(_msgSender(), matrixVault, claimCount);
+
+    emit MatrixReclaimQueueReserved(matrixVault, claimCount, totalReservedShares, totalReservedAssets);
   }
 
   /// @dev only entrypoint
