@@ -5,6 +5,7 @@ import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.
 
 import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
+import { ReentrancyGuardTransient } from '@oz-v5/utils/ReentrancyGuardTransient.sol';
 
 import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 
@@ -17,7 +18,13 @@ import { MatrixVaultStorageV1 } from './MatrixVaultStorageV1.sol';
  * @title MatrixVault
  * @notice Base implementation of an MatrixVault
  */
-abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgradeable, Pausable {
+abstract contract MatrixVault is
+  MatrixVaultStorageV1,
+  ERC4626,
+  Ownable2StepUpgradeable,
+  Pausable,
+  ReentrancyGuardTransient
+{
   using Math for uint256;
 
   function __MatrixVault_init(
@@ -65,7 +72,14 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgr
 
   // Mutative functions
 
-  function deposit(uint256 assets, address receiver) public virtual override whenNotPaused returns (uint256) {
+  function deposit(uint256 assets, address receiver)
+    public
+    virtual
+    override
+    nonReentrant
+    whenNotPaused
+    returns (uint256)
+  {
     uint256 maxAssets = maxDeposit(receiver);
     require(assets <= maxAssets, DepositMoreThanMax());
 
@@ -75,7 +89,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgr
     return shares;
   }
 
-  function mint(uint256 shares, address receiver) public virtual override whenNotPaused returns (uint256) {
+  function mint(uint256 shares, address receiver) public virtual override nonReentrant whenNotPaused returns (uint256) {
     uint256 maxShares = maxMint(receiver);
     require(shares <= maxShares, MintMoreThanMax());
 
@@ -85,7 +99,13 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgr
     return assets;
   }
 
-  function withdraw(uint256 assets, address receiver, address owner) public override whenNotPaused returns (uint256) {
+  function withdraw(uint256 assets, address receiver, address owner)
+    public
+    override
+    nonReentrant
+    whenNotPaused
+    returns (uint256)
+  {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyReclaimQueue($);
@@ -99,7 +119,13 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgr
     return shares;
   }
 
-  function redeem(uint256 shares, address receiver, address owner) public override whenNotPaused returns (uint256) {
+  function redeem(uint256 shares, address receiver, address owner)
+    public
+    override
+    nonReentrant
+    whenNotPaused
+    returns (uint256)
+  {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyReclaimQueue($);
