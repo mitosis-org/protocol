@@ -361,12 +361,16 @@ contract ValidatorStaking is
 
     uint48 now_ = Time.timestamp();
     uint256 lastRedelegationTime_ = $.lastRedelegationTime[delegator];
-    require(
-      now_ >= lastRedelegationTime_ + $.redelegationCooldown,
-      IValidatorStaking__CooldownNotPassed(
-        lastRedelegationTime_.toUint48(), now_, (lastRedelegationTime_.toUint48() + $.redelegationCooldown) - now_
-      )
-    );
+
+    if (lastRedelegationTime_ > 0) {
+      uint48 cooldown = $.redelegationCooldown;
+      uint48 lasttime = lastRedelegationTime_.toUint48();
+      require(
+        now_ >= lasttime + cooldown, //
+        IValidatorStaking__CooldownNotPassed(lasttime, now_, (lasttime + cooldown) - now_)
+      );
+    }
+    $.lastRedelegationTime[delegator] = now_;
 
     _storeUnstake($, fromValAddr, delegator, amount);
     _storeStake($, toValAddr, delegator, amount);
