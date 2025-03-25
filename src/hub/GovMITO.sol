@@ -84,7 +84,6 @@ contract GovMITO is
   }
 
   function initialize(address owner_, address minter_, uint256 redeemPeriod_) external initializer {
-    require(owner_ != address(0), StdError.ZeroAddress('owner'));
     require(minter_ != address(0), StdError.ZeroAddress('minter'));
     require(redeemPeriod_ > 0, StdError.InvalidParameter('redeemPeriod'));
 
