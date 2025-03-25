@@ -16,7 +16,7 @@ interface IMerkleRewardDistributor {
     address indexed receiver, uint256 indexed stage, address indexed matrixVault, address[] rewards, uint256[] amounts
   );
 
-  event TreasuryUpdated(ITreasury oldTreasury, ITreasury newTreasury);
+  event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
 
   /**
    * @notice Error thrown when attempting to claim an already claimed reward.
