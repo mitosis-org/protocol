@@ -91,7 +91,7 @@ contract GovMITOEmissionTest is Toolkit {
       })
     );
 
-    vm.expectRevert(_errInvalidParameter('config.ssf'));
+    vm.expectRevert(_errInvalidParameter('config.startsFrom'));
     _init(
       total,
       IGovMITOEmission.ValidatorRewardConfig({

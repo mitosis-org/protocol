@@ -74,7 +74,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
 
     uint48 currentTime = Time.timestamp();
     require(config.total == msg.value, StdError.InvalidParameter('config.total'));
-    require(config.startsFrom > currentTime, StdError.InvalidParameter('config.ssf'));
+    require(config.startsFrom > currentTime, StdError.InvalidParameter('config.startsFrom'));
 
     StorageV1 storage $ = _getStorageV1();
 
@@ -161,9 +161,9 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     require($.validatorReward.total >= spent + amount, NotEnoughReserve());
 
     $.validatorReward.spent += amount;
-    _govMITO.safeTransfer(recipient, amount);
-
     emit ValidatorRewardRequested(epoch, amount);
+
+    _govMITO.safeTransfer(recipient, amount);
 
     return amount;
   }
@@ -190,6 +190,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
 
   /// @inheritdoc IGovMITOEmission
   function setValidatorRewardRecipient(address recipient) external onlyOwner {
+    require(recipient != address(0), StdError.ZeroAddress('recipient'));
     _setValidatorRewardRecipient(_getStorageV1(), recipient);
   }
 
@@ -208,6 +209,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
       StdError.InvalidParameter('timestamp')
     );
 
+    uint256 emissionIndex = $.validatorReward.emissions.length;
     $.validatorReward.emissions.push(
       ValidatorRewardEmission({
         rps: rps,
@@ -217,7 +219,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
       })
     );
 
-    emit ValidatorRewardEmissionConfigured(rps, rateMultiplier, renewalPeriod, timestamp);
+    emit ValidatorRewardEmissionConfigured(emissionIndex, rps, rateMultiplier, renewalPeriod, timestamp);
   }
 
   function _setValidatorRewardRecipient(StorageV1 storage $, address recipient) internal {
