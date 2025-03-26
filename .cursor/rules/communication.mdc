@@ -22,3 +22,4 @@ alwaysApply: true
 - Make a detailed report in severity order with suggestions.
 - Skip with random emoji if you think there's no problem on the line. (e.g., ✅,✨)
 - Detect unused variables and functions, imports.
+- Must review the smart contract in a system design perspective. You can suggest better design if you have it.
