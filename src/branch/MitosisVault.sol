@@ -112,7 +112,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
     _deposit($, asset, to, amount);
 
     _assertMatrixInitialized($, hubMatrixVault);
-    require(asset == $.matrices[hubMatrixVault].asset, IMitosisVault__InvalidMatrixVault(hubMatrixVault, asset));
+    require(asset == $.matrices[hubMatrixVault].asset, IMatrixMitosisVault__InvalidMatrixVault(hubMatrixVault, asset));
 
     $.entrypoint.depositWithSupplyMatrix(asset, to, hubMatrixVault, amount);
     emit MatrixDepositedWithSupply(asset, to, hubMatrixVault, amount);
@@ -334,14 +334,14 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
   function _assertMatrixInitialized(StorageV1 storage $, address hubMatrixVault) internal view {
     require(
       _isMatrixInitialized($, hubMatrixVault),
-      IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixNotInitialized(hubMatrixVault)
+      IMatrixMitosisVault.IMatrixMitosisVault__MatrixNotInitialized(hubMatrixVault)
     );
   }
 
   function _assertMatrixNotInitialized(StorageV1 storage $, address hubMatrixVault) internal view {
     require(
       !_isMatrixInitialized($, hubMatrixVault),
-      IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixAlreadyInitialized(hubMatrixVault)
+      IMatrixMitosisVault.IMatrixMitosisVault__MatrixAlreadyInitialized(hubMatrixVault)
     );
   }
 
