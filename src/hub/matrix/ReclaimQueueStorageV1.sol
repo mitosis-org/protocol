@@ -82,7 +82,6 @@ abstract contract ReclaimQueueStorageV1 is IReclaimQueueStorageV1, ContextUpgrad
 
     IReclaimQueueStorageV1.GetRequestResponse[] memory resp = new IReclaimQueueStorageV1.GetRequestResponse[](len);
     for (uint256 i; i < len;) {
-      // Remove initialization
       LibRedeemQueue.Request memory req = queue.get(reqIds[i]);
 
       resp[i] = GetRequestResponse({

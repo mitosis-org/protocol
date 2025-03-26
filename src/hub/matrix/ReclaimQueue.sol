@@ -72,7 +72,7 @@ contract ReclaimQueue is
     IMatrixVault(matrixVault).safeTransferFrom(_msgSender(), address(this), shares);
 
     // We're subtracting 1 because of the rounding error
-    // If there's better way to handle this, We can apply it
+    // If there's a better way to handle this, we can apply it
     uint256 assets = IMatrixVault(matrixVault).previewRedeem(shares) - 1;
 
     uint256 reqId = $.states[matrixVault].queue.enqueue(

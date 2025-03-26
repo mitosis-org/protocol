@@ -38,8 +38,6 @@ contract MatrixVaultFactory is Ownable2StepUpgradeable, UUPSUpgradeable {
     string symbol;
   }
 
-  /* ... more to come ... */
-
   struct BeaconInfo {
     bool initialized;
     address beacon;
