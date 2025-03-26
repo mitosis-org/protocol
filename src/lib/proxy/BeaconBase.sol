@@ -6,8 +6,12 @@ import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
 import { ERC7201Utils } from '../ERC7201Utils.sol';
+import { StdError } from '../StdError.sol';
 
 interface IBeaconBase {
+  event InstanceAdded(address indexed instance);
+  event BeaconExecuted(address indexed caller, bytes data, bool success, bytes ret);
+
   error IBeaconBase__BeaconCallFailed(bytes revertData);
 
   function beacon() external view returns (address);
@@ -38,8 +42,12 @@ abstract contract BeaconBase is IBeaconBase, ContextUpgradeable {
   }
 
   function __BeaconBase_init(UpgradeableBeacon beacon_) internal {
+    require(address(beacon_).code.length > 0, StdError.InvalidAddress('beacon'));
+
     __Context_init();
+
     BeaconBaseStorage storage $ = _getBeaconBaseStorage();
+
     $.beacon = beacon_;
   }
 
@@ -78,6 +86,9 @@ abstract contract BeaconBase is IBeaconBase, ContextUpgradeable {
   function _callBeacon(bytes calldata data) internal returns (bytes memory) {
     (bool success, bytes memory result) = address(beacon()).call(data);
     require(success, IBeaconBase__BeaconCallFailed(result));
+
+    emit BeaconExecuted(_msgSender(), data, success, result);
+
     return result;
   }
 
@@ -85,5 +96,7 @@ abstract contract BeaconBase is IBeaconBase, ContextUpgradeable {
     BeaconBaseStorage storage $ = _getBeaconBaseStorage();
     $.instances.push(instance);
     $.instanceIndex[instance] = $.instances.length - 1;
+
+    emit InstanceAdded(instance);
   }
 }
