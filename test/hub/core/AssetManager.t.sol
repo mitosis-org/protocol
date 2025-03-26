@@ -455,12 +455,28 @@ contract AssetManagerTest is Toolkit {
   }
 
   function test_reserveMatrix_MatrixInsufficient() public {
-    test_deallocateMatrix();
-    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 100 ether);
+    test_allocateMatrix();
+
+    vm.prank(owner);
+    _reclaimQueue.enable(address(_matrixVault));
+
+    vm.startPrank(user1);
+    _matrixVault.approve(address(_reclaimQueue), 50 ether);
+    _reclaimQueue.request(50 ether, user1, address(_matrixVault));
+    vm.stopPrank();
 
     vm.expectRevert(_errMatrixInsufficient(address(_matrixVault)));
     vm.prank(strategist);
-    _assetManager.reserveMatrix(address(_matrixVault), 101 ether);
+    _assetManager.reserveMatrix(address(_matrixVault), 1);
+  }
+
+  function test_reserveMatrix_MatrixNothingToReserve() public {
+    test_deallocateMatrix();
+    assertEq(_assetManager.matrixIdle(address(_matrixVault)), 100 ether);
+
+    vm.expectRevert(_errMatrixNothingToReserve(address(_matrixVault)));
+    vm.prank(strategist);
+    _assetManager.reserveMatrix(address(_matrixVault), 100);
   }
 
   function test_reserveMatrix_Unauthorized() public {
@@ -474,7 +490,7 @@ contract AssetManagerTest is Toolkit {
     _matrixVault.transfer(address(_reclaimQueue), 10 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _assetManager.reserveMatrix(address(_matrixVault), 10 ether);
+    _assetManager.reserveMatrix(address(_matrixVault), 10);
   }
 
   function test_settleMatrixYield() public {
@@ -960,6 +976,10 @@ contract AssetManagerTest is Toolkit {
 
   function _errInvalidMatrixVault(address matrixVault, address hubAsset) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(IAssetManager.IAssetManager__InvalidMatrixVault.selector, matrixVault, hubAsset);
+  }
+
+  function _errMatrixNothingToReserve(address matrixVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAssetManager.IAssetManager__NothingToReserve.selector, matrixVault);
   }
 
   function _errMatrixInsufficient(address matrixVault) internal pure returns (bytes memory) {
