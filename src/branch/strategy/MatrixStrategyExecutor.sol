@@ -119,7 +119,7 @@ contract MatrixStrategyExecutor is
     $.storedTotalBalance -= amount;
   }
 
-  function settle() external {
+  function settle() external nonReentrant {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($);
