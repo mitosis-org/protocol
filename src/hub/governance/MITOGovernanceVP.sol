@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
 import { ECDSA } from '@oz-v5/utils/cryptography/ECDSA.sol';
 
-import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 import { EIP712Upgradeable } from '@ozu-v5/utils/cryptography/EIP712Upgradeable.sol';
 import { NoncesUpgradeable } from '@ozu-v5/utils/NoncesUpgradeable.sol';
@@ -12,7 +12,7 @@ import { NoncesUpgradeable } from '@ozu-v5/utils/NoncesUpgradeable.sol';
 import { ISudoVotes } from '../../interfaces/lib/ISudoVotes.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-contract MITOGovernanceVP is IVotes, OwnableUpgradeable, UUPSUpgradeable, EIP712Upgradeable, NoncesUpgradeable {
+contract MITOGovernanceVP is IVotes, Ownable2StepUpgradeable, UUPSUpgradeable, EIP712Upgradeable, NoncesUpgradeable {
   event TokensUpdated(ISudoVotes[] oldTokens, ISudoVotes[] newTokens);
 
   error MITOGovernanceVP__ZeroLengthTokens();
@@ -30,6 +30,7 @@ contract MITOGovernanceVP is IVotes, OwnableUpgradeable, UUPSUpgradeable, EIP712
   }
 
   function initialize(address owner_, ISudoVotes[] calldata tokens_) external initializer {
+    __Ownable2Step_init();
     __Ownable_init(owner_);
     __UUPSUpgradeable_init();
     __EIP712_init('Mitosis Governance VP', '1');
