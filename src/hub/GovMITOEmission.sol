@@ -73,21 +73,12 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     __Ownable2Step_init();
 
     uint48 currentTime = Time.timestamp();
-    require(config.total == msg.value, StdError.InvalidParameter('config.total'));
     require(config.startsFrom > currentTime, StdError.InvalidParameter('config.ssf'));
 
     StorageV1 storage $ = _getStorageV1();
 
     _configureValidatorRewardEmission($, config.rps, config.rateMultiplier, config.renewalPeriod, config.startsFrom);
     _setValidatorRewardRecipient($, config.recipient);
-
-    $.validatorReward.total = config.total;
-    $.validatorReward.spent = 0;
-
-    if (config.total > 0) {
-      // convert the total amount to gMITO
-      _govMITO.mint{ value: config.total }(address(this));
-    }
   }
 
   /// @inheritdoc IGovMITOEmission
