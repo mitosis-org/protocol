@@ -63,7 +63,7 @@ contract MatrixVaultFactory is Ownable2StepUpgradeable, UUPSUpgradeable {
   }
 
   event VaultTypeInitialized(VaultType vaultType, address beacon);
-  event MatrixVaultCreated(address indexed creator, VaultType vaultType, address instance);
+  event MatrixVaultCreated(address indexed creator, VaultType vaultType, address instance, bytes initArgs);
   event MatrixVaultMigrated(address indexed migrator, VaultType from, VaultType to, address instance);
   event BeaconCalled(address indexed caller, VaultType vaultType, bytes data);
 
@@ -140,7 +140,7 @@ contract MatrixVaultFactory is Ownable2StepUpgradeable, UUPSUpgradeable {
     return result;
   }
 
-  function create(VaultType t, bytes memory args) external onlyOwner returns (address) {
+  function create(VaultType t, bytes calldata args) external onlyOwner returns (address) {
     Storage storage $ = _getStorage();
     require($.infos[t].initialized, NotInitialized());
 
@@ -150,7 +150,7 @@ contract MatrixVaultFactory is Ownable2StepUpgradeable, UUPSUpgradeable {
     else if (t == VaultType.Capped) instance = _create($, abi.decode(args, (CappedVaultInitArgs)));
     else revert InvalidVaultType();
 
-    emit MatrixVaultCreated(_msgSender(), t, instance);
+    emit MatrixVaultCreated(_msgSender(), t, instance, args);
     return instance;
   }
 
@@ -171,8 +171,8 @@ contract MatrixVaultFactory is Ownable2StepUpgradeable, UUPSUpgradeable {
     $.infos[from].instances.pop();
     delete $.infos[from].instanceIndex[instance]; // Use delete instead of setting to 0
 
-    IBeaconProxy(instance).upgradeBeaconToAndCall($.infos[to].beacon, data);
     $.infos[to].instances.push(instance);
+    IBeaconProxy(instance).upgradeBeaconToAndCall($.infos[to].beacon, data);
 
     emit MatrixVaultMigrated(_msgSender(), from, to, instance);
   }
