@@ -30,7 +30,7 @@ interface ICrossChainRegistry {
   event VaultSet(uint256 indexed chainId, address indexed vault);
 
   /**
-   * @notice Error thrown when attempting to register an already registered chain or Hyperlane domain.
+   * @notice Error thrown when attempting to register a chain that is not registered.
    */
   error ICrossChainRegistry__NotRegistered();
 
