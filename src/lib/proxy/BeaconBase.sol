@@ -75,7 +75,7 @@ abstract contract BeaconBase is IBeaconBase, ContextUpgradeable {
     return $.instances[index];
   }
 
-  function instances(uint256[] memory indexes) external view returns (address[] memory) {
+  function instances(uint256[] calldata indexes) external view returns (address[] memory) {
     BeaconBaseStorage storage $ = _getBeaconBaseStorage();
 
     address[] memory result = new address[](indexes.length);
