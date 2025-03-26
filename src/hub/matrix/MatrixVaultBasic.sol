@@ -7,7 +7,7 @@ import { MatrixVault } from './MatrixVault.sol';
 
 /**
  * @title MatrixVaultBasic
- * @notice Basic implementation of an MatrixVault by simply inherits the MatrixVault contract
+ * @notice Basic implementation of a MatrixVault that simply inherits the MatrixVault contract
  */
 contract MatrixVaultBasic is MatrixVault {
   constructor() {
