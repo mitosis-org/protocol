@@ -30,10 +30,9 @@ interface IMatrixMitosisVault {
 
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
-  error MatrixDepositedWithSupply__MatrixNotInitialized(address hubMatrixVault);
-  error MatrixDepositedWithSupply__MatrixAlreadyInitialized(address hubMatrixVault);
-
-  error IMitosisVault__InvalidMatrixVault(address hubMatrixVault, address asset);
+  error IMatrixMitosisVault__MatrixNotInitialized(address hubMatrixVault);
+  error IMatrixMitosisVault__MatrixAlreadyInitialized(address hubMatrixVault);
+  error IMatrixMitosisVault__InvalidMatrixVault(address hubMatrixVault, address asset);
 
   //=========== NOTE: View functions ===========//
 

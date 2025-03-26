@@ -63,7 +63,7 @@ interface IMerkleRewardDistributor {
    * @notice Makes a leaf hash that expected to be used in the merkle tree.
    * @param stage The stage number.
    * @param receiver The receiver address.
-   * @param matrixVault The EOL Vault address.
+   * @param matrixVault The Matrix Vault address.
    * @param rewards The reward token addresses.
    * @param amounts The reward amounts.
    */
@@ -79,7 +79,7 @@ interface IMerkleRewardDistributor {
    * @notice Checks if the account can claim the rewards for the specified matrixVault in the specified stage.
    * @param receiver The receiver address.
    * @param stage The stage number.
-   * @param matrixVault The EOL Vault address.
+   * @param matrixVault The Matrix Vault address.
    * @param rewards The reward token addresses.
    * @param amounts The reward amounts.
    * @param proof The merkle proof.

@@ -858,14 +858,13 @@ contract MitosisVaultTest is Toolkit {
 
   function _errMatrixAlreadyInitialized(address _hubMatrixVault) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
-      IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixAlreadyInitialized.selector, _hubMatrixVault
+      IMatrixMitosisVault.IMatrixMitosisVault__MatrixAlreadyInitialized.selector, _hubMatrixVault
     );
   }
 
   function _errMatrixNotInitialized(address _hubMatrixVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(
-      IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixNotInitialized.selector, _hubMatrixVault
-    );
+    return
+      abi.encodeWithSelector(IMatrixMitosisVault.IMatrixMitosisVault__MatrixNotInitialized.selector, _hubMatrixVault);
   }
 
   function _errMatrixStrategyExecutorNotDraind(address _hubMatrixVault, address matrixStrategyExecutor_)
