@@ -194,8 +194,8 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
 
     MatrixInfo storage matrixInfo = $.matrices[hubMatrixVault];
 
-    IERC20(matrixInfo.asset).safeTransferFrom(matrixInfo.strategyExecutor, address(this), amount);
     matrixInfo.availableLiquidity += amount;
+    IERC20(matrixInfo.asset).safeTransferFrom(matrixInfo.strategyExecutor, address(this), amount);
 
     emit MatrixReturned(hubMatrixVault, amount);
   }
