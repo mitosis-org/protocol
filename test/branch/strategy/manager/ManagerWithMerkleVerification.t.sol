@@ -81,21 +81,21 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     bytes[] memory targetData;
     uint256[] memory values;
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser1(100 ether);
 
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser2(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser2(100 ether);
 
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser3(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser3(100 ether);
 
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
@@ -110,7 +110,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     bytes[] memory targetData;
     uint256[] memory values;
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser1(100 ether);
 
     vm.expectRevert(_errNotFound('manageProof'));
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
@@ -130,7 +130,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     bytes[] memory targetData;
     uint256[] memory values;
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser1(100 ether);
 
     // invalid manageProofs
     manageProofs = new bytes32[][](1);
@@ -145,7 +145,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser1(100 ether);
 
     // invalid target address
     targets[0] = user2;
@@ -156,7 +156,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser1(100 ether);
 
     // invalid decoderAndSanitizer address
 
@@ -177,7 +177,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser1(100 ether);
 
     // invalid values (canSendValue)
     values[0] = 1 ether;
@@ -296,7 +296,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     }
   }
 
-  function _makeManageParamterForUser1(uint256 amount)
+  function _makeManageParameterForUser1(uint256 amount)
     internal
     view
     returns (
@@ -328,7 +328,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     return (manageProofs, decodersAndSanitizers, targets, targetData, values);
   }
 
-  function _makeManageParamterForUser2(uint256 amount)
+  function _makeManageParameterForUser2(uint256 amount)
     internal
     view
     returns (
@@ -360,7 +360,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     return (manageProofs, decodersAndSanitizers, targets, targetData, values);
   }
 
-  function _makeManageParamterForUser3(uint256 amount)
+  function _makeManageParameterForUser3(uint256 amount)
     internal
     view
     returns (

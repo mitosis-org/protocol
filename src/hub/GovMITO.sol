@@ -246,7 +246,7 @@ contract GovMITO is
 
   function _setWhitelistedSender(GovMITOStorage storage $, address sender, bool isWhitelisted) internal {
     $.isWhitelistedSender[sender] = isWhitelisted;
-    emit WhiltelistedSenderSet(sender, isWhitelisted);
+    emit WhitelistedSenderSet(sender, isWhitelisted);
   }
 
   function _setRedeemPeriod(GovMITOStorage storage $, uint256 redeemPeriod_) internal {

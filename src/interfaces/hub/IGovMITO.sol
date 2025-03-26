@@ -38,7 +38,7 @@ interface IGovMITO is IERC20, IERC5805 {
    * @param sender The address of the sender
    * @param whitelisted Whether the sender is whitelisted
    */
-  event WhiltelistedSenderSet(address indexed sender, bool whitelisted);
+  event WhitelistedSenderSet(address indexed sender, bool whitelisted);
 
   /**
    * @notice Emitted when the redeem period is set.

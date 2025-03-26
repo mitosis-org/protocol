@@ -57,7 +57,7 @@ contract CrossChainRegistryTest is Test {
     require(chainIds.length == 1, 'invalid chainIds');
     require(chainIds[0] == chainID, 'invalid chainIds');
     require(
-      keccak256(abi.encodePacked(ccRegistry.chainName(1))) == keccak256(abi.encodePacked(name)), 'invalid chainNmae'
+      keccak256(abi.encodePacked(ccRegistry.chainName(1))) == keccak256(abi.encodePacked(name)), 'invalid chainName'
     );
     require(ccRegistry.hyperlaneDomain(chainID) == hplDomain, 'invalid hyperlaneDomain');
     require(ccRegistry.mitosisVaultEntrypoint(chainID) == mitosisVaultEntrypoint, 'invalid mitosisVaultEntrypoint');

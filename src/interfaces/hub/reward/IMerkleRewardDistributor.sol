@@ -55,7 +55,7 @@ interface IMerkleRewardDistributor {
   function rewardInfo(uint256 stage_) external view returns (address[] memory rewards, uint256[] memory amounts);
 
   /**
-   * @notice Retruns the ITreasury.
+   * @notice Returns the ITreasury.
    */
   function treasury() external view returns (ITreasury);
 
@@ -134,12 +134,12 @@ interface IMerkleRewardDistributor {
   // ============================ NOTE: MANAGER FUNCTIONS ============================ //
 
   /**
-   * @notice Fetchs reward from the matrixVault to the specified stage.
+   * @notice Fetches reward from the matrixVault to the specified stage.
    */
   function fetchRewards(uint256 stage, uint256 nonce, address matrixVault, address reward, uint256 amount) external;
 
   /**
-   * @notice Fetchs rewards from the matrixVaults to the specified stage.
+   * @notice Fetches rewards from the matrixVaults to the specified stage.
    */
   function fetchRewardsMultiple(
     uint256 stage,
@@ -150,7 +150,7 @@ interface IMerkleRewardDistributor {
   ) external;
 
   /**
-   * @notice Fetchs rewards from the multiple matrixVaults to the specified stage.
+   * @notice Fetches rewards from the multiple matrixVaults to the specified stage.
    */
   function fetchRewardsBatch(
     uint256 stage,
