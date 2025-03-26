@@ -338,7 +338,7 @@ contract ValidatorManager is
         validator.rewardConfig.pendingCommissionRateUpdateEpoch.toUint96(),
         // check for global minimum commission rate modified
         Math.max(
-          uint256(globalConfig.minimumCommissionRates.lowerLookup(currentEpoch.toUint96())),
+          uint256(globalConfig.minimumCommissionRates.upperLookup(currentEpoch.toUint96())),
           validator.rewardConfig.pendingCommissionRate
         ).toUint160()
       );
@@ -371,7 +371,7 @@ contract ValidatorManager is
   {
     Validator storage info = _validator($, valAddr);
 
-    uint256 commissionRate = info.rewardConfig.commissionRates.lowerLookup(epoch.toUint96());
+    uint256 commissionRate = info.rewardConfig.commissionRates.upperLookup(epoch.toUint96());
 
     ValidatorInfoResponse memory response = ValidatorInfoResponse({
       valAddr: info.valAddr,
@@ -384,13 +384,13 @@ contract ValidatorManager is
     });
 
     // apply pending rate
-    if (info.rewardConfig.pendingCommissionRateUpdateEpoch >= epoch) {
+    if (info.rewardConfig.pendingCommissionRateUpdateEpoch <= epoch) {
       response.commissionRate = info.rewardConfig.pendingCommissionRate;
     }
 
     // hard limit
     response.commissionRate =
-      Math.max(response.commissionRate, $.globalValidatorConfig.minimumCommissionRates.lowerLookup(epoch.toUint96()));
+      Math.max(response.commissionRate, $.globalValidatorConfig.minimumCommissionRates.upperLookup(epoch.toUint96()));
 
     return response;
   }
