@@ -352,8 +352,29 @@ contract ValidatorManagerTest is Toolkit {
 
     assertEq(manager.validatorInfo(val.addr).commissionRate, previousCommissionRate);
 
-    vm.warp(1 + epochInterval * commissionRateUpdateDelay);
+    vm.warp(block.timestamp + epochInterval * commissionRateUpdateDelay);
     assertEq(manager.validatorInfo(val.addr).commissionRate, newCommissionRate);
+
+    assertEq(manager.validatorInfoAt(0, val.addr).commissionRate, previousCommissionRate);
+    assertEq(manager.validatorInfoAt(1, val.addr).commissionRate, previousCommissionRate);
+    assertEq(manager.validatorInfoAt(2, val.addr).commissionRate, previousCommissionRate);
+    assertEq(manager.validatorInfoAt(3, val.addr).commissionRate, newCommissionRate);
+
+    previousCommissionRate = newCommissionRate;
+    newCommissionRate = 300;
+
+    vm.prank(val.addr);
+    manager.updateRewardConfig(
+      val.addr, IValidatorManager.UpdateRewardConfigRequest({ commissionRate: newCommissionRate })
+    );
+
+    vm.warp(block.timestamp + epochInterval * commissionRateUpdateDelay);
+    assertEq(manager.validatorInfo(val.addr).commissionRate, newCommissionRate);
+
+    assertEq(manager.validatorInfoAt(3, val.addr).commissionRate, previousCommissionRate);
+    assertEq(manager.validatorInfoAt(4, val.addr).commissionRate, previousCommissionRate);
+    assertEq(manager.validatorInfoAt(5, val.addr).commissionRate, previousCommissionRate);
+    assertEq(manager.validatorInfoAt(6, val.addr).commissionRate, newCommissionRate);
   }
 
   function _makePubKey(string memory name) internal returns (ValidatorKey memory) {
