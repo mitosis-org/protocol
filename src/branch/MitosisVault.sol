@@ -129,7 +129,7 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSU
     emit Redeemed(asset, to, amount);
   }
 
-  //=========== NOTE: MUTATIVE - EOL FUNCTIONS ===========//
+  //=========== NOTE: MUTATIVE - MATRIX FUNCTIONS ===========//
 
   function initializeMatrix(address hubMatrixVault, address asset) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
