@@ -56,7 +56,7 @@ interface IReclaimQueueStorageV1 {
 
   /**
    * @notice Historical data about reserves at a specific point in time
-   * @param reserved Reserved amount for specific log
+   * @param reserved Reserved amount for a specific log
    * @param reservedAt Timestamp when this reserve entry was created
    * @param totalShares Total shares in the MatrixVault at this point
    * @param totalAssets Total assets in the MatrixVault at this point
@@ -69,7 +69,7 @@ interface IReclaimQueueStorageV1 {
   }
 
   /**
-   * @notice Emitted when an reclaim queue is activated for an MatrixVault
+   * @notice Emitted when a reclaim queue is activated for an MatrixVault
    * @param matrixVault Address of the MatrixVault for which the queue is enabled
    */
   event QueueEnabled(address indexed matrixVault);
