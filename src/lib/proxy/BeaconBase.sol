@@ -12,6 +12,7 @@ interface IBeaconBase {
   event InstanceAdded(address indexed instance);
   event BeaconExecuted(address indexed caller, bytes data, bool success, bytes ret);
 
+  error IBeaconBase__IndexOutOfBounds(uint256 max, uint256 given);
   error IBeaconBase__BeaconCallFailed(bytes revertData);
 
   function beacon() external view returns (address);
@@ -66,15 +67,24 @@ abstract contract BeaconBase is IBeaconBase, ContextUpgradeable {
   }
 
   function instances(uint256 index) external view returns (address) {
-    return _getBeaconBaseStorage().instances[index];
+    BeaconBaseStorage storage $ = _getBeaconBaseStorage();
+
+    uint256 instancesLen = $.instances.length;
+    require(index < instancesLen, IBeaconBase__IndexOutOfBounds(instancesLen, index));
+
+    return $.instances[index];
   }
 
   function instances(uint256[] memory indexes) external view returns (address[] memory) {
     BeaconBaseStorage storage $ = _getBeaconBaseStorage();
 
     address[] memory result = new address[](indexes.length);
-    for (uint256 i = 0; i < indexes.length; i++) {
-      result[i] = $.instances[indexes[i]];
+    uint256 instancesLen = $.instances.length;
+    uint256 indexesLen = indexes.length;
+    for (uint256 i = 0; i < indexesLen; i++) {
+      uint256 index = indexes[i];
+      require(index < instancesLen, IBeaconBase__IndexOutOfBounds(instancesLen, index));
+      result[i] = $.instances[index];
     }
     return result;
   }
