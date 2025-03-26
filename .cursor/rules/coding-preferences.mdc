@@ -27,7 +27,7 @@ alwaysApply: true
 
 ## Basic principal of our smart contract (Solidity)
 
-* Use ERC7201 (namespaced storage) pattern + defining separate contract for storage definition.
+* Use ERC7201 (namespaced storage) pattern + defining separate contract for storage definition. It must be an abstract contract.
 * Use UUPS Proxy except some extraordinary cases like beacon proxy pattern, etc.
 * Use ReentrancyGuardTransient to prevent reentrancy. And apply it only for necessary cases.
 * Must use OZ's SafeERC20, Solady's SafeTransferLib to transferring or sending some tokens in any form (native, erc20, etc.)
