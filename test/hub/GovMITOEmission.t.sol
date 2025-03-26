@@ -34,16 +34,17 @@ contract GovMITOEmissionTest is Toolkit {
     uint256 total = rps * 365 days * 2;
 
     _init(
-      total,
       IGovMITOEmission.ValidatorRewardConfig({
         rps: rps,
-        total: total,
         rateMultiplier: 5000, // 50%
         renewalPeriod: 365 days,
         startsFrom: 1 days,
         recipient: recipient
       })
     );
+
+    vm.deal(owner, total);
+    emission.addValidatorRewardEmission{ value: total }();
 
     govMITO.assertLastCall(abi.encodeCall(IGovMITO.mint, (address(emission))), total);
 
@@ -76,27 +77,11 @@ contract GovMITOEmissionTest is Toolkit {
 
   function test_init_invalidParameter() public {
     uint256 rps = 1 gwei;
-    uint256 total = rps * 365 days * 2;
-
-    vm.expectRevert(_errInvalidParameter('config.total'));
-    _init(
-      total,
-      IGovMITOEmission.ValidatorRewardConfig({
-        rps: rps,
-        total: total + 1 gwei,
-        rateMultiplier: 5000, // 50%
-        renewalPeriod: 365 days,
-        startsFrom: 1 days,
-        recipient: recipient
-      })
-    );
 
     vm.expectRevert(_errInvalidParameter('config.startsFrom'));
     _init(
-      total,
       IGovMITOEmission.ValidatorRewardConfig({
         rps: rps,
-        total: total,
         rateMultiplier: 5000, // 50%
         renewalPeriod: 365 days,
         startsFrom: _now48() - 1,
@@ -109,16 +94,17 @@ contract GovMITOEmissionTest is Toolkit {
     uint256 total = 1 ether;
 
     _init(
-      total,
       IGovMITOEmission.ValidatorRewardConfig({
         rps: 1 gwei,
-        total: total,
         rateMultiplier: 5000, // 50%
         renewalPeriod: 365 days,
         startsFrom: 1 days,
         recipient: recipient
       })
     );
+
+    vm.deal(owner, total);
+    emission.addValidatorRewardEmission{ value: total }();
 
     uint256 amount = 1 ether;
     vm.expectEmit();
@@ -135,16 +121,17 @@ contract GovMITOEmissionTest is Toolkit {
     uint256 total = 1 gwei * 365 days * 2;
 
     _init(
-      total,
       IGovMITOEmission.ValidatorRewardConfig({
         rps: 1 gwei,
-        total: total,
         rateMultiplier: 5000, // 50%
         renewalPeriod: 365 days,
         startsFrom: 1 days,
         recipient: recipient
       })
     );
+
+    vm.deal(owner, total);
+    emission.addValidatorRewardEmission{ value: total }();
 
     for (uint256 i = 1; i <= 20; i++) {
       feeder.setRet(abi.encodeCall(IEpochFeeder.timeAt, (i)), false, abi.encode((2 * i - 1) * 1 days));
@@ -164,16 +151,17 @@ contract GovMITOEmissionTest is Toolkit {
     uint256 total = 1 gwei * 365 days * 2;
 
     _init(
-      total,
       IGovMITOEmission.ValidatorRewardConfig({
         rps: 1 gwei,
-        total: total,
         rateMultiplier: 5000, // 50%
         renewalPeriod: 4 days,
         startsFrom: 1 days,
         recipient: recipient
       })
     );
+
+    vm.deal(owner, total);
+    emission.addValidatorRewardEmission{ value: total }();
 
     for (uint256 i = 1; i <= 20; i++) {
       feeder.setRet(abi.encodeCall(IEpochFeeder.timeAt, (i)), false, abi.encode((2 * i - 1) * 1 days));
@@ -191,16 +179,17 @@ contract GovMITOEmissionTest is Toolkit {
     uint256 total = 1 gwei * 365 days * 2;
 
     _init(
-      total,
       IGovMITOEmission.ValidatorRewardConfig({
         rps: 1 gwei,
-        total: total,
         rateMultiplier: 5000, // 50%
         renewalPeriod: 4 days,
         startsFrom: 1 days,
         recipient: recipient
       })
     );
+
+    vm.deal(owner, total);
+    emission.addValidatorRewardEmission{ value: total }();
 
     vm.prank(owner);
     emission.configureValidatorRewardEmission(2 gwei, 7500, 2 days, 6 days);
@@ -229,14 +218,12 @@ contract GovMITOEmissionTest is Toolkit {
     assertEq(emission.validatorReward(9), 1 gwei * 2 days, 'epoch 9-10');
   }
 
-  function _init(uint256 value, IGovMITOEmission.ValidatorRewardConfig memory config) private {
-    vm.deal(owner, value);
+  function _init(IGovMITOEmission.ValidatorRewardConfig memory config) private {
     vm.startPrank(owner);
     emission = GovMITOEmission(
       _proxy(
         address(emissionImpl), //
-        abi.encodeCall(GovMITOEmission.initialize, (owner, config)),
-        value
+        abi.encodeCall(GovMITOEmission.initialize, (owner, config))
       )
     );
     vm.stopPrank();

@@ -7,7 +7,6 @@ import { IEpochFeeder } from './validator/IEpochFeeder.sol';
 interface IGovMITOEmission {
   struct ValidatorRewardConfig {
     uint256 rps;
-    uint256 total;
     uint160 rateMultiplier; // 10000 = 100%
     uint48 renewalPeriod;
     uint48 startsFrom;
