@@ -24,26 +24,26 @@ interface IValidatorStakingHub {
 
   /**
    * @notice Emitted when a stake is notified.
-   * @param valAddr The address of the validator.
-   * @param staker The address of the staker.
-   * @param amount The amount of stake.
+   * @param valAddr Validator address to be notified.
+   * @param staker Staker address to be notified.
+   * @param amount Amount of stake to be notified.
    */
   event NotifiedStake(address indexed valAddr, address indexed staker, uint256 amount);
 
   /**
    * @notice Emitted when an unstake is notified.
-   * @param valAddr The address of the validator.
-   * @param staker The address of the staker.
-   * @param amount The amount of unstake.
+   * @param valAddr Validator address to be notified.
+   * @param staker Staker address to be notified.
+   * @param amount Amount of unstake to be notified.
    */
   event NotifiedUnstake(address indexed valAddr, address indexed staker, uint256 amount);
 
   /**
    * @notice Emitted when a redelegation is notified.
-   * @param fromVal The address of the validator that the staker is redelegating from.
-   * @param toVal The address of the validator that the staker is redelegating to.
-   * @param staker The address of the staker.
-   * @param amount The amount of redelegation.
+   * @param fromVal Validator address to be notified.
+   * @param toVal Validator address to be notified.
+   * @param staker Staker address to be notified.
+   * @param amount Amount of redelegation to be notified.
    */
   event NotifiedRedelegation(address indexed fromVal, address indexed toVal, address indexed staker, uint256 amount);
 
@@ -137,26 +137,26 @@ interface IValidatorStakingHub {
 
   /**
    * @notice Notifies a stake.
-   * @param valAddr The address of the validator.
-   * @param staker The address of the staker.
-   * @param amount The amount of stake.
+   * @param valAddr Validator address to be notified.
+   * @param staker Staker address to be notified.
+   * @param amount Amount of stake to be notified.
    */
   function notifyStake(address valAddr, address staker, uint256 amount) external;
 
   /**
    * @notice Notifies an unstake.
-   * @param valAddr The address of the validator.
-   * @param staker The address of the staker.
-   * @param amount The amount of unstake.
+   * @param valAddr Validator address to be notified.
+   * @param staker Staker address to be notified.
+   * @param amount Amount of unstake to be notified.
    */
   function notifyUnstake(address valAddr, address staker, uint256 amount) external;
 
   /**
    * @notice Notifies a redelegation.
-   * @param fromValAddr The address of the validator that the staker is redelegating from.
-   * @param toValAddr The address of the validator that the staker is redelegating to.
-   * @param staker The address of the staker.
-   * @param amount The amount of redelegation.
+   * @param fromValAddr Validator address to be notified.
+   * @param toValAddr Validator address to be notified.
+   * @param staker Staker address to be notified.
+   * @param amount Amount of redelegation to be notified.
    */
   function notifyRedelegation(address fromValAddr, address toValAddr, address staker, uint256 amount) external;
 }
