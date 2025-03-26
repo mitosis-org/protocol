@@ -251,7 +251,7 @@ contract MitosisVaultTest is Toolkit {
 
     _token.approve(address(_mitosisVault), 100 ether);
 
-    vm.expectRevert(_errMatrixNotInitiailized(hubMatrixVault));
+    vm.expectRevert(_errMatrixNotInitialized(hubMatrixVault));
     _mitosisVault.depositWithSupplyMatrix(address(_token), user1, hubMatrixVault, 100 ether);
 
     vm.stopPrank();
@@ -425,7 +425,7 @@ contract MitosisVaultTest is Toolkit {
 
     // _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
 
-    vm.expectRevert(_errMatrixNotInitiailized(hubMatrixVault));
+    vm.expectRevert(_errMatrixNotInitialized(hubMatrixVault));
     _mitosisVault.allocateMatrix(hubMatrixVault, 100 ether);
 
     vm.stopPrank();
@@ -736,7 +736,7 @@ contract MitosisVaultTest is Toolkit {
   function test_setMatrixStrategyExecutor_MatrixNotInitialized() public {
     vm.startPrank(owner);
 
-    vm.expectRevert(_errMatrixNotInitiailized(hubMatrixVault));
+    vm.expectRevert(_errMatrixNotInitialized(hubMatrixVault));
     _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
     vm.stopPrank();
@@ -862,7 +862,7 @@ contract MitosisVaultTest is Toolkit {
     );
   }
 
-  function _errMatrixNotInitiailized(address _hubMatrixVault) internal pure returns (bytes memory) {
+  function _errMatrixNotInitialized(address _hubMatrixVault) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
       IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixNotInitialized.selector, _hubMatrixVault
     );

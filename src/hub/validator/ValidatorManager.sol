@@ -346,7 +346,7 @@ contract ValidatorManager is
 
     uint256 epochToUpdate = currentEpoch + globalConfig.commissionRateUpdateDelay;
 
-    // update pending commision rate
+    // update pending commission rate
     validator.rewardConfig.pendingCommissionRate = request.commissionRate;
     validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate;
 
