@@ -23,12 +23,12 @@ remappings = [
     "@ozu-v5=dependencies/@openzeppelin-contracts-upgradeable-5.1.0",
     "@oz-v4=dependencies/@openzeppelin-contracts-v4-4.9.6/contracts",
     "@ozu-v4=dependencies/@openzeppelin-contracts-upgradeable-v4-4.9.6/contracts",
-    "@solady=dependencies/solady-0.0.230/src",
+    "@solady=dependencies/solady-0.1.12/src",
     "@std=dependencies/forge-std-1.9.6/src",
     "@solmate=dependencies/solmate-6.8.0/src",
     "forge-std-1.9.6/=dependencies/forge-std-1.9.6/",
     "openzeppelin-foundry-upgrades-0.3.1/=dependencies/openzeppelin-foundry-upgrades-0.3.1/",
-    "solady-0.0.230/=dependencies/solady-0.0.230/",
+    "solady-0.1.12/=dependencies/solady-0.1.12/",
 ]
 fs_permissions = [{ access = "read-write", path = "./TemporaryLeafs.json" }]
 
@@ -58,7 +58,7 @@ remappings_location = "config"
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 
 [dependencies]
-solady = "0.0.230"
+solady = "0.1.12"
 forge-std = "1.9.6"
 openzeppelin-foundry-upgrades = "0.3.1"
 solmate = "6.8.0"

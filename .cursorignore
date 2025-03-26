@@ -12,9 +12,9 @@ dependencies/@openzeppelin-contracts-upgradeable-5.1.0/build
 dependencies/@elliptic-curve-solidity-0.2.5/*
 !dependencies/@elliptic-curve-solidity-0.2.5/contracts
 
-!dependencies/solady-0.0.230
-dependencies/solady-0.0.230/*
-!dependencies/solady-0.0.230/src
+!dependencies/solady-0.1.12
+dependencies/solady-0.1.12/*
+!dependencies/solady-0.1.12/src
 
 !dependencies/forge-std-1.9.6
 dependencies/forge-std-1.9.6/*
