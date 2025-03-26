@@ -119,7 +119,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     address operatorAddr;
     address rewardManager;
     address withdrawalRecipient;
-    uint256 comissionRate;
+    uint256 commissionRate;
     // ValidatorStakingHub
     address[] stakers;
     uint256[] amounts;
@@ -149,7 +149,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -167,7 +167,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 50, stakers: 50, comission: 10%
+    // operator: 50, stakers: 50, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -220,7 +220,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -232,7 +232,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-2'),
       rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -255,8 +255,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
     _setUpEpochs(epochParams);
 
     // total reward: 100 => val-1 50, val-2 50
-    // val-1: operator 80 %, stakers 20%, comission: 10%
-    // val-2: operator 50 %, stakers 50%, comission: 10%
+    // val-1: operator 80 %, stakers 20%, commission: 10%
+    // val-2: operator 50 %, stakers 50%, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -338,7 +338,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 70,
@@ -350,7 +350,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-2'),
       rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 30,
@@ -374,8 +374,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     // total reward: 100 => val-1 70, val-2 30
     //
-    // val-1: operator 80 %, stakers 20%, comission: 10%
-    // val-2: operator 50 %, stakers 50%, comission: 10%
+    // val-1: operator 80 %, stakers 20%, commission: 10%
+    // val-2: operator 50 %, stakers 50%, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -464,7 +464,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -487,7 +487,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 50, stakers: 50, comission: 10%
+    // operator: 50, stakers: 50, commission: 10%
     //
     // staker1: 50%, staker2: 25%, staker3: 25%
     uint256 claimable;
@@ -567,7 +567,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -585,7 +585,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 80, stakers: 20, comission: 10%
+    // operator: 80, stakers: 20, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -646,7 +646,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -666,8 +666,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
     _setUpEpochs(epochParams);
 
     // epoch1: 100, epoch1: 100
-    // epoch1) val1) operator: 50, stakers: 50, comission: 10%
-    // epoch2) val1) operator: 50, stakers: 50, comission: 10%
+    // epoch1) val1) operator: 50, stakers: 50, commission: 10%
+    // epoch2) val1) operator: 50, stakers: 50, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -729,7 +729,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -741,7 +741,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-2'),
       rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -754,7 +754,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -766,7 +766,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-2'),
       rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -795,14 +795,14 @@ contract ValidatorRewardDistributorTest is Toolkit {
     _setUpEpochs(epochParams);
 
     // epoch1: 100, epoch2: 100
-    // epoch1) operator: 80%, staker: 20%, comission: 10%
+    // epoch1) operator: 80%, staker: 20%, commission: 10%
     //
     //
     //
-    // epoch1) val1) operator: 80%, stakers: 20%, comission: 10%
-    // epoch1) val2) operator: 50%, stakers: 50%, comission: 10%
-    // epoch2) val1) operator: 50%, stakers: 50%, comission: 10%
-    // epoch2) val2) operator: 50%, stakers: 50%, comission: 10%
+    // epoch1) val1) operator: 80%, stakers: 20%, commission: 10%
+    // epoch1) val2) operator: 50%, stakers: 50%, commission: 10%
+    // epoch2) val1) operator: 50%, stakers: 50%, commission: 10%
+    // epoch2) val2) operator: 50%, stakers: 50%, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -890,7 +890,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -902,7 +902,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-2'),
       rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -1055,7 +1055,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -1073,7 +1073,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 0, stakers: 100, comission: 10%
+    // operator: 0, stakers: 100, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -1124,7 +1124,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -1142,7 +1142,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 0, stakers: 100, comission: 10%
+    // operator: 0, stakers: 100, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -1191,7 +1191,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -1247,7 +1247,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -1259,7 +1259,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-2'),
       rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -1356,7 +1356,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -1438,7 +1438,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -1456,7 +1456,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 50, stakers: 50, comission: 10%
+    // operator: 50, stakers: 50, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -1510,7 +1510,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -1528,7 +1528,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 50, stakers: 50, comission: 10%
+    // operator: 50, stakers: 50, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -1597,7 +1597,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -1615,7 +1615,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 50, stakers: 50, comission: 10%
+    // operator: 50, stakers: 50, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -1691,7 +1691,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -1703,7 +1703,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-2'),
       rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -1882,7 +1882,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
           validatorParam.operatorAddr, // address operator;
           validatorParam.rewardManager, // address rewardManager;
           validatorParam.withdrawalRecipient, // withdrawalRecipient
-          validatorParam.comissionRate, // uint256 commissionRate;
+          validatorParam.commissionRate, // uint256 commissionRate;
           bytes('') // bytes metadata;
         );
 

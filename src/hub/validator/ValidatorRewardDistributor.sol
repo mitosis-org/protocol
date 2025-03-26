@@ -75,7 +75,7 @@ contract ValidatorRewardDistributor is
   IValidatorContributionFeed private immutable _validatorContributionFeed;
   IGovMITOEmission private immutable _govMITOEmission;
 
-  uint8 private constant _CLAIM_CONFIG_VERISON = 1;
+  uint8 private constant _CLAIM_CONFIG_VERSION = 1;
 
   constructor(
     address epochFeeder_,
@@ -136,7 +136,7 @@ contract ValidatorRewardDistributor is
     ClaimConfig memory claimConfig_ = _getStorageV1().claimConfig;
 
     return ClaimConfigResponse({
-      version: _CLAIM_CONFIG_VERISON,
+      version: _CLAIM_CONFIG_VERSION,
       maxClaimEpochs: claimConfig_.maxClaimEpochs,
       maxStakerBatchSize: claimConfig_.maxStakerBatchSize,
       maxOperatorBatchSize: claimConfig_.maxOperatorBatchSize
@@ -258,7 +258,7 @@ contract ValidatorRewardDistributor is
       reserved: 0
     });
     $.claimConfig = newClaimConfig;
-    emit ClaimConfigUpdated(_CLAIM_CONFIG_VERISON, abi.encode(newClaimConfig));
+    emit ClaimConfigUpdated(_CLAIM_CONFIG_VERSION, abi.encode(newClaimConfig));
   }
 
   function _claimableStakerRewards(StorageV1 storage $, address valAddr, address staker, uint256 epochCount)
