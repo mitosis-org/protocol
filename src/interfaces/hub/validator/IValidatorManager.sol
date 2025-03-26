@@ -49,12 +49,12 @@ interface IValidatorManager {
     address operator;
     address rewardManager;
     address withdrawalRecipient;
-    uint256 commissionRate; // bp ex) 10000 = 100%
+    uint256 commissionRate; // bp e.g.) 10000 = 100%
     bytes metadata;
   }
 
   struct UpdateRewardConfigRequest {
-    uint256 commissionRate; // bp ex) 10000 = 100%
+    uint256 commissionRate; // bp e.g.) 10000 = 100%
   }
 
   struct GenesisValidatorSet {
@@ -71,7 +71,7 @@ interface IValidatorManager {
   struct SetGlobalValidatorConfigRequest {
     uint256 initialValidatorDeposit; // used on creation of the validator
     uint256 collateralWithdrawalDelay; // in seconds
-    uint256 minimumCommissionRate; // bp ex) 10000 = 100%
+    uint256 minimumCommissionRate; // bp e.g.) 10000 = 100%
     uint96 commissionRateUpdateDelay; // in epoch
   }
 
