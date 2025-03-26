@@ -119,7 +119,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
 
   /// @inheritdoc IGovMITOEmission
   function validatorRewardEmissionsByTime(uint48 timestamp) external view returns (uint256, uint160, uint48) {
-    (uint256 index, bool found) = _lowerLookup(_getStorageV1().validatorReward.emissions, timestamp);
+    (uint256 index, bool found) = _upperLookup(_getStorageV1().validatorReward.emissions, timestamp);
     require(found, StdError.InvalidParameter('emission.timestamp'));
 
     ValidatorRewardEmission memory emission = _getStorageV1().validatorReward.emissions[index];
@@ -253,7 +253,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     ValidatorRewardEmission[] storage emissions = $.validatorReward.emissions;
 
     uint256 emissionLen = emissions.length;
-    (uint256 emissionIndex, bool found) = _lowerLookup(emissions, epochStartTime);
+    (uint256 emissionIndex, bool found) = _upperLookup(emissions, epochStartTime);
     ValidatorRewardEmission memory activeLog = emissions[found ? emissionIndex : 0];
     if (epochEndTime < activeLog.timestamp) return 0; // no hope
 
@@ -293,24 +293,24 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     return self[self.length - 1];
   }
 
-  function _lowerLookup(ValidatorRewardEmission[] storage self, uint48 key) private view returns (uint256, bool) {
+  function _upperLookup(ValidatorRewardEmission[] storage self, uint48 key) private view returns (uint256, bool) {
+    if (self.length == 0) return (0, false);
     if (key < self[0].timestamp) return (0, false);
 
-    uint256 left = 0;
-    uint256 right = self.length - 1;
-    uint256 target = 0;
+    uint256 low = 0;
+    uint256 high = self.length;
 
-    while (left <= right) {
-      uint256 mid = left + (right - left) / 2;
-      if (self[mid].timestamp <= key) {
-        target = mid;
-        left = mid + 1;
+    while (low < high) {
+      uint256 mid = Math.average(low, high);
+      if (self[mid].timestamp > key) {
+        high = mid;
       } else {
-        right = mid - 1;
+        low = mid + 1;
       }
     }
 
-    return (target, true);
+    if (high == 0) return (0, false);
+    return (high - 1, true);
   }
 
   // ================== UUPS ================== //
