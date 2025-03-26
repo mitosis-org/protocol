@@ -84,8 +84,10 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     $.validatorReward.total = config.total;
     $.validatorReward.spent = 0;
 
-    // convert the total amount to gMITO
-    _govMITO.mint{ value: config.total }(address(this));
+    if (config.total > 0) {
+      // convert the total amount to gMITO
+      _govMITO.mint{ value: config.total }(address(this));
+    }
   }
 
   /// @inheritdoc IGovMITOEmission
