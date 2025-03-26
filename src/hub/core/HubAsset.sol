@@ -10,6 +10,8 @@ import { StdError } from '../../lib/StdError.sol';
 import { HubAssetStorageV1 } from './HubAssetStorageV1.sol';
 
 contract HubAsset is Ownable2StepUpgradeable, ERC20, HubAssetStorageV1 {
+  event SupplyManagerUpdated(address indexed previousSupplyManager, address indexed newSupplyManager);
+
   constructor() {
     _disableInitializers();
   }
@@ -53,14 +55,23 @@ contract HubAsset is Ownable2StepUpgradeable, ERC20, HubAssetStorageV1 {
   }
 
   function mint(address account, uint256 value) external onlySupplyManager {
+    require(value > 0, StdError.ZeroAmount());
+
     _mint(account, value);
   }
 
   function burn(address account, uint256 value) external onlySupplyManager {
+    require(value > 0, StdError.ZeroAmount());
+
     _burn(account, value);
   }
 
   function setSupplyManager(address supplyManager_) external onlyOwner {
-    _getStorageV1().supplyManager = supplyManager_;
+    StorageV1 storage $ = _getStorageV1();
+
+    address oldSupplyManager = $.supplyManager;
+    $.supplyManager = supplyManager_;
+
+    emit SupplyManagerUpdated(oldSupplyManager, supplyManager_);
   }
 }
