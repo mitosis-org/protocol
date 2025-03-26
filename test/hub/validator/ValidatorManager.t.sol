@@ -340,17 +340,19 @@ contract ValidatorManagerTest is Toolkit {
 
   function test_updateRewardConfig() public {
     ValidatorKey memory val = test_createValidator('val-1');
-    address newOperator = makeAddr('newOperator');
+
     uint256 newCommissionRate = 200;
+    uint256 previousCommissionRate = manager.validatorInfo(val.addr).commissionRate;
+    uint256 commissionRateUpdateDelay = manager.globalValidatorConfig().commissionRateUpdateDelay;
 
     vm.prank(val.addr);
-    manager.updateOperator(val.addr, newOperator);
-
-    vm.prank(newOperator);
     manager.updateRewardConfig(
       val.addr, IValidatorManager.UpdateRewardConfigRequest({ commissionRate: newCommissionRate })
     );
 
+    assertEq(manager.validatorInfo(val.addr).commissionRate, previousCommissionRate);
+
+    vm.warp(1 + epochInterval * commissionRateUpdateDelay);
     assertEq(manager.validatorInfo(val.addr).commissionRate, newCommissionRate);
   }
 
