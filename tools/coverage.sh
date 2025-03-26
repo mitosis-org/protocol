@@ -9,6 +9,7 @@ lcov \
     --remove lcov.info \
     --output-file filtered-lcov.info \
     --ignore-errors unused \
+    --ignore-errors inconsistent \
     "*dependencies*" "*test*" "*script*" "*src/external*"
 
 rm lcov.info
@@ -24,7 +25,8 @@ if [ "$CI" != "true" ]; then
     genhtml \
         --rc derive_function_end_line=0 \
         --output-directory coverage \
-        --ignore-errors category \
+        --ignore-errors unused \
+        --ignore-errors inconsistent \
         lcov.info
     open coverage/index.html
 fi
