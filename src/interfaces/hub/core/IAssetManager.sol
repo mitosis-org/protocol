@@ -271,6 +271,12 @@ interface IAssetManager is IAssetManagerStorageV1 {
   error IAssetManager__InvalidMatrixVault(address matrixVault, address hubAsset);
 
   /**
+   * @notice Error thrown when a MatrixVault has no claimable amount
+   * @param matrixVault The address of the MatrixVault with no claimable amount
+   */
+  error IAssetManager__NothingToReserve(address matrixVault);
+
+  /**
    * @notice Error thrown when a MatrixVault has insufficient funds
    * @param matrixVault The address of the MatrixVault with insufficient funds
    */

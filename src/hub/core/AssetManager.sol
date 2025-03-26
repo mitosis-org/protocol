@@ -138,6 +138,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
 
     uint256 idle = _matrixIdle($, matrixVault);
     (, uint256 simulatedTotalReservedAssets) = $.reclaimQueue.previewSync(matrixVault, claimCount);
+    require(simulatedTotalReservedAssets > 0, IAssetManager__NothingToReserve(matrixVault));
     require(simulatedTotalReservedAssets <= idle, IAssetManager__MatrixInsufficient(matrixVault));
 
     (uint256 totalReservedShares, uint256 totalReservedAssets) =
