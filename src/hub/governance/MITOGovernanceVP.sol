@@ -20,7 +20,7 @@ contract MITOGovernanceVP is IVotes, Ownable2StepUpgradeable, UUPSUpgradeable, E
 
   error MITOGovernanceVP__ZeroLengthTokens();
   error MITOGovernanceVP__InvalidToken(address token);
-  error MITOGoverannceVP__MaxTokensLengthExceeded(uint256 max, uint256 actual);
+  error MITOGovernanceVP__MaxTokensLengthExceeded(uint256 max, uint256 actual);
 
   uint256 public constant MAX_TOKENS = 25;
 
@@ -61,7 +61,7 @@ contract MITOGovernanceVP is IVotes, Ownable2StepUpgradeable, UUPSUpgradeable, E
 
   function updateTokens(ISudoVotes[] calldata newTokens_) external onlyOwner {
     require(newTokens_.length > 0, MITOGovernanceVP__ZeroLengthTokens());
-    require(newTokens_.length <= MAX_TOKENS, MITOGoverannceVP__MaxTokensLengthExceeded(MAX_TOKENS, newTokens_.length));
+    require(newTokens_.length <= MAX_TOKENS, MITOGovernanceVP__MaxTokensLengthExceeded(MAX_TOKENS, newTokens_.length));
 
     uint256 newTokensLen = newTokens_.length;
     for (uint256 i = 0; i < newTokensLen;) {
