@@ -10,9 +10,12 @@ import { EIP712Upgradeable } from '@ozu-v5/utils/cryptography/EIP712Upgradeable.
 import { NoncesUpgradeable } from '@ozu-v5/utils/NoncesUpgradeable.sol';
 
 import { ISudoVotes } from '../../interfaces/lib/ISudoVotes.sol';
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 contract MITOGovernanceVP is IVotes, Ownable2StepUpgradeable, UUPSUpgradeable, EIP712Upgradeable, NoncesUpgradeable {
+  using ERC7201Utils for string;
+
   event TokensUpdated(ISudoVotes[] oldTokens, ISudoVotes[] newTokens);
 
   error MITOGovernanceVP__ZeroLengthTokens();
@@ -23,7 +26,20 @@ contract MITOGovernanceVP is IVotes, Ownable2StepUpgradeable, UUPSUpgradeable, E
 
   bytes32 private constant DELEGATION_TYPEHASH = keccak256('Delegation(address delegatee,uint256 nonce,uint256 expiry)');
 
-  ISudoVotes[] private _tokens;
+  struct StorageV1 {
+    ISudoVotes[] tokens;
+  }
+
+  string private constant _NAMESPACE = 'mitosis.storage.MITOGovernanceVP.v1';
+  bytes32 private immutable _slot = _NAMESPACE.storageSlot();
+
+  function _getStorageV1() internal view returns (StorageV1 storage $) {
+    bytes32 slot = _slot;
+    // slither-disable-next-line assembly
+    assembly {
+      $.slot := slot
+    }
+  }
 
   constructor() {
     _disableInitializers();
@@ -36,11 +52,11 @@ contract MITOGovernanceVP is IVotes, Ownable2StepUpgradeable, UUPSUpgradeable, E
     __EIP712_init('Mitosis Governance VP', '1');
     __Nonces_init();
 
-    _tokens = tokens_;
+    _getStorageV1().tokens = tokens_;
   }
 
   function tokens() external view returns (ISudoVotes[] memory) {
-    return _tokens;
+    return _getStorageV1().tokens;
   }
 
   function updateTokens(ISudoVotes[] calldata newTokens_) external onlyOwner {
@@ -59,41 +75,45 @@ contract MITOGovernanceVP is IVotes, Ownable2StepUpgradeable, UUPSUpgradeable, E
       }
     }
 
-    ISudoVotes[] memory oldTokens = _tokens;
-    _tokens = newTokens_;
+    StorageV1 storage $ = _getStorageV1();
+    ISudoVotes[] memory oldTokens = $.tokens;
+    $.tokens = newTokens_;
 
     emit TokensUpdated(oldTokens, newTokens_);
   }
 
   function getVotes(address account) external view returns (uint256) {
     uint256 votes = 0;
-    uint256 tokensLen = _tokens.length;
+    ISudoVotes[] memory tokens_ = _getStorageV1().tokens;
+    uint256 tokensLen = tokens_.length;
     for (uint256 i = 0; i < tokensLen; i++) {
-      votes += _tokens[i].getVotes(account);
+      votes += tokens_[i].getVotes(account);
     }
     return votes;
   }
 
   function getPastVotes(address account, uint256 timepoint) external view returns (uint256) {
     uint256 votes = 0;
-    uint256 tokensLen = _tokens.length;
+    ISudoVotes[] memory tokens_ = _getStorageV1().tokens;
+    uint256 tokensLen = tokens_.length;
     for (uint256 i = 0; i < tokensLen; i++) {
-      votes += _tokens[i].getPastVotes(account, timepoint);
+      votes += tokens_[i].getPastVotes(account, timepoint);
     }
     return votes;
   }
 
   function getPastTotalSupply(uint256 timepoint) external view returns (uint256) {
     uint256 totalSupply = 0;
-    uint256 tokensLen = _tokens.length;
+    ISudoVotes[] memory tokens_ = _getStorageV1().tokens;
+    uint256 tokensLen = tokens_.length;
     for (uint256 i = 0; i < tokensLen; i++) {
-      totalSupply += _tokens[i].getPastTotalSupply(timepoint);
+      totalSupply += tokens_[i].getPastTotalSupply(timepoint);
     }
     return totalSupply;
   }
 
   function delegates(address account) external view returns (address) {
-    return _tokens[0].delegates(account);
+    return _getStorageV1().tokens[0].delegates(account);
   }
 
   function delegate(address delegatee) external {
@@ -112,9 +132,10 @@ contract MITOGovernanceVP is IVotes, Ownable2StepUpgradeable, UUPSUpgradeable, E
   }
 
   function _delegate(address account, address delegatee) internal virtual {
-    uint256 tokensLen = _tokens.length;
+    ISudoVotes[] memory tokens_ = _getStorageV1().tokens;
+    uint256 tokensLen = tokens_.length;
     for (uint256 i = 0; i < tokensLen; i++) {
-      _tokens[i].sudoDelegate(account, delegatee);
+      tokens_[i].sudoDelegate(account, delegatee);
     }
   }
 
