@@ -6,6 +6,7 @@ import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { ReentrancyGuardTransient } from '@oz-v5/utils/ReentrancyGuardTransient.sol';
+import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
@@ -20,12 +21,11 @@ import { ERC20VotesUpgradeable } from '@ozu-v5/token/ERC20/extensions/ERC20Votes
 import { NoncesUpgradeable } from '@ozu-v5/utils/NoncesUpgradeable.sol';
 
 import { IGovMITO } from '../interfaces/hub/IGovMITO.sol';
+import { CheckpointsExt } from '../lib/CheckpointsExt.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
-import { LibRedeemQueue } from '../lib/LibRedeemQueue.sol';
 import { StdError } from '../lib/StdError.sol';
 import { SudoVotes } from '../lib/SudoVotes.sol';
 
-// TODO(thai): Add more view functions. (Check ReclaimQueueStorageV1.sol as a reference)
 contract GovMITO is
   IGovMITO,
   ERC20PermitUpgradeable,
@@ -36,13 +36,21 @@ contract GovMITO is
   ReentrancyGuardTransient
 {
   using ERC7201Utils for string;
-  using LibRedeemQueue for *;
   using SafeCast for uint256;
+  using Checkpoints for Checkpoints.Trace208;
+  using CheckpointsExt for Checkpoints.Trace208;
+
+  struct WithdrawalQueue {
+    uint256 offset;
+    Checkpoints.Trace208 requests;
+  }
 
   /// @custom:storage-location mitosis.storage.GovMITO
   struct GovMITOStorage {
     address minter;
-    LibRedeemQueue.Queue redeemQueue;
+    uint48 withdrawalPeriod;
+    uint48 _reserved;
+    mapping(address user => WithdrawalQueue) queue;
     mapping(address sender => bool) isWhitelistedSender;
   }
 
@@ -83,9 +91,9 @@ contract GovMITO is
     revert StdError.NotSupported();
   }
 
-  function initialize(address owner_, address minter_, uint256 redeemPeriod_) external initializer {
+  function initialize(address owner_, address minter_, uint256 withdrawalPeriod_) external initializer {
     require(minter_ != address(0), StdError.ZeroAddress('minter'));
-    require(redeemPeriod_ > 0, StdError.InvalidParameter('redeemPeriod'));
+    require(withdrawalPeriod_ > 0, StdError.InvalidParameter('withdrawalPeriod'));
 
     // TODO(thai): not fixed yet. could be modified before launching.
     __ERC20_init('Mitosis Governance Token', 'gMITO');
@@ -99,7 +107,7 @@ contract GovMITO is
     GovMITOStorage storage $ = _getGovMITOStorage();
 
     _setMinter($, minter_);
-    _setRedeemPeriod($, redeemPeriod_);
+    _setWithdrawalPeriod($, withdrawalPeriod_);
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
@@ -116,8 +124,48 @@ contract GovMITO is
     return _getGovMITOStorage().isWhitelistedSender[sender];
   }
 
-  function redeemPeriod() external view returns (uint256) {
-    return _getGovMITOStorage().redeemQueue.redeemPeriod;
+  function withdrawalPeriod() external view returns (uint256) {
+    return _getGovMITOStorage().withdrawalPeriod;
+  }
+
+  function withdrawalQueueOffset(address receiver) external view returns (uint256) {
+    return _getGovMITOStorage().queue[receiver].offset;
+  }
+
+  function withdrawalQueueSize(address receiver) external view returns (uint256) {
+    return _getGovMITOStorage().queue[receiver].requests.length();
+  }
+
+  function withdrawalQueueRequestByIndex(address receiver, uint32 pos) external view returns (uint48, uint208) {
+    Checkpoints.Checkpoint208 memory checkpoint = _getGovMITOStorage().queue[receiver].requests.at(pos);
+    return (checkpoint._key, checkpoint._value);
+  }
+
+  function withdrawalQueueRequestByTime(address receiver, uint48 time) external view returns (uint48, uint208) {
+    GovMITOStorage storage $ = _getGovMITOStorage();
+
+    uint256 pos = $.queue[receiver].requests.upperBinaryLookup(time, 0, $.queue[receiver].requests.length());
+    if (pos == 0) return (0, 0);
+
+    Checkpoints.Checkpoint208 memory checkpoint = $.queue[receiver].requests.at((pos - 1).toUint32());
+    return (checkpoint._key, checkpoint._value);
+  }
+
+  function previewClaimWithdraw(address receiver) external view returns (uint256) {
+    GovMITOStorage storage $ = _getGovMITOStorage();
+
+    Checkpoints.Trace208 storage requests = $.queue[receiver].requests;
+
+    uint256 offset = $.queue[receiver].offset;
+    uint256 reqLen = requests.length();
+    if (reqLen <= offset) return 0;
+
+    uint256 found = requests.upperBinaryLookup(clock() - $.withdrawalPeriod, offset, reqLen);
+    if (found <= offset + 1) return 0;
+
+    uint256 claimed = requests.valueAt((found - 1).toUint32()) - requests.valueAt(offset.toUint32());
+
+    return claimed;
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
@@ -140,30 +188,46 @@ contract GovMITO is
     emit Minted(to, msg.value);
   }
 
-  function requestRedeem(address receiver, uint256 amount) external returns (uint256 reqId) {
+  function requestWithdraw(address receiver, uint256 amount) external returns (uint256) {
     require(receiver != address(0), StdError.ZeroAddress('receiver'));
     require(amount > 0, StdError.ZeroAmount());
 
     GovMITOStorage storage $ = _getGovMITOStorage();
 
     _burn(_msgSender(), amount);
-    reqId = $.redeemQueue.enqueue(receiver, amount, clock(), bytes(''));
-    $.redeemQueue.reserve(address(this), amount, clock(), bytes(''));
 
-    emit RedeemRequested(_msgSender(), receiver, amount);
+    Checkpoints.Trace208 storage requests = $.queue[receiver].requests;
+    uint256 reqId = requests.length();
+    if (reqId == 0) {
+      requests.push(0, 0);
+      requests.push(clock(), amount.toUint208());
+    } else {
+      requests.push(clock(), requests.latest() + amount.toUint208());
+    }
+
+    emit WithdrawRequested(_msgSender(), receiver, amount, reqId);
 
     return reqId;
   }
 
-  function claimRedeem(address receiver) external nonReentrant returns (uint256 claimed) {
+  function claimWithdraw(address receiver) external nonReentrant returns (uint256) {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    $.redeemQueue.update(clock());
-    claimed = $.redeemQueue.claim(receiver, clock());
+    Checkpoints.Trace208 storage requests = $.queue[receiver].requests;
+
+    uint256 offset = $.queue[receiver].offset;
+    uint256 reqLen = requests.length();
+    require(reqLen > offset, IGovMITO__NothingToClaim());
+
+    uint256 found = requests.upperBinaryLookup(clock() - $.withdrawalPeriod, offset, reqLen);
+    require(found > offset + 1, IGovMITO__NothingToClaim());
+
+    uint256 claimed = requests.valueAt((found - 1).toUint32()) - requests.valueAt(offset.toUint32());
+    $.queue[receiver].offset = (found - 1);
 
     SafeTransferLib.safeTransferETH(receiver, claimed);
 
-    emit RedeemRequestClaimed(receiver, claimed);
+    emit WithdrawRequestClaimed(receiver, claimed, offset, found - 1);
 
     return claimed;
   }
@@ -182,9 +246,9 @@ contract GovMITO is
     _setWhitelistedSender(_getGovMITOStorage(), sender, isWhitelisted);
   }
 
-  function setRedeemPeriod(uint256 redeemPeriod_) external onlyOwner {
-    require(redeemPeriod_ > 0, StdError.InvalidParameter('redeemPeriod'));
-    _setRedeemPeriod(_getGovMITOStorage(), redeemPeriod_);
+  function setWithdrawalPeriod(uint256 withdrawalPeriod_) external onlyOwner {
+    require(withdrawalPeriod_ > 0, StdError.InvalidParameter('withdrawalPeriod'));
+    _setWithdrawalPeriod(_getGovMITOStorage(), withdrawalPeriod_);
   }
 
   // ============================ NOTE: IERC6372 OVERRIDES ============================ //
@@ -249,8 +313,8 @@ contract GovMITO is
     emit WhitelistedSenderSet(sender, isWhitelisted);
   }
 
-  function _setRedeemPeriod(GovMITOStorage storage $, uint256 redeemPeriod_) internal {
-    $.redeemQueue.redeemPeriod = redeemPeriod_;
-    emit RedeemPeriodSet(redeemPeriod_);
+  function _setWithdrawalPeriod(GovMITOStorage storage $, uint256 withdrawalPeriod_) internal {
+    $.withdrawalPeriod = uint48(withdrawalPeriod_);
+    emit WithdrawalPeriodSet(withdrawalPeriod_);
   }
 }

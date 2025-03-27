@@ -23,12 +23,14 @@ contract GovMITOTest is Toolkit {
   address immutable proxy = makeAddr('proxy');
   address immutable delegationManager = makeAddr('delegationManager');
 
-  uint48 constant REDEEM_PERIOD = 21 days;
+  uint48 constant WITHDRAWAL_PERIOD = 21 days;
 
   function setUp() public {
+    // use real time to avoid arithmatic overflow on withdrawalPeriod calculation
+    vm.warp(1743061332);
     govMITO = GovMITO(
       payable(
-        new ERC1967Proxy(address(new GovMITO()), abi.encodeCall(GovMITO.initialize, (owner, minter, REDEEM_PERIOD)))
+        new ERC1967Proxy(address(new GovMITO()), abi.encodeCall(GovMITO.initialize, (owner, minter, WITHDRAWAL_PERIOD)))
       )
     );
   }
@@ -37,7 +39,7 @@ contract GovMITOTest is Toolkit {
     assertEq(govMITO.owner(), owner);
     assertEq(govMITO.minter(), minter);
     assertEq(govMITO.delegationManager(), address(0));
-    assertEq(govMITO.redeemPeriod(), REDEEM_PERIOD);
+    assertEq(govMITO.withdrawalPeriod(), WITHDRAWAL_PERIOD);
   }
 
   function test_metadata() public view {
@@ -72,38 +74,46 @@ contract GovMITOTest is Toolkit {
     vm.startPrank(user1);
 
     uint256 requestedAt = block.timestamp;
-    govMITO.requestRedeem(user1, 30);
+    govMITO.requestWithdraw(user1, 30);
     assertEq(user1.balance, 0);
     assertEq(govMITO.balanceOf(user1), 70);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD - 1);
-    uint256 claimed = govMITO.claimRedeem(user1);
-    assertEq(claimed, 0);
-    assertEq(user1.balance, 0);
-    assertEq(govMITO.balanceOf(user1), 70);
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD - 1);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD);
-    claimed = govMITO.claimRedeem(user1);
+    vm.expectRevert(_errNothingToClaim());
+    uint256 claimed = govMITO.claimWithdraw(user1);
+
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD);
+    assertEq(govMITO.previewClaimWithdraw(user1), 30);
+
+    claimed = govMITO.claimWithdraw(user1);
     assertEq(claimed, 30);
     assertEq(user1.balance, 30);
     assertEq(govMITO.balanceOf(user1), 70);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
     requestedAt = block.timestamp;
-    govMITO.requestRedeem(user1, 70);
+    govMITO.requestWithdraw(user1, 70);
     assertEq(user1.balance, 30);
     assertEq(govMITO.balanceOf(user1), 0);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD - 1);
-    claimed = govMITO.claimRedeem(user1);
-    assertEq(claimed, 0);
-    assertEq(user1.balance, 30);
-    assertEq(govMITO.balanceOf(user1), 0);
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD - 1);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD);
-    claimed = govMITO.claimRedeem(user1);
+    vm.expectRevert(_errNothingToClaim());
+    claimed = govMITO.claimWithdraw(user1);
+
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD);
+    assertEq(govMITO.previewClaimWithdraw(user1), 70);
+
+    claimed = govMITO.claimWithdraw(user1);
     assertEq(claimed, 70);
     assertEq(user1.balance, 100);
     assertEq(govMITO.balanceOf(user1), 0);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
     vm.stopPrank();
   }
@@ -116,20 +126,27 @@ contract GovMITOTest is Toolkit {
     vm.startPrank(user1);
 
     uint256 requestedAt = block.timestamp;
-    govMITO.requestRedeem(user1, 30);
+    govMITO.requestWithdraw(user1, 30);
     assertEq(user1.balance, 0);
     assertEq(govMITO.balanceOf(user1), 70);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD / 2);
-    govMITO.requestRedeem(user1, 50);
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD / 2);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
+
+    govMITO.requestWithdraw(user1, 50);
     assertEq(user1.balance, 0);
     assertEq(govMITO.balanceOf(user1), 20);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD / 2 + REDEEM_PERIOD);
-    uint256 claimed = govMITO.claimRedeem(user1);
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD / 2 + WITHDRAWAL_PERIOD);
+    assertEq(govMITO.previewClaimWithdraw(user1), 80);
+
+    uint256 claimed = govMITO.claimWithdraw(user1);
     assertEq(claimed, 80);
     assertEq(user1.balance, 80);
     assertEq(govMITO.balanceOf(user1), 20);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
     vm.stopPrank();
   }
@@ -142,32 +159,42 @@ contract GovMITOTest is Toolkit {
     vm.startPrank(user1);
 
     uint256 requestedAt = block.timestamp;
-    govMITO.requestRedeem(user1, 30);
+    govMITO.requestWithdraw(user1, 30);
     assertEq(user1.balance, 0);
     assertEq(govMITO.balanceOf(user1), 70);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD / 2);
-    govMITO.requestRedeem(user1, 50);
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD / 2);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
+
+    govMITO.requestWithdraw(user1, 50);
     assertEq(user1.balance, 0);
     assertEq(govMITO.balanceOf(user1), 20);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD);
-    uint256 claimed = govMITO.claimRedeem(user1);
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD);
+    assertEq(govMITO.previewClaimWithdraw(user1), 30);
+
+    uint256 claimed = govMITO.claimWithdraw(user1);
     assertEq(claimed, 30);
     assertEq(user1.balance, 30);
     assertEq(govMITO.balanceOf(user1), 20);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD / 2 + REDEEM_PERIOD - 1);
-    claimed = govMITO.claimRedeem(user1);
-    assertEq(claimed, 0);
-    assertEq(user1.balance, 30);
-    assertEq(govMITO.balanceOf(user1), 20);
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD / 2 + WITHDRAWAL_PERIOD - 1);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD / 2 + REDEEM_PERIOD);
-    claimed = govMITO.claimRedeem(user1);
+    vm.expectRevert(_errNothingToClaim());
+    claimed = govMITO.claimWithdraw(user1);
+
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD / 2 + WITHDRAWAL_PERIOD);
+    assertEq(govMITO.previewClaimWithdraw(user1), 50);
+
+    claimed = govMITO.claimWithdraw(user1);
     assertEq(claimed, 50);
     assertEq(user1.balance, 80);
     assertEq(govMITO.balanceOf(user1), 20);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
     vm.stopPrank();
   }
@@ -180,26 +207,36 @@ contract GovMITOTest is Toolkit {
     vm.startPrank(user1);
 
     uint256 requestedAt = block.timestamp;
-    govMITO.requestRedeem(user1, 30);
+    govMITO.requestWithdraw(user1, 30);
     assertEq(user1.balance, 0);
     assertEq(govMITO.balanceOf(user1), 70);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD);
-    govMITO.requestRedeem(user1, 50);
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD);
+    assertEq(govMITO.previewClaimWithdraw(user1), 30);
+
+    govMITO.requestWithdraw(user1, 50);
     assertEq(user1.balance, 0);
     assertEq(govMITO.balanceOf(user1), 20);
+    assertEq(govMITO.previewClaimWithdraw(user1), 30);
 
-    vm.warp(requestedAt + REDEEM_PERIOD * 2 - 1);
-    uint256 claimed = govMITO.claimRedeem(user1);
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD * 2 - 1);
+    assertEq(govMITO.previewClaimWithdraw(user1), 30);
+
+    uint256 claimed = govMITO.claimWithdraw(user1);
     assertEq(claimed, 30);
     assertEq(user1.balance, 30);
     assertEq(govMITO.balanceOf(user1), 20);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD * 2);
-    claimed = govMITO.claimRedeem(user1);
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD * 2);
+    assertEq(govMITO.previewClaimWithdraw(user1), 50);
+
+    claimed = govMITO.claimWithdraw(user1);
     assertEq(claimed, 50);
     assertEq(user1.balance, 80);
     assertEq(govMITO.balanceOf(user1), 20);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
     vm.stopPrank();
   }
@@ -214,32 +251,40 @@ contract GovMITOTest is Toolkit {
     uint256 requestedAt = block.timestamp;
 
     vm.prank(user1);
-    govMITO.requestRedeem(user1, 30);
+    govMITO.requestWithdraw(user1, 30);
     assertEq(user1.balance, 0);
     assertEq(govMITO.balanceOf(user1), 20);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
     vm.prank(user2);
-    govMITO.requestRedeem(user2, 40);
+    govMITO.requestWithdraw(user2, 40);
     assertEq(user2.balance, 0);
     assertEq(govMITO.balanceOf(user2), 10);
+    assertEq(govMITO.previewClaimWithdraw(user2), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD);
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD);
+    assertEq(govMITO.previewClaimWithdraw(user1), 30);
+    assertEq(govMITO.previewClaimWithdraw(user2), 40);
 
     vm.prank(user1);
-    uint256 claimed = govMITO.claimRedeem(user1);
+    uint256 claimed = govMITO.claimWithdraw(user1);
     assertEq(claimed, 30);
     assertEq(user1.balance, 30);
     assertEq(user2.balance, 0);
     assertEq(govMITO.balanceOf(user1), 20);
     assertEq(govMITO.balanceOf(user2), 10);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
+    assertEq(govMITO.previewClaimWithdraw(user2), 40);
 
     vm.prank(user2);
-    claimed = govMITO.claimRedeem(user2);
+    claimed = govMITO.claimWithdraw(user2);
     assertEq(claimed, 40);
     assertEq(user1.balance, 30);
     assertEq(user2.balance, 40);
     assertEq(govMITO.balanceOf(user1), 20);
     assertEq(govMITO.balanceOf(user2), 10);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
+    assertEq(govMITO.previewClaimWithdraw(user2), 0);
   }
 
   function test_redeem_differentReceiver() public {
@@ -249,18 +294,22 @@ contract GovMITOTest is Toolkit {
 
     uint256 requestedAt = block.timestamp;
     vm.prank(user1);
-    govMITO.requestRedeem(user2, 30);
+    govMITO.requestWithdraw(user2, 30);
     assertEq(user1.balance, 0);
     assertEq(user2.balance, 0);
     assertEq(govMITO.balanceOf(user1), 70);
+    assertEq(govMITO.previewClaimWithdraw(user2), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD);
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD);
+    assertEq(govMITO.previewClaimWithdraw(user2), 30);
+
     vm.prank(user2);
-    uint256 claimed = govMITO.claimRedeem(user2);
+    uint256 claimed = govMITO.claimWithdraw(user2);
     assertEq(claimed, 30);
     assertEq(user1.balance, 0);
     assertEq(user2.balance, 30);
     assertEq(govMITO.balanceOf(user1), 70);
+    assertEq(govMITO.previewClaimWithdraw(user2), 0);
   }
 
   function test_redeem_anyoneCanClaim() public {
@@ -270,16 +319,20 @@ contract GovMITOTest is Toolkit {
 
     uint256 requestedAt = block.timestamp;
     vm.prank(user1);
-    govMITO.requestRedeem(user1, 30);
+    govMITO.requestWithdraw(user1, 30);
     assertEq(user1.balance, 0);
     assertEq(govMITO.balanceOf(user1), 70);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
-    vm.warp(requestedAt + REDEEM_PERIOD);
+    vm.warp(requestedAt + WITHDRAWAL_PERIOD);
+    assertEq(govMITO.previewClaimWithdraw(user1), 30);
+
     vm.prank(user2);
-    uint256 claimed = govMITO.claimRedeem(user1);
+    uint256 claimed = govMITO.claimWithdraw(user1);
     assertEq(claimed, 30);
     assertEq(user1.balance, 30);
     assertEq(govMITO.balanceOf(user1), 70);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
   }
 
   function test_redeem_ERC20InsufficientBalance() public {
@@ -289,10 +342,11 @@ contract GovMITOTest is Toolkit {
 
     vm.startPrank(user1);
 
-    govMITO.requestRedeem(user1, 30);
+    govMITO.requestWithdraw(user1, 30);
+    assertEq(govMITO.previewClaimWithdraw(user1), 0);
 
     vm.expectRevert();
-    govMITO.requestRedeem(user1, 71);
+    govMITO.requestWithdraw(user1, 71);
 
     vm.stopPrank();
   }
@@ -392,5 +446,9 @@ contract GovMITOTest is Toolkit {
     vm.expectEmit();
     emit IVotes.DelegateVotesChanged(user1, 0, 100);
     govMITO.sudoDelegate(user1, user1);
+  }
+
+  function _errNothingToClaim() internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IGovMITO.IGovMITO__NothingToClaim.selector);
   }
 }
