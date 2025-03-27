@@ -201,6 +201,7 @@ contract GovMITO is
     if (reqId == 0) {
       requests.push(0, 0);
       requests.push(clock(), amount.toUint208());
+      reqId = 1;
     } else {
       requests.push(clock(), requests.latest() + amount.toUint208());
     }
