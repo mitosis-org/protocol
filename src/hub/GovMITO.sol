@@ -224,7 +224,7 @@ contract GovMITO is
     require(found > offset + 1, IGovMITO__NothingToClaim());
 
     uint256 claimed = requests.valueAt((found - 1).toUint32()) - requests.valueAt(offset.toUint32());
-    $.queue[receiver].offset = (found - 1);
+    $.queue[receiver].offset = found - 1;
 
     SafeTransferLib.safeTransferETH(receiver, claimed);
 
