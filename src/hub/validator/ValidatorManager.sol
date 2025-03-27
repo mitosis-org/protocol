@@ -16,7 +16,6 @@ import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-la
 import { IEpochFeeder } from '../../interfaces/hub/validator/IEpochFeeder.sol';
 import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { LibSecp256k1 } from '../../lib/LibSecp256k1.sol';
 import { StdError } from '../../lib/StdError.sol';
 
@@ -86,7 +85,6 @@ contract ValidatorManager is
   UUPSUpgradeable
 {
   using SafeCast for uint256;
-  using LibRedeemQueue for LibRedeemQueue.Queue;
   using LibSecp256k1 for bytes;
   using Checkpoints for Checkpoints.Trace160;
 
