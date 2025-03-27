@@ -53,7 +53,8 @@ contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
 
   function _getVotingUnits(address account) internal view override returns (uint256) {
     uint48 now_ = clock();
-    return stakerTotal(account, now_) + unstakingTotal(account, now_);
+    (uint256 totalUnstakingAmount,) = unstaking(account, now_);
+    return stakerTotal(account, now_) + totalUnstakingAmount;
   }
 
   /// @dev Mints voting units to the recipient. No need to care about the validator
@@ -81,8 +82,8 @@ contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
   }
 
   /// @dev Burns the voting units from the recipient
-  function _claimUnstake(StorageV1 storage $, address valAddr, address receiver) internal override returns (uint256) {
-    uint256 claimed = super._claimUnstake($, valAddr, receiver);
+  function _claimUnstake(StorageV1 storage $, address receiver) internal override returns (uint256) {
+    uint256 claimed = super._claimUnstake($, receiver);
 
     // burn the voting units
     _moveDelegateVotes(delegates(receiver), address(0), claimed);

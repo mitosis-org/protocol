@@ -14,12 +14,17 @@ import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorStaking } from '../../interfaces/hub/validator/IValidatorStaking.sol';
 import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
+import { CheckpointsExt } from '../../lib/CheckpointsExt.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 contract ValidatorStakingStorageV1 {
   using ERC7201Utils for string;
+
+  struct UnstakeQueue {
+    uint256 offset;
+    Checkpoints.Trace208 requests;
+  }
 
   struct StorageV1 {
     // configs
@@ -31,9 +36,8 @@ contract ValidatorStakingStorageV1 {
     // states
     Checkpoints.Trace208 totalStaked;
     mapping(address staker => uint256) lastRedelegationTime;
-    mapping(address valAddr => LibRedeemQueue.Queue) unstakeQueue;
+    mapping(address staker => UnstakeQueue) unstakeQueue;
     mapping(address staker => Checkpoints.Trace208) stakerTotal;
-    mapping(address staker => Checkpoints.Trace208) unstakingTotal;
     mapping(address valAddr => Checkpoints.Trace208) validatorTotal;
     mapping(address valAddr => mapping(address staker => Checkpoints.Trace208)) staked;
   }
@@ -59,9 +63,8 @@ contract ValidatorStaking is
 {
   using SafeCast for uint256;
   using SafeTransferLib for address;
-  using LibRedeemQueue for LibRedeemQueue.Queue;
-  using LibRedeemQueue for LibRedeemQueue.Index;
   using Checkpoints for Checkpoints.Trace208;
+  using CheckpointsExt for Checkpoints.Trace208;
 
   address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -110,17 +113,17 @@ contract ValidatorStaking is
   }
 
   /// @inheritdoc IValidatorStaking
-  function totalStaked(uint48 timestamp) public view virtual returns (uint256) {
+  function totalStaked(uint48 timestamp) external view virtual returns (uint256) {
     return _getStorageV1().totalStaked.upperLookupRecent(timestamp);
   }
 
   /// @inheritdoc IValidatorStaking
-  function totalUnstaking() public view virtual returns (uint256) {
+  function totalUnstaking() external view virtual returns (uint256) {
     return _getStorageV1().totalUnstaking;
   }
 
   /// @inheritdoc IValidatorStaking
-  function staked(address valAddr, address staker, uint48 timestamp) public view virtual returns (uint256) {
+  function staked(address valAddr, address staker, uint48 timestamp) external view virtual returns (uint256) {
     return _getStorageV1().staked[valAddr][staker].upperLookupRecent(timestamp);
   }
 
@@ -130,42 +133,76 @@ contract ValidatorStaking is
   }
 
   /// @inheritdoc IValidatorStaking
-  function unstakingTotal(address staker, uint48 timestamp) public view virtual returns (uint256) {
-    return _getStorageV1().unstakingTotal[staker].upperLookupRecent(timestamp);
-  }
-
-  /// @inheritdoc IValidatorStaking
-  function validatorTotal(address valAddr, uint48 timestamp) public view virtual returns (uint256) {
+  function validatorTotal(address valAddr, uint48 timestamp) external view virtual returns (uint256) {
     return _getStorageV1().validatorTotal[valAddr].upperLookupRecent(timestamp);
   }
 
   /// @inheritdoc IValidatorStaking
-  function unstaking(address valAddr, address staker, uint48 timestamp) public view virtual returns (uint256, uint256) {
-    return _unstaking(_getStorageV1(), valAddr, staker, timestamp);
+  function unstaking(address staker, uint48 timestamp) public view virtual returns (uint256, uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    Checkpoints.Trace208 storage requests = $.unstakeQueue[staker].requests;
+
+    uint256 offset = $.unstakeQueue[staker].offset;
+    uint256 reqLen = requests.length();
+    if (reqLen <= offset) return (0, 0);
+
+    uint256 total = requests.latest() - requests.valueAt(offset.toUint32());
+    uint256 found = requests.upperBinaryLookup(timestamp - $.unstakeCooldown, offset, reqLen);
+    if (offset == found) return (total, 0);
+
+    uint256 claimable = requests.valueAt((found - 1).toUint32()) - requests.valueAt(offset.toUint32());
+    return (total, claimable);
   }
 
   /// @inheritdoc IValidatorStaking
-  function minStakingAmount() public view virtual returns (uint256) {
+  function unstakingQueueOffset(address staker) external view returns (uint256) {
+    return _getStorageV1().unstakeQueue[staker].offset;
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function unstakingQueueSize(address staker) external view returns (uint256) {
+    return _getStorageV1().unstakeQueue[staker].requests.length();
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function unstakingQueueRequestByIndex(address staker, uint32 pos) external view returns (uint48, uint208) {
+    Checkpoints.Checkpoint208 memory checkpoint = _getStorageV1().unstakeQueue[staker].requests.at(pos);
+    return (checkpoint._key, checkpoint._value);
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function unstakingQueueRequestByTime(address staker, uint48 time) external view returns (uint48, uint208) {
+    Checkpoints.Trace208 storage requests = _getStorageV1().unstakeQueue[staker].requests;
+
+    uint256 pos = requests.upperBinaryLookup(time, 0, requests.length());
+    if (pos == 0) return (0, 0);
+
+    Checkpoints.Checkpoint208 memory checkpoint = requests.at((pos - 1).toUint32());
+    return (checkpoint._key, checkpoint._value);
+  }
+
+  /// @inheritdoc IValidatorStaking
+  function minStakingAmount() external view virtual returns (uint256) {
     return _getStorageV1().minStakingAmount;
   }
 
   /// @inheritdoc IValidatorStaking
-  function minUnstakingAmount() public view virtual returns (uint256) {
+  function minUnstakingAmount() external view virtual returns (uint256) {
     return _getStorageV1().minUnstakingAmount;
   }
 
   /// @inheritdoc IValidatorStaking
-  function unstakeCooldown() public view virtual returns (uint48) {
+  function unstakeCooldown() external view virtual returns (uint48) {
     return _getStorageV1().unstakeCooldown;
   }
 
   /// @inheritdoc IValidatorStaking
-  function redelegationCooldown() public view virtual returns (uint48) {
+  function redelegationCooldown() external view virtual returns (uint48) {
     return _getStorageV1().redelegationCooldown;
   }
 
   /// @inheritdoc IValidatorStaking
-  function lastRedelegationTime(address staker) public view virtual returns (uint256) {
+  function lastRedelegationTime(address staker) external view virtual returns (uint256) {
     return _getStorageV1().lastRedelegationTime[staker];
   }
 
@@ -180,8 +217,8 @@ contract ValidatorStaking is
   }
 
   /// @inheritdoc IValidatorStaking
-  function claimUnstake(address valAddr, address receiver) external nonReentrant returns (uint256) {
-    return _claimUnstake(_getStorageV1(), valAddr, receiver);
+  function claimUnstake(address receiver) external nonReentrant returns (uint256) {
+    return _claimUnstake(_getStorageV1(), receiver);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -223,46 +260,6 @@ contract ValidatorStaking is
     }
   }
 
-  function _unstaking(StorageV1 storage $, address valAddr, address staker, uint48 timestamp)
-    internal
-    view
-    returns (uint256, uint256)
-  {
-    LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
-
-    uint256 offset = queue.indexes[staker].offset;
-    (uint256 newOffset, bool found) = queue.searchIndexOffset(
-      staker,
-      type(uint256).max,
-      timestamp,
-      queue.redeemPeriod != $.unstakeCooldown ? $.unstakeCooldown : queue.redeemPeriod
-    );
-
-    uint256 indexSide = queue.indexes[staker].size;
-    uint256 claimable = 0;
-    uint256 nonClaimable = 0;
-
-    LibRedeemQueue.Index storage index = queue.indexes[staker];
-
-    if (found) {
-      for (uint256 i = offset; i < newOffset;) {
-        claimable += queue.requestAmount(index.get(i));
-        unchecked {
-          ++i;
-        }
-      }
-    }
-
-    for (uint256 i = found ? newOffset : offset; i < indexSide;) {
-      nonClaimable += queue.requestAmount(index.get(i));
-      unchecked {
-        ++i;
-      }
-    }
-
-    return (claimable, nonClaimable);
-  }
-
   function _stake(StorageV1 storage $, address valAddr, address recipient, uint256 amount)
     internal
     virtual
@@ -274,9 +271,6 @@ contract ValidatorStaking is
     require(_baseAsset != NATIVE_TOKEN || msg.value == amount, StdError.InvalidParameter('amount'));
     require(recipient != address(0), StdError.InvalidParameter('recipient'));
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator(valAddr));
-
-    LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
-    _updateRedeemPeriod(queue, $.unstakeCooldown);
 
     // If the base asset is not native, we need to transfer from the sender to the contract
     if (_baseAsset != NATIVE_TOKEN) _baseAsset.safeTransferFrom(_msgSender(), address(this), amount);
@@ -300,42 +294,45 @@ contract ValidatorStaking is
     address staker = _msgSender();
     _assertUnstakeAmountCondition($, valAddr, staker, amount);
 
-    LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
-    _updateRedeemPeriod(queue, $.unstakeCooldown);
-
-    // FIXME(eddy): shorten the enqueue + reserve flow
-    uint48 now_ = Time.timestamp();
-    uint256 reqId = queue.enqueue(receiver, amount, now_, bytes(''));
-    queue.reserve(valAddr, amount, now_, bytes(''));
+    Checkpoints.Trace208 storage requests = $.unstakeQueue[receiver].requests;
+    uint256 reqId = requests.length();
+    if (reqId == 0) {
+      requests.push(0, 0);
+      requests.push(Time.timestamp(), amount.toUint208());
+      reqId = 1;
+    } else {
+      requests.push(Time.timestamp(), requests.latest() + amount.toUint208());
+    }
 
     _storeUnstake($, valAddr, staker, amount);
 
     _hub.notifyUnstake(valAddr, staker, amount);
     $.totalUnstaking += amount.toUint128();
-    $.unstakingTotal[staker].push(now_, ($.unstakingTotal[staker].latest() + amount).toUint208());
 
     emit UnstakeRequested(valAddr, staker, receiver, amount, reqId);
 
     return reqId;
   }
 
-  function _claimUnstake(StorageV1 storage $, address valAddr, address receiver) internal virtual returns (uint256) {
-    require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator(valAddr));
+  function _claimUnstake(StorageV1 storage $, address receiver) internal virtual returns (uint256) {
+    Checkpoints.Trace208 storage requests = $.unstakeQueue[receiver].requests;
 
-    LibRedeemQueue.Queue storage queue = $.unstakeQueue[valAddr];
-    _updateRedeemPeriod(queue, $.unstakeCooldown);
+    uint256 offset = $.unstakeQueue[receiver].offset;
+    uint256 reqLen = requests.length();
+    require(reqLen > offset, IValidatorStaking__NothingToClaim());
 
-    uint48 now_ = Time.timestamp();
-    queue.update(now_);
-    uint256 claimed = queue.claim(receiver, now_);
+    uint256 found = requests.upperBinaryLookup(Time.timestamp() - $.unstakeCooldown, offset, reqLen);
+    require(found > offset + 1, IValidatorStaking__NothingToClaim());
+
+    uint256 claimed = requests.valueAt((found - 1).toUint32()) - requests.valueAt(offset.toUint32());
+    $.unstakeQueue[receiver].offset = (found - 1);
 
     if (_baseAsset == NATIVE_TOKEN) receiver.safeTransferETH(claimed);
     else _baseAsset.safeTransfer(receiver, claimed);
 
     $.totalUnstaking -= claimed.toUint128();
-    $.unstakingTotal[receiver].push(now_, ($.unstakingTotal[receiver].latest() - claimed).toUint208());
 
-    emit UnstakeClaimed(valAddr, receiver, claimed);
+    emit UnstakeClaimed(receiver, claimed, offset, found - 1);
 
     return claimed;
   }
@@ -352,12 +349,6 @@ contract ValidatorStaking is
 
     require(_manager.isValidator(fromValAddr), IValidatorStaking__NotValidator(fromValAddr));
     require(_manager.isValidator(toValAddr), IValidatorStaking__NotValidator(toValAddr));
-
-    {
-      uint256 unstakeCooldown_ = $.unstakeCooldown;
-      _updateRedeemPeriod($.unstakeQueue[fromValAddr], unstakeCooldown_);
-      _updateRedeemPeriod($.unstakeQueue[toValAddr], unstakeCooldown_);
-    }
 
     uint48 now_ = Time.timestamp();
     uint256 lastRedelegationTime_ = $.lastRedelegationTime[delegator];
@@ -382,37 +373,48 @@ contract ValidatorStaking is
     return amount;
   }
 
-  function _updateRedeemPeriod(LibRedeemQueue.Queue storage queue, uint256 cooldown) internal virtual {
-    if (queue.redeemPeriod != cooldown) queue.redeemPeriod = cooldown;
-  }
-
   function _storeStake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal virtual {
     uint48 now_ = Time.timestamp();
-    uint208 newTotalStaked;
-    uint208 newStakerTotal;
-    uint208 newValidatorTotal;
-    uint208 newStaked;
+
+    // Cache storage pointers
+    Checkpoints.Trace208 storage totalStakedTrace = $.totalStaked;
+    Checkpoints.Trace208 storage stakerTotalTrace = $.stakerTotal[staker];
+    Checkpoints.Trace208 storage validatorTotalTrace = $.validatorTotal[valAddr];
+    Checkpoints.Trace208 storage stakedTrace = $.staked[valAddr][staker];
 
     unchecked {
-      newTotalStaked = ($.totalStaked.latest() + amount).toUint208();
-      newStakerTotal = ($.stakerTotal[staker].latest() + amount).toUint208();
-      newValidatorTotal = ($.validatorTotal[valAddr].latest() + amount).toUint208();
-      newStaked = ($.staked[valAddr][staker].latest() + amount).toUint208();
-    }
+      uint208 newTotalStaked = (totalStakedTrace.latest() + amount).toUint208();
+      uint208 newStakerTotal = (stakerTotalTrace.latest() + amount).toUint208();
+      uint208 newValidatorTotal = (validatorTotalTrace.latest() + amount).toUint208();
+      uint208 newStaked = (stakedTrace.latest() + amount).toUint208();
 
-    $.totalStaked.push(now_, newTotalStaked);
-    $.stakerTotal[staker].push(now_, newStakerTotal);
-    $.validatorTotal[valAddr].push(now_, newValidatorTotal);
-    $.staked[valAddr][staker].push(now_, newStaked);
+      totalStakedTrace.push(now_, newTotalStaked);
+      stakerTotalTrace.push(now_, newStakerTotal);
+      validatorTotalTrace.push(now_, newValidatorTotal);
+      stakedTrace.push(now_, newStaked);
+    }
   }
 
   function _storeUnstake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal virtual {
     uint48 now_ = Time.timestamp();
 
-    $.totalStaked.push(now_, ($.totalStaked.latest() - amount).toUint208());
-    $.stakerTotal[staker].push(now_, ($.stakerTotal[staker].latest() - amount).toUint208());
-    $.validatorTotal[valAddr].push(now_, ($.validatorTotal[valAddr].latest() - amount).toUint208());
-    $.staked[valAddr][staker].push(now_, ($.staked[valAddr][staker].latest() - amount).toUint208());
+    // Cache storage pointers
+    Checkpoints.Trace208 storage totalStakedTrace = $.totalStaked;
+    Checkpoints.Trace208 storage stakerTotalTrace = $.stakerTotal[staker];
+    Checkpoints.Trace208 storage validatorTotalTrace = $.validatorTotal[valAddr];
+    Checkpoints.Trace208 storage stakedTrace = $.staked[valAddr][staker];
+
+    unchecked {
+      uint208 newTotalStaked = (totalStakedTrace.latest() - amount).toUint208();
+      uint208 newStakerTotal = (stakerTotalTrace.latest() - amount).toUint208();
+      uint208 newValidatorTotal = (validatorTotalTrace.latest() - amount).toUint208();
+      uint208 newStaked = (stakedTrace.latest() - amount).toUint208();
+
+      totalStakedTrace.push(now_, newTotalStaked);
+      stakerTotalTrace.push(now_, newStakerTotal);
+      validatorTotalTrace.push(now_, newValidatorTotal);
+      stakedTrace.push(now_, newStaked);
+    }
   }
 
   // ========== ADMIN ACTIONS ========== //
