@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
@@ -50,12 +51,21 @@ contract GovMITOEmissionStorageV1 {
 
 /// @title GovMITOEmission
 /// @notice This contract is used to manage the emission of GovMITO
-/// @dev This is very temporary contract. We need to think more about the design of the emission management.
-contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgradeable, Ownable2StepUpgradeable {
+contract GovMITOEmission is
+  IGovMITOEmission,
+  GovMITOEmissionStorageV1,
+  UUPSUpgradeable,
+  Ownable2StepUpgradeable,
+  AccessControlEnumerableUpgradeable
+{
   using SafeERC20 for IGovMITO;
   using SafeCast for uint256;
 
   uint256 public constant RATE_DENOMINATOR = 10000;
+
+  /// @notice keccak256('mitosis.role.GovMITOEmission.validatorRewardManager')
+  bytes32 public constant VALIDATOR_REWARD_MANAGER_ROLE =
+    0x36d3c8b6777fd16fd79f9eef0dbf969583ea790f221ff2956c3152aa8dbed5eb;
 
   IGovMITO private immutable _govMITO;
   IEpochFeeder private immutable _epochFeeder;
@@ -71,6 +81,12 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     __UUPSUpgradeable_init();
     __Ownable_init(initialOwner);
     __Ownable2Step_init();
+
+    __AccessControl_init();
+    __AccessControlEnumerable_init();
+
+    _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
+    _setRoleAdmin(VALIDATOR_REWARD_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
 
     uint48 currentTime = Time.timestamp();
     require(config.startsFrom > currentTime, StdError.InvalidParameter('config.ssf'));
@@ -173,10 +189,9 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     emit ValidatorRewardEmissionAdded(msg.value);
   }
 
-  /// @inheritdoc IGovMITOEmission
   function configureValidatorRewardEmission(uint256 rps, uint160 rateMultiplier, uint48 renewalPeriod, uint48 applyFrom)
     external
-    onlyOwner
+    onlyRole(VALIDATOR_REWARD_MANAGER_ROLE)
   {
     _configureValidatorRewardEmission(_getStorageV1(), rps, rateMultiplier, renewalPeriod, applyFrom);
   }
