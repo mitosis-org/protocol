@@ -26,7 +26,6 @@ interface IValidatorStaking {
   error IValidatorStaking__RedelegateToSameValidator(address valAddr);
   error IValidatorStaking__CooldownNotPassed(uint48 lastTime, uint48 currentTime, uint48 requiredCooldown);
   error IValidatorStaking__InsufficientMinimumAmount(uint256 minAmount);
-  error IValidatorStaking__NothingToClaim();
 
   // ========== VIEWS ========== //
 

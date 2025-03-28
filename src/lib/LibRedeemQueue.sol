@@ -3,6 +3,9 @@ pragma solidity ^0.8.28;
 
 import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
+
+import { CheckpointsExt } from './CheckpointsExt.sol';
 
 /**
  * @dev LIFECYCLE:
@@ -13,6 +16,87 @@ import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
  */
 library LibRedeemQueue {
   using SafeCast for uint256;
+  using Checkpoints for Checkpoints.Trace208;
+  using CheckpointsExt for Checkpoints.Trace208;
+
+  // ================================= OffsetQueue ================================= //
+
+  error LibRedeemQueue__NothingToClaim();
+
+  struct OffsetQueue {
+    uint256 _offset;
+    Checkpoints.Trace208 _items;
+  }
+
+  function size(OffsetQueue storage $) internal view returns (uint256) {
+    return $._items.length();
+  }
+
+  function offset(OffsetQueue storage $) internal view returns (uint256) {
+    return $._offset;
+  }
+
+  function itemAt(OffsetQueue storage $, uint32 pos) internal view returns (uint48, uint208) {
+    Checkpoints.Checkpoint208 memory checkpoint = $._items.at(pos);
+    return (checkpoint._key, checkpoint._value);
+  }
+
+  function recentItemAt(OffsetQueue storage $, uint48 time) internal view returns (uint48, uint208) {
+    Checkpoints.Trace208 storage items = $._items;
+    uint256 pos = items.upperBinaryLookup(time, 0, items.length());
+    if (pos == 0) return (0, 0);
+
+    Checkpoints.Checkpoint208 memory checkpoint = $._items.at((pos - 1).toUint32());
+    return (checkpoint._key, checkpoint._value);
+  }
+
+  function pending(OffsetQueue storage $, uint48 time) internal view returns (uint256, uint256) {
+    Checkpoints.Trace208 storage items = $._items;
+    uint256 offset = $._offset;
+    uint256 reqLen = items.length();
+    if (reqLen <= offset) return (0, 0);
+
+    uint256 total = items.latest() - items.valueAt(offset.toUint32());
+    uint256 found = items.upperBinaryLookup(time, offset, reqLen);
+    if (offset == found) return (total, 0);
+
+    uint256 available = items.valueAt((found - 1).toUint32()) - items.valueAt(offset.toUint32());
+    return (total, available);
+  }
+
+  function append(OffsetQueue storage $, uint48 time, uint208 amount) internal returns (uint256) {
+    Checkpoints.Trace208 storage items = $._items;
+
+    uint256 reqId = items.length();
+
+    if (reqId == 0) {
+      items.push(0, 0);
+      items.push(time, amount);
+      reqId = 1;
+    } else {
+      items.push(time, items.latest() + amount);
+    }
+
+    return reqId;
+  }
+
+  function solve(OffsetQueue storage $, uint48 timestamp) internal returns (uint256, uint256, uint256) {
+    Checkpoints.Trace208 storage items = $._items;
+
+    uint256 offset = $._offset;
+    uint256 reqLen = items.length();
+    require(reqLen > offset, LibRedeemQueue__NothingToClaim());
+
+    uint256 found = items.upperBinaryLookup(timestamp, offset, reqLen);
+    require(found > offset + 1, LibRedeemQueue__NothingToClaim());
+
+    uint256 solved = items.valueAt((found - 1).toUint32()) - items.valueAt(offset.toUint32());
+    $._offset = found - 1;
+
+    return (solved, offset, found - 1);
+  }
+
+  // ================================= RedeemQueue ================================= //
 
   struct Request {
     uint256 accumulated;
