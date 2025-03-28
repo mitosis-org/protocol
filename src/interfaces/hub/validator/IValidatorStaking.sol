@@ -41,7 +41,7 @@ interface IValidatorStaking {
   function redelegationCooldown() external view returns (uint48);
 
   function totalStaked(uint48 timestamp) external view returns (uint256);
-  function totalUnstaking() external view returns (uint256);
+  function totalUnstaking(uint48 timestamp) external view returns (uint256);
 
   /**
    * @notice Returns the amount of staked tokens for a validator.

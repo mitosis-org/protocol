@@ -30,11 +30,11 @@ contract ValidatorStakingStorageV1 {
     // configs
     uint48 unstakeCooldown;
     uint48 redelegationCooldown;
-    uint160 totalUnstaking;
     uint256 minStakingAmount;
     uint256 minUnstakingAmount;
     // states
     Checkpoints.Trace208 totalStaked;
+    Checkpoints.Trace208 totalUnstaking;
     mapping(address staker => uint256) lastRedelegationTime;
     mapping(address staker => UnstakeQueue) unstakeQueue;
     mapping(address staker => Checkpoints.Trace208) stakerTotal;
@@ -118,8 +118,8 @@ contract ValidatorStaking is
   }
 
   /// @inheritdoc IValidatorStaking
-  function totalUnstaking() external view virtual returns (uint256) {
-    return _getStorageV1().totalUnstaking;
+  function totalUnstaking(uint48 timestamp) external view virtual returns (uint256) {
+    return _getStorageV1().totalUnstaking.upperLookupRecent(timestamp);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -208,12 +208,12 @@ contract ValidatorStaking is
 
   /// @inheritdoc IValidatorStaking
   function stake(address valAddr, address recipient, uint256 amount) external payable returns (uint256) {
-    return _stake(_getStorageV1(), valAddr, recipient, amount);
+    return _stake(_getStorageV1(), valAddr, _msgSender(), recipient, amount);
   }
 
   /// @inheritdoc IValidatorStaking
   function requestUnstake(address valAddr, address receiver, uint256 amount) external returns (uint256) {
-    return _requestUnstake(_getStorageV1(), valAddr, receiver, amount);
+    return _requestUnstake(_getStorageV1(), valAddr, _msgSender(), receiver, amount);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -260,7 +260,7 @@ contract ValidatorStaking is
     }
   }
 
-  function _stake(StorageV1 storage $, address valAddr, address recipient, uint256 amount)
+  function _stake(StorageV1 storage $, address valAddr, address payer, address recipient, uint256 amount)
     internal
     virtual
     returns (uint256)
@@ -273,17 +273,25 @@ contract ValidatorStaking is
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator(valAddr));
 
     // If the base asset is not native, we need to transfer from the sender to the contract
-    if (_baseAsset != NATIVE_TOKEN) _baseAsset.safeTransferFrom(_msgSender(), address(this), amount);
+    if (_baseAsset != NATIVE_TOKEN) _baseAsset.safeTransferFrom(payer, address(this), amount);
 
-    _storeStake($, valAddr, _msgSender(), amount);
-    _hub.notifyStake(valAddr, _msgSender(), amount);
+    uint48 now_ = Time.timestamp();
 
-    emit Staked(valAddr, _msgSender(), recipient, amount);
+    // apply to state
+    {
+      uint208 amount208 = amount.toUint208();
+      _push($.totalStaked, now_, amount208, _opAdd);
+      _storeStake($, now_, valAddr, recipient, amount208);
+    }
+
+    _hub.notifyStake(valAddr, recipient, amount);
+
+    emit Staked(valAddr, payer, recipient, amount);
 
     return amount;
   }
 
-  function _requestUnstake(StorageV1 storage $, address valAddr, address receiver, uint256 amount)
+  function _requestUnstake(StorageV1 storage $, address valAddr, address payer, address recipient, uint256 amount)
     internal
     virtual
     returns (uint256)
@@ -291,25 +299,30 @@ contract ValidatorStaking is
     require(amount > 0, StdError.ZeroAmount());
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator(valAddr));
 
-    address staker = _msgSender();
-    _assertUnstakeAmountCondition($, valAddr, staker, amount);
+    _assertUnstakeAmountCondition($, valAddr, payer, amount);
 
-    Checkpoints.Trace208 storage requests = $.unstakeQueue[receiver].requests;
+    uint48 now_ = Time.timestamp();
+    Checkpoints.Trace208 storage requests = $.unstakeQueue[recipient].requests;
     uint256 reqId = requests.length();
     if (reqId == 0) {
       requests.push(0, 0);
-      requests.push(Time.timestamp(), amount.toUint208());
+      requests.push(now_, amount.toUint208());
       reqId = 1;
     } else {
-      requests.push(Time.timestamp(), requests.latest() + amount.toUint208());
+      requests.push(now_, requests.latest() + amount.toUint208());
     }
 
-    _storeUnstake($, valAddr, staker, amount);
+    // apply to state
+    {
+      uint208 amount208 = amount.toUint208();
+      _push($.totalStaked, now_, amount208, _opSub);
+      _push($.totalUnstaking, now_, amount208, _opAdd);
+      _storeUnstake($, now_, valAddr, payer, amount208);
+    }
 
-    _hub.notifyUnstake(valAddr, staker, amount);
-    $.totalUnstaking += amount.toUint128();
+    _hub.notifyUnstake(valAddr, payer, amount);
 
-    emit UnstakeRequested(valAddr, staker, receiver, amount, reqId);
+    emit UnstakeRequested(valAddr, payer, recipient, amount, reqId);
 
     return reqId;
   }
@@ -321,16 +334,18 @@ contract ValidatorStaking is
     uint256 reqLen = requests.length();
     require(reqLen > offset, IValidatorStaking__NothingToClaim());
 
-    uint256 found = requests.upperBinaryLookup(Time.timestamp() - $.unstakeCooldown, offset, reqLen);
+    uint48 now_ = Time.timestamp();
+    uint256 found = requests.upperBinaryLookup(now_ - $.unstakeCooldown, offset, reqLen);
     require(found > offset + 1, IValidatorStaking__NothingToClaim());
 
     uint256 claimed = requests.valueAt((found - 1).toUint32()) - requests.valueAt(offset.toUint32());
-    $.unstakeQueue[receiver].offset = (found - 1);
+    $.unstakeQueue[receiver].offset = found - 1;
 
     if (_baseAsset == NATIVE_TOKEN) receiver.safeTransferETH(claimed);
     else _baseAsset.safeTransfer(receiver, claimed);
 
-    $.totalUnstaking -= claimed.toUint128();
+    // apply to state
+    _push($.totalUnstaking, now_, claimed.toUint208(), _opSub);
 
     emit UnstakeClaimed(receiver, claimed, offset, found - 1);
 
@@ -363,8 +378,12 @@ contract ValidatorStaking is
     }
     $.lastRedelegationTime[delegator] = now_;
 
-    _storeUnstake($, fromValAddr, delegator, amount);
-    _storeStake($, toValAddr, delegator, amount);
+    // apply to state
+    {
+      uint208 amount208 = amount.toUint208();
+      _storeUnstake($, now_, fromValAddr, delegator, amount208);
+      _storeStake($, now_, toValAddr, delegator, amount208);
+    }
 
     _hub.notifyRedelegation(fromValAddr, toValAddr, delegator, amount);
 
@@ -373,47 +392,42 @@ contract ValidatorStaking is
     return amount;
   }
 
-  function _storeStake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal virtual {
-    uint48 now_ = Time.timestamp();
+  function _storeStake(StorageV1 storage $, uint48 now_, address valAddr, address staker, uint208 amount)
+    internal
+    virtual
+  {
+    _push($.staked[valAddr][staker], now_, amount, _opAdd);
+    _push($.stakerTotal[staker], now_, amount, _opAdd);
+    _push($.validatorTotal[valAddr], now_, amount, _opAdd);
+  }
 
-    // Cache storage pointers
-    Checkpoints.Trace208 storage totalStakedTrace = $.totalStaked;
-    Checkpoints.Trace208 storage stakerTotalTrace = $.stakerTotal[staker];
-    Checkpoints.Trace208 storage validatorTotalTrace = $.validatorTotal[valAddr];
-    Checkpoints.Trace208 storage stakedTrace = $.staked[valAddr][staker];
+  function _storeUnstake(StorageV1 storage $, uint48 now_, address valAddr, address staker, uint208 amount)
+    internal
+    virtual
+  {
+    _push($.staked[valAddr][staker], now_, amount, _opSub);
+    _push($.stakerTotal[staker], now_, amount, _opSub);
+    _push($.validatorTotal[valAddr], now_, amount, _opSub);
+  }
 
+  function _push(
+    Checkpoints.Trace208 storage $,
+    uint48 time,
+    uint208 amount,
+    function (uint208,uint208) pure returns (uint208) op
+  ) private {
+    $.push(time, op($.latest(), amount));
+  }
+
+  function _opSub(uint208 x, uint208 y) private pure returns (uint208) {
     unchecked {
-      uint208 newTotalStaked = (totalStakedTrace.latest() + amount).toUint208();
-      uint208 newStakerTotal = (stakerTotalTrace.latest() + amount).toUint208();
-      uint208 newValidatorTotal = (validatorTotalTrace.latest() + amount).toUint208();
-      uint208 newStaked = (stakedTrace.latest() + amount).toUint208();
-
-      totalStakedTrace.push(now_, newTotalStaked);
-      stakerTotalTrace.push(now_, newStakerTotal);
-      validatorTotalTrace.push(now_, newValidatorTotal);
-      stakedTrace.push(now_, newStaked);
+      return x - y;
     }
   }
 
-  function _storeUnstake(StorageV1 storage $, address valAddr, address staker, uint256 amount) internal virtual {
-    uint48 now_ = Time.timestamp();
-
-    // Cache storage pointers
-    Checkpoints.Trace208 storage totalStakedTrace = $.totalStaked;
-    Checkpoints.Trace208 storage stakerTotalTrace = $.stakerTotal[staker];
-    Checkpoints.Trace208 storage validatorTotalTrace = $.validatorTotal[valAddr];
-    Checkpoints.Trace208 storage stakedTrace = $.staked[valAddr][staker];
-
+  function _opAdd(uint208 x, uint208 y) private pure returns (uint208) {
     unchecked {
-      uint208 newTotalStaked = (totalStakedTrace.latest() - amount).toUint208();
-      uint208 newStakerTotal = (stakerTotalTrace.latest() - amount).toUint208();
-      uint208 newValidatorTotal = (validatorTotalTrace.latest() - amount).toUint208();
-      uint208 newStaked = (stakedTrace.latest() - amount).toUint208();
-
-      totalStakedTrace.push(now_, newTotalStaked);
-      stakerTotalTrace.push(now_, newStakerTotal);
-      validatorTotalTrace.push(now_, newValidatorTotal);
-      stakedTrace.push(now_, newStaked);
+      return x + y;
     }
   }
 

@@ -28,6 +28,9 @@ contract ValidatorStakingTest is Toolkit {
   ValidatorStaking nativeVault;
 
   function setUp() public {
+    // use real time to avoid arithmatic overflow on withdrawalPeriod calculation
+    vm.warp(1743061332);
+
     weth = new WETH();
     hub = new MockContract();
     hub.setCall(IValidatorStakingHub.notifyStake.selector);
@@ -122,7 +125,7 @@ contract ValidatorStakingTest is Toolkit {
     _test_stake(nativeVault);
   }
 
-  function test_stake_min_amount() public {
+  function test_stake_minAmount() public {
     _fund();
 
     _regVal(val1, true);
@@ -150,6 +153,38 @@ contract ValidatorStakingTest is Toolkit {
 
     vm.prank(user1);
     nativeVault.stake{ value: 1 ether }(val1, user1, 1 ether);
+  }
+
+  function test_stake_fromAnotherAddress() public {
+    _fund();
+
+    _regVal(val1, true);
+
+    // ERC20 Vault
+
+    vm.prank(user1);
+    vm.expectEmit();
+    emit IValidatorStaking.Staked(val1, user1, user2, 1 ether);
+    erc20Vault.stake(val1, user2, 1 ether);
+
+    assertEq(erc20Vault.staked(val1, user1, _now48()), 0);
+    assertEq(erc20Vault.staked(val1, user2, _now48()), 1 ether);
+
+    assertEq(erc20Vault.stakerTotal(user1, _now48()), 0);
+    assertEq(erc20Vault.stakerTotal(user2, _now48()), 1 ether);
+
+    // NativeVault
+
+    vm.prank(user1);
+    vm.expectEmit();
+    emit IValidatorStaking.Staked(val1, user1, user2, 1 ether);
+    nativeVault.stake{ value: 1 ether }(val1, user2, 1 ether);
+
+    assertEq(nativeVault.staked(val1, user1, _now48()), 0);
+    assertEq(nativeVault.staked(val1, user2, _now48()), 1 ether);
+
+    assertEq(nativeVault.stakerTotal(user1, _now48()), 0);
+    assertEq(nativeVault.stakerTotal(user2, _now48()), 1 ether);
   }
 
   function _test_stake(ValidatorStaking vault) private {
@@ -235,7 +270,7 @@ contract ValidatorStakingTest is Toolkit {
     _test_unstake(nativeVault);
   }
 
-  function test_unstake_min_amount() public {
+  function test_unstake_minAmount() public {
     _fund();
 
     _regVal(val1, true);
@@ -268,6 +303,45 @@ contract ValidatorStakingTest is Toolkit {
     nativeVault.requestUnstake(val1, user1, 1 ether);
   }
 
+  function test_unstake_fromAnotherAddress() public {
+    _fund();
+
+    _regVal(val1, true);
+
+    _stake(erc20Vault, val1, user1, user2, 1 ether);
+    _stake(nativeVault, val1, user1, user2, 1 ether);
+
+    vm.prank(user2);
+    vm.expectEmit();
+    emit IValidatorStaking.UnstakeRequested(val1, user2, user1, 1 ether, 1);
+    erc20Vault.requestUnstake(val1, user1, 1 ether);
+
+    assertEq(erc20Vault.staked(val1, user1, _now48()), 0);
+    assertEq(erc20Vault.staked(val1, user2, _now48()), 0);
+
+    assertEq(erc20Vault.stakerTotal(user1, _now48()), 0);
+    assertEq(erc20Vault.stakerTotal(user2, _now48()), 0);
+
+    _assertUnstaking(erc20Vault, user1, _now48(), 1 ether, 0);
+    _assertUnstaking(erc20Vault, user2, _now48(), 0, 0);
+
+    // NativeVault
+
+    vm.prank(user2);
+    vm.expectEmit();
+    emit IValidatorStaking.UnstakeRequested(val1, user2, user1, 1 ether, 1);
+    nativeVault.requestUnstake(val1, user1, 1 ether);
+
+    assertEq(nativeVault.staked(val1, user1, _now48()), 0);
+    assertEq(nativeVault.staked(val1, user2, _now48()), 0);
+
+    assertEq(nativeVault.stakerTotal(user1, _now48()), 0);
+    assertEq(nativeVault.stakerTotal(user2, _now48()), 0);
+
+    _assertUnstaking(nativeVault, user1, _now48(), 1 ether, 0);
+    _assertUnstaking(nativeVault, user2, _now48(), 0, 0);
+  }
+
   function _test_unstake(ValidatorStaking vault) private {
     _fund();
 
@@ -298,7 +372,7 @@ contract ValidatorStakingTest is Toolkit {
     //======== present
 
     assertEq(vault.totalStaked(now_), 20 ether);
-    assertEq(vault.totalUnstaking(), 20 ether);
+    assertEq(vault.totalUnstaking(now_), 20 ether);
 
     assertEq(vault.staked(val1, user1, now_), 5 ether);
     assertEq(vault.staked(val3, user1, now_), 5 ether);
@@ -319,7 +393,7 @@ contract ValidatorStakingTest is Toolkit {
     //======== past
 
     assertEq(vault.totalStaked(now_ - 1), 40 ether);
-    assertEq(vault.totalUnstaking(), 20 ether);
+    assertEq(vault.totalUnstaking(now_ - 1), 0 ether);
 
     assertEq(vault.staked(val1, user1, now_ - 1), 10 ether);
     assertEq(vault.staked(val3, user1, now_ - 1), 10 ether);
@@ -333,11 +407,13 @@ contract ValidatorStakingTest is Toolkit {
 
     vm.warp(block.timestamp + 1 days);
 
+    now_ = _now48();
+
     _claimUnstake(vault, user1, 0, 1);
     _claimUnstake(vault, user2, 0, 1);
 
     assertEq(vault.totalStaked(now_), 20 ether);
-    assertEq(vault.totalUnstaking(), 0);
+    assertEq(vault.totalUnstaking(now_), 0);
 
     _assertUnstaking(vault, user1, now_, 0, 0);
     _assertUnstaking(vault, user2, now_, 0, 0);
