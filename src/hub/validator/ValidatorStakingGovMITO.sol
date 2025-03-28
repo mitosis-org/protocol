@@ -58,27 +58,27 @@ contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
   }
 
   /// @dev Mints voting units to the recipient. No need to care about the validator
-  function _stake(StorageV1 storage $, address valAddr, address recipient, uint256 amount)
+  function _stake(StorageV1 storage $, address valAddr, address payer, address recipient, uint256 amount)
     internal
     override
     returns (uint256)
   {
-    require(recipient == _msgSender(), ValidatorStakingGovMITO__NonTransferable());
+    require(recipient == payer, ValidatorStakingGovMITO__NonTransferable());
 
     // mint the voting units
     _moveDelegateVotes(address(0), delegates(recipient), amount);
 
-    return super._stake($, valAddr, recipient, amount);
+    return super._stake($, valAddr, payer, recipient, amount);
   }
 
   /// @dev Prevent the other users to receive unstaked tokens. Otherwise, users can perform transfer tokens to the others.
-  function _requestUnstake(StorageV1 storage $, address valAddr, address receiver, uint256 amount)
+  function _requestUnstake(StorageV1 storage $, address valAddr, address payer, address receiver, uint256 amount)
     internal
     override
     returns (uint256)
   {
-    require(receiver == _msgSender(), ValidatorStakingGovMITO__NonTransferable());
-    return super._requestUnstake($, valAddr, receiver, amount);
+    require(receiver == payer, ValidatorStakingGovMITO__NonTransferable());
+    return super._requestUnstake($, valAddr, payer, receiver, amount);
   }
 
   /// @dev Burns the voting units from the recipient
