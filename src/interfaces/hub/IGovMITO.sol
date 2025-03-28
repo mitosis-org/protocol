@@ -50,11 +50,6 @@ interface IGovMITO is IERC20, IERC5805 {
   event WithdrawalPeriodSet(uint256 withdrawalPeriod);
 
   /**
-   * @notice Emitted when there is nothing to claim.
-   */
-  error IGovMITO__NothingToClaim();
-
-  /**
    * @notice Returns the address of the minter.
    * @return The address of the minter
    */

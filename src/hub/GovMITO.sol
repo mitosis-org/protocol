@@ -6,7 +6,6 @@ import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { ReentrancyGuardTransient } from '@oz-v5/utils/ReentrancyGuardTransient.sol';
-import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
 import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
@@ -21,8 +20,8 @@ import { ERC20VotesUpgradeable } from '@ozu-v5/token/ERC20/extensions/ERC20Votes
 import { NoncesUpgradeable } from '@ozu-v5/utils/NoncesUpgradeable.sol';
 
 import { IGovMITO } from '../interfaces/hub/IGovMITO.sol';
-import { CheckpointsExt } from '../lib/CheckpointsExt.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
+import { LibRedeemQueue } from '../lib/LibRedeemQueue.sol';
 import { StdError } from '../lib/StdError.sol';
 import { SudoVotes } from '../lib/SudoVotes.sol';
 
@@ -37,20 +36,14 @@ contract GovMITO is
 {
   using ERC7201Utils for string;
   using SafeCast for uint256;
-  using Checkpoints for Checkpoints.Trace208;
-  using CheckpointsExt for Checkpoints.Trace208;
-
-  struct WithdrawalQueue {
-    uint256 offset;
-    Checkpoints.Trace208 requests;
-  }
+  using LibRedeemQueue for LibRedeemQueue.OffsetQueue;
 
   /// @custom:storage-location mitosis.storage.GovMITO
   struct GovMITOStorage {
     address minter;
     uint48 withdrawalPeriod;
     uint48 _reserved;
-    mapping(address user => WithdrawalQueue) queue;
+    mapping(address user => LibRedeemQueue.OffsetQueue) queue;
     mapping(address sender => bool) isWhitelistedSender;
   }
 
@@ -129,43 +122,25 @@ contract GovMITO is
   }
 
   function withdrawalQueueOffset(address receiver) external view returns (uint256) {
-    return _getGovMITOStorage().queue[receiver].offset;
+    return _getGovMITOStorage().queue[receiver].offset();
   }
 
   function withdrawalQueueSize(address receiver) external view returns (uint256) {
-    return _getGovMITOStorage().queue[receiver].requests.length();
+    return _getGovMITOStorage().queue[receiver].size();
   }
 
   function withdrawalQueueRequestByIndex(address receiver, uint32 pos) external view returns (uint48, uint208) {
-    Checkpoints.Checkpoint208 memory checkpoint = _getGovMITOStorage().queue[receiver].requests.at(pos);
-    return (checkpoint._key, checkpoint._value);
+    return _getGovMITOStorage().queue[receiver].itemAt(pos);
   }
 
   function withdrawalQueueRequestByTime(address receiver, uint48 time) external view returns (uint48, uint208) {
-    GovMITOStorage storage $ = _getGovMITOStorage();
-
-    uint256 pos = $.queue[receiver].requests.upperBinaryLookup(time, 0, $.queue[receiver].requests.length());
-    if (pos == 0) return (0, 0);
-
-    Checkpoints.Checkpoint208 memory checkpoint = $.queue[receiver].requests.at((pos - 1).toUint32());
-    return (checkpoint._key, checkpoint._value);
+    return _getGovMITOStorage().queue[receiver].recentItemAt(time);
   }
 
   function previewClaimWithdraw(address receiver) external view returns (uint256) {
     GovMITOStorage storage $ = _getGovMITOStorage();
-
-    Checkpoints.Trace208 storage requests = $.queue[receiver].requests;
-
-    uint256 offset = $.queue[receiver].offset;
-    uint256 reqLen = requests.length();
-    if (reqLen <= offset) return 0;
-
-    uint256 found = requests.upperBinaryLookup(clock() - $.withdrawalPeriod, offset, reqLen);
-    if (found <= offset + 1) return 0;
-
-    uint256 claimed = requests.valueAt((found - 1).toUint32()) - requests.valueAt(offset.toUint32());
-
-    return claimed;
+    (, uint256 available) = $.queue[receiver].pending(clock() - $.withdrawalPeriod);
+    return available;
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
@@ -196,15 +171,7 @@ contract GovMITO is
 
     _burn(_msgSender(), amount);
 
-    Checkpoints.Trace208 storage requests = $.queue[receiver].requests;
-    uint256 reqId = requests.length();
-    if (reqId == 0) {
-      requests.push(0, 0);
-      requests.push(clock(), amount.toUint208());
-      reqId = 1;
-    } else {
-      requests.push(clock(), requests.latest() + amount.toUint208());
-    }
+    uint256 reqId = $.queue[receiver].append(clock(), amount.toUint208());
 
     emit WithdrawRequested(_msgSender(), receiver, amount, reqId);
 
@@ -214,21 +181,11 @@ contract GovMITO is
   function claimWithdraw(address receiver) external nonReentrant returns (uint256) {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    Checkpoints.Trace208 storage requests = $.queue[receiver].requests;
-
-    uint256 offset = $.queue[receiver].offset;
-    uint256 reqLen = requests.length();
-    require(reqLen > offset, IGovMITO__NothingToClaim());
-
-    uint256 found = requests.upperBinaryLookup(clock() - $.withdrawalPeriod, offset, reqLen);
-    require(found > offset + 1, IGovMITO__NothingToClaim());
-
-    uint256 claimed = requests.valueAt((found - 1).toUint32()) - requests.valueAt(offset.toUint32());
-    $.queue[receiver].offset = found - 1;
+    (uint256 claimed, uint256 reqIdFrom, uint256 reqIdTo) = $.queue[receiver].solve(clock() - $.withdrawalPeriod);
 
     SafeTransferLib.safeTransferETH(receiver, claimed);
 
-    emit WithdrawRequestClaimed(receiver, claimed, offset, found - 1);
+    emit WithdrawRequestClaimed(receiver, claimed, reqIdFrom, reqIdTo);
 
     return claimed;
   }

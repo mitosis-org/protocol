@@ -14,17 +14,12 @@ import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorStaking } from '../../interfaces/hub/validator/IValidatorStaking.sol';
 import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
-import { CheckpointsExt } from '../../lib/CheckpointsExt.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 contract ValidatorStakingStorageV1 {
   using ERC7201Utils for string;
-
-  struct UnstakeQueue {
-    uint256 offset;
-    Checkpoints.Trace208 requests;
-  }
 
   struct StorageV1 {
     // configs
@@ -36,7 +31,7 @@ contract ValidatorStakingStorageV1 {
     Checkpoints.Trace208 totalStaked;
     Checkpoints.Trace208 totalUnstaking;
     mapping(address staker => uint256) lastRedelegationTime;
-    mapping(address staker => UnstakeQueue) unstakeQueue;
+    mapping(address staker => LibRedeemQueue.OffsetQueue) unstakeQueue;
     mapping(address staker => Checkpoints.Trace208) stakerTotal;
     mapping(address valAddr => Checkpoints.Trace208) validatorTotal;
     mapping(address valAddr => mapping(address staker => Checkpoints.Trace208)) staked;
@@ -64,7 +59,7 @@ contract ValidatorStaking is
   using SafeCast for uint256;
   using SafeTransferLib for address;
   using Checkpoints for Checkpoints.Trace208;
-  using CheckpointsExt for Checkpoints.Trace208;
+  using LibRedeemQueue for LibRedeemQueue.OffsetQueue;
 
   address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -140,45 +135,27 @@ contract ValidatorStaking is
   /// @inheritdoc IValidatorStaking
   function unstaking(address staker, uint48 timestamp) public view virtual returns (uint256, uint256) {
     StorageV1 storage $ = _getStorageV1();
-    Checkpoints.Trace208 storage requests = $.unstakeQueue[staker].requests;
-
-    uint256 offset = $.unstakeQueue[staker].offset;
-    uint256 reqLen = requests.length();
-    if (reqLen <= offset) return (0, 0);
-
-    uint256 total = requests.latest() - requests.valueAt(offset.toUint32());
-    uint256 found = requests.upperBinaryLookup(timestamp - $.unstakeCooldown, offset, reqLen);
-    if (offset == found) return (total, 0);
-
-    uint256 claimable = requests.valueAt((found - 1).toUint32()) - requests.valueAt(offset.toUint32());
-    return (total, claimable);
+    return $.unstakeQueue[staker].pending(timestamp - $.unstakeCooldown);
   }
 
   /// @inheritdoc IValidatorStaking
   function unstakingQueueOffset(address staker) external view returns (uint256) {
-    return _getStorageV1().unstakeQueue[staker].offset;
+    return _getStorageV1().unstakeQueue[staker].offset();
   }
 
   /// @inheritdoc IValidatorStaking
   function unstakingQueueSize(address staker) external view returns (uint256) {
-    return _getStorageV1().unstakeQueue[staker].requests.length();
+    return _getStorageV1().unstakeQueue[staker].size();
   }
 
   /// @inheritdoc IValidatorStaking
   function unstakingQueueRequestByIndex(address staker, uint32 pos) external view returns (uint48, uint208) {
-    Checkpoints.Checkpoint208 memory checkpoint = _getStorageV1().unstakeQueue[staker].requests.at(pos);
-    return (checkpoint._key, checkpoint._value);
+    return _getStorageV1().unstakeQueue[staker].itemAt(pos);
   }
 
   /// @inheritdoc IValidatorStaking
   function unstakingQueueRequestByTime(address staker, uint48 time) external view returns (uint48, uint208) {
-    Checkpoints.Trace208 storage requests = _getStorageV1().unstakeQueue[staker].requests;
-
-    uint256 pos = requests.upperBinaryLookup(time, 0, requests.length());
-    if (pos == 0) return (0, 0);
-
-    Checkpoints.Checkpoint208 memory checkpoint = requests.at((pos - 1).toUint32());
-    return (checkpoint._key, checkpoint._value);
+    return _getStorageV1().unstakeQueue[staker].recentItemAt(time);
   }
 
   /// @inheritdoc IValidatorStaking
@@ -302,19 +279,11 @@ contract ValidatorStaking is
     _assertUnstakeAmountCondition($, valAddr, payer, amount);
 
     uint48 now_ = Time.timestamp();
-    Checkpoints.Trace208 storage requests = $.unstakeQueue[recipient].requests;
-    uint256 reqId = requests.length();
-    if (reqId == 0) {
-      requests.push(0, 0);
-      requests.push(now_, amount.toUint208());
-      reqId = 1;
-    } else {
-      requests.push(now_, requests.latest() + amount.toUint208());
-    }
+    uint208 amount208 = amount.toUint208();
+    uint256 reqId = $.unstakeQueue[recipient].append(now_, amount208);
 
     // apply to state
     {
-      uint208 amount208 = amount.toUint208();
       _push($.totalStaked, now_, amount208, _opSub);
       _push($.totalUnstaking, now_, amount208, _opAdd);
       _storeUnstake($, now_, valAddr, payer, amount208);
@@ -328,18 +297,8 @@ contract ValidatorStaking is
   }
 
   function _claimUnstake(StorageV1 storage $, address receiver) internal virtual returns (uint256) {
-    Checkpoints.Trace208 storage requests = $.unstakeQueue[receiver].requests;
-
-    uint256 offset = $.unstakeQueue[receiver].offset;
-    uint256 reqLen = requests.length();
-    require(reqLen > offset, IValidatorStaking__NothingToClaim());
-
     uint48 now_ = Time.timestamp();
-    uint256 found = requests.upperBinaryLookup(now_ - $.unstakeCooldown, offset, reqLen);
-    require(found > offset + 1, IValidatorStaking__NothingToClaim());
-
-    uint256 claimed = requests.valueAt((found - 1).toUint32()) - requests.valueAt(offset.toUint32());
-    $.unstakeQueue[receiver].offset = found - 1;
+    (uint256 claimed, uint256 reqIdFrom, uint256 reqIdTo) = $.unstakeQueue[receiver].solve(now_ - $.unstakeCooldown);
 
     if (_baseAsset == NATIVE_TOKEN) receiver.safeTransferETH(claimed);
     else _baseAsset.safeTransfer(receiver, claimed);
@@ -347,7 +306,7 @@ contract ValidatorStaking is
     // apply to state
     _push($.totalUnstaking, now_, claimed.toUint208(), _opSub);
 
-    emit UnstakeClaimed(receiver, claimed, offset, found - 1);
+    emit UnstakeClaimed(receiver, claimed, reqIdFrom, reqIdTo);
 
     return claimed;
   }
