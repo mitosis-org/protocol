@@ -13,6 +13,7 @@ import { Toolkit } from '../util/Toolkit.sol';
 contract GovMITOEmissionTest is Toolkit {
   address owner = makeAddr('owner');
   address recipient = makeAddr('recipient');
+  address rewardManager = makeAddr('rewardManager');
 
   GovMITOEmission emission;
   GovMITOEmission emissionImpl;
@@ -42,6 +43,8 @@ contract GovMITOEmissionTest is Toolkit {
         recipient: recipient
       })
     );
+
+    assertEq(emission.VALIDATOR_REWARD_MANAGER_ROLE(), keccak256('mitosis.role.GovMITOEmission.validatorRewardManager'));
 
     vm.deal(owner, total);
     emission.addValidatorRewardEmission{ value: total }();
@@ -188,19 +191,27 @@ contract GovMITOEmissionTest is Toolkit {
       })
     );
 
+    vm.startPrank(owner);
+
     vm.deal(owner, total);
     emission.addValidatorRewardEmission{ value: total }();
+    emission.grantRole(emission.VALIDATOR_REWARD_MANAGER_ROLE(), rewardManager);
 
-    vm.prank(owner);
+    vm.expectRevert(_errAccessControlUnauthorized(owner, emission.VALIDATOR_REWARD_MANAGER_ROLE()));
     emission.configureValidatorRewardEmission(2 gwei, 7500, 2 days, 6 days);
 
-    vm.prank(owner);
+    vm.stopPrank();
+
+    vm.prank(rewardManager);
+    emission.configureValidatorRewardEmission(2 gwei, 7500, 2 days, 6 days);
+
+    vm.prank(rewardManager);
     emission.configureValidatorRewardEmission(1 gwei, 20000, 4 days, 10 days);
 
-    vm.prank(owner);
+    vm.prank(rewardManager);
     emission.configureValidatorRewardEmission(0, 0, 0, 15 days);
 
-    vm.prank(owner);
+    vm.prank(rewardManager);
     emission.configureValidatorRewardEmission(1 gwei, 10000, 1 days, 17 days);
 
     for (uint256 i = 1; i <= 20; i++) {
