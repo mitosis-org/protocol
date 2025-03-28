@@ -8,8 +8,8 @@ import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
-import { BeaconProxy, IBeaconProxy } from '../../lib/proxy/BeaconProxy.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { BeaconProxy, IBeaconProxy } from '../../lib/proxy/BeaconProxy.sol';
 import { EOLVault } from './EOLVault.sol';
 
 contract EOLVaultFactory is Ownable2StepUpgradeable, UUPSUpgradeable {
