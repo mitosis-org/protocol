@@ -11,14 +11,11 @@ gen() {
 
   tmp=$(mktemp -d)
   abifile=${tmp}/${name}.abi
-  binfile=${tmp}/${name}.bin
 
   forge inspect ${target} abi > ${abifile}
-  forge inspect ${target} bytecode > ${binfile}
 
   abigen \
     --abi ${abifile} \
-    --bin ${binfile} \
     --type ${name} \
     --pkg bindings \
     --out ./bindings/${file_name}.go
