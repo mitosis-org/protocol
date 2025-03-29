@@ -21,7 +21,7 @@ contract GovMITOTest is Toolkit {
   address immutable minter = makeAddr('minter');
   address immutable user1 = makeAddr('user1');
   address immutable user2 = makeAddr('user2');
-  address immutable proxy = makeAddr('proxy');
+  address immutable module = makeAddr('module');
   address immutable delegationManager = makeAddr('delegationManager');
 
   uint48 constant WITHDRAWAL_PERIOD = 21 days;
@@ -463,6 +463,36 @@ contract GovMITOTest is Toolkit {
     vm.expectEmit();
     emit IVotes.DelegateVotesChanged(user1, 0, 100);
     govMITO.sudoDelegate(user1, user1);
+  }
+
+  function test_module() public {
+    test_mint();
+
+    vm.prank(user1);
+    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
+    govMITO.setModule(module, true);
+
+    vm.prank(owner);
+    vm.expectEmit();
+    emit IGovMITO.ModuleSet(module, true);
+    govMITO.setModule(module, true);
+
+    assertTrue(govMITO.isModule(module));
+
+    vm.prank(user1);
+    govMITO.approve(module, 100);
+
+    vm.prank(module);
+    govMITO.transferFrom(user1, module, 100);
+
+    assertEq(govMITO.balanceOf(user1), 0);
+    assertEq(govMITO.balanceOf(module), 100);
+
+    vm.prank(module);
+    govMITO.transfer(user1, 100);
+
+    assertEq(govMITO.balanceOf(user1), 100);
+    assertEq(govMITO.balanceOf(module), 0);
   }
 
   function _errNothingToClaim() internal pure returns (bytes memory) {
