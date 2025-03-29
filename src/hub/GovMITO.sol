@@ -117,7 +117,7 @@ contract GovMITO is
   }
 
   function isModule(address addr) external view returns (bool) {
-    return _getGovMITOStorage().isModule[sender];
+    return _getGovMITOStorage().isModule[addr];
   }
 
   function withdrawalPeriod() external view returns (uint256) {
@@ -201,11 +201,11 @@ contract GovMITO is
     _setMinter(_getGovMITOStorage(), minter_);
   }
 
-  function setModule(address addr, bool isModule) external onlyOwner {
+  function setModule(address addr, bool isModule_) external onlyOwner {
     require(addr != address(0), StdError.ZeroAddress('sender'));
     GovMITOStorage storage $ = _getGovMITOStorage();
-    $.isModule[addr] = isModule;
-    emit ModuleSet(addr, isModule);
+    $.isModule[addr] = isModule_;
+    emit ModuleSet(addr, isModule_);
   }
 
   function setWhitelistedSender(address sender, bool isWhitelisted) external onlyOwner {
@@ -235,7 +235,7 @@ contract GovMITO is
   function approve(address spender, uint256 amount) public override(IERC20, ERC20Upgradeable) returns (bool) {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    require($.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
+    require($.isModule[spender] || $.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
 
     return super.approve(spender, amount);
   }
@@ -243,7 +243,7 @@ contract GovMITO is
   function transfer(address to, uint256 amount) public override(IERC20, ERC20Upgradeable) returns (bool) {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    require($.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
+    require($.isModule[_msgSender()] || $.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
 
     return super.transfer(to, amount);
   }
@@ -255,13 +255,9 @@ contract GovMITO is
   {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    if ($.isModule[_msgSender()]) {
-      super._transfer(from, to, value);
-      return true;
-    } else {
-      require($.isWhitelistedSender[from], StdError.Unauthorized());
-      return super.transferFrom(from, to, amount);
-    }
+    require(($.isModule[to] && _msgSender() == to) || $.isWhitelistedSender[from], StdError.Unauthorized());
+
+    return super.transferFrom(from, to, amount);
   }
 
   function nonces(address owner_) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
