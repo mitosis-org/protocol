@@ -6,9 +6,11 @@ import { console } from '@std/console.sol';
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
-import { MitosisVault, AssetAction, MatrixAction } from '../../src/branch/MitosisVault.sol';
-import { IMitosisVault, IMatrixMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
+import { MitosisVault, AssetAction } from '../../src/branch/MitosisVault.sol';
+import { IMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
+import { IMitosisVaultEOL, EOLAction } from '../../src/interfaces/branch/IMitosisVaultEOL.sol';
+import { IMitosisVaultMatrix, MatrixAction } from '../../src/interfaces/branch/IMitosisVaultMatrix.sol';
 import { StdError } from '../../src/lib/StdError.sol';
 import { MockERC20Snapshots } from '../mock/MockERC20Snapshots.t.sol';
 import { MockMatrixStrategyExecutor } from '../mock/MockMatrixStrategyExecutor.t.sol';
@@ -858,13 +860,13 @@ contract MitosisVaultTest is Toolkit {
 
   function _errMatrixAlreadyInitialized(address _hubMatrixVault) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
-      IMatrixMitosisVault.IMatrixMitosisVault__MatrixAlreadyInitialized.selector, _hubMatrixVault
+      IMitosisVaultMatrix.IMitosisVaultMatrix__MatrixAlreadyInitialized.selector, _hubMatrixVault
     );
   }
 
   function _errMatrixNotInitialized(address _hubMatrixVault) internal pure returns (bytes memory) {
     return
-      abi.encodeWithSelector(IMatrixMitosisVault.IMatrixMitosisVault__MatrixNotInitialized.selector, _hubMatrixVault);
+      abi.encodeWithSelector(IMitosisVaultMatrix.IMitosisVaultMatrix__MatrixNotInitialized.selector, _hubMatrixVault);
   }
 
   function _errMatrixStrategyExecutorNotDraind(address _hubMatrixVault, address matrixStrategyExecutor_)
@@ -873,7 +875,9 @@ contract MitosisVaultTest is Toolkit {
     returns (bytes memory)
   {
     return abi.encodeWithSelector(
-      IMitosisVault.IMitosisVault__StrategyExecutorNotDrained.selector, _hubMatrixVault, matrixStrategyExecutor_
+      IMitosisVaultMatrix.IMitosisVaultMatrix__StrategyExecutorNotDrained.selector,
+      _hubMatrixVault,
+      matrixStrategyExecutor_
     );
   }
 }

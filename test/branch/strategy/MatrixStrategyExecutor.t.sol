@@ -7,12 +7,14 @@ import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 import { Strings } from '@oz-v5/utils/Strings.sol';
 
-import { MitosisVault, AssetAction, MatrixAction } from '../../../src/branch/MitosisVault.sol';
+import { MitosisVault, AssetAction } from '../../../src/branch/MitosisVault.sol';
 import {
   MatrixStrategyExecutor, IMatrixStrategyExecutor
 } from '../../../src/branch/strategy/MatrixStrategyExecutor.sol';
-import { IMitosisVault, IMatrixMitosisVault } from '../../../src/interfaces/branch/IMitosisVault.sol';
+import { IMitosisVault } from '../../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
+import { IMitosisVaultEOL, EOLAction } from '../../../src/interfaces/branch/IMitosisVaultEOL.sol';
+import { IMitosisVaultMatrix, MatrixAction } from '../../../src/interfaces/branch/IMitosisVaultMatrix.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { MockERC20Snapshots } from '../../mock/MockERC20Snapshots.t.sol';
 import { MockManagerWithMerkleVerification } from '../../mock/MockManagerWithMerkleVerification.t.sol';

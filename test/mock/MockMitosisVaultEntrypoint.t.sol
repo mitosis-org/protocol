@@ -15,6 +15,8 @@ contract MockMitosisVaultEntrypoint is IMitosisVaultEntrypoint {
 
   function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount) external { }
 
+  function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount) external { }
+
   function deallocateMatrix(address hubMatrixVault, uint256 amount) external { }
 
   function settleMatrixYield(address hubMatrixVault, uint256 amount) external { }
