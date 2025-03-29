@@ -6,11 +6,11 @@ import { console } from '@std/console.sol';
 import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
 import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 
-import { MitosisVault, AssetAction, MatrixAction } from '../../../../src/branch/MitosisVault.sol';
+import { MitosisVault, AssetAction } from '../../../../src/branch/MitosisVault.sol';
 import { ManagerWithMerkleVerification } from
   '../../../../src/branch/strategy/manager/ManagerWithMerkleVerification.sol';
 import { MatrixStrategyExecutor } from '../../../../src/branch/strategy/MatrixStrategyExecutor.sol';
-import { IMitosisVault, IMatrixMitosisVault } from '../../../../src/interfaces/branch/IMitosisVault.sol';
+import { IMitosisVault } from '../../../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IManagerWithMerkleVerification } from
   '../../../../src/interfaces/branch/strategy/manager/IManagerWithMerkleVerification.sol';

@@ -11,6 +11,7 @@ import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 import { EOLVault } from '../../../src/hub/eol/EOLVault.sol';
 import { EOLVaultFactory } from '../../../src/hub/eol/EOLVaultFactory.sol';
 import { IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
+import { IEOLVaultFactory } from '../../../src/interfaces/hub/eol/IEOLVaultFactory.sol';
 import { MockContract } from '../../util/MockContract.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
@@ -38,21 +39,21 @@ contract EOLVaultFactoryTest is Toolkit {
 
   function test_initVaultType() public {
     vm.startPrank(owner);
-    base.initVaultType(EOLVaultFactory.VaultType.Basic, address(basicImpl));
+    base.initVaultType(IEOLVaultFactory.VaultType.Basic, address(basicImpl));
     vm.stopPrank();
 
-    assertNotEq(base.beacon(EOLVaultFactory.VaultType.Basic), address(0));
+    assertNotEq(base.beacon(IEOLVaultFactory.VaultType.Basic), address(0));
 
-    assertTrue(base.vaultTypeInitialized(EOLVaultFactory.VaultType.Basic));
+    assertTrue(base.vaultTypeInitialized(IEOLVaultFactory.VaultType.Basic));
   }
 
   function test_create_basic() public returns (address) {
     vm.prank(owner);
-    base.initVaultType(EOLVaultFactory.VaultType.Basic, address(basicImpl));
+    base.initVaultType(IEOLVaultFactory.VaultType.Basic, address(basicImpl));
 
     address instance = _createBasic(
       owner,
-      EOLVaultFactory.BasicVaultInitArgs({
+      IEOLVaultFactory.BasicVaultInitArgs({
         owner: owner,
         asset: IERC20Metadata(address(new WETH())),
         name: 'Basic Vault',
@@ -62,16 +63,16 @@ contract EOLVaultFactoryTest is Toolkit {
 
     assertEq(address(0x0), _erc1967Admin(instance));
     assertEq(address(0x0), _erc1967Impl(instance));
-    assertEq(base.beacon(EOLVaultFactory.VaultType.Basic), _erc1967Beacon(instance));
+    assertEq(base.beacon(IEOLVaultFactory.VaultType.Basic), _erc1967Beacon(instance));
 
-    assertEq(base.instancesLength(EOLVaultFactory.VaultType.Basic), 1);
-    assertEq(base.instances(EOLVaultFactory.VaultType.Basic, 0), instance);
+    assertEq(base.instancesLength(IEOLVaultFactory.VaultType.Basic), 1);
+    assertEq(base.instances(IEOLVaultFactory.VaultType.Basic, 0), instance);
 
     return instance;
   }
 
-  function _createBasic(address caller, EOLVaultFactory.BasicVaultInitArgs memory args) internal returns (address) {
+  function _createBasic(address caller, IEOLVaultFactory.BasicVaultInitArgs memory args) internal returns (address) {
     vm.prank(caller);
-    return base.create(EOLVaultFactory.VaultType.Basic, abi.encode(args));
+    return base.create(IEOLVaultFactory.VaultType.Basic, abi.encode(args));
   }
 }

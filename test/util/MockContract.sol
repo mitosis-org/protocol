@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { console } from '@std/console.sol';
+
+import { LibString } from '@solady/utils/LibString.sol';
+
 contract MockContract {
+  using LibString for bytes;
+  using LibString for uint256;
+
   struct Log {
     bytes4 sig;
     bytes args;
@@ -74,6 +81,16 @@ contract MockContract {
     _assertCall(sig, args[4:], value, callLogs[sig][callLogs[sig].length - 1 - offset]);
   }
 
+  function printCall(Log memory log) public pure {
+    console.log('=> log.sig: ', abi.encodePacked(log.sig).toHexString());
+    console.log('=> args: ', log.args.toHexString());
+    console.log('=> value: ', log.value);
+  }
+
+  function printCall(bytes4 sig, uint256 offset) external view {
+    printCall(callLogs[sig][callLogs[sig].length - 1 - offset]);
+  }
+
   function assertLastCall(bytes calldata args) external view {
     _assertLastCall(bytes4(args[0:4]), args[4:], 0);
   }
@@ -93,8 +110,34 @@ contract MockContract {
 
   function _assertCall(bytes4 sig, bytes memory args, uint256 value, Log memory log) internal view {
     require(callLogs[sig].length > 0, 'no calls');
-    require(log.sig == sig, 'sig mismatch');
-    require(log.value == value, 'value mismatch');
-    require(keccak256(log.args) == keccak256(args), 'args mismatch');
+
+    if (log.sig != sig) {
+      _printAssertionResult(sig, args, value, log);
+      revert('sig mismatch');
+    }
+
+    if (log.value != value) {
+      _printAssertionResult(sig, args, value, log);
+      revert('value mismatch');
+    }
+
+    if (keccak256(log.args) != keccak256(args)) {
+      _printAssertionResult(sig, args, value, log);
+      revert('args mismatch');
+    }
+  }
+
+  function _printAssertionResult(bytes4 sig, bytes memory args, uint256 value, Log memory log) internal view {
+    console.log('Expected:');
+    printCall(Log({ sig: sig, args: args, value: value }));
+    console.log('Actual:');
+    printCall(log);
+
+    console.log('============= STACK TRACE ===============');
+    for (uint256 i = 0; i < callLogs[sig].length; i++) {
+      console.log('=> INDEX: ', i.toString());
+      printCall(callLogs[sig][i]);
+      console.log('=========================================');
+    }
   }
 }
