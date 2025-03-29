@@ -29,28 +29,22 @@ contract GovMITOTest is Toolkit {
   function setUp() public {
     // use real time to avoid arithmatic overflow on withdrawalPeriod calculation
     vm.warp(1743061332);
-    govMITO = GovMITO(
-      payable(
-        new ERC1967Proxy(address(new GovMITO()), abi.encodeCall(GovMITO.initialize, (owner, minter, WITHDRAWAL_PERIOD)))
-      )
-    );
+    govMITO =
+      GovMITO(payable(_proxy(address(new GovMITO()), abi.encodeCall(GovMITO.initialize, (owner, WITHDRAWAL_PERIOD)))));
+
+    vm.prank(owner);
+    govMITO.setMinter(minter);
   }
 
   function test_init() public view {
+    assertEq(govMITO.name(), 'Mitosis Governance Token');
+    assertEq(govMITO.symbol(), 'gMITO');
+    assertEq(govMITO.decimals(), 18);
+
     assertEq(govMITO.owner(), owner);
     assertEq(govMITO.minter(), minter);
     assertEq(govMITO.delegationManager(), address(0));
     assertEq(govMITO.withdrawalPeriod(), WITHDRAWAL_PERIOD);
-  }
-
-  function test_metadata() public view {
-    assertEq(govMITO.name(), 'Mitosis Governance Token');
-    assertEq(govMITO.symbol(), 'gMITO');
-    assertEq(govMITO.decimals(), 18);
-  }
-
-  function test_minter() public view {
-    assertEq(govMITO.minter(), minter);
   }
 
   function test_mint() public {
@@ -418,6 +412,28 @@ contract GovMITOTest is Toolkit {
     vm.expectRevert(_errNotSupported());
     vm.prank(user1);
     govMITO.delegateBySig(user1, 0, 0, 0, bytes32(0), bytes32(0));
+  }
+
+  function test_setMinter() public {
+    vm.prank(user1);
+    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
+    govMITO.setMinter(minter);
+
+    // set to zero address
+    vm.prank(owner);
+    vm.expectEmit();
+    emit IGovMITO.MinterSet(address(0));
+    govMITO.setMinter(address(0));
+
+    assertEq(govMITO.minter(), address(0));
+
+    // rollback to minter
+    vm.prank(owner);
+    vm.expectEmit();
+    emit IGovMITO.MinterSet(minter);
+    govMITO.setMinter(minter);
+
+    assertEq(govMITO.minter(), minter);
   }
 
   function test_setDelegationManager() public {
