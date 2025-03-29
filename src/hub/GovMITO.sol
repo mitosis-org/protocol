@@ -258,7 +258,7 @@ contract GovMITO is
   {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    if ($.isModule[from]) {
+    if ($.isModule[_msgSender()]) {
       super._transfer(from, to, value);
       return true;
     } else {
