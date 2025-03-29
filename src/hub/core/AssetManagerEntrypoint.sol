@@ -141,12 +141,12 @@ contract AssetManagerEntrypoint is
     _dispatchToBranch(chainId, enc);
   }
 
-  function redeem(uint256 chainId, address branchAsset, address to, uint256 amount)
+  function withdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
     external
     onlyAssetManager
     onlyDispatchable(chainId)
   {
-    bytes memory enc = MsgRedeem({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
+    bytes memory enc = MsgWithdraw({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
     _dispatchToBranch(chainId, enc);
   }
 

@@ -122,14 +122,14 @@ contract AssetManagerErrors {
     uint256 chainId,
     address hubAsset,
     uint256 threshold,
-    uint256 redeemAmount
+    uint256 withdrawAmount
   ) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
       IAssetManagerStorageV1.IAssetManagerStorageV1__BranchLiquidityThresholdNotSatisfied.selector,
       chainId,
       hubAsset,
       threshold,
-      redeemAmount
+      withdrawAmount
     );
   }
 }
@@ -163,7 +163,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     reclaimQueue.setCall(IReclaimQueue.sync.selector);
 
     entrypoint = new MockContract();
-    entrypoint.setCall(IAssetManagerEntrypoint.redeem.selector);
+    entrypoint.setCall(IAssetManagerEntrypoint.withdraw.selector);
     entrypoint.setCall(IAssetManagerEntrypoint.allocateMatrix.selector);
     entrypoint.setCall(IAssetManagerEntrypoint.initializeAsset.selector);
     entrypoint.setCall(IAssetManagerEntrypoint.initializeMatrix.selector);
@@ -369,7 +369,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     assetManager.depositWithSupplyEOL(branchChainId1, branchAsset1, user1, address(eolVault), 100 ether);
   }
 
-  function test_redeem() public {
+  function test_withdraw() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
 
     vm.prank(address(entrypoint));
@@ -377,26 +377,26 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     vm.prank(user1);
     vm.expectEmit();
-    emit IAssetManager.Redeemed(branchChainId1, address(hubAsset), user1, 100 ether);
-    assetManager.redeem(branchChainId1, address(hubAsset), user1, 100 ether);
+    emit IAssetManager.Withdrawn(branchChainId1, address(hubAsset), user1, 100 ether);
+    assetManager.withdraw(branchChainId1, address(hubAsset), user1, 100 ether);
 
     hubAsset.assertLastCall(abi.encodeCall(IHubAsset.burn, (user1, 100 ether)));
     entrypoint.assertLastCall(
       abi.encodeCall(
-        IAssetManagerEntrypoint.redeem, //
+        IAssetManagerEntrypoint.withdraw, //
         (branchChainId1, branchAsset1, user1, 100 ether)
       )
     );
   }
 
   /// @dev No occurrence case until methods like unsetAssetPair are added.
-  function test_redeem_BranchAssetPairNotExist() public {
+  function test_withdraw_BranchAssetPairNotExist() public {
     vm.prank(address(entrypoint));
     vm.expectRevert(_errBranchAssetPairNotExist(branchChainId1, address(0)));
-    assetManager.redeem(branchChainId1, address(hubAsset), user1, 100 ether);
+    assetManager.withdraw(branchChainId1, address(hubAsset), user1, 100 ether);
   }
 
-  function test_redeem_ToZeroAddress() public {
+  function test_withdraw_ToZeroAddress() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
 
     vm.prank(address(entrypoint));
@@ -404,10 +404,10 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     vm.prank(user1);
     vm.expectRevert(_errZeroToAddress());
-    assetManager.redeem(branchChainId1, address(hubAsset), address(0), 100 ether);
+    assetManager.withdraw(branchChainId1, address(hubAsset), address(0), 100 ether);
   }
 
-  function test_redeem_ZeroAmount() public {
+  function test_withdraw_ZeroAmount() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
 
     vm.prank(address(entrypoint));
@@ -415,18 +415,18 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     vm.prank(user1);
     vm.expectRevert(_errZeroAmount());
-    assetManager.redeem(branchChainId1, address(hubAsset), user1, 0);
+    assetManager.withdraw(branchChainId1, address(hubAsset), user1, 0);
   }
 
-  function test_redeem_BranchAvailableLiquidityInsufficient() public {
+  function test_withdraw_BranchAvailableLiquidityInsufficient() public {
     test_allocateMatrix();
 
     vm.prank(user1);
     vm.expectRevert(_errBranchAvailableLiquidityInsufficient(branchChainId1, address(hubAsset), 200 ether, 201 ether));
-    assetManager.redeem(branchChainId1, address(hubAsset), user1, 201 ether);
+    assetManager.withdraw(branchChainId1, address(hubAsset), user1, 201 ether);
   }
 
-  function test_redeem_BranchLiquidityThresholdNotSatisfied() public {
+  function test_withdraw_BranchLiquidityThresholdNotSatisfied() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
 
     vm.prank(address(entrypoint));
@@ -437,7 +437,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     vm.prank(user1);
     vm.expectRevert(_errBranchLiquidityThresholdNotSatisfied(branchChainId1, address(hubAsset), 80 ether, 21 ether));
-    assetManager.redeem(branchChainId1, address(hubAsset), user1, 21 ether);
+    assetManager.withdraw(branchChainId1, address(hubAsset), user1, 21 ether);
   }
 
   function test_allocateMatrix() public {

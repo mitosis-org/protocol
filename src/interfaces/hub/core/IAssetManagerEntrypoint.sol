@@ -59,13 +59,13 @@ interface IAssetManagerEntrypoint {
   function initializeEOL(uint256 chainId, address eolVault, address branchAsset) external;
 
   /**
-   * @notice Initiates a redemption of assets from a branch chain
+   * @notice Initiates a withdrawal of assets from a branch chain
    * @param chainId The ID of the branch chain
    * @param branchAsset The address of the asset on the branch chain
-   * @param to The address that will receive the redeemed assets
-   * @param amount The amount of assets to redeem
+   * @param to The address that will receive the withdrawn assets
+   * @param amount The amount of assets to withdraw
    */
-  function redeem(uint256 chainId, address branchAsset, address to, uint256 amount) external;
+  function withdraw(uint256 chainId, address branchAsset, address to, uint256 amount) external;
 
   /**
    * @notice Allocates assets to the StrategyExecutor for MatrixVault on branch chain

@@ -114,7 +114,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     emit DepositedWithSupplyEOL(chainId, hubAsset, to, eolVault, amount, supplyAmount);
   }
 
-  function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external whenNotPaused {
+  function withdraw(uint256 chainId, address hubAsset, address to, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     require(to != address(0), StdError.ZeroAddress('to'));
@@ -127,9 +127,9 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     _assertBranchLiquidityThresholdSatisfied($, hubAsset, chainId, amount);
 
     _burn($, chainId, hubAsset, _msgSender(), amount);
-    $.entrypoint.redeem(chainId, branchAsset, to, amount);
+    $.entrypoint.withdraw(chainId, branchAsset, to, amount);
 
-    emit Redeemed(chainId, hubAsset, to, amount);
+    emit Withdrawn(chainId, hubAsset, to, amount);
   }
 
   //=========== NOTE: MATRIX FUNCTIONS ===========//

@@ -61,7 +61,7 @@ contract GovMITOTest is Toolkit {
     govMITO.mint{ value: 100 }(user1);
   }
 
-  function test_redeem_basic() public {
+  function test_withdraw_basic() public {
     payable(minter).transfer(100);
     vm.prank(minter);
     govMITO.mint{ value: 100 }(user1);
@@ -113,7 +113,7 @@ contract GovMITOTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_redeem_requestTwiceAndClaimOnce() public {
+  function test_withdraw_requestTwiceAndClaimOnce() public {
     payable(minter).transfer(100);
     vm.prank(minter);
     govMITO.mint{ value: 100 }(user1);
@@ -146,7 +146,7 @@ contract GovMITOTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_redeem_requestTwiceAndClaimTwice() public {
+  function test_withdraw_requestTwiceAndClaimTwice() public {
     payable(minter).transfer(100);
     vm.prank(minter);
     govMITO.mint{ value: 100 }(user1);
@@ -194,7 +194,7 @@ contract GovMITOTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_redeem_requestAfterClaimable() public {
+  function test_withdraw_requestAfterClaimable() public {
     payable(minter).transfer(100);
     vm.prank(minter);
     govMITO.mint{ value: 100 }(user1);
@@ -236,7 +236,7 @@ contract GovMITOTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_redeem_severalUsers() public {
+  function test_withdraw_severalUsers() public {
     payable(minter).transfer(100);
     vm.startPrank(minter);
     govMITO.mint{ value: 50 }(user1);
@@ -282,7 +282,7 @@ contract GovMITOTest is Toolkit {
     assertEq(govMITO.previewClaimWithdraw(user2), 0);
   }
 
-  function test_redeem_differentReceiver() public {
+  function test_withdraw_differentReceiver() public {
     payable(minter).transfer(100);
     vm.prank(minter);
     govMITO.mint{ value: 100 }(user1);
@@ -307,7 +307,7 @@ contract GovMITOTest is Toolkit {
     assertEq(govMITO.previewClaimWithdraw(user2), 0);
   }
 
-  function test_redeem_anyoneCanClaim() public {
+  function test_withdraw_anyoneCanClaim() public {
     payable(minter).transfer(100);
     vm.prank(minter);
     govMITO.mint{ value: 100 }(user1);
@@ -330,7 +330,7 @@ contract GovMITOTest is Toolkit {
     assertEq(govMITO.previewClaimWithdraw(user1), 0);
   }
 
-  function test_redeem_ERC20InsufficientBalance() public {
+  function test_withdraw_ERC20InsufficientBalance() public {
     payable(minter).transfer(100);
     vm.prank(minter);
     govMITO.mint{ value: 100 }(user1);

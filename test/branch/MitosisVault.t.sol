@@ -307,26 +307,26 @@ contract MitosisVaultTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_redeem() public {
+  function test_withdraw() public {
     test_deposit(); // (owner) - - - deposit 100 ETH - - -> (_mitosisVault)
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.redeem(address(_token), address(1), 10 ether);
+    _mitosisVault.withdraw(address(_token), address(1), 10 ether);
 
     assertEq(_token.balanceOf(address(1)), 10 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 90 ether);
   }
 
-  function test_redeem_Unauthorized() public {
+  function test_withdraw_Unauthorized() public {
     test_deposit();
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.redeem(address(_token), address(1), 10 ether);
+    _mitosisVault.withdraw(address(_token), address(1), 10 ether);
   }
 
-  function test_redeem_AssetNotInitialized() public {
+  function test_withdraw_AssetNotInitialized() public {
     test_deposit();
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
@@ -335,19 +335,19 @@ contract MitosisVaultTest is Toolkit {
     address myToken = address(10);
 
     vm.expectRevert(_errAssetNotInitialized(myToken));
-    _mitosisVault.redeem(myToken, address(1), 10 ether);
+    _mitosisVault.withdraw(myToken, address(1), 10 ether);
 
     vm.stopPrank();
   }
 
-  function test_redeem_NotEnoughBalance() public {
+  function test_withdraw_NotEnoughBalance() public {
     test_deposit();
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.startPrank(address(_mitosisVaultEntrypoint));
 
     vm.expectRevert();
-    _mitosisVault.redeem(address(_token), address(1), 101 ether);
+    _mitosisVault.withdraw(address(_token), address(1), 101 ether);
 
     vm.stopPrank();
   }
