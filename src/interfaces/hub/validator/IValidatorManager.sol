@@ -108,6 +108,10 @@ interface IValidatorManager {
   function validatorPubKeyToAddress(bytes calldata pubKey) external pure returns (address);
 
   function validatorCount() external view returns (uint256);
+
+  /// @notice Returns the validator address at a given index.
+  /// @param index The index (starting from 1) to retrieve the validator address from.
+  /// @return valAddr The validator address at the specified index.
   function validatorAt(uint256 index) external view returns (address);
   function isValidator(address valAddr) external view returns (bool);
 
