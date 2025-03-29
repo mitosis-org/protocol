@@ -22,9 +22,9 @@ import { IEpochFeeder } from './IEpochFeeder.sol';
 interface IValidatorManager {
   struct GlobalValidatorConfigResponse {
     uint256 initialValidatorDeposit;
-    uint256 collateralWithdrawalDelay;
+    uint256 collateralWithdrawalDelaySeconds;
     uint256 minimumCommissionRate;
-    uint96 commissionRateUpdateDelay;
+    uint96 commissionRateUpdateDelayEpoch;
   }
 
   struct ValidatorInfoResponse {
@@ -70,9 +70,9 @@ interface IValidatorManager {
 
   struct SetGlobalValidatorConfigRequest {
     uint256 initialValidatorDeposit; // used on creation of the validator
-    uint256 collateralWithdrawalDelay; // in seconds
+    uint256 collateralWithdrawalDelaySeconds; // in seconds
     uint256 minimumCommissionRate; // bp e.g.) 10000 = 100%
-    uint96 commissionRateUpdateDelay; // in epoch
+    uint96 commissionRateUpdateDelayEpoch; // in epoch
   }
 
   event FeeSet(uint256 previousFee, uint256 newFee);

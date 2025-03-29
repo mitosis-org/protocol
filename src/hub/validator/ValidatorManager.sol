@@ -26,9 +26,9 @@ contract ValidatorManagerStorageV1 {
 
   struct GlobalValidatorConfig {
     uint256 initialValidatorDeposit; // used on creation of the validator
-    uint256 collateralWithdrawalDelay; // in seconds
+    uint256 collateralWithdrawalDelaySeconds;
     Checkpoints.Trace160 minimumCommissionRates;
-    uint96 commissionRateUpdateDelay; // in epoch
+    uint96 commissionRateUpdateDelayEpoch;
   }
 
   struct ValidatorRewardConfig {
@@ -159,9 +159,9 @@ contract ValidatorManager is
 
     return GlobalValidatorConfigResponse({
       initialValidatorDeposit: config.initialValidatorDeposit,
-      collateralWithdrawalDelay: config.collateralWithdrawalDelay,
+      collateralWithdrawalDelaySeconds: config.collateralWithdrawalDelaySeconds,
       minimumCommissionRate: config.minimumCommissionRates.latest(),
-      commissionRateUpdateDelay: config.commissionRateUpdateDelay
+      commissionRateUpdateDelayEpoch: config.commissionRateUpdateDelayEpoch
     });
   }
 
@@ -244,7 +244,7 @@ contract ValidatorManager is
       valAddr,
       amount,
       validator.withdrawalRecipient,
-      Time.timestamp() + $.globalValidatorConfig.collateralWithdrawalDelay.toUint48()
+      Time.timestamp() + $.globalValidatorConfig.collateralWithdrawalDelaySeconds.toUint48()
     );
 
     emit CollateralWithdrawn(valAddr, amount);
@@ -342,7 +342,7 @@ contract ValidatorManager is
       );
     }
 
-    uint256 epochToUpdate = currentEpoch + globalConfig.commissionRateUpdateDelay;
+    uint256 epochToUpdate = currentEpoch + globalConfig.commissionRateUpdateDelayEpoch;
 
     // update pending commission rate
     validator.rewardConfig.pendingCommissionRate = request.commissionRate;
@@ -404,13 +404,12 @@ contract ValidatorManager is
       0 <= request.minimumCommissionRate && request.minimumCommissionRate <= MAX_COMMISSION_RATE,
       StdError.InvalidParameter('minimumCommissionRate')
     );
-    require(request.commissionRateUpdateDelay > 0, StdError.InvalidParameter('commissionRateUpdateDelay'));
 
     uint256 epoch = _epochFeeder.epoch();
     $.globalValidatorConfig.minimumCommissionRates.push(epoch.toUint96(), request.minimumCommissionRate.toUint160());
-    $.globalValidatorConfig.commissionRateUpdateDelay = request.commissionRateUpdateDelay;
+    $.globalValidatorConfig.commissionRateUpdateDelayEpoch = request.commissionRateUpdateDelayEpoch;
     $.globalValidatorConfig.initialValidatorDeposit = request.initialValidatorDeposit;
-    $.globalValidatorConfig.collateralWithdrawalDelay = request.collateralWithdrawalDelay;
+    $.globalValidatorConfig.collateralWithdrawalDelaySeconds = request.collateralWithdrawalDelaySeconds;
 
     emit GlobalValidatorConfigUpdated();
   }
