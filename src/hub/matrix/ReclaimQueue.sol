@@ -1,140 +1,234 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
+import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
 import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { ReentrancyGuardTransient } from '@oz-v5/utils/ReentrancyGuardTransient.sol';
+import { Time } from '@oz-v5/utils/types/Time.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
-import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
-import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
 import { IReclaimQueue } from '../../interfaces/hub/matrix/IReclaimQueue.sol';
-import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+import { LibQueue } from '../../lib/LibQueue.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { ReclaimQueueStorageV1 } from './ReclaimQueueStorageV1.sol';
 
-contract ReclaimQueue is
-  IReclaimQueue,
-  Pausable,
-  Ownable2StepUpgradeable,
-  UUPSUpgradeable,
-  ReclaimQueueStorageV1,
-  ReentrancyGuardTransient
-{
-  using SafeERC20 for IMatrixVault;
-  using SafeERC20 for IHubAsset;
+contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSUpgradeable, ReentrancyGuardTransient {
+  using SafeERC20 for IERC4626;
+  using SafeERC20 for IERC20Metadata;
   using SafeCast for uint256;
+  using ERC7201Utils for string;
   using Math for uint256;
-  using LibRedeemQueue for *;
+  using LibQueue for LibQueue.UintOffsetQueue;
 
-  struct SyncState {
-    uint256 queueOffset;
-    uint256 queueSize;
-    uint256 totalReservedShares;
-    uint256 totalReservedAssets;
-    uint256 totalShares;
-    uint256 totalAssets;
+  struct QueueState {
+    // configs
+    bool isEnabled;
+    uint48 reclaimPeriod;
+    uint168 _reserved; // reserved for future usage
+    // main
+    uint32 offset;
+    SyncLog[] logs;
+    Request[] items;
+    mapping(address recipient => LibQueue.UintOffsetQueue) indexes;
   }
+
+  struct VaultState {
+    // vault
+    uint8 decimalsOffset;
+    uint8 underlyingDecimals;
+    // reserved for future usage
+    uint240 _reserved;
+  }
+
+  struct StorageV1 {
+    IAssetManager assetManager;
+    mapping(address vault => QueueState) queues;
+    mapping(address vault => VaultState) vaults;
+  }
+
+  string private constant _NAMESPACE = 'mitosis.storage.ReclaimQueue.v1';
+  bytes32 private immutable _slot = _NAMESPACE.storageSlot();
+
+  function _getStorageV1() internal view returns (StorageV1 storage $) {
+    bytes32 slot = _slot;
+    // slither-disable-next-line assembly
+    assembly {
+      $.slot := slot
+    }
+  }
+
+  // =========================== NOTE: CONSTANTS =========================== //
+
+  uint32 public constant MAX_CLAIM_SIZE = 100;
+
+  // =========================== NOTE: INITIALIZATION =========================== //
 
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(address owner_, address assetManager) public initializer {
+  function initialize(address owner_, address assetManager_) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
     __Ownable_init(owner_);
     __UUPSUpgradeable_init();
 
     StorageV1 storage $ = _getStorageV1();
-    _setAssetManager($, assetManager);
+
+    _setAssetManager($, assetManager_);
   }
 
   // =========================== NOTE: QUERY FUNCTIONS =========================== //
 
-  function previewSync(address matrixVault, uint256 claimCount) external view returns (uint256, uint256) {
-    SyncState memory state = _calcSync(_getStorageV1(), IMatrixVault(matrixVault), claimCount);
-    return (state.totalReservedShares, state.totalReservedAssets);
+  function assetManager() external view returns (address) {
+    return address(_getStorageV1().assetManager);
+  }
+
+  function reclaimPeriod(address vault) external view returns (uint256) {
+    return _getStorageV1().queues[vault].reclaimPeriod;
+  }
+
+  function isEnabled(address vault) external view returns (bool) {
+    return _getStorageV1().queues[vault].isEnabled;
+  }
+
+  function queueInfo(address vault) external view returns (QueueInfo memory) {
+    QueueState storage q$ = _getStorageV1().queues[vault];
+
+    return QueueInfo({
+      isEnabled: q$.isEnabled,
+      reclaimPeriod: q$.reclaimPeriod,
+      offset: q$.offset,
+      logsLen: q$.logs.length.toUint32(),
+      itemsLen: q$.items.length.toUint32()
+    });
+  }
+
+  function queueItem(address vault, uint256 index) external view returns (Request memory) {
+    QueueState storage q$ = _getStorageV1().queues[vault];
+    return q$.items[index];
+  }
+
+  function queueLog(address vault, uint256 index) external view returns (SyncLog memory) {
+    QueueState storage q$ = _getStorageV1().queues[vault];
+    return q$.logs[index];
+  }
+
+  function queueIndex(address vault, address recipient) external view returns (QueueIndexInfo memory) {
+    QueueState storage q$ = _getStorageV1().queues[vault];
+
+    return QueueIndexInfo({
+      offset: q$.indexes[recipient].offset(), //
+      size: q$.indexes[recipient].size()
+    });
+  }
+
+  function queueIndexItem(address vault, address recipient, uint32 index) external view returns (Request memory) {
+    QueueState storage q$ = _getStorageV1().queues[vault];
+    return q$.items[q$.indexes[recipient].itemAt(index)];
+  }
+
+  function previewClaim(address receiver, address vault) external view returns (uint256, uint256) {
+    StorageV1 storage $ = _getStorageV1();
+
+    LibQueue.UintOffsetQueue storage index = $.queues[vault].indexes[receiver];
+
+    ClaimResult memory res = ClaimResult({
+      reqIdFrom: index.offset(),
+      reqIdTo: Math.min(index.offset() + MAX_CLAIM_SIZE, index.size()).toUint32(),
+      totalSharesClaimed: 0,
+      totalAssetsClaimed: 0
+    });
+
+    uint8 decimalsOffset = $.vaults[vault].decimalsOffset;
+    res = _calcClaim($.queues[vault], res, receiver, decimalsOffset);
+
+    return (res.totalSharesClaimed, res.totalAssetsClaimed);
+  }
+
+  function previewSync(address vault, uint256 requestCount) external view returns (uint256, uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    uint8 decimalsOffset = $.vaults[vault].decimalsOffset;
+    SyncResult memory res = _calcSync($.queues[vault], vault, requestCount, decimalsOffset);
+    return (res.totalSharesSynced, Math.min(res.totalAssetsOnRequest, res.totalAssetsOnReserve));
   }
 
   // =========================== NOTE: QUEUE FUNCTIONS =========================== //
 
-  function request(uint256 shares, address receiver, address matrixVault) external whenNotPaused returns (uint256) {
-    StorageV1 storage $ = _getStorageV1();
+  function request(uint256 shares, address receiver, address vault) external whenNotPaused returns (uint256) {
+    QueueState storage q$ = _getStorageV1().queues[vault];
 
-    _assertQueueEnabled($, matrixVault);
+    require(q$.isEnabled, IReclaimQueue__QueueNotEnabled(vault));
 
-    IMatrixVault(matrixVault).safeTransferFrom(_msgSender(), address(this), shares);
+    IERC4626(vault).safeTransferFrom(_msgSender(), address(this), shares);
 
     // We're subtracting 1 because of the rounding error
     // If there's a better way to handle this, we can apply it
-    uint256 assets = IMatrixVault(matrixVault).previewRedeem(shares) - 1;
+    uint256 assets = IERC4626(vault).previewRedeem(shares) - 1;
 
-    uint256 reqId = $.states[matrixVault].queue.enqueue(
-      receiver,
-      shares,
-      block.timestamp.toUint48(),
-      /// METADATA
-      _encodeRequestMetadata(assets)
-    );
+    uint48 now_ = Time.timestamp();
 
-    emit ReclaimRequested(receiver, matrixVault, shares, assets);
+    uint256 reqId = q$.items.length;
+
+    {
+      uint208 assets208 = assets.toUint208();
+      uint208 shares208 = shares.toUint208();
+
+      if (reqId == 0) {
+        q$.items.push(Request(0, 0, 0));
+        q$.items.push(Request(now_, assets208, shares208));
+        reqId = 1;
+      } else {
+        q$.items.push(Request(now_, assets208, q$.items[reqId - 1].sharesAcc + shares208));
+      }
+    }
+
+    q$.indexes[receiver].append(reqId);
+
+    emit Requested(receiver, vault, reqId, shares, assets);
 
     return reqId;
   }
 
-  function claim(address receiver, address matrixVault) external nonReentrant whenNotPaused returns (uint256) {
+  function claim(address receiver, address vault) external nonReentrant whenNotPaused returns (uint256, uint256) {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertQueueEnabled($, matrixVault);
-
-    LibRedeemQueue.Queue storage queue = $.states[matrixVault].queue;
-    LibRedeemQueue.Index storage index = queue.index(receiver);
-
-    uint48 timestamp = block.timestamp.toUint48();
-
-    queue.update(timestamp);
-
-    ClaimConfig memory cfg = ClaimConfig({
-      timestamp: timestamp,
-      receiver: receiver,
-      matrixVault: IMatrixVault(matrixVault),
-      hubAsset: IHubAsset(IMatrixVault(matrixVault).asset()),
-      decimalsOffset: $.states[matrixVault].decimalsOffset,
-      queueOffset: queue.offset,
-      idxOffset: index.offset
-    });
+    require($.queues[vault].isEnabled, IReclaimQueue__QueueNotEnabled(vault));
 
     // run actual claim logic
-    uint256 totalClaimed_ = _claim(queue, index, cfg);
-    require(totalClaimed_ > 0, IReclaimQueue__NothingToClaim());
+    ClaimResult memory res = _claim($, receiver, vault);
+    require(res.totalAssetsClaimed > 0, IReclaimQueue__NothingToClaim());
 
-    emit ReclaimRequestClaimed(receiver, matrixVault, totalClaimed_);
+    emit ClaimSucceeded(receiver, vault, res);
 
     // send total claim amount to receiver
-    cfg.hubAsset.safeTransfer(receiver, totalClaimed_);
+    IERC20Metadata(IERC4626(vault).asset()).safeTransfer(receiver, res.totalAssetsClaimed);
 
-    return totalClaimed_;
+    return (res.totalSharesClaimed, res.totalAssetsClaimed);
   }
 
-  function sync(address executor, address matrixVault, uint256 claimCount)
+  function sync(address executor, address vault, uint256 requestCount)
     external
     whenNotPaused
     returns (uint256, uint256)
   {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertOnlyAssetManager($);
-    _assertQueueEnabled($, matrixVault);
+    require(_msgSender() == address($.assetManager), StdError.Unauthorized());
+    require($.queues[vault].isEnabled, IReclaimQueue__QueueNotEnabled(vault));
 
-    SyncState memory state = _sync($, executor, IMatrixVault(matrixVault), claimCount);
+    SyncResult memory res = _sync($, vault, requestCount);
 
-    return (state.totalReservedShares, state.totalReservedAssets);
+    emit Synced(executor, vault, res);
+
+    return (res.totalSharesSynced, Math.min(res.totalAssetsOnRequest, res.totalAssetsOnReserve));
   }
 
   // =========================== NOTE: OWNABLE FUNCTIONS =========================== //
@@ -143,23 +237,19 @@ contract ReclaimQueue is
 
   function _authorizePause(address) internal view override onlyOwner { }
 
-  function enable(address matrixVault) external onlyOwner {
-    _enableQueue(_getStorageV1(), matrixVault);
+  function enableQueue(address vault) external onlyOwner {
+    _enableQueue(_getStorageV1(), vault);
   }
 
-  function setAssetManager(address assetManager) external onlyOwner {
-    _setAssetManager(_getStorageV1(), assetManager);
+  function setAssetManager(address assetManager_) external onlyOwner {
+    _setAssetManager(_getStorageV1(), assetManager_);
   }
 
-  function setReclaimPeriod(address matrixVault, uint256 reclaimPeriod_) external onlyOwner {
-    _setReclaimPeriod(_getStorageV1(), matrixVault, reclaimPeriod_);
+  function setReclaimPeriod(address vault, uint256 reclaimPeriod_) external onlyOwner {
+    _setReclaimPeriod(_getStorageV1(), vault, reclaimPeriod_);
   }
 
   // =========================== NOTE: INTERNAL FUNCTIONS =========================== //
-
-  function _abssub(uint256 x, uint256 y) private pure returns (uint256, bool) {
-    return (x > y ? x - y : y - x, x > y);
-  }
 
   function _convertToAssets(
     uint256 shares,
@@ -171,121 +261,259 @@ contract ReclaimQueue is
     return shares.mulDiv(totalAssets + 1, totalSupply + 10 ** decimalsOffset, rounding);
   }
 
-  function _idle(LibRedeemQueue.Queue storage queue, IAssetManager assetManager, address matrixVault)
+  function _calcSync(QueueState storage q$, address vault, uint256 requestCount, uint8 decimalsOffset)
     internal
     view
-    returns (uint256)
+    returns (SyncResult memory)
   {
-    return IMatrixVault(matrixVault).totalAssets() - queue.totalPendingAmount() - assetManager.matrixAlloc(matrixVault);
-  }
+    // reuse to avoid duplicate SLOAD
+    uint32 offset = q$.offset;
+    uint256 itemsLen = q$.items.length;
 
-  function _claim(LibRedeemQueue.Queue storage queue, LibRedeemQueue.Index storage index, ClaimConfig memory cfg)
-    internal
-    returns (uint256 totalClaimed_)
-  {
-    uint256 i = cfg.idxOffset;
-
-    for (; i < index.size; i++) {
-      if (i - cfg.idxOffset >= LibRedeemQueue.DEFAULT_CLAIM_SIZE) break;
-
-      uint256 reqId = index.data[i];
-
-      LibRedeemQueue.Request memory req = queue.data[reqId];
-      if (req.isClaimed()) continue;
-      if (reqId >= cfg.queueOffset) break;
-
-      uint256 assetsOnRequest = _decodeRequestMetadata(req.metadata);
-      uint256 assetsOnReserve;
-
-      {
-        (LibRedeemQueue.ReserveLog memory reserveLog,) = queue.reserveLog(reqId); // found can be ignored
-
-        (uint256 totalShares, uint256 totalAssets) = _decodeReserveMetadata(reserveLog.metadata);
-
-        assetsOnReserve = _convertToAssets(
-          reqId == 0 ? req.accumulated : req.accumulated - queue.data[reqId - 1].accumulated,
-          cfg.decimalsOffset,
-          totalAssets,
-          totalShares,
-          Math.Rounding.Floor
-        );
-      }
-
-      queue.data[reqId].claimedAt = cfg.timestamp.toUint48();
-
-      totalClaimed_ += Math.min(assetsOnRequest, assetsOnReserve);
-
-      emit LibRedeemQueue.Claimed(cfg.receiver, reqId);
-    }
-
-    // update index offset if there's any claimed request
-
-    if (totalClaimed_ > 0) index.offset = i;
-
-    return totalClaimed_;
-  }
-
-  function _calcSync(StorageV1 storage $, IMatrixVault matrixVault, uint256 claimCount)
-    internal
-    view
-    returns (SyncState memory)
-  {
-    LibRedeemQueue.Queue storage q = $.states[address(matrixVault)].queue;
-
-    SyncState memory state = SyncState({
-      queueOffset: q.offset,
-      queueSize: q.size,
-      totalReservedShares: 0,
-      totalReservedAssets: 0,
-      totalShares: matrixVault.totalSupply(),
-      totalAssets: matrixVault.totalAssets()
+    SyncResult memory res = SyncResult({
+      reqIdFrom: offset,
+      reqIdTo: Math.min(offset + requestCount, itemsLen).toUint32(),
+      totalSupply: IERC4626(vault).totalSupply(),
+      totalAssets: IERC4626(vault).totalAssets(),
+      totalSharesSynced: 0,
+      totalAssetsOnReserve: 0,
+      totalAssetsOnRequest: 0
     });
 
-    // Use cached values from SyncState
-    for (uint256 i = state.queueOffset; i < state.queueOffset + claimCount && i < state.queueSize;) {
-      LibRedeemQueue.Request memory req = q.data[i];
-      uint256 shares = i == 0 ? req.accumulated : req.accumulated - q.data[i - 1].accumulated;
+    for (uint256 i = res.reqIdFrom + 1; i < res.reqIdTo;) {
+      Request memory req = q$.items[i];
 
-      uint256 assetsOnRequest = _decodeRequestMetadata(req.metadata);
-      uint256 assetsOnReserve = _convertToAssets(
-        shares, $.states[address(matrixVault)].decimalsOffset, state.totalAssets, state.totalShares, Math.Rounding.Floor
-      );
-
-      state.totalReservedShares += shares;
-      state.totalReservedAssets += Math.min(assetsOnRequest, assetsOnReserve);
+      res.totalSharesSynced += req.sharesAcc - q$.items[i - 1].sharesAcc;
+      res.totalAssetsOnRequest += req.assets;
 
       unchecked {
         ++i;
       } // Use unchecked for gas savings
     }
 
-    return state;
-  }
-
-  function _sync(StorageV1 storage $, address executor, IMatrixVault matrixVault, uint256 claimCount)
-    internal
-    returns (SyncState memory)
-  {
-    SyncState memory state = _calcSync($, matrixVault, claimCount);
-
-    IMatrixVault(matrixVault).withdraw(state.totalReservedAssets, address(this), address(this));
-
-    $.states[address(matrixVault)].queue.reserve(
-      executor,
-      state.totalReservedShares,
-      block.timestamp.toUint48(),
-      /// METADATA
-      _encodeReserveMetadata(state.totalShares, state.totalAssets)
+    res.totalAssetsOnReserve = _convertToAssets(
+      res.totalSharesSynced, // calculate total synced assets on reserve
+      decimalsOffset,
+      res.totalAssets,
+      res.totalSupply,
+      Math.Rounding.Floor
     );
 
-    emit ReserveSynced(executor, address(matrixVault), claimCount, state.totalReservedShares, state.totalReservedAssets);
-
-    return state;
+    return res;
   }
 
-  // =========================== NOTE: ASSERTIONS =========================== //
+  function _fetchSyncLogByReqId(QueueState storage q$, uint256 fromIndex, uint256 reqId)
+    internal
+    view
+    returns (SyncLog memory, uint256)
+  {
+    SyncLog[] storage syncLogs = q$.logs;
+    uint256 syncLogsLen = syncLogs.length;
 
-  function _assertQueueEnabled(StorageV1 storage $, address matrixVault) internal view override {
-    require($.states[matrixVault].isEnabled, IReclaimQueue__QueueNotEnabled(matrixVault));
+    uint256 pos = _lowerBinaryLookup(syncLogs, reqId, fromIndex, syncLogsLen);
+    SyncLog memory log = _unsafeAccess(syncLogs, pos);
+
+    return (log, pos);
+  }
+
+  function _calcClaim(QueueState storage q$, ClaimResult memory res, address receiver, uint8 decimalsOffset)
+    internal
+    view
+    returns (ClaimResult memory)
+  {
+    uint256 cachedLogPos = 0;
+    SyncLog memory cached;
+
+    uint32 queueOffset = q$.offset;
+    uint48 reqTimeBoundary = Time.timestamp() - q$.reclaimPeriod;
+
+    LibQueue.UintOffsetQueue storage index = q$.indexes[receiver];
+
+    for (uint32 i = res.reqIdFrom + 1; i < res.reqIdTo;) {
+      uint256 reqId = index.itemAt(i);
+      Request memory req = q$.items[reqId];
+
+      // if the request didn't pass the reclaim period or before the sync, stop the loop
+      if (queueOffset < reqId || req.timestamp < reqTimeBoundary) {
+        res.reqIdTo = i - 1;
+        break;
+      }
+
+      if (cached.timestamp == 0 || (reqId < cached.reqIdTo && cached.reqIdFrom < reqId)) {
+        (cached, cachedLogPos) = _fetchSyncLogByReqId(q$, cachedLogPos, reqId);
+      }
+
+      uint256 shares = req.sharesAcc - q$.items[reqId - 1].sharesAcc;
+      res.totalSharesClaimed += shares;
+      res.totalAssetsClaimed += Math.min(
+        req.assets,
+        _convertToAssets(shares, decimalsOffset, cached.totalAssets, cached.totalSupply, Math.Rounding.Floor)
+      );
+
+      unchecked {
+        ++i;
+      } // Use unchecked for gas savings
+    }
+
+    return res;
+  }
+
+  function _execClaim(
+    QueueState storage q$,
+    ClaimResult memory res,
+    address vault,
+    address receiver,
+    uint8 decimalsOffset
+  ) internal returns (ClaimResult memory) {
+    uint256 cachedLogPos = 0;
+    SyncLog memory cached;
+
+    uint32 queueOffset = q$.offset;
+    uint48 reqTimeBoundary = Time.timestamp() - q$.reclaimPeriod;
+
+    LibQueue.UintOffsetQueue storage index = q$.indexes[receiver];
+
+    for (uint32 i = res.reqIdFrom + 1; i < res.reqIdTo;) {
+      uint256 reqId = index.itemAt(i);
+      Request memory req = q$.items[reqId];
+
+      // if the request didn't pass the reclaim period or before the sync, stop the loop
+      if (queueOffset < reqId || req.timestamp < reqTimeBoundary) {
+        res.reqIdTo = i - 1;
+        break;
+      }
+
+      if (cached.timestamp == 0 || (reqId < cached.reqIdTo && cached.reqIdFrom < reqId)) {
+        (cached, cachedLogPos) = _fetchSyncLogByReqId(q$, cachedLogPos, reqId);
+      }
+
+      uint256 shares = req.sharesAcc - q$.items[reqId - 1].sharesAcc;
+      uint256 assets = Math.min(
+        req.assets,
+        _convertToAssets(shares, decimalsOffset, cached.totalAssets, cached.totalSupply, Math.Rounding.Floor)
+      );
+
+      emit Claimed(receiver, vault, reqId, shares, assets, cached.totalSupply, cached.totalAssets);
+
+      res.totalSharesClaimed += shares;
+      res.totalAssetsClaimed += assets;
+
+      unchecked {
+        ++i;
+      } // Use unchecked for gas savings
+    }
+
+    return res;
+  }
+
+  function _claim(StorageV1 storage $, address receiver, address vault) internal returns (ClaimResult memory) {
+    QueueState storage q$ = $.queues[vault];
+    LibQueue.UintOffsetQueue storage index = q$.indexes[receiver];
+
+    ClaimResult memory res = ClaimResult({
+      reqIdFrom: index.offset(),
+      reqIdTo: Math.min(index.offset() + MAX_CLAIM_SIZE, index.size()).toUint32(),
+      totalSharesClaimed: 0,
+      totalAssetsClaimed: 0
+    });
+
+    {
+      VaultState storage v$ = $.vaults[vault];
+      res = _execClaim(q$, res, vault, receiver, v$.decimalsOffset);
+    }
+
+    // update index offset if there's at least one request to be claimed
+    if (res.reqIdFrom < res.reqIdTo) index._offset = res.reqIdTo;
+
+    return res;
+  }
+
+  function _sync(StorageV1 storage $, address vault, uint256 requestCount) internal returns (SyncResult memory) {
+    QueueState storage q$ = $.queues[vault];
+    VaultState storage v$ = $.vaults[vault];
+
+    SyncResult memory res = _calcSync(q$, vault, requestCount, v$.decimalsOffset);
+    require(res.reqIdTo > q$.offset, IReclaimQueue__NothingToSync());
+
+    uint256 withdrawAmount = Math.min(res.totalAssetsOnRequest, res.totalAssetsOnReserve);
+    IERC4626(vault).withdraw(withdrawAmount, address(this), address(this));
+
+    {
+      SyncLog[] storage syncLogs = q$.logs;
+
+      uint256 syncLogsLen = syncLogs.length;
+      uint256 nextSharesAcc = syncLogsLen == 0 ? 0 : syncLogs[syncLogsLen - 1].sharesAcc + res.totalSharesSynced;
+
+      syncLogs.push(
+        SyncLog({
+          timestamp: Time.timestamp(),
+          reqIdFrom: res.reqIdFrom,
+          reqIdTo: res.reqIdTo,
+          sharesAcc: nextSharesAcc.toUint144(),
+          totalSupply: res.totalSupply.toUint128(),
+          totalAssets: res.totalAssets.toUint128()
+        })
+      );
+    }
+
+    q$.offset = res.reqIdTo;
+
+    return res;
+  }
+
+  function _enableQueue(StorageV1 storage $, address vault) internal {
+    $.queues[vault].isEnabled = true;
+
+    uint8 underlyingDecimals = IERC20Metadata(IERC4626(vault).asset()).decimals();
+    $.vaults[vault].underlyingDecimals = underlyingDecimals;
+    $.vaults[vault].decimalsOffset = IERC4626(vault).decimals() - underlyingDecimals;
+
+    emit QueueEnabled(vault);
+  }
+
+  function _setAssetManager(StorageV1 storage $, address assetManager_) internal {
+    require(assetManager_.code.length > 0, StdError.InvalidAddress('AssetManager'));
+
+    $.assetManager = IAssetManager(assetManager_);
+
+    emit AssetManagerSet(assetManager_);
+  }
+
+  function _setReclaimPeriod(StorageV1 storage $, address vault, uint256 reclaimPeriod_) internal {
+    require($.queues[vault].isEnabled, IReclaimQueue__QueueNotEnabled(vault));
+
+    $.queues[vault].reclaimPeriod = reclaimPeriod_.toUint48();
+
+    emit ReclaimPeriodSet(vault, reclaimPeriod_);
+  }
+
+  function _lowerBinaryLookup(SyncLog[] storage self, uint256 reqId, uint256 low, uint256 high)
+    private
+    view
+    returns (uint256)
+  {
+    while (low < high) {
+      uint256 mid = Math.average(low, high);
+      if (_unsafeAccess(self, mid).reqIdTo < reqId) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+    return high;
+  }
+
+  function _unsafeAccess(SyncLog[] storage self, uint256 pos) private pure returns (SyncLog storage result) {
+    assembly {
+      mstore(0, self.slot)
+      result.slot :=
+        add(
+          keccak256(
+            0,
+            0x20 // two slots
+          ),
+          pos
+        )
+    }
   }
 }

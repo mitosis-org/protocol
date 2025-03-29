@@ -19,7 +19,6 @@ contract ReclaimQueueTest is Toolkit {
   address internal _admin = makeAddr('admin');
   address internal _owner = makeAddr('owner');
   address internal _user = makeAddr('user');
-  address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
 
   MockContract internal assetManager;
   MockContract internal hubAsset;
@@ -58,9 +57,9 @@ contract ReclaimQueueTest is Toolkit {
     );
   }
 
-  function _enable(address matrixVault_, uint256 reclaimPeriod_) internal {
+  function _enableQueue(address matrixVault_, uint256 reclaimPeriod_) internal {
     vm.startPrank(_owner);
-    reclaimQueue.enable(address(matrixVault_));
+    reclaimQueue.enableQueue(address(matrixVault_));
     reclaimQueue.setReclaimPeriod(address(matrixVault_), reclaimPeriod_);
     vm.stopPrank();
   }
@@ -70,16 +69,17 @@ contract ReclaimQueueTest is Toolkit {
     vm.expectRevert(_errQueueNotEnabled(address(matrixVault)));
     reclaimQueue.request(100 ether, _user, address(matrixVault));
 
-    _enable(address(matrixVault), 1 days);
+    _enableQueue(address(matrixVault), 1 days);
 
     // request
     matrixVault.setRet(
       abi.encodeCall(IERC20.transferFrom, (_user, address(reclaimQueue), 100 ether)), false, abi.encode(true)
     );
+
     matrixVault.setRet(abi.encodeCall(IERC4626.previewRedeem, (100 ether)), false, abi.encode(100 ether));
     vm.prank(_user);
     vm.expectEmit();
-    emit IReclaimQueue.ReclaimRequested(_user, address(matrixVault), 100 ether, 100 ether - 1);
+    emit IReclaimQueue.Requested(_user, address(matrixVault), 1, 100 ether, 100 ether - 1);
     reclaimQueue.request(100 ether, _user, address(matrixVault));
 
     matrixVault.assertLastCall(abi.encodeCall(IERC20.transferFrom, (_user, address(reclaimQueue), 100 ether)));
@@ -102,7 +102,19 @@ contract ReclaimQueueTest is Toolkit {
     );
     vm.prank(address(assetManager));
     vm.expectEmit();
-    emit IReclaimQueue.ReserveSynced(address(assetManager), address(matrixVault), 1, 100 ether, 100 ether - 1);
+    emit IReclaimQueue.Synced(
+      address(assetManager),
+      address(matrixVault),
+      IReclaimQueue.SyncResult({
+        reqIdFrom: 0,
+        reqIdTo: 1,
+        totalSupply: 100 ether - 1,
+        totalAssets: 100 ether - 1,
+        totalSharesSynced: 100 ether - 1,
+        totalAssetsOnReserve: 100 ether - 1,
+        totalAssetsOnRequest: 100 ether - 1
+      })
+    );
     reclaimQueue.sync(address(assetManager), address(matrixVault), 1);
 
     matrixVault.assertLastCall(
@@ -113,7 +125,9 @@ contract ReclaimQueueTest is Toolkit {
     matrixVault.setRet(abi.encodeCall(IERC20.transfer, (_user, 100 ether - 1)), false, abi.encode(true));
     vm.prank(_user);
     vm.expectEmit();
-    emit IReclaimQueue.ReclaimRequestClaimed(_user, address(matrixVault), 100 ether - 1);
+    emit IReclaimQueue.Claimed(
+      _user, address(matrixVault), 1, 100 ether - 1, 100 ether - 1, 100 ether - 1, 100 ether - 1
+    );
     reclaimQueue.claim(_user, address(matrixVault));
 
     hubAsset.assertLastCall(abi.encodeCall(IERC20.transfer, (_user, 100 ether - 1)));
@@ -125,7 +139,7 @@ contract ReclaimQueueTest is Toolkit {
   }
 
   function test_onLossReported() public {
-    _enable(address(matrixVault), 1 days);
+    _enableQueue(address(matrixVault), 1 days);
 
     // request
     matrixVault.setRet(
@@ -134,7 +148,7 @@ contract ReclaimQueueTest is Toolkit {
     matrixVault.setRet(abi.encodeCall(IERC4626.previewRedeem, (100 ether)), false, abi.encode(100 ether));
     vm.prank(_user);
     vm.expectEmit();
-    emit IReclaimQueue.ReclaimRequested(_user, address(matrixVault), 100 ether, 100 ether - 1);
+    emit IReclaimQueue.Requested(_user, address(matrixVault), 1, 100 ether, 100 ether - 1);
     reclaimQueue.request(100 ether, _user, address(matrixVault));
 
     // claim - should revert
@@ -155,14 +169,26 @@ contract ReclaimQueueTest is Toolkit {
     );
     vm.prank(address(assetManager));
     vm.expectEmit();
-    emit IReclaimQueue.ReserveSynced(address(assetManager), address(matrixVault), 1, 100 ether, 90 ether + 1);
+    emit IReclaimQueue.Synced(
+      address(assetManager),
+      address(matrixVault),
+      IReclaimQueue.SyncResult({
+        reqIdFrom: 0,
+        reqIdTo: 1,
+        totalSupply: 100 ether - 1,
+        totalAssets: 90 ether,
+        totalSharesSynced: 90 ether,
+        totalAssetsOnReserve: 90 ether,
+        totalAssetsOnRequest: 90 ether
+      })
+    );
     reclaimQueue.sync(address(assetManager), address(matrixVault), 1);
 
     // claim
     hubAsset.setRet(abi.encodeCall(IERC20.transfer, (_user, 90 ether + 1)), false, abi.encode(true));
     vm.prank(_user);
     vm.expectEmit();
-    emit IReclaimQueue.ReclaimRequestClaimed(_user, address(matrixVault), 90 ether + 1);
+    emit IReclaimQueue.Claimed(_user, address(matrixVault), 1, 90 ether + 1, 90 ether + 1, 100 ether - 1, 100 ether - 1);
     reclaimQueue.claim(_user, address(matrixVault));
 
     hubAsset.assertLastCall(abi.encodeCall(IERC20.transfer, (_user, 90 ether + 1)));
@@ -174,7 +200,7 @@ contract ReclaimQueueTest is Toolkit {
   }
 
   function test_onYieldReported() public {
-    _enable(address(matrixVault), 1 days);
+    _enableQueue(address(matrixVault), 1 days);
 
     // request
     matrixVault.setRet(
@@ -183,7 +209,7 @@ contract ReclaimQueueTest is Toolkit {
     matrixVault.setRet(abi.encodeCall(IERC4626.previewRedeem, (100 ether)), false, abi.encode(100 ether));
     vm.prank(_user);
     vm.expectEmit();
-    emit IReclaimQueue.ReclaimRequested(_user, address(matrixVault), 100 ether, 100 ether - 1);
+    emit IReclaimQueue.Requested(_user, address(matrixVault), 1, 100 ether, 100 ether - 1);
     reclaimQueue.request(100 ether, _user, address(matrixVault));
 
     // claim - should revert
@@ -204,14 +230,28 @@ contract ReclaimQueueTest is Toolkit {
     );
     vm.prank(address(assetManager));
     vm.expectEmit();
-    emit IReclaimQueue.ReserveSynced(address(assetManager), address(matrixVault), 1, 100 ether, 100 ether - 1);
+    emit IReclaimQueue.Synced(
+      address(assetManager),
+      address(matrixVault),
+      IReclaimQueue.SyncResult({
+        reqIdFrom: 0,
+        reqIdTo: 1,
+        totalSupply: 100 ether - 1,
+        totalAssets: 100 ether - 1,
+        totalSharesSynced: 100 ether - 1,
+        totalAssetsOnReserve: 100 ether - 1,
+        totalAssetsOnRequest: 100 ether - 1
+      })
+    );
     reclaimQueue.sync(address(assetManager), address(matrixVault), 1);
 
     // claim
     matrixVault.setRet(abi.encodeCall(IERC20.transfer, (_user, 100 ether - 1)), false, abi.encode(true));
     vm.prank(_user);
     vm.expectEmit();
-    emit IReclaimQueue.ReclaimRequestClaimed(_user, address(matrixVault), 100 ether - 1);
+    emit IReclaimQueue.Claimed(
+      _user, address(matrixVault), 1, 100 ether - 1, 100 ether - 1, 100 ether - 1, 100 ether - 1
+    );
     reclaimQueue.claim(_user, address(matrixVault));
 
     hubAsset.assertLastCall(abi.encodeCall(IERC20.transfer, (_user, 100 ether - 1)));
