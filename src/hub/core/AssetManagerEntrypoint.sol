@@ -132,6 +132,15 @@ contract AssetManagerEntrypoint is
     _dispatchToBranch(chainId, enc);
   }
 
+  function initializeEOL(uint256 chainId, address eolVault, address branchAsset)
+    external
+    onlyAssetManager
+    onlyDispatchable(chainId)
+  {
+    bytes memory enc = MsgInitializeEOL({ eolVault: eolVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
+    _dispatchToBranch(chainId, enc);
+  }
+
   function redeem(uint256 chainId, address branchAsset, address to, uint256 amount)
     external
     onlyAssetManager
@@ -178,6 +187,14 @@ contract AssetManagerEntrypoint is
       MsgDepositWithSupplyMatrix memory decoded = msg_.decodeDepositWithSupplyMatrix();
       _assetManager.depositWithSupplyMatrix(
         chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.matrixVault.toAddress(), decoded.amount
+      );
+      return;
+    }
+
+    if (msgType == MsgType.MsgDepositWithSupplyEOL) {
+      MsgDepositWithSupplyEOL memory decoded = msg_.decodeDepositWithSupplyEOL();
+      _assetManager.depositWithSupplyEOL(
+        chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.eolVault.toAddress(), decoded.amount
       );
       return;
     }
