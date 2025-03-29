@@ -65,9 +65,9 @@ contract ValidatorManagerTest is Toolkit {
             1 ether,
             IValidatorManager.SetGlobalValidatorConfigRequest({
               initialValidatorDeposit: 1000 ether,
-              collateralWithdrawalDelay: 1000 seconds,
+              collateralWithdrawalDelaySeconds: 1000 seconds,
               minimumCommissionRate: 100, // 1 %
-              commissionRateUpdateDelay: 3 // 3 * 100 seconds
+              commissionRateUpdateDelayEpoch: 3 // 3 * 100 seconds
              }),
             genesisValidators
           )
@@ -83,9 +83,9 @@ contract ValidatorManagerTest is Toolkit {
 
     IValidatorManager.GlobalValidatorConfigResponse memory config = manager.globalValidatorConfig();
     assertEq(config.initialValidatorDeposit, 1000 ether);
-    assertEq(config.collateralWithdrawalDelay, 1000 seconds);
+    assertEq(config.collateralWithdrawalDelaySeconds, 1000 seconds);
     assertEq(config.minimumCommissionRate, 100);
-    assertEq(config.commissionRateUpdateDelay, 3);
+    assertEq(config.commissionRateUpdateDelayEpoch, 3);
 
     assertEq(manager.fee(), 1 ether);
     assertEq(manager.validatorCount(), 0);
@@ -343,7 +343,7 @@ contract ValidatorManagerTest is Toolkit {
 
     uint256 newCommissionRate = 200;
     uint256 previousCommissionRate = manager.validatorInfo(val.addr).commissionRate;
-    uint256 commissionRateUpdateDelay = manager.globalValidatorConfig().commissionRateUpdateDelay;
+    uint256 commissionRateUpdateDelayEpoch = manager.globalValidatorConfig().commissionRateUpdateDelayEpoch;
 
     vm.prank(val.addr);
     manager.updateRewardConfig(
@@ -352,7 +352,7 @@ contract ValidatorManagerTest is Toolkit {
 
     assertEq(manager.validatorInfo(val.addr).commissionRate, previousCommissionRate);
 
-    vm.warp(block.timestamp + epochInterval * commissionRateUpdateDelay);
+    vm.warp(block.timestamp + epochInterval * commissionRateUpdateDelayEpoch);
     assertEq(manager.validatorInfo(val.addr).commissionRate, newCommissionRate);
 
     assertEq(manager.validatorInfoAt(0, val.addr).commissionRate, previousCommissionRate);
@@ -368,7 +368,7 @@ contract ValidatorManagerTest is Toolkit {
       val.addr, IValidatorManager.UpdateRewardConfigRequest({ commissionRate: newCommissionRate })
     );
 
-    vm.warp(block.timestamp + epochInterval * commissionRateUpdateDelay);
+    vm.warp(block.timestamp + epochInterval * commissionRateUpdateDelayEpoch);
     assertEq(manager.validatorInfo(val.addr).commissionRate, newCommissionRate);
 
     assertEq(manager.validatorInfoAt(3, val.addr).commissionRate, previousCommissionRate);
