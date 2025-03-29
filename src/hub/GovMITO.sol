@@ -84,8 +84,7 @@ contract GovMITO is
     revert StdError.NotSupported();
   }
 
-  function initialize(address owner_, address minter_, uint256 withdrawalPeriod_) external initializer {
-    require(minter_ != address(0), StdError.ZeroAddress('minter'));
+  function initialize(address owner_, uint256 withdrawalPeriod_) external initializer {
     require(withdrawalPeriod_ > 0, StdError.InvalidParameter('withdrawalPeriod'));
 
     // TODO(thai): not fixed yet. could be modified before launching.
@@ -99,7 +98,6 @@ contract GovMITO is
 
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    _setMinter($, minter_);
     _setWithdrawalPeriod($, withdrawalPeriod_);
   }
 
@@ -195,7 +193,6 @@ contract GovMITO is
   function _authorizeUpgrade(address) internal override onlyOwner { }
 
   function setMinter(address minter_) external onlyOwner {
-    require(minter_ != address(0), StdError.ZeroAddress('minter'));
     _setMinter(_getGovMITOStorage(), minter_);
   }
 
