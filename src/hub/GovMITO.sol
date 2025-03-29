@@ -184,7 +184,7 @@ contract GovMITO is
   function claimWithdraw(address receiver) external nonReentrant returns (uint256) {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    (uint256 claimed, uint256 reqIdFrom, uint256 reqIdTo) = $.queue[receiver].solve(clock() - $.withdrawalPeriod);
+    (uint256 claimed, uint256 reqIdFrom, uint256 reqIdTo) = $.queue[receiver].solveByTime(clock() - $.withdrawalPeriod);
 
     SafeTransferLib.safeTransferETH(receiver, claimed);
 

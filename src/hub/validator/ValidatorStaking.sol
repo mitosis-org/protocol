@@ -298,7 +298,8 @@ contract ValidatorStaking is
 
   function _claimUnstake(StorageV1 storage $, address receiver) internal virtual returns (uint256) {
     uint48 now_ = Time.timestamp();
-    (uint256 claimed, uint256 reqIdFrom, uint256 reqIdTo) = $.unstakeQueue[receiver].solve(now_ - $.unstakeCooldown);
+    (uint256 claimed, uint256 reqIdFrom, uint256 reqIdTo) =
+      $.unstakeQueue[receiver].solveByTime(now_ - $.unstakeCooldown);
 
     if (_baseAsset == NATIVE_TOKEN) receiver.safeTransferETH(claimed);
     else _baseAsset.safeTransfer(receiver, claimed);
