@@ -116,7 +116,7 @@ contract MitosisVault is
     emit Deposited(asset, to, amount);
   }
 
-  function redeem(address asset, address to, uint256 amount) external whenNotPaused {
+  function withdraw(address asset, address to, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -124,7 +124,7 @@ contract MitosisVault is
 
     IERC20(asset).safeTransfer(to, amount);
 
-    emit Redeemed(asset, to, amount);
+    emit Withdrawn(asset, to, amount);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//

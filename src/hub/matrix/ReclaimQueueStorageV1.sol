@@ -54,7 +54,7 @@ abstract contract ReclaimQueueStorageV1 is IReclaimQueueStorageV1, ContextUpgrad
     return address(_getStorageV1().assetManager);
   }
 
-  function redeemPeriod(address matrixVault) external view returns (uint256) {
+  function reclaimPeriod(address matrixVault) external view returns (uint256) {
     return _queue(_getStorageV1(), matrixVault).redeemPeriod;
   }
 
@@ -182,12 +182,12 @@ abstract contract ReclaimQueueStorageV1 is IReclaimQueueStorageV1, ContextUpgrad
     emit AssetManagerSet(assetManager_);
   }
 
-  function _setRedeemPeriod(StorageV1 storage $, address matrixVault, uint256 redeemPeriod_) internal {
+  function _setReclaimPeriod(StorageV1 storage $, address matrixVault, uint256 reclaimPeriod_) internal {
     _assertQueueEnabled($, matrixVault);
 
-    $.states[matrixVault].queue.redeemPeriod = redeemPeriod_;
+    $.states[matrixVault].queue.redeemPeriod = reclaimPeriod_;
 
-    emit RedeemPeriodSet(matrixVault, redeemPeriod_);
+    emit ReclaimPeriodSet(matrixVault, reclaimPeriod_);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //

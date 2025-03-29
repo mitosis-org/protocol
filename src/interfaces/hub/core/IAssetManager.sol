@@ -50,10 +50,10 @@ interface IAssetManagerStorageV1 {
   event StrategistSet(address indexed matrixVault, address indexed strategist);
 
   /**
-   * @notice Emitted when the redeemable deposit threshold is updated for a hub asset on a specific chain
+   * @notice Emitted when the withdrawable deposit threshold is updated for a hub asset on a specific chain
    * @param hubAsset The address of the hub asset for which the threshold is set
    * @param chainId The ID of the chain where the threshold is applied
-   * @param threshold The new redeemable deposit threshold amount
+   * @param threshold The new withdrawable deposit threshold amount
    */
   event BranchLiquidityThresholdSet(address indexed hubAsset, uint256 indexed chainId, uint256 threshold);
 
@@ -82,7 +82,7 @@ interface IAssetManagerStorageV1 {
   );
 
   error IAssetManagerStorageV1__BranchLiquidityThresholdNotSatisfied(
-    uint256 chainId, address hubAsset, uint256 threshold, uint256 redeemAmount
+    uint256 chainId, address hubAsset, uint256 threshold, uint256 amount
   );
 
   //=========== NOTE: STATE GETTERS ===========//
@@ -140,7 +140,7 @@ interface IAssetManagerStorageV1 {
   function branchAllocated(address hubAsset_, uint256 chainId) external view returns (uint256);
 
   /**
-   * @notice Retrieves the redeemable deposit threshold for a given hub asset and chain ID
+   * @notice Retrieves the withdrawable deposit threshold for a given hub asset and chain ID
    * @param hubAsset_ The address of the hub asset
    * @param chainId The ID of the chain
    */
@@ -148,7 +148,7 @@ interface IAssetManagerStorageV1 {
 
   /**
    * @notice Get the available liquidity of branch asset for a given hub asset and chain ID
-   * @dev The available amount of branch asset can be used for redemption or allocation.
+   * @dev The available amount of branch asset can be used for withdrawal or allocation.
    * @param hubAsset_ The address of the hub asset
    * @param chainId The ID of the chain
    */
@@ -273,13 +273,13 @@ interface IAssetManager is IAssetManagerStorageV1 {
   );
 
   /**
-   * @notice Emitted when hubAssets are redeemed
-   * @param chainId The ID of the chain where the redemption occurs
-   * @param hubAsset The address of the redeemed asset
-   * @param to The address receiving the redeemed assets on the branch chain
-   * @param amount The hubAsset amount to be redeemed
+   * @notice Emitted when hubAssets are withdrawn
+   * @param chainId The ID of the chain where the withdrawal occurs
+   * @param hubAsset The address of the withdrawn asset
+   * @param to The address receiving the withdrawn assets on the branch chain
+   * @param amount The hubAsset amount to be withdrawn
    */
-  event Redeemed(uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount);
+  event Withdrawn(uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount);
 
   /**
    * @notice Emitted when a reward is settled from the branch chain to the hub chain for a specific MatrixVault
@@ -388,14 +388,14 @@ interface IAssetManager is IAssetManagerStorageV1 {
     external;
 
   /**
-   * @notice Redeem hub assets and receive the asset on the branch chain
+   * @notice Withdraw hub assets and receive the asset on the branch chain
    * @dev Dispatches the cross-chain message to branch chain (see IAssetManagerEntrypoint)
-   * @param chainId The ID of the chain where the redemption occurs
-   * @param hubAsset The address of the hub asset to redeem
-   * @param to The address receiving the redeemed assets
-   * @param amount The amount to redeem
+   * @param chainId The ID of the chain where the withdrawal occurs
+   * @param hubAsset The address of the hub asset to withdraw
+   * @param to The address receiving the withdrawn assets
+   * @param amount The amount to withdraw
    */
-  function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external;
+  function withdraw(uint256 chainId, address hubAsset, address to, uint256 amount) external;
 
   /**
    * @notice Allocate the assets to the branch chain for a specific MatrixVault
@@ -460,19 +460,19 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function initializeAsset(uint256 chainId, address hubAsset) external;
 
   /**
-   * @notice Sets the redeemable deposit threshold for a specific asset on a given chain
-   * @dev This threshold determines the minimum deposit required to be eligible for redemption.
+   * @notice Sets the withdrawable deposit threshold for a specific asset on a given chain
+   * @dev This threshold determines the minimum deposit required to be eligible for withdrawal.
    * @param chainId The ID of the chain where the threshold is being set
    * @param hubAsset The address of the hub asset for which the threshold applies
-   * @param threshold The minimum deposit amount required for redemption
+   * @param threshold The minimum deposit amount required for withdrawal
    */
   function setBranchLiquidityThreshold(uint256 chainId, address hubAsset, uint256 threshold) external;
 
   /**
-   * @notice Sets the redeemable deposit threshold for multiple assets across multiple chains
+   * @notice Sets the withdrawable deposit threshold for multiple assets across multiple chains
    * @param chainIds An array of chain IDs where the thresholds are being set
    * @param hubAssets An array of hub asset addresses for which the thresholds apply
-   * @param thresholds An array of minimum deposit amounts required for redemption
+   * @param thresholds An array of minimum deposit amounts required for withdrawal
    */
   function setBranchLiquidityThreshold(
     uint256[] calldata chainIds,
