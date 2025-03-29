@@ -36,14 +36,14 @@ contract GovMITO is
 {
   using ERC7201Utils for string;
   using SafeCast for uint256;
-  using LibRedeemQueue for LibRedeemQueue.OffsetQueue;
+  using LibRedeemQueue for LibRedeemQueue.SimpleOffsetQueue;
 
   /// @custom:storage-location mitosis.storage.GovMITO
   struct GovMITOStorage {
     address minter;
     uint48 withdrawalPeriod;
     uint48 _reserved;
-    mapping(address user => LibRedeemQueue.OffsetQueue) queue;
+    mapping(address user => LibRedeemQueue.SimpleOffsetQueue) queue;
     mapping(address addr => bool) isModule;
     mapping(address sender => bool) isWhitelistedSender;
   }

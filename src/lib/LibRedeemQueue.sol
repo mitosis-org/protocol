@@ -19,29 +19,31 @@ library LibRedeemQueue {
   using Checkpoints for Checkpoints.Trace208;
   using CheckpointsExt for Checkpoints.Trace208;
 
-  // ================================= OffsetQueue ================================= //
+  // ================================= SimpleOffsetQueue ================================= //
 
   error LibRedeemQueue__NothingToClaim();
 
-  struct OffsetQueue {
-    uint256 _offset;
+  struct SimpleOffsetQueue {
+    uint32 _offset;
+    // storage reserve for future usage
+    uint224 _reserved;
     Checkpoints.Trace208 _items;
   }
 
-  function size(OffsetQueue storage $) internal view returns (uint256) {
+  function size(SimpleOffsetQueue storage $) internal view returns (uint256) {
     return $._items.length();
   }
 
-  function offset(OffsetQueue storage $) internal view returns (uint256) {
+  function offset(SimpleOffsetQueue storage $) internal view returns (uint256) {
     return $._offset;
   }
 
-  function itemAt(OffsetQueue storage $, uint32 pos) internal view returns (uint48, uint208) {
+  function itemAt(SimpleOffsetQueue storage $, uint32 pos) internal view returns (uint48, uint208) {
     Checkpoints.Checkpoint208 memory checkpoint = $._items.at(pos);
     return (checkpoint._key, checkpoint._value);
   }
 
-  function recentItemAt(OffsetQueue storage $, uint48 time) internal view returns (uint48, uint208) {
+  function recentItemAt(SimpleOffsetQueue storage $, uint48 time) internal view returns (uint48, uint208) {
     Checkpoints.Trace208 storage items = $._items;
     uint256 pos = items.upperBinaryLookup(time, 0, items.length());
     if (pos == 0) return (0, 0);
@@ -50,21 +52,22 @@ library LibRedeemQueue {
     return (checkpoint._key, checkpoint._value);
   }
 
-  function pending(OffsetQueue storage $, uint48 time) internal view returns (uint256, uint256) {
+  function pending(SimpleOffsetQueue storage $, uint48 time) internal view returns (uint256, uint256) {
     Checkpoints.Trace208 storage items = $._items;
-    uint256 offset = $._offset;
+
+    uint32 offset_ = $._offset;
     uint256 reqLen = items.length();
-    if (reqLen <= offset) return (0, 0);
+    if (reqLen <= offset_) return (0, 0);
 
-    uint256 total = items.latest() - items.valueAt(offset.toUint32());
-    uint256 found = items.upperBinaryLookup(time, offset, reqLen);
-    if (offset == found) return (total, 0);
+    uint256 total = items.latest() - items.valueAt(offset_);
+    uint256 found = items.upperBinaryLookup(time, offset_, reqLen);
+    if (offset_ == found) return (total, 0);
 
-    uint256 available = items.valueAt((found - 1).toUint32()) - items.valueAt(offset.toUint32());
+    uint256 available = items.valueAt((found - 1).toUint32()) - items.valueAt(offset_);
     return (total, available);
   }
 
-  function append(OffsetQueue storage $, uint48 time, uint208 amount) internal returns (uint256) {
+  function append(SimpleOffsetQueue storage $, uint48 time, uint208 amount) internal returns (uint256) {
     Checkpoints.Trace208 storage items = $._items;
 
     uint256 reqId = items.length();
@@ -80,20 +83,20 @@ library LibRedeemQueue {
     return reqId;
   }
 
-  function solve(OffsetQueue storage $, uint48 timestamp) internal returns (uint256, uint256, uint256) {
+  function solve(SimpleOffsetQueue storage $, uint48 timestamp) internal returns (uint256, uint256, uint256) {
     Checkpoints.Trace208 storage items = $._items;
 
-    uint256 offset = $._offset;
+    uint32 offset_ = $._offset;
     uint256 reqLen = items.length();
-    require(reqLen > offset, LibRedeemQueue__NothingToClaim());
+    require(reqLen > offset_, LibRedeemQueue__NothingToClaim());
 
-    uint256 found = items.upperBinaryLookup(timestamp, offset, reqLen);
-    require(found > offset + 1, LibRedeemQueue__NothingToClaim());
+    uint256 found = items.upperBinaryLookup(timestamp, offset_, reqLen);
+    require(found > offset_ + 1, LibRedeemQueue__NothingToClaim());
 
-    uint256 solved = items.valueAt((found - 1).toUint32()) - items.valueAt(offset.toUint32());
-    $._offset = found - 1;
+    uint256 solved = items.valueAt((found - 1).toUint32()) - items.valueAt(offset_);
+    $._offset = (found - 1).toUint32();
 
-    return (solved, offset, found - 1);
+    return (solved, offset_, found - 1);
   }
 
   // ================================= RedeemQueue ================================= //

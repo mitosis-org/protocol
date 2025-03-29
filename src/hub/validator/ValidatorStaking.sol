@@ -31,7 +31,7 @@ contract ValidatorStakingStorageV1 {
     Checkpoints.Trace208 totalStaked;
     Checkpoints.Trace208 totalUnstaking;
     mapping(address staker => uint256) lastRedelegationTime;
-    mapping(address staker => LibRedeemQueue.OffsetQueue) unstakeQueue;
+    mapping(address staker => LibRedeemQueue.SimpleOffsetQueue) unstakeQueue;
     mapping(address staker => Checkpoints.Trace208) stakerTotal;
     mapping(address valAddr => Checkpoints.Trace208) validatorTotal;
     mapping(address valAddr => mapping(address staker => Checkpoints.Trace208)) staked;
@@ -59,7 +59,7 @@ contract ValidatorStaking is
   using SafeCast for uint256;
   using SafeTransferLib for address;
   using Checkpoints for Checkpoints.Trace208;
-  using LibRedeemQueue for LibRedeemQueue.OffsetQueue;
+  using LibRedeemQueue for LibRedeemQueue.SimpleOffsetQueue;
 
   address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
