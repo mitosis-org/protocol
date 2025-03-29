@@ -37,6 +37,13 @@ interface IGovMITO is IERC20, IERC5805 {
   event MinterSet(address indexed minter);
 
   /**
+   * @notice Emitted when a module is enabled or disabled.
+   * @param module The address of the module
+   * @param enabled Whether the module is enabled
+   */
+  event ModuleSet(address indexed module, bool indexed enabled);
+
+  /**
    * @notice Emitted when a whitelist status for a sender is set.
    * @param sender The address of the sender
    * @param whitelisted Whether the sender is whitelisted
@@ -54,6 +61,13 @@ interface IGovMITO is IERC20, IERC5805 {
    * @return The address of the minter
    */
   function minter() external view returns (address);
+
+  /**
+   * @notice Checks if a module is enabled.
+   * @param module The address to check
+   * @return Whether the module is enabled
+   */
+  function isModule(address module) external view returns (bool);
 
   /**
    * @notice Checks if an address is a whitelisted sender.
@@ -136,6 +150,13 @@ interface IGovMITO is IERC20, IERC5805 {
    * @param minter The address of the new minter
    */
   function setMinter(address minter) external;
+
+  /**
+   * @notice Set the whitelist status for a module.
+   * @param addr The address of the module
+   * @param isModule Whether the module is enabled
+   */
+  function setModule(address addr, bool isModule) external;
 
   /**
    * @notice Set the whitelist status for a sender.
