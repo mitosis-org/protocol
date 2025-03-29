@@ -93,10 +93,11 @@ library LibRedeemQueue {
     uint256 found = items.upperBinaryLookup(timestamp, offset_, reqLen);
     require(found > offset_ + 1, LibRedeemQueue__NothingToClaim());
 
-    uint256 solved = items.valueAt((found - 1).toUint32()) - items.valueAt(offset_);
-    $._offset = (found - 1).toUint32();
+    uint32 pos = (found - 1).toUint32();
+    uint256 solved = items.valueAt(pos) - items.valueAt(offset_);
+    $._offset = pos;
 
-    return (solved, offset_, found - 1);
+    return (solved, offset_, pos);
   }
 
   function solveByCount(SimpleOffsetQueue storage $, uint256 count) internal returns (uint256, uint256, uint256) {
@@ -109,10 +110,12 @@ library LibRedeemQueue {
     uint256 found = Math.min(offset_ + count, reqLen);
     require(found > offset_ + 1, LibRedeemQueue__NothingToClaim());
 
-    uint256 solved = items.valueAt((found - 1).toUint32()) - items.valueAt(offset_);
-    $._offset = (found - 1).toUint32();
+    uint32 pos = (found - 1).toUint32();
+    uint256 solved = items.valueAt(pos) - items.valueAt(offset_);
+    $._offset = pos;
 
-    return (solved, offset_, found - 1);
+    return (solved, offset_, pos);
+  }
   }
 
   // ================================= RedeemQueue ================================= //
