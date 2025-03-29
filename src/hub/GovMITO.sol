@@ -44,6 +44,7 @@ contract GovMITO is
     uint48 withdrawalPeriod;
     uint48 _reserved;
     mapping(address user => LibRedeemQueue.OffsetQueue) queue;
+    mapping(address addr => bool) isModule;
     mapping(address sender => bool) isWhitelistedSender;
   }
 
@@ -113,6 +114,10 @@ contract GovMITO is
 
   function isWhitelistedSender(address sender) external view returns (bool) {
     return _getGovMITOStorage().isWhitelistedSender[sender];
+  }
+
+  function isModule(address addr) external view returns (bool) {
+    return _getGovMITOStorage().isModule[sender];
   }
 
   function withdrawalPeriod() external view returns (uint256) {
@@ -196,6 +201,13 @@ contract GovMITO is
     _setMinter(_getGovMITOStorage(), minter_);
   }
 
+  function setModule(address addr, bool isModule) external onlyOwner {
+    require(addr != address(0), StdError.ZeroAddress('sender'));
+    GovMITOStorage storage $ = _getGovMITOStorage();
+    $.isModule[addr] = isModule;
+    emit ModuleSet(addr, isModule);
+  }
+
   function setWhitelistedSender(address sender, bool isWhitelisted) external onlyOwner {
     require(sender != address(0), StdError.ZeroAddress('sender'));
     _setWhitelistedSender(_getGovMITOStorage(), sender, isWhitelisted);
@@ -243,9 +255,13 @@ contract GovMITO is
   {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    require($.isWhitelistedSender[from], StdError.Unauthorized());
-
-    return super.transferFrom(from, to, amount);
+    if ($.isModule[_msgSender()]) {
+      super._transfer(from, to, value);
+      return true;
+    } else {
+      require($.isWhitelistedSender[from], StdError.Unauthorized());
+      return super.transferFrom(from, to, amount);
+    }
   }
 
   function nonces(address owner_) public view override(ERC20PermitUpgradeable, NoncesUpgradeable) returns (uint256) {
