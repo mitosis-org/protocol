@@ -1,49 +1,49 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { Arrays } from '@oz-v5/utils/Arrays.sol';
 import { Math } from '@oz-v5/utils/math/Math.sol';
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
 
 import { CheckpointsExt } from './CheckpointsExt.sol';
 
-/**
- * @dev LIFECYCLE:
- * 1. enqueue
- * 2. update queue offset
- * 3. update index offset
- * 3. claim (single, multiple, by recipient, by recipient with custom claim size)
- */
-library LibRedeemQueue {
+library LibQueue {
   using SafeCast for uint256;
   using Checkpoints for Checkpoints.Trace208;
   using CheckpointsExt for Checkpoints.Trace208;
+  using Arrays for uint256[];
 
-  // ================================= SimpleOffsetQueue ================================= //
+  // ================================= Trace208OffsetQueue ================================= //
 
-  error LibRedeemQueue__NothingToClaim();
+  error LibQueue__NothingToClaim();
 
-  struct SimpleOffsetQueue {
+  struct Trace208OffsetQueue {
     uint32 _offset;
     // storage reserve for future usage
     uint224 _reserved;
     Checkpoints.Trace208 _items;
   }
 
-  function size(SimpleOffsetQueue storage $) internal view returns (uint256) {
+  function size(Trace208OffsetQueue storage $) internal view returns (uint256) {
     return $._items.length();
   }
 
-  function offset(SimpleOffsetQueue storage $) internal view returns (uint256) {
+  function offset(Trace208OffsetQueue storage $) internal view returns (uint256) {
     return $._offset;
   }
 
-  function itemAt(SimpleOffsetQueue storage $, uint32 pos) internal view returns (uint48, uint208) {
+  function itemAt(Trace208OffsetQueue storage $, uint32 pos) internal view returns (uint48, uint208) {
     Checkpoints.Checkpoint208 memory checkpoint = $._items.at(pos);
     return (checkpoint._key, checkpoint._value);
   }
 
-  function recentItemAt(SimpleOffsetQueue storage $, uint48 time) internal view returns (uint48, uint208) {
+  function valueAt(Trace208OffsetQueue storage $, uint32 pos) internal view returns (uint208) {
+    Checkpoints.Checkpoint208 memory checkpoint = $._items.at(pos);
+    return checkpoint._value;
+  }
+
+  function recentItemAt(Trace208OffsetQueue storage $, uint48 time) internal view returns (uint48, uint208) {
     Checkpoints.Trace208 storage items = $._items;
     uint256 pos = items.upperBinaryLookup(time, 0, items.length());
     if (pos == 0) return (0, 0);
@@ -52,7 +52,7 @@ library LibRedeemQueue {
     return (checkpoint._key, checkpoint._value);
   }
 
-  function pending(SimpleOffsetQueue storage $, uint48 time) internal view returns (uint256, uint256) {
+  function pending(Trace208OffsetQueue storage $, uint48 time) internal view returns (uint256, uint256) {
     Checkpoints.Trace208 storage items = $._items;
 
     uint32 offset_ = $._offset;
@@ -67,7 +67,7 @@ library LibRedeemQueue {
     return (total, available);
   }
 
-  function append(SimpleOffsetQueue storage $, uint48 time, uint208 amount) internal returns (uint256) {
+  function append(Trace208OffsetQueue storage $, uint48 time, uint208 amount) internal returns (uint256) {
     Checkpoints.Trace208 storage items = $._items;
 
     uint256 reqId = items.length();
@@ -83,39 +83,100 @@ library LibRedeemQueue {
     return reqId;
   }
 
-  function solveByTime(SimpleOffsetQueue storage $, uint48 timestamp) internal returns (uint256, uint256, uint256) {
+  function solveByKey(Trace208OffsetQueue storage $, uint48 key) internal returns (uint32, uint32) {
     Checkpoints.Trace208 storage items = $._items;
 
     uint32 offset_ = $._offset;
     uint256 reqLen = items.length();
-    require(reqLen > offset_, LibRedeemQueue__NothingToClaim());
+    require(reqLen > offset_, LibQueue__NothingToClaim());
 
-    uint256 found = items.upperBinaryLookup(timestamp, offset_, reqLen);
-    require(found > offset_ + 1, LibRedeemQueue__NothingToClaim());
+    uint256 found = items.upperBinaryLookup(key, offset_, reqLen);
+    require(found > offset_ + 1, LibQueue__NothingToClaim());
 
     uint32 pos = (found - 1).toUint32();
-    uint256 solved = items.valueAt(pos) - items.valueAt(offset_);
     $._offset = pos;
 
-    return (solved, offset_, pos);
+    return (offset_, pos);
   }
 
-  function solveByCount(SimpleOffsetQueue storage $, uint256 count) internal returns (uint256, uint256, uint256) {
+  function solveByCount(Trace208OffsetQueue storage $, uint256 count) internal returns (uint32, uint32) {
     Checkpoints.Trace208 storage items = $._items;
 
     uint32 offset_ = $._offset;
     uint256 reqLen = items.length();
-    require(reqLen > offset_, LibRedeemQueue__NothingToClaim());
+    require(reqLen > offset_, LibQueue__NothingToClaim());
 
     uint256 found = Math.min(offset_ + count, reqLen);
-    require(found > offset_ + 1, LibRedeemQueue__NothingToClaim());
+    require(found > offset_ + 1, LibQueue__NothingToClaim());
 
     uint32 pos = (found - 1).toUint32();
-    uint256 solved = items.valueAt(pos) - items.valueAt(offset_);
     $._offset = pos;
 
-    return (solved, offset_, pos);
+    return (offset_, pos);
   }
+
+  // ================================= NEW ================================= //
+
+  struct UintOffsetQueue {
+    uint32 _offset;
+    // storage reserve for future usage
+    uint224 _reserved;
+    uint256[] _items;
+  }
+
+  function size(UintOffsetQueue storage $) internal view returns (uint256) {
+    return $._items.length;
+  }
+
+  function offset(UintOffsetQueue storage $) internal view returns (uint256) {
+    return $._offset;
+  }
+
+  function itemAt(UintOffsetQueue storage $, uint32 pos) internal view returns (uint256) {
+    return $._items[pos];
+  }
+
+  function append(UintOffsetQueue storage $, uint256 item) internal returns (uint256) {
+    $._items.push(item);
+    uint256 reqId = $._items.length;
+
+    if (reqId == 0) {
+      $._items.push(0);
+      $._items.push(item);
+      reqId = 1;
+    } else {
+      $._items.push(item);
+    }
+
+    return reqId;
+  }
+
+  function solveByKey(UintOffsetQueue storage $, uint256 key) internal returns (uint32, uint32) {
+    uint256 reqLen = $._items.length;
+    uint32 offset_ = $._offset;
+    require(reqLen > offset_, LibQueue__NothingToClaim());
+
+    uint256 found = Arrays.findUpperBound($._items, key);
+    require(found > offset_ + 1, LibQueue__NothingToClaim());
+
+    uint32 pos = (found - 1).toUint32();
+    $._offset = pos;
+
+    return (offset_, pos);
+  }
+
+  function solveByCount(UintOffsetQueue storage $, uint256 count) internal returns (uint32, uint32) {
+    uint256 reqLen = $._items.length;
+    uint32 offset_ = $._offset;
+    require(reqLen > offset_, LibQueue__NothingToClaim());
+
+    uint256 found = Math.min(offset_ + count, reqLen);
+    require(found > offset_ + 1, LibQueue__NothingToClaim());
+
+    uint32 pos = (found - 1).toUint32();
+    $._offset = pos;
+
+    return (offset_, pos);
   }
 
   // ================================= RedeemQueue ================================= //
@@ -165,11 +226,11 @@ library LibRedeemQueue {
   event QueueOffsetUpdated(uint256 oldOffset, uint256 newOffset);
   event IndexOffsetUpdated(address indexed recipient, uint256 oldOffset, uint256 newOffset);
 
-  error LibRedeemQueue__EmptyIndex(address recipient);
-  error LibRedeemQueue__IndexOutOfRange(uint256 index, uint256 from, uint256 to);
-  error LibRedeemQueue__NotReadyToClaim(uint256 index);
-  error LibRedeemQueue__InvalidRequestAmount();
-  error LibRedeemQueue__InvalidReserveAmount();
+  error LibQueue__EmptyIndex(address recipient);
+  error LibQueue__IndexOutOfRange(uint256 index, uint256 from, uint256 to);
+  error LibQueue__NotReadyToClaim(uint256 index);
+  error LibQueue__InvalidRequestAmount();
+  error LibQueue__InvalidReserveAmount();
 
   function isClaimed(Request memory x) internal pure returns (bool) {
     return x.claimedAt != 0;
@@ -180,12 +241,12 @@ library LibRedeemQueue {
   }
 
   function get(Queue storage q, uint256 itemIndex) internal view returns (Request memory) {
-    require(itemIndex < q.size, LibRedeemQueue__IndexOutOfRange(itemIndex, 0, q.size - 1));
+    require(itemIndex < q.size, LibQueue__IndexOutOfRange(itemIndex, 0, q.size - 1));
     return q.data[itemIndex];
   }
 
   function get(Index storage idx, uint256 i) internal view returns (uint256 itemIndex) {
-    require(i < idx.size, LibRedeemQueue__IndexOutOfRange(i, 0, idx.size - 1));
+    require(i < idx.size, LibQueue__IndexOutOfRange(i, 0, idx.size - 1));
     return idx.data[i];
   }
 
@@ -244,7 +305,7 @@ library LibRedeemQueue {
 
   function index(Queue storage q, address recipient) internal view returns (Index storage) {
     Index storage idx = q.indexes[recipient];
-    require(idx.size != 0, LibRedeemQueue__EmptyIndex(recipient));
+    require(idx.size != 0, LibQueue__EmptyIndex(recipient));
     return idx;
   }
 
@@ -315,7 +376,7 @@ library LibRedeemQueue {
     internal
     returns (uint256 itemIndex)
   {
-    require(amount != 0, LibRedeemQueue__InvalidRequestAmount());
+    require(amount != 0, LibQueue__InvalidRequestAmount());
 
     bool isPrevItemExists = q.size > 0;
     itemIndex = q.size;
@@ -385,7 +446,7 @@ library LibRedeemQueue {
     internal
     returns (uint256)
   {
-    require(amount != 0, LibRedeemQueue__InvalidReserveAmount());
+    require(amount != 0, LibQueue__InvalidReserveAmount());
     uint256 historyIndex = q.reserveHistory.length;
 
     ReserveLog memory log = q.reserveHistory.length == 0

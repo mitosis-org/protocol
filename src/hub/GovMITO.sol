@@ -21,7 +21,7 @@ import { NoncesUpgradeable } from '@ozu-v5/utils/NoncesUpgradeable.sol';
 
 import { IGovMITO } from '../interfaces/hub/IGovMITO.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
-import { LibRedeemQueue } from '../lib/LibRedeemQueue.sol';
+import { LibQueue } from '../lib/LibQueue.sol';
 import { StdError } from '../lib/StdError.sol';
 import { SudoVotes } from '../lib/SudoVotes.sol';
 
@@ -36,14 +36,14 @@ contract GovMITO is
 {
   using ERC7201Utils for string;
   using SafeCast for uint256;
-  using LibRedeemQueue for LibRedeemQueue.SimpleOffsetQueue;
+  using LibQueue for LibQueue.Trace208OffsetQueue;
 
   /// @custom:storage-location mitosis.storage.GovMITO
   struct GovMITOStorage {
     address minter;
     uint48 withdrawalPeriod;
     uint48 _reserved;
-    mapping(address user => LibRedeemQueue.SimpleOffsetQueue) queue;
+    mapping(address user => LibQueue.Trace208OffsetQueue) queue;
     mapping(address addr => bool) isModule;
     mapping(address sender => bool) isWhitelistedSender;
   }
@@ -184,7 +184,9 @@ contract GovMITO is
   function claimWithdraw(address receiver) external nonReentrant returns (uint256) {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    (uint256 claimed, uint256 reqIdFrom, uint256 reqIdTo) = $.queue[receiver].solveByTime(clock() - $.withdrawalPeriod);
+    LibQueue.Trace208OffsetQueue storage queue = $.queue[receiver];
+    (uint32 reqIdFrom, uint32 reqIdTo) = queue.solveByKey(clock() - $.withdrawalPeriod);
+    uint256 claimed = queue.valueAt(reqIdTo) - queue.valueAt(reqIdFrom);
 
     SafeTransferLib.safeTransferETH(receiver, claimed);
 

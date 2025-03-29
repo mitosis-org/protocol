@@ -7,15 +7,15 @@ import { LibString } from '@solady/utils/LibString.sol';
 
 import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
-import { LibRedeemQueue } from '../../src/lib/LibRedeemQueue.sol';
+import { LibQueue } from '../../src/lib/LibQueue.sol';
 import { Toolkit } from '../util/Toolkit.sol';
 
-contract LibRedeemQueueTest is Toolkit {
-  using LibRedeemQueue for *;
+contract LibQueueTest is Toolkit {
+  using LibQueue for *;
   using LibString for *;
   using SafeCast for uint256;
 
-  LibRedeemQueue.Queue public q;
+  LibQueue.Queue public q;
 
   function setUp() public { }
 
