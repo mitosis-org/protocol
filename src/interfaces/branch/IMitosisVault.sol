@@ -17,7 +17,7 @@ interface IMitosisVault is IMitosisVaultMatrix, IMitosisVaultEOL {
   event AssetInitialized(address asset);
 
   event Deposited(address indexed asset, address indexed to, uint256 amount);
-  event Redeemed(address indexed asset, address indexed to, uint256 amount);
+  event Withdrawn(address indexed asset, address indexed to, uint256 amount);
 
   event EntrypointSet(address entrypoint);
 
@@ -40,7 +40,7 @@ interface IMitosisVault is IMitosisVaultMatrix, IMitosisVaultEOL {
 
   function initializeAsset(address asset) external;
   function deposit(address asset, address to, uint256 amount) external;
-  function redeem(address asset, address to, uint256 amount) external;
+  function withdraw(address asset, address to, uint256 amount) external;
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 

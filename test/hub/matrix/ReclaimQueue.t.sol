@@ -61,7 +61,7 @@ contract ReclaimQueueTest is Toolkit {
   function _enable(address matrixVault_, uint256 reclaimPeriod_) internal {
     vm.startPrank(_owner);
     reclaimQueue.enable(address(matrixVault_));
-    reclaimQueue.setRedeemPeriod(address(matrixVault_), reclaimPeriod_);
+    reclaimQueue.setReclaimPeriod(address(matrixVault_), reclaimPeriod_);
     vm.stopPrank();
   }
 
@@ -89,8 +89,8 @@ contract ReclaimQueueTest is Toolkit {
     vm.expectRevert(_errNothingToClaim());
     reclaimQueue.claim(_user, address(matrixVault));
 
-    // wait for redeem period
-    vm.warp(block.timestamp + reclaimQueue.redeemPeriod(address(matrixVault)));
+    // wait for reclaim period
+    vm.warp(block.timestamp + reclaimQueue.reclaimPeriod(address(matrixVault)));
 
     // sync
     matrixVault.setRet(abi.encodeCall(IERC20.totalSupply, ()), false, abi.encode(100 ether - 1));
@@ -142,8 +142,8 @@ contract ReclaimQueueTest is Toolkit {
     vm.expectRevert(_errNothingToClaim());
     reclaimQueue.claim(_user, address(matrixVault));
 
-    // wait for redeem period
-    vm.warp(block.timestamp + reclaimQueue.redeemPeriod(address(matrixVault)));
+    // wait for reclaim period
+    vm.warp(block.timestamp + reclaimQueue.reclaimPeriod(address(matrixVault)));
 
     // sync with loss
     matrixVault.setRet(abi.encodeCall(IERC20.totalSupply, ()), false, abi.encode(100 ether - 1));
@@ -191,8 +191,8 @@ contract ReclaimQueueTest is Toolkit {
     vm.expectRevert(_errNothingToClaim());
     reclaimQueue.claim(_user, address(matrixVault));
 
-    // wait for redeem period
-    vm.warp(block.timestamp + reclaimQueue.redeemPeriod(address(matrixVault)));
+    // wait for reclaim period
+    vm.warp(block.timestamp + reclaimQueue.reclaimPeriod(address(matrixVault)));
 
     // sync with yield
     matrixVault.setRet(abi.encodeCall(IERC20.totalSupply, ()), false, abi.encode(100 ether - 1));

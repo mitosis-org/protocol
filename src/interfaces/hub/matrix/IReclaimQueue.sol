@@ -81,11 +81,11 @@ interface IReclaimQueueStorageV1 {
   event AssetManagerSet(address indexed assetManager);
 
   /**
-   * @notice Emitted when the redeem period is updated for an MatrixVault
-   * @param matrixVault Address of the MatrixVault for which the redeem period is set
-   * @param redeemPeriod Duration of the new redeem period in seconds
+   * @notice Emitted when the reclaim period is updated for an MatrixVault
+   * @param matrixVault Address of the MatrixVault for which the reclaim period is set
+   * @param reclaimPeriod Duration of the new reclaim period in seconds
    */
-  event RedeemPeriodSet(address indexed matrixVault, uint256 redeemPeriod);
+  event ReclaimPeriodSet(address indexed matrixVault, uint256 reclaimPeriod);
 
   /**
    * @notice Retrieves the current asset manager address
@@ -93,10 +93,10 @@ interface IReclaimQueueStorageV1 {
   function assetManager() external view returns (address);
 
   /**
-   * @notice Gets the redeem period duration in seconds for a specific MatrixVault
+   * @notice Gets the reclaim period duration in seconds for a specific MatrixVault
    * @param matrixVault Address of the MatrixVault to query
    */
-  function redeemPeriod(address matrixVault) external view returns (uint256);
+  function reclaimPeriod(address matrixVault) external view returns (uint256);
 
   /**
    * @notice Retrieves the status of a specific reclaim request
@@ -299,10 +299,10 @@ interface IReclaimQueue is IReclaimQueueStorageV1 {
   function enable(address matrixVault) external;
 
   /**
-   * @notice Sets the duration of the redeem period for an MatrixVault
+   * @notice Sets the duration of the reclaim period for an MatrixVault
    * @dev Can only be called by the contract owner
-   * @param matrixVault Address of the MatrixVault to set the redeem period for
-   * @param redeemPeriod_ Duration of the redeem period in seconds
+   * @param matrixVault Address of the MatrixVault to set the reclaim period for
+   * @param reclaimPeriod_ Duration of the reclaim period in seconds
    */
-  function setRedeemPeriod(address matrixVault, uint256 redeemPeriod_) external;
+  function setReclaimPeriod(address matrixVault, uint256 reclaimPeriod_) external;
 }

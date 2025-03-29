@@ -137,9 +137,9 @@ contract MitosisVaultEntrypoint is
       _vault.initializeAsset(decoded.asset.toAddress());
     }
 
-    if (msgType == MsgType.MsgRedeem) {
-      MsgRedeem memory decoded = msg_.decodeRedeem();
-      _vault.redeem(decoded.asset.toAddress(), decoded.to.toAddress(), decoded.amount);
+    if (msgType == MsgType.MsgWithdraw) {
+      MsgWithdraw memory decoded = msg_.decodeWithdraw();
+      _vault.withdraw(decoded.asset.toAddress(), decoded.to.toAddress(), decoded.amount);
     }
 
     if (msgType == MsgType.MsgInitializeMatrix) {

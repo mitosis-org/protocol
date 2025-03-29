@@ -151,8 +151,8 @@ contract ReclaimQueue is
     _setAssetManager(_getStorageV1(), assetManager);
   }
 
-  function setRedeemPeriod(address matrixVault, uint256 redeemPeriod_) external onlyOwner {
-    _setRedeemPeriod(_getStorageV1(), matrixVault, redeemPeriod_);
+  function setReclaimPeriod(address matrixVault, uint256 reclaimPeriod_) external onlyOwner {
+    _setReclaimPeriod(_getStorageV1(), matrixVault, reclaimPeriod_);
   }
 
   // =========================== NOTE: INTERNAL FUNCTIONS =========================== //

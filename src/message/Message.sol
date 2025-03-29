@@ -7,7 +7,7 @@ enum MsgType {
   MsgDeposit,
   MsgDepositWithSupplyMatrix,
   MsgDepositWithSupplyEOL,
-  MsgRedeem,
+  MsgWithdraw,
   //=========== NOTE: Matrix ===========//
   MsgInitializeMatrix,
   MsgAllocateMatrix,
@@ -49,7 +49,7 @@ struct MsgDepositWithSupplyEOL {
 }
 
 // hub -> branch
-struct MsgRedeem {
+struct MsgWithdraw {
   bytes32 asset;
   bytes32 to;
   uint256 amount;
@@ -114,7 +114,7 @@ library Message {
   uint256 public constant LEN_MSG_DEPOSIT = 97;
   uint256 public constant LEN_MSG_DEPOSIT_WITH_SUPPLY_MATRIX = 129;
   uint256 public constant LEN_MSG_DEPOSIT_WITH_SUPPLY_EOL = 129;
-  uint256 public constant LEN_MSG_REDEEM = 97;
+  uint256 public constant LEN_MSG_WITHDRAW = 97;
   uint256 public constant LEN_MSG_INITIALIZE_MATRIX = 65;
   uint256 public constant LEN_MSG_ALLOCATE_MATRIX = 65;
   uint256 public constant LEN_MSG_DEALLOCATE_MATRIX = 65;
@@ -189,12 +189,12 @@ library Message {
     decoded.amount = uint256(bytes32(msg_[97:]));
   }
 
-  function encode(MsgRedeem memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgRedeem), msg_.asset, msg_.to, msg_.amount);
+  function encode(MsgWithdraw memory msg_) internal pure returns (bytes memory) {
+    return abi.encodePacked(uint8(MsgType.MsgWithdraw), msg_.asset, msg_.to, msg_.amount);
   }
 
-  function decodeRedeem(bytes calldata msg_) internal pure returns (MsgRedeem memory decoded) {
-    assertMsg(msg_, MsgType.MsgRedeem, LEN_MSG_REDEEM);
+  function decodeWithdraw(bytes calldata msg_) internal pure returns (MsgWithdraw memory decoded) {
+    assertMsg(msg_, MsgType.MsgWithdraw, LEN_MSG_WITHDRAW);
 
     decoded.asset = bytes32(msg_[1:33]);
     decoded.to = bytes32(msg_[33:65]);
