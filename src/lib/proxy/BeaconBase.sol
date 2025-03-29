@@ -5,22 +5,9 @@ import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
 
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
+import { IBeaconBase } from '../../interfaces/lib/proxy/IBeaconBase.sol';
 import { ERC7201Utils } from '../ERC7201Utils.sol';
 import { StdError } from '../StdError.sol';
-
-interface IBeaconBase {
-  event InstanceAdded(address indexed instance);
-  event BeaconExecuted(address indexed caller, bytes data, bool success, bytes ret);
-
-  error IBeaconBase__IndexOutOfBounds(uint256 max, uint256 given);
-  error IBeaconBase__BeaconCallFailed(bytes revertData);
-
-  function beacon() external view returns (address);
-  function isInstance(address instance) external view returns (bool);
-  function instances(uint256 index) external view returns (address);
-  function instances(uint256[] memory indexes) external view returns (address[] memory);
-  function instancesLength() external view returns (uint256);
-}
 
 abstract contract BeaconBase is IBeaconBase, ContextUpgradeable {
   using ERC7201Utils for string;
