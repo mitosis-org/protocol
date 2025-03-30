@@ -10,7 +10,7 @@ import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
 import { GovMITO } from '../../src/hub/GovMITO.sol';
 import { IGovMITO } from '../../src/interfaces/hub/IGovMITO.sol';
 import { ISudoVotes } from '../../src/interfaces/lib/ISudoVotes.sol';
-import { LibRedeemQueue } from '../../src/lib/LibRedeemQueue.sol';
+import { LibQueue } from '../../src/lib/LibQueue.sol';
 import { StdError } from '../../src/lib/StdError.sol';
 import { Toolkit } from '../util/Toolkit.sol';
 
@@ -496,6 +496,6 @@ contract GovMITOTest is Toolkit {
   }
 
   function _errNothingToClaim() internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(LibRedeemQueue.LibRedeemQueue__NothingToClaim.selector);
+    return abi.encodeWithSelector(LibQueue.LibQueue__NothingToClaim.selector);
   }
 }

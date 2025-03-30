@@ -1,308 +1,94 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IHubAsset } from '../core/IHubAsset.sol';
-import { IMatrixVault } from './IMatrixVault.sol';
-
-/**
- * @title IReclaimQueueStorageV1
- * @notice Storage interface for ReclaimQueue, defining getter functions and events for storage operations
- * @dev Provides the foundation for managing reclaim requests in MatrixVaults
- */
-interface IReclaimQueueStorageV1 {
-  /**
-   * @notice Reclaim request status enumeration
-   */
-  enum RequestStatus {
-    None,
-    Requested,
-    Claimable,
-    Claimed
+interface IReclaimQueue {
+  struct Request {
+    uint48 timestamp;
+    uint208 assets;
+    uint208 sharesAcc;
   }
 
-  /**
-   * @notice Detailed information about a specific reclaim request
-   * @param id Unique identifier of the request
-   * @param shares Number of shares requested in the reclaim
-   * @param recipient Address that will receive the assets
-   * @param createdAt Timestamp when the request was created
-   * @param claimedAt Timestamp when the request was claimed (0 if unclaimed)
-   */
-  struct GetRequestResponse {
-    uint256 id;
-    uint256 shares;
-    address recipient;
-    uint48 createdAt;
-    uint48 claimedAt;
+  struct SyncLog {
+    uint48 timestamp;
+    uint32 reqIdFrom;
+    uint32 reqIdTo;
+    uint144 sharesAcc;
+    uint128 totalSupply;
+    uint128 totalAssets;
   }
 
-  /**
-   * @notice Detailed information about a request, including its index in the queue
-   * @param id Unique identifier of the request
-   * @param indexId Position of the request in the recipient's index
-   * @param shares Number of shares requested in the reclaim
-   * @param recipient Address that will receive the assets
-   * @param createdAt Timestamp when the request was created
-   * @param claimedAt Timestamp when the request was claimed (0 if unclaimed)
-   */
-  struct GetRequestByIndexResponse {
-    uint256 id;
-    uint256 indexId;
-    uint256 shares;
-    address recipient;
-    uint48 createdAt;
-    uint48 claimedAt;
-  }
-
-  /**
-   * @notice Historical data about reserves at a specific point in time
-   * @param reserved Reserved amount for a specific log
-   * @param reservedAt Timestamp when this reserve entry was created
-   * @param totalShares Total shares in the MatrixVault at this point
-   * @param totalAssets Total assets in the MatrixVault at this point
-   */
-  struct GetReserveHistoryResponse {
-    uint256 reserved;
-    uint48 reservedAt;
-    uint256 totalShares;
+  struct SyncResult {
+    uint256 logIndex;
+    uint32 reqIdFrom;
+    uint32 reqIdTo;
+    uint256 totalSupply;
     uint256 totalAssets;
+    uint256 totalSharesSynced;
+    uint256 totalAssetsOnReserve;
+    uint256 totalAssetsOnRequest;
   }
 
-  /**
-   * @notice Emitted when a reclaim queue is activated for an MatrixVault
-   * @param matrixVault Address of the MatrixVault for which the queue is enabled
-   */
-  event QueueEnabled(address indexed matrixVault);
+  struct ClaimResult {
+    uint32 reqIdFrom;
+    uint32 reqIdTo;
+    uint256 totalSharesClaimed;
+    uint256 totalAssetsClaimed;
+  }
 
-  /**
-   * @notice Emitted when a new asset manager is set for the contract
-   * @param assetManager Address of the newly set asset manager
-   */
+  struct QueueInfo {
+    bool isEnabled;
+    uint48 reclaimPeriod;
+    uint32 offset;
+    uint32 itemsLen;
+    uint32 syncLogsLen;
+  }
+
+  struct QueueIndexInfo {
+    uint32 offset;
+    uint32 size;
+  }
+
+  event QueueEnabled(address indexed vault);
   event AssetManagerSet(address indexed assetManager);
-
-  /**
-   * @notice Emitted when the reclaim period is updated for an MatrixVault
-   * @param matrixVault Address of the MatrixVault for which the reclaim period is set
-   * @param reclaimPeriod Duration of the new reclaim period in seconds
-   */
-  event ReclaimPeriodSet(address indexed matrixVault, uint256 reclaimPeriod);
-
-  /**
-   * @notice Retrieves the current asset manager address
-   */
-  function assetManager() external view returns (address);
-
-  /**
-   * @notice Gets the reclaim period duration in seconds for a specific MatrixVault
-   * @param matrixVault Address of the MatrixVault to query
-   */
-  function reclaimPeriod(address matrixVault) external view returns (uint256);
-
-  /**
-   * @notice Retrieves the status of a specific reclaim request
-   * @param matrixVault Address of the MatrixVault to query
-   * @param reqId ID of the request to query
-   */
-  function getStatus(address matrixVault, uint256 reqId) external view returns (RequestStatus);
-
-  /**
-   * @notice Retrieves details for multiple requests from a specific MatrixVault
-   * @param matrixVault Address of the MatrixVault to query
-   * @param reqIds Array of request IDs to retrieve
-   */
-  function getRequest(address matrixVault, uint256[] calldata reqIds)
-    external
-    view
-    returns (GetRequestResponse[] memory);
-
-  /**
-   * @notice Gets details for multiple requests for a specific receiver from an MatrixVault
-   * @dev Use queueIndexOffset to get the starting index for retrieval
-   * @param matrixVault Address of the MatrixVault to query
-   * @param receiver Address of the receiver to query
-   * @param idxItemIds Array of index item IDs to retrieve
-   */
-  function getRequestByReceiver(address matrixVault, address receiver, uint256[] calldata idxItemIds)
-    external
-    view
-    returns (GetRequestByIndexResponse[] memory);
-
-  /**
-   * @notice Retrieves the timestamp when a specific request was reserved
-   * @param matrixVault Address of the MatrixVault to query
-   * @param reqId ID of the request to query
-   * @return reservedAt_ Timestamp when the request was reserved
-   * @return isReserved Boolean indicating if the request is reserved
-   */
-  function reservedAt(address matrixVault, uint256 reqId) external view returns (uint256 reservedAt_, bool isReserved);
-
-  /**
-   * @notice Gets the timestamp when a specific request was resolved
-   * @param matrixVault Address of the MatrixVault to query
-   * @param reqId ID of the request to query
-   * @return resolvedAt_ Timestamp when the request was resolved
-   * @return isResolved Boolean indicating if the request is resolved
-   */
-  function resolvedAt(address matrixVault, uint256 reqId) external view returns (uint256 resolvedAt_, bool isResolved);
-
-  /**
-   * @notice Retrieves the total amount of reserved assets for an MatrixVault's queue
-   * @param matrixVault Address of the MatrixVault to query
-   */
-  function totalReserved(address matrixVault) external view returns (uint256);
-
-  /**
-   * @notice Retrieves the total amount of pending assets for an MatrixVault's queue
-   * @param matrixVault Address of the MatrixVault to query
-   */
-  function totalPending(address matrixVault) external view returns (uint256);
-
-  /**
-   * @notice Gets the reserve history entry for a specific index in an MatrixVault
-   * @param matrixVault Address of the MatrixVault to query
-   * @param index Index of the reserve history entry to retrieve
-   * @return resp GetReserveHistoryResponse struct containing the reserve history data
-   */
-  function reserveHistory(address matrixVault, uint256 index)
-    external
-    view
-    returns (GetReserveHistoryResponse memory resp);
-
-  /**
-   * @notice Retrieves the number of entries in the reserve history for an MatrixVault
-   * @param matrixVault Address of the MatrixVault to query
-   */
-  function reserveHistoryLength(address matrixVault) external view returns (uint256);
-
-  /**
-   * @notice Checks if the reclaim queue is enabled for a specific MatrixVault
-   * @param matrixVault Address of the MatrixVault to query
-   */
-  function isEnabled(address matrixVault) external view returns (bool);
-}
-
-/**
- * @title IReclaimQueue
- * @notice Interface for managing reclaim requests in MatrixVaults
- * @dev Extends IReclaimQueueStorageV1 with queue management and configuration functions
- */
-interface IReclaimQueue is IReclaimQueueStorageV1 {
-  /**
-   * @notice Configuration parameters for processing claim requests
-   * @dev Used internally to pass data during claim processing
-   * @param timestamp Current timestamp for the claim
-   * @param receiver Address receiving the claim
-   * @param matrixVault MatrixVault contract interface
-   * @param hubAsset Hub asset contract interface
-   * @param decimalsOffset Difference in decimals between MatrixVault and hub asset
-   * @param queueOffset Current offset in the main queue
-   * @param idxOffset Current offset in the receiver's index
-   */
-  struct ClaimConfig {
-    uint256 timestamp;
-    address receiver;
-    IMatrixVault matrixVault;
-    IHubAsset hubAsset;
-    uint8 decimalsOffset;
-    uint256 queueOffset;
-    uint256 idxOffset;
-  }
-
-  /**
-   * @notice Emitted when a new reclaim request is added to the queue
-   * @param receiver Address that will receive the assets
-   * @param matrixVault Address of the MatrixVault
-   * @param shares Number of shares being opted out
-   * @param assets Equivalent asset amount at time of request
-   */
-  event ReclaimRequested(address indexed receiver, address indexed matrixVault, uint256 shares, uint256 assets);
-
-  /**
-   * @notice Emitted when an reclaim request is successfully claimed
-   * @param receiver Address receiving the claim
-   * @param matrixVault Address of the MatrixVault
-   * @param claimed Amount of assets claimed
-   */
-  event ReclaimRequestClaimed(address indexed receiver, address indexed matrixVault, uint256 claimed);
-
-  /**
-   * @notice Emitted when the reserve is synced for an MatrixVault
-   * @param executor Address of the executor calling the function
-   * @param matrixVault Address of the MatrixVault
-   * @param claimCount Number of claims in the queue
-   * @param totalReservedShares Total shares affected by this sync
-   * @param totalReservedAssets Total assets affected by this sync
-   */
-  event ReserveSynced(
-    address indexed executor,
-    address indexed matrixVault,
-    uint256 claimCount,
-    uint256 totalReservedShares,
-    uint256 totalReservedAssets
+  event ReclaimPeriodSet(address indexed vault, uint256 reclaimPeriod);
+  event Requested(address indexed receiver, address indexed vault, uint256 reqId, uint256 shares, uint256 assets);
+  event Claimed(
+    address indexed receiver,
+    address indexed vault,
+    uint256 reqId,
+    uint256 shares,
+    uint256 assets,
+    uint256 totalSupply,
+    uint256 totalAssets,
+    uint256 syncLogIndex
   );
+  event ClaimSucceeded(address indexed receiver, address indexed vault, ClaimResult result);
+  event Synced(address indexed executor, address indexed vault, SyncResult result);
 
-  /**
-   * @notice Error thrown when trying to interact with a disabled queue
-   * @param matrixVault Address of the MatrixVault with the disabled queue
-   */
-  error IReclaimQueue__QueueNotEnabled(address matrixVault);
-
-  /**
-   * @notice Error thrown when attempting to claim with no eligible requests
-   */
+  error IReclaimQueue__QueueNotEnabled(address vault);
   error IReclaimQueue__NothingToClaim();
+  error IReclaimQueue__NothingToSync();
+  error IReclaimQueue__Empty();
+  error IReclaimQueue__OutOfBounds(uint256 max, uint256 actual);
 
-  /**
-   * @notice Preview the total reserved shares and assets for an MatrixVault
-   * @param matrixVault Address of the MatrixVault to preview
-   * @param claimCount Number of claims to preview
-   * @return totalReservedShares Simulated total shares that will be affected
-   * @return totalReservedAssets Simulated total assets that will be affected
-   */
-  function previewSync(address matrixVault, uint256 claimCount) external view returns (uint256, uint256);
+  function assetManager() external view returns (address);
+  function reclaimPeriod(address vault) external view returns (uint256);
+  function isEnabled(address vault) external view returns (bool);
 
-  /**
-   * @notice Submits a new reclaim request
-   * @param shares Number of shares to opt out
-   * @param receiver Address that will receive the assets
-   * @param matrixVault Address of the MatrixVault to opt out from
-   * @return reqId Unique identifier for the queued request
-   */
-  function request(uint256 shares, address receiver, address matrixVault) external returns (uint256 reqId);
+  function queueInfo(address vault) external view returns (QueueInfo memory);
+  function queueItem(address vault, uint256 index) external view returns (Request memory);
+  function queueIndex(address vault, address recipient) external view returns (QueueIndexInfo memory);
+  function queueIndexItem(address vault, address recipient, uint32 index) external view returns (Request memory);
+  function queueSyncLog(address vault, uint256 index) external view returns (SyncLog memory);
 
-  /**
-   * @notice Processes and fulfills eligible reclaim requests for a receiver
-   * @param receiver Address of the receiver claiming their requests
-   * @param matrixVault Address of the MatrixVault to claim from
-   * @return totalClaimed_ Total amount of assets claimed
-   */
-  function claim(address receiver, address matrixVault) external returns (uint256 totalClaimed_);
+  function previewClaim(address receiver, address vault) external view returns (uint256, uint256);
+  function previewSync(address vault, uint256 requestCount) external view returns (uint256, uint256);
 
-  /**
-   * @notice Updates the queue with available idle balance
-   * @dev Can only be called by the asset manager
-   * @param executor Address of the executor calling the function
-   * @param matrixVault Address of the MatrixVault to update
-   * @param claimCount Amount of claim requests to resolve
-   * @return totalReservedShares Total shares affected by this sync
-   * @return totalReservedAssets Total assets affected by this sync
-   */
-  function sync(address executor, address matrixVault, uint256 claimCount)
-    external
-    returns (uint256 totalReservedShares, uint256 totalReservedAssets);
+  function request(uint256 shares, address receiver, address vault) external returns (uint256);
+  function claim(address receiver, address vault) external returns (uint256, uint256);
+  function sync(address executor, address vault, uint256 requestCount) external returns (uint256, uint256);
 
-  /**
-   * @notice Activates the reclaim queue for an MatrixVault
-   * @dev Can only be called by the contract owner
-   * @param matrixVault Address of the MatrixVault to enable the queue for
-   */
-  function enable(address matrixVault) external;
-
-  /**
-   * @notice Sets the duration of the reclaim period for an MatrixVault
-   * @dev Can only be called by the contract owner
-   * @param matrixVault Address of the MatrixVault to set the reclaim period for
-   * @param reclaimPeriod_ Duration of the reclaim period in seconds
-   */
-  function setReclaimPeriod(address matrixVault, uint256 reclaimPeriod_) external;
+  function enableQueue(address vault) external;
+  function setAssetManager(address assetManager_) external;
+  function setReclaimPeriod(address vault, uint256 reclaimPeriod_) external;
 }

@@ -15,7 +15,7 @@ import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorMana
 import { IValidatorStaking } from '../../interfaces/hub/validator/IValidatorStaking.sol';
 import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-import { LibRedeemQueue } from '../../lib/LibRedeemQueue.sol';
+import { LibQueue } from '../../lib/LibQueue.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 contract ValidatorStakingStorageV1 {
@@ -31,7 +31,7 @@ contract ValidatorStakingStorageV1 {
     Checkpoints.Trace208 totalStaked;
     Checkpoints.Trace208 totalUnstaking;
     mapping(address staker => uint256) lastRedelegationTime;
-    mapping(address staker => LibRedeemQueue.OffsetQueue) unstakeQueue;
+    mapping(address staker => LibQueue.Trace208OffsetQueue) unstakeQueue;
     mapping(address staker => Checkpoints.Trace208) stakerTotal;
     mapping(address valAddr => Checkpoints.Trace208) validatorTotal;
     mapping(address valAddr => mapping(address staker => Checkpoints.Trace208)) staked;
@@ -59,7 +59,7 @@ contract ValidatorStaking is
   using SafeCast for uint256;
   using SafeTransferLib for address;
   using Checkpoints for Checkpoints.Trace208;
-  using LibRedeemQueue for LibRedeemQueue.OffsetQueue;
+  using LibQueue for LibQueue.Trace208OffsetQueue;
 
   address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -297,8 +297,16 @@ contract ValidatorStaking is
   }
 
   function _claimUnstake(StorageV1 storage $, address receiver) internal virtual returns (uint256) {
+    LibQueue.Trace208OffsetQueue storage queue = $.unstakeQueue[receiver];
+
     uint48 now_ = Time.timestamp();
-    (uint256 claimed, uint256 reqIdFrom, uint256 reqIdTo) = $.unstakeQueue[receiver].solve(now_ - $.unstakeCooldown);
+    (uint32 reqIdFrom, uint32 reqIdTo) = queue.solveByKey(now_ - $.unstakeCooldown);
+    uint256 claimed;
+    {
+      uint256 fromValue = reqIdFrom == 0 ? 0 : queue.valueAt(reqIdFrom - 1);
+      uint256 toValue = queue.valueAt(reqIdTo - 1);
+      claimed = toValue - fromValue;
+    }
 
     if (_baseAsset == NATIVE_TOKEN) receiver.safeTransferETH(claimed);
     else _baseAsset.safeTransfer(receiver, claimed);
