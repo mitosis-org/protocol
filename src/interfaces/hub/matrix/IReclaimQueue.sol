@@ -18,6 +18,7 @@ interface IReclaimQueue {
   }
 
   struct SyncResult {
+    uint256 logIndex;
     uint32 reqIdFrom;
     uint32 reqIdTo;
     uint256 totalSupply;
@@ -38,8 +39,8 @@ interface IReclaimQueue {
     bool isEnabled;
     uint48 reclaimPeriod;
     uint32 offset;
-    uint32 logsLen;
     uint32 itemsLen;
+    uint32 syncLogsLen;
   }
 
   struct QueueIndexInfo {
@@ -58,7 +59,8 @@ interface IReclaimQueue {
     uint256 shares,
     uint256 assets,
     uint256 totalSupply,
-    uint256 totalAssets
+    uint256 totalAssets,
+    uint256 syncLogIndex
   );
   event ClaimSucceeded(address indexed receiver, address indexed vault, ClaimResult result);
   event Synced(address indexed executor, address indexed vault, SyncResult result);
@@ -66,16 +68,18 @@ interface IReclaimQueue {
   error IReclaimQueue__QueueNotEnabled(address vault);
   error IReclaimQueue__NothingToClaim();
   error IReclaimQueue__NothingToSync();
+  error IReclaimQueue__Empty();
+  error IReclaimQueue__OutOfBounds(uint256 max, uint256 actual);
 
   function assetManager() external view returns (address);
   function reclaimPeriod(address vault) external view returns (uint256);
   function isEnabled(address vault) external view returns (bool);
 
   function queueInfo(address vault) external view returns (QueueInfo memory);
-  function queueLog(address vault, uint256 index) external view returns (SyncLog memory);
   function queueItem(address vault, uint256 index) external view returns (Request memory);
   function queueIndex(address vault, address recipient) external view returns (QueueIndexInfo memory);
   function queueIndexItem(address vault, address recipient, uint32 index) external view returns (Request memory);
+  function queueSyncLog(address vault, uint256 index) external view returns (SyncLog memory);
 
   function previewClaim(address receiver, address vault) external view returns (uint256, uint256);
   function previewSync(address vault, uint256 requestCount) external view returns (uint256, uint256);

@@ -106,57 +106,61 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
       isEnabled: q$.isEnabled,
       reclaimPeriod: q$.reclaimPeriod,
       offset: q$.offset,
-      logsLen: q$.logs.length.toUint32(),
-      itemsLen: q$.items.length.toUint32()
+      itemsLen: q$.items.length.toUint32(),
+      syncLogsLen: q$.logs.length.toUint32()
     });
   }
 
   function queueItem(address vault, uint256 index) external view returns (Request memory) {
     QueueState storage q$ = _getStorageV1().queues[vault];
+    _validateIndex(index, q$.items.length);
     return q$.items[index];
-  }
-
-  function queueLog(address vault, uint256 index) external view returns (SyncLog memory) {
-    QueueState storage q$ = _getStorageV1().queues[vault];
-    return q$.logs[index];
   }
 
   function queueIndex(address vault, address recipient) external view returns (QueueIndexInfo memory) {
     QueueState storage q$ = _getStorageV1().queues[vault];
-
-    return QueueIndexInfo({
-      offset: q$.indexes[recipient].offset(), //
-      size: q$.indexes[recipient].size()
-    });
+    LibQueue.UintOffsetQueue storage i$ = q$.indexes[recipient];
+    return QueueIndexInfo({ offset: i$.offset(), size: i$.size() });
   }
 
   function queueIndexItem(address vault, address recipient, uint32 index) external view returns (Request memory) {
     QueueState storage q$ = _getStorageV1().queues[vault];
-    return q$.items[q$.indexes[recipient].itemAt(index)];
+    LibQueue.UintOffsetQueue storage i$ = q$.indexes[recipient];
+    _validateIndex(index, i$.size());
+    return q$.items[i$.itemAt(index)];
+  }
+
+  function queueSyncLog(address vault, uint256 index) external view returns (SyncLog memory) {
+    QueueState storage q$ = _getStorageV1().queues[vault];
+    _validateIndex(index, q$.logs.length);
+    return q$.logs[index];
   }
 
   function previewClaim(address receiver, address vault) external view returns (uint256, uint256) {
     StorageV1 storage $ = _getStorageV1();
-
     LibQueue.UintOffsetQueue storage index = $.queues[vault].indexes[receiver];
 
-    ClaimResult memory res = ClaimResult({
-      reqIdFrom: index.offset(),
-      reqIdTo: Math.min(index.offset() + MAX_CLAIM_SIZE, index.size()).toUint32(),
-      totalSharesClaimed: 0,
-      totalAssetsClaimed: 0
-    });
+    uint32 reqIdFrom = index.offset();
+    uint32 reqIdTo = Math.min(reqIdFrom + MAX_CLAIM_SIZE, index.size()).toUint32();
 
-    uint8 decimalsOffset = $.vaults[vault].decimalsOffset;
-    res = _calcClaim($.queues[vault], res, receiver, decimalsOffset);
+    ClaimResult memory res = _calcClaim(
+      $.queues[vault],
+      ClaimResult({
+        reqIdFrom: reqIdFrom, //
+        reqIdTo: reqIdTo,
+        totalSharesClaimed: 0,
+        totalAssetsClaimed: 0
+      }),
+      receiver,
+      $.vaults[vault].decimalsOffset
+    );
 
     return (res.totalSharesClaimed, res.totalAssetsClaimed);
   }
 
   function previewSync(address vault, uint256 requestCount) external view returns (uint256, uint256) {
     StorageV1 storage $ = _getStorageV1();
-    uint8 decimalsOffset = $.vaults[vault].decimalsOffset;
-    SyncResult memory res = _calcSync($.queues[vault], vault, requestCount, decimalsOffset);
+    SyncResult memory res = _calcSync($.queues[vault], vault, requestCount);
     return (res.totalSharesSynced, Math.min(res.totalAssetsOnRequest, res.totalAssetsOnReserve));
   }
 
@@ -169,9 +173,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
     IERC4626(vault).safeTransferFrom(_msgSender(), address(this), shares);
 
-    // We're subtracting 1 because of the rounding error
-    // If there's a better way to handle this, we can apply it
-    uint256 assets = IERC4626(vault).previewRedeem(shares) - 1;
+    uint256 assets = IERC4626(vault).previewRedeem(shares);
 
     uint48 now_ = Time.timestamp();
 
@@ -181,13 +183,8 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
       uint208 assets208 = assets.toUint208();
       uint208 shares208 = shares.toUint208();
 
-      if (reqId == 0) {
-        q$.items.push(Request(0, 0, 0));
-        q$.items.push(Request(now_, assets208, shares208));
-        reqId = 1;
-      } else {
-        q$.items.push(Request(now_, assets208, q$.items[reqId - 1].sharesAcc + shares208));
-      }
+      if (reqId == 0) q$.items.push(Request(now_, assets208, shares208));
+      else q$.items.push(Request(now_, assets208, q$.items[reqId - 1].sharesAcc + shares208));
     }
 
     q$.indexes[receiver].append(reqId);
@@ -199,8 +196,16 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function claim(address receiver, address vault) external nonReentrant whenNotPaused returns (uint256, uint256) {
     StorageV1 storage $ = _getStorageV1();
+    {
+      QueueState storage q$ = $.queues[vault];
+      LibQueue.UintOffsetQueue storage index = q$.indexes[receiver];
 
-    require($.queues[vault].isEnabled, IReclaimQueue__QueueNotEnabled(vault));
+      uint32 indexSize = index.size();
+
+      require(q$.isEnabled, IReclaimQueue__QueueNotEnabled(vault));
+      require(indexSize != 0, IReclaimQueue__NothingToClaim());
+      require(index.offset() < indexSize, IReclaimQueue__NothingToClaim());
+    }
 
     // run actual claim logic
     ClaimResult memory res = _claim($, receiver, vault);
@@ -258,62 +263,24 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     uint256 totalSupply,
     Math.Rounding rounding
   ) private pure returns (uint256) {
-    return shares.mulDiv(totalAssets + 1, totalSupply + 10 ** decimalsOffset, rounding);
+    return shares.mulDiv(totalAssets, totalSupply + 10 ** decimalsOffset, rounding);
   }
 
-  function _calcSync(QueueState storage q$, address vault, uint256 requestCount, uint8 decimalsOffset)
-    internal
-    view
-    returns (SyncResult memory)
-  {
-    // reuse to avoid duplicate SLOAD
-    uint32 offset = q$.offset;
-    uint256 itemsLen = q$.items.length;
-
-    SyncResult memory res = SyncResult({
-      reqIdFrom: offset,
-      reqIdTo: Math.min(offset + requestCount, itemsLen).toUint32(),
-      totalSupply: IERC4626(vault).totalSupply(),
-      totalAssets: IERC4626(vault).totalAssets(),
-      totalSharesSynced: 0,
-      totalAssetsOnReserve: 0,
-      totalAssetsOnRequest: 0
-    });
-
-    for (uint256 i = res.reqIdFrom + 1; i < res.reqIdTo;) {
-      Request memory req = q$.items[i];
-
-      res.totalSharesSynced += req.sharesAcc - q$.items[i - 1].sharesAcc;
-      res.totalAssetsOnRequest += req.assets;
-
-      unchecked {
-        ++i;
-      } // Use unchecked for gas savings
-    }
-
-    res.totalAssetsOnReserve = _convertToAssets(
-      res.totalSharesSynced, // calculate total synced assets on reserve
-      decimalsOffset,
-      res.totalAssets,
-      res.totalSupply,
-      Math.Rounding.Floor
-    );
-
-    return res;
-  }
-
-  function _fetchSyncLogByReqId(QueueState storage q$, uint256 fromIndex, uint256 reqId)
-    internal
-    view
-    returns (SyncLog memory, uint256)
-  {
+  function _fetchSyncLogByReqId(QueueState storage q$, uint256 reqId) internal view returns (SyncLog memory, uint256) {
     SyncLog[] storage syncLogs = q$.logs;
     uint256 syncLogsLen = syncLogs.length;
 
-    uint256 pos = _lowerBinaryLookup(syncLogs, reqId, fromIndex, syncLogsLen);
+    uint256 pos = _lowerBinaryLookup(syncLogs, reqId, 0, syncLogsLen);
     SyncLog memory log = _unsafeAccess(syncLogs, pos);
 
     return (log, pos);
+  }
+
+  struct CalcClaimState {
+    uint256 cachedLogPos;
+    SyncLog cached;
+    uint32 queueOffset;
+    uint48 reqTimeBoundary;
   }
 
   function _calcClaim(QueueState storage q$, ClaimResult memory res, address receiver, uint8 decimalsOffset)
@@ -321,34 +288,49 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     view
     returns (ClaimResult memory)
   {
-    uint256 cachedLogPos = 0;
-    SyncLog memory cached;
+    CalcClaimState memory state;
+    {
+      uint256 cachedLogPos = q$.logs.length - 1;
+      SyncLog memory cached = _unsafeAccess(q$.logs, cachedLogPos);
 
-    uint32 queueOffset = q$.offset;
-    uint48 reqTimeBoundary = Time.timestamp() - q$.reclaimPeriod;
+      state = CalcClaimState({
+        cachedLogPos: cachedLogPos,
+        cached: cached,
+        queueOffset: q$.offset,
+        reqTimeBoundary: Time.timestamp() - q$.reclaimPeriod
+      });
+    }
 
     LibQueue.UintOffsetQueue storage index = q$.indexes[receiver];
 
-    for (uint32 i = res.reqIdFrom + 1; i < res.reqIdTo;) {
+    for (uint32 i = res.reqIdFrom; i < res.reqIdTo;) {
       uint256 reqId = index.itemAt(i);
       Request memory req = q$.items[reqId];
 
       // if the request didn't pass the reclaim period or before the sync, stop the loop
-      if (queueOffset < reqId || req.timestamp < reqTimeBoundary) {
-        res.reqIdTo = i - 1;
+      if (state.queueOffset < reqId || state.reqTimeBoundary < req.timestamp) {
+        res.reqIdTo = i;
         break;
       }
 
-      if (cached.timestamp == 0 || (reqId < cached.reqIdTo && cached.reqIdFrom < reqId)) {
-        (cached, cachedLogPos) = _fetchSyncLogByReqId(q$, cachedLogPos, reqId);
+      if (reqId < state.cached.reqIdFrom || state.cached.reqIdTo <= reqId) {
+        (state.cached, state.cachedLogPos) = _fetchSyncLogByReqId(q$, reqId);
       }
 
-      uint256 shares = req.sharesAcc - q$.items[reqId - 1].sharesAcc;
-      res.totalSharesClaimed += shares;
-      res.totalAssetsClaimed += Math.min(
+      uint256 shares = i == 0 ? req.sharesAcc : req.sharesAcc - q$.items[reqId - 1].sharesAcc;
+      uint256 assets = Math.min(
         req.assets,
-        _convertToAssets(shares, decimalsOffset, cached.totalAssets, cached.totalSupply, Math.Rounding.Floor)
+        _convertToAssets(
+          shares, //
+          decimalsOffset,
+          state.cached.totalAssets,
+          state.cached.totalSupply,
+          Math.Rounding.Floor
+        )
       );
+
+      res.totalSharesClaimed += shares;
+      res.totalAssetsClaimed += assets;
 
       unchecked {
         ++i;
@@ -365,35 +347,57 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     address receiver,
     uint8 decimalsOffset
   ) internal returns (ClaimResult memory) {
-    uint256 cachedLogPos = 0;
-    SyncLog memory cached;
+    CalcClaimState memory state;
+    {
+      uint256 cachedLogPos = q$.logs.length - 1;
+      SyncLog memory cached = _unsafeAccess(q$.logs, cachedLogPos);
 
-    uint32 queueOffset = q$.offset;
-    uint48 reqTimeBoundary = Time.timestamp() - q$.reclaimPeriod;
+      state = CalcClaimState({
+        cachedLogPos: cachedLogPos,
+        cached: cached,
+        queueOffset: q$.offset,
+        reqTimeBoundary: Time.timestamp() - q$.reclaimPeriod
+      });
+    }
 
     LibQueue.UintOffsetQueue storage index = q$.indexes[receiver];
 
-    for (uint32 i = res.reqIdFrom + 1; i < res.reqIdTo;) {
+    for (uint32 i = res.reqIdFrom; i < res.reqIdTo;) {
       uint256 reqId = index.itemAt(i);
       Request memory req = q$.items[reqId];
 
       // if the request didn't pass the reclaim period or before the sync, stop the loop
-      if (queueOffset < reqId || req.timestamp < reqTimeBoundary) {
-        res.reqIdTo = i - 1;
+      if (state.queueOffset < reqId || state.reqTimeBoundary < req.timestamp) {
+        res.reqIdTo = i;
         break;
       }
 
-      if (cached.timestamp == 0 || (reqId < cached.reqIdTo && cached.reqIdFrom < reqId)) {
-        (cached, cachedLogPos) = _fetchSyncLogByReqId(q$, cachedLogPos, reqId);
+      if (reqId < state.cached.reqIdFrom || state.cached.reqIdTo <= reqId) {
+        (state.cached, state.cachedLogPos) = _fetchSyncLogByReqId(q$, reqId);
       }
 
-      uint256 shares = req.sharesAcc - q$.items[reqId - 1].sharesAcc;
+      uint256 shares = i == 0 ? req.sharesAcc : req.sharesAcc - q$.items[reqId - 1].sharesAcc;
       uint256 assets = Math.min(
         req.assets,
-        _convertToAssets(shares, decimalsOffset, cached.totalAssets, cached.totalSupply, Math.Rounding.Floor)
+        _convertToAssets(
+          shares, //
+          decimalsOffset,
+          state.cached.totalAssets,
+          state.cached.totalSupply,
+          Math.Rounding.Floor
+        )
       );
 
-      emit Claimed(receiver, vault, reqId, shares, assets, cached.totalSupply, cached.totalAssets);
+      emit Claimed(
+        receiver, //
+        vault,
+        reqId,
+        shares,
+        assets,
+        state.cached.totalSupply,
+        state.cached.totalAssets,
+        state.cachedLogPos
+      );
 
       res.totalSharesClaimed += shares;
       res.totalAssetsClaimed += assets;
@@ -410,17 +414,21 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     QueueState storage q$ = $.queues[vault];
     LibQueue.UintOffsetQueue storage index = q$.indexes[receiver];
 
-    ClaimResult memory res = ClaimResult({
-      reqIdFrom: index.offset(),
-      reqIdTo: Math.min(index.offset() + MAX_CLAIM_SIZE, index.size()).toUint32(),
-      totalSharesClaimed: 0,
-      totalAssetsClaimed: 0
-    });
+    uint32 reqIdFrom = index.offset();
+    uint32 reqIdTo = Math.min(reqIdFrom + MAX_CLAIM_SIZE, index.size()).toUint32();
 
-    {
-      VaultState storage v$ = $.vaults[vault];
-      res = _execClaim(q$, res, vault, receiver, v$.decimalsOffset);
-    }
+    ClaimResult memory res = _execClaim(
+      q$,
+      ClaimResult({
+        reqIdFrom: reqIdFrom, //
+        reqIdTo: reqIdTo,
+        totalSharesClaimed: 0,
+        totalAssetsClaimed: 0
+      }),
+      vault,
+      receiver,
+      $.vaults[vault].decimalsOffset
+    );
 
     // update index offset if there's at least one request to be claimed
     if (res.reqIdFrom < res.reqIdTo) index._offset = res.reqIdTo;
@@ -428,11 +436,49 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     return res;
   }
 
+  function _calcSync(QueueState storage q$, address vault, uint256 requestCount)
+    internal
+    view
+    returns (SyncResult memory)
+  {
+    // reuse to avoid duplicate SLOAD
+    uint256 itemsLen = q$.items.length;
+    uint32 reqIdFrom = q$.offset;
+    uint32 reqIdTo = Math.min(reqIdFrom + requestCount, itemsLen).toUint32();
+
+    SyncResult memory res = SyncResult({
+      logIndex: q$.logs.length,
+      reqIdFrom: reqIdFrom,
+      reqIdTo: reqIdTo,
+      totalSupply: IERC4626(vault).totalSupply(),
+      totalAssets: IERC4626(vault).totalAssets(),
+      totalSharesSynced: 0,
+      totalAssetsOnReserve: 0,
+      totalAssetsOnRequest: 0
+    });
+
+    for (uint32 i = res.reqIdFrom; i < res.reqIdTo;) {
+      Request memory req = q$.items[i];
+
+      uint256 shares = i == 0 ? req.sharesAcc : req.sharesAcc - q$.items[i - 1].sharesAcc;
+
+      res.totalSharesSynced += shares;
+      res.totalAssetsOnRequest += req.assets;
+      res.totalAssetsOnReserve += IERC4626(vault).convertToAssets(shares);
+
+      unchecked {
+        ++i;
+      } // Use unchecked for gas savings
+    }
+
+    return res;
+  }
+
   function _sync(StorageV1 storage $, address vault, uint256 requestCount) internal returns (SyncResult memory) {
     QueueState storage q$ = $.queues[vault];
-    VaultState storage v$ = $.vaults[vault];
+    require(q$.items.length != 0, IReclaimQueue__NothingToSync());
 
-    SyncResult memory res = _calcSync(q$, vault, requestCount, v$.decimalsOffset);
+    SyncResult memory res = _calcSync(q$, vault, requestCount);
     require(res.reqIdTo > q$.offset, IReclaimQueue__NothingToSync());
 
     uint256 withdrawAmount = Math.min(res.totalAssetsOnRequest, res.totalAssetsOnReserve);
@@ -442,7 +488,10 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
       SyncLog[] storage syncLogs = q$.logs;
 
       uint256 syncLogsLen = syncLogs.length;
-      uint256 nextSharesAcc = syncLogsLen == 0 ? 0 : syncLogs[syncLogsLen - 1].sharesAcc + res.totalSharesSynced;
+      uint256 nextSharesAcc =
+        syncLogsLen == 0 ? res.totalSharesSynced : syncLogs[syncLogsLen - 1].sharesAcc + res.totalSharesSynced;
+
+      res.logIndex = syncLogs.length;
 
       syncLogs.push(
         SyncLog({
@@ -494,7 +543,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
   {
     while (low < high) {
       uint256 mid = Math.average(low, high);
-      if (_unsafeAccess(self, mid).reqIdTo < reqId) {
+      if (_unsafeAccess(self, mid).reqIdTo <= reqId) {
         low = mid + 1;
       } else {
         high = mid;
@@ -505,15 +554,17 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function _unsafeAccess(SyncLog[] storage self, uint256 pos) private pure returns (SyncLog storage result) {
     assembly {
+      // Get the array's storage slot
       mstore(0, self.slot)
-      result.slot :=
-        add(
-          keccak256(
-            0,
-            0x20 // two slots
-          ),
-          pos
-        )
+      // Multiply position by 2 (since each element takes 2 storage slots)
+      let slotOffset := shl(1, pos)
+      // Add the offset to the base storage location
+      result.slot := add(keccak256(0, 0x20), slotOffset)
     }
+  }
+
+  function _validateIndex(uint256 index, uint256 length) private pure {
+    require(length != 0, IReclaimQueue__Empty());
+    require(length - 1 >= index, IReclaimQueue__OutOfBounds(length - 1, index));
   }
 }
