@@ -216,11 +216,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       asset = address(new MockContract());
       asset.initMockERC20();
       asset.setRetERC20Decimals(18);
-
-      vault = address(new MockContract());
-      vault.initMockERC4626();
-      vault.setRetERC4626Asset(address(asset));
-      vault.setRetERC20Decimals(18);
+      vault = address(new SimpleERC4626Vault(asset, 'vault', 'vault'));
     }
 
     // setup asset and vault pair # 2
@@ -228,11 +224,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       asset2 = address(new MockContract());
       asset2.initMockERC20();
       asset2.setRetERC20Decimals(18);
-
-      vault2 = address(new MockContract());
-      vault2.initMockERC4626();
-      vault2.setRetERC4626Asset(address(asset2));
-      vault2.setRetERC20Decimals(18);
+      vault2 = address(new SimpleERC4626Vault(asset2, 'vault2', 'vault2'));
     }
 
     // deploy reclaim queue
@@ -262,32 +254,15 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     _compareQueueIndexInfo(queue.queueIndex(vault2, user), makeQueueIndexInfo(0, 0));
   }
 
-  function test_request_1_1(uint256 amount) public {
+  function test_request(uint256 amount) public {
     vm.assume(0 < amount && amount <= 100 ether);
 
-    IReclaimQueue.Request memory expected = _request(amount, amount, 0); // shares : assets = 1 : 1
+    vm.prank(user);
+    SimpleERC4626Vault(vault).approve(address(queue), amount);
+    SimpleERC4626Vault(vault).mint(user, amount);
+    asset.setRetERC20BalanceOf(vault, amount);
 
-    _compareQueueInfo(queue.queueInfo(vault), makeQueueInfo(true, 1 days, 0, 1, 0));
-    _compareQueueIndexInfo(queue.queueIndex(vault, user), makeQueueIndexInfo(0, 1));
-    _compareRequest(queue.queueItem(vault, 0), expected);
-    _compareRequest(queue.queueIndexItem(vault, user, 0), expected);
-  }
-
-  function test_request_1_2(uint256 amount) public {
-    vm.assume(0 < amount && amount <= 100 ether);
-
-    IReclaimQueue.Request memory expected = _request(amount, amount * 2, 0); // shares : assets = 1 : 2
-
-    _compareQueueInfo(queue.queueInfo(vault), makeQueueInfo(true, 1 days, 0, 1, 0));
-    _compareQueueIndexInfo(queue.queueIndex(vault, user), makeQueueIndexInfo(0, 1));
-    _compareRequest(queue.queueItem(vault, 0), expected);
-    _compareRequest(queue.queueIndexItem(vault, user, 0), expected);
-  }
-
-  function test_request_2_1(uint256 amount) public {
-    vm.assume(0 < amount && amount <= 100 ether);
-
-    IReclaimQueue.Request memory expected = _request(amount * 2, amount, 0); // shares : assets = 2 : 1
+    IReclaimQueue.Request memory expected = _request(amount, amount, 0);
 
     _compareQueueInfo(queue.queueInfo(vault), makeQueueInfo(true, 1 days, 0, 1, 0));
     _compareQueueIndexInfo(queue.queueIndex(vault, user), makeQueueIndexInfo(0, 1));
@@ -302,23 +277,25 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
   }
 
   function test_sync() public {
-    _request(100 ether, 100 ether, 0);
-    _request(100 ether, 100 ether, 1);
-    _request(100 ether, 100 ether, 2);
+    // setup
+    {
+      vm.prank(user);
+      SimpleERC4626Vault(vault).approve(address(queue), 300 ether);
+      SimpleERC4626Vault(vault).mint(user, 300 ether);
+      asset.setRetERC20BalanceOf(vault, 300 ether);
 
-    uint256 totalSupply = 300 ether;
-    uint256 totalAssets = 300 ether;
-
-    vault.setRetERC20TotalSupply(totalSupply);
-    vault.setRetERC4626TotalAssets(totalAssets);
-    vault.setRetERC4626ConvertToAssets(100 ether, 100 ether - 1);
+      _request(100 ether, 100 ether, 0);
+      _request(100 ether, 100 ether, 1);
+      _request(100 ether, 100 ether, 2);
+    }
 
     // # 1
     {
+      asset.setRetERC20BalanceOf(vault, 300 ether);
       uint256 expectedShares = 200 ether;
-      uint256 expectedAssets = 200 ether - 2;
+      uint256 expectedAssets = 200 ether;
 
-      vault.setRetERC4626Withdraw(expectedAssets, address(queue), address(queue), expectedShares);
+      asset.setRetERC20Transfer(address(queue), expectedAssets);
 
       // check preview result
       {
@@ -330,26 +307,28 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       // check actual result
       {
         IReclaimQueue.SyncResult memory syncResult =
-          makeSyncResult(0, 0, 2, totalSupply, totalAssets, expectedShares, expectedAssets, expectedShares);
+          makeSyncResult(0, 0, 2, 300 ether, 300 ether, expectedShares, expectedAssets, expectedShares);
 
         vm.prank(assetManager);
         vm.expectEmit();
         emit IReclaimQueue.Synced(owner, vault, syncResult);
+
         (uint256 totalSharesSynced, uint256 totalAssetsSynced) = queue.sync(owner, vault, 2);
         assertEq(totalSharesSynced, expectedShares, 'totalSharesSynced');
         assertEq(totalAssetsSynced, expectedAssets, 'totalAssetsSynced');
       }
 
-      vault.assertERC4626Withdraw(expectedAssets, address(queue), address(queue));
-      _compareSyncLog(queue.queueSyncLog(vault, 0), makeSyncLog(_now(), 0, 2, 200 ether, totalSupply, totalAssets));
+      asset.assertERC20Transfer(address(queue), expectedAssets);
+      _compareSyncLog(queue.queueSyncLog(vault, 0), makeSyncLog(_now(), 0, 2, 200 ether, 300 ether, 300 ether));
     }
 
     // # 2
     {
+      asset.setRetERC20BalanceOf(vault, 100 ether);
       uint256 expectedShares = 100 ether;
-      uint256 expectedAssets = 100 ether - 1;
+      uint256 expectedAssets = 100 ether;
 
-      vault.setRetERC4626Withdraw(expectedAssets, address(queue), address(queue), expectedShares);
+      asset.setRetERC20Transfer(address(queue), expectedAssets);
 
       // check preview result
       {
@@ -361,40 +340,46 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       // check actual result
       {
         IReclaimQueue.SyncResult memory syncResult =
-          makeSyncResult(1, 2, 3, totalSupply, totalAssets, expectedShares, expectedAssets, expectedShares);
+          makeSyncResult(1, 2, 3, 100 ether, 100 ether, expectedShares, expectedAssets, expectedShares);
 
         vm.prank(assetManager);
         vm.expectEmit();
         emit IReclaimQueue.Synced(owner, vault, syncResult);
+
         (uint256 totalSharesSynced, uint256 totalAssetsSynced) = queue.sync(owner, vault, 2);
         assertEq(totalSharesSynced, expectedShares, 'totalSharesSynced');
         assertEq(totalAssetsSynced, expectedAssets, 'totalAssetsSynced');
       }
 
-      vault.assertERC4626Withdraw(expectedAssets, address(queue), address(queue));
-      _compareSyncLog(queue.queueSyncLog(vault, 1), makeSyncLog(_now(), 2, 3, 300 ether, totalSupply, totalAssets));
+      asset.assertERC20Transfer(address(queue), expectedAssets);
+      _compareSyncLog(queue.queueSyncLog(vault, 1), makeSyncLog(_now(), 2, 3, 300 ether, 100 ether, 100 ether));
     }
 
     _compareQueueInfo(queue.queueInfo(vault), makeQueueInfo(true, 1 days, 3, 3, 2));
   }
 
   function test_sync_loss() public {
-    _request(100 ether, 100 ether, 0);
-    _request(100 ether, 100 ether, 1);
-    _request(100 ether, 100 ether, 2);
+    // setup
+    {
+      vm.prank(user);
+      SimpleERC4626Vault(vault).approve(address(queue), 300 ether);
+      SimpleERC4626Vault(vault).mint(user, 300 ether);
+      asset.setRetERC20BalanceOf(vault, 300 ether);
+
+      _request(100 ether, 100 ether, 0);
+      _request(100 ether, 100 ether, 1);
+      _request(100 ether, 100 ether, 2);
+    }
 
     uint256 totalSupply = 300 ether;
     uint256 totalAssets = 150 ether; // 50% loss
 
-    vault.setRetERC20TotalSupply(totalSupply);
-    vault.setRetERC4626TotalAssets(totalAssets);
-    vault.setRetERC4626ConvertToAssets(100 ether, 50 ether - 1);
-
     uint256 expectedSharesSynced = 300 ether;
     uint256 expectedAssetsOnRequest = 300 ether;
-    uint256 expectedAssetsOnReserve = 150 ether - 3;
+    uint256 expectedAssetsOnReserve = 150 ether;
 
-    vault.setRetERC4626Withdraw(expectedAssetsOnReserve, address(queue), address(queue), expectedSharesSynced);
+    asset.setRetERC20BalanceOf(vault, totalAssets);
+    asset.setRetERC20Transfer(address(queue), expectedAssetsOnRequest);
 
     // check preview result
     {
@@ -417,33 +402,33 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       assertEq(totalAssetsSynced, expectedAssetsOnReserve, 'totalAssetsSynced');
     }
 
-    vault.assertERC4626Withdraw(expectedAssetsOnReserve, address(queue), address(queue));
+    asset.assertERC20Transfer(address(queue), expectedAssetsOnReserve);
     _compareSyncLog(queue.queueSyncLog(vault, 0), makeSyncLog(_now(), 0, 3, 300 ether, totalSupply, totalAssets));
   }
 
   function test_sync_yield() public {
-    _request(100 ether, 100 ether, 0);
-    _request(100 ether, 100 ether, 1);
-    _request(100 ether, 100 ether, 2);
+    // setup
+    {
+      vm.prank(user);
+      SimpleERC4626Vault(vault).approve(address(queue), 300 ether);
+      SimpleERC4626Vault(vault).mint(user, 300 ether);
+      asset.setRetERC20BalanceOf(vault, 300 ether);
+
+      _request(100 ether, 100 ether, 0);
+      _request(100 ether, 100 ether, 1);
+      _request(100 ether, 100 ether, 2);
+    }
 
     uint256 totalSupply = 300 ether;
     uint256 totalAssets = 450 ether; // 50% yield
 
-    vault.setRetERC20TotalSupply(totalSupply);
-    vault.setRetERC4626TotalAssets(totalAssets);
-    vault.setRetERC4626ConvertToAssets(100 ether, 150 ether - 1);
-
-    uint256 expectedSharesRemain = 100 ether;
+    uint256 expectedSharesRemain = 100 ether - 1;
     uint256 expectedSharesSynced = 300 ether;
     uint256 expectedAssetsOnRequest = 300 ether;
     uint256 expectedAssetsOnReserve = 450 ether - 3;
 
-    vault.setRetERC4626Withdraw(
-      expectedAssetsOnRequest, //
-      address(queue),
-      address(queue),
-      expectedSharesSynced - expectedSharesRemain
-    );
+    asset.setRetERC20BalanceOf(vault, totalAssets);
+    asset.setRetERC20Transfer(address(queue), expectedAssetsOnRequest);
 
     // check preview result
     {
@@ -466,7 +451,8 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       assertEq(totalAssetsSynced, expectedAssetsOnRequest, 'totalAssetsSynced');
     }
 
-    vault.assertERC4626Withdraw(expectedAssetsOnRequest, address(queue), address(queue));
+    assertEq(SimpleERC4626Vault(vault).balanceOf(address(queue)), expectedSharesRemain, 'shares remain');
+    asset.assertERC20Transfer(address(queue), expectedAssetsOnRequest);
     _compareSyncLog(queue.queueSyncLog(vault, 0), makeSyncLog(_now(), 0, 3, 300 ether, totalSupply, totalAssets));
   }
 
@@ -497,45 +483,35 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
   }
 
   function test_claim() public {
-    _request(100 ether, 100 ether, 0);
-    _request(100 ether, 100 ether, 1);
-    _request(100 ether, 100 ether, 2);
-    _request(100 ether, 100 ether, 3);
-    _request(100 ether, 100 ether, 4);
-    _request(100 ether, 100 ether, 5);
+    // setup
+    {
+      vm.prank(user);
+      SimpleERC4626Vault(vault).approve(address(queue), 600 ether);
+      SimpleERC4626Vault(vault).mint(user, 600 ether);
+      asset.setRetERC20BalanceOf(vault, 600 ether);
+
+      _request(100 ether, 100 ether, 0);
+      _request(100 ether, 100 ether, 1);
+      _request(100 ether, 100 ether, 2);
+      _request(100 ether, 100 ether, 3);
+      _request(100 ether, 100 ether, 4);
+      _request(100 ether, 100 ether, 5);
+    }
 
     // # 1 sync
-    {
-      vault.setRetERC20TotalSupply(300 ether);
-      vault.setRetERC4626TotalAssets(300 ether);
-
-      vault.setRetERC4626ConvertToAssets(100 ether, 100 ether - 1);
-      vault.setRetERC4626Withdraw(100 ether - 1, address(queue), address(queue), 100 ether);
-      vm.prank(assetManager);
-      queue.sync(owner, vault, 1);
-    }
+    asset.setRetERC20BalanceOf(vault, 300 ether);
+    vm.prank(assetManager);
+    queue.sync(owner, vault, 1);
 
     // # 2 sync: loss
-    {
-      vault.setRetERC20TotalSupply(300 ether);
-      vault.setRetERC4626TotalAssets(150 ether);
-
-      vault.setRetERC4626ConvertToAssets(100 ether, 50 ether - 1);
-      vault.setRetERC4626Withdraw(50 ether - 1, address(queue), address(queue), 100 ether);
-      vm.prank(assetManager);
-      queue.sync(owner, vault, 1);
-    }
+    asset.setRetERC20BalanceOf(vault, 150 ether);
+    vm.prank(assetManager);
+    queue.sync(owner, vault, 1);
 
     // # 3 sync: yield
-    {
-      vault.setRetERC20TotalSupply(300 ether);
-      vault.setRetERC4626TotalAssets(450 ether);
-
-      vault.setRetERC4626ConvertToAssets(100 ether, 150 ether - 1);
-      vault.setRetERC4626Withdraw(100 ether, address(queue), address(queue), 50 ether);
-      vm.prank(assetManager);
-      queue.sync(owner, vault, 1);
-    }
+    asset.setRetERC20BalanceOf(vault, 450 ether);
+    vm.prank(assetManager);
+    queue.sync(owner, vault, 1);
 
     // pass reclaim period
     vm.warp(block.timestamp + 1 days);
@@ -545,7 +521,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     _compareQueueIndexInfo(queue.queueIndex(vault, user), makeQueueIndexInfo(0, 6));
 
     uint256 expectedClaimedShares = 300 ether;
-    uint256 expectedClaimedAssets = 250 ether - 2;
+    uint256 expectedClaimedAssets = 180 ether - 2;
 
     // check preview result
     {
@@ -559,13 +535,13 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       vm.prank(user);
 
       vm.expectEmit();
-      emit IReclaimQueue.Claimed(user, vault, 0, 100 ether, 100 ether - 1, 300 ether, 300 ether, 0);
+      emit IReclaimQueue.Claimed(user, vault, 0, 100 ether, 50 ether - 1, 600 ether, 300 ether, 0);
       vm.expectEmit();
-      emit IReclaimQueue.Claimed(user, vault, 1, 100 ether, 50 ether - 1, 300 ether, 150 ether, 1);
+      emit IReclaimQueue.Claimed(user, vault, 1, 100 ether, 30 ether - 1, 500 ether, 150 ether, 1);
       vm.expectEmit();
-      emit IReclaimQueue.Claimed(user, vault, 2, 100 ether, 100 ether, 300 ether, 450 ether, 2);
+      emit IReclaimQueue.Claimed(user, vault, 2, 100 ether, 100 ether, 400 ether, 450 ether, 2);
       vm.expectEmit();
-      emit IReclaimQueue.ClaimSucceeded(user, vault, makeClaimResult(0, 3, 300 ether, 250 ether - 2));
+      emit IReclaimQueue.ClaimSucceeded(user, vault, makeClaimResult(0, 3, 300 ether, 180 ether - 2));
 
       (uint256 totalSharesClaimed, uint256 totalAssetsClaimed) = queue.claim(user, vault);
       assertEq(totalSharesClaimed, expectedClaimedShares, 'totalSharesClaimed');
@@ -631,17 +607,11 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     internal
     returns (IReclaimQueue.Request memory)
   {
-    vault.setRetERC20TransferFrom(user, address(queue), shares);
-    vault.setRetERC4626PreviewRedeem(shares, assets);
-
     vm.prank(user);
     vm.expectEmit();
     emit IReclaimQueue.Requested(user, vault, expectedReqId, shares, assets);
     uint256 reqId = queue.request(shares, user, vault);
     assertEq(reqId, expectedReqId, 'reqId');
-
-    // check transfer
-    vault.assertERC20TransferFrom(user, address(queue), shares);
 
     return makeRequest(_now48(), assets, shares);
   }
