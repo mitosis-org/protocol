@@ -6,9 +6,9 @@ import { ERC20 } from '@oz-v5/token/ERC20/ERC20.sol';
 import { ERC4626 } from '@oz-v5/token/ERC20/extensions/ERC4626.sol';
 
 contract SimpleERC4626Vault is ERC4626 {
-  constructor(IERC20 underlying_, string memory name_, string memory symbol_)
+  constructor(address underlying_, string memory name_, string memory symbol_)
     ERC20(name_, symbol_)
-    ERC4626(underlying_)
+    ERC4626(IERC20(underlying_))
   { }
 
   function mint(address to, uint256 amount) external {
