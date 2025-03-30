@@ -88,7 +88,7 @@ contract GovMITO is
   function initialize(address owner_, uint256 withdrawalPeriod_) external initializer {
     require(withdrawalPeriod_ > 0, StdError.InvalidParameter('withdrawalPeriod'));
 
-    // TODO(thai): not fixed yet. could be modified before launching.
+    // NOTE: not fixed yet. could be modified before launching.
     __ERC20_init('Mitosis Governance Token', 'gMITO');
     __ERC20Permit_init('Mitosis Governance Token');
     __ERC20Votes_init();
