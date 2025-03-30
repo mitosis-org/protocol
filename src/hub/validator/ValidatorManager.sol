@@ -37,7 +37,6 @@ contract ValidatorManagerStorageV1 {
     uint256 pendingCommissionRateUpdateEpoch; // current epoch + 2
   }
 
-  // TODO(eddy): versioning + search logic by epoch
   struct Validator {
     address valAddr;
     address operator;

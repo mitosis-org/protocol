@@ -9,8 +9,6 @@ import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibSecp256k1 } from '../../lib/LibSecp256k1.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-// TODO(thai): test codes
-
 contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2StepUpgradeable, UUPSUpgradeable {
   using ERC7201Utils for string;
 

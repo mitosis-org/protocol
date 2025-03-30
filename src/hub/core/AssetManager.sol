@@ -307,10 +307,8 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     StorageV1 storage $ = _getStorageV1();
     _assertHubAssetFactorySet($);
     _assertHubAssetInstance($, hubAsset);
+    _assertBranchAssetPairNotExist($, branchChainId, branchAsset);
 
-    // TODO(ray): handle already initialized asset through initializeAsset.
-    //
-    // https://github.com/mitosis-org/protocol/pull/23#discussion_r1728680943
     _hubAssetState($, hubAsset, branchChainId).branchAsset = branchAsset;
     _branchAssetState($, branchChainId, branchAsset).hubAsset = hubAsset;
     emit AssetPairSet(hubAsset, branchChainId, branchAsset);
@@ -360,5 +358,12 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function _assertOnlyContract(address addr, string memory paramName) internal view {
     require(addr.code.length > 0, StdError.InvalidParameter(paramName));
+  }
+
+  function _assertBranchAssetPairNotExist(StorageV1 storage $, uint256 chainId, address branchAsset) internal view {
+    require(
+      _branchAssetState($, chainId, branchAsset).hubAsset == address(0),
+      IAssetManagerStorageV1__BranchAssetPairNotExist(chainId, branchAsset)
+    );
   }
 }

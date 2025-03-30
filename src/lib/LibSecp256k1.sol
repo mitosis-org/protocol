@@ -5,8 +5,6 @@ import { EllipticCurve } from '@elliptic-curve-solidity/contracts/EllipticCurve.
 
 import { StdError } from './StdError.sol';
 
-// TODO(thai): test codes
-
 library LibSecp256k1 {
   uint256 constant AA = 0;
   uint256 constant BB = 7;
