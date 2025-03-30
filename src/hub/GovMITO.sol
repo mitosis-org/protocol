@@ -186,7 +186,13 @@ contract GovMITO is
 
     LibQueue.Trace208OffsetQueue storage queue = $.queue[receiver];
     (uint32 reqIdFrom, uint32 reqIdTo) = queue.solveByKey(clock() - $.withdrawalPeriod);
-    uint256 claimed = queue.valueAt(reqIdTo) - queue.valueAt(reqIdFrom);
+
+    uint256 claimed;
+    {
+      uint256 fromValue = reqIdFrom == 0 ? 0 : queue.valueAt(reqIdFrom - 1);
+      uint256 toValue = queue.valueAt(reqIdTo - 1);
+      claimed = toValue - fromValue;
+    }
 
     SafeTransferLib.safeTransferETH(receiver, claimed);
 

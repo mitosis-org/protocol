@@ -301,7 +301,12 @@ contract ValidatorStaking is
 
     uint48 now_ = Time.timestamp();
     (uint32 reqIdFrom, uint32 reqIdTo) = queue.solveByKey(now_ - $.unstakeCooldown);
-    uint256 claimed = queue.valueAt(reqIdTo) - queue.valueAt(reqIdFrom);
+    uint256 claimed;
+    {
+      uint256 fromValue = reqIdFrom == 0 ? 0 : queue.valueAt(reqIdFrom - 1);
+      uint256 toValue = queue.valueAt(reqIdTo - 1);
+      claimed = toValue - fromValue;
+    }
 
     if (_baseAsset == NATIVE_TOKEN) receiver.safeTransferETH(claimed);
     else _baseAsset.safeTransfer(receiver, claimed);

@@ -62,10 +62,13 @@ library LibQueue {
 
     uint32 found = items.upperBinaryLookup(time, offset_, reqLen).toUint32();
 
-    uint256 total = items.latest() - items.valueAt(offset_);
+    uint208 latestValue = items.latest();
+    uint208 offsetValue = offset_ == 0 ? 0 : items.valueAt(offset_ - 1);
+    uint256 total = latestValue - offsetValue;
     if (offset_ == found) return (total, 0);
 
-    uint256 available = items.valueAt(found - 1) - items.valueAt(offset_);
+    uint208 foundValue = items.valueAt(found - 1);
+    uint256 available = foundValue - offsetValue;
     return (total, available);
   }
 
