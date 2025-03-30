@@ -114,7 +114,6 @@ contract CrossChainRegistry is
 
   function enrollMitosisVaultEntrypoint(address hplRouter) external onlyOwner {
     uint256[] memory allChainIds = _getStorageV1().chainIds;
-    // TODO(ray): IRouter.enrollRemoteRouters
     for (uint256 i = 0; i < allChainIds.length; i++) {
       enrollMitosisVaultEntrypoint(hplRouter, allChainIds[i]);
     }

@@ -14,8 +14,6 @@ import { Conv } from '../lib/Conv.sol';
 import { StdError } from '../lib/StdError.sol';
 import '../message/Message.sol';
 
-// TODO(thai): consider to make our own contract (`HyperlaneConnector`) instead of using `GasRouter`.
-
 contract MitosisVaultEntrypoint is
   IMitosisVaultEntrypoint,
   IMessageRecipient,

@@ -18,7 +18,6 @@ interface IMatrixStrategyExecutor is IStrategyExecutor {
   function asset() external view returns (IERC20);
   function hubMatrixVault() external view returns (address);
 
-  // TODO(ray): Move methods to IStrategyExecutor for shared use.
   function strategist() external view returns (address);
   function executor() external view returns (address);
   function tally() external view returns (ITally);
