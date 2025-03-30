@@ -313,7 +313,7 @@ contract ValidatorStakingTest is Toolkit {
 
     vm.prank(user2);
     vm.expectEmit();
-    emit IValidatorStaking.UnstakeRequested(val1, user2, user1, 1 ether, 1);
+    emit IValidatorStaking.UnstakeRequested(val1, user2, user1, 1 ether, 0);
     erc20Vault.requestUnstake(val1, user1, 1 ether);
 
     assertEq(erc20Vault.staked(val1, user1, _now48()), 0);
@@ -329,7 +329,7 @@ contract ValidatorStakingTest is Toolkit {
 
     vm.prank(user2);
     vm.expectEmit();
-    emit IValidatorStaking.UnstakeRequested(val1, user2, user1, 1 ether, 1);
+    emit IValidatorStaking.UnstakeRequested(val1, user2, user1, 1 ether, 0);
     nativeVault.requestUnstake(val1, user1, 1 ether);
 
     assertEq(nativeVault.staked(val1, user1, _now48()), 0);
@@ -576,9 +576,7 @@ contract ValidatorStakingTest is Toolkit {
   {
     vm.prank(sender);
     vm.expectEmit();
-    emit IValidatorStaking.UnstakeRequested(
-      val, sender, recipient, amount, globalReqId[address(vault)][recipient]++ + 1
-    );
+    emit IValidatorStaking.UnstakeRequested(val, sender, recipient, amount, globalReqId[address(vault)][recipient]++);
     vault.requestUnstake(val, recipient, amount);
 
     hub.assertLastCall(abi.encodeCall(IValidatorStakingHub.notifyUnstake, (val, recipient, amount)));
