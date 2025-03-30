@@ -18,7 +18,7 @@ contract HubAssetTest is Toolkit {
   address immutable owner = makeAddr('owner');
   address immutable user1 = makeAddr('user1');
   address immutable user2 = makeAddr('user2');
-  address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
+  address immutable mitosis = makeAddr('mitosis');
 
   function setUp() public {
     hubAsset = HubAsset(

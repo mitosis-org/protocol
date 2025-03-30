@@ -24,7 +24,7 @@ contract MitosisVaultTest is Toolkit {
   MockMatrixStrategyExecutor internal _matrixStrategyExecutor;
 
   address immutable owner = makeAddr('owner');
-  address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
+  address immutable mitosis = makeAddr('mitosis');
   address immutable hubMatrixVault = makeAddr('hubMatrixVault');
 
   function setUp() public {
@@ -182,8 +182,6 @@ contract MitosisVaultTest is Toolkit {
 
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
-
-    // TODO: resumeMatrix check?
 
     vm.prank(owner);
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);

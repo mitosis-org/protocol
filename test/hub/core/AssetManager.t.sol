@@ -149,7 +149,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
   address owner = makeAddr('owner');
   address user1 = makeAddr('user1');
-  address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
+  address immutable mitosis = makeAddr('mitosis');
 
   uint48 branchChainId1 = 10;
   uint48 branchChainId2 = 20;

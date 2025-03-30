@@ -16,8 +16,6 @@ import { StdError } from '../../lib/StdError.sol';
 import '../../message/Message.sol';
 import { AssetManager } from './AssetManager.sol';
 
-// TODO(thai): consider to make our own contract (`HyperlaneConnector`) instead of using `GasRouter`.
-
 contract AssetManagerEntrypoint is
   IAssetManagerEntrypoint,
   IMessageRecipient,
