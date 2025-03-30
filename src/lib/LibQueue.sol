@@ -45,10 +45,11 @@ library LibQueue {
 
   function recentItemAt(Trace208OffsetQueue storage $, uint48 time) internal view returns (uint48, uint208) {
     Checkpoints.Trace208 storage items = $._items;
-    uint256 pos = items.upperBinaryLookup(time, 0, items.length());
+
+    uint32 pos = items.upperBinaryLookup(time, 0, items.length()).toUint32();
     if (pos == 0) return (0, 0);
 
-    Checkpoints.Checkpoint208 memory checkpoint = $._items.at((pos - 1).toUint32());
+    Checkpoints.Checkpoint208 memory checkpoint = $._items.at(pos - 1);
     return (checkpoint._key, checkpoint._value);
   }
 
@@ -59,11 +60,12 @@ library LibQueue {
     uint256 reqLen = items.length();
     if (reqLen <= offset_) return (0, 0);
 
+    uint32 found = items.upperBinaryLookup(time, offset_, reqLen).toUint32();
+
     uint256 total = items.latest() - items.valueAt(offset_);
-    uint256 found = items.upperBinaryLookup(time, offset_, reqLen);
     if (offset_ == found) return (total, 0);
 
-    uint256 available = items.valueAt((found - 1).toUint32()) - items.valueAt(offset_);
+    uint256 available = items.valueAt(found - 1) - items.valueAt(offset_);
     return (total, available);
   }
 
@@ -72,13 +74,8 @@ library LibQueue {
 
     uint32 reqId = size($);
 
-    if (reqId == 0) {
-      items.push(0, 0);
-      items.push(time, amount);
-      reqId = 1;
-    } else {
-      items.push(time, items.latest() + amount);
-    }
+    if (reqId == 0) items.push(time, amount);
+    else items.push(time, items.latest() + amount);
 
     return reqId;
   }
@@ -90,13 +87,12 @@ library LibQueue {
     uint256 reqLen = items.length();
     require(reqLen > offset_, LibQueue__NothingToClaim());
 
-    uint256 found = items.upperBinaryLookup(key, offset_, reqLen);
-    require(found > offset_ + 1, LibQueue__NothingToClaim());
+    uint32 found = items.upperBinaryLookup(key, offset_, reqLen).toUint32();
+    require(found > offset_, LibQueue__NothingToClaim());
 
-    uint32 pos = (found - 1).toUint32();
-    $._offset = pos;
+    $._offset = found;
 
-    return (offset_, pos);
+    return (offset_, found);
   }
 
   function solveByCount(Trace208OffsetQueue storage $, uint256 count) internal returns (uint32, uint32) {
@@ -106,13 +102,12 @@ library LibQueue {
     uint256 reqLen = items.length();
     require(reqLen > offset_, LibQueue__NothingToClaim());
 
-    uint256 found = Math.min(offset_ + count, reqLen);
-    require(found > offset_ + 1, LibQueue__NothingToClaim());
+    uint32 found = Math.min(offset_ + count, reqLen).toUint32();
+    require(found > offset_, LibQueue__NothingToClaim());
 
-    uint32 pos = (found - 1).toUint32();
-    $._offset = pos;
+    $._offset = found;
 
-    return (offset_, pos);
+    return (offset_, found);
   }
 
   // ================================= NEW ================================= //
@@ -137,17 +132,9 @@ library LibQueue {
   }
 
   function append(UintOffsetQueue storage $, uint256 item) internal returns (uint32) {
-    uint256[] storage items = $._items;
-
     uint32 reqId = size($);
 
-    if (reqId == 0) {
-      items.push(0);
-      items.push(item);
-      reqId = 1;
-    } else {
-      items.push(item);
-    }
+    $._items.push(item);
 
     return reqId;
   }
@@ -159,13 +146,12 @@ library LibQueue {
     uint256 reqLen = items.length;
     require(reqLen > offset_, LibQueue__NothingToClaim());
 
-    uint256 found = Arrays.findUpperBound(items, key);
-    require(found > offset_ + 1, LibQueue__NothingToClaim());
+    uint32 found = Arrays.findUpperBound(items, key).toUint32();
+    require(found > offset_, LibQueue__NothingToClaim());
 
-    uint32 pos = (found - 1).toUint32();
-    $._offset = pos;
+    $._offset = found;
 
-    return (offset_, pos);
+    return (offset_, found);
   }
 
   function solveByCount(UintOffsetQueue storage $, uint256 count) internal returns (uint32, uint32) {
@@ -175,12 +161,10 @@ library LibQueue {
     uint256 reqLen = items.length;
     require(reqLen > offset_, LibQueue__NothingToClaim());
 
-    uint256 found = Math.min(offset_ + count, reqLen);
-    require(found > offset_ + 1, LibQueue__NothingToClaim());
+    uint32 found = Math.min(offset_ + count, reqLen).toUint32();
 
-    uint32 pos = (found - 1).toUint32();
-    $._offset = pos;
+    $._offset = found;
 
-    return (offset_, pos);
+    return (offset_, found);
   }
 }
