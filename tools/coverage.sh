@@ -1,7 +1,5 @@
 set -e # exit on error
 
-rm -rf coverage
-
 # generates lcov.info
 forge coverage --report lcov -vvv
 
@@ -24,6 +22,11 @@ lcov \
 
 # Open more granular breakdown in browser
 if [ "$CI" != "true" ]; then
-    yarn lcov-viewer lcov -o coverage ./lcov.info
+    genhtml \
+        --rc derive_function_end_line=0 \
+        --output-directory coverage \
+        --ignore-errors unused \
+        --ignore-errors inconsistent \
+        lcov.info
     open coverage/index.html
 fi
