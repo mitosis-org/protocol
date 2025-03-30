@@ -499,6 +499,9 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     _request(100 ether, 100 ether, 0);
     _request(100 ether, 100 ether, 1);
     _request(100 ether, 100 ether, 2);
+    _request(100 ether, 100 ether, 3);
+    _request(100 ether, 100 ether, 4);
+    _request(100 ether, 100 ether, 5);
 
     // # 1 sync
     {
@@ -538,7 +541,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
 
     //======= TEST
 
-    _compareQueueIndexInfo(queue.queueIndex(vault, user), makeQueueIndexInfo(0, 3));
+    _compareQueueIndexInfo(queue.queueIndex(vault, user), makeQueueIndexInfo(0, 6));
 
     uint256 expectedClaimedShares = 300 ether;
     uint256 expectedClaimedAssets = 250 ether - 2;
@@ -570,7 +573,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
 
     asset.assertERC20Transfer(user, expectedClaimedAssets);
 
-    _compareQueueIndexInfo(queue.queueIndex(vault, user), makeQueueIndexInfo(3, 3));
+    _compareQueueIndexInfo(queue.queueIndex(vault, user), makeQueueIndexInfo(3, 6));
   }
 
   function test_claim_queueNotEnabled() public {
@@ -599,8 +602,8 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
 
     test_claim();
 
-    vm.expectRevert(_errOutOfBounds(2, 3));
-    queue.queueItem(vault, 3);
+    vm.expectRevert(_errOutOfBounds(5, 6));
+    queue.queueItem(vault, 6);
   }
 
   function test_queueIndexItem_validation() public {
@@ -609,8 +612,8 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
 
     test_claim();
 
-    vm.expectRevert(_errOutOfBounds(2, 3));
-    queue.queueIndexItem(vault, user, 3);
+    vm.expectRevert(_errOutOfBounds(5, 6));
+    queue.queueIndexItem(vault, user, 6);
   }
 
   function test_queueSyncLog_validation() public {

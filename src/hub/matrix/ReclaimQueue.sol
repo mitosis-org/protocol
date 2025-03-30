@@ -266,6 +266,25 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     return shares.mulDiv(totalAssets, totalSupply + 10 ** decimalsOffset, rounding);
   }
 
+  struct CalcClaimState {
+    uint256 cachedLogPos;
+    SyncLog cached;
+    uint32 queueOffset;
+    uint48 reqTimeBoundary;
+  }
+
+  function _fetchInitialCalcClaimState(QueueState storage q$) internal view returns (CalcClaimState memory) {
+    uint256 cachedLogPos = q$.logs.length - 1;
+    SyncLog memory cached = _unsafeAccess(q$.logs, cachedLogPos);
+
+    return CalcClaimState({
+      cachedLogPos: cachedLogPos,
+      cached: cached,
+      queueOffset: q$.offset,
+      reqTimeBoundary: Time.timestamp() - q$.reclaimPeriod
+    });
+  }
+
   function _fetchSyncLogByReqId(QueueState storage q$, uint256 reqId) internal view returns (SyncLog memory, uint256) {
     SyncLog[] storage syncLogs = q$.logs;
     uint256 syncLogsLen = syncLogs.length;
@@ -276,31 +295,12 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     return (log, pos);
   }
 
-  struct CalcClaimState {
-    uint256 cachedLogPos;
-    SyncLog cached;
-    uint32 queueOffset;
-    uint48 reqTimeBoundary;
-  }
-
   function _calcClaim(QueueState storage q$, ClaimResult memory res, address receiver, uint8 decimalsOffset)
     internal
     view
     returns (ClaimResult memory)
   {
-    CalcClaimState memory state;
-    {
-      uint256 cachedLogPos = q$.logs.length - 1;
-      SyncLog memory cached = _unsafeAccess(q$.logs, cachedLogPos);
-
-      state = CalcClaimState({
-        cachedLogPos: cachedLogPos,
-        cached: cached,
-        queueOffset: q$.offset,
-        reqTimeBoundary: Time.timestamp() - q$.reclaimPeriod
-      });
-    }
-
+    CalcClaimState memory state = _fetchInitialCalcClaimState(q$);
     LibQueue.UintOffsetQueue storage index = q$.indexes[receiver];
 
     for (uint32 i = res.reqIdFrom; i < res.reqIdTo;) {
@@ -308,7 +308,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
       Request memory req = q$.items[reqId];
 
       // if the request didn't pass the reclaim period or before the sync, stop the loop
-      if (state.queueOffset < reqId || state.reqTimeBoundary < req.timestamp) {
+      if (state.queueOffset <= reqId || state.reqTimeBoundary < req.timestamp) {
         res.reqIdTo = i;
         break;
       }
@@ -347,19 +347,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     address receiver,
     uint8 decimalsOffset
   ) internal returns (ClaimResult memory) {
-    CalcClaimState memory state;
-    {
-      uint256 cachedLogPos = q$.logs.length - 1;
-      SyncLog memory cached = _unsafeAccess(q$.logs, cachedLogPos);
-
-      state = CalcClaimState({
-        cachedLogPos: cachedLogPos,
-        cached: cached,
-        queueOffset: q$.offset,
-        reqTimeBoundary: Time.timestamp() - q$.reclaimPeriod
-      });
-    }
-
+    CalcClaimState memory state = _fetchInitialCalcClaimState(q$);
     LibQueue.UintOffsetQueue storage index = q$.indexes[receiver];
 
     for (uint32 i = res.reqIdFrom; i < res.reqIdTo;) {
@@ -367,7 +355,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
       Request memory req = q$.items[reqId];
 
       // if the request didn't pass the reclaim period or before the sync, stop the loop
-      if (state.queueOffset < reqId || state.reqTimeBoundary < req.timestamp) {
+      if (state.queueOffset <= reqId || state.reqTimeBoundary < req.timestamp) {
         res.reqIdTo = i;
         break;
       }
