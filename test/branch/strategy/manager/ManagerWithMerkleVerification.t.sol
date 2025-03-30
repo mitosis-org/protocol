@@ -182,7 +182,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     // invalid values (canSendValue)
     values[0] = 1 ether;
 
-    vm.expectRevert(); // TODO
+    vm.expectRevert();
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
