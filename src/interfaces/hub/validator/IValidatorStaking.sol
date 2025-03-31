@@ -9,7 +9,6 @@ import { IValidatorStakingHub } from './IValidatorStakingHub.sol';
 /// @title IValidatorStaking
 /// @notice Interface for the ValidatorStaking contract.
 /// @dev This interface defines the actions that users and validators can perform.
-
 interface IValidatorStaking {
   event Staked(address indexed val, address indexed who, address indexed to, uint256 amount);
   event UnstakeRequested(address indexed val, address indexed who, address indexed to, uint256 amount, uint256 reqId);
@@ -111,9 +110,10 @@ interface IValidatorStaking {
   /**
    * @notice Returns the last time a staker redelegated.
    * @param staker The address of the staker.
+   * @param valAddr The address of the validator.
    * @return lastRedelegationTime The last time a staker redelegated.
    */
-  function lastRedelegationTime(address staker) external view returns (uint256);
+  function lastRedelegationTime(address staker, address valAddr) external view returns (uint256);
 
   // ========== ACTIONS ========== //
 

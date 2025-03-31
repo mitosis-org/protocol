@@ -29,11 +29,11 @@ contract ValidatorStakingStorageV1 {
     // states
     Checkpoints.Trace208 totalStaked;
     Checkpoints.Trace208 totalUnstaking;
-    mapping(address staker => uint256) lastRedelegationTime;
     mapping(address staker => LibQueue.Trace208OffsetQueue) unstakeQueue;
     mapping(address staker => Checkpoints.Trace208) stakerTotal;
     mapping(address valAddr => Checkpoints.Trace208) validatorTotal;
     mapping(address valAddr => mapping(address staker => Checkpoints.Trace208)) staked;
+    mapping(address staker => mapping(address valAddr => uint256)) lastRedelegationTime;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.ValidatorStaking.v1';
@@ -180,8 +180,8 @@ contract ValidatorStaking is
   }
 
   /// @inheritdoc IValidatorStaking
-  function lastRedelegationTime(address staker) external view virtual returns (uint256) {
-    return _getStorageV1().lastRedelegationTime[staker];
+  function lastRedelegationTime(address staker, address valAddr) external view virtual returns (uint256) {
+    return _getStorageV1().lastRedelegationTime[staker][valAddr];
   }
 
   // ===================================== MUTATIVE FUNCTIONS ===================================== //
@@ -322,6 +322,22 @@ contract ValidatorStaking is
     return claimed;
   }
 
+  function _checkRedelegationCooldown(StorageV1 storage $, uint48 now_, address delegator, address valAddr)
+    internal
+    view
+  {
+    uint256 lastRedelegationTime_ = $.lastRedelegationTime[delegator][valAddr];
+
+    if (lastRedelegationTime_ > 0) {
+      uint48 cooldown = $.redelegationCooldown;
+      uint48 lasttime = lastRedelegationTime_.toUint48();
+      require(
+        now_ >= lasttime + cooldown, //
+        IValidatorStaking__CooldownNotPassed(lasttime, now_, (lasttime + cooldown) - now_)
+      );
+    }
+  }
+
   function _redelegate(StorageV1 storage $, address delegator, address fromValAddr, address toValAddr, uint256 amount)
     internal
     virtual
@@ -336,17 +352,12 @@ contract ValidatorStaking is
     require(_manager.isValidator(toValAddr), IValidatorStaking__NotValidator(toValAddr));
 
     uint48 now_ = Time.timestamp();
-    uint256 lastRedelegationTime_ = $.lastRedelegationTime[delegator];
 
-    if (lastRedelegationTime_ > 0) {
-      uint48 cooldown = $.redelegationCooldown;
-      uint48 lasttime = lastRedelegationTime_.toUint48();
-      require(
-        now_ >= lasttime + cooldown, //
-        IValidatorStaking__CooldownNotPassed(lasttime, now_, (lasttime + cooldown) - now_)
-      );
-    }
-    $.lastRedelegationTime[delegator] = now_;
+    _checkRedelegationCooldown($, now_, delegator, fromValAddr);
+    _checkRedelegationCooldown($, now_, delegator, toValAddr);
+
+    $.lastRedelegationTime[delegator][fromValAddr] = now_;
+    $.lastRedelegationTime[delegator][toValAddr] = now_;
 
     // apply to state
     {
