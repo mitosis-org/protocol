@@ -9,20 +9,30 @@ import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { IEpochFeeder } from '../../interfaces/hub/validator/IEpochFeeder.sol';
-import {
-  IValidatorContributionFeed,
-  ValidatorWeight,
-  ReportStatus
-} from '../../interfaces/hub/validator/IValidatorContributionFeed.sol';
+import { IValidatorContributionFeed } from '../../interfaces/hub/validator/IValidatorContributionFeed.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-contract ValidatorContributionFeedStorageV1 {
+/// @title ValidatorContributionFeed
+/// @dev Report lifecycle:
+/// 1. initializeReport
+/// 2. pushValidatorWeights
+/// 3-1. finalizeReport
+/// 3-2. revokeReport -> Back to step 1
+contract ValidatorContributionFeed is
+  IValidatorContributionFeed,
+  Ownable2StepUpgradeable,
+  AccessControlEnumerableUpgradeable,
+  UUPSUpgradeable
+{
   using ERC7201Utils for string;
+  using SafeCast for uint256;
+  using EnumerableMap for EnumerableMap.AddressToUintMap;
 
   struct ReportChecker {
     uint128 totalWeight;
     uint16 numOfValidators; // max 65535
+    uint112 _reserved;
   }
 
   struct Reward {
@@ -48,17 +58,8 @@ contract ValidatorContributionFeedStorageV1 {
       $.slot := slot
     }
   }
-}
 
-contract ValidatorContributionFeed is
-  IValidatorContributionFeed,
-  ValidatorContributionFeedStorageV1,
-  Ownable2StepUpgradeable,
-  AccessControlEnumerableUpgradeable,
-  UUPSUpgradeable
-{
-  using SafeCast for uint256;
-  using EnumerableMap for EnumerableMap.AddressToUintMap;
+  // ========================================== END STORAGE LAYOUT ========================================== //
 
   /// @notice keccak256('mitosis.role.ValidatorContributionFeed.feeder')
   bytes32 public constant FEEDER_ROLE = 0xa33b22848ec080944b3c811b3fe6236387c5104ce69ccd386b545a980fbe6827;

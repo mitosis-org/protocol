@@ -18,8 +18,8 @@ contract TreasuryStorageV1 is ITreasuryStorageV1 {
   }
 
   struct StorageV1 {
-    mapping(address matrixVault => mapping(address reward => uint256 balance)) balances;
-    mapping(address matrixVault => mapping(address reward => Log[] logs)) history;
+    mapping(address vault => mapping(address reward => uint256 balance)) balances;
+    mapping(address vault => mapping(address reward => Log[] logs)) history;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.TreasuryStorage.v1';
@@ -38,26 +38,26 @@ contract TreasuryStorageV1 is ITreasuryStorageV1 {
   /**
    * @inheritdoc ITreasuryStorageV1
    */
-  function balances(address matrixVault, address reward) external view returns (uint256) {
-    return _balances(_getStorageV1(), matrixVault, reward);
+  function balances(address vault, address reward) external view returns (uint256) {
+    return _balances(_getStorageV1(), vault, reward);
   }
 
   /**
    * @inheritdoc ITreasuryStorageV1
    */
-  function history(address matrixVault, address reward, uint256 offset, uint256 size)
+  function history(address vault, address reward, uint256 offset, uint256 size)
     external
     view
     returns (HistoryResponse[] memory)
   {
     StorageV1 storage $ = _getStorageV1();
 
-    uint256 historyLength = $.history[matrixVault][reward].length;
+    uint256 historyLength = $.history[vault][reward].length;
     if (offset + size > historyLength) size = historyLength - offset;
 
     HistoryResponse[] memory history_ = new HistoryResponse[](size);
     for (uint256 i = 0; i < size; i++) {
-      Log memory log = $.history[matrixVault][reward][offset + i];
+      Log memory log = $.history[vault][reward][offset + i];
       history_[i] = HistoryResponse(log.timestamp, log.amount, log.sign);
     }
 
@@ -66,7 +66,7 @@ contract TreasuryStorageV1 is ITreasuryStorageV1 {
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _balances(StorageV1 storage $, address matrixVault, address reward) internal view returns (uint256) {
-    return $.balances[matrixVault][reward];
+  function _balances(StorageV1 storage $, address vault, address reward) internal view returns (uint256) {
+    return $.balances[vault][reward];
   }
 }

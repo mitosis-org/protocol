@@ -27,16 +27,18 @@ interface IValidatorStakingHub {
    * @param valAddr Validator address to be notified.
    * @param staker Staker address to be notified.
    * @param amount Amount of stake to be notified.
+   * @param notifier The address of the notifier that notified the stake.
    */
-  event NotifiedStake(address indexed valAddr, address indexed staker, uint256 amount);
+  event NotifiedStake(address indexed valAddr, address indexed staker, uint256 amount, address notifier);
 
   /**
    * @notice Emitted when an unstake is notified.
    * @param valAddr Validator address to be notified.
    * @param staker Staker address to be notified.
    * @param amount Amount of unstake to be notified.
+   * @param notifier The address of the notifier that notified the unstake.
    */
-  event NotifiedUnstake(address indexed valAddr, address indexed staker, uint256 amount);
+  event NotifiedUnstake(address indexed valAddr, address indexed staker, uint256 amount, address notifier);
 
   /**
    * @notice Emitted when a redelegation is notified.
@@ -44,8 +46,11 @@ interface IValidatorStakingHub {
    * @param toVal Validator address to be notified.
    * @param staker Staker address to be notified.
    * @param amount Amount of redelegation to be notified.
+   * @param notifier The address of the notifier that notified the redelegation.
    */
-  event NotifiedRedelegation(address indexed fromVal, address indexed toVal, address indexed staker, uint256 amount);
+  event NotifiedRedelegation(
+    address indexed fromVal, address indexed toVal, address indexed staker, uint256 amount, address notifier
+  );
 
   // ========== ERRORS ========== //
 

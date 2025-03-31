@@ -31,9 +31,9 @@ contract ValidatorManagerStorageV1 {
   }
 
   struct ValidatorRewardConfig {
+    uint128 pendingCommissionRate; // bp ex) 10000 = 100%
+    uint128 pendingCommissionRateUpdateEpoch; // current epoch + 2
     Checkpoints.Trace160 commissionRates; // bp ex) 10000 = 100%
-    uint256 pendingCommissionRate; // bp ex) 10000 = 100%
-    uint256 pendingCommissionRateUpdateEpoch; // current epoch + 2
   }
 
   struct Validator {
@@ -224,7 +224,7 @@ contract ValidatorManager is
     Validator storage validator = _validator($, valAddr);
     _entrypoint.depositCollateral{ value: netMsgValue }(valAddr, validator.withdrawalRecipient);
 
-    emit CollateralDeposited(valAddr, netMsgValue);
+    emit CollateralDeposited(valAddr, _msgSender(), netMsgValue);
   }
 
   /// @inheritdoc IValidatorManager
@@ -245,7 +245,7 @@ contract ValidatorManager is
       Time.timestamp() + $.globalValidatorConfig.collateralWithdrawalDelaySeconds.toUint48()
     );
 
-    emit CollateralWithdrawn(valAddr, amount);
+    emit CollateralWithdrawn(valAddr, validator.withdrawalRecipient, amount);
   }
 
   /// @inheritdoc IValidatorManager
@@ -331,7 +331,7 @@ contract ValidatorManager is
     // update previous pending rate
     if (validator.rewardConfig.pendingCommissionRateUpdateEpoch >= currentEpoch) {
       validator.rewardConfig.commissionRates.push(
-        validator.rewardConfig.pendingCommissionRateUpdateEpoch.toUint96(),
+        uint256(validator.rewardConfig.pendingCommissionRateUpdateEpoch).toUint96(),
         // check for global minimum commission rate modified
         Math.max(
           uint256(globalConfig.minimumCommissionRates.upperLookup(currentEpoch.toUint96())),
@@ -343,10 +343,10 @@ contract ValidatorManager is
     uint256 epochToUpdate = currentEpoch + globalConfig.commissionRateUpdateDelayEpoch;
 
     // update pending commission rate
-    validator.rewardConfig.pendingCommissionRate = request.commissionRate;
-    validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate;
+    validator.rewardConfig.pendingCommissionRate = request.commissionRate.toUint128();
+    validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate.toUint128();
 
-    emit RewardConfigUpdated(valAddr, _msgSender());
+    emit RewardConfigUpdated(valAddr, _msgSender(), request);
   }
 
   function setFee(uint256 fee_) external onlyOwner {
@@ -409,7 +409,7 @@ contract ValidatorManager is
     $.globalValidatorConfig.initialValidatorDeposit = request.initialValidatorDeposit;
     $.globalValidatorConfig.collateralWithdrawalDelaySeconds = request.collateralWithdrawalDelaySeconds;
 
-    emit GlobalValidatorConfigUpdated();
+    emit GlobalValidatorConfigUpdated(request);
   }
 
   function _validator(StorageV1 storage $, address valAddr) internal view returns (Validator storage) {
@@ -452,7 +452,7 @@ contract ValidatorManager is
 
     $.indexByValAddr[valAddr] = valIndex;
 
-    emit ValidatorCreated(valAddr, request.operator, pubKey);
+    emit ValidatorCreated(valAddr, request.operator, pubKey, value, request);
   }
 
   /// @notice Burns the fee amount of ETH
@@ -462,7 +462,10 @@ contract ValidatorManager is
     uint256 fee_ = $.fee;
     require(msg.value >= fee_, IValidatorManager__InsufficientFee());
 
-    if (fee_ > 0) SafeTransferLib.safeTransferETH(payable(address(0)), fee_);
+    if (fee_ > 0) {
+      SafeTransferLib.safeTransferETH(payable(address(0)), fee_);
+      emit FeePaid(fee_);
+    }
 
     unchecked {
       return msg.value - fee_;

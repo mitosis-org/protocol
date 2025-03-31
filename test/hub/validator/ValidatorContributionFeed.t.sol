@@ -11,10 +11,7 @@ import { LibString } from '@solady/utils/LibString.sol';
 
 import { ValidatorContributionFeed } from '../../../src/hub/validator/ValidatorContributionFeed.sol';
 import { IEpochFeeder } from '../../../src/interfaces/hub/validator/IEpochFeeder.sol';
-import {
-  IValidatorContributionFeed,
-  ValidatorWeight
-} from '../../../src/interfaces/hub/validator/IValidatorContributionFeed.sol';
+import { IValidatorContributionFeed } from '../../../src/interfaces/hub/validator/IValidatorContributionFeed.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { MockContract } from '../../util/MockContract.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
@@ -68,10 +65,10 @@ contract ValidatorContributionFeedTest is Toolkit {
     feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300e18, numOfValidators: 300 }));
 
     for (uint256 i = 0; i < 6; i++) {
-      ValidatorWeight[] memory weights = new ValidatorWeight[](50);
+      IValidatorContributionFeed.ValidatorWeight[] memory weights = _makeValidatorWeights(50);
       for (uint256 j = 0; j < 50; j++) {
         address addr = makeAddr(string.concat('val-', ((i * 50) + j).toString()));
-        weights[j] = ValidatorWeight(addr, 1e18, 1e18, 1e18);
+        weights[j] = _makeValidatorWeight(addr, 1e18, 1e18, 1e18);
       }
 
       vm.prank(abuser);
@@ -98,19 +95,19 @@ contract ValidatorContributionFeedTest is Toolkit {
     for (uint256 i = 0; i < 6; i++) {
       for (uint256 j = 0; j < 50; j++) {
         address addr = makeAddr(string.concat('val-', ((i * 50) + j).toString()));
-        assertTrue(_eq(feed.weightAt(1, (i * 50) + j), ValidatorWeight(addr, 1e18, 1e18, 1e18)));
+        assertTrue(_eq(feed.weightAt(1, (i * 50) + j), _makeValidatorWeight(addr, 1e18, 1e18, 1e18)));
 
-        (ValidatorWeight memory w, bool exists) = feed.weightOf(1, addr);
+        (IValidatorContributionFeed.ValidatorWeight memory w, bool exists) = feed.weightOf(1, addr);
         assertTrue(exists);
-        assertTrue(_eq(w, ValidatorWeight(addr, 1e18, 1e18, 1e18)));
+        assertTrue(_eq(w, _makeValidatorWeight(addr, 1e18, 1e18, 1e18)));
       }
     }
 
     // check weight query for non-existent weight
     {
-      (ValidatorWeight memory w, bool exists) = feed.weightOf(1, makeAddr('random'));
+      (IValidatorContributionFeed.ValidatorWeight memory w, bool exists) = feed.weightOf(1, makeAddr('random'));
       assertFalse(exists);
-      assertTrue(_eq(w, ValidatorWeight(address(0), 0, 0, 0)));
+      assertTrue(_eq(w, _makeValidatorWeight(address(0), 0, 0, 0)));
     }
 
     // check report availability
@@ -137,10 +134,10 @@ contract ValidatorContributionFeedTest is Toolkit {
     feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300e18, numOfValidators: 300 }));
 
     for (uint256 i = 0; i < 6; i++) {
-      ValidatorWeight[] memory weights = new ValidatorWeight[](50);
+      IValidatorContributionFeed.ValidatorWeight[] memory weights = _makeValidatorWeights(50);
       for (uint256 j = 0; j < 50; j++) {
         address addr = makeAddr(string.concat('val-', ((i * 50) + j).toString()));
-        weights[j] = ValidatorWeight(addr, 2e18, 1e18, 1e18);
+        weights[j] = _makeValidatorWeight(addr, 2e18, 1e18, 1e18);
       }
 
       vm.prank(feeder);
@@ -159,10 +156,10 @@ contract ValidatorContributionFeedTest is Toolkit {
     feed.initializeReport(IValidatorContributionFeed.InitReportRequest({ totalWeight: 300e18, numOfValidators: 300 }));
 
     for (uint256 i = 0; i < 10; i++) {
-      ValidatorWeight[] memory weights = new ValidatorWeight[](50);
+      IValidatorContributionFeed.ValidatorWeight[] memory weights = _makeValidatorWeights(50);
       for (uint256 j = 0; j < 50; j++) {
         address addr = makeAddr(string.concat('val-', ((i * 50) + j).toString()));
-        weights[j] = ValidatorWeight(addr, 0.6e18, 1e18, 1e18);
+        weights[j] = _makeValidatorWeight(addr, 0.6e18, 1e18, 1e18);
       }
 
       vm.prank(feeder);
@@ -182,10 +179,10 @@ contract ValidatorContributionFeedTest is Toolkit {
 
     // Push 500 validators (5 batches of 100)
     for (uint256 i = 0; i < 19; i++) {
-      ValidatorWeight[] memory weights = new ValidatorWeight[](100);
+      IValidatorContributionFeed.ValidatorWeight[] memory weights = _makeValidatorWeights(100);
       for (uint256 j = 0; j < 100; j++) {
         address addr = makeAddr(string.concat('val-', ((i * 100) + j).toString()));
-        weights[j] = ValidatorWeight(addr, 0.6e18, 1e18, 1e18);
+        weights[j] = _makeValidatorWeight(addr, 0.6e18, 1e18, 1e18);
       }
 
       vm.prank(feeder);
@@ -243,12 +240,33 @@ contract ValidatorContributionFeedTest is Toolkit {
     feed.summary(1);
   }
 
-  function _eq(ValidatorWeight memory a, ValidatorWeight memory b) internal pure returns (bool) {
+  function _eq(IValidatorContributionFeed.ValidatorWeight memory a, IValidatorContributionFeed.ValidatorWeight memory b)
+    internal
+    pure
+    returns (bool)
+  {
     return a.addr == b.addr && a.weight == b.weight && a.collateralRewardShare == b.collateralRewardShare
       && a.delegationRewardShare == b.delegationRewardShare;
   }
 
   function _mockEpoch(uint256 epoch) internal {
     epochFeeder.setRet(abi.encodeCall(IEpochFeeder.epoch, ()), false, abi.encode(epoch));
+  }
+
+  function _makeValidatorWeight(
+    address addr,
+    uint96 weight,
+    uint128 collateralRewardShare,
+    uint128 delegationRewardShare
+  ) internal pure returns (IValidatorContributionFeed.ValidatorWeight memory) {
+    return IValidatorContributionFeed.ValidatorWeight(addr, weight, collateralRewardShare, delegationRewardShare);
+  }
+
+  function _makeValidatorWeights(uint256 size)
+    internal
+    pure
+    returns (IValidatorContributionFeed.ValidatorWeight[] memory)
+  {
+    return new IValidatorContributionFeed.ValidatorWeight[](size);
   }
 }

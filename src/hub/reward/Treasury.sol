@@ -46,32 +46,32 @@ contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradea
   /**
    * @inheritdoc ITreasury
    */
-  function storeRewards(address matrixVault, address reward, uint256 amount) external onlyRole(TREASURY_MANAGER_ROLE) {
-    require(matrixVault != address(0), StdError.ZeroAddress('matrixVault'));
+  function storeRewards(address vault, address reward, uint256 amount) external onlyRole(TREASURY_MANAGER_ROLE) {
+    require(vault != address(0), StdError.ZeroAddress('vault'));
     require(reward != address(0), StdError.ZeroAddress('reward'));
     require(amount > 0, StdError.ZeroAmount());
 
-    _storeRewards(matrixVault, reward, amount);
+    _storeRewards(vault, reward, amount);
   }
 
   /**
    * @inheritdoc ITreasury
    */
-  function dispatch(address matrixVault, address reward, uint256 amount, address distributor)
+  function dispatch(address vault, address reward, uint256 amount, address distributor)
     external
     onlyRole(DISPATCHER_ROLE)
   {
-    require(matrixVault != address(0), StdError.ZeroAddress('matrixVault'));
+    require(vault != address(0), StdError.ZeroAddress('vault'));
     require(reward != address(0), StdError.ZeroAddress('reward'));
     require(distributor != address(0), StdError.ZeroAddress('distributor'));
     require(amount > 0, StdError.ZeroAmount());
     StorageV1 storage $ = _getStorageV1();
 
-    uint256 balance = _balances($, matrixVault, reward);
+    uint256 balance = _balances($, vault, reward);
     require(balance >= amount, ITreasury__InsufficientBalance());
 
-    $.balances[matrixVault][reward] = balance - amount;
-    $.history[matrixVault][reward].push(
+    $.balances[vault][reward] = balance - amount;
+    $.history[vault][reward].push(
       Log({
         timestamp: block.timestamp.toUint48(),
         amount: amount.toUint208(),
@@ -80,7 +80,7 @@ contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradea
     );
 
     IERC20(reward).safeTransfer(distributor, amount);
-    emit RewardDispatched(matrixVault, reward, distributor, amount);
+    emit RewardDispatched(vault, reward, distributor, amount);
   }
 
   //=========== NOTE: ADMIN FUNCTIONS ===========//
@@ -89,13 +89,13 @@ contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradea
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _storeRewards(address matrixVault, address reward, uint256 amount) internal {
+  function _storeRewards(address vault, address reward, uint256 amount) internal {
     IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
 
     StorageV1 storage $ = _getStorageV1();
 
-    $.balances[matrixVault][reward] += amount;
-    $.history[matrixVault][reward].push(
+    $.balances[vault][reward] += amount;
+    $.history[vault][reward].push(
       Log({
         timestamp: block.timestamp.toUint48(),
         amount: amount.toUint208(),
@@ -103,6 +103,6 @@ contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradea
        })
     );
 
-    emit RewardStored(matrixVault, reward, _msgSender(), amount);
+    emit RewardStored(vault, reward, _msgSender(), amount);
   }
 }

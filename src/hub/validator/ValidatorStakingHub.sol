@@ -150,7 +150,7 @@ contract ValidatorStakingHub is
 
     _stake($, valAddr, staker, amount);
 
-    emit NotifiedStake(valAddr, staker, amount);
+    emit NotifiedStake(valAddr, staker, amount, _msgSender());
   }
 
   /// @inheritdoc IValidatorStakingHub
@@ -164,7 +164,7 @@ contract ValidatorStakingHub is
 
     _unstake($, valAddr, staker, amount);
 
-    emit NotifiedUnstake(valAddr, staker, amount);
+    emit NotifiedUnstake(valAddr, staker, amount, _msgSender());
   }
 
   /// @inheritdoc IValidatorStakingHub
@@ -180,7 +180,7 @@ contract ValidatorStakingHub is
     _unstake($, fromValAddr, staker, amount);
     _stake($, toValAddr, staker, amount);
 
-    emit NotifiedRedelegation(fromValAddr, toValAddr, staker, amount);
+    emit NotifiedRedelegation(fromValAddr, toValAddr, staker, amount, _msgSender());
   }
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //

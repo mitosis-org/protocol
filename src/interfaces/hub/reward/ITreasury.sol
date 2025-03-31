@@ -15,20 +15,20 @@ interface ITreasuryStorageV1 {
   }
 
   /**
-   * @notice Returns the current holdings of the reward token for the MatrixVault
-   * @param matrixVault The MatrixVault address
+   * @notice Returns the current holdings of the reward token for the vault
+   * @param vault The vault address
    * @param reward The reward token address
    */
-  function balances(address matrixVault, address reward) external view returns (uint256);
+  function balances(address vault, address reward) external view returns (uint256);
 
   /**
-   * @notice Returns the management log histories of the reward token for the MatrixVault
-   * @param matrixVault The MatrixVault address
+   * @notice Returns the management log histories of the reward token for the vault
+   * @param vault The vault address
    * @param reward The reward token address
    * @param offset The offset to start from
    * @param size The number of logs to return
    */
-  function history(address matrixVault, address reward, uint256 offset, uint256 size)
+  function history(address vault, address reward, uint256 offset, uint256 size)
     external
     view
     returns (HistoryResponse[] memory);
@@ -39,8 +39,8 @@ interface ITreasuryStorageV1 {
  * @notice Interface for the Treasury reward handler
  */
 interface ITreasury is IAccessControlEnumerable, ITreasuryStorageV1 {
-  event RewardDispatched(address indexed matrixVault, address indexed reward, address indexed from, uint256 amount);
-  event RewardStored(address indexed matrixVault, address indexed reward, address indexed from, uint256 amount);
+  event RewardDispatched(address indexed vault, address indexed reward, address indexed from, uint256 amount);
+  event RewardStored(address indexed vault, address indexed reward, address indexed from, uint256 amount);
 
   error ITreasury__InsufficientBalance();
 
@@ -48,14 +48,14 @@ interface ITreasury is IAccessControlEnumerable, ITreasuryStorageV1 {
    * @notice Stores the distribution of rewards for the specified vault and reward
    * @dev This method can only be called by the account that is allowed to dispatch rewards by `isDispatchable`
    */
-  function storeRewards(address matrixVault, address reward, uint256 amount) external;
+  function storeRewards(address vault, address reward, uint256 amount) external;
 
   /**
    * @notice Dispatches reward distribution with stacked rewards
-   * @param matrixVault The MatrixVault address
+   * @param vault The vault address
    * @param reward The reward token address
    * @param amount The reward amount
    * @param handler The reward handler address
    */
-  function dispatch(address matrixVault, address reward, uint256 amount, address handler) external;
+  function dispatch(address vault, address reward, uint256 amount, address handler) external;
 }

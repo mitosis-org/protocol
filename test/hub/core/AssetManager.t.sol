@@ -14,7 +14,7 @@ import { AssetManager } from '../../../src/hub/core/AssetManager.sol';
 import { AssetManagerStorageV1 } from '../../../src/hub/core/AssetManagerStorageV1.sol';
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
-import { ReclaimQueue } from '../../../src/hub/matrix/ReclaimQueue.sol';
+import { ReclaimQueue } from '../../../src/hub/ReclaimQueue.sol';
 import { Treasury } from '../../../src/hub/reward/Treasury.sol';
 import { IAssetManager, IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../../src/interfaces/hub/core/IAssetManagerEntrypoint.sol';
@@ -450,7 +450,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     vm.prank(strategist);
     vm.expectEmit();
-    emit IAssetManager.MatrixAllocated(branchChainId1, address(matrixVault), 100 ether);
+    emit IAssetManager.MatrixAllocated(strategist, branchChainId1, address(matrixVault), 100 ether);
     assetManager.allocateMatrix(branchChainId1, address(matrixVault), 100 ether);
   }
 
@@ -573,7 +573,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     vm.prank(strategist);
     vm.expectEmit();
-    emit IAssetManager.MatrixReclaimQueueReserved(address(matrixVault), 100, 100, 100 ether);
+    emit IAssetManager.MatrixReserved(strategist, address(matrixVault), 100, 100, 100 ether);
     assetManager.reserveMatrix(address(matrixVault), 100);
 
     reclaimQueue.assertLastCall(abi.encodeCall(IReclaimQueue.sync, (strategist, address(matrixVault), 100)));

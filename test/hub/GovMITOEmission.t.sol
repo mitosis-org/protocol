@@ -111,7 +111,7 @@ contract GovMITOEmissionTest is Toolkit {
 
     uint256 amount = 1 ether;
     vm.expectEmit();
-    emit IGovMITOEmission.ValidatorRewardEmissionAdded(amount);
+    emit IGovMITOEmission.ValidatorRewardEmissionAdded(owner, amount);
 
     vm.deal(owner, amount);
     vm.prank(owner);
@@ -141,7 +141,7 @@ contract GovMITOEmissionTest is Toolkit {
     }
 
     vm.expectEmit();
-    emit IGovMITOEmission.ValidatorRewardRequested(1, 1 gwei);
+    emit IGovMITOEmission.ValidatorRewardRequested(1, recipient, 1 gwei);
 
     vm.prank(recipient);
     emission.requestValidatorReward(1, recipient, 1 gwei);

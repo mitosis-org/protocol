@@ -15,10 +15,7 @@ import { IConsensusValidatorEntrypoint } from
 import { IGovMITO } from '../../../src/interfaces/hub/IGovMITO.sol';
 import { IGovMITOEmission } from '../../../src/interfaces/hub/IGovMITOEmission.sol';
 import { IEpochFeeder } from '../../../src/interfaces/hub/validator/IEpochFeeder.sol';
-import {
-  IValidatorContributionFeed,
-  ValidatorWeight
-} from '../../../src/interfaces/hub/validator/IValidatorContributionFeed.sol';
+import { IValidatorContributionFeed } from '../../../src/interfaces/hub/validator/IValidatorContributionFeed.sol';
 import { IValidatorManager } from '../../../src/interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorRewardDistributor } from '../../../src/interfaces/hub/validator/IValidatorRewardDistributor.sol';
 import { IValidatorStaking } from '../../../src/interfaces/hub/validator/IValidatorStaking.sol';
@@ -1900,7 +1897,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
           abi.encodeCall(IValidatorContributionFeed.weightOf, (epochParam.epoch, validatorParam.valAddr)),
           false,
           abi.encode(
-            ValidatorWeight(
+            IValidatorContributionFeed.ValidatorWeight(
               validatorParam.valAddr, // address addr;
               validatorParam.weight, // uint96 weight; // max 79 billion * 1e18
               validatorParam.collateralRewardShare, // uint128 collateralRewardShare;

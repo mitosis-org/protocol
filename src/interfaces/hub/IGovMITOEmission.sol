@@ -22,8 +22,8 @@ interface IGovMITOEmission {
   error NotEnoughBalance();
   error NotEnoughReserve();
 
-  event ValidatorRewardRequested(uint256 indexed epoch, uint256 amount);
-  event ValidatorRewardEmissionAdded(uint256 amount);
+  event ValidatorRewardRequested(uint256 indexed epoch, address indexed recipient, uint256 amount);
+  event ValidatorRewardEmissionAdded(address indexed sender, uint256 amount);
   event ValidatorRewardEmissionConfigured(uint256 rps, uint160 deductionRate, uint48 deductionPeriod, uint48 timestamp);
   event ValidatorRewardRecipientSet(address previousRecipient, address newRecipient);
 

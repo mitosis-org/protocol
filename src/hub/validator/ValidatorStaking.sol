@@ -92,6 +92,8 @@ contract ValidatorStaking is
     _setRedelegationCooldown($, redelegationCooldown_);
   }
 
+  // ===================================== VIEW FUNCTIONS ===================================== //
+
   /// @inheritdoc IValidatorStaking
   function baseAsset() external view returns (address) {
     return _baseAsset;
@@ -181,6 +183,8 @@ contract ValidatorStaking is
   function lastRedelegationTime(address staker) external view virtual returns (uint256) {
     return _getStorageV1().lastRedelegationTime[staker];
   }
+
+  // ===================================== MUTATIVE FUNCTIONS ===================================== //
 
   /// @inheritdoc IValidatorStaking
   function stake(address valAddr, address recipient, uint256 amount) external payable returns (uint256) {
