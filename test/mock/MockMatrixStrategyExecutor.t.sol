@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
+import { IERC20 } from '@oz/interfaces/IERC20.sol';
 
 import { IMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
 import { IMatrixStrategyExecutor } from '../../src/interfaces/branch/strategy/IMatrixStrategyExecutor.sol';

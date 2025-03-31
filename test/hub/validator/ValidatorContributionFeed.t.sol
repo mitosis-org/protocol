@@ -3,8 +3,8 @@ pragma solidity ^0.8.28;
 
 import { console } from '@std/console.sol';
 
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
+import { SafeCast } from '@oz/utils/math/SafeCast.sol';
 
 import { LibClone } from '@solady/utils/LibClone.sol';
 import { LibString } from '@solady/utils/LibString.sol';

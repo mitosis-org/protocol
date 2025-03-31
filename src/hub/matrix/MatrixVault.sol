@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-
-import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
-import { Math } from '@oz-v5/utils/math/Math.sol';
-import { ReentrancyGuardTransient } from '@oz-v5/utils/ReentrancyGuardTransient.sol';
+import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
+import { Math } from '@oz/utils/math/Math.sol';
+import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 
 import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 

@@ -3,8 +3,8 @@ pragma solidity ^0.8.28;
 
 import { Test } from '@std/Test.sol';
 
-import { BeaconProxy } from '@oz-v5/proxy/beacon/BeaconProxy.sol';
-import { Initializable } from '@oz-v5/proxy/utils/Initializable.sol';
+import { BeaconProxy } from '@oz/proxy/beacon/BeaconProxy.sol';
+import { Initializable } from '@oz/proxy/utils/Initializable.sol';
 
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IAccessControlEnumerable } from '@oz-v5/access/extensions/IAccessControlEnumerable.sol';
+import { IAccessControlEnumerable } from '@oz/access/extensions/IAccessControlEnumerable.sol';
 
 /**
  * @title ITreasuryStorageV1

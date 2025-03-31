@@ -5,7 +5,7 @@ import { console } from '@std/console.sol';
 
 import { WETH } from '@solady/tokens/WETH.sol';
 
-import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
+import { IVotes } from '@oz/governance/utils/IVotes.sol';
 
 import { ValidatorStakingGovMITO } from '../../../src/hub/validator/ValidatorStakingGovMITO.sol';
 import { IValidatorManager } from '../../../src/interfaces/hub/validator/IValidatorManager.sol';

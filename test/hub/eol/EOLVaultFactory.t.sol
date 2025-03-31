@@ -5,8 +5,8 @@ import { WETH } from '@solady/tokens/WETH.sol';
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
-import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
+import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { EOLVault } from '../../../src/hub/eol/EOLVault.sol';
 import { EOLVaultFactory } from '../../../src/hub/eol/EOLVaultFactory.sol';

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
+import { IERC4626 } from '@oz/interfaces/IERC4626.sol';
 
 /**
  * @title IMatrixVaultStorageV1

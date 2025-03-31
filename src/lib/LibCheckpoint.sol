@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Math } from '@oz-v5/utils/math/Math.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { Math } from '@oz/utils/math/Math.sol';
+import { SafeCast } from '@oz/utils/math/SafeCast.sol';
 
 import { StdError } from './StdError.sol';
 

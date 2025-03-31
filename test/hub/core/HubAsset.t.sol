@@ -5,7 +5,7 @@ import { console } from '@std/console.sol';
 import { Test } from '@std/Test.sol';
 import { Vm } from '@std/Vm.sol';
 
-import { IERC20Errors } from '@oz-v5/interfaces/draft-IERC6093.sol';
+import { IERC20Errors } from '@oz/interfaces/draft-IERC6093.sol';
 
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';

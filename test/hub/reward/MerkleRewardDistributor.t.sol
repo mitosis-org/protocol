@@ -7,7 +7,7 @@ import { Merkle } from '@murky/Merkle.sol';
 
 import { WETH } from '@solady/tokens/WETH.sol';
 
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { MerkleRewardDistributor } from '../../../src/hub/reward/MerkleRewardDistributor.sol';
 import { Treasury } from '../../../src/hub/reward/Treasury.sol';

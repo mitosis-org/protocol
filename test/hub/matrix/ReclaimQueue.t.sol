@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
-import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
-import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
-import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { IERC20 } from '@oz/interfaces/IERC20.sol';
+import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
+import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
+import { IERC4626 } from '@oz/interfaces/IERC4626.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
+import { SafeCast } from '@oz/utils/math/SafeCast.sol';
 
 import { Test } from '@std/Test.sol';
 

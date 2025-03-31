@@ -3,9 +3,9 @@ pragma solidity ^0.8.27;
 
 import { console } from '@std/console.sol';
 
-import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
-import { Strings } from '@oz-v5/utils/Strings.sol';
+import { IERC20 } from '@oz/interfaces/IERC20.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
+import { Strings } from '@oz/utils/Strings.sol';
 
 import { MitosisVault, AssetAction } from '../../../src/branch/MitosisVault.sol';
 import {

@@ -3,10 +3,9 @@ pragma solidity ^0.8.28;
 
 import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 
-import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
-import { ReentrancyGuardTransient } from '@oz-v5/utils/ReentrancyGuardTransient.sol';
-
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
+import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { Pausable } from '../../lib/Pausable.sol';

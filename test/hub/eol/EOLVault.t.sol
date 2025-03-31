@@ -6,7 +6,7 @@ import { Test } from '@std/Test.sol';
 import { WETH } from '@solady/tokens/WETH.sol';
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 
-import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
+import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 
 import { EOLVault } from '../../../src/hub/eol/EOLVault.sol';
 

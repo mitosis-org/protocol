@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
+import { IVotes } from '@oz/governance/utils/IVotes.sol';
 
 interface ISudoVotes is IVotes {
   /**

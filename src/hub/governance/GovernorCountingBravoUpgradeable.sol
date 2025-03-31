@@ -4,8 +4,8 @@
 // Modified to support the Bravo style of quorum.
 pragma solidity ^0.8.28;
 
-import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
-import { Initializable } from '@ozu-v5/proxy/utils/Initializable.sol';
+import { GovernorUpgradeable } from '@ozu/governance/GovernorUpgradeable.sol';
+import { Initializable } from '@ozu/proxy/utils/Initializable.sol';
 
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 

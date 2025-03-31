@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
-import { MessageHashUtils } from '@oz-v5/utils/cryptography/MessageHashUtils.sol';
+import { IVotes } from '@oz/governance/utils/IVotes.sol';
+import { MessageHashUtils } from '@oz/utils/cryptography/MessageHashUtils.sol';
 
 import { MITOGovernanceVP } from '../../../src/hub/governance/MITOGovernanceVP.sol';
 import { ISudoVotes } from '../../../src/interfaces/lib/ISudoVotes.sol';

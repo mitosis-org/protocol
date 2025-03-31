@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Arrays } from '@oz-v5/utils/Arrays.sol';
-import { Math } from '@oz-v5/utils/math/Math.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
-import { Checkpoints } from '@oz-v5/utils/structs/Checkpoints.sol';
+import { Arrays } from '@oz/utils/Arrays.sol';
+import { Math } from '@oz/utils/math/Math.sol';
+import { SafeCast } from '@oz/utils/math/SafeCast.sol';
+import { Checkpoints } from '@oz/utils/structs/Checkpoints.sol';
 
 import { CheckpointsExt } from './CheckpointsExt.sol';
 

@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IAccessControl } from '@oz-v5/access/IAccessControl.sol';
-import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
-
-import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
-import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
-import { GovernorSettingsUpgradeable } from '@ozu-v5/governance/extensions/GovernorSettingsUpgradeable.sol';
-import { GovernorStorageUpgradeable } from '@ozu-v5/governance/extensions/GovernorStorageUpgradeable.sol';
-import { GovernorTimelockControlUpgradeable } from
-  '@ozu-v5/governance/extensions/GovernorTimelockControlUpgradeable.sol';
+import { IAccessControl } from '@oz/access/IAccessControl.sol';
+import { IVotes } from '@oz/governance/utils/IVotes.sol';
+import { AccessControlUpgradeable } from '@ozu/access/AccessControlUpgradeable.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
+import { GovernorSettingsUpgradeable } from '@ozu/governance/extensions/GovernorSettingsUpgradeable.sol';
+import { GovernorStorageUpgradeable } from '@ozu/governance/extensions/GovernorStorageUpgradeable.sol';
+import { GovernorTimelockControlUpgradeable } from '@ozu/governance/extensions/GovernorTimelockControlUpgradeable.sol';
 import { GovernorVotesQuorumFractionUpgradeable } from
-  '@ozu-v5/governance/extensions/GovernorVotesQuorumFractionUpgradeable.sol';
-import { GovernorVotesUpgradeable } from '@ozu-v5/governance/extensions/GovernorVotesUpgradeable.sol';
-import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+  '@ozu/governance/extensions/GovernorVotesQuorumFractionUpgradeable.sol';
+import { GovernorVotesUpgradeable } from '@ozu/governance/extensions/GovernorVotesUpgradeable.sol';
+import { GovernorUpgradeable } from '@ozu/governance/GovernorUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { Timelock } from '../../lib/Timelock.sol';
 import { GovernorCountingBravoUpgradeable } from './GovernorCountingBravoUpgradeable.sol';

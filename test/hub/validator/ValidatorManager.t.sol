@@ -5,9 +5,9 @@ import { console } from '@std/console.sol';
 import { stdJson } from '@std/StdJson.sol';
 import { Vm } from '@std/Vm.sol';
 
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
-import { Time } from '@oz-v5/utils/types/Time.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
+import { SafeCast } from '@oz/utils/math/SafeCast.sol';
+import { Time } from '@oz/utils/types/Time.sol';
 
 import { LibClone } from '@solady/utils/LibClone.sol';
 import { LibString } from '@solady/utils/LibString.sol';

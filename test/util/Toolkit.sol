@@ -3,14 +3,13 @@ pragma solidity ^0.8.28;
 
 import { Test } from '@std/Test.sol';
 
-import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+import { IAccessControl } from '@oz/access/IAccessControl.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
+import { ERC1967Utils } from '@oz/proxy/ERC1967/ERC1967Utils.sol';
+import { SafeCast } from '@oz/utils/math/SafeCast.sol';
+import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
 
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
-
-import { IAccessControl } from '@oz-v5/access/IAccessControl.sol';
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
-import { ERC1967Utils } from '@oz-v5/proxy/ERC1967/ERC1967Utils.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
 
 import { Pausable } from '../../src/lib/Pausable.sol';
 import { StdError } from '../../src/lib/StdError.sol';
