@@ -14,7 +14,7 @@ import { AssetManager } from '../../../src/hub/core/AssetManager.sol';
 import { AssetManagerStorageV1 } from '../../../src/hub/core/AssetManagerStorageV1.sol';
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
-import { ReclaimQueue } from '../../../src/hub/matrix/ReclaimQueue.sol';
+import { ReclaimQueue } from '../../../src/hub/ReclaimQueue.sol';
 import { Treasury } from '../../../src/hub/reward/Treasury.sol';
 import { IAssetManager, IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../../src/interfaces/hub/core/IAssetManagerEntrypoint.sol';
