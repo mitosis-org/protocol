@@ -45,8 +45,8 @@ contract EOLVault is ERC4626, Ownable2StepUpgradeable, Pausable, ReentrancyGuard
     __Pausable_init();
 
     if (bytes(name_).length == 0 || bytes(symbol_).length == 0) {
-      name_ = string.concat('Mitosis Matrix ', asset_.name());
-      symbol_ = string.concat('ma', asset_.symbol());
+      name_ = string.concat('Mitosis EOL ', asset_.name());
+      symbol_ = string.concat('mi', asset_.symbol());
     }
 
     StorageV1 storage $ = _getStorageV1();
