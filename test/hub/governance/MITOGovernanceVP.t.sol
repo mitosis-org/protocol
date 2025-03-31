@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IVotes } from '@oz/governance/utils/IVotes.sol';
 import { MessageHashUtils } from '@oz/utils/cryptography/MessageHashUtils.sol';
+import { Nonces } from '@oz/utils/Nonces.sol';
 
 import { MITOGovernanceVP } from '../../../src/hub/governance/MITOGovernanceVP.sol';
 import { ISudoVotes } from '../../../src/interfaces/lib/ISudoVotes.sol';
@@ -98,7 +99,12 @@ contract MITOGovernanceVPTest is Toolkit {
   }
 
   function test_delegate() public {
+    vpt1.setRet(abi.encodeCall(IVotes.delegates, (user1)), false, abi.encode(0));
+    vpt2.setRet(abi.encodeCall(IVotes.delegates, (user1)), false, abi.encode(0));
+
     vm.prank(user1);
+    vm.expectEmit();
+    emit IVotes.DelegateChanged(user1, address(0), user2);
     vp.delegate(user2);
 
     vpt1.assertLastCall(abi.encodeCall(ISudoVotes.sudoDelegate, (user1, user2)));
@@ -126,7 +132,12 @@ contract MITOGovernanceVPTest is Toolkit {
 
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(user2Key, hash_);
 
+    vpt1.setRet(abi.encodeCall(IVotes.delegates, (user2)), false, abi.encode(0));
+    vpt2.setRet(abi.encodeCall(IVotes.delegates, (user2)), false, abi.encode(0));
+
     vm.prank(owner);
+    vm.expectEmit();
+    emit IVotes.DelegateChanged(user2, address(0), user1);
     vp.delegateBySig(user1, 0, 1 days, v, r, s);
 
     vpt1.assertLastCall(abi.encodeCall(ISudoVotes.sudoDelegate, (user2, user1)));
