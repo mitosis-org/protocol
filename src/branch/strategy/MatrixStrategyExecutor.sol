@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
-import { SafeERC20, IERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
-import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
-import { Address } from '@oz-v5/utils/Address.sol';
-
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
+import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
+import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { Address } from '@oz/utils/Address.sol';
+import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 
 import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
 import { IMatrixStrategyExecutor } from '../../interfaces/branch/strategy/IMatrixStrategyExecutor.sol';
@@ -19,6 +18,7 @@ contract MatrixStrategyExecutor is
   IStrategyExecutor,
   IMatrixStrategyExecutor,
   Ownable2StepUpgradeable,
+  ReentrancyGuardTransient,
   MatrixStrategyExecutorStorageV1
 {
   using SafeERC20 for IERC20;
@@ -86,6 +86,8 @@ contract MatrixStrategyExecutor is
   //=========== NOTE: STRATEGIST FUNCTIONS ===========//
 
   function deallocateLiquidity(uint256 amount) external {
+    require(amount > 0, StdError.ZeroAmount());
+
     StorageV1 memory $ = _getStorageV1();
 
     _assertOnlyStrategist($);
@@ -94,6 +96,8 @@ contract MatrixStrategyExecutor is
   }
 
   function fetchLiquidity(uint256 amount) external {
+    require(amount > 0, StdError.ZeroAmount());
+
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($);
@@ -103,6 +107,8 @@ contract MatrixStrategyExecutor is
   }
 
   function returnLiquidity(uint256 amount) external {
+    require(amount > 0, StdError.ZeroAmount());
+
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($);
@@ -112,7 +118,7 @@ contract MatrixStrategyExecutor is
     $.storedTotalBalance -= amount;
   }
 
-  function settle() external {
+  function settle() external nonReentrant {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($);
@@ -130,6 +136,8 @@ contract MatrixStrategyExecutor is
   }
 
   function settleExtraRewards(address reward, uint256 amount) external {
+    require(amount > 0, StdError.ZeroAmount());
+
     StorageV1 memory $ = _getStorageV1();
 
     _assertOnlyStrategist($);
@@ -141,7 +149,11 @@ contract MatrixStrategyExecutor is
 
   //=========== NOTE: EXECUTOR FUNCTIONS ===========//
 
-  function execute(address target, bytes calldata data, uint256 value) external returns (bytes memory result) {
+  function execute(address target, bytes calldata data, uint256 value)
+    external
+    nonReentrant
+    returns (bytes memory result)
+  {
     StorageV1 memory $ = _getStorageV1();
     _assertOnlyExecutor($);
     _assertOnlyTallyRegisteredProtocol($, target);
@@ -151,8 +163,11 @@ contract MatrixStrategyExecutor is
 
   function execute(address[] calldata targets, bytes[] calldata data, uint256[] calldata values)
     external
+    nonReentrant
     returns (bytes[] memory results)
   {
+    require(targets.length == data.length && data.length == values.length, StdError.InvalidParameter('executeData'));
+
     StorageV1 memory $ = _getStorageV1();
     _assertOnlyExecutor($);
     _assertOnlyTallyRegisteredProtocol($, targets);

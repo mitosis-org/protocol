@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
+import { ContextUpgradeable } from '@ozu/utils/ContextUpgradeable.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IMatrixVaultStorageV1 } from '../../interfaces/hub/matrix/IMatrixVault.sol';
@@ -36,10 +36,18 @@ contract MatrixVaultStorageV1 is IMatrixVaultStorageV1, ContextUpgradeable {
     return address(_getStorageV1().assetManager);
   }
 
+  function reclaimQueue() external view returns (address) {
+    return address(_getStorageV1().assetManager.reclaimQueue());
+  }
+
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   function _setAssetManager(StorageV1 storage $, address assetManager_) internal {
     require(assetManager_.code.length > 0, StdError.InvalidAddress('AssetManager'));
+
+    // Verify ReclaimQueue exists
+    address reclaimQueueAddr = IAssetManager(assetManager_).reclaimQueue();
+    require(reclaimQueueAddr.code.length > 0, StdError.InvalidAddress('ReclaimQueue'));
 
     $.assetManager = IAssetManager(assetManager_);
 

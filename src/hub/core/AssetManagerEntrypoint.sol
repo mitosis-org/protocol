@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
-import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
+import { IMessageRecipient } from '@hpl/interfaces/IMessageRecipient.sol';
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
+import { GasRouter } from '../../external/hyperlane/GasRouter.sol';
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
@@ -15,8 +15,6 @@ import { Conv } from '../../lib/Conv.sol';
 import { StdError } from '../../lib/StdError.sol';
 import '../../message/Message.sol';
 import { AssetManager } from './AssetManager.sol';
-
-// TODO(thai): consider to make our own contract (`HyperlaneConnector`) instead of using `GasRouter`.
 
 contract AssetManagerEntrypoint is
   IAssetManagerEntrypoint,
@@ -132,12 +130,21 @@ contract AssetManagerEntrypoint is
     _dispatchToBranch(chainId, enc);
   }
 
-  function redeem(uint256 chainId, address branchAsset, address to, uint256 amount)
+  function initializeEOL(uint256 chainId, address eolVault, address branchAsset)
     external
     onlyAssetManager
     onlyDispatchable(chainId)
   {
-    bytes memory enc = MsgRedeem({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
+    bytes memory enc = MsgInitializeEOL({ eolVault: eolVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
+    _dispatchToBranch(chainId, enc);
+  }
+
+  function withdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
+    external
+    onlyAssetManager
+    onlyDispatchable(chainId)
+  {
+    bytes memory enc = MsgWithdraw({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
     _dispatchToBranch(chainId, enc);
   }
 
@@ -153,8 +160,8 @@ contract AssetManagerEntrypoint is
   function _dispatchToBranch(uint256 chainId, bytes memory enc) internal {
     uint32 hplDomain = _ccRegistry.hyperlaneDomain(chainId);
 
-    uint256 fee = _GasRouter_quoteDispatch(hplDomain, enc, address(hook));
-    _GasRouter_dispatch(hplDomain, fee, enc, address(hook));
+    uint256 fee = _GasRouter_quoteDispatch(hplDomain, enc, address(hook()));
+    _GasRouter_dispatch(hplDomain, fee, enc, address(hook()));
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//
@@ -178,6 +185,14 @@ contract AssetManagerEntrypoint is
       MsgDepositWithSupplyMatrix memory decoded = msg_.decodeDepositWithSupplyMatrix();
       _assetManager.depositWithSupplyMatrix(
         chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.matrixVault.toAddress(), decoded.amount
+      );
+      return;
+    }
+
+    if (msgType == MsgType.MsgDepositWithSupplyEOL) {
+      MsgDepositWithSupplyEOL memory decoded = msg_.decodeDepositWithSupplyEOL();
+      _assetManager.depositWithSupplyEOL(
+        chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.eolVault.toAddress(), decoded.amount
       );
       return;
     }

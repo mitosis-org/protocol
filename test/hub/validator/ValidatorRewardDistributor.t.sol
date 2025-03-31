@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
-import { Time } from '@oz-v5/utils/types/Time.sol';
+import { IERC20 } from '@oz/interfaces/IERC20.sol';
+import { SafeCast } from '@oz/utils/math/SafeCast.sol';
+import { Time } from '@oz/utils/types/Time.sol';
 
 import { LibString } from '@solady/utils/LibString.sol';
 
@@ -25,6 +25,12 @@ import { IValidatorStaking } from '../../../src/interfaces/hub/validator/IValida
 import { MockContract } from '../../util/MockContract.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
+contract MockGovMITOEmission is MockContract {
+  function requestValidatorReward(uint256, address, uint256 amount) external pure returns (uint256) {
+    return amount;
+  }
+}
+
 contract ValidatorRewardDistributorTest is Toolkit {
   using SafeCast for uint256;
   using LibString for *;
@@ -32,7 +38,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   address _owner = makeAddr('owner');
 
   MockContract _govMITO;
-  MockContract _govMITOEmission;
+  MockGovMITOEmission _govMITOEmission;
   MockContract _validatorManager;
   MockContract _epochFeed;
   MockContract _contributionFeed;
@@ -43,7 +49,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
   function setUp() public {
     _govMITO = new MockContract();
-    _govMITOEmission = new MockContract();
+    _govMITOEmission = new MockGovMITOEmission();
     _validatorManager = new MockContract();
     _epochFeed = new MockContract();
     _contributionFeed = new MockContract();
@@ -66,14 +72,22 @@ contract ValidatorRewardDistributorTest is Toolkit {
             address(_govMITOEmission)
           )
         ),
-        abi.encodeCall(ValidatorRewardDistributor.initialize, (_owner))
+        abi.encodeCall(
+          ValidatorRewardDistributor.initialize,
+          (
+            _owner,
+            32, // maxClaimEpochs
+            1000, // maxStakerBatchSize
+            1000 // maxOperatorBatchSize
+          )
+        )
       )
     );
 
     vm.prank(_owner);
     _stakingHub.addNotifier(address(this));
 
-    snapshotId = vm.snapshot();
+    snapshotId = vm.snapshotState();
   }
 
   function test_init() public view {
@@ -83,6 +97,11 @@ contract ValidatorRewardDistributorTest is Toolkit {
     assertEq(address(_distributor.validatorStakingHub()), address(_stakingHub));
     assertEq(address(_distributor.validatorContributionFeed()), address(_contributionFeed));
     assertEq(address(_distributor.govMITOEmission()), address(_govMITOEmission));
+
+    IValidatorRewardDistributor.ClaimConfigResponse memory claimConfig = _distributor.claimConfig();
+    assertEq(claimConfig.maxClaimEpochs, 32);
+    assertEq(claimConfig.maxStakerBatchSize, 1000);
+    assertEq(claimConfig.maxOperatorBatchSize, 1000);
   }
 
   struct EpochParam {
@@ -100,7 +119,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
     address operatorAddr;
     address rewardManager;
     address withdrawalRecipient;
-    uint256 comissionRate;
+    uint256 commissionRate;
     // ValidatorStakingHub
     address[] stakers;
     uint256[] amounts;
@@ -111,7 +130,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -130,7 +149,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -148,7 +167,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 50, stakers: 50, comission: 10%
+    // operator: 50, stakers: 50, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -182,7 +201,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_by_multiple_validator() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -201,7 +220,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -213,7 +232,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-2'),
       rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -236,8 +255,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
     _setUpEpochs(epochParams);
 
     // total reward: 100 => val-1 50, val-2 50
-    // val-1: operator 80 %, stakers 20%, comission: 10%
-    // val-2: operator 50 %, stakers 50%, comission: 10%
+    // val-1: operator 80 %, stakers 20%, commission: 10%
+    // val-2: operator 50 %, stakers 50%, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -300,7 +319,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_by_multiple_validator_diff_weight() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -319,7 +338,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 70,
@@ -331,7 +350,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-2'),
       rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 30,
@@ -355,8 +374,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     // total reward: 100 => val-1 70, val-2 30
     //
-    // val-1: operator 80 %, stakers 20%, comission: 10%
-    // val-2: operator 50 %, stakers 50%, comission: 10%
+    // val-1: operator 80 %, stakers 20%, commission: 10%
+    // val-2: operator 50 %, stakers 50%, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -419,7 +438,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_by_multiple_stakers() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -445,7 +464,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -468,7 +487,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 50, stakers: 50, comission: 10%
+    // operator: 50, stakers: 50, commission: 10%
     //
     // staker1: 50%, staker2: 25%, staker3: 25%
     uint256 claimable;
@@ -529,7 +548,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_by_diff_collateral() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -548,7 +567,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -566,7 +585,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 80, stakers: 20, comission: 10%
+    // operator: 80, stakers: 20, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -600,7 +619,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_multiple_epoch() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](2);
     epochParams[0] = EpochParam({
@@ -627,7 +646,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -647,8 +666,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
     _setUpEpochs(epochParams);
 
     // epoch1: 100, epoch1: 100
-    // epoch1) val1) operator: 50, stakers: 50, comission: 10%
-    // epoch2) val1) operator: 50, stakers: 50, comission: 10%
+    // epoch1) val1) operator: 50, stakers: 50, commission: 10%
+    // epoch2) val1) operator: 50, stakers: 50, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -682,7 +701,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_multiple_epoch_multiple_validator() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](2);
     epochParams[0] = EpochParam({
@@ -710,7 +729,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -722,7 +741,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-2'),
       rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -735,7 +754,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -747,7 +766,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-2'),
       rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -776,14 +795,14 @@ contract ValidatorRewardDistributorTest is Toolkit {
     _setUpEpochs(epochParams);
 
     // epoch1: 100, epoch2: 100
-    // epoch1) operator: 80%, staker: 20%, comission: 10%
+    // epoch1) operator: 80%, staker: 20%, commission: 10%
     //
     //
     //
-    // epoch1) val1) operator: 80%, stakers: 20%, comission: 10%
-    // epoch1) val2) operator: 50%, stakers: 50%, comission: 10%
-    // epoch2) val1) operator: 50%, stakers: 50%, comission: 10%
-    // epoch2) val2) operator: 50%, stakers: 50%, comission: 10%
+    // epoch1) val1) operator: 80%, stakers: 20%, commission: 10%
+    // epoch1) val2) operator: 50%, stakers: 50%, commission: 10%
+    // epoch2) val1) operator: 50%, stakers: 50%, commission: 10%
+    // epoch2) val2) operator: 50%, stakers: 50%, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -842,7 +861,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_batch_claim_rewards_by_multiple_stakers() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -871,7 +890,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -883,7 +902,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-2'),
       rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -1017,7 +1036,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_validator_collateral_zero() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1036,7 +1055,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -1054,7 +1073,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 0, stakers: 100, comission: 10%
+    // operator: 0, stakers: 100, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -1086,7 +1105,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_validator_delegation_zero() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1105,7 +1124,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -1123,7 +1142,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 0, stakers: 100, comission: 10%
+    // operator: 0, stakers: 100, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -1153,7 +1172,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_unavailable() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1172,7 +1191,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -1209,7 +1228,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_batch_rewards_unavailable() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1228,7 +1247,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -1240,7 +1259,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-2'),
       rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -1325,7 +1344,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_rewards_gt_32_epochs() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     uint256 epochCount = 35;
 
@@ -1337,7 +1356,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -1400,7 +1419,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_approval_own() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1419,7 +1438,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -1437,7 +1456,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 50, stakers: 50, comission: 10%
+    // operator: 50, stakers: 50, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -1472,7 +1491,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_approval_delegate() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1491,7 +1510,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -1509,7 +1528,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 50, stakers: 50, comission: 10%
+    // operator: 50, stakers: 50, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -1559,7 +1578,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_claim_approval_false() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1578,7 +1597,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 100,
@@ -1596,7 +1615,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
 
     _setUpEpochs(epochParams);
 
-    // operator: 50, stakers: 50, comission: 10%
+    // operator: 50, stakers: 50, commission: 10%
     uint256 claimable;
     uint256 nextEpoch;
     (claimable, nextEpoch) = _distributor.claimableOperatorRewards(makeAddr('val-1'));
@@ -1643,7 +1662,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
   }
 
   function test_batch_claim_approval() public {
-    vm.revertTo(snapshotId);
+    require(vm.revertToState(snapshotId), 'Failed to initialize');
 
     EpochParam[] memory epochParams = new EpochParam[](1);
     epochParams[0] = EpochParam({
@@ -1672,7 +1691,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-1'),
       rewardManager: makeAddr('rewardManager-1'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-1'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -1684,7 +1703,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
       operatorAddr: makeAddr('operator-2'),
       rewardManager: makeAddr('rewardManager-2'),
       withdrawalRecipient: makeAddr('withdrawalRecipient-2'),
-      comissionRate: 1000,
+      commissionRate: 1000,
       stakers: new address[](0), // init
       amounts: new uint256[](0), // init
       weight: 50,
@@ -1863,7 +1882,7 @@ contract ValidatorRewardDistributorTest is Toolkit {
           validatorParam.operatorAddr, // address operator;
           validatorParam.rewardManager, // address rewardManager;
           validatorParam.withdrawalRecipient, // withdrawalRecipient
-          validatorParam.comissionRate, // uint256 commissionRate;
+          validatorParam.commissionRate, // uint256 commissionRate;
           bytes('') // bytes metadata;
         );
 

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
-
-import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
-import { Math } from '@oz-v5/utils/math/Math.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
-import { Time } from '@oz-v5/utils/types/Time.sol';
+import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { Math } from '@oz/utils/math/Math.sol';
+import { SafeCast } from '@oz/utils/math/SafeCast.sol';
+import { Time } from '@oz/utils/types/Time.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { IGovMITO } from '../interfaces/hub/IGovMITO.sol';
 import { IGovMITOEmission } from '../interfaces/hub/IGovMITOEmission.sol';
@@ -50,12 +50,21 @@ contract GovMITOEmissionStorageV1 {
 
 /// @title GovMITOEmission
 /// @notice This contract is used to manage the emission of GovMITO
-/// @dev This is very temporary contract. We need to think more about the design of the emission management.
-contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgradeable, Ownable2StepUpgradeable {
+contract GovMITOEmission is
+  IGovMITOEmission,
+  GovMITOEmissionStorageV1,
+  UUPSUpgradeable,
+  Ownable2StepUpgradeable,
+  AccessControlEnumerableUpgradeable
+{
   using SafeERC20 for IGovMITO;
   using SafeCast for uint256;
 
   uint256 public constant RATE_DENOMINATOR = 10000;
+
+  /// @notice keccak256('mitosis.role.GovMITOEmission.validatorRewardManager')
+  bytes32 public constant VALIDATOR_REWARD_MANAGER_ROLE =
+    0x36d3c8b6777fd16fd79f9eef0dbf969583ea790f221ff2956c3152aa8dbed5eb;
 
   IGovMITO private immutable _govMITO;
   IEpochFeeder private immutable _epochFeeder;
@@ -71,6 +80,12 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     __UUPSUpgradeable_init();
     __Ownable_init(initialOwner);
     __Ownable2Step_init();
+
+    __AccessControl_init();
+    __AccessControlEnumerable_init();
+
+    _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
+    _setRoleAdmin(VALIDATOR_REWARD_MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
 
     uint48 currentTime = Time.timestamp();
     require(config.startsFrom > currentTime, StdError.InvalidParameter('config.ssf'));
@@ -119,7 +134,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
 
   /// @inheritdoc IGovMITOEmission
   function validatorRewardEmissionsByTime(uint48 timestamp) external view returns (uint256, uint160, uint48) {
-    (uint256 index, bool found) = _lowerLookup(_getStorageV1().validatorReward.emissions, timestamp);
+    (uint256 index, bool found) = _upperLookup(_getStorageV1().validatorReward.emissions, timestamp);
     require(found, StdError.InvalidParameter('emission.timestamp'));
 
     ValidatorRewardEmission memory emission = _getStorageV1().validatorReward.emissions[index];
@@ -146,7 +161,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
   }
 
   /// @inheritdoc IGovMITOEmission
-  function requestValidatorReward(uint256 epoch, address recipient, uint256 amount) external {
+  function requestValidatorReward(uint256 epoch, address recipient, uint256 amount) external returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
     require($.validatorReward.recipient == _msgSender(), StdError.Unauthorized());
 
@@ -157,6 +172,8 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     _govMITO.safeTransfer(recipient, amount);
 
     emit ValidatorRewardRequested(epoch, amount);
+
+    return amount;
   }
 
   /// @inheritdoc IGovMITOEmission
@@ -171,10 +188,9 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     emit ValidatorRewardEmissionAdded(msg.value);
   }
 
-  /// @inheritdoc IGovMITOEmission
   function configureValidatorRewardEmission(uint256 rps, uint160 rateMultiplier, uint48 renewalPeriod, uint48 applyFrom)
     external
-    onlyOwner
+    onlyRole(VALIDATOR_REWARD_MANAGER_ROLE)
   {
     _configureValidatorRewardEmission(_getStorageV1(), rps, rateMultiplier, renewalPeriod, applyFrom);
   }
@@ -249,7 +265,7 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     ValidatorRewardEmission[] storage emissions = $.validatorReward.emissions;
 
     uint256 emissionLen = emissions.length;
-    (uint256 emissionIndex, bool found) = _lowerLookup(emissions, epochStartTime);
+    (uint256 emissionIndex, bool found) = _upperLookup(emissions, epochStartTime);
     ValidatorRewardEmission memory activeLog = emissions[found ? emissionIndex : 0];
     if (epochEndTime < activeLog.timestamp) return 0; // no hope
 
@@ -289,24 +305,24 @@ contract GovMITOEmission is IGovMITOEmission, GovMITOEmissionStorageV1, UUPSUpgr
     return self[self.length - 1];
   }
 
-  function _lowerLookup(ValidatorRewardEmission[] storage self, uint48 key) private view returns (uint256, bool) {
+  function _upperLookup(ValidatorRewardEmission[] storage self, uint48 key) private view returns (uint256, bool) {
+    if (self.length == 0) return (0, false);
     if (key < self[0].timestamp) return (0, false);
 
-    uint256 left = 0;
-    uint256 right = self.length - 1;
-    uint256 target = 0;
+    uint256 low = 0;
+    uint256 high = self.length;
 
-    while (left <= right) {
-      uint256 mid = left + (right - left) / 2;
-      if (self[mid].timestamp <= key) {
-        target = mid;
-        left = mid + 1;
+    while (low < high) {
+      uint256 mid = Math.average(low, high);
+      if (self[mid].timestamp > key) {
+        high = mid;
       } else {
-        right = mid - 1;
+        low = mid + 1;
       }
     }
 
-    return (target, true);
+    if (high == 0) return (0, false);
+    return (high - 1, true);
   }
 
   // ================== UUPS ================== //

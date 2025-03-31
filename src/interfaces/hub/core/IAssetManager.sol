@@ -25,6 +25,24 @@ interface IAssetManagerStorageV1 {
   event TreasurySet(address indexed treasury);
 
   /**
+   * @notice Emitted when a new hub asset factory is set
+   * @param hubAssetFactory The address of the new hub asset factory
+   */
+  event HubAssetFactorySet(address indexed hubAssetFactory);
+
+  /**
+   * @notice Emitted when a new Matrix vault factory is set
+   * @param matrixVaultFactory The address of the new Matrix vault factory
+   */
+  event MatrixVaultFactorySet(address indexed matrixVaultFactory);
+
+  /**
+   * @notice Emitted when a new EOL vault factory is set
+   * @param eolVaultFactory The address of the new EOL vault factory
+   */
+  event EOLVaultFactorySet(address indexed eolVaultFactory);
+
+  /**
    * @notice Emitted when a new strategist is set for a MatrixVault
    * @param matrixVault The address of the MatrixVault
    * @param strategist The address of the new strategist
@@ -32,10 +50,10 @@ interface IAssetManagerStorageV1 {
   event StrategistSet(address indexed matrixVault, address indexed strategist);
 
   /**
-   * @notice Emitted when the redeemable deposit threshold is updated for a hub asset on a specific chain
+   * @notice Emitted when the withdrawable deposit threshold is updated for a hub asset on a specific chain
    * @param hubAsset The address of the hub asset for which the threshold is set
    * @param chainId The ID of the chain where the threshold is applied
-   * @param threshold The new redeemable deposit threshold amount
+   * @param threshold The new withdrawable deposit threshold amount
    */
   event BranchLiquidityThresholdSet(address indexed hubAsset, uint256 indexed chainId, uint256 threshold);
 
@@ -43,22 +61,28 @@ interface IAssetManagerStorageV1 {
 
   error IAssetManagerStorageV1__HubAssetPairNotExist(address hubAsset);
 
-  error IAssetManagerStorageV1__BranchAssetPairNotExist(address branchAsset);
+  error IAssetManagerStorageV1__BranchAssetPairNotExist(uint256 chainId, address branchAsset);
   error IAssetManagerStorageV1__TreasuryNotSet();
 
+  error IAssetManagerStorageV1__HubAssetFactoryNotSet();
+  error IAssetManagerStorageV1__InvalidHubAsset(address hubAsset);
+
+  error IAssetManagerStorageV1__MatrixVaultFactoryNotSet();
+  error IAssetManagerStorageV1__InvalidMatrixVault(address matrixVault);
   error IAssetManagerStorageV1__MatrixNotInitialized(uint256 chainId, address matrixVault);
   error IAssetManagerStorageV1__MatrixAlreadyInitialized(uint256 chainId, address matrixVault);
+
+  error IAssetManagerStorageV1__EOLVaultFactoryNotSet();
+  error IAssetManagerStorageV1__InvalidEOLVault(address eolVault);
+  error IAssetManagerStorageV1__EOLNotInitialized(uint256 chainId, address eolVault);
+  error IAssetManagerStorageV1__EOLAlreadyInitialized(uint256 chainId, address eolVault);
 
   error IAssetManagerStorageV1__BranchAvailableLiquidityInsufficient(
     uint256 chainId, address hubAsset, uint256 available, uint256 amount
   );
 
   error IAssetManagerStorageV1__BranchLiquidityThresholdNotSatisfied(
-    uint256 chainId, address hubAsset, uint256 threshold, uint256 redeemAmount
-  );
-
-  error IAssetManagerStorageV1__BranchLiquidityNotInsufficient(
-    uint256 chainId, address hubAsset, uint256 allocated, uint256 liquidity, uint256 amount
+    uint256 chainId, address hubAsset, uint256 threshold, uint256 amount
   );
 
   //=========== NOTE: STATE GETTERS ===========//
@@ -77,6 +101,21 @@ interface IAssetManagerStorageV1 {
    * @notice Get the current reward treasury address (see ITreasury)
    */
   function treasury() external view returns (address);
+
+  /**
+   * @notice Get the current hub asset factory address (see IHubAssetFactory)
+   */
+  function hubAssetFactory() external view returns (address);
+
+  /**
+   * @notice Get the current Matrix vault factory address (see IMatrixVaultFactory)
+   */
+  function matrixVaultFactory() external view returns (address);
+
+  /**
+   * @notice Get the current EOL vault factory address (see IEOLVaultFactory)
+   */
+  function eolVaultFactory() external view returns (address);
 
   /**
    * @notice Get the branch asset address for a given hub asset and chain ID
@@ -101,7 +140,7 @@ interface IAssetManagerStorageV1 {
   function branchAllocated(address hubAsset_, uint256 chainId) external view returns (uint256);
 
   /**
-   * @notice Retrieves the redeemable deposit threshold for a given hub asset and chain ID
+   * @notice Retrieves the withdrawable deposit threshold for a given hub asset and chain ID
    * @param hubAsset_ The address of the hub asset
    * @param chainId The ID of the chain
    */
@@ -109,7 +148,7 @@ interface IAssetManagerStorageV1 {
 
   /**
    * @notice Get the available liquidity of branch asset for a given hub asset and chain ID
-   * @dev The available amount of branch asset can be used for redemption or allocation.
+   * @dev The available amount of branch asset can be used for withdrawal or allocation.
    * @param hubAsset_ The address of the hub asset
    * @param chainId The ID of the chain
    */
@@ -128,6 +167,13 @@ interface IAssetManagerStorageV1 {
    * @param matrixVault The address of the MatrixVault
    */
   function matrixInitialized(uint256 chainId, address matrixVault) external view returns (bool);
+
+  /**
+   * @notice Check if a EOL vault is initialized for a given chain and branch asset (EOLVault -> hubAsset -> branchAsset)
+   * @param chainId The ID of the chain
+   * @param eolVault The address of the EOL vault
+   */
+  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool);
 
   /**
    * @notice Get the idle balance of a MatrixVault
@@ -173,6 +219,15 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event MatrixInitialized(address indexed hubAsset, uint256 indexed chainId, address matrixVault, address branchAsset);
 
   /**
+   * @notice Emitted when a EOL vault is initialized
+   * @param hubAsset The address of the hub asset
+   * @param chainId The ID of the chain where the EOL vault is initialized
+   * @param eolVault The address of the initialized EOL vault
+   * @param branchAsset The address of the branch asset associated with the EOL vault
+   */
+  event EOLInitialized(address indexed hubAsset, uint256 indexed chainId, address eolVault, address branchAsset);
+
+  /**
    * @notice Emitted when a deposit is made
    * @param chainId The ID of the chain where the deposit is made
    * @param hubAsset The address of the asset that correspond to the branch asset
@@ -200,13 +255,31 @@ interface IAssetManager is IAssetManagerStorageV1 {
   );
 
   /**
-   * @notice Emitted when hubAssets are redeemed
-   * @param chainId The ID of the chain where the redemption occurs
-   * @param hubAsset The address of the redeemed asset
-   * @param to The address receiving the redeemed assets on the branch chain
-   * @param amount The hubAsset amount to be redeemed
+   * @notice Emitted when a deposit is made with supply to a EOL vault
+   * @param chainId The ID of the chain where the deposit is made
+   * @param hubAsset The address of the asset that correspond to the branch asset
+   * @param to The address receiving the miAsset
+   * @param eolVault The address of the EOL vault supplied into
+   * @param amount The amount deposited
+   * @param supplyAmount The amount supplied into the EOL vault
    */
-  event Redeemed(uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount);
+  event DepositedWithSupplyEOL(
+    uint256 indexed chainId,
+    address indexed hubAsset,
+    address indexed to,
+    address eolVault,
+    uint256 amount,
+    uint256 supplyAmount
+  );
+
+  /**
+   * @notice Emitted when hubAssets are withdrawn
+   * @param chainId The ID of the chain where the withdrawal occurs
+   * @param hubAsset The address of the withdrawn asset
+   * @param to The address receiving the withdrawn assets on the branch chain
+   * @param amount The hubAsset amount to be withdrawn
+   */
+  event Withdrawn(uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount);
 
   /**
    * @notice Emitted when a reward is settled from the branch chain to the hub chain for a specific MatrixVault
@@ -245,6 +318,17 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event MatrixDeallocated(uint256 indexed chainId, address indexed matrixVault, uint256 amount);
 
   /**
+   * @notice Emitted when a claim request is reserved from the reclaim queue
+   * @param matrixVault The address of the MatrixVault to be reported the claim request
+   * @param claimCount The amount of the claim request
+   * @param totalReservedShares The total amount of shares reserved
+   * @param totalReservedAssets The total amount of assets reserved
+   */
+  event MatrixReclaimQueueReserved(
+    address indexed matrixVault, uint256 claimCount, uint256 totalReservedShares, uint256 totalReservedAssets
+  );
+
+  /**
    * @notice Emitted when an asset pair is set
    * @param hubAsset The address of the hub asset
    * @param branchChainId The ID of the branch chain
@@ -253,11 +337,10 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event AssetPairSet(address hubAsset, uint256 branchChainId, address branchAsset);
 
   /**
-   * @notice Error thrown when an invalid MatrixVault address does not match with the hub asset
-   * @param matrixVault The address of the invalid MatrixVault
-   * @param hubAsset The address of the hub asset
+   * @notice Error thrown when a MatrixVault has no claimable amount
+   * @param matrixVault The address of the MatrixVault with no claimable amount
    */
-  error IAssetManager__InvalidMatrixVault(address matrixVault, address hubAsset);
+  error IAssetManager__NothingToReserve(address matrixVault);
 
   /**
    * @notice Error thrown when a MatrixVault has insufficient funds
@@ -293,14 +376,26 @@ interface IAssetManager is IAssetManagerStorageV1 {
   ) external;
 
   /**
-   * @notice Redeem hub assets and receive the asset on the branch chain
-   * @dev Dispatches the cross-chain message to branch chain (see IAssetManagerEntrypoint)
-   * @param chainId The ID of the chain where the redemption occurs
-   * @param hubAsset The address of the hub asset to redeem
-   * @param to The address receiving the redeemed assets
-   * @param amount The amount to redeem
+   * @notice Deposit branch assets with supply to a EOL vault
+   * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
+   * @param chainId The ID of the chain where the deposit is made
+   * @param branchAsset The address of the branch asset being deposited
+   * @param to The address receiving the deposit
+   * @param eolVault The address of the EOL vault to supply into
+   * @param amount The amount to deposit
    */
-  function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external;
+  function depositWithSupplyEOL(uint256 chainId, address branchAsset, address to, address eolVault, uint256 amount)
+    external;
+
+  /**
+   * @notice Withdraw hub assets and receive the asset on the branch chain
+   * @dev Dispatches the cross-chain message to branch chain (see IAssetManagerEntrypoint)
+   * @param chainId The ID of the chain where the withdrawal occurs
+   * @param hubAsset The address of the hub asset to withdraw
+   * @param to The address receiving the withdrawn assets
+   * @param amount The amount to withdraw
+   */
+  function withdraw(uint256 chainId, address hubAsset, address to, uint256 amount) external;
 
   /**
    * @notice Allocate the assets to the branch chain for a specific MatrixVault
@@ -324,9 +419,9 @@ interface IAssetManager is IAssetManagerStorageV1 {
   /**
    * @notice Resolves the pending reclaim request amount from the reclaim queue using the idle balance of a MatrixVault
    * @param matrixVault The address of the MatrixVault
-   * @param amount The amount to reserve
+   * @param claimCount The amount of claim requests to resolve
    */
-  function reserveMatrix(address matrixVault, uint256 amount) external;
+  function reserveMatrix(address matrixVault, uint256 claimCount) external;
 
   /**
    * @notice Settles an yield generated from Matrix Protocol
@@ -365,19 +460,19 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function initializeAsset(uint256 chainId, address hubAsset) external;
 
   /**
-   * @notice Sets the redeemable deposit threshold for a specific asset on a given chain
-   * @dev This threshold determines the minimum deposit required to be eligible for redemption.
+   * @notice Sets the withdrawable deposit threshold for a specific asset on a given chain
+   * @dev This threshold determines the minimum deposit required to be eligible for withdrawal.
    * @param chainId The ID of the chain where the threshold is being set
    * @param hubAsset The address of the hub asset for which the threshold applies
-   * @param threshold The minimum deposit amount required for redemption
+   * @param threshold The minimum deposit amount required for withdrawal
    */
   function setBranchLiquidityThreshold(uint256 chainId, address hubAsset, uint256 threshold) external;
 
   /**
-   * @notice Sets the redeemable deposit threshold for multiple assets across multiple chains
+   * @notice Sets the withdrawable deposit threshold for multiple assets across multiple chains
    * @param chainIds An array of chain IDs where the thresholds are being set
    * @param hubAssets An array of hub asset addresses for which the thresholds apply
-   * @param thresholds An array of minimum deposit amounts required for redemption
+   * @param thresholds An array of minimum deposit amounts required for withdrawal
    */
   function setBranchLiquidityThreshold(
     uint256[] calldata chainIds,
@@ -391,6 +486,13 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param matrixVault The address of the MatrixVault to initialize
    */
   function initializeMatrix(uint256 chainId, address matrixVault) external;
+
+  /**
+   * @notice Initialize a EOL vault for branch asset on a given chain
+   * @param chainId The ID of the chain where the EOL vault is initialized
+   * @param eolVault The address of the EOL vault to initialize
+   */
+  function initializeEOL(uint256 chainId, address eolVault) external;
 
   /**
    * @notice Set an asset pair
@@ -417,6 +519,25 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param treasury_ The new treasury address
    */
   function setTreasury(address treasury_) external;
+
+  /**
+   * @notice Set the hub asset factory address
+   * @param hubAssetFactory_ The new hub asset factory address
+   */
+  function setHubAssetFactory(address hubAssetFactory_) external;
+
+  /**
+   * @notice Set the Matrix vault factory address
+   * @param matrixVaultFactory_ The new Matrix vault factory address
+   */
+  function setMatrixVaultFactory(address matrixVaultFactory_) external;
+
+  /**
+   * `
+   * @notice Set the EOL vault factory address
+   * @param eolVaultFactory_ The new EOL vault factory address
+   */
+  function setEOLVaultFactory(address eolVaultFactory_) external;
 
   /**
    * @notice Set the strategist for a MatrixVault

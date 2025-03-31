@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
+import { ContextUpgradeable } from '@ozu/utils/ContextUpgradeable.sol';
 
 import { IAssetManagerStorageV1 } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
+import { IHubAssetFactory } from '../../interfaces/hub/core/IHubAssetFactory.sol';
+import { IEOLVaultFactory } from '../../interfaces/hub/eol/IEOLVaultFactory.sol';
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
+import { IMatrixVaultFactory } from '../../interfaces/hub/matrix/IMatrixVaultFactory.sol';
 import { IReclaimQueue } from '../../interfaces/hub/matrix/IReclaimQueue.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
@@ -34,12 +37,17 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     IAssetManagerEntrypoint entrypoint;
     IReclaimQueue reclaimQueue;
     ITreasury treasury;
+    IHubAssetFactory hubAssetFactory;
+    IEOLVaultFactory eolVaultFactory;
+    IMatrixVaultFactory matrixVaultFactory;
     // Asset states
     mapping(address hubAsset => mapping(uint256 chainId => HubAssetState)) hubAssetStates;
     mapping(uint256 chainId => mapping(address branchAsset => BranchAssetState)) branchAssetStates;
     // Matrix states
     mapping(address matrixVault => MatrixState state) matrixStates;
     mapping(uint256 chainId => mapping(address matrixVault => bool initialized)) matrixInitialized;
+    // EOL states
+    mapping(uint256 chainId => mapping(address eolVault => bool initialized)) eolInitialized;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.AssetManagerStorage.v1';
@@ -65,6 +73,18 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
 
   function treasury() external view returns (address) {
     return address(_getStorageV1().treasury);
+  }
+
+  function hubAssetFactory() external view returns (address) {
+    return address(_getStorageV1().hubAssetFactory);
+  }
+
+  function eolVaultFactory() external view returns (address) {
+    return address(_getStorageV1().eolVaultFactory);
+  }
+
+  function matrixVaultFactory() external view returns (address) {
+    return address(_getStorageV1().matrixVaultFactory);
   }
 
   function branchAsset(address hubAsset_, uint256 chainId) external view returns (address) {
@@ -93,6 +113,10 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
 
   function matrixInitialized(uint256 chainId, address matrixVault) external view returns (bool) {
     return _getStorageV1().matrixInitialized[chainId][matrixVault];
+  }
+
+  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool) {
+    return _getStorageV1().eolInitialized[chainId][eolVault];
   }
 
   function matrixIdle(address matrixVault) external view returns (uint256) {
@@ -133,8 +157,33 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     emit TreasurySet(treasury_);
   }
 
+  function _setHubAssetFactory(StorageV1 storage $, address hubAssetFactory_) internal {
+    require(hubAssetFactory_.code.length > 0, StdError.InvalidParameter('HubAssetFactory'));
+
+    $.hubAssetFactory = IHubAssetFactory(hubAssetFactory_);
+
+    emit HubAssetFactorySet(hubAssetFactory_);
+  }
+
+  function _setMatrixVaultFactory(StorageV1 storage $, address matrixVaultFactory_) internal {
+    require(matrixVaultFactory_.code.length > 0, StdError.InvalidParameter('MatrixVaultFactory'));
+
+    $.matrixVaultFactory = IMatrixVaultFactory(matrixVaultFactory_);
+
+    emit MatrixVaultFactorySet(matrixVaultFactory_);
+  }
+
+  function _setEOLVaultFactory(StorageV1 storage $, address eolVaultFactory_) internal {
+    require(eolVaultFactory_.code.length > 0, StdError.InvalidParameter('EOLVaultFactory'));
+
+    $.eolVaultFactory = IEOLVaultFactory(eolVaultFactory_);
+
+    emit EOLVaultFactorySet(eolVaultFactory_);
+  }
+
   function _setStrategist(StorageV1 storage $, address matrixVault, address strategist_) internal {
-    require(matrixVault.code.length > 0, StdError.InvalidParameter('MatrixVault'));
+    _assertMatrixVaultFactorySet($);
+    _assertMatrixVaultInstance($, matrixVault);
 
     $.matrixStates[matrixVault].strategist = strategist_;
 
@@ -203,7 +252,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   {
     require(
       _branchAssetState($, chainId, branchAsset_).hubAsset != address(0),
-      IAssetManagerStorageV1__BranchAssetPairNotExist(branchAsset_)
+      IAssetManagerStorageV1__BranchAssetPairNotExist(chainId, branchAsset_)
     );
   }
 
@@ -215,13 +264,13 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     StorageV1 storage $,
     address hubAsset_,
     uint256 chainId,
-    uint256 redeemAmount
+    uint256 withdrawAmount
   ) internal view virtual {
     HubAssetState storage hubAssetState = _hubAssetState($, hubAsset_, chainId);
     require(
-      hubAssetState.branchLiquidity - redeemAmount >= hubAssetState.branchLiquidityThreshold,
+      hubAssetState.branchLiquidity - withdrawAmount >= hubAssetState.branchLiquidityThreshold,
       IAssetManagerStorageV1__BranchLiquidityThresholdNotSatisfied(
-        chainId, hubAsset_, hubAssetState.branchLiquidityThreshold, redeemAmount
+        chainId, hubAsset_, hubAssetState.branchLiquidityThreshold, withdrawAmount
       )
     );
   }
@@ -239,15 +288,51 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     );
   }
 
-  function _assertMatrixInitialized(StorageV1 storage $, uint256 chainId, address matrixVault) internal view virtual {
-    require(
-      $.matrixInitialized[chainId][matrixVault], IAssetManagerStorageV1__MatrixNotInitialized(chainId, matrixVault)
-    );
+  function _assertHubAssetFactorySet(StorageV1 storage $) internal view virtual {
+    require(address($.hubAssetFactory) != address(0), IAssetManagerStorageV1__HubAssetFactoryNotSet());
   }
 
-  function _assertMatrixNotInitialized(StorageV1 storage $, uint256 chainId, address matrixVault) internal view virtual {
-    require(
-      !$.matrixInitialized[chainId][matrixVault], IAssetManagerStorageV1__MatrixAlreadyInitialized(chainId, matrixVault)
-    );
+  function _assertHubAssetInstance(StorageV1 storage $, address hubAsset_) internal view virtual {
+    require($.hubAssetFactory.isInstance(hubAsset_), IAssetManagerStorageV1__InvalidHubAsset(hubAsset_));
+  }
+
+  function _assertMatrixVaultFactorySet(StorageV1 storage $) internal view virtual {
+    require(address($.matrixVaultFactory) != address(0), IAssetManagerStorageV1__MatrixVaultFactoryNotSet());
+  }
+
+  function _assertMatrixVaultInstance(StorageV1 storage $, address matrixVault_) internal view virtual {
+    require($.matrixVaultFactory.isInstance(matrixVault_), IAssetManagerStorageV1__InvalidMatrixVault(matrixVault_));
+  }
+
+  function _assertMatrixInitialized(StorageV1 storage $, uint256 chainId, address matrixVault_) internal view virtual {
+    bool initialized = $.matrixInitialized[chainId][matrixVault_];
+    require(initialized, IAssetManagerStorageV1__MatrixNotInitialized(chainId, matrixVault_));
+  }
+
+  function _assertMatrixNotInitialized(StorageV1 storage $, uint256 chainId, address matrixVault_)
+    internal
+    view
+    virtual
+  {
+    bool initialized = $.matrixInitialized[chainId][matrixVault_];
+    require(!initialized, IAssetManagerStorageV1__MatrixAlreadyInitialized(chainId, matrixVault_));
+  }
+
+  function _assertEOLVaultFactorySet(StorageV1 storage $) internal view virtual {
+    require(address($.eolVaultFactory) != address(0), IAssetManagerStorageV1__EOLVaultFactoryNotSet());
+  }
+
+  function _assertEOLVaultInstance(StorageV1 storage $, address eolVault_) internal view virtual {
+    require($.eolVaultFactory.isInstance(eolVault_), IAssetManagerStorageV1__InvalidEOLVault(eolVault_));
+  }
+
+  function _assertEOLInitialized(StorageV1 storage $, uint256 chainId, address eolVault_) internal view virtual {
+    bool initialized = $.eolInitialized[chainId][eolVault_];
+    require(initialized, IAssetManagerStorageV1__EOLNotInitialized(chainId, eolVault_));
+  }
+
+  function _assertEOLNotInitialized(StorageV1 storage $, uint256 chainId, address eolVault_) internal view virtual {
+    bool initialized = $.eolInitialized[chainId][eolVault_];
+    require(!initialized, IAssetManagerStorageV1__EOLAlreadyInitialized(chainId, eolVault_));
   }
 }

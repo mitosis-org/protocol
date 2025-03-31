@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibSecp256k1 } from '../../lib/LibSecp256k1.sol';
 import { StdError } from '../../lib/StdError.sol';
-
-// TODO(thai): test codes
 
 contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2StepUpgradeable, UUPSUpgradeable {
   using ERC7201Utils for string;
@@ -90,18 +88,18 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
     require(msg.value % 1 gwei == 0, StdError.InvalidParameter('msg.value'));
 
-    payable(address(0)).transfer(msg.value);
-
     emit MsgRegisterValidator(valAddr, pubKey, msg.value / 1 gwei, collateralRefundAddr);
+
+    payable(address(0)).transfer(msg.value);
   }
 
   function depositCollateral(address valAddr, address collateralRefundAddr) external payable onlyPermittedCaller {
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
     require(msg.value % 1 gwei == 0, StdError.InvalidParameter('msg.value'));
 
-    payable(address(0)).transfer(msg.value);
-
     emit MsgDepositCollateral(valAddr, msg.value / 1 gwei, collateralRefundAddr);
+
+    payable(address(0)).transfer(msg.value);
   }
 
   function withdrawCollateral(address valAddr, uint256 amount, address receiver, uint48 maturesAt)

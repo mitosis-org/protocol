@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
-import { MessageHashUtils } from '@oz-v5/utils/cryptography/MessageHashUtils.sol';
+import { IVotes } from '@oz/governance/utils/IVotes.sol';
+import { MessageHashUtils } from '@oz/utils/cryptography/MessageHashUtils.sol';
 
 import { MITOGovernanceVP } from '../../../src/hub/governance/MITOGovernanceVP.sol';
 import { ISudoVotes } from '../../../src/interfaces/lib/ISudoVotes.sol';
@@ -55,13 +55,17 @@ contract MITOGovernanceVPTest is Toolkit {
     vp.updateTokens(new ISudoVotes[](0));
 
     vm.prank(owner);
+    vm.expectRevert(abi.encodeWithSelector(MITOGovernanceVP.MITOGovernanceVP__InvalidToken.selector, (address(0))));
+    vp.updateTokens(new ISudoVotes[](1));
+
+    vm.prank(owner);
     vm.expectEmit();
-    emit MITOGovernanceVP.TokensUpdated(vpts, new ISudoVotes[](2));
-    vp.updateTokens(new ISudoVotes[](2));
+    emit MITOGovernanceVP.TokensUpdated(vpts, vpts);
+    vp.updateTokens(vpts);
 
     assertEq(vp.tokens().length, 2);
-    assertEq(address(vp.tokens()[0]), address(0));
-    assertEq(address(vp.tokens()[1]), address(0));
+    assertEq(address(vp.tokens()[0]), address(vpt1));
+    assertEq(address(vp.tokens()[1]), address(vpt2));
   }
 
   function test_getVotes() public {

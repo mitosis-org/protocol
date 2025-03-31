@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Time } from '@oz-v5/utils/types/Time.sol';
-
-import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+import { Time } from '@oz/utils/types/Time.sol';
+import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
 
 import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
@@ -53,36 +52,37 @@ contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
 
   function _getVotingUnits(address account) internal view override returns (uint256) {
     uint48 now_ = clock();
-    return stakerTotal(account, now_) + unstakingTotal(account, now_);
+    (uint256 totalUnstakingAmount,) = unstaking(account, now_);
+    return stakerTotal(account, now_) + totalUnstakingAmount;
   }
 
   /// @dev Mints voting units to the recipient. No need to care about the validator
-  function _stake(StorageV1 storage $, address valAddr, address recipient, uint256 amount)
+  function _stake(StorageV1 storage $, address valAddr, address payer, address recipient, uint256 amount)
     internal
     override
     returns (uint256)
   {
-    require(recipient == _msgSender(), ValidatorStakingGovMITO__NonTransferable());
+    require(recipient == payer, ValidatorStakingGovMITO__NonTransferable());
 
     // mint the voting units
     _moveDelegateVotes(address(0), delegates(recipient), amount);
 
-    return super._stake($, valAddr, recipient, amount);
+    return super._stake($, valAddr, payer, recipient, amount);
   }
 
   /// @dev Prevent the other users to receive unstaked tokens. Otherwise, users can perform transfer tokens to the others.
-  function _requestUnstake(StorageV1 storage $, address valAddr, address receiver, uint256 amount)
+  function _requestUnstake(StorageV1 storage $, address valAddr, address payer, address receiver, uint256 amount)
     internal
     override
     returns (uint256)
   {
-    require(receiver == _msgSender(), ValidatorStakingGovMITO__NonTransferable());
-    return super._requestUnstake($, valAddr, receiver, amount);
+    require(receiver == payer, ValidatorStakingGovMITO__NonTransferable());
+    return super._requestUnstake($, valAddr, payer, receiver, amount);
   }
 
   /// @dev Burns the voting units from the recipient
-  function _claimUnstake(StorageV1 storage $, address valAddr, address receiver) internal override returns (uint256) {
-    uint256 claimed = super._claimUnstake($, valAddr, receiver);
+  function _claimUnstake(StorageV1 storage $, address receiver) internal override returns (uint256) {
+    uint256 claimed = super._claimUnstake($, receiver);
 
     // burn the voting units
     _moveDelegateVotes(delegates(receiver), address(0), claimed);

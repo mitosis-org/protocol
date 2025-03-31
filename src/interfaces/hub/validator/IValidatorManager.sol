@@ -22,9 +22,9 @@ import { IEpochFeeder } from './IEpochFeeder.sol';
 interface IValidatorManager {
   struct GlobalValidatorConfigResponse {
     uint256 initialValidatorDeposit;
-    uint256 collateralWithdrawalDelay;
+    uint256 collateralWithdrawalDelaySeconds;
     uint256 minimumCommissionRate;
-    uint96 commissionRateUpdateDelay;
+    uint96 commissionRateUpdateDelayEpoch;
   }
 
   struct ValidatorInfoResponse {
@@ -49,12 +49,12 @@ interface IValidatorManager {
     address operator;
     address rewardManager;
     address withdrawalRecipient;
-    uint256 commissionRate; // bp ex) 10000 = 100%
+    uint256 commissionRate; // bp e.g.) 10000 = 100%
     bytes metadata;
   }
 
   struct UpdateRewardConfigRequest {
-    uint256 commissionRate; // bp ex) 10000 = 100%
+    uint256 commissionRate; // bp e.g.) 10000 = 100%
   }
 
   struct GenesisValidatorSet {
@@ -70,9 +70,9 @@ interface IValidatorManager {
 
   struct SetGlobalValidatorConfigRequest {
     uint256 initialValidatorDeposit; // used on creation of the validator
-    uint256 collateralWithdrawalDelay; // in seconds
-    uint256 minimumCommissionRate; // bp ex) 10000 = 100%
-    uint96 commissionRateUpdateDelay; // in epoch
+    uint256 collateralWithdrawalDelaySeconds; // in seconds
+    uint256 minimumCommissionRate; // bp e.g.) 10000 = 100%
+    uint96 commissionRateUpdateDelayEpoch; // in epoch
   }
 
   event FeeSet(uint256 previousFee, uint256 newFee);
@@ -108,6 +108,10 @@ interface IValidatorManager {
   function validatorPubKeyToAddress(bytes calldata pubKey) external pure returns (address);
 
   function validatorCount() external view returns (uint256);
+
+  /// @notice Returns the validator address at a given index.
+  /// @param index The index (starting from 1) to retrieve the validator address from.
+  /// @return valAddr The validator address at the specified index.
   function validatorAt(uint256 index) external view returns (address);
   function isValidator(address valAddr) external view returns (bool);
 

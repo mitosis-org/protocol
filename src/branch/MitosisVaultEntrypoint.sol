@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
-import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
+import { IMessageRecipient } from '@hpl/interfaces/IMessageRecipient.sol';
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
+import { GasRouter } from '../external/hyperlane/GasRouter.sol';
 import { IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { Conv } from '../lib/Conv.sol';
 import { StdError } from '../lib/StdError.sol';
 import '../message/Message.sol';
-
-// TODO(thai): consider to make our own contract (`HyperlaneConnector`) instead of using `GasRouter`.
 
 contract MitosisVaultEntrypoint is
   IMitosisVaultEntrypoint,
@@ -86,6 +84,16 @@ contract MitosisVaultEntrypoint is
     _dispatchToMitosis(enc);
   }
 
+  function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount) external onlyVault {
+    bytes memory enc = MsgDepositWithSupplyEOL({
+      asset: asset.toBytes32(),
+      to: to.toBytes32(),
+      eolVault: hubEOLVault.toBytes32(),
+      amount: amount
+    }).encode();
+    _dispatchToMitosis(enc);
+  }
+
   function deallocateMatrix(address hubMatrixVault, uint256 amount) external onlyVault {
     bytes memory enc = MsgDeallocateMatrix({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
@@ -111,8 +119,8 @@ contract MitosisVaultEntrypoint is
   }
 
   function _dispatchToMitosis(bytes memory enc) internal {
-    uint256 fee = _GasRouter_quoteDispatch(_mitosisDomain, enc, address(hook));
-    _GasRouter_dispatch(_mitosisDomain, fee, enc, address(hook));
+    uint256 fee = _GasRouter_quoteDispatch(_mitosisDomain, enc, address(hook()));
+    _GasRouter_dispatch(_mitosisDomain, fee, enc, address(hook()));
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//
@@ -127,9 +135,9 @@ contract MitosisVaultEntrypoint is
       _vault.initializeAsset(decoded.asset.toAddress());
     }
 
-    if (msgType == MsgType.MsgRedeem) {
-      MsgRedeem memory decoded = msg_.decodeRedeem();
-      _vault.redeem(decoded.asset.toAddress(), decoded.to.toAddress(), decoded.amount);
+    if (msgType == MsgType.MsgWithdraw) {
+      MsgWithdraw memory decoded = msg_.decodeWithdraw();
+      _vault.withdraw(decoded.asset.toAddress(), decoded.to.toAddress(), decoded.amount);
     }
 
     if (msgType == MsgType.MsgInitializeMatrix) {
@@ -140,6 +148,11 @@ contract MitosisVaultEntrypoint is
     if (msgType == MsgType.MsgAllocateMatrix) {
       MsgAllocateMatrix memory decoded = msg_.decodeAllocateMatrix();
       _vault.allocateMatrix(decoded.matrixVault.toAddress(), decoded.amount);
+    }
+
+    if (msgType == MsgType.MsgInitializeEOL) {
+      MsgInitializeEOL memory decoded = msg_.decodeInitializeEOL();
+      _vault.initializeEOL(decoded.eolVault.toAddress(), decoded.asset.toAddress());
     }
   }
 

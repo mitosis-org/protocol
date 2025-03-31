@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Time } from '@oz-v5/utils/types/Time.sol';
-
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+import { Time } from '@oz/utils/types/Time.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
+import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
+import { IEOLVaultFactory } from '../../interfaces/hub/eol/IEOLVaultFactory.sol';
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
+import { IMatrixVaultFactory } from '../../interfaces/hub/matrix/IMatrixVaultFactory.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
@@ -58,26 +60,60 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     _assertBranchAssetPairExist($, chainId, branchAsset);
     _assertMatrixInitialized($, chainId, matrixVault);
 
+    // NOTE: We don't need to check if the matrixVault is registered instance of MatrixVaultFactory
+
     address hubAsset = _branchAssetState($, chainId, branchAsset).hubAsset;
-    require(hubAsset == IMatrixVault(matrixVault).asset(), IAssetManager__InvalidMatrixVault(matrixVault, hubAsset));
+    uint256 supplyAmount = 0;
 
-    _mint($, chainId, hubAsset, address(this), amount);
+    if (hubAsset != IMatrixVault(matrixVault).asset()) {
+      // just transfer hubAsset if it's not the same as the MatrixVault's asset
+      _mint($, chainId, hubAsset, to, amount);
+    } else {
+      _mint($, chainId, hubAsset, address(this), amount);
 
-    uint256 maxAssets = IMatrixVault(matrixVault).maxDeposit(to);
-    uint256 supplyAmount = amount < maxAssets ? amount : maxAssets;
+      uint256 maxAssets = IMatrixVault(matrixVault).maxDeposit(to);
+      supplyAmount = amount < maxAssets ? amount : maxAssets;
 
-    IHubAsset(hubAsset).approve(matrixVault, supplyAmount);
-    IMatrixVault(matrixVault).deposit(supplyAmount, to);
+      IHubAsset(hubAsset).approve(matrixVault, supplyAmount);
+      IMatrixVault(matrixVault).deposit(supplyAmount, to);
 
-    // transfer remaining hub assets to `to` because there could be remaining hub assets due to the cap of Matrix Vault.
-    if (supplyAmount < amount) {
-      IHubAsset(hubAsset).transfer(to, amount - supplyAmount);
+      // transfer remaining hub assets to `to` because there could be remaining hub assets due to the cap of Matrix Vault.
+      if (supplyAmount < amount) IHubAsset(hubAsset).transfer(to, amount - supplyAmount);
     }
 
     emit DepositedWithSupplyMatrix(chainId, hubAsset, to, matrixVault, amount, supplyAmount);
   }
 
-  function redeem(uint256 chainId, address hubAsset, address to, uint256 amount) external whenNotPaused {
+  function depositWithSupplyEOL(uint256 chainId, address branchAsset, address to, address eolVault, uint256 amount)
+    external
+    whenNotPaused
+  {
+    StorageV1 storage $ = _getStorageV1();
+
+    _assertOnlyEntrypoint($);
+    _assertBranchAssetPairExist($, chainId, branchAsset);
+    _assertEOLInitialized($, chainId, eolVault);
+
+    // NOTE: We don't need to check if the eolVault is registered instance of EOLVaultFactory
+
+    address hubAsset = _branchAssetState($, chainId, branchAsset).hubAsset;
+    uint256 supplyAmount = 0;
+
+    if (hubAsset != IEOLVault(eolVault).asset()) {
+      _mint($, chainId, hubAsset, to, amount);
+    } else {
+      _mint($, chainId, hubAsset, address(this), amount);
+
+      supplyAmount = amount;
+
+      IHubAsset(hubAsset).approve(eolVault, amount);
+      IEOLVault(eolVault).deposit(amount, to);
+    }
+
+    emit DepositedWithSupplyEOL(chainId, hubAsset, to, eolVault, amount, supplyAmount);
+  }
+
+  function withdraw(uint256 chainId, address hubAsset, address to, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     require(to != address(0), StdError.ZeroAddress('to'));
@@ -90,9 +126,9 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     _assertBranchLiquidityThresholdSatisfied($, hubAsset, chainId, amount);
 
     _burn($, chainId, hubAsset, _msgSender(), amount);
-    $.entrypoint.redeem(chainId, branchAsset, to, amount);
+    $.entrypoint.withdraw(chainId, branchAsset, to, amount);
 
-    emit Redeemed(chainId, hubAsset, to, amount);
+    emit Withdrawn(chainId, hubAsset, to, amount);
   }
 
   //=========== NOTE: MATRIX FUNCTIONS ===========//
@@ -131,15 +167,20 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
   }
 
   /// @dev only strategist
-  function reserveMatrix(address matrixVault, uint256 amount) external whenNotPaused {
+  function reserveMatrix(address matrixVault, uint256 claimCount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($, matrixVault);
 
     uint256 idle = _matrixIdle($, matrixVault);
-    require(amount <= idle, IAssetManager__MatrixInsufficient(matrixVault));
+    (, uint256 simulatedTotalReservedAssets) = $.reclaimQueue.previewSync(matrixVault, claimCount);
+    require(simulatedTotalReservedAssets > 0, IAssetManager__NothingToReserve(matrixVault));
+    require(simulatedTotalReservedAssets <= idle, IAssetManager__MatrixInsufficient(matrixVault));
 
-    $.reclaimQueue.sync(_msgSender(), matrixVault, amount);
+    (uint256 totalReservedShares, uint256 totalReservedAssets) =
+      $.reclaimQueue.sync(_msgSender(), matrixVault, claimCount);
+
+    emit MatrixReclaimQueueReserved(matrixVault, claimCount, totalReservedShares, totalReservedAssets);
   }
 
   /// @dev only entrypoint
@@ -230,9 +271,9 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
   }
 
   function initializeMatrix(uint256 chainId, address matrixVault) external onlyOwner whenNotPaused {
-    _assertOnlyContract(matrixVault, 'matrixVault');
-
     StorageV1 storage $ = _getStorageV1();
+    _assertMatrixVaultFactorySet($);
+    _assertMatrixVaultInstance($, matrixVault);
 
     address hubAsset = IMatrixVault(matrixVault).asset();
     address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
@@ -245,13 +286,28 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     emit MatrixInitialized(hubAsset, chainId, matrixVault, branchAsset);
   }
 
-  function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external onlyOwner {
-    _assertOnlyContract(address(hubAsset), 'hubAsset');
-
-    // TODO(ray): handle already initialized asset through initializeAsset.
-    //
-    // https://github.com/mitosis-org/protocol/pull/23#discussion_r1728680943
+  function initializeEOL(uint256 chainId, address eolVault) external onlyOwner whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
+    _assertEOLVaultFactorySet($);
+    _assertEOLVaultInstance($, eolVault);
+
+    address hubAsset = IEOLVault(eolVault).asset();
+    address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
+    _assertBranchAssetPairExist($, chainId, branchAsset);
+
+    _assertEOLNotInitialized($, chainId, eolVault);
+    $.eolInitialized[chainId][eolVault] = true;
+
+    $.entrypoint.initializeEOL(chainId, eolVault, branchAsset);
+    emit EOLInitialized(hubAsset, chainId, eolVault, branchAsset);
+  }
+
+  function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external onlyOwner {
+    StorageV1 storage $ = _getStorageV1();
+    _assertHubAssetFactorySet($);
+    _assertHubAssetInstance($, hubAsset);
+    _assertBranchAssetPairNotExist($, branchChainId, branchAsset);
+
     _hubAssetState($, hubAsset, branchChainId).branchAsset = branchAsset;
     _branchAssetState($, branchChainId, branchAsset).hubAsset = hubAsset;
     emit AssetPairSet(hubAsset, branchChainId, branchAsset);
@@ -267,6 +323,18 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function setTreasury(address treasury_) external onlyOwner {
     _setTreasury(_getStorageV1(), treasury_);
+  }
+
+  function setHubAssetFactory(address hubAssetFactory_) external onlyOwner {
+    _setHubAssetFactory(_getStorageV1(), hubAssetFactory_);
+  }
+
+  function setMatrixVaultFactory(address matrixVaultFactory_) external onlyOwner {
+    _setMatrixVaultFactory(_getStorageV1(), matrixVaultFactory_);
+  }
+
+  function setEOLVaultFactory(address eolVaultFactory_) external onlyOwner {
+    _setEOLVaultFactory(_getStorageV1(), eolVaultFactory_);
   }
 
   function setStrategist(address matrixVault, address strategist) external onlyOwner {
@@ -289,5 +357,12 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function _assertOnlyContract(address addr, string memory paramName) internal view {
     require(addr.code.length > 0, StdError.InvalidParameter(paramName));
+  }
+
+  function _assertBranchAssetPairNotExist(StorageV1 storage $, uint256 chainId, address branchAsset) internal view {
+    require(
+      _branchAssetState($, chainId, branchAsset).hubAsset == address(0),
+      IAssetManagerStorageV1__BranchAssetPairNotExist(chainId, branchAsset)
+    );
   }
 }

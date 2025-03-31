@@ -16,6 +16,8 @@ interface IMerkleRewardDistributor {
     address indexed receiver, uint256 indexed stage, address indexed matrixVault, address[] rewards, uint256[] amounts
   );
 
+  event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
+
   /**
    * @notice Error thrown when attempting to claim an already claimed reward.
    */
@@ -53,7 +55,7 @@ interface IMerkleRewardDistributor {
   function rewardInfo(uint256 stage_) external view returns (address[] memory rewards, uint256[] memory amounts);
 
   /**
-   * @notice Retruns the ITreasury.
+   * @notice Returns the ITreasury.
    */
   function treasury() external view returns (ITreasury);
 
@@ -61,7 +63,7 @@ interface IMerkleRewardDistributor {
    * @notice Makes a leaf hash that expected to be used in the merkle tree.
    * @param stage The stage number.
    * @param receiver The receiver address.
-   * @param matrixVault The EOL Vault address.
+   * @param matrixVault The Matrix Vault address.
    * @param rewards The reward token addresses.
    * @param amounts The reward amounts.
    */
@@ -77,7 +79,7 @@ interface IMerkleRewardDistributor {
    * @notice Checks if the account can claim the rewards for the specified matrixVault in the specified stage.
    * @param receiver The receiver address.
    * @param stage The stage number.
-   * @param matrixVault The EOL Vault address.
+   * @param matrixVault The Matrix Vault address.
    * @param rewards The reward token addresses.
    * @param amounts The reward amounts.
    * @param proof The merkle proof.
@@ -132,12 +134,12 @@ interface IMerkleRewardDistributor {
   // ============================ NOTE: MANAGER FUNCTIONS ============================ //
 
   /**
-   * @notice Fetchs reward from the matrixVault to the specified stage.
+   * @notice Fetches reward from the matrixVault to the specified stage.
    */
   function fetchRewards(uint256 stage, uint256 nonce, address matrixVault, address reward, uint256 amount) external;
 
   /**
-   * @notice Fetchs rewards from the matrixVaults to the specified stage.
+   * @notice Fetches rewards from the matrixVaults to the specified stage.
    */
   function fetchRewardsMultiple(
     uint256 stage,
@@ -148,7 +150,7 @@ interface IMerkleRewardDistributor {
   ) external;
 
   /**
-   * @notice Fetchs rewards from the multiple matrixVaults to the specified stage.
+   * @notice Fetches rewards from the multiple matrixVaults to the specified stage.
    */
   function fetchRewardsBatch(
     uint256 stage,

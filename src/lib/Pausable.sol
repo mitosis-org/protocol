@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
+import { ContextUpgradeable } from '@ozu/utils/ContextUpgradeable.sol';
 
 import { ERC7201Utils } from './ERC7201Utils.sol';
 import { StdError } from './StdError.sol';

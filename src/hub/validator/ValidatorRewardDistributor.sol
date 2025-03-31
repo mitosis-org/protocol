@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
-
-import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
-import { Math } from '@oz-v5/utils/math/Math.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
+import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { Math } from '@oz/utils/math/Math.sol';
+import { SafeCast } from '@oz/utils/math/SafeCast.sol';
+import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
 import { IGovMITOEmission } from '../../interfaces/hub/IGovMITOEmission.sol';
@@ -25,13 +25,23 @@ import { StdError } from '../../lib/StdError.sol';
 contract ValidatorRewardDistributorStorageV1 {
   using ERC7201Utils for string;
 
+  struct ClaimConfig {
+    // Maximum number of epochs that can be claimed at once
+    uint32 maxClaimEpochs;
+    // Maximum number of stakers that can be processed in a batch operation
+    uint32 maxStakerBatchSize;
+    // Maximum number of operators that can be processed in a batch operation
+    uint32 maxOperatorBatchSize;
+    // Reserved for future use to maintain 256-bit packing
+    uint160 reserved;
+  }
+
   struct StorageV1 {
-    // Approvals
+    mapping(address valAddr => uint256) operator;
+    mapping(address staker => mapping(address valAddr => uint256)) staker;
     mapping(address account => mapping(address valAddr => mapping(address claimer => bool))) stakerClaimApprovals;
     mapping(address account => mapping(address valAddr => mapping(address claimer => bool))) operatorClaimApprovals;
-    // LastClaimedEpochs
-    mapping(address staker => mapping(address valAddr => uint256)) staker;
-    mapping(address valAddr => uint256) operator;
+    ClaimConfig claimConfig;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.ValidatorRewardDistributorStorage.v1';
@@ -52,6 +62,7 @@ contract ValidatorRewardDistributor is
   IValidatorRewardDistributor,
   ValidatorRewardDistributorStorageV1,
   Ownable2StepUpgradeable,
+  ReentrancyGuardTransient,
   UUPSUpgradeable
 {
   using SafeCast for uint256;
@@ -63,9 +74,7 @@ contract ValidatorRewardDistributor is
   IValidatorContributionFeed private immutable _validatorContributionFeed;
   IGovMITOEmission private immutable _govMITOEmission;
 
-  // Maximum number of epochs that can be claimed at once
-  // Set to 32 based on gas cost analysis and typical usage patterns
-  uint256 public constant MAX_CLAIM_EPOCHS = 32;
+  uint8 private constant _CLAIM_CONFIG_VERSION = 1;
 
   constructor(
     address epochFeeder_,
@@ -83,10 +92,17 @@ contract ValidatorRewardDistributor is
     _govMITOEmission = IGovMITOEmission(govMITOEmission_);
   }
 
-  function initialize(address initialOwner_) external initializer {
+  function initialize(
+    address initialOwner_,
+    uint32 maxClaimEpochs,
+    uint32 maxStakerBatchSize,
+    uint32 maxOperatorBatchSize
+  ) external initializer {
     __UUPSUpgradeable_init();
     __Ownable_init(initialOwner_);
     __Ownable2Step_init();
+
+    _setClaimConfig(_getStorageV1(), maxClaimEpochs, maxStakerBatchSize, maxOperatorBatchSize);
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -115,6 +131,18 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
+  function claimConfig() external view returns (ClaimConfigResponse memory) {
+    ClaimConfig memory claimConfig_ = _getStorageV1().claimConfig;
+
+    return ClaimConfigResponse({
+      version: _CLAIM_CONFIG_VERSION,
+      maxClaimEpochs: claimConfig_.maxClaimEpochs,
+      maxStakerBatchSize: claimConfig_.maxStakerBatchSize,
+      maxOperatorBatchSize: claimConfig_.maxOperatorBatchSize
+    });
+  }
+
+  /// @inheritdoc IValidatorRewardDistributor
   function stakerClaimAllowed(address account, address valAddr, address claimer) external view returns (bool) {
     return _isClaimable(account, valAddr, claimer, _getStorageV1().stakerClaimApprovals);
   }
@@ -136,12 +164,16 @@ contract ValidatorRewardDistributor is
 
   /// @inheritdoc IValidatorRewardDistributor
   function claimableStakerRewards(address staker, address valAddr) external view returns (uint256, uint256) {
-    return _claimableStakerRewards(_getStorageV1(), valAddr, staker, MAX_CLAIM_EPOCHS);
+    StorageV1 storage $ = _getStorageV1();
+    uint32 maxClaimEpochs = $.claimConfig.maxClaimEpochs;
+    return _claimableStakerRewards($, valAddr, staker, maxClaimEpochs);
   }
 
   /// @inheritdoc IValidatorRewardDistributor
   function claimableOperatorRewards(address valAddr) external view returns (uint256, uint256) {
-    return _claimableOperatorRewards(_getStorageV1(), valAddr, MAX_CLAIM_EPOCHS);
+    StorageV1 storage $ = _getStorageV1();
+    uint32 maxClaimEpochs = $.claimConfig.maxClaimEpochs;
+    return _claimableOperatorRewards($, valAddr, maxClaimEpochs);
   }
 
   /// @inheritdoc IValidatorRewardDistributor
@@ -157,21 +189,26 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function claimStakerRewards(address staker, address valAddr) external returns (uint256) {
+  function claimStakerRewards(address staker, address valAddr) external nonReentrant returns (uint256) {
     return _claimStakerRewards(_getStorageV1(), staker, valAddr, _msgSender());
   }
 
   /// @inheritdoc IValidatorRewardDistributor
   function batchClaimStakerRewards(address[] calldata stakers, address[][] calldata valAddrs)
     external
+    nonReentrant
     returns (uint256)
   {
+    StorageV1 storage $ = _getStorageV1();
+    require(
+      stakers.length <= $.claimConfig.maxStakerBatchSize, IValidatorRewardDistributor__MaxStakerBatchSizeExceeded()
+    );
     require(stakers.length == valAddrs.length, IValidatorRewardDistributor__ArrayLengthMismatch());
 
     uint256 totalClaimed;
     for (uint256 i = 0; i < stakers.length; i++) {
       for (uint256 j = 0; j < valAddrs[i].length; j++) {
-        totalClaimed += _claimStakerRewards(_getStorageV1(), stakers[i], valAddrs[i][j], _msgSender());
+        totalClaimed += _claimStakerRewards($, stakers[i], valAddrs[i][j], _msgSender());
       }
     }
 
@@ -179,19 +216,48 @@ contract ValidatorRewardDistributor is
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function claimOperatorRewards(address valAddr) external returns (uint256) {
+  function claimOperatorRewards(address valAddr) external nonReentrant returns (uint256) {
     return _claimOperatorRewards(_getStorageV1(), valAddr, _msgSender());
   }
 
   /// @inheritdoc IValidatorRewardDistributor
-  function batchClaimOperatorRewards(address[] calldata valAddrs) external returns (uint256) {
+  function batchClaimOperatorRewards(address[] calldata valAddrs) external nonReentrant returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    require(
+      valAddrs.length <= $.claimConfig.maxOperatorBatchSize, IValidatorRewardDistributor__MaxOperatorBatchSizeExceeded()
+    );
+
     uint256 totalClaimed;
 
     for (uint256 i = 0; i < valAddrs.length; i++) {
-      totalClaimed += _claimOperatorRewards(_getStorageV1(), valAddrs[i], _msgSender());
+      totalClaimed += _claimOperatorRewards($, valAddrs[i], _msgSender());
     }
 
     return totalClaimed;
+  }
+
+  /// @inheritdoc IValidatorRewardDistributor
+  function setClaimConfig(uint32 maxClaimEpochs, uint32 maxStakerBatchSize, uint32 maxOperatorBatchSize)
+    external
+    onlyOwner
+  {
+    _setClaimConfig(_getStorageV1(), maxClaimEpochs, maxStakerBatchSize, maxOperatorBatchSize);
+  }
+
+  function _setClaimConfig(
+    StorageV1 storage $,
+    uint32 maxClaimEpochs,
+    uint32 maxStakerBatchSize,
+    uint32 maxOperatorBatchSize
+  ) internal {
+    ClaimConfig memory newClaimConfig = ClaimConfig({
+      maxClaimEpochs: maxClaimEpochs,
+      maxStakerBatchSize: maxStakerBatchSize,
+      maxOperatorBatchSize: maxOperatorBatchSize,
+      reserved: 0
+    });
+    $.claimConfig = newClaimConfig;
+    emit ClaimConfigUpdated(_CLAIM_CONFIG_VERSION, abi.encode(newClaimConfig));
   }
 
   function _claimableStakerRewards(StorageV1 storage $, address valAddr, address staker, uint256 epochCount)
@@ -237,7 +303,8 @@ contract ValidatorRewardDistributor is
   {
     _assertClaimApproval(staker, valAddr, recipient, $.stakerClaimApprovals);
 
-    (uint256 start, uint256 end) = _claimRange($.staker[staker][valAddr], _epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
+    (uint256 start, uint256 end) =
+      _claimRange($.staker[staker][valAddr], _epochFeeder.epoch(), $.claimConfig.maxClaimEpochs);
     if (start == end) return 0;
 
     uint256 totalClaimed;
@@ -248,16 +315,17 @@ contract ValidatorRewardDistributor is
 
       uint256 claimable = _calculateStakerRewardForEpoch(valAddr, staker, epoch);
 
-      // NOTE(eddy): reentrancy guard?
       if (claimable > 0) {
-        _govMITOEmission.requestValidatorReward(epoch.toUint96(), staker, claimable);
-        totalClaimed += claimable;
+        totalClaimed += _govMITOEmission.requestValidatorReward(epoch.toUint96(), staker, claimable);
       }
 
       lastClaimedEpoch = epoch;
     }
 
     $.staker[staker][valAddr] = lastClaimedEpoch;
+
+    emit StakerRewardsClaimed(staker, valAddr, recipient, totalClaimed, start, lastClaimedEpoch);
+
     return totalClaimed;
   }
 
@@ -266,7 +334,7 @@ contract ValidatorRewardDistributor is
       _validatorManager.validatorInfo(valAddr).rewardManager, valAddr, recipient, $.operatorClaimApprovals
     );
 
-    (uint256 start, uint256 end) = _claimRange($.operator[valAddr], _epochFeeder.epoch(), MAX_CLAIM_EPOCHS);
+    (uint256 start, uint256 end) = _claimRange($.operator[valAddr], _epochFeeder.epoch(), $.claimConfig.maxClaimEpochs);
     if (start == end) return 0;
 
     uint256 totalClaimed;
@@ -276,16 +344,17 @@ contract ValidatorRewardDistributor is
       if (!_validatorContributionFeed.available(epoch)) break;
       (uint256 claimable,) = _rewardForEpoch(valAddr, epoch);
 
-      // NOTE(eddy): reentrancy guard?
       if (claimable > 0) {
-        _govMITOEmission.requestValidatorReward(epoch.toUint96(), recipient, claimable);
-        totalClaimed += claimable;
+        totalClaimed += _govMITOEmission.requestValidatorReward(epoch.toUint96(), recipient, claimable);
       }
 
       lastClaimedEpoch = epoch;
     }
 
     $.operator[valAddr] = lastClaimedEpoch;
+
+    emit OperatorRewardsClaimed(valAddr, recipient, totalClaimed, start, lastClaimedEpoch);
+
     return totalClaimed;
   }
 
@@ -316,12 +385,12 @@ contract ValidatorRewardDistributor is
     {
       uint256 startTWAB = _validatorStakingHub.validatorTotalTWAB(valAddr, epochTime);
       uint256 endTWAB = _validatorStakingHub.validatorTotalTWAB(valAddr, nextEpochTime);
-      totalDelegation = (endTWAB - startTWAB) * 1e18 / (nextEpochTime - epochTime) / 1e18;
+      totalDelegation = Math.mulDiv(endTWAB - startTWAB, 1e18, nextEpochTime - epochTime);
     }
     {
       uint256 startTWAB = _validatorStakingHub.validatorStakerTotalTWAB(valAddr, staker, epochTime);
       uint256 endTWAB = _validatorStakingHub.validatorStakerTotalTWAB(valAddr, staker, nextEpochTime);
-      stakerDelegation = (endTWAB - startTWAB) * 1e18 / (nextEpochTime - epochTime) / 1e18;
+      stakerDelegation = Math.mulDiv(endTWAB - startTWAB, 1e18, nextEpochTime - epochTime);
     }
 
     if (totalDelegation == 0) return 0;

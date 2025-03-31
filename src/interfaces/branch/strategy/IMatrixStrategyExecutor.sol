@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
+import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 
 import { IMitosisVault } from '../IMitosisVault.sol';
 import { IStrategyExecutor } from './IStrategyExecutor.sol';
@@ -18,7 +18,6 @@ interface IMatrixStrategyExecutor is IStrategyExecutor {
   function asset() external view returns (IERC20);
   function hubMatrixVault() external view returns (address);
 
-  // TODO(ray): Move methods to IStrategyExecutor for shared use.
   function strategist() external view returns (address);
   function executor() external view returns (address);
   function tally() external view returns (ITally);

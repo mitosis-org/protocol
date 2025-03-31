@@ -4,10 +4,10 @@ pragma solidity ^0.8.28;
 import { CommonBase } from '@std/Base.sol';
 import { Vm } from '@std/Vm.sol';
 
-import { Ownable } from '@oz-v5/access/Ownable.sol';
+import { Ownable } from '@oz/access/Ownable.sol';
 
-import { MockMailbox } from '@hpl-v5/mock/MockMailbox.sol';
-import { TestInterchainGasPaymaster } from '@hpl-v5/test/TestInterchainGasPaymaster.sol';
+import { MockMailbox } from '@hpl/mock/MockMailbox.sol';
+import { TestInterchainGasPaymaster } from '@hpl/test/TestInterchainGasPaymaster.sol';
 
 import { LibString } from '@solady/utils/LibString.sol';
 

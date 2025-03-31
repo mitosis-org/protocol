@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import { console } from '@std/console.sol';
 import { Script } from '@std/Script.sol';
 
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { ConsensusGovernanceEntrypoint } from '../src/hub/consensus-layer/ConsensusGovernanceEntrypoint.sol';
 import { ConsensusValidatorEntrypoint } from '../src/hub/consensus-layer/ConsensusValidatorEntrypoint.sol';

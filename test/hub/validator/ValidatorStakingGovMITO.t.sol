@@ -5,7 +5,7 @@ import { console } from '@std/console.sol';
 
 import { WETH } from '@solady/tokens/WETH.sol';
 
-import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
+import { IVotes } from '@oz/governance/utils/IVotes.sol';
 
 import { ValidatorStakingGovMITO } from '../../../src/hub/validator/ValidatorStakingGovMITO.sol';
 import { IValidatorManager } from '../../../src/interfaces/hub/validator/IValidatorManager.sol';
@@ -30,6 +30,9 @@ contract ValidatorStakingGovMITOTest is Toolkit {
   uint48 REDELEGATION_COOLDOWN = 1 days;
 
   function setUp() public {
+    // use real time to avoid arithmatic overflow on withdrawalPeriod calculation
+    vm.warp(1743061332);
+
     weth = new WETH();
     manager = new MockContract();
     hub = new MockContract();
@@ -130,7 +133,7 @@ contract ValidatorStakingGovMITOTest is Toolkit {
     vault.stake(val, user2, 100);
 
     vm.warp(_now() + 1);
-    assertEq(vault.getPastTotalSupply(_now() - 1), 200);
+    assertEq(vault.getPastTotalSupply(_now() - 1), 0);
     assertEq(vault.getVotes(user1), 0);
     assertEq(vault.getVotes(user2), 100);
 
@@ -168,7 +171,7 @@ contract ValidatorStakingGovMITOTest is Toolkit {
 
     vm.warp(_now() + 1);
     assertEq(vault.getVotes(user1), 200); // 100 + 100
-    assertEq(vault.getPastTotalSupply(_now() - 1), 200);
+    assertEq(vault.getPastTotalSupply(_now() - 1), 0);
   }
 
   function test_requestUnstake_nonTransferable() public {
@@ -187,12 +190,12 @@ contract ValidatorStakingGovMITOTest is Toolkit {
     vm.prank(user1);
     vm.expectEmit();
     emit IVotes.DelegateVotesChanged(user1, 200, 100);
-    uint256 claimed = vault.claimUnstake(val, user1);
+    uint256 claimed = vault.claimUnstake(user1);
 
     vm.warp(_now() + 1);
     assertEq(claimed, 100);
     assertEq(vault.getVotes(user1), 100);
-    assertEq(vault.getPastTotalSupply(_now() - 1), 100);
+    assertEq(vault.getPastTotalSupply(_now() - 1), 0);
   }
 
   function _mintAndApprove(address user, uint256 amount) internal {

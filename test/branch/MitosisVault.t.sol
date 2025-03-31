@@ -3,12 +3,14 @@ pragma solidity ^0.8.28;
 
 import { console } from '@std/console.sol';
 
-import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
+import { IERC20 } from '@oz/interfaces/IERC20.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
-import { MitosisVault, AssetAction, MatrixAction } from '../../src/branch/MitosisVault.sol';
-import { IMitosisVault, IMatrixMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
+import { MitosisVault, AssetAction } from '../../src/branch/MitosisVault.sol';
+import { IMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
+import { IMitosisVaultEOL, EOLAction } from '../../src/interfaces/branch/IMitosisVaultEOL.sol';
+import { IMitosisVaultMatrix, MatrixAction } from '../../src/interfaces/branch/IMitosisVaultMatrix.sol';
 import { StdError } from '../../src/lib/StdError.sol';
 import { MockERC20Snapshots } from '../mock/MockERC20Snapshots.t.sol';
 import { MockMatrixStrategyExecutor } from '../mock/MockMatrixStrategyExecutor.t.sol';
@@ -22,7 +24,7 @@ contract MitosisVaultTest is Toolkit {
   MockMatrixStrategyExecutor internal _matrixStrategyExecutor;
 
   address immutable owner = makeAddr('owner');
-  address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
+  address immutable mitosis = makeAddr('mitosis');
   address immutable hubMatrixVault = makeAddr('hubMatrixVault');
 
   function setUp() public {
@@ -181,8 +183,6 @@ contract MitosisVaultTest is Toolkit {
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
 
-    // TODO: resumeMatrix check?
-
     vm.prank(owner);
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
 
@@ -251,7 +251,7 @@ contract MitosisVaultTest is Toolkit {
 
     _token.approve(address(_mitosisVault), 100 ether);
 
-    vm.expectRevert(_errMatrixNotInitiailized(hubMatrixVault));
+    vm.expectRevert(_errMatrixNotInitialized(hubMatrixVault));
     _mitosisVault.depositWithSupplyMatrix(address(_token), user1, hubMatrixVault, 100 ether);
 
     vm.stopPrank();
@@ -305,26 +305,26 @@ contract MitosisVaultTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_redeem() public {
+  function test_withdraw() public {
     test_deposit(); // (owner) - - - deposit 100 ETH - - -> (_mitosisVault)
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.redeem(address(_token), address(1), 10 ether);
+    _mitosisVault.withdraw(address(_token), address(1), 10 ether);
 
     assertEq(_token.balanceOf(address(1)), 10 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 90 ether);
   }
 
-  function test_redeem_Unauthorized() public {
+  function test_withdraw_Unauthorized() public {
     test_deposit();
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.redeem(address(_token), address(1), 10 ether);
+    _mitosisVault.withdraw(address(_token), address(1), 10 ether);
   }
 
-  function test_redeem_AssetNotInitialized() public {
+  function test_withdraw_AssetNotInitialized() public {
     test_deposit();
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
@@ -333,19 +333,19 @@ contract MitosisVaultTest is Toolkit {
     address myToken = address(10);
 
     vm.expectRevert(_errAssetNotInitialized(myToken));
-    _mitosisVault.redeem(myToken, address(1), 10 ether);
+    _mitosisVault.withdraw(myToken, address(1), 10 ether);
 
     vm.stopPrank();
   }
 
-  function test_redeem_NotEnoughBalance() public {
+  function test_withdraw_NotEnoughBalance() public {
     test_deposit();
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.startPrank(address(_mitosisVaultEntrypoint));
 
     vm.expectRevert();
-    _mitosisVault.redeem(address(_token), address(1), 101 ether);
+    _mitosisVault.withdraw(address(_token), address(1), 101 ether);
 
     vm.stopPrank();
   }
@@ -425,7 +425,7 @@ contract MitosisVaultTest is Toolkit {
 
     // _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
 
-    vm.expectRevert(_errMatrixNotInitiailized(hubMatrixVault));
+    vm.expectRevert(_errMatrixNotInitialized(hubMatrixVault));
     _mitosisVault.allocateMatrix(hubMatrixVault, 100 ether);
 
     vm.stopPrank();
@@ -736,7 +736,7 @@ contract MitosisVaultTest is Toolkit {
   function test_setMatrixStrategyExecutor_MatrixNotInitialized() public {
     vm.startPrank(owner);
 
-    vm.expectRevert(_errMatrixNotInitiailized(hubMatrixVault));
+    vm.expectRevert(_errMatrixNotInitialized(hubMatrixVault));
     _mitosisVault.setMatrixStrategyExecutor(hubMatrixVault, address(_matrixStrategyExecutor));
 
     vm.stopPrank();
@@ -858,14 +858,13 @@ contract MitosisVaultTest is Toolkit {
 
   function _errMatrixAlreadyInitialized(address _hubMatrixVault) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
-      IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixAlreadyInitialized.selector, _hubMatrixVault
+      IMitosisVaultMatrix.IMitosisVaultMatrix__MatrixAlreadyInitialized.selector, _hubMatrixVault
     );
   }
 
-  function _errMatrixNotInitiailized(address _hubMatrixVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(
-      IMatrixMitosisVault.MatrixDepositedWithSupply__MatrixNotInitialized.selector, _hubMatrixVault
-    );
+  function _errMatrixNotInitialized(address _hubMatrixVault) internal pure returns (bytes memory) {
+    return
+      abi.encodeWithSelector(IMitosisVaultMatrix.IMitosisVaultMatrix__MatrixNotInitialized.selector, _hubMatrixVault);
   }
 
   function _errMatrixStrategyExecutorNotDraind(address _hubMatrixVault, address matrixStrategyExecutor_)
@@ -874,7 +873,9 @@ contract MitosisVaultTest is Toolkit {
     returns (bytes memory)
   {
     return abi.encodeWithSelector(
-      IMitosisVault.IMitosisVault__StrategyExecutorNotDrained.selector, _hubMatrixVault, matrixStrategyExecutor_
+      IMitosisVaultMatrix.IMitosisVaultMatrix__StrategyExecutorNotDrained.selector,
+      _hubMatrixVault,
+      matrixStrategyExecutor_
     );
   }
 }

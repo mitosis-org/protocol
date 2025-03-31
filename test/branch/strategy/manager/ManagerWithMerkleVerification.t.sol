@@ -3,14 +3,14 @@ pragma solidity ^0.8.27;
 
 import { console } from '@std/console.sol';
 
-import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
+import { IERC20 } from '@oz/interfaces/IERC20.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
-import { MitosisVault, AssetAction, MatrixAction } from '../../../../src/branch/MitosisVault.sol';
+import { MitosisVault, AssetAction } from '../../../../src/branch/MitosisVault.sol';
 import { ManagerWithMerkleVerification } from
   '../../../../src/branch/strategy/manager/ManagerWithMerkleVerification.sol';
 import { MatrixStrategyExecutor } from '../../../../src/branch/strategy/MatrixStrategyExecutor.sol';
-import { IMitosisVault, IMatrixMitosisVault } from '../../../../src/interfaces/branch/IMitosisVault.sol';
+import { IMitosisVault } from '../../../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IManagerWithMerkleVerification } from
   '../../../../src/interfaces/branch/strategy/manager/IManagerWithMerkleVerification.sol';
@@ -81,21 +81,21 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     bytes[] memory targetData;
     uint256[] memory values;
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser1(100 ether);
 
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser2(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser2(100 ether);
 
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser3(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser3(100 ether);
 
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
@@ -110,7 +110,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     bytes[] memory targetData;
     uint256[] memory values;
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser1(100 ether);
 
     vm.expectRevert(_errNotFound('manageProof'));
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
@@ -130,7 +130,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     bytes[] memory targetData;
     uint256[] memory values;
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser1(100 ether);
 
     // invalid manageProofs
     manageProofs = new bytes32[][](1);
@@ -145,7 +145,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser1(100 ether);
 
     // invalid target address
     targets[0] = user2;
@@ -156,7 +156,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser1(100 ether);
 
     // invalid decoderAndSanitizer address
 
@@ -177,12 +177,12 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
-    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParamterForUser1(100 ether);
+    (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser1(100 ether);
 
     // invalid values (canSendValue)
     values[0] = 1 ether;
 
-    vm.expectRevert(); // TODO
+    vm.expectRevert();
     vm.prank(strategist);
     _managerWithMerkleVerification.manageVaultWithMerkleVerification(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
@@ -296,7 +296,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     }
   }
 
-  function _makeManageParamterForUser1(uint256 amount)
+  function _makeManageParameterForUser1(uint256 amount)
     internal
     view
     returns (
@@ -328,7 +328,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     return (manageProofs, decodersAndSanitizers, targets, targetData, values);
   }
 
-  function _makeManageParamterForUser2(uint256 amount)
+  function _makeManageParameterForUser2(uint256 amount)
     internal
     view
     returns (
@@ -360,7 +360,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     return (manageProofs, decodersAndSanitizers, targets, targetData, values);
   }
 
-  function _makeManageParamterForUser3(uint256 amount)
+  function _makeManageParameterForUser3(uint256 amount)
     internal
     view
     returns (

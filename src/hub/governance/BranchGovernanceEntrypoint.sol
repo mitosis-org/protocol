@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
-import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
+import { IMessageRecipient } from '@hpl/interfaces/IMessageRecipient.sol';
 
-import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
-import { Address } from '@oz-v5/utils/Address.sol';
-
+import { GasRouter } from '../../external/hyperlane/GasRouter.sol';
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 import { IBranchGovernanceEntrypoint } from '../../interfaces/hub/governance/IBranchGovernanceEntrypoint.sol';
 import { Conv } from '../../lib/Conv.sol';
@@ -19,6 +18,7 @@ contract BranchGovernanceEntrypoint is
   IBranchGovernanceEntrypoint,
   GasRouter,
   UUPSUpgradeable,
+  ReentrancyGuardTransient,
   AccessControlEnumerableUpgradeable
 {
   using Message for *;
@@ -39,6 +39,8 @@ contract BranchGovernanceEntrypoint is
   }
 
   constructor(address mailbox, address ccRegistry_) GasRouter(mailbox) initializer {
+    require(ccRegistry_.code.length > 0, StdError.InvalidAddress('ccRegistry'));
+
     _ccRegistry = ICrossChainRegistry(ccRegistry_);
   }
 
@@ -52,7 +54,7 @@ contract BranchGovernanceEntrypoint is
     }
   }
 
-  receive() external payable { }
+  receive() external payable nonReentrant { }
 
   function dispatchGovernanceExecution(
     uint256 chainId,
@@ -69,14 +71,17 @@ contract BranchGovernanceEntrypoint is
       predecessor: predecessor,
       salt: salt
     }).encode();
+
     _dispatchToBranch(chainId, enc);
+
+    emit ExecutionDispatched(chainId, targets, values, data, predecessor, salt);
   }
 
   function _dispatchToBranch(uint256 chainId, bytes memory enc) internal {
     uint32 hplDomain = _ccRegistry.hyperlaneDomain(chainId);
 
-    uint256 fee = _GasRouter_quoteDispatch(hplDomain, enc, address(hook));
-    _GasRouter_dispatch(hplDomain, fee, enc, address(hook));
+    uint256 fee = _GasRouter_quoteDispatch(hplDomain, enc, address(hook()));
+    _GasRouter_dispatch(hplDomain, fee, enc, address(hook()));
   }
 
   function _handle(uint32, bytes32, bytes calldata) internal override { }

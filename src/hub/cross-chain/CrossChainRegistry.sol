@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IRouter } from '@hpl-v5/interfaces/IRouter.sol';
+import { IRouter } from '@hpl/interfaces/IRouter.sol';
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 import { Conv } from '../../lib/Conv.sol';
@@ -114,7 +114,6 @@ contract CrossChainRegistry is
 
   function enrollMitosisVaultEntrypoint(address hplRouter) external onlyOwner {
     uint256[] memory allChainIds = _getStorageV1().chainIds;
-    // TODO(ray): IRouter.enrollRemoteRouters
     for (uint256 i = 0; i < allChainIds.length; i++) {
       enrollMitosisVaultEntrypoint(hplRouter, allChainIds[i]);
     }

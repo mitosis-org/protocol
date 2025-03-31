@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
-import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
-import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
-
-import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+import { IERC6372 } from '@oz/interfaces/IERC6372.sol';
+import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
+import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { SafeCast } from '@oz/utils/math/SafeCast.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { StdError } from '../../lib/StdError.sol';
@@ -33,6 +32,7 @@ contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradea
   }
 
   function initialize(address admin) external initializer {
+    require(admin != address(0), StdError.ZeroAddress('admin'));
     __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
 
@@ -47,6 +47,10 @@ contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradea
    * @inheritdoc ITreasury
    */
   function storeRewards(address matrixVault, address reward, uint256 amount) external onlyRole(TREASURY_MANAGER_ROLE) {
+    require(matrixVault != address(0), StdError.ZeroAddress('matrixVault'));
+    require(reward != address(0), StdError.ZeroAddress('reward'));
+    require(amount > 0, StdError.ZeroAmount());
+
     _storeRewards(matrixVault, reward, amount);
   }
 
@@ -57,6 +61,10 @@ contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradea
     external
     onlyRole(DISPATCHER_ROLE)
   {
+    require(matrixVault != address(0), StdError.ZeroAddress('matrixVault'));
+    require(reward != address(0), StdError.ZeroAddress('reward'));
+    require(distributor != address(0), StdError.ZeroAddress('distributor'));
+    require(amount > 0, StdError.ZeroAmount());
     StorageV1 storage $ = _getStorageV1();
 
     uint256 balance = _balances($, matrixVault, reward);
@@ -71,7 +79,7 @@ contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradea
        })
     );
 
-    IERC20(reward).transfer(distributor, amount);
+    IERC20(reward).safeTransfer(distributor, amount);
     emit RewardDispatched(matrixVault, reward, distributor, amount);
   }
 

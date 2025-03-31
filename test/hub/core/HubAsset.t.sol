@@ -5,7 +5,7 @@ import { console } from '@std/console.sol';
 import { Test } from '@std/Test.sol';
 import { Vm } from '@std/Vm.sol';
 
-import { IERC20Errors } from '@oz-v5/interfaces/draft-IERC6093.sol';
+import { IERC20Errors } from '@oz/interfaces/draft-IERC6093.sol';
 
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
@@ -18,7 +18,7 @@ contract HubAssetTest is Toolkit {
   address immutable owner = makeAddr('owner');
   address immutable user1 = makeAddr('user1');
   address immutable user2 = makeAddr('user2');
-  address immutable mitosis = makeAddr('mitosis'); // TODO: replace with actual contract
+  address immutable mitosis = makeAddr('mitosis');
 
   function setUp() public {
     hubAsset = HubAsset(

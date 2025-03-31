@@ -1,46 +1,49 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
-import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
-import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
-import { Time } from '@oz-v5/utils/types/Time.sol';
-
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
-import { VotesUpgradeable } from '@ozu-v5/governance/utils/VotesUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
-import { ERC20Upgradeable } from '@ozu-v5/token/ERC20/ERC20Upgradeable.sol';
-import { ERC20PermitUpgradeable } from '@ozu-v5/token/ERC20/extensions/ERC20PermitUpgradeable.sol';
-import { ERC20VotesUpgradeable } from '@ozu-v5/token/ERC20/extensions/ERC20VotesUpgradeable.sol';
-import { NoncesUpgradeable } from '@ozu-v5/utils/NoncesUpgradeable.sol';
+import { IVotes } from '@oz/governance/utils/IVotes.sol';
+import { IERC20 } from '@oz/interfaces/IERC20.sol';
+import { IERC6372 } from '@oz/interfaces/IERC6372.sol';
+import { SafeCast } from '@oz/utils/math/SafeCast.sol';
+import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
+import { Time } from '@oz/utils/types/Time.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
+import { VotesUpgradeable } from '@ozu/governance/utils/VotesUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
+import { ERC20Upgradeable } from '@ozu/token/ERC20/ERC20Upgradeable.sol';
+import { ERC20PermitUpgradeable } from '@ozu/token/ERC20/extensions/ERC20PermitUpgradeable.sol';
+import { ERC20VotesUpgradeable } from '@ozu/token/ERC20/extensions/ERC20VotesUpgradeable.sol';
+import { NoncesUpgradeable } from '@ozu/utils/NoncesUpgradeable.sol';
 
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
 import { IGovMITO } from '../interfaces/hub/IGovMITO.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
-import { LibRedeemQueue } from '../lib/LibRedeemQueue.sol';
+import { LibQueue } from '../lib/LibQueue.sol';
 import { StdError } from '../lib/StdError.sol';
 import { SudoVotes } from '../lib/SudoVotes.sol';
 
-// TODO(thai): Add more view functions. (Check ReclaimQueueStorageV1.sol as a reference)
 contract GovMITO is
   IGovMITO,
   ERC20PermitUpgradeable,
   ERC20VotesUpgradeable,
   Ownable2StepUpgradeable,
   UUPSUpgradeable,
-  SudoVotes
+  SudoVotes,
+  ReentrancyGuardTransient
 {
   using ERC7201Utils for string;
-  using LibRedeemQueue for *;
   using SafeCast for uint256;
+  using LibQueue for LibQueue.Trace208OffsetQueue;
 
   /// @custom:storage-location mitosis.storage.GovMITO
   struct GovMITOStorage {
     address minter;
-    LibRedeemQueue.Queue redeemQueue;
+    uint48 withdrawalPeriod;
+    uint48 _reserved;
+    mapping(address user => LibQueue.Trace208OffsetQueue) queue;
+    mapping(address addr => bool) isModule;
     mapping(address sender => bool) isWhitelistedSender;
   }
 
@@ -81,8 +84,10 @@ contract GovMITO is
     revert StdError.NotSupported();
   }
 
-  function initialize(address owner_, address minter_, uint256 redeemPeriod_) external initializer {
-    // TODO(thai): not fixed yet. could be modified before launching.
+  function initialize(address owner_, uint256 withdrawalPeriod_) external initializer {
+    require(withdrawalPeriod_ > 0, StdError.InvalidParameter('withdrawalPeriod'));
+
+    // NOTE: not fixed yet. could be modified before launching.
     __ERC20_init('Mitosis Governance Token', 'gMITO');
     __ERC20Permit_init('Mitosis Governance Token');
     __ERC20Votes_init();
@@ -93,8 +98,7 @@ contract GovMITO is
 
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    _setMinter($, minter_);
-    _setRedeemPeriod($, redeemPeriod_);
+    _setWithdrawalPeriod($, withdrawalPeriod_);
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
@@ -111,8 +115,34 @@ contract GovMITO is
     return _getGovMITOStorage().isWhitelistedSender[sender];
   }
 
-  function redeemPeriod() external view returns (uint256) {
-    return _getGovMITOStorage().redeemQueue.redeemPeriod;
+  function isModule(address addr) external view returns (bool) {
+    return _getGovMITOStorage().isModule[addr];
+  }
+
+  function withdrawalPeriod() external view returns (uint256) {
+    return _getGovMITOStorage().withdrawalPeriod;
+  }
+
+  function withdrawalQueueOffset(address receiver) external view returns (uint256) {
+    return _getGovMITOStorage().queue[receiver].offset();
+  }
+
+  function withdrawalQueueSize(address receiver) external view returns (uint256) {
+    return _getGovMITOStorage().queue[receiver].size();
+  }
+
+  function withdrawalQueueRequestByIndex(address receiver, uint32 pos) external view returns (uint48, uint208) {
+    return _getGovMITOStorage().queue[receiver].itemAt(pos);
+  }
+
+  function withdrawalQueueRequestByTime(address receiver, uint48 time) external view returns (uint48, uint208) {
+    return _getGovMITOStorage().queue[receiver].recentItemAt(time);
+  }
+
+  function previewClaimWithdraw(address receiver) external view returns (uint256) {
+    GovMITOStorage storage $ = _getGovMITOStorage();
+    (, uint256 available) = $.queue[receiver].pending(clock() - $.withdrawalPeriod);
+    return available;
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
@@ -135,27 +165,37 @@ contract GovMITO is
     emit Minted(to, msg.value);
   }
 
-  function requestRedeem(address receiver, uint256 amount) external returns (uint256 reqId) {
+  function requestWithdraw(address receiver, uint256 amount) external returns (uint256) {
+    require(receiver != address(0), StdError.ZeroAddress('receiver'));
+    require(amount > 0, StdError.ZeroAmount());
+
     GovMITOStorage storage $ = _getGovMITOStorage();
 
     _burn(_msgSender(), amount);
-    reqId = $.redeemQueue.enqueue(receiver, amount, clock(), bytes(''));
-    $.redeemQueue.reserve(address(this), amount, clock(), bytes(''));
 
-    emit RedeemRequested(_msgSender(), receiver, amount);
+    uint256 reqId = $.queue[receiver].append(clock(), amount.toUint208());
+
+    emit WithdrawRequested(_msgSender(), receiver, amount, reqId);
 
     return reqId;
   }
 
-  function claimRedeem(address receiver) external returns (uint256 claimed) {
+  function claimWithdraw(address receiver) external nonReentrant returns (uint256) {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    $.redeemQueue.update(clock());
-    claimed = $.redeemQueue.claim(receiver, clock());
+    LibQueue.Trace208OffsetQueue storage queue = $.queue[receiver];
+    (uint32 reqIdFrom, uint32 reqIdTo) = queue.solveByKey(clock() - $.withdrawalPeriod);
+
+    uint256 claimed;
+    {
+      uint256 fromValue = reqIdFrom == 0 ? 0 : queue.valueAt(reqIdFrom - 1);
+      uint256 toValue = queue.valueAt(reqIdTo - 1);
+      claimed = toValue - fromValue;
+    }
 
     SafeTransferLib.safeTransferETH(receiver, claimed);
 
-    emit RedeemRequestClaimed(receiver, claimed);
+    emit WithdrawRequestClaimed(receiver, claimed, reqIdFrom, reqIdTo);
 
     return claimed;
   }
@@ -168,8 +208,21 @@ contract GovMITO is
     _setMinter(_getGovMITOStorage(), minter_);
   }
 
+  function setModule(address addr, bool isModule_) external onlyOwner {
+    require(addr != address(0), StdError.ZeroAddress('sender'));
+    GovMITOStorage storage $ = _getGovMITOStorage();
+    $.isModule[addr] = isModule_;
+    emit ModuleSet(addr, isModule_);
+  }
+
   function setWhitelistedSender(address sender, bool isWhitelisted) external onlyOwner {
+    require(sender != address(0), StdError.ZeroAddress('sender'));
     _setWhitelistedSender(_getGovMITOStorage(), sender, isWhitelisted);
+  }
+
+  function setWithdrawalPeriod(uint256 withdrawalPeriod_) external onlyOwner {
+    require(withdrawalPeriod_ > 0, StdError.InvalidParameter('withdrawalPeriod'));
+    _setWithdrawalPeriod(_getGovMITOStorage(), withdrawalPeriod_);
   }
 
   // ============================ NOTE: IERC6372 OVERRIDES ============================ //
@@ -189,7 +242,7 @@ contract GovMITO is
   function approve(address spender, uint256 amount) public override(IERC20, ERC20Upgradeable) returns (bool) {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    require($.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
+    require($.isModule[spender] || $.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
 
     return super.approve(spender, amount);
   }
@@ -197,7 +250,7 @@ contract GovMITO is
   function transfer(address to, uint256 amount) public override(IERC20, ERC20Upgradeable) returns (bool) {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    require($.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
+    require($.isModule[_msgSender()] || $.isWhitelistedSender[_msgSender()], StdError.Unauthorized());
 
     return super.transfer(to, amount);
   }
@@ -209,7 +262,7 @@ contract GovMITO is
   {
     GovMITOStorage storage $ = _getGovMITOStorage();
 
-    require($.isWhitelistedSender[from], StdError.Unauthorized());
+    require(($.isModule[to] && _msgSender() == to) || $.isWhitelistedSender[from], StdError.Unauthorized());
 
     return super.transferFrom(from, to, amount);
   }
@@ -231,11 +284,11 @@ contract GovMITO is
 
   function _setWhitelistedSender(GovMITOStorage storage $, address sender, bool isWhitelisted) internal {
     $.isWhitelistedSender[sender] = isWhitelisted;
-    emit WhiltelistedSenderSet(sender, isWhitelisted);
+    emit WhitelistedSenderSet(sender, isWhitelisted);
   }
 
-  function _setRedeemPeriod(GovMITOStorage storage $, uint256 redeemPeriod_) internal {
-    $.redeemQueue.redeemPeriod = redeemPeriod_;
-    emit RedeemPeriodSet(redeemPeriod_);
+  function _setWithdrawalPeriod(GovMITOStorage storage $, uint256 withdrawalPeriod_) internal {
+    $.withdrawalPeriod = uint48(withdrawalPeriod_);
+    emit WithdrawalPeriodSet(withdrawalPeriod_);
   }
 }

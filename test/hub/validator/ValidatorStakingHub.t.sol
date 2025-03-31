@@ -68,7 +68,7 @@ contract ValidatorStakingHubTest is Toolkit {
     test_addNotifier();
 
     vm.prank(makeAddr('wrong'));
-    vm.expectRevert(_errUnauthorized());
+    vm.expectRevert(_errNotifierNotRegistered(makeAddr('wrong')));
     hub.notifyStake(val1, user1, 10 ether);
 
     vm.prank(notifier1);
@@ -127,7 +127,7 @@ contract ValidatorStakingHubTest is Toolkit {
     test_addNotifier();
 
     vm.prank(makeAddr('wrong'));
-    vm.expectRevert(_errUnauthorized());
+    vm.expectRevert(_errNotifierNotRegistered(makeAddr('wrong')));
     hub.notifyUnstake(val1, user1, 10 ether);
 
     // First stake 20 ether
@@ -176,7 +176,7 @@ contract ValidatorStakingHubTest is Toolkit {
     test_addNotifier();
 
     vm.prank(makeAddr('wrong'));
-    vm.expectRevert(_errUnauthorized());
+    vm.expectRevert(_errNotifierNotRegistered(makeAddr('wrong')));
     hub.notifyRedelegation(val1, val2, user1, 10 ether);
 
     // First stake 20 ether to val1
@@ -229,5 +229,9 @@ contract ValidatorStakingHubTest is Toolkit {
     assertEq(hub.validatorStakerTotalTWAB(val2, user1, _now48()), expectedVal2StakerTwabDay2);
     assertEq(hub.validatorTotalTWAB(val2, _now48() - offset), expectedVal2StakerTwabDay1);
     assertEq(hub.validatorStakerTotalTWAB(val2, user1, _now48() - offset), expectedVal2StakerTwabDay1);
+  }
+
+  function _errNotifierNotRegistered(address notifier) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IValidatorStakingHub.IValidatorStakingHub__NotifierNotRegistered.selector, notifier);
   }
 }

@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import { Test } from '@std/Test.sol';
 
-import { Strings } from '@oz-v5/utils/Strings.sol';
+import { Strings } from '@oz/utils/Strings.sol';
 
 // https://github.com/Se7en-Seas/boring-vault/blob/main/test/resources/MerkleTreeHelper/MerkleTreeHelper.sol
 contract MerkleTreeHelper is Test {

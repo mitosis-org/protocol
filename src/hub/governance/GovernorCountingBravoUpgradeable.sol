@@ -4,8 +4,8 @@
 // Modified to support the Bravo style of quorum.
 pragma solidity ^0.8.28;
 
-import { GovernorUpgradeable } from '@ozu-v5/governance/GovernorUpgradeable.sol';
-import { Initializable } from '@ozu-v5/proxy/utils/Initializable.sol';
+import { GovernorUpgradeable } from '@ozu/governance/GovernorUpgradeable.sol';
+import { Initializable } from '@ozu/proxy/utils/Initializable.sol';
 
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 
@@ -37,7 +37,7 @@ abstract contract GovernorCountingBravoUpgradeable is Initializable, GovernorUpg
     mapping(uint256 proposalId => ProposalVote) _proposalVotes;
   }
 
-  string constant _GovernorCountingBravoStorageNamespace = 'mitosis.storage.GovernorCountingBravo';
+  string private constant _GovernorCountingBravoStorageNamespace = 'mitosis.storage.GovernorCountingBravo';
   bytes32 private immutable _GovernorCountingBravoStorageLocation = _GovernorCountingBravoStorageNamespace.storageSlot();
 
   function _getGovernorCountingBravoStorage() private view returns (GovernorCountingBravoStorage storage $) {

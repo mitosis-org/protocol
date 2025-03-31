@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';

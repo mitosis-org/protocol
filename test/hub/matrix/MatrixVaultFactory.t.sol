@@ -5,28 +5,37 @@ import { WETH } from '@solady/tokens/WETH.sol';
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
-import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
+import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
 import { MatrixVaultCapped } from '../../../src/hub/matrix/MatrixVaultCapped.sol';
 import { MatrixVaultFactory } from '../../../src/hub/matrix/MatrixVaultFactory.sol';
+import { IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
+import { IMatrixVaultFactory } from '../../../src/interfaces/hub/matrix/IMatrixVaultFactory.sol';
+import { MockContract } from '../../util/MockContract.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
-
-contract Empty { }
 
 contract MatrixVaultFactoryTest is Toolkit {
   address public contractOwner = makeAddr('owner');
-  address public assetManager = address(new Empty());
+  MockContract public assetManager;
+  MockContract public reclaimQueue;
 
   ERC1967Factory public proxyFactory;
 
   MatrixVaultBasic public basicImpl;
   MatrixVaultCapped public cappedImpl;
   MatrixVaultFactory public factoryImpl;
+
   MatrixVaultFactory public base;
 
   function setUp() public {
+    assetManager = new MockContract();
+    reclaimQueue = new MockContract();
+    assetManager.setRet(
+      abi.encodeCall(IAssetManagerStorageV1.reclaimQueue, ()), false, abi.encode(address(reclaimQueue))
+    );
+
     proxyFactory = new ERC1967Factory();
 
     basicImpl = new MatrixVaultBasic();
@@ -45,26 +54,26 @@ contract MatrixVaultFactoryTest is Toolkit {
 
   function test_initVaultType() public {
     vm.startPrank(contractOwner);
-    base.initVaultType(MatrixVaultFactory.VaultType.Basic, address(basicImpl));
-    base.initVaultType(MatrixVaultFactory.VaultType.Capped, address(cappedImpl));
+    base.initVaultType(IMatrixVaultFactory.VaultType.Basic, address(basicImpl));
+    base.initVaultType(IMatrixVaultFactory.VaultType.Capped, address(cappedImpl));
     vm.stopPrank();
 
-    assertNotEq(base.beacon(MatrixVaultFactory.VaultType.Basic), address(0));
-    assertNotEq(base.beacon(MatrixVaultFactory.VaultType.Capped), address(0));
+    assertNotEq(base.beacon(IMatrixVaultFactory.VaultType.Basic), address(0));
+    assertNotEq(base.beacon(IMatrixVaultFactory.VaultType.Capped), address(0));
 
-    assertTrue(base.vaultTypeInitialized(MatrixVaultFactory.VaultType.Basic));
-    assertTrue(base.vaultTypeInitialized(MatrixVaultFactory.VaultType.Capped));
+    assertTrue(base.vaultTypeInitialized(IMatrixVaultFactory.VaultType.Basic));
+    assertTrue(base.vaultTypeInitialized(IMatrixVaultFactory.VaultType.Capped));
   }
 
   function test_create_basic() public returns (address) {
     vm.prank(contractOwner);
-    base.initVaultType(MatrixVaultFactory.VaultType.Basic, address(basicImpl));
+    base.initVaultType(IMatrixVaultFactory.VaultType.Basic, address(basicImpl));
 
     address instance = _createBasic(
       contractOwner,
-      MatrixVaultFactory.BasicVaultInitArgs({
+      IMatrixVaultFactory.BasicVaultInitArgs({
         owner: contractOwner,
-        assetManager: assetManager,
+        assetManager: address(assetManager),
         asset: IERC20Metadata(address(new WETH())),
         name: 'Basic Vault',
         symbol: 'BV'
@@ -73,23 +82,23 @@ contract MatrixVaultFactoryTest is Toolkit {
 
     assertEq(address(0x0), _erc1967Admin(instance));
     assertEq(address(0x0), _erc1967Impl(instance));
-    assertEq(base.beacon(MatrixVaultFactory.VaultType.Basic), _erc1967Beacon(instance));
+    assertEq(base.beacon(IMatrixVaultFactory.VaultType.Basic), _erc1967Beacon(instance));
 
-    assertEq(base.instancesLength(MatrixVaultFactory.VaultType.Basic), 1);
-    assertEq(base.instances(MatrixVaultFactory.VaultType.Basic, 0), instance);
+    assertEq(base.instancesLength(IMatrixVaultFactory.VaultType.Basic), 1);
+    assertEq(base.instances(IMatrixVaultFactory.VaultType.Basic, 0), instance);
 
     return instance;
   }
 
   function test_create_capped() public returns (address) {
     vm.prank(contractOwner);
-    base.initVaultType(MatrixVaultFactory.VaultType.Capped, address(cappedImpl));
+    base.initVaultType(IMatrixVaultFactory.VaultType.Capped, address(cappedImpl));
 
     address instance = _createCapped(
       contractOwner,
-      MatrixVaultFactory.CappedVaultInitArgs({
+      IMatrixVaultFactory.CappedVaultInitArgs({
         owner: contractOwner,
-        assetManager: assetManager,
+        assetManager: address(assetManager),
         asset: IERC20Metadata(address(new WETH())),
         name: 'Capped Vault',
         symbol: 'CV'
@@ -98,10 +107,10 @@ contract MatrixVaultFactoryTest is Toolkit {
 
     assertEq(address(0x0), _erc1967Admin(instance));
     assertEq(address(0x0), _erc1967Impl(instance));
-    assertEq(base.beacon(MatrixVaultFactory.VaultType.Capped), _erc1967Beacon(instance));
+    assertEq(base.beacon(IMatrixVaultFactory.VaultType.Capped), _erc1967Beacon(instance));
 
-    assertEq(base.instancesLength(MatrixVaultFactory.VaultType.Capped), 1);
-    assertEq(base.instances(MatrixVaultFactory.VaultType.Capped, 0), instance);
+    assertEq(base.instancesLength(IMatrixVaultFactory.VaultType.Capped), 1);
+    assertEq(base.instances(IMatrixVaultFactory.VaultType.Capped, 0), instance);
 
     return instance;
   }
@@ -111,23 +120,23 @@ contract MatrixVaultFactoryTest is Toolkit {
     address capped = test_create_capped();
 
     vm.prank(contractOwner);
-    base.migrate(MatrixVaultFactory.VaultType.Basic, MatrixVaultFactory.VaultType.Capped, basic, '');
+    base.migrate(IMatrixVaultFactory.VaultType.Basic, IMatrixVaultFactory.VaultType.Capped, basic, '');
 
-    assertEq(base.instancesLength(MatrixVaultFactory.VaultType.Basic), 0);
-    assertEq(base.instancesLength(MatrixVaultFactory.VaultType.Capped), 2);
-    assertEq(base.instances(MatrixVaultFactory.VaultType.Capped, 0), capped);
-    assertEq(base.instances(MatrixVaultFactory.VaultType.Capped, 1), basic);
+    assertEq(base.instancesLength(IMatrixVaultFactory.VaultType.Basic), 0);
+    assertEq(base.instancesLength(IMatrixVaultFactory.VaultType.Capped), 2);
+    assertEq(base.instances(IMatrixVaultFactory.VaultType.Capped, 0), capped);
+    assertEq(base.instances(IMatrixVaultFactory.VaultType.Capped, 1), basic);
 
-    assertEq(base.beacon(MatrixVaultFactory.VaultType.Capped), _erc1967Beacon(basic));
+    assertEq(base.beacon(IMatrixVaultFactory.VaultType.Capped), _erc1967Beacon(basic));
   }
 
   function _createBasic(address caller, MatrixVaultFactory.BasicVaultInitArgs memory args) internal returns (address) {
     vm.prank(caller);
-    return base.create(MatrixVaultFactory.VaultType.Basic, abi.encode(args));
+    return base.create(IMatrixVaultFactory.VaultType.Basic, abi.encode(args));
   }
 
   function _createCapped(address caller, MatrixVaultFactory.CappedVaultInitArgs memory args) internal returns (address) {
     vm.prank(caller);
-    return base.create(MatrixVaultFactory.VaultType.Capped, abi.encode(args));
+    return base.create(IMatrixVaultFactory.VaultType.Capped, abi.encode(args));
   }
 }

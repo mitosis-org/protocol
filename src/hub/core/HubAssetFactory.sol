@@ -3,10 +3,9 @@ pragma solidity >=0.8.23 <0.9.0;
 
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
-import { BeaconProxy } from '@oz-v5/proxy/beacon/BeaconProxy.sol';
-
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+import { BeaconProxy } from '@oz/proxy/beacon/BeaconProxy.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { BeaconBase } from '../../lib/proxy/BeaconBase.sol';
 import { HubAsset } from './HubAsset.sol';
