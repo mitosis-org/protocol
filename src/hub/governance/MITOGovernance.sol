@@ -49,10 +49,10 @@ contract MITOGovernance is
   function initialize(
     IVotes token_,
     Timelock timelock_,
-    uint32 votingDelay_,
+    uint48 votingDelay_,
     uint32 votingPeriod_,
-    uint32 proposalThreshold_,
-    uint32 quorumFraction_
+    uint256 quorumFraction_,
+    uint256 proposalThreshold_
   ) public initializer {
     __Governor_init('MITOGovernance');
     __GovernorSettings_init(votingDelay_, votingPeriod_, proposalThreshold_);
