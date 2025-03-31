@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Initializable } from '@oz-v5/proxy/utils/Initializable.sol';
+import { Initializable } from '@oz/proxy/utils/Initializable.sol';
 
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 

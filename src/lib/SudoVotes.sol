@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { VotesUpgradeable } from '@ozu-v5/governance/utils/VotesUpgradeable.sol';
-
-import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
+import { IVotes } from '@oz/governance/utils/IVotes.sol';
+import { VotesUpgradeable } from '@ozu/governance/utils/VotesUpgradeable.sol';
 
 import { ISudoVotes } from '../interfaces/lib/ISudoVotes.sol';
 import { ERC7201Utils } from './ERC7201Utils.sol';

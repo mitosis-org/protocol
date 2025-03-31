@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.23 <0.9.0;
 
-import { IBeacon } from '@oz-v5/proxy/beacon/IBeacon.sol';
-import { ERC1967Utils } from '@oz-v5/proxy/ERC1967/ERC1967Utils.sol';
-import { Proxy } from '@oz-v5/proxy/Proxy.sol';
+import { IBeacon } from '@oz/proxy/beacon/IBeacon.sol';
+import { ERC1967Utils } from '@oz/proxy/ERC1967/ERC1967Utils.sol';
+import { Proxy } from '@oz/proxy/Proxy.sol';
 
 /**
  * @dev ownable Interface of the BeaconProxy.

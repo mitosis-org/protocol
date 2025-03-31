@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { IConsensusGovernanceEntrypoint } from '../../interfaces/hub/consensus-layer/IConsensusGovernanceEntrypoint.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';

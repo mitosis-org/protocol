@@ -5,8 +5,8 @@ import { WETH } from '@solady/tokens/WETH.sol';
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
-import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
+import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
 import { MatrixVaultCapped } from '../../../src/hub/matrix/MatrixVaultCapped.sol';

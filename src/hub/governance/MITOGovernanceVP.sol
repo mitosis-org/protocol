@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
-import { ECDSA } from '@oz-v5/utils/cryptography/ECDSA.sol';
-
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
-import { EIP712Upgradeable } from '@ozu-v5/utils/cryptography/EIP712Upgradeable.sol';
-import { NoncesUpgradeable } from '@ozu-v5/utils/NoncesUpgradeable.sol';
+import { IVotes } from '@oz/governance/utils/IVotes.sol';
+import { ECDSA } from '@oz/utils/cryptography/ECDSA.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
+import { EIP712Upgradeable } from '@ozu/utils/cryptography/EIP712Upgradeable.sol';
+import { NoncesUpgradeable } from '@ozu/utils/NoncesUpgradeable.sol';
 
 import { ISudoVotes } from '../../interfaces/lib/ISudoVotes.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';

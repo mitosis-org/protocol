@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
-import { Time } from '@oz-v5/utils/types/Time.sol';
+import { IERC20 } from '@oz/interfaces/IERC20.sol';
+import { SafeCast } from '@oz/utils/math/SafeCast.sol';
+import { Time } from '@oz/utils/types/Time.sol';
 
 import { LibString } from '@solady/utils/LibString.sol';
 

@@ -2,8 +2,8 @@
 // Based on https://github.com/Se7en-Seas/boring-vault
 pragma solidity ^0.8.28;
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { Address } from '@openzeppelin/contracts/utils/Address.sol';
 

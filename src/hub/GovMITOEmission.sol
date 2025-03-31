@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
-
-import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
-import { Math } from '@oz-v5/utils/math/Math.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
-import { Time } from '@oz-v5/utils/types/Time.sol';
+import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { Math } from '@oz/utils/math/Math.sol';
+import { SafeCast } from '@oz/utils/math/SafeCast.sol';
+import { Time } from '@oz/utils/types/Time.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { IGovMITO } from '../interfaces/hub/IGovMITO.sol';
 import { IGovMITOEmission } from '../interfaces/hub/IGovMITOEmission.sol';

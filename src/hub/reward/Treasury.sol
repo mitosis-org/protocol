@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC6372 } from '@oz-v5/interfaces/IERC6372.sol';
-import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
-import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
-import { SafeCast } from '@oz-v5/utils/math/SafeCast.sol';
-
-import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+import { IERC6372 } from '@oz/interfaces/IERC6372.sol';
+import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
+import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { SafeCast } from '@oz/utils/math/SafeCast.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { StdError } from '../../lib/StdError.sol';

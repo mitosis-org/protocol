@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
-import { ERC20 } from '@oz-v5/token/ERC20/ERC20.sol';
-import { ERC4626 } from '@oz-v5/token/ERC20/extensions/ERC4626.sol';
+import { IERC20 } from '@oz/interfaces/IERC20.sol';
+import { ERC20 } from '@oz/token/ERC20/ERC20.sol';
+import { ERC4626 } from '@oz/token/ERC20/extensions/ERC4626.sol';
 
 contract SimpleERC4626Vault is ERC4626 {
   constructor(address underlying_, string memory name_, string memory symbol_)

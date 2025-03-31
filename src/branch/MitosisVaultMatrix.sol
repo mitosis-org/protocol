@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-
-import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
-import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
+import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
+import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IMitosisVaultMatrix, MatrixAction } from '../interfaces/branch/IMitosisVaultMatrix.sol';

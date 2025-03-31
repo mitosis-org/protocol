@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Time } from '@oz-v5/utils/types/Time.sol';
-
-import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+import { Time } from '@oz/utils/types/Time.sol';
+import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
 
 import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';

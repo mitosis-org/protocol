@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { GasRouter } from '@hpl-v5/client/GasRouter.sol';
-import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
+import { IMessageRecipient } from '@hpl/interfaces/IMessageRecipient.sol';
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
+import { GasRouter } from '../external/hyperlane/GasRouter.sol';
 import { IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { Conv } from '../lib/Conv.sol';
@@ -119,8 +119,8 @@ contract MitosisVaultEntrypoint is
   }
 
   function _dispatchToMitosis(bytes memory enc) internal {
-    uint256 fee = _GasRouter_quoteDispatch(_mitosisDomain, enc, address(hook));
-    _GasRouter_dispatch(_mitosisDomain, fee, enc, address(hook));
+    uint256 fee = _GasRouter_quoteDispatch(_mitosisDomain, enc, address(hook()));
+    _GasRouter_dispatch(_mitosisDomain, fee, enc, address(hook()));
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//

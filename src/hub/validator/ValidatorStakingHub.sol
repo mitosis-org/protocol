@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu-v5/proxy/utils/UUPSUpgradeable.sol';
-
-import { Math } from '@oz-v5/utils/math/Math.sol';
-import { Time } from '@oz-v5/utils/types/Time.sol';
+import { Math } from '@oz/utils/math/Math.sol';
+import { Time } from '@oz/utils/types/Time.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
 import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';

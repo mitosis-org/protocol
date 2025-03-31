@@ -4,8 +4,8 @@ pragma solidity ^0.8.28;
 import { console } from '@std/console.sol';
 import { Vm } from '@std/Vm.sol';
 
-import { IVotes } from '@oz-v5/governance/utils/IVotes.sol';
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
+import { IVotes } from '@oz/governance/utils/IVotes.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { GovMITO } from '../../src/hub/GovMITO.sol';
 import { IGovMITO } from '../../src/interfaces/hub/IGovMITO.sol';

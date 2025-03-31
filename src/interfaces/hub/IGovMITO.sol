@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
-import { IERC5805 } from '@oz-v5/interfaces/IERC5805.sol';
+import { IERC20 } from '@oz/interfaces/IERC20.sol';
+import { IERC5805 } from '@oz/interfaces/IERC5805.sol';
 
 interface IGovMITO is IERC20, IERC5805 {
   /**

@@ -27,32 +27,11 @@ checksum = "87854223d14941d6fda3d78d900217e79e25755ea5bc48beca035766fa6a4e7e"
 integrity = "826fb621339dcee4261f848b283ec86364743d3c289d61f621747d95e315215a"
 
 [[dependencies]]
-name = "@openzeppelin-contracts-upgradeable-v4"
-version = "4.9.6"
-url = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/archive/refs/tags/v4.9.6.zip"
-checksum = "f438c623b1aa398337ec45cd92a4c13b0e0b079d28008f3c3be70f334ab6eba7"
-integrity = "cd2692a0627ab13be2bb59171cb688393f9264be12255851fa3922d418a16f95"
-
-[[dependencies]]
-name = "@openzeppelin-contracts-v4"
-version = "4.9.6"
-url = "https://github.com/OpenZeppelin/openzeppelin-contracts/archive/refs/tags/v4.9.6.zip"
-checksum = "7af0307b0ad8560aa09405da10bd705fd189b544597695b2c3046b15ce637e47"
-integrity = "559f038c60d5352d61332f7b4e81d4e021b3d4b6688fd384d12a23aaf2649395"
-
-[[dependencies]]
 name = "forge-std"
 version = "1.9.6"
 url = "https://soldeer-revisions.s3.amazonaws.com/forge-std/1_9_6_01-02-2025_20:49:10_forge-std-1.9.zip"
 checksum = "55f341818321b3f925161a72fd0dcd62e4a0a4b66785a7a932bf2bfaf96fb9d1"
 integrity = "e9ecdc364d152157431e5df5aa041ffddbe9bb1c1ad81634b1e72df9e23814e8"
-
-[[dependencies]]
-name = "openzeppelin-foundry-upgrades"
-version = "0.3.1"
-url = "https://soldeer-revisions.s3.amazonaws.com/openzeppelin-foundry-upgrades/0_3_1_25-06-2024_18:12:33_openzeppelin-foundry-upgrades.zip"
-checksum = "16a43c67b7c62e4a638b669b35f7b19c98a37278811fe910750b62b6e6fdffa7"
-integrity = "9a7b6e6f82f0524e1980342d1e8075e3e9fb65861ffccab7954958ce18f37038"
 
 [[dependencies]]
 name = "solady"

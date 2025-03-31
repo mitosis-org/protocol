@@ -4,11 +4,11 @@ pragma solidity ^0.8.28;
 import { console } from '@std/console.sol';
 import { Vm } from '@std/Vm.sol';
 
-import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
-import { IERC20Metadata } from '@oz-v5/interfaces/IERC20Metadata.sol';
-import { IERC4626 } from '@oz-v5/interfaces/IERC4626.sol';
-import { ERC1967Proxy } from '@oz-v5/proxy/ERC1967/ERC1967Proxy.sol';
-import { ERC20 } from '@oz-v5/token/ERC20/ERC20.sol';
+import { IERC20 } from '@oz/interfaces/IERC20.sol';
+import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
+import { IERC4626 } from '@oz/interfaces/IERC4626.sol';
+import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
+import { ERC20 } from '@oz/token/ERC20/ERC20.sol';
 
 import { AssetManager } from '../../../src/hub/core/AssetManager.sol';
 import { AssetManagerStorageV1 } from '../../../src/hub/core/AssetManagerStorageV1.sol';

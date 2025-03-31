@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.23 <0.9.0;
 
-import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
+import { ContextUpgradeable } from '@ozu/utils/ContextUpgradeable.sol';
 
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
