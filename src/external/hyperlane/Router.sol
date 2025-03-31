@@ -7,7 +7,9 @@ import { EnumerableMapExtended } from '@hpl/libs/EnumerableMapExtended.sol';
 
 import { Strings } from '@oz/utils/Strings.sol';
 
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { MailboxClient } from './MailboxClient.sol';
+
 
 
 
@@ -18,17 +20,27 @@ import { MailboxClient } from './MailboxClient.sol';
 abstract contract Router is MailboxClient, IMessageRecipient {
   using EnumerableMapExtended for EnumerableMapExtended.UintToBytes32Map;
   using Strings for uint32;
+  using ERC7201Utils for string;
 
-  // ============ Mutable Storage ============
-  EnumerableMapExtended.UintToBytes32Map internal _routers;
+  struct RouterStorage {
+    EnumerableMapExtended.UintToBytes32Map routers;
+  }
 
-  uint256[48] private __GAP; // gap for upgrade safety
+  string private constant _ROUTER_STORAGE_NAMESPACE = 'hyperlane.storage.Router';
+  bytes32 private immutable _slot = _ROUTER_STORAGE_NAMESPACE.storageSlot();
+
+  function _getHplRouterStorage() private view returns (RouterStorage storage $) {
+    bytes32 slot = _slot;
+    assembly {
+      $.slot := slot
+    }
+  }
 
   constructor(address _mailbox) MailboxClient(_mailbox) { }
 
   // ============ External functions ============
   function domains() external view returns (uint32[] memory) {
-    return _routers.uint32Keys();
+    return _getHplRouterStorage().routers.uint32Keys();
   }
 
   /**
@@ -38,7 +50,7 @@ abstract contract Router is MailboxClient, IMessageRecipient {
    * @return router The address of the Router contract for the given domain
    */
   function routers(uint32 _domain) public view virtual returns (bytes32) {
-    (, bytes32 _router) = _routers.tryGet(_domain);
+    (, bytes32 _router) = _getHplRouterStorage().routers.tryGet(_domain);
     return _router;
   }
 
@@ -112,7 +124,7 @@ abstract contract Router is MailboxClient, IMessageRecipient {
    * @param _address The new router
    */
   function _enrollRemoteRouter(uint32 _domain, bytes32 _address) internal virtual {
-    _routers.set(_domain, _address);
+    _getHplRouterStorage().routers.set(_domain, _address);
   }
 
   /**
@@ -120,7 +132,7 @@ abstract contract Router is MailboxClient, IMessageRecipient {
    * @param _domain The domain
    */
   function _unenrollRemoteRouter(uint32 _domain) internal virtual {
-    require(_routers.remove(_domain), _domainNotFoundError(_domain));
+    require(_getHplRouterStorage().routers.remove(_domain), _domainNotFoundError(_domain));
   }
 
   /**
@@ -138,7 +150,7 @@ abstract contract Router is MailboxClient, IMessageRecipient {
    * @return _router The address of the remote Application Router on _domain
    */
   function _mustHaveRemoteRouter(uint32 _domain) internal view returns (bytes32) {
-    (bool contained, bytes32 _router) = _routers.tryGet(_domain);
+    (bool contained, bytes32 _router) = _getHplRouterStorage().routers.tryGet(_domain);
     if (contained) {
       return _router;
     }
@@ -167,7 +179,7 @@ abstract contract Router is MailboxClient, IMessageRecipient {
    * @dev For backward compatibility with v2 client contracts
    */
   function _dispatch(uint32 _destinationDomain, bytes memory _messageBody) internal returns (bytes32) {
-    return _Router_dispatch(_destinationDomain, msg.value, _messageBody, '', address(hook));
+    return _Router_dispatch(_destinationDomain, msg.value, _messageBody, '', address(hook()));
   }
 
   function _Router_quoteDispatch(
@@ -185,6 +197,6 @@ abstract contract Router is MailboxClient, IMessageRecipient {
    * @dev For backward compatibility with v2 client contracts
    */
   function _quoteDispatch(uint32 _destinationDomain, bytes memory _messageBody) internal view returns (uint256) {
-    return _Router_quoteDispatch(_destinationDomain, _messageBody, '', address(hook));
+    return _Router_quoteDispatch(_destinationDomain, _messageBody, '', address(hook()));
   }
 }

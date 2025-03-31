@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity >=0.6.11;
+
 import { StandardHookMetadata } from '@hpl/hooks/libs/StandardHookMetadata.sol';
 
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { Router } from './Router.sol';
 
 /*@@@@@@@       @@@@@@@@@
@@ -16,17 +18,30 @@ import { Router } from './Router.sol';
  @@@@@@@@@       @@@@@@@@@
 @@@@@@@@@       @@@@@@@@*/
 
-
-
 abstract contract GasRouter is Router {
+  using ERC7201Utils for string;
+
   event GasSet(uint32 domain, uint256 gas);
 
   // ============ Mutable Storage ============
-  mapping(uint32 => uint256) public destinationGas;
 
   struct GasRouterConfig {
     uint32 domain;
     uint256 gas;
+  }
+
+  struct GasRouterStorage {
+    mapping(uint32 => uint256) destinationGas;
+  }
+
+  string private constant _GAS_ROUTER_STORAGE_NAMESPACE = 'hyperlane.storage.GasRouter';
+  bytes32 private immutable _slot = _GAS_ROUTER_STORAGE_NAMESPACE.storageSlot();
+
+  function _getHplGasRouterStorage() internal view returns (GasRouterStorage storage $) {
+    bytes32 slot = _slot;
+    assembly {
+      $.slot := slot
+    }
   }
 
   constructor(address _mailbox) Router(_mailbox) { }
@@ -56,15 +71,15 @@ abstract contract GasRouter is Router {
    * @return _gasPayment Payment computed by the registered InterchainGasPaymaster.
    */
   function quoteGasPayment(uint32 _destinationDomain) external view virtual returns (uint256) {
-    return _GasRouter_quoteDispatch(_destinationDomain, '', address(hook));
+    return _GasRouter_quoteDispatch(_destinationDomain, '', address(hook()));
   }
 
   function _GasRouter_hookMetadata(uint32 _destination) internal view returns (bytes memory) {
-    return StandardHookMetadata.overrideGasLimit(destinationGas[_destination]);
+    return StandardHookMetadata.overrideGasLimit(_getHplGasRouterStorage().destinationGas[_destination]);
   }
 
   function _setDestinationGas(uint32 domain, uint256 gas) internal {
-    destinationGas[domain] = gas;
+    _getHplGasRouterStorage().destinationGas[domain] = gas;
     emit GasSet(domain, gas);
   }
 

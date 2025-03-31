@@ -80,8 +80,8 @@ contract BranchGovernanceEntrypoint is
   function _dispatchToBranch(uint256 chainId, bytes memory enc) internal {
     uint32 hplDomain = _ccRegistry.hyperlaneDomain(chainId);
 
-    uint256 fee = _GasRouter_quoteDispatch(hplDomain, enc, address(hook));
-    _GasRouter_dispatch(hplDomain, fee, enc, address(hook));
+    uint256 fee = _GasRouter_quoteDispatch(hplDomain, enc, address(hook()));
+    _GasRouter_dispatch(hplDomain, fee, enc, address(hook()));
   }
 
   function _handle(uint32, bytes32, bytes calldata) internal override { }

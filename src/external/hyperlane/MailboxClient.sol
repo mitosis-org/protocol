@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity >=0.6.11;
+
 import { IPostDispatchHook } from '@hpl/interfaces/hooks/IPostDispatchHook.sol';
 import { IInterchainSecurityModule } from '@hpl/interfaces/IInterchainSecurityModule.sol';
 import { IMailbox } from '@hpl/interfaces/IMailbox.sol';
@@ -9,12 +10,7 @@ import { PackageVersioned } from '@hpl/PackageVersioned.sol';
 import { Address } from '@oz/utils/Address.sol';
 import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
 
-
-
-
-
-
-
+import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 
 /*@@@@@@@       @@@@@@@@@
  @@@@@@@@@       @@@@@@@@@
@@ -30,19 +26,37 @@ import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
 
 abstract contract MailboxClient is OwnableUpgradeable, PackageVersioned {
   using Message for bytes;
+  using ERC7201Utils for string;
 
   event HookSet(address _hook);
   event IsmSet(address _ism);
 
   IMailbox public immutable mailbox;
-
   uint32 public immutable localDomain;
 
-  IPostDispatchHook public hook;
+  struct MailboxClientStorage {
+    IPostDispatchHook hook;
+    IInterchainSecurityModule interchainSecurityModule;
+  }
 
-  IInterchainSecurityModule public interchainSecurityModule;
+  string private constant _MAILBOX_CLIENT_STORAGE_NAMESPACE = 'hyperlane.storage.MailboxClient';
+  bytes32 private immutable _slot = _MAILBOX_CLIENT_STORAGE_NAMESPACE.storageSlot();
 
-  uint256[48] private __GAP; // gap for upgrade safety
+  function _getHplMailboxClientStorage() internal view returns (MailboxClientStorage storage $) {
+    bytes32 slot = _slot;
+    assembly {
+      $.slot := slot
+    }
+  }
+
+  // ============ Getters ============
+  function hook() public view returns (IPostDispatchHook) {
+    return _getHplMailboxClientStorage().hook;
+  }
+
+  function interchainSecurityModule() public view returns (IInterchainSecurityModule) {
+    return _getHplMailboxClientStorage().interchainSecurityModule;
+  }
 
   // ============ Modifiers ============
   modifier onlyContract(address _contract) {
@@ -74,7 +88,7 @@ abstract contract MailboxClient is OwnableUpgradeable, PackageVersioned {
    * @param _hook The address of the hook contract.
    */
   function setHook(address _hook) public virtual onlyContractOrNull(_hook) onlyOwner {
-    hook = IPostDispatchHook(_hook);
+    _getHplMailboxClientStorage().hook = IPostDispatchHook(_hook);
     emit HookSet(_hook);
   }
 
@@ -83,7 +97,7 @@ abstract contract MailboxClient is OwnableUpgradeable, PackageVersioned {
    * @param _module The address of the interchain security module contract.
    */
   function setInterchainSecurityModule(address _module) public onlyContractOrNull(_module) onlyOwner {
-    interchainSecurityModule = IInterchainSecurityModule(_module);
+    _getHplMailboxClientStorage().interchainSecurityModule = IInterchainSecurityModule(_module);
     emit IsmSet(_module);
   }
 

@@ -160,8 +160,8 @@ contract AssetManagerEntrypoint is
   function _dispatchToBranch(uint256 chainId, bytes memory enc) internal {
     uint32 hplDomain = _ccRegistry.hyperlaneDomain(chainId);
 
-    uint256 fee = _GasRouter_quoteDispatch(hplDomain, enc, address(hook));
-    _GasRouter_dispatch(hplDomain, fee, enc, address(hook));
+    uint256 fee = _GasRouter_quoteDispatch(hplDomain, enc, address(hook()));
+    _GasRouter_dispatch(hplDomain, fee, enc, address(hook()));
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//
