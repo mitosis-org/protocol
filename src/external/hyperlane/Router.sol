@@ -1,4 +1,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
+// Forked from @hyperlane-xyz/core (https://github.com/hyperlane-xyz/hyperlane-monorepo)
+// - rev: https://github.com/hyperlane-xyz/hyperlane-monorepo/commit/42ccee13eb99313a4a078f36938aec6dab16990c
+// Modified by Mitosis Team
+//
+// CHANGES:
+// - Use ERC7201 Namespaced Storage for storage variables.
 pragma solidity >=0.6.11;
 
 import { IPostDispatchHook } from '@hpl/interfaces/hooks/IPostDispatchHook.sol';
@@ -22,10 +28,6 @@ import { MailboxClient } from './MailboxClient.sol';
   @@@@@@@@@       @@@@@@@@@
  @@@@@@@@@       @@@@@@@@@
 @@@@@@@@@       @@@@@@@@*/
-
-/// NOTICE: This contract is a fork of the Hyperlane Router contract.
-/// We have made the following changes:
-/// - Use ERC7201 Namespaced Storage for storage variables.
 abstract contract Router is MailboxClient, IMessageRecipient {
   using EnumerableMapExtended for EnumerableMapExtended.UintToBytes32Map;
   using Strings for uint32;
