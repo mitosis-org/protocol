@@ -31,9 +31,9 @@ contract ValidatorManagerStorageV1 {
   }
 
   struct ValidatorRewardConfig {
+    uint128 pendingCommissionRate; // bp ex) 10000 = 100%
+    uint128 pendingCommissionRateUpdateEpoch; // current epoch + 2
     Checkpoints.Trace160 commissionRates; // bp ex) 10000 = 100%
-    uint256 pendingCommissionRate; // bp ex) 10000 = 100%
-    uint256 pendingCommissionRateUpdateEpoch; // current epoch + 2
   }
 
   struct Validator {
@@ -331,7 +331,7 @@ contract ValidatorManager is
     // update previous pending rate
     if (validator.rewardConfig.pendingCommissionRateUpdateEpoch >= currentEpoch) {
       validator.rewardConfig.commissionRates.push(
-        validator.rewardConfig.pendingCommissionRateUpdateEpoch.toUint96(),
+        uint256(validator.rewardConfig.pendingCommissionRateUpdateEpoch).toUint96(),
         // check for global minimum commission rate modified
         Math.max(
           uint256(globalConfig.minimumCommissionRates.upperLookup(currentEpoch.toUint96())),
@@ -343,8 +343,8 @@ contract ValidatorManager is
     uint256 epochToUpdate = currentEpoch + globalConfig.commissionRateUpdateDelayEpoch;
 
     // update pending commission rate
-    validator.rewardConfig.pendingCommissionRate = request.commissionRate;
-    validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate;
+    validator.rewardConfig.pendingCommissionRate = request.commissionRate.toUint128();
+    validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate.toUint128();
 
     emit RewardConfigUpdated(valAddr, _msgSender(), request);
   }
