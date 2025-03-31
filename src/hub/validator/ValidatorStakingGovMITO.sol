@@ -24,7 +24,7 @@ contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
     uint256 initialMinUnstakingAmount,
     uint48 unstakeCooldown_,
     uint48 redelegationCooldown_
-  ) external override initializer {
+  ) public override initializer {
     super.initialize(
       initialOwner, //
       initialMinStakingAmount,
