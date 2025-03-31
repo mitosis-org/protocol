@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { GasRouter } from '@hpl/client/GasRouter.sol';
 import { IMessageRecipient } from '@hpl/interfaces/IMessageRecipient.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
+import { GasRouter } from '../../external/hyperlane/GasRouter.sol';
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
@@ -160,8 +160,8 @@ contract AssetManagerEntrypoint is
   function _dispatchToBranch(uint256 chainId, bytes memory enc) internal {
     uint32 hplDomain = _ccRegistry.hyperlaneDomain(chainId);
 
-    uint256 fee = _GasRouter_quoteDispatch(hplDomain, enc, address(hook));
-    _GasRouter_dispatch(hplDomain, fee, enc, address(hook));
+    uint256 fee = _GasRouter_quoteDispatch(hplDomain, enc, address(hook()));
+    _GasRouter_dispatch(hplDomain, fee, enc, address(hook()));
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//
