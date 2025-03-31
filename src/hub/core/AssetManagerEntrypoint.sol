@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { GasRouter } from '@hpl/client/GasRouter.sol';
 import { IMessageRecipient } from '@hpl/interfaces/IMessageRecipient.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
+import { GasRouter } from '../../external/hyperlane/GasRouter.sol';
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';

@@ -4,8 +4,7 @@ pragma solidity ^0.8.28;
 import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
-import { GasRouter } from '@hpl/client/GasRouter.sol';
-
+import { GasRouter } from '../../external/hyperlane/GasRouter.sol';
 import { IGovernanceEntrypoint } from '../../interfaces/branch/governance/IGovernanceEntrypoint.sol';
 import { Conv } from '../../lib/Conv.sol';
 import { StdError } from '../../lib/StdError.sol';
