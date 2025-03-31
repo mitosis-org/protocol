@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity >=0.6.11;
+
 import { IPostDispatchHook } from '@hpl/interfaces/hooks/IPostDispatchHook.sol';
 import { IInterchainSecurityModule } from '@hpl/interfaces/IInterchainSecurityModule.sol';
 import { IMessageRecipient } from '@hpl/interfaces/IMessageRecipient.sol';
@@ -10,13 +11,21 @@ import { Strings } from '@oz/utils/Strings.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { MailboxClient } from './MailboxClient.sol';
 
+/*@@@@@@@       @@@@@@@@@
+ @@@@@@@@@       @@@@@@@@@
+  @@@@@@@@@       @@@@@@@@@
+   @@@@@@@@@       @@@@@@@@@
+    @@@@@@@@@@@@@@@@@@@@@@@@@
+     @@@@@  HYPERLANE  @@@@@@@
+    @@@@@@@@@@@@@@@@@@@@@@@@@
+   @@@@@@@@@       @@@@@@@@@
+  @@@@@@@@@       @@@@@@@@@
+ @@@@@@@@@       @@@@@@@@@
+@@@@@@@@@       @@@@@@@@*/
 
-
-
-
-
-
-
+/// NOTICE: This contract is a fork of the Hyperlane Router contract.
+/// We have made the following changes:
+/// - Use ERC7201 Namespaced Storage for storage variables.
 abstract contract Router is MailboxClient, IMessageRecipient {
   using EnumerableMapExtended for EnumerableMapExtended.UintToBytes32Map;
   using Strings for uint32;

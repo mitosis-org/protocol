@@ -18,6 +18,9 @@ import { Router } from './Router.sol';
  @@@@@@@@@       @@@@@@@@@
 @@@@@@@@@       @@@@@@@@*/
 
+/// NOTICE: This contract is a fork of the Hyperlane GasRouter contract.
+/// We have made the following changes:
+/// - Use ERC7201 Namespaced Storage for storage variables.
 abstract contract GasRouter is Router {
   using ERC7201Utils for string;
 

@@ -24,6 +24,9 @@ import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
  @@@@@@@@@       @@@@@@@@@
 @@@@@@@@@       @@@@@@@@*/
 
+/// NOTICE: This contract is a fork of the Hyperlane MailboxClient contract.
+/// We have made the following changes:
+/// - Use ERC7201 Namespaced Storage for storage variables.
 abstract contract MailboxClient is OwnableUpgradeable, PackageVersioned {
   using Message for bytes;
   using ERC7201Utils for string;
