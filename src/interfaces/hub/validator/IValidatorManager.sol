@@ -76,20 +76,25 @@ interface IValidatorManager {
   }
 
   event FeeSet(uint256 previousFee, uint256 newFee);
+  event FeePaid(uint256 amount);
 
-  event ValidatorCreated(address indexed valAddr, address indexed operator, bytes pubKey);
-  event CollateralDeposited(address indexed valAddr, uint256 amount);
-  event CollateralWithdrawn(address indexed valAddr, uint256 amount);
+  event ValidatorCreated(
+    address indexed valAddr,
+    address indexed operator,
+    bytes pubKey,
+    uint256 initialDeposit,
+    CreateValidatorRequest request
+  );
+  event CollateralDeposited(address indexed valAddr, address indexed depositor, uint256 amount);
+  event CollateralWithdrawn(address indexed valAddr, address indexed recipient, uint256 amount);
   event ValidatorUnjailed(address indexed valAddr);
   event OperatorUpdated(address indexed valAddr, address indexed operator);
-  event WithdrawalRecipientUpdated(
-    address indexed valAddr, address indexed operator, address indexed withdrawalRecipient
-  );
+  event WithdrawalRecipientUpdated(address indexed valAddr, address indexed operator, address indexed recipient);
   event RewardManagerUpdated(address indexed valAddr, address indexed operator, address indexed rewardManager);
   event MetadataUpdated(address indexed valAddr, address indexed operator, bytes metadata);
-  event RewardConfigUpdated(address indexed valAddr, address indexed operator);
+  event RewardConfigUpdated(address indexed valAddr, address indexed operator, UpdateRewardConfigRequest request);
 
-  event GlobalValidatorConfigUpdated();
+  event GlobalValidatorConfigUpdated(SetGlobalValidatorConfigRequest request);
   event EpochFeederUpdated(IEpochFeeder indexed epochFeeder);
   event EntrypointUpdated(IConsensusValidatorEntrypoint indexed entrypoint);
 

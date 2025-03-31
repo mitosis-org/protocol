@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
+
 import { Math } from '@oz/utils/math/Math.sol';
 import { SafeCast } from '@oz/utils/math/SafeCast.sol';
 import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
 import { Checkpoints } from '@oz/utils/structs/Checkpoints.sol';
 import { Time } from '@oz/utils/types/Time.sol';
-import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { SafeTransferLib } from '@solady/utils/SafeTransferLib.sol';
 
@@ -224,7 +225,7 @@ contract ValidatorManager is
     Validator storage validator = _validator($, valAddr);
     _entrypoint.depositCollateral{ value: netMsgValue }(valAddr, validator.withdrawalRecipient);
 
-    emit CollateralDeposited(valAddr, netMsgValue);
+    emit CollateralDeposited(valAddr, _msgSender(), netMsgValue);
   }
 
   /// @inheritdoc IValidatorManager
@@ -245,7 +246,7 @@ contract ValidatorManager is
       Time.timestamp() + $.globalValidatorConfig.collateralWithdrawalDelaySeconds.toUint48()
     );
 
-    emit CollateralWithdrawn(valAddr, amount);
+    emit CollateralWithdrawn(valAddr, validator.withdrawalRecipient, amount);
   }
 
   /// @inheritdoc IValidatorManager
@@ -346,7 +347,7 @@ contract ValidatorManager is
     validator.rewardConfig.pendingCommissionRate = request.commissionRate;
     validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate;
 
-    emit RewardConfigUpdated(valAddr, _msgSender());
+    emit RewardConfigUpdated(valAddr, _msgSender(), request);
   }
 
   function setFee(uint256 fee_) external onlyOwner {
@@ -409,7 +410,7 @@ contract ValidatorManager is
     $.globalValidatorConfig.initialValidatorDeposit = request.initialValidatorDeposit;
     $.globalValidatorConfig.collateralWithdrawalDelaySeconds = request.collateralWithdrawalDelaySeconds;
 
-    emit GlobalValidatorConfigUpdated();
+    emit GlobalValidatorConfigUpdated(request);
   }
 
   function _validator(StorageV1 storage $, address valAddr) internal view returns (Validator storage) {
@@ -452,7 +453,7 @@ contract ValidatorManager is
 
     $.indexByValAddr[valAddr] = valIndex;
 
-    emit ValidatorCreated(valAddr, request.operator, pubKey);
+    emit ValidatorCreated(valAddr, request.operator, pubKey, value, request);
   }
 
   /// @notice Burns the fee amount of ETH
@@ -462,7 +463,10 @@ contract ValidatorManager is
     uint256 fee_ = $.fee;
     require(msg.value >= fee_, IValidatorManager__InsufficientFee());
 
-    if (fee_ > 0) SafeTransferLib.safeTransferETH(payable(address(0)), fee_);
+    if (fee_ > 0) {
+      SafeTransferLib.safeTransferETH(payable(address(0)), fee_);
+      emit FeePaid(fee_);
+    }
 
     unchecked {
       return msg.value - fee_;
