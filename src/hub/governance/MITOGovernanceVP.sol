@@ -130,12 +130,16 @@ contract MITOGovernanceVP is IVotes, Ownable2StepUpgradeable, UUPSUpgradeable, E
     _delegate(signer, delegatee);
   }
 
-  function _delegate(address account, address delegatee) internal virtual {
+  function _delegate(address account, address delegatee) internal {
+    address previousDelegate = _getStorageV1().tokens[0].delegates(account);
+
     ISudoVotes[] memory tokens_ = _getStorageV1().tokens;
     uint256 tokensLen = tokens_.length;
     for (uint256 i = 0; i < tokensLen; i++) {
       tokens_[i].sudoDelegate(account, delegatee);
     }
+
+    emit DelegateChanged(account, previousDelegate, delegatee);
   }
 
   function _authorizeUpgrade(address) internal override onlyOwner { }
