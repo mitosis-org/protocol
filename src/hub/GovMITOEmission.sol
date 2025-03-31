@@ -171,7 +171,7 @@ contract GovMITOEmission is
     $.validatorReward.spent += amount;
     _govMITO.safeTransfer(recipient, amount);
 
-    emit ValidatorRewardRequested(epoch, amount);
+    emit ValidatorRewardRequested(epoch, recipient, amount);
 
     return amount;
   }
@@ -185,7 +185,7 @@ contract GovMITOEmission is
     $.validatorReward.total += msg.value;
     _govMITO.mint{ value: msg.value }(address(this));
 
-    emit ValidatorRewardEmissionAdded(msg.value);
+    emit ValidatorRewardEmissionAdded(_msgSender(), msg.value);
   }
 
   function configureValidatorRewardEmission(uint256 rps, uint160 rateMultiplier, uint48 renewalPeriod, uint48 applyFrom)
