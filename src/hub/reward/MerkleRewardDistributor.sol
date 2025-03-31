@@ -85,11 +85,11 @@ contract MerkleRewardDistributor is
   function encodeLeaf(
     address receiver,
     uint256 stage,
-    address matrixVault,
+    address vault,
     address[] calldata rewards,
     uint256[] calldata amounts
   ) external pure returns (bytes32 leaf) {
-    return _leaf(receiver, stage, matrixVault, rewards, amounts);
+    return _leaf(receiver, stage, vault, rewards, amounts);
   }
 
   /**
@@ -98,12 +98,12 @@ contract MerkleRewardDistributor is
   function claimable(
     address receiver,
     uint256 stage,
-    address matrixVault,
+    address vault,
     address[] calldata rewards,
     uint256[] calldata amounts,
     bytes32[] calldata proof
   ) external view returns (bool) {
-    return _claimable(receiver, stage, matrixVault, rewards, amounts, proof);
+    return _claimable(receiver, stage, vault, rewards, amounts, proof);
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
@@ -114,12 +114,12 @@ contract MerkleRewardDistributor is
   function claim(
     address receiver,
     uint256 stage,
-    address matrixVault,
+    address vault,
     address[] calldata rewards,
     uint256[] calldata amounts,
     bytes32[] calldata proof
   ) public {
-    _claim(receiver, stage, matrixVault, rewards, amounts, proof);
+    _claim(receiver, stage, vault, rewards, amounts, proof);
   }
 
   /**
@@ -128,18 +128,18 @@ contract MerkleRewardDistributor is
   function claimMultiple(
     address receiver,
     uint256 stage,
-    address[] calldata matrixVaults,
+    address[] calldata vaults,
     address[][] calldata rewards,
     uint256[][] calldata amounts,
     bytes32[][] calldata proofs
   ) public {
-    require(matrixVaults.length == rewards.length, StdError.InvalidParameter('rewards.length'));
-    require(matrixVaults.length == amounts.length, StdError.InvalidParameter('amounts.length'));
-    require(matrixVaults.length == proofs.length, StdError.InvalidParameter('proofs.length'));
-    require(matrixVaults.length <= MAX_CLAIM_VAULT_SIZE, StdError.InvalidParameter('matrixVaults.length'));
+    require(vaults.length == rewards.length, StdError.InvalidParameter('rewards.length'));
+    require(vaults.length == amounts.length, StdError.InvalidParameter('amounts.length'));
+    require(vaults.length == proofs.length, StdError.InvalidParameter('proofs.length'));
+    require(vaults.length <= MAX_CLAIM_VAULT_SIZE, StdError.InvalidParameter('vaults.length'));
 
-    for (uint256 i = 0; i < matrixVaults.length; i++) {
-      claim(receiver, stage, matrixVaults[i], rewards[i], amounts[i], proofs[i]);
+    for (uint256 i = 0; i < vaults.length; i++) {
+      claim(receiver, stage, vaults[i], rewards[i], amounts[i], proofs[i]);
     }
   }
 
@@ -149,19 +149,19 @@ contract MerkleRewardDistributor is
   function claimBatch(
     address receiver,
     uint256[] calldata stages,
-    address[][] calldata matrixVaults,
+    address[][] calldata vaults,
     address[][][] calldata rewards,
     uint256[][][] calldata amounts,
     bytes32[][][] calldata proofs
   ) public {
-    require(stages.length == matrixVaults.length, StdError.InvalidParameter('matrixVaults.length'));
+    require(stages.length == vaults.length, StdError.InvalidParameter('vaults.length'));
     require(stages.length == rewards.length, StdError.InvalidParameter('rewards.length'));
     require(stages.length == amounts.length, StdError.InvalidParameter('amounts.length'));
     require(stages.length == proofs.length, StdError.InvalidParameter('proofs.length'));
     require(stages.length <= MAX_CLAIM_STAGES_SIZE, StdError.InvalidParameter('stages.length'));
 
     for (uint256 i = 0; i < stages.length; i++) {
-      claimMultiple(receiver, stages[i], matrixVaults[i], rewards[i], amounts[i], proofs[i]);
+      claimMultiple(receiver, stages[i], vaults[i], rewards[i], amounts[i], proofs[i]);
     }
   }
 
@@ -171,7 +171,7 @@ contract MerkleRewardDistributor is
 
   // ============================ NOTE: MANAGER FUNCTIONS ============================ //
 
-  function fetchRewards(uint256 stage, uint256 nonce, address matrixVault, address reward, uint256 amount)
+  function fetchRewards(uint256 stage, uint256 nonce, address vault, address reward, uint256 amount)
     external
     onlyRole(MANAGER_ROLE)
   {
@@ -180,13 +180,13 @@ contract MerkleRewardDistributor is
     require(stage == $.lastStage, IMerkleRewardDistributor__NotCurrentStage(stage));
     require(nonce == _stage($, stage).nonce, IMerkleRewardDistributor__InvalidStageNonce(stage, nonce));
 
-    _fetchRewards($, stage, matrixVault, reward, amount);
+    _fetchRewards($, stage, vault, reward, amount);
   }
 
   function fetchRewardsMultiple(
     uint256 stage,
     uint256 nonce,
-    address matrixVault,
+    address vault,
     address[] calldata rewards,
     uint256[] calldata amounts
   ) external onlyRole(MANAGER_ROLE) {
@@ -196,14 +196,14 @@ contract MerkleRewardDistributor is
     require(nonce == _stage($, stage).nonce, IMerkleRewardDistributor__InvalidStageNonce(stage, nonce));
 
     for (uint256 i = 0; i < rewards.length; i++) {
-      _fetchRewards($, stage, matrixVault, rewards[i], amounts[i]);
+      _fetchRewards($, stage, vault, rewards[i], amounts[i]);
     }
   }
 
   function fetchRewardsBatch(
     uint256 stage,
     uint256 nonce,
-    address[] calldata matrixVaults,
+    address[] calldata vaults,
     address[][] calldata rewards,
     uint256[][] calldata amounts
   ) external onlyRole(MANAGER_ROLE) {
@@ -211,11 +211,11 @@ contract MerkleRewardDistributor is
 
     require(stage == $.lastStage, IMerkleRewardDistributor__NotCurrentStage(stage));
     require(nonce == _stage($, stage).nonce, IMerkleRewardDistributor__InvalidStageNonce(stage, nonce));
-    require(matrixVaults.length == rewards.length, StdError.InvalidParameter('rewards.length'));
+    require(vaults.length == rewards.length, StdError.InvalidParameter('rewards.length'));
 
-    for (uint256 i = 0; i < matrixVaults.length; i++) {
+    for (uint256 i = 0; i < vaults.length; i++) {
       for (uint256 j = 0; j < rewards[i].length; j++) {
-        _fetchRewards($, stage, matrixVaults[i], rewards[i][j], amounts[i][j]);
+        _fetchRewards($, stage, vaults[i], rewards[i][j], amounts[i][j]);
       }
     }
   }
@@ -257,15 +257,13 @@ contract MerkleRewardDistributor is
     emit TreasuryUpdated(address(oldTreasury), treasury_);
   }
 
-  function _fetchRewards(StorageV1 storage $, uint256 stage, address matrixVault, address reward, uint256 amount)
-    internal
-  {
+  function _fetchRewards(StorageV1 storage $, uint256 stage, address vault, address reward, uint256 amount) internal {
     Stage storage s = _stage($, stage);
     uint256 nonce = s.nonce++;
 
-    $.treasury.dispatch(matrixVault, reward, amount, address(this));
+    $.treasury.dispatch(vault, reward, amount, address(this));
 
-    emit RewardsFetched(stage, nonce, matrixVault, reward, amount);
+    emit RewardsFetched(stage, nonce, vault, reward, amount);
   }
 
   function _addStage(StorageV1 storage $, bytes32 root_, address[] calldata rewards, uint256[] calldata amounts)
@@ -291,7 +289,7 @@ contract MerkleRewardDistributor is
   function _claimable(
     address receiver,
     uint256 stage,
-    address matrixVault,
+    address vault,
     address[] calldata rewards,
     uint256[] calldata amounts,
     bytes32[] calldata proof
@@ -299,29 +297,29 @@ contract MerkleRewardDistributor is
     StorageV1 storage $ = _getStorageV1();
     Stage storage s = _stage($, stage);
 
-    bytes32 leaf = _leaf(receiver, stage, matrixVault, rewards, amounts);
+    bytes32 leaf = _leaf(receiver, stage, vault, rewards, amounts);
 
-    return !s.claimed[receiver][matrixVault] && proof.verify(s.root, leaf);
+    return !s.claimed[receiver][vault] && proof.verify(s.root, leaf);
   }
 
   function _claim(
     address receiver,
     uint256 stage,
-    address matrixVault,
+    address vault,
     address[] calldata rewards,
     uint256[] calldata amounts,
     bytes32[] calldata proof
   ) internal {
     StorageV1 storage $ = _getStorageV1();
     Stage storage s = _stage($, stage);
-    require(!s.claimed[receiver][matrixVault], IMerkleRewardDistributor__AlreadyClaimed());
+    require(!s.claimed[receiver][vault], IMerkleRewardDistributor__AlreadyClaimed());
 
     uint256 rewardsLen = rewards.length;
-    bytes32 leaf = _leaf(receiver, stage, matrixVault, rewards, amounts);
+    bytes32 leaf = _leaf(receiver, stage, vault, rewards, amounts);
     require(proof.verify(s.root, leaf), IMerkleRewardDistributor__InvalidProof());
     require(rewardsLen == amounts.length, StdError.InvalidParameter('amounts.length'));
 
-    s.claimed[receiver][matrixVault] = true;
+    s.claimed[receiver][vault] = true;
     for (uint256 i = 0; i < rewardsLen; i++) {
       $.reservedRewardAmounts[rewards[i]] -= amounts[i];
     }
@@ -330,22 +328,20 @@ contract MerkleRewardDistributor is
       IERC20(rewards[i]).safeTransfer(receiver, amounts[i]);
     }
 
-    emit Claimed(receiver, stage, matrixVault, rewards, amounts);
+    emit Claimed(receiver, stage, vault, rewards, amounts);
   }
 
   function _availableRewardAmount(StorageV1 storage $, address reward) internal view returns (uint256) {
     return IERC20(reward).balanceOf(address(this)) - $.reservedRewardAmounts[reward];
   }
 
-  function _leaf(
-    address receiver,
-    uint256 stage,
-    address matrixVault,
-    address[] calldata rewards,
-    uint256[] calldata amounts
-  ) internal pure returns (bytes32 leaf) {
+  function _leaf(address receiver, uint256 stage, address vault, address[] calldata rewards, uint256[] calldata amounts)
+    internal
+    pure
+    returns (bytes32 leaf)
+  {
     // double-hashing to prevent second preimage attacks:
     // https://flawed.net.nz/2018/02/21/attacking-merkle-trees-with-a-second-preimage-attack/
-    return keccak256(bytes.concat(keccak256(abi.encodePacked(receiver, stage, matrixVault, rewards, amounts))));
+    return keccak256(bytes.concat(keccak256(abi.encodePacked(receiver, stage, vault, rewards, amounts))));
   }
 }
