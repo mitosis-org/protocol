@@ -11,9 +11,7 @@ import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
 import { IGovMITOEmission } from '../../interfaces/hub/IGovMITOEmission.sol';
 import { IEpochFeeder } from '../../interfaces/hub/validator/IEpochFeeder.sol';
-import {
-  IValidatorContributionFeed, ValidatorWeight
-} from '../../interfaces/hub/validator/IValidatorContributionFeed.sol';
+import { IValidatorContributionFeed } from '../../interfaces/hub/validator/IValidatorContributionFeed.sol';
 import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorRewardDistributor } from '../../interfaces/hub/validator/IValidatorRewardDistributor.sol';
 import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
@@ -404,7 +402,8 @@ contract ValidatorRewardDistributor is
   function _rewardForEpoch(address valAddr, uint256 epoch) internal view returns (uint256, uint256) {
     IValidatorManager.ValidatorInfoResponse memory validatorInfo = _validatorManager.validatorInfoAt(epoch, valAddr);
     IValidatorContributionFeed.Summary memory rewardSummary = _validatorContributionFeed.summary(epoch);
-    (ValidatorWeight memory weight, bool exists) = _validatorContributionFeed.weightOf(epoch, valAddr);
+    (IValidatorContributionFeed.ValidatorWeight memory weight, bool exists) =
+      _validatorContributionFeed.weightOf(epoch, valAddr);
     if (!exists) return (0, 0);
 
     uint256 totalReward =

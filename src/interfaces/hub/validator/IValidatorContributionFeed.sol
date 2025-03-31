@@ -3,21 +3,21 @@ pragma solidity ^0.8.28;
 
 import { IEpochFeeder } from './IEpochFeeder.sol';
 
-struct ValidatorWeight {
-  address addr;
-  uint96 weight; // max 79 billion * 1e18
-  uint128 collateralRewardShare;
-  uint128 delegationRewardShare;
-}
-
-enum ReportStatus {
-  NONE,
-  INITIALIZED,
-  REVOKING,
-  FINALIZED
-}
-
 interface IValidatorContributionFeed {
+  struct ValidatorWeight {
+    address addr;
+    uint96 weight; // max 79 billion * 1e18
+    uint128 collateralRewardShare;
+    uint128 delegationRewardShare;
+  }
+
+  enum ReportStatus {
+    NONE,
+    INITIALIZED,
+    REVOKING,
+    FINALIZED
+  }
+
   struct ReportRequest {
     uint128 totalWeight;
     ValidatorWeight[] weights;
