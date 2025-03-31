@@ -450,7 +450,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     vm.prank(strategist);
     vm.expectEmit();
-    emit IAssetManager.MatrixAllocated(branchChainId1, address(matrixVault), 100 ether);
+    emit IAssetManager.MatrixAllocated(strategist, branchChainId1, address(matrixVault), 100 ether);
     assetManager.allocateMatrix(branchChainId1, address(matrixVault), 100 ether);
   }
 
@@ -573,7 +573,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     vm.prank(strategist);
     vm.expectEmit();
-    emit IAssetManager.MatrixReclaimQueueReserved(address(matrixVault), 100, 100, 100 ether);
+    emit IAssetManager.MatrixReserved(strategist, address(matrixVault), 100, 100, 100 ether);
     assetManager.reserveMatrix(address(matrixVault), 100);
 
     reclaimQueue.assertLastCall(abi.encodeCall(IReclaimQueue.sync, (strategist, address(matrixVault), 100)));

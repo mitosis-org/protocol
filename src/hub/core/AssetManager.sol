@@ -150,7 +150,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     _hubAssetState($, hubAsset, chainId).branchAllocated += amount;
     $.matrixStates[matrixVault].allocation += amount;
 
-    emit MatrixAllocated(chainId, matrixVault, amount);
+    emit MatrixAllocated(_msgSender(), chainId, matrixVault, amount);
   }
 
   /// @dev only entrypoint
@@ -180,7 +180,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     (uint256 totalReservedShares, uint256 totalReservedAssets) =
       $.reclaimQueue.sync(_msgSender(), matrixVault, claimCount);
 
-    emit MatrixReclaimQueueReserved(matrixVault, claimCount, totalReservedShares, totalReservedAssets);
+    emit MatrixReserved(_msgSender(), matrixVault, claimCount, totalReservedShares, totalReservedAssets);
   }
 
   /// @dev only entrypoint

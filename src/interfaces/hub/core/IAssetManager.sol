@@ -303,11 +303,14 @@ interface IAssetManager is IAssetManagerStorageV1 {
 
   /**
    * @notice Emitted when assets are allocated to the branch chain for a specific MatrixVault
+   * @param strategist The address of the strategist
    * @param chainId The ID of the chain where the allocation occurs
    * @param matrixVault The address of the MatrixVault to be reported the allocation
    * @param amount The amount allocated
    */
-  event MatrixAllocated(uint256 indexed chainId, address indexed matrixVault, uint256 amount);
+  event MatrixAllocated(
+    address indexed strategist, uint256 indexed chainId, address indexed matrixVault, uint256 amount
+  );
 
   /**
    * @notice Emitted when assets are deallocated from the branch chain for a specific MatrixVault
@@ -319,13 +322,18 @@ interface IAssetManager is IAssetManagerStorageV1 {
 
   /**
    * @notice Emitted when a claim request is reserved from the reclaim queue
+   * @param strategist The address of the strategist
    * @param matrixVault The address of the MatrixVault to be reported the claim request
    * @param claimCount The amount of the claim request
    * @param totalReservedShares The total amount of shares reserved
    * @param totalReservedAssets The total amount of assets reserved
    */
-  event MatrixReclaimQueueReserved(
-    address indexed matrixVault, uint256 claimCount, uint256 totalReservedShares, uint256 totalReservedAssets
+  event MatrixReserved(
+    address indexed strategist,
+    address indexed matrixVault,
+    uint256 claimCount,
+    uint256 totalReservedShares,
+    uint256 totalReservedAssets
   );
 
   /**
