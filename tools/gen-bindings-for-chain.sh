@@ -24,6 +24,7 @@ gen() {
 TARGETS=(
     "src/hub/consensus-layer/ConsensusGovernanceEntrypoint.sol:ConsensusGovernanceEntrypoint"
     "src/hub/consensus-layer/ConsensusValidatorEntrypoint.sol:ConsensusValidatorEntrypoint"
+    "src/interfaces/hub/validator/IValidatorManager.sol:IValidatorManager"
 )
 
 rm -rf ./bindings && mkdir -p ./bindings
