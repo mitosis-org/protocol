@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IAccessControl } from '@oz/access/IAccessControl.sol';
 import { IVotes } from '@oz/governance/utils/IVotes.sol';
+import { Time } from '@oz/utils/types/Time.sol';
 import { AccessControlUpgradeable } from '@ozu/access/AccessControlUpgradeable.sol';
 import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { GovernorSettingsUpgradeable } from '@ozu/governance/extensions/GovernorSettingsUpgradeable.sol';
@@ -65,6 +66,14 @@ contract MITOGovernance is
     __UUPSUpgradeable_init();
 
     // NOTE: Don't setup admin role here because `_executor()` is considered as admin. (Check `hasRole()`)
+  }
+
+  function clock() public view override(GovernorUpgradeable, GovernorVotesUpgradeable) returns (uint48) {
+    return Time.timestamp();
+  }
+
+  function CLOCK_MODE() public pure override(GovernorUpgradeable, GovernorVotesUpgradeable) returns (string memory) {
+    return 'mode=timestamp';
   }
 
   function hasRole(bytes32 role, address account)
