@@ -229,6 +229,161 @@ contract GovMITOEmissionTest is Toolkit {
     assertEq(emission.validatorReward(9), 1 gwei * 2 days, 'epoch 9-10');
   }
 
+  function test_configureValidatorRewardEmission() public {
+    uint48 now_ = 1000;
+    vm.warp(now_);
+
+    _init(
+      IGovMITOEmission.ValidatorRewardConfig({
+        rps: 1 gwei,
+        rateMultiplier: 5000, // 50%
+        renewalPeriod: 365 days,
+        startsFrom: 2000,
+        recipient: recipient
+      })
+    );
+
+    vm.startPrank(owner);
+    emission.grantRole(emission.VALIDATOR_REWARD_MANAGER_ROLE(), rewardManager);
+    vm.stopPrank();
+
+    uint256 emissionCount = 1;
+    uint256 rps;
+    uint160 rateMultiplier;
+    uint48 renewalPeriod;
+
+    require(emission.validatorRewardEmissionsCount() == emissionCount, 'emissionCount');
+    (rps, rateMultiplier, renewalPeriod) = emission.validatorRewardEmissionsByIndex(emissionCount - 1);
+    require(rps == 1 gwei, 'rps');
+    require(rateMultiplier == 5000, 'rateMultiplier');
+    require(renewalPeriod == 365 days, 'renewalPeriod');
+
+    // Overwrite: (now)[2000]
+    vm.prank(rewardManager);
+    emission.configureValidatorRewardEmission(5 gwei, 10000, 365 days, 2000);
+
+    require(emission.validatorRewardEmissionsCount() == emissionCount, 'emissionCount');
+    (rps, rateMultiplier, renewalPeriod) = emission.validatorRewardEmissionsByIndex(emissionCount - 1);
+    require(rps == 5 gwei, 'rps');
+    require(rateMultiplier == 10000, 'rateMultiplier');
+    require(renewalPeriod == 365 days, 'renewalPeriod');
+
+    // Abnormal Push: (now)[2000]
+    vm.prank(rewardManager);
+    vm.expectRevert(_errInvalidParameter('timestamp'));
+    emission.configureValidatorRewardEmission(1 gwei, 10000, 365 days, 1500);
+
+    // Abnormal Push: (now)[2000]
+    vm.prank(rewardManager);
+    vm.expectRevert(_errInvalidParameter('timestamp'));
+    emission.configureValidatorRewardEmission(1 gwei, 10000, 365 days, 500);
+
+    // Push: (now)[2000, 2100]
+    vm.prank(rewardManager);
+    emission.configureValidatorRewardEmission(1 gwei, 10000, 365 days, 2100);
+    emissionCount++;
+
+    require(emission.validatorRewardEmissionsCount() == emissionCount, 'emissionCount');
+    (rps, rateMultiplier, renewalPeriod) = emission.validatorRewardEmissionsByIndex(emissionCount - 1);
+    require(rps == 1 gwei, 'rps');
+    require(rateMultiplier == 10000, 'rateMultiplier');
+    require(renewalPeriod == 365 days, 'renewalPeriod');
+
+    // Abnormal Push: (now)[2000, 2100]
+    vm.prank(rewardManager);
+    vm.expectRevert(_errInvalidParameter('timestamp'));
+    emission.configureValidatorRewardEmission(1 gwei, 10000, 365 days, 2050);
+
+    // Overwrite: (now)[2000, 2100]
+    vm.prank(rewardManager);
+    emission.configureValidatorRewardEmission(5 gwei, 8000, 365 days, 2100);
+
+    require(emission.validatorRewardEmissionsCount() == emissionCount, 'emissionCount');
+    (rps, rateMultiplier, renewalPeriod) = emission.validatorRewardEmissionsByIndex(emissionCount - 1);
+    require(rps == 5 gwei, 'rps');
+    require(rateMultiplier == 8000, 'rateMultiplier');
+    require(renewalPeriod == 365 days, 'renewalPeriod');
+
+    // Push: (now)[2000, 2100, 2200]
+    vm.prank(rewardManager);
+    emission.configureValidatorRewardEmission(1 gwei, 5000, 365 days, 2200);
+    emissionCount++;
+
+    require(emission.validatorRewardEmissionsCount() == emissionCount, 'emissionCount');
+    (rps, rateMultiplier, renewalPeriod) = emission.validatorRewardEmissionsByIndex(emissionCount - 1);
+    require(rps == 1 gwei, 'rps');
+    require(rateMultiplier == 5000, 'rateMultiplier');
+    require(renewalPeriod == 365 days, 'renewalPeriod');
+
+    // Overwrite: (now)[2000, 2100, 2200]
+    vm.prank(rewardManager);
+    emission.configureValidatorRewardEmission(100 gwei, 10000, 365 days, 2000);
+
+    require(emission.validatorRewardEmissionsCount() == emissionCount, 'emissionCount');
+    (rps, rateMultiplier, renewalPeriod) = emission.validatorRewardEmissionsByIndex(0);
+    require(rps == 100 gwei, 'rps');
+    require(rateMultiplier == 10000, 'rateMultiplier');
+    require(renewalPeriod == 365 days, 'renewalPeriod');
+
+    // Move to 2050
+    vm.warp(2050);
+
+    // Push: [2000(now), 2100, 2200, 2300]
+    vm.prank(rewardManager);
+    emission.configureValidatorRewardEmission(1 gwei, 7500, 365 days, 2300);
+    emissionCount++;
+
+    require(emission.validatorRewardEmissionsCount() == emissionCount, 'emissionCount');
+    (rps, rateMultiplier, renewalPeriod) = emission.validatorRewardEmissionsByIndex(emissionCount - 1);
+    require(rps == 1 gwei, 'rps');
+    require(rateMultiplier == 7500, 'rateMultiplier');
+    require(renewalPeriod == 365 days, 'renewalPeriod');
+
+    // Abnormal Push: [2000(now), 2100, 2200, 2300]
+    vm.prank(rewardManager);
+    vm.expectRevert(_errInvalidParameter('timestamp'));
+    emission.configureValidatorRewardEmission(1 gwei, 7500, 365 days, 2150);
+
+    // Abnormal Overwrite: [2000(now), 2100, 2200, 2300]
+    vm.prank(rewardManager);
+    vm.expectRevert(_errInvalidParameter('timestamp'));
+    emission.configureValidatorRewardEmission(1 gwei, 5000, 365 days, 2000);
+
+    // Overwrite: [2000(now), 2100, 2200, 2300]
+    vm.prank(rewardManager);
+    emission.configureValidatorRewardEmission(100 gwei, 10000, 365 days, 2100);
+
+    require(emission.validatorRewardEmissionsCount() == emissionCount, 'emissionCount');
+    (rps, rateMultiplier, renewalPeriod) = emission.validatorRewardEmissionsByIndex(1);
+    require(rps == 100 gwei, 'rps');
+    require(rateMultiplier == 10000, 'rateMultiplier');
+    require(renewalPeriod == 365 days, 'renewalPeriod');
+
+    // Move to 2500
+    vm.warp(2500);
+
+    // Abnormal Push: [2000, 2100, 2200, 2300(now)]
+    vm.prank(rewardManager);
+    vm.expectRevert(_errInvalidParameter('timestamp'));
+    emission.configureValidatorRewardEmission(50 gwei, 5000, 365 days, 2500);
+
+    // Abnormal Overwrite: [2000, 2100, 2200, 2300]
+    vm.prank(rewardManager);
+    vm.expectRevert(_errInvalidParameter('timestamp'));
+    emission.configureValidatorRewardEmission(15 gwei, 5000, 365 days, 2500);
+
+    // Push: [2000(now), 2100, 2200, 2300, 2501]
+    vm.prank(rewardManager);
+    emission.configureValidatorRewardEmission(15 gwei, 7500, 365 days, 2501);
+    emissionCount++;
+
+    require(emission.validatorRewardEmissionsCount() == emissionCount, 'emissionCount');
+    (rps, rateMultiplier, renewalPeriod) = emission.validatorRewardEmissionsByIndex(emissionCount - 1);
+    require(rps == 15 gwei, 'rps');
+    require(rateMultiplier == 7500, 'rateMultiplier');
+    require(renewalPeriod == 365 days, 'renewalPeriod');
+  }
+
   function _init(IGovMITOEmission.ValidatorRewardConfig memory config) private {
     vm.startPrank(owner);
     emission = GovMITOEmission(
