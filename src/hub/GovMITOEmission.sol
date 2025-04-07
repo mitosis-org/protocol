@@ -208,7 +208,7 @@ contract GovMITOEmission is
     uint48 timestamp
   ) internal {
     uint48 now_ = Time.timestamp();
-    require(now_ <= timestamp, StdError.InvalidParameter('timestamp'));
+    require(now_ < timestamp, StdError.InvalidParameter('timestamp'));
 
     ValidatorRewardEmission memory emission = ValidatorRewardEmission({
       rps: rps,
