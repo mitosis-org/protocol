@@ -208,21 +208,30 @@ contract GovMITOEmission is
     uint48 timestamp
   ) internal {
     uint48 now_ = Time.timestamp();
+    require(now_ < timestamp, StdError.InvalidParameter('timestamp'));
 
-    require(now_ <= timestamp, StdError.InvalidParameter('timestamp'));
-    require(
-      $.validatorReward.emissions.length == 0 || timestamp > _latest($.validatorReward.emissions).timestamp,
-      StdError.InvalidParameter('timestamp')
-    );
+    ValidatorRewardEmission memory emission = ValidatorRewardEmission({
+      rps: rps,
+      rateMultiplier: rateMultiplier,
+      renewalPeriod: renewalPeriod,
+      timestamp: timestamp
+    });
 
-    $.validatorReward.emissions.push(
-      ValidatorRewardEmission({
-        rps: rps,
-        rateMultiplier: rateMultiplier,
-        renewalPeriod: renewalPeriod,
-        timestamp: timestamp
-      })
-    );
+    ValidatorRewardEmission[] storage emissions = $.validatorReward.emissions;
+    uint256 emissionsLength = emissions.length;
+
+    if (emissionsLength == 0) {
+      emissions.push(emission);
+    } else {
+      (uint256 index,) = _upperLookup(emissions, timestamp);
+      if (emissions[index].timestamp == timestamp) {
+        emissions[index] = emission;
+      } else {
+        uint256 latestTimestamp = emissions[emissionsLength - 1].timestamp;
+        require(timestamp > latestTimestamp, StdError.InvalidParameter('timestamp'));
+        emissions.push(emission);
+      }
+    }
 
     emit ValidatorRewardEmissionConfigured(rps, rateMultiplier, renewalPeriod, timestamp);
   }
