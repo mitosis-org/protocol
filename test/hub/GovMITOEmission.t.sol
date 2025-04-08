@@ -367,12 +367,12 @@ contract GovMITOEmissionTest is Toolkit {
     vm.expectRevert(_errInvalidParameter('timestamp'));
     emission.configureValidatorRewardEmission(50 gwei, 5000, 365 days, 2500);
 
-    // Abnormal Overwrite: [2000, 2100, 2200, 2300]
+    // Abnormal Overwrite: [2000, 2100, 2200, 2300(now)]
     vm.prank(rewardManager);
     vm.expectRevert(_errInvalidParameter('timestamp'));
     emission.configureValidatorRewardEmission(15 gwei, 5000, 365 days, 2500);
 
-    // Push: [2000(now), 2100, 2200, 2300, 2501]
+    // Push: [2000, 2100, 2200, 2300(now), 2501]
     vm.prank(rewardManager);
     emission.configureValidatorRewardEmission(15 gwei, 7500, 365 days, 2501);
     emissionCount++;
@@ -382,6 +382,14 @@ contract GovMITOEmissionTest is Toolkit {
     require(rps == 15 gwei, 'rps');
     require(rateMultiplier == 7500, 'rateMultiplier');
     require(renewalPeriod == 365 days, 'renewalPeriod');
+
+    // Move to 2501
+    vm.warp(2501);
+
+    // Abnormal Overwrite: [2000, 2100, 2200, 2300, 2501(now)]
+    vm.prank(rewardManager);
+    vm.expectRevert(_errInvalidParameter('timestamp'));
+    emission.configureValidatorRewardEmission(15 gwei, 5000, 365 days, 2501);
   }
 
   function _init(IGovMITOEmission.ValidatorRewardConfig memory config) private {
