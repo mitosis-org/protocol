@@ -217,15 +217,19 @@ contract GovMITOEmission is
       timestamp: timestamp
     });
 
-    if ($.validatorReward.emissions.length == 0) {
-      $.validatorReward.emissions.push(emission);
+    ValidatorRewardEmission[] storage emissions = $.validatorReward.emissions;
+    uint256 emissionsLength = emissions.length;
+
+    if (emissionsLength == 0) {
+      emissions.push(emission);
     } else {
-      (uint256 index,) = _upperLookup($.validatorReward.emissions, timestamp);
-      if ($.validatorReward.emissions[index].timestamp == timestamp) {
-        $.validatorReward.emissions[index] = emission;
+      (uint256 index,) = _upperLookup(emissions, timestamp);
+      if (emissions[index].timestamp == timestamp) {
+        emissions[index] = emission;
       } else {
-        require(timestamp > _latest($.validatorReward.emissions).timestamp, StdError.InvalidParameter('timestamp'));
-        $.validatorReward.emissions.push(emission);
+        uint256 latestTimestamp = emissions[emissionsLength - 1].timestamp;
+        require(timestamp > latestTimestamp, StdError.InvalidParameter('timestamp'));
+        emissions.push(emission);
       }
     }
 
