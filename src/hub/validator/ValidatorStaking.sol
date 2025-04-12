@@ -281,6 +281,9 @@ contract ValidatorStaking is
 
     _assertUnstakeAmountCondition($, valAddr, payer, amount);
 
+    uint256 currentStaked = $.staked[valAddr][payer].latest();
+    require(amount <= currentStaked, IValidatorStaking__InsufficientStakedAmount(amount, currentStaked));
+
     uint48 now_ = Time.timestamp();
     uint208 amount208 = amount.toUint208();
     uint256 reqId = $.unstakeQueue[recipient].append(now_, amount208);
@@ -347,6 +350,9 @@ contract ValidatorStaking is
     require(fromValAddr != toValAddr, IValidatorStaking__RedelegateToSameValidator(fromValAddr));
 
     _assertUnstakeAmountCondition($, fromValAddr, delegator, amount);
+
+    uint256 currentStakedFrom = $.staked[fromValAddr][delegator].latest();
+    require(amount <= currentStakedFrom, IValidatorStaking__InsufficientStakedAmount(amount, currentStakedFrom));
 
     require(_manager.isValidator(fromValAddr), IValidatorStaking__NotValidator(fromValAddr));
     require(_manager.isValidator(toValAddr), IValidatorStaking__NotValidator(toValAddr));
