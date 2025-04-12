@@ -6,6 +6,7 @@ import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { ContextUpgradeable } from '@ozu/utils/ContextUpgradeable.sol';
 
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { Pausable } from '../../lib/Pausable.sol';
@@ -104,4 +105,8 @@ contract EOLVault is ERC4626, Ownable2StepUpgradeable, Pausable, ReentrancyGuard
   }
 
   function _authorizePause(address) internal view override onlyOwner { }
+
+  function _msgSender() internal view override(Pausable, ContextUpgradeable) returns (address) {
+    return super._msgSender();
+  }
 }

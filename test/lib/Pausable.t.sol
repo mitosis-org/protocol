@@ -27,6 +27,10 @@ contract PausableContract is Pausable {
   function assertPaused(bytes4 sig) external view {
     require(_isPaused(sig), Pausable__NotPaused(sig));
   }
+
+  function _msgSender() internal view override returns (address) {
+    return msg.sender;
+  }
 }
 
 contract PausableTest is Test {

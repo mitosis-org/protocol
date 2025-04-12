@@ -6,10 +6,10 @@ import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IMitosisVaultEOL, EOLAction } from '../interfaces/branch/IMitosisVaultEOL.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
-import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
+import { MitosisVaultCore } from './MitosisVaultCore.sol';
 
-abstract contract MitosisVaultEOL is IMitosisVaultEOL, Pausable, Ownable2StepUpgradeable {
+abstract contract MitosisVaultEOL is IMitosisVaultEOL, MitosisVaultCore {
   using ERC7201Utils for string;
 
   struct EOLInfo {
@@ -43,12 +43,6 @@ abstract contract MitosisVaultEOL is IMitosisVaultEOL, Pausable, Ownable2StepUpg
   }
 
   //=========== NOTE: Asset ===========//
-
-  function _deposit(address asset, address to, uint256 amount) internal virtual;
-
-  function _assertAssetInitialized(address asset) internal view virtual;
-
-  function entrypoint() public view virtual returns (address);
 
   function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount) external whenNotPaused {
     _deposit(asset, to, amount);

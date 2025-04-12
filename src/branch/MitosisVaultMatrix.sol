@@ -3,16 +3,15 @@ pragma solidity ^0.8.28;
 
 import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
-import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IMitosisVaultMatrix, MatrixAction } from '../interfaces/branch/IMitosisVaultMatrix.sol';
 import { IMatrixStrategyExecutor } from '../interfaces/branch/strategy/IMatrixStrategyExecutor.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
-import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
+import { MitosisVaultCore } from './MitosisVaultCore.sol';
 
-abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2StepUpgradeable {
+abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, MitosisVaultCore {
   using ERC7201Utils for string;
   using SafeERC20 for IERC20;
 
@@ -57,12 +56,6 @@ abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2S
   }
 
   //=========== NOTE: Asset ===========//
-
-  function _deposit(address asset, address to, uint256 amount) internal virtual;
-
-  function _assertAssetInitialized(address asset) internal view virtual;
-
-  function entrypoint() public view virtual returns (address);
 
   function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount)
     external

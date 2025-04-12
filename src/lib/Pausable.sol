@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { ContextUpgradeable } from '@ozu/utils/ContextUpgradeable.sol';
-
 import { ERC7201Utils } from './ERC7201Utils.sol';
 import { StdError } from './StdError.sol';
 
-abstract contract Pausable is ContextUpgradeable {
+abstract contract Pausable {
   using ERC7201Utils for string;
 
   /// @custom:storage-location mitosis.storage.Pausable
@@ -59,6 +57,8 @@ abstract contract Pausable is ContextUpgradeable {
   // =========================== NOTE: VIRTUAL FUNCTIONS =========================== //
 
   function _authorizePause(address) internal view virtual;
+
+  function _msgSender() internal view virtual returns (address);
 
   // =========================== NOTE: MAIN FUNCTIONS =========================== //
 

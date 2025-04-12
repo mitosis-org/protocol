@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import { Time } from '@oz/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
+import { ContextUpgradeable } from '@ozu/utils/ContextUpgradeable.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
@@ -364,5 +365,11 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
       _branchAssetState($, chainId, branchAsset).hubAsset == address(0),
       IAssetManagerStorageV1__BranchAssetPairNotExist(chainId, branchAsset)
     );
+  }
+
+  //=========== NOTE: OVERRIDES ===========//
+
+  function _msgSender() internal view override(Pausable, ContextUpgradeable) returns (address) {
+    return super._msgSender();
   }
 }

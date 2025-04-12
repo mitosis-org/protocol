@@ -10,6 +10,7 @@ import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol
 import { Time } from '@oz/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
+import { ContextUpgradeable } from '@ozu/utils/ContextUpgradeable.sol';
 
 import { IAssetManager } from '../interfaces/hub/core/IAssetManager.sol';
 import { IReclaimQueue } from '../interfaces/hub/matrix/IReclaimQueue.sol';
@@ -553,5 +554,11 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
   function _validateIndex(uint256 index, uint256 length) private pure {
     require(length != 0, IReclaimQueue__Empty());
     require(length - 1 >= index, IReclaimQueue__OutOfBounds(length - 1, index));
+  }
+
+  //=========== NOTE: OVERRIDES ===========//
+
+  function _msgSender() internal view override(Pausable, ContextUpgradeable) returns (address) {
+    return super._msgSender();
   }
 }

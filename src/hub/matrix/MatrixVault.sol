@@ -5,6 +5,7 @@ import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { Math } from '@oz/utils/math/Math.sol';
 import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { ContextUpgradeable } from '@ozu/utils/ContextUpgradeable.sol';
 
 import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 
@@ -141,4 +142,8 @@ abstract contract MatrixVault is
   // general overrides
 
   function _authorizePause(address) internal view override onlyOwner { }
+
+  function _msgSender() internal view override(Pausable, ContextUpgradeable) returns (address) {
+    return super._msgSender();
+  }
 }
