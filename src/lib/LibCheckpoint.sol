@@ -53,7 +53,7 @@ library LibCheckpoint {
       self.checkpoints.push(
         TWABCheckpoint({
           // we assume `now` is always greater than `last_.lastUpdate`
-          twab: last_.amount * sub(now_, last_.lastUpdate),
+          twab: last_.twab + (last_.amount * sub(now_, last_.lastUpdate)),
           amount: nextAmountFunc(last_.amount, amount).toUint208(),
           lastUpdate: now_
         })
