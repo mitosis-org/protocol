@@ -21,19 +21,10 @@ jobs:
     runs-on: arc-runner-set
     container: node:20
 
-    env:
-      ARBITRUM_MAINNET_RPC: ${{ secrets.ARBITRUM_MAINNET_RPC }}
-      BLAST_MAINNET_RPC: ${{ secrets.BLAST_MAINNET_RPC }}
-      ETHEREUM_MAINNET_RPC: ${{ secrets.ETHEREUM_MAINNET_RPC }}
-      LINEA_MAINNET_RPC: ${{ secrets.LINEA_MAINNET_RPC }}
-      MANTA_PACIFIC_MAINNET_RPC: ${{ secrets.MANTA_PACIFIC_MAINNET_RPC }}
-      MODE_MAINNET_RPC: ${{ secrets.MODE_MAINNET_RPC }}
-      OPTIMISM_MAINNET_RPC: ${{ secrets.OPTIMISM_MAINNET_RPC }}
-      SCROLL_MAINNET_RPC: ${{ secrets.SCROLL_MAINNET_RPC }}
-
     steps:
       - uses: actions/checkout@v4
         with:
+          token: ${{ secrets.GH_REPO_READER }}
           submodules: recursive
 
       - uses: actions/setup-node@v4
