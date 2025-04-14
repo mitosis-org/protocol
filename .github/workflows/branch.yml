@@ -27,7 +27,7 @@ jobs:
         run: |
           git config --global --add safe.directory /__w/protocol/protocol
           git fetch
-          git checkout origin/main src foundry.toml soldeer.lock
+          git checkout origin/main src foundry.toml soldeer.lock .gitignore
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
