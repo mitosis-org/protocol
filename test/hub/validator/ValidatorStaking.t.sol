@@ -202,7 +202,7 @@ contract ValidatorStakingTest is Toolkit {
       vault.stake{ value: 0 }(val1, user1, 0);
 
       vm.prank(user1);
-      vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__NotValidator.selector, val2));
+      vm.expectRevert(_errNotValidator(val2));
       vault.stake{ value: 10 ether }(val2, user1, 10 ether);
     } else {
       vm.prank(user1);
@@ -210,7 +210,7 @@ contract ValidatorStakingTest is Toolkit {
       vault.stake(val1, user1, 0);
 
       vm.prank(user1);
-      vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__NotValidator.selector, val2));
+      vm.expectRevert(_errNotValidator(val2));
       vault.stake(val2, user1, 10 ether);
     }
 
@@ -354,7 +354,7 @@ contract ValidatorStakingTest is Toolkit {
     vault.requestUnstake(val1, user1, 0);
 
     vm.prank(user1);
-    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__NotValidator.selector, val2));
+    vm.expectRevert(_errNotValidator(val2));
     vault.requestUnstake(val2, user1, 10 ether);
 
     _stake(vault, val1, user1, user1, 10 ether);
@@ -468,17 +468,15 @@ contract ValidatorStakingTest is Toolkit {
     _regVal(val3, true);
 
     vm.prank(user1);
-    vm.expectRevert(
-      abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__RedelegateToSameValidator.selector, val1)
-    );
+    vm.expectRevert(_errRedelegateToSameValidator(val1));
     vault.redelegate(val1, val1, 10 ether);
 
     vm.prank(user1);
-    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__NotValidator.selector, val2));
+    vm.expectRevert(_errInsufficientStakedAmount(10 ether, 0));
     vault.redelegate(val2, val1, 10 ether);
 
     vm.prank(user1);
-    vm.expectRevert(abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__NotValidator.selector, val2));
+    vm.expectRevert(_errInsufficientStakedAmount(10 ether, 0));
     vault.redelegate(val1, val2, 10 ether);
 
     _stake(vault, val1, user1, user1, 10 ether);
@@ -627,6 +625,20 @@ contract ValidatorStakingTest is Toolkit {
   {
     return abi.encodeWithSelector(
       IValidatorStaking.IValidatorStaking__CooldownNotPassed.selector, lastTime, currentTime, requiredCooldown
+    );
+  }
+
+  function _errNotValidator(address val) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__NotValidator.selector, val);
+  }
+
+  function _errRedelegateToSameValidator(address val) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__RedelegateToSameValidator.selector, val);
+  }
+
+  function _errInsufficientStakedAmount(uint256 requested, uint256 available) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(
+      IValidatorStaking.IValidatorStaking__InsufficientStakedAmount.selector, requested, available
     );
   }
 
