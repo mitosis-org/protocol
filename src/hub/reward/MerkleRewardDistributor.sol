@@ -226,7 +226,7 @@ contract MerkleRewardDistributor is
     uint256 nonce,
     address[] calldata rewards,
     uint256[] calldata amounts
-  ) external onlyRole(MANAGER_ROLE) returns (uint256 merkleStage) {
+  ) external onlyRole(MANAGER_ROLE) returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
     Stage storage s = _stage($, stage);
 
@@ -241,7 +241,7 @@ contract MerkleRewardDistributor is
       $.reservedRewardAmounts[reward] += amount;
     }
 
-    _addStage($, merkleRoot, rewards, amounts);
+    uint256 merkleStage = _addStage($, merkleRoot, rewards, amounts);
 
     return merkleStage;
   }
