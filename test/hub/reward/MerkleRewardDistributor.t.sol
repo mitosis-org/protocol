@@ -66,4 +66,28 @@ contract MerkleRewardDistributorTest is Toolkit {
     assertEq(_token.balanceOf(address(_treasury)), 0);
     assertEq(_token.balanceOf(address(_distributor)), 100 ether);
   }
+
+  function test_addStage() public {
+    test_fetchRewards();
+
+    bytes32 merkleRoot = keccak256(abi.encodePacked(address(_token)));
+
+    address[] memory rewards = new address[](1);
+    rewards[0] = address(_token);
+
+    uint256[] memory amounts = new uint256[](1);
+    amounts[0] = 50 ether;
+
+    vm.prank(owner);
+    uint256 merkleStage = _distributor.addStage(merkleRoot, 0, 1, rewards, amounts);
+
+    assertEq(merkleStage, 1);
+    assertEq(_distributor.lastStage(), 1);
+
+    vm.prank(owner);
+    merkleStage = _distributor.addStage(merkleRoot, 1, 0, rewards, amounts);
+
+    assertEq(merkleStage, 2);
+    assertEq(_distributor.lastStage(), 2);
+  }
 }
