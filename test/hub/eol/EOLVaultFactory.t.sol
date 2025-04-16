@@ -51,15 +51,7 @@ contract EOLVaultFactoryTest is Toolkit {
     vm.prank(owner);
     base.initVaultType(IEOLVaultFactory.VaultType.Basic, address(basicImpl));
 
-    address instance = _createBasic(
-      owner,
-      IEOLVaultFactory.BasicVaultInitArgs({
-        owner: owner,
-        asset: IERC20Metadata(address(new WETH())),
-        name: 'Basic Vault',
-        symbol: 'BV'
-      })
-    );
+    address instance = _createBasic(owner, owner, address(new WETH()), 'Basic Vault', 'BV');
 
     assertEq(address(0x0), _erc1967Admin(instance));
     assertEq(address(0x0), _erc1967Impl(instance));
@@ -71,8 +63,30 @@ contract EOLVaultFactoryTest is Toolkit {
     return instance;
   }
 
+  // function test_migrate() public {
+  //   vm.prank(owner);
+  //   base.initVaultType(IEOLVaultFactory.VaultType.Basic, address(basicImpl));
+
+  //   address instance1 = _createBasic(owner, owner, address(new WETH()), 'Basic Vault 1', 'BV1');
+  //   address instance2 = _createBasic(owner, owner, address(new WETH()), 'Basic Vault 2', 'BV2');
+  //   address instance3 = _createBasic(owner, owner, address(new WETH()), 'Basic Vault 3', 'BV3');
+
+  //   vm.prank(owner);
+  //   base.migrate(IEOLVaultFactory.VaultType.Basic, IEOLVaultFactory.VaultType.Basic, instance1, '');
+  // }
+
   function _createBasic(address caller, IEOLVaultFactory.BasicVaultInitArgs memory args) internal returns (address) {
     vm.prank(caller);
     return base.create(IEOLVaultFactory.VaultType.Basic, abi.encode(args));
+  }
+
+  function _createBasic(address caller, address owner_, address asset, string memory name, string memory symbol)
+    internal
+    returns (address)
+  {
+    return _createBasic(
+      caller,
+      IEOLVaultFactory.BasicVaultInitArgs({ owner: owner_, asset: IERC20Metadata(asset), name: name, symbol: symbol })
+    );
   }
 }

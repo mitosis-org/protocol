@@ -127,23 +127,27 @@ contract MatrixVaultFactory is IMatrixVaultFactory, Ownable2StepUpgradeable, UUP
 
   function migrate(VaultType from, VaultType to, address instance, bytes calldata data) external onlyOwner {
     Storage storage $ = _getStorage();
-    require($.infos[from].initialized, IMatrixVaultFactory__NotInitialized());
-    require($.infos[to].initialized, IMatrixVaultFactory__NotInitialized());
+    BeaconInfo storage fromInfo = $.infos[from];
+    BeaconInfo storage toInfo = $.infos[to];
+
+    require(fromInfo.initialized, IMatrixVaultFactory__NotInitialized());
+    require(toInfo.initialized, IMatrixVaultFactory__NotInitialized());
     require(_isInstance($, from, instance), IMatrixVaultFactory__NotAnInstance());
 
     // Remove instance from 'from' type's tracking
-    uint256 index = $.infos[from].instanceIndex[instance];
-    if ($.infos[from].instances.length > 1) {
+    uint256 index = fromInfo.instanceIndex[instance];
+    if (fromInfo.instances.length > 1) {
       // Move last element to the removed index and update its index mapping
-      address last = $.infos[from].instances[$.infos[from].instances.length - 1];
-      $.infos[from].instances[index] = last;
-      $.infos[from].instanceIndex[last] = index;
+      address last = fromInfo.instances[fromInfo.instances.length - 1];
+      fromInfo.instances[index] = last;
+      fromInfo.instanceIndex[last] = index;
     }
-    $.infos[from].instances.pop();
-    delete $.infos[from].instanceIndex[instance]; // Use delete instead of setting to 0
+    fromInfo.instances.pop();
+    delete fromInfo.instanceIndex[instance]; // Use delete instead of setting to 0
 
-    $.infos[to].instances.push(instance);
-    IBeaconProxy(instance).upgradeBeaconToAndCall($.infos[to].beacon, data);
+    toInfo.instances.push(instance);
+    toInfo.instanceIndex[instance] = toInfo.instances.length - 1;
+    IBeaconProxy(instance).upgradeBeaconToAndCall(toInfo.beacon, data);
 
     emit MatrixVaultMigrated(from, to, instance);
   }
