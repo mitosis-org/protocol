@@ -334,10 +334,10 @@ contract ValidatorStaking is
     if (lastRedelegationTime_ > 0) {
       uint48 cooldown = $.redelegationCooldown;
       uint48 lasttime = lastRedelegationTime_.toUint48();
-      require(
-        now_ >= lasttime + cooldown, //
-        IValidatorStaking__CooldownNotPassed(lasttime, now_, (lasttime + cooldown) - now_)
-      );
+
+      if (now_ < lasttime + cooldown) {
+        revert IValidatorStaking__CooldownNotPassed(lasttime, now_, (lasttime + cooldown) - now_);
+      }
     }
   }
 
