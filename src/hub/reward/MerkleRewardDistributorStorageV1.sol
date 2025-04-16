@@ -1,24 +1,26 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.27;
+pragma solidity ^0.8.28;
 
-import { ContextUpgradeable } from '@ozu-v5/utils/ContextUpgradeable.sol';
-
-import { IMerkleRewardDistributorStorageV1 } from '../../interfaces/hub/reward/IMerkleRewardDistributor.sol';
-import { IRewardHandler } from '../../interfaces/hub/reward/IRewardHandler.sol';
+import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-abstract contract MerkleRewardDistributorStorageV1 is IMerkleRewardDistributorStorageV1, ContextUpgradeable {
+abstract contract MerkleRewardDistributorStorageV1 {
   using ERC7201Utils for string;
 
   struct Stage {
-    uint256 amount;
+    uint256 nonce;
     bytes32 root;
-    mapping(address => bool) claimed;
+    address[] rewards;
+    uint256[] amounts;
+    mapping(address receiver => mapping(address matrixVault => bool)) claimed;
   }
 
   struct StorageV1 {
-    mapping(address eolVault => mapping(address reward => mapping(uint256 stage => Stage))) stages;
+    uint256 lastStage;
+    ITreasury treasury;
+    mapping(uint256 stage => Stage) stages;
+    mapping(address reward => uint256 amount) reservedRewardAmounts;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.MerkleRewardDistributorStorage.v1';
@@ -30,23 +32,5 @@ abstract contract MerkleRewardDistributorStorageV1 is IMerkleRewardDistributorSt
     assembly {
       $.slot := slot
     }
-  }
-
-  // ============================ NOTE: VIEW FUNCTIONS ============================ //
-
-  function stage(address eolVault, address reward, uint256 stage_) external view returns (StageResponse memory) {
-    StorageV1 storage $ = _getStorageV1();
-    Stage storage s = _stage($, eolVault, reward, stage_);
-    return StageResponse({ amount: s.amount, root: s.root });
-  }
-
-  // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
-
-  function _stage(StorageV1 storage $, address eolVault, address reward, uint256 stage_)
-    internal
-    view
-    returns (Stage storage)
-  {
-    return $.stages[eolVault][reward][stage_];
   }
 }

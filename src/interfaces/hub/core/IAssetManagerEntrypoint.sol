@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { IAssetManager } from './IAssetManager.sol';
 
@@ -24,16 +24,16 @@ interface IAssetManagerEntrypoint {
   /**
    * @notice Gets the address of the branch vault for a specific chain
    * @param chainId The ID of the chain to query
-   * @return The address of the branch vault on the specified chain
+   * @return The address of the branch MitosisVault on the specified chain
    */
-  function branchVault(uint256 chainId) external view returns (address);
+  function branchMitosisVault(uint256 chainId) external view returns (address);
 
   /**
    * @notice Retrieves the address of the branch entrypoint for a given chain
    * @param chainId The ID of the chain to query
-   * @return The address of the branch entrypoint on the specified chain
+   * @return The address of the branch MitosisVaultEntrypoint on the specified chain
    */
-  function branchEntrypointAddr(uint256 chainId) external view returns (address);
+  function branchMitosisVaultEntrypoint(uint256 chainId) external view returns (address);
 
   /**
    * @notice Initializes an asset on a specified branch chain
@@ -43,27 +43,35 @@ interface IAssetManagerEntrypoint {
   function initializeAsset(uint256 chainId, address branchAsset) external;
 
   /**
-   * @notice Initializes an EOLVault on a specified branch chain
+   * @notice Initializes a MatrixVault on a specified branch chain
    * @param chainId The ID of the branch chain
-   * @param eolVault The address of the EOLVault
+   * @param matrixVault The address of the MatrixVault
+   * @param branchAsset The address of the associated asset on the branch chain
+   */
+  function initializeMatrix(uint256 chainId, address matrixVault, address branchAsset) external;
+
+  /**
+   * @notice Initializes a EOL vault on a specified branch chain
+   * @param chainId The ID of the branch chain
+   * @param eolVault The address of the EOL vault
    * @param branchAsset The address of the associated asset on the branch chain
    */
   function initializeEOL(uint256 chainId, address eolVault, address branchAsset) external;
 
   /**
-   * @notice Initiates a redemption of assets from a branch chain
+   * @notice Initiates a withdrawal of assets from a branch chain
    * @param chainId The ID of the branch chain
    * @param branchAsset The address of the asset on the branch chain
-   * @param to The address that will receive the redeemed assets
-   * @param amount The amount of assets to redeem
+   * @param to The address that will receive the withdrawn assets
+   * @param amount The amount of assets to withdraw
    */
-  function redeem(uint256 chainId, address branchAsset, address to, uint256 amount) external;
+  function withdraw(uint256 chainId, address branchAsset, address to, uint256 amount) external;
 
   /**
-   * @notice Allocates assets to the StrategyExecutor for MitosisVault on branch chain that corresponed to the EOLVault on hub chain
+   * @notice Allocates assets to the StrategyExecutor for MatrixVault on branch chain
    * @param chainId The ID of the branch chain
-   * @param eolVault The address of the EOLVault
+   * @param matrixVault The address of the MatrixVault
    * @param amount The amount of assets to allocate
    */
-  function allocateEOL(uint256 chainId, address eolVault, uint256 amount) external;
+  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external;
 }

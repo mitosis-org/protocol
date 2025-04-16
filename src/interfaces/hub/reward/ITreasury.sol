@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.27;
+pragma solidity ^0.8.28;
 
-import { IAccessControlEnumerable } from '@oz-v5/access/extensions/IAccessControlEnumerable.sol';
-
-import { IRewardHandler } from './IRewardHandler.sol';
+import { IAccessControlEnumerable } from '@oz/access/extensions/IAccessControlEnumerable.sol';
 
 /**
  * @title ITreasuryStorageV1
@@ -17,20 +15,20 @@ interface ITreasuryStorageV1 {
   }
 
   /**
-   * @notice Returns the current holdings of the reward token for the EOLVault
-   * @param eolVault The EOLVault address
+   * @notice Returns the current holdings of the reward token for the vault
+   * @param vault The vault address
    * @param reward The reward token address
    */
-  function balances(address eolVault, address reward) external view returns (uint256);
+  function balances(address vault, address reward) external view returns (uint256);
 
   /**
-   * @notice Returns the management log histories of the reward token for the EOLVault
-   * @param eolVault The EOLVault address
+   * @notice Returns the management log histories of the reward token for the vault
+   * @param vault The vault address
    * @param reward The reward token address
    * @param offset The offset to start from
    * @param size The number of logs to return
    */
-  function history(address eolVault, address reward, uint256 offset, uint256 size)
+  function history(address vault, address reward, uint256 offset, uint256 size)
     external
     view
     returns (HistoryResponse[] memory);
@@ -40,20 +38,24 @@ interface ITreasuryStorageV1 {
  * @title ITreasury
  * @notice Interface for the Treasury reward handler
  */
-interface ITreasury is IRewardHandler, IAccessControlEnumerable, ITreasuryStorageV1 {
-  event RewardDispatched(address indexed eolVault, address indexed reward, address indexed from, uint256 amount);
-  event RewardHandled(address indexed eolVault, address indexed reward, address indexed handler, uint256 amount);
+interface ITreasury is IAccessControlEnumerable, ITreasuryStorageV1 {
+  event RewardDispatched(address indexed vault, address indexed reward, address indexed from, uint256 amount);
+  event RewardStored(address indexed vault, address indexed reward, address indexed from, uint256 amount);
 
   error ITreasury__InsufficientBalance();
 
   /**
+   * @notice Stores the distribution of rewards for the specified vault and reward
+   * @dev This method can only be called by the account that is allowed to dispatch rewards by `isDispatchable`
+   */
+  function storeRewards(address vault, address reward, uint256 amount) external;
+
+  /**
    * @notice Dispatches reward distribution with stacked rewards
-   * @param eolVault The EOLVault address
+   * @param vault The vault address
    * @param reward The reward token address
    * @param amount The reward amount
    * @param handler The reward handler address
-   * @param metadata The auxiliary data for the reward handler
    */
-  function dispatch(address eolVault, address reward, uint256 amount, address handler, bytes calldata metadata)
-    external;
+  function dispatch(address vault, address reward, uint256 amount, address handler) external;
 }

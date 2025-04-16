@@ -1,34 +1,42 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.27;
+pragma solidity ^0.8.28;
 
-import { Router } from '@hpl-v5/client/Router.sol';
-import { IMessageRecipient } from '@hpl-v5/interfaces/IMessageRecipient.sol';
+import { IMessageRecipient } from '@hpl/interfaces/IMessageRecipient.sol';
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-import { OwnableUpgradeable } from '@ozu-v5/access/OwnableUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
+import { GasRouter } from '../external/hyperlane/GasRouter.sol';
 import { IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { Conv } from '../lib/Conv.sol';
 import { StdError } from '../lib/StdError.sol';
 import '../message/Message.sol';
 
-// TODO(thai): consider to make our own contract (`HyperlaneConnector`) instead of using `Router`.
-
-contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, Router, Ownable2StepUpgradeable {
+contract MitosisVaultEntrypoint is
+  IMitosisVaultEntrypoint,
+  IMessageRecipient,
+  GasRouter,
+  Ownable2StepUpgradeable,
+  UUPSUpgradeable
+{
   using Message for *;
   using Conv for *;
 
   IMitosisVault internal immutable _vault;
   uint32 internal immutable _mitosisDomain;
-  bytes32 internal immutable _mitosisAddr;
+  bytes32 internal immutable _mitosisAddr; // Hub.AssetManagerEntrypoint
 
   modifier onlyVault() {
     require(_msgSender() == address(_vault), StdError.InvalidAddress('vault'));
     _;
   }
 
-  constructor(address mailbox, address vault_, uint32 mitosisDomain_, bytes32 mitosisAddr_) Router(mailbox) initializer {
+  constructor(address mailbox, address vault_, uint32 mitosisDomain_, bytes32 mitosisAddr_)
+    GasRouter(mailbox)
+    initializer
+  {
     _vault = IMitosisVault(vault_);
     _mitosisDomain = mitosisDomain_;
     _mitosisAddr = mitosisAddr_;
@@ -37,10 +45,12 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, R
   function initialize(address owner_, address hook, address ism) public initializer {
     _MailboxClient_initialize(hook, ism, owner_);
     __Ownable2Step_init();
-    _transferOwnership(owner_);
+    __UUPSUpgradeable_init();
 
     _enrollRemoteRouter(_mitosisDomain, _mitosisAddr);
   }
+
+  receive() external payable { }
 
   function vault() external view returns (IMitosisVault) {
     return _vault;
@@ -61,8 +71,21 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, R
     _dispatchToMitosis(enc);
   }
 
-  function depositWithOptIn(address asset, address to, address hubEOLVault, uint256 amount) external onlyVault {
-    bytes memory enc = MsgDepositWithOptIn({
+  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount)
+    external
+    onlyVault
+  {
+    bytes memory enc = MsgDepositWithSupplyMatrix({
+      asset: asset.toBytes32(),
+      to: to.toBytes32(),
+      matrixVault: hubMatrixVault.toBytes32(),
+      amount: amount
+    }).encode();
+    _dispatchToMitosis(enc);
+  }
+
+  function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount) external onlyVault {
+    bytes memory enc = MsgDepositWithSupplyEOL({
       asset: asset.toBytes32(),
       to: to.toBytes32(),
       eolVault: hubEOLVault.toBytes32(),
@@ -71,30 +94,33 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, R
     _dispatchToMitosis(enc);
   }
 
-  function deallocateEOL(address hubEOLVault, uint256 amount) external onlyVault {
-    bytes memory enc = MsgDeallocateEOL({ eolVault: hubEOLVault.toBytes32(), amount: amount }).encode();
+  function deallocateMatrix(address hubMatrixVault, uint256 amount) external onlyVault {
+    bytes memory enc = MsgDeallocateMatrix({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 
-  function settleYield(address hubEOLVault, uint256 amount) external onlyVault {
-    bytes memory enc = MsgSettleYield({ eolVault: hubEOLVault.toBytes32(), amount: amount }).encode();
+  function settleMatrixYield(address hubMatrixVault, uint256 amount) external onlyVault {
+    bytes memory enc = MsgSettleMatrixYield({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 
-  function settleLoss(address hubEOLVault, uint256 amount) external onlyVault {
-    bytes memory enc = MsgSettleLoss({ eolVault: hubEOLVault.toBytes32(), amount: amount }).encode();
+  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external onlyVault {
+    bytes memory enc = MsgSettleMatrixLoss({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc);
   }
 
-  function settleExtraRewards(address hubEOLVault, address reward, uint256 amount) external onlyVault {
-    bytes memory enc =
-      MsgSettleExtraRewards({ eolVault: hubEOLVault.toBytes32(), reward: reward.toBytes32(), amount: amount }).encode();
+  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external onlyVault {
+    bytes memory enc = MsgSettleMatrixExtraRewards({
+      matrixVault: hubMatrixVault.toBytes32(),
+      reward: reward.toBytes32(),
+      amount: amount
+    }).encode();
     _dispatchToMitosis(enc);
   }
 
   function _dispatchToMitosis(bytes memory enc) internal {
-    // TODO(thai): consider hyperlane fee
-    _dispatch(_mitosisDomain, enc);
+    uint256 fee = _GasRouter_quoteDispatch(_mitosisDomain, enc, address(hook()));
+    _GasRouter_dispatch(_mitosisDomain, fee, enc, address(hook()));
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//
@@ -109,21 +135,30 @@ contract MitosisVaultEntrypoint is IMitosisVaultEntrypoint, IMessageRecipient, R
       _vault.initializeAsset(decoded.asset.toAddress());
     }
 
-    if (msgType == MsgType.MsgRedeem) {
-      MsgRedeem memory decoded = msg_.decodeRedeem();
-      _vault.redeem(decoded.asset.toAddress(), decoded.to.toAddress(), decoded.amount);
+    if (msgType == MsgType.MsgWithdraw) {
+      MsgWithdraw memory decoded = msg_.decodeWithdraw();
+      _vault.withdraw(decoded.asset.toAddress(), decoded.to.toAddress(), decoded.amount);
+    }
+
+    if (msgType == MsgType.MsgInitializeMatrix) {
+      MsgInitializeMatrix memory decoded = msg_.decodeInitializeMatrix();
+      _vault.initializeMatrix(decoded.matrixVault.toAddress(), decoded.asset.toAddress());
+    }
+
+    if (msgType == MsgType.MsgAllocateMatrix) {
+      MsgAllocateMatrix memory decoded = msg_.decodeAllocateMatrix();
+      _vault.allocateMatrix(decoded.matrixVault.toAddress(), decoded.amount);
     }
 
     if (msgType == MsgType.MsgInitializeEOL) {
       MsgInitializeEOL memory decoded = msg_.decodeInitializeEOL();
       _vault.initializeEOL(decoded.eolVault.toAddress(), decoded.asset.toAddress());
     }
-
-    if (msgType == MsgType.MsgAllocateEOL) {
-      MsgAllocateEOL memory decoded = msg_.decodeAllocateEOL();
-      _vault.allocateEOL(decoded.eolVault.toAddress(), decoded.amount);
-    }
   }
+
+  //=========== NOTE: OWNABLE FUNCTIONS ===========//
+
+  function _authorizeUpgrade(address) internal override onlyOwner { }
 
   //=========== NOTE: OwnableUpgradeable & Ownable2StepUpgradeable
 

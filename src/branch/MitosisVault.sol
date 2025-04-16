@@ -1,24 +1,52 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
-import { IERC20 } from '@oz-v5/token/ERC20/IERC20.sol';
-import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
-import { Address } from '@oz-v5/utils/Address.sol';
+import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
+import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
-import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
-
-import { MitosisVaultStorageV1 } from '../branch/MitosisVaultStorageV1.sol';
-import { AssetAction, EOLAction, IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
+import { AssetAction, IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
-import { IEOLStrategyExecutor } from '../interfaces/branch/strategy/IEOLStrategyExecutor.sol';
+import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
+import { MitosisVaultEOL } from './MitosisVaultEOL.sol';
+import { MitosisVaultMatrix } from './MitosisVaultMatrix.sol';
 
-// TODO(thai): add some view functions in MitosisVault
-
-contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, MitosisVaultStorageV1 {
+contract MitosisVault is
+  IMitosisVault,
+  Pausable,
+  Ownable2StepUpgradeable,
+  UUPSUpgradeable,
+  MitosisVaultMatrix,
+  MitosisVaultEOL
+{
   using SafeERC20 for IERC20;
-  using Address for address;
+  using ERC7201Utils for string;
+
+  struct AssetInfo {
+    bool initialized;
+    uint256 maxCap;
+    uint256 availableCap;
+    mapping(AssetAction => bool) isHalted;
+  }
+
+  struct StorageV1 {
+    IMitosisVaultEntrypoint entrypoint;
+    mapping(address asset => AssetInfo) assets;
+  }
+
+  string private constant _NAMESPACE = 'mitosis.storage.MitosisVaultStorage.v1';
+  bytes32 private immutable _slot = _NAMESPACE.storageSlot();
+
+  function _getStorageV1() internal view returns (StorageV1 storage $) {
+    bytes32 slot = _slot;
+    // slither-disable-next-line assembly
+    assembly {
+      $.slot := slot
+    }
+  }
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -27,46 +55,45 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
   }
 
   fallback() external payable {
-    revert StdError.Unauthorized();
+    revert StdError.NotSupported();
   }
 
   receive() external payable {
-    revert StdError.Unauthorized();
+    revert StdError.NotSupported();
   }
 
   function initialize(address owner_) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
-    _transferOwnership(owner_);
+    __Ownable_init(owner_);
+    __UUPSUpgradeable_init();
   }
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
+
+  function maxCap(address asset) external view returns (uint256) {
+    return _getStorageV1().assets[asset].maxCap;
+  }
+
+  function availableCap(address asset) external view returns (uint256) {
+    return _getStorageV1().assets[asset].availableCap;
+  }
+
+  function isAssetActionHalted(address asset, AssetAction action) external view returns (bool) {
+    return _isHalted(_getStorageV1(), asset, action);
+  }
 
   function isAssetInitialized(address asset) external view returns (bool) {
     return _isAssetInitialized(_getStorageV1(), asset);
   }
 
-  function isEOLInitialized(address hubEOLVault) external view returns (bool) {
-    return _isEOLInitialized(_getStorageV1(), hubEOLVault);
-  }
-
-  function availableEOL(address hubEOLVault) external view returns (uint256) {
-    return _getStorageV1().eols[hubEOLVault].availableEOL;
-  }
-
-  function entrypoint() external view returns (address) {
+  function entrypoint() public view override(IMitosisVault, MitosisVaultMatrix, MitosisVaultEOL) returns (address) {
     return address(_getStorageV1().entrypoint);
   }
 
-  function eolStrategyExecutor(address hubEOLVault) external view returns (address) {
-    return _getStorageV1().eols[hubEOLVault].eolStrategyExecutor;
-  }
-
-  //=========== NOTE: MUTATIVE FUNCTIONS ===========//
-
   //=========== NOTE: MUTATIVE - ASSET FUNCTIONS ===========//
 
-  function initializeAsset(address asset) external {
+  function initializeAsset(address asset) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -75,215 +102,58 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     $.assets[asset].initialized = true;
     emit AssetInitialized(asset);
 
-    // NOTE: we halt deposit by default.
+    // NOTE: we halt deposit and keep the cap at zero by default.
     _haltAsset($, asset, AssetAction.Deposit);
   }
 
-  function deposit(address asset, address to, uint256 amount) external {
+  function deposit(address asset, address to, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
-    _deposit($, asset, to, amount);
+
+    _deposit(asset, to, amount);
 
     $.entrypoint.deposit(asset, to, amount);
     emit Deposited(asset, to, amount);
   }
 
-  function depositWithOptIn(address asset, address to, address hubEOLVault, uint256 amount) external {
-    StorageV1 storage $ = _getStorageV1();
-    _deposit($, asset, to, amount);
-
-    _assertEOLInitialized($, hubEOLVault);
-    require(asset == $.eols[hubEOLVault].asset, IMitosisVault__InvalidEOLVault(hubEOLVault, asset));
-
-    $.entrypoint.depositWithOptIn(asset, to, hubEOLVault, amount);
-    emit DepositedWithOptIn(asset, to, hubEOLVault, amount);
-  }
-
-  function redeem(address asset, address to, uint256 amount) external {
+  function withdraw(address asset, address to, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
-    _assertAssetInitialized($, asset);
+    _assertAssetInitialized(asset);
 
     IERC20(asset).safeTransfer(to, amount);
 
-    emit Redeemed(asset, to, amount);
-  }
-
-  //=========== NOTE: MUTATIVE - EOL FUNCTIONS ===========//
-
-  function initializeEOL(address hubEOLVault, address asset) external {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertOnlyEntrypoint($);
-    _assertEOLNotInitialized($, hubEOLVault);
-    _assertAssetInitialized($, asset);
-
-    $.eols[hubEOLVault].initialized = true;
-    $.eols[hubEOLVault].asset = asset;
-
-    emit EOLInitialized(hubEOLVault, asset);
-  }
-
-  function allocateEOL(address hubEOLVault, uint256 amount) external {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertOnlyEntrypoint($);
-    _assertEOLInitialized($, hubEOLVault);
-
-    EOLInfo storage eolInfo = $.eols[hubEOLVault];
-
-    eolInfo.availableEOL += amount;
-
-    emit EOLAllocated(hubEOLVault, amount);
-  }
-
-  function deallocateEOL(address hubEOLVault, uint256 amount) external {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
-
-    EOLInfo storage eolInfo = $.eols[hubEOLVault];
-
-    eolInfo.availableEOL -= amount;
-    $.entrypoint.deallocateEOL(hubEOLVault, amount);
-
-    emit EOLDeallocated(hubEOLVault, amount);
-  }
-
-  function fetchEOL(address hubEOLVault, uint256 amount) external {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
-    _assertNotHalted($, hubEOLVault, EOLAction.FetchEOL);
-
-    EOLInfo storage eolInfo = $.eols[hubEOLVault];
-
-    eolInfo.availableEOL -= amount;
-    IERC20(eolInfo.asset).safeTransfer(eolInfo.eolStrategyExecutor, amount);
-
-    emit EOLFetched(hubEOLVault, amount);
-  }
-
-  function returnEOL(address hubEOLVault, uint256 amount) external {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
-
-    EOLInfo storage eolInfo = $.eols[hubEOLVault];
-
-    IERC20(eolInfo.asset).safeTransferFrom(eolInfo.eolStrategyExecutor, address(this), amount);
-    eolInfo.availableEOL += amount;
-
-    emit EOLReturned(hubEOLVault, amount);
-  }
-
-  function settleYield(address hubEOLVault, uint256 amount) external {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
-
-    $.entrypoint.settleYield(hubEOLVault, amount);
-
-    emit YieldSettled(hubEOLVault, amount);
-  }
-
-  function settleLoss(address hubEOLVault, uint256 amount) external {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
-
-    $.entrypoint.settleLoss(hubEOLVault, amount);
-
-    emit LossSettled(hubEOLVault, amount);
-  }
-
-  function settleExtraRewards(address hubEOLVault, address reward, uint256 amount) external {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertEOLInitialized($, hubEOLVault);
-    _assertOnlyEOLStrategyExecutor($, hubEOLVault);
-    _assertAssetInitialized($, reward);
-    require(reward != $.eols[hubEOLVault].asset, StdError.InvalidAddress('reward'));
-
-    IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
-    $.entrypoint.settleExtraRewards(hubEOLVault, reward, amount);
-
-    emit ExtraRewardsSettled(hubEOLVault, reward, amount);
+    emit Withdrawn(asset, to, amount);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
+
+  function _authorizeUpgrade(address) internal override onlyOwner { }
+
+  function _authorizePause(address) internal view override onlyOwner { }
 
   function setEntrypoint(address entrypoint_) external onlyOwner {
     _getStorageV1().entrypoint = IMitosisVaultEntrypoint(entrypoint_);
     emit EntrypointSet(address(entrypoint_));
   }
 
-  function setEOLStrategyExecutor(address hubEOLVault, address eolStrategyExecutor_) external onlyOwner {
+  function setCap(address asset, uint256 newCap) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    EOLInfo storage eolInfo = $.eols[hubEOLVault];
+    _assertAssetInitialized(asset);
 
-    _assertEOLInitialized($, hubEOLVault);
-
-    if (eolInfo.eolStrategyExecutor != address(0)) {
-      // NOTE: no way to check if every extra rewards are settled.
-      bool drained = IEOLStrategyExecutor(eolInfo.eolStrategyExecutor).totalBalance() == 0
-        && IEOLStrategyExecutor(eolInfo.eolStrategyExecutor).storedTotalBalance() == 0;
-
-      require(drained, IMitosisVault__EOLStrategyExecutorNotDrained(hubEOLVault, eolInfo.eolStrategyExecutor));
-    }
-
-    require(
-      hubEOLVault == IEOLStrategyExecutor(eolStrategyExecutor_).hubEOLVault(),
-      StdError.InvalidId('eolStrategyExecutor.hubEOLVault')
-    );
-    require(
-      address(this) == address(IEOLStrategyExecutor(eolStrategyExecutor_).vault()),
-      StdError.InvalidAddress('eolStrategyExecutor.vault')
-    );
-    require(
-      eolInfo.asset == address(IEOLStrategyExecutor(eolStrategyExecutor_).asset()),
-      StdError.InvalidAddress('eolStrategyExecutor.asset')
-    );
-
-    eolInfo.eolStrategyExecutor = eolStrategyExecutor_;
-    emit EOLStrategyExecutorSet(hubEOLVault, eolStrategyExecutor_);
+    _setCap($, asset, newCap);
   }
 
   function haltAsset(address asset, AssetAction action) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    _assertAssetInitialized($, asset);
+    _assertAssetInitialized(asset);
     return _haltAsset($, asset, action);
   }
 
   function resumeAsset(address asset, AssetAction action) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
-    _assertAssetInitialized($, asset);
+    _assertAssetInitialized(asset);
     return _resumeAsset($, asset, action);
-  }
-
-  function haltEOL(address hubEOLVault, EOLAction action) external onlyOwner {
-    StorageV1 storage $ = _getStorageV1();
-    _assertEOLInitialized($, hubEOLVault);
-    return _haltEOL($, hubEOLVault, action);
-  }
-
-  function resumeEOL(address hubEOLVault, EOLAction action) external onlyOwner {
-    StorageV1 storage $ = _getStorageV1();
-    _assertEOLInitialized($, hubEOLVault);
-    return _resumeEOL($, hubEOLVault, action);
-  }
-
-  function pause() external onlyOwner {
-    _pause();
-  }
-
-  function unpause() external onlyOwner {
-    _unpause();
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
@@ -292,48 +162,37 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     require(_msgSender() == address($.entrypoint), StdError.Unauthorized());
   }
 
-  function _assertOnlyEOLStrategyExecutor(StorageV1 storage $, address hubEOLVault) internal view {
-    require(_msgSender() == $.eols[hubEOLVault].eolStrategyExecutor, StdError.Unauthorized());
+  function _assertCapNotExceeded(StorageV1 storage $, address asset, uint256 amount) internal view {
+    uint256 available = $.assets[asset].availableCap;
+    require(available >= amount, IMitosisVault__ExceededCap(asset, amount, available));
   }
 
-  function _assertAssetInitialized(StorageV1 storage $, address asset) internal view {
-    require(_isAssetInitialized($, asset), IMitosisVault__AssetNotInitialized(asset));
+  function _assertAssetInitialized(address asset) internal view override(MitosisVaultMatrix, MitosisVaultEOL) {
+    require(_isAssetInitialized(_getStorageV1(), asset), IMitosisVault__AssetNotInitialized(asset));
   }
 
   function _assertAssetNotInitialized(StorageV1 storage $, address asset) internal view {
     require(!_isAssetInitialized($, asset), IMitosisVault__AssetAlreadyInitialized(asset));
   }
 
-  function _assertEOLInitialized(StorageV1 storage $, address hubEOLVault) internal view {
-    require(_isEOLInitialized($, hubEOLVault), IMitosisVault__EOLNotInitialized(hubEOLVault));
-  }
-
-  function _assertEOLNotInitialized(StorageV1 storage $, address hubEOLVault) internal view {
-    require(!_isEOLInitialized($, hubEOLVault), IMitosisVault__EOLAlreadyInitialized(hubEOLVault));
-  }
-
   function _assertNotHalted(StorageV1 storage $, address asset, AssetAction action) internal view {
     require(!_isHalted($, asset, action), StdError.Halted());
-  }
-
-  function _assertNotHalted(StorageV1 storage $, address hubEOLVault, EOLAction action) internal view {
-    require(!_isHalted($, hubEOLVault, action), StdError.Halted());
   }
 
   function _isHalted(StorageV1 storage $, address asset, AssetAction action) internal view returns (bool) {
     return $.assets[asset].isHalted[action];
   }
 
-  function _isHalted(StorageV1 storage $, address hubEOLVault, EOLAction action) internal view returns (bool) {
-    return $.eols[hubEOLVault].isHalted[action];
-  }
-
   function _isAssetInitialized(StorageV1 storage $, address asset) internal view returns (bool) {
     return $.assets[asset].initialized;
   }
 
-  function _isEOLInitialized(StorageV1 storage $, address hubEOLVault) internal view returns (bool) {
-    return $.eols[hubEOLVault].initialized;
+  function _setCap(StorageV1 storage $, address asset, uint256 newCap) internal {
+    AssetInfo storage assetInfo = $.assets[asset];
+    uint256 prevCap = assetInfo.maxCap;
+    assetInfo.maxCap = newCap;
+    assetInfo.availableCap = newCap;
+    emit CapSet(_msgSender(), asset, prevCap, newCap);
   }
 
   function _haltAsset(StorageV1 storage $, address asset, AssetAction action) internal {
@@ -346,22 +205,16 @@ contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, Mitos
     emit AssetResumed(asset, action);
   }
 
-  function _haltEOL(StorageV1 storage $, address hubEOLVault, EOLAction action) internal {
-    $.eols[hubEOLVault].isHalted[action] = true;
-    emit EOLHalted(hubEOLVault, action);
-  }
-
-  function _resumeEOL(StorageV1 storage $, address hubEOLVault, EOLAction action) internal {
-    $.eols[hubEOLVault].isHalted[action] = false;
-    emit EOLResumed(hubEOLVault, action);
-  }
-
-  function _deposit(StorageV1 storage $, address asset, address to, uint256 amount) internal {
-    _assertAssetInitialized($, asset);
-    _assertNotHalted($, asset, AssetAction.Deposit);
+  function _deposit(address asset, address to, uint256 amount) internal override(MitosisVaultMatrix, MitosisVaultEOL) {
+    StorageV1 storage $ = _getStorageV1();
     require(to != address(0), StdError.ZeroAddress('to'));
     require(amount != 0, StdError.ZeroAmount());
 
+    _assertAssetInitialized(asset);
+    _assertNotHalted($, asset, AssetAction.Deposit);
+    _assertCapNotExceeded($, asset, amount);
+
+    $.assets[asset].availableCap -= amount;
     IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
   }
 }

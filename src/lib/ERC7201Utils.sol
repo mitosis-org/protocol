@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 library ERC7201Utils {
   function storageSlot(string memory namespace) internal pure returns (bytes32 slot) {
