@@ -460,6 +460,39 @@ contract ValidatorStakingTest is Toolkit {
     nativeVault.redelegate(val1, val2, 1 ether);
   }
 
+  function test_redelegate_cooldown_overflow() public {
+    _fund();
+
+    ValidatorStaking vault = erc20Vault;
+
+    vm.deal(user1, 100 ether);
+    vm.startPrank(user1);
+    weth.deposit{ value: 100 ether }();
+    weth.approve(address(vault), 100000 ether);
+    vm.stopPrank();
+
+    _regVal(val1, true);
+    _regVal(val2, true);
+    _regVal(val3, true);
+
+    _stake(vault, val1, user1, user1, 35 ether);
+    _stake(vault, val2, user1, user1, 10 ether);
+    _stake(vault, val3, user1, user1, 10 ether);
+
+    // val1 -> val2 (set val1,val2 lastRedelegationTime)
+
+    vm.prank(user1);
+    vault.redelegate(val1, val2, 5 ether);
+
+    // pass redelegation cooldown
+    vm.warp(block.timestamp + 5 days);
+
+    // val2 -> val3 (val2 has lastRedelegationTime, but val3 does not have it)
+
+    vm.prank(user1);
+    vault.redelegate(val2, val3, 1 ether);
+  }
+
   function _test_redelegate(ValidatorStaking vault) private {
     _fund();
 
