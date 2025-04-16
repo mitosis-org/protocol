@@ -1,32 +1,23 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
-import { IRewardDistributor } from './IRewardDistributor.sol';
-
-/**
- * @title IMerkleRewardDistributorStorageV1
- * @notice Interface definition for the MerkleRewradDistributorStorageV1
- */
-interface IMerkleRewardDistributorStorageV1 {
-  struct StageResponse {
-    uint256 amount;
-    bytes32 root;
-  }
-
-  /**
-   * @notice Returns the stage info of specific distribution for the EOLVault and reward token.
-   * @param eolVault The EOLVault address
-   * @param reward The reward token address
-   * @param stageNum The stage number
-   */
-  function stage(address eolVault, address reward, uint256 stageNum) external view returns (StageResponse memory);
-}
+import { ITreasury } from './ITreasury.sol';
 
 /**
  * @title IMerkleRewardDistributor
  * @notice Interface for the Merkle based reward distributor
  */
-interface IMerkleRewardDistributor is IRewardDistributor, IMerkleRewardDistributorStorageV1 {
+interface IMerkleRewardDistributor {
+  event RewardsFetched(uint256 indexed id, uint256 nonce, address indexed vault, address reward, uint256 amount);
+
+  event StageAdded(uint256 indexed stage, bytes32 root, address[] rewards, uint256[] amounts);
+
+  event Claimed(
+    address indexed receiver, uint256 indexed stage, address indexed vault, address[] rewards, uint256[] amounts
+  );
+
+  event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
+
   /**
    * @notice Error thrown when attempting to claim an already claimed reward.
    */
@@ -38,34 +29,151 @@ interface IMerkleRewardDistributor is IRewardDistributor, IMerkleRewardDistribut
   error IMerkleRewardDistributor__InvalidProof();
 
   /**
-   * @notice Error thrown when an invalid amount is provided for claim.
+   * @notice Error thrown when an invalid amount is provided for claim or adding stage.
    */
   error IMerkleRewardDistributor__InvalidAmount();
 
-  /**
-   * @notice Encodes metadata for the specified vault, stage, amount, and proof.
-   * @param eolVault The EOLVault address
-   * @param stage_ The stage number
-   * @param amount The reward amount
-   * @param proof The Merkle proof
-   * @return metadata The encoded metadata
-   */
-  function encodeMetadata(address eolVault, uint256 stage_, uint256 amount, bytes32[] calldata proof)
-    external
-    pure
-    returns (bytes memory metadata);
+  error IMerkleRewardDistributor__NotCurrentStage(uint256 stage);
+
+  error IMerkleRewardDistributor__InvalidStageNonce(uint256 stage, uint256 nonce);
+
+  // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
   /**
-   * @notice Makes a leaf hash that expected to be used in the Merkle tree.
-   * @param eolVault The EOLVault address
-   * @param reward The reward token address
-   * @param stage_ The stage number
-   * @param account The account address
-   * @param amount The reward amount
-   * @return leaf The leaf hash
+   * @notice Returns the last stage. If no stage exists, it returns 0.
    */
-  function encodeLeaf(address eolVault, address reward, uint256 stage_, address account, uint256 amount)
-    external
-    pure
-    returns (bytes32 leaf);
+  function lastStage() external view returns (uint256);
+
+  /**
+   * @notice Returns the root hash of the specified stage. If the stage does not exist, it returns 0.
+   */
+  function root(uint256 stage_) external view returns (bytes32);
+
+  /**
+   * @notice Returns the reward information of the specified stage. If the stage does not exist, it returns empty array.
+   */
+  function rewardInfo(uint256 stage_) external view returns (address[] memory rewards, uint256[] memory amounts);
+
+  /**
+   * @notice Returns the ITreasury.
+   */
+  function treasury() external view returns (ITreasury);
+
+  /**
+   * @notice Makes a leaf hash that expected to be used in the merkle tree.
+   * @param stage The stage number.
+   * @param receiver The receiver address.
+   * @param vault The vault address.
+   * @param rewards The reward token addresses.
+   * @param amounts The reward amounts.
+   */
+  function encodeLeaf(
+    address receiver,
+    uint256 stage,
+    address vault,
+    address[] calldata rewards,
+    uint256[] calldata amounts
+  ) external pure returns (bytes32 leaf);
+
+  /**
+   * @notice Checks if the account can claim the rewards for the specified vault in the specified stage.
+   * @param receiver The receiver address.
+   * @param stage The stage number.
+   * @param vault The vault address.
+   * @param rewards The reward token addresses.
+   * @param amounts The reward amounts.
+   * @param proof The merkle proof.
+   */
+  function claimable(
+    address receiver,
+    uint256 stage,
+    address vault,
+    address[] calldata rewards,
+    uint256[] calldata amounts,
+    bytes32[] calldata proof
+  ) external view returns (bool);
+
+  // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
+
+  /**
+   * @notice Claims rewards for the specified vault in the specified stage.
+   */
+  function claim(
+    address receiver,
+    uint256 stage,
+    address vault,
+    address[] calldata rewards,
+    uint256[] calldata amounts,
+    bytes32[] calldata proof
+  ) external;
+
+  /**
+   * @notice Claims rewards for the multiple vaults in the specified stage.
+   */
+  function claimMultiple(
+    address receiver,
+    uint256 stage,
+    address[] calldata vaults,
+    address[][] calldata rewards,
+    uint256[][] calldata amounts,
+    bytes32[][] calldata proofs
+  ) external;
+
+  /**
+   * @notice Claims rewards for the multiple vaults in the multiple stages.
+   */
+  function claimBatch(
+    address receiver,
+    uint256[] calldata stages,
+    address[][] calldata vaults,
+    address[][][] calldata rewards,
+    uint256[][][] calldata amounts,
+    bytes32[][][] calldata proofs
+  ) external;
+
+  // ============================ NOTE: MANAGER FUNCTIONS ============================ //
+
+  /**
+   * @notice Fetches reward from the vault to the specified stage.
+   */
+  function fetchRewards(uint256 stage, uint256 nonce, address vault, address reward, uint256 amount) external;
+
+  /**
+   * @notice Fetches rewards from the vaults to the specified stage.
+   */
+  function fetchRewardsMultiple(
+    uint256 stage,
+    uint256 nonce,
+    address vault,
+    address[] calldata rewards,
+    uint256[] calldata amounts
+  ) external;
+
+  /**
+   * @notice Fetches rewards from the multiple vaults to the specified stage.
+   */
+  function fetchRewardsBatch(
+    uint256 stage,
+    uint256 nonce,
+    address[] calldata vaults,
+    address[][] calldata rewards,
+    uint256[][] calldata amounts
+  ) external;
+
+  /**
+   * @notice Adds a new stage with the specified root hash.
+   * @param root_ The root hash of the merkle tree.
+   * @param stage_ The stage number of the added root hash.
+   * @param nonce The nonce number of the stage.
+   * @param rewards The reward token addresses.
+   * @param amounts The reward amounts.
+   * @return stage The stage number of the added root hash.
+   */
+  function addStage(
+    bytes32 root_,
+    uint256 stage_,
+    uint256 nonce,
+    address[] calldata rewards,
+    uint256[] calldata amounts
+  ) external returns (uint256 stage);
 }

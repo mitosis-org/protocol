@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 /**
  * @title ICrossChainRegistry
@@ -10,10 +10,17 @@ interface ICrossChainRegistry {
    * @notice Emitted when a new chain is registered or updated.
    * @param chainId The ID of the chain being set.
    * @param hplDomain The Hyperlane domain associated with the chain.
-   * @param entrypoint The address of the entrypoint contract for the chain.
+   * @param mitosisVaultEntrypoint The address of the MitosisVaultEntrypoint contract for the chain.
+   * @param governanceEntrypoint The address of the GovernanceEntrypoint contract for the chain.
    * @param name The name of the chain.
    */
-  event ChainSet(uint256 indexed chainId, uint32 indexed hplDomain, address indexed entrypoint, string name);
+  event ChainSet(
+    uint256 indexed chainId,
+    uint32 indexed hplDomain,
+    address mitosisVaultEntrypoint,
+    address governanceEntrypoint,
+    string name
+  );
 
   /**
    * @notice Emitted when a vault is set for a chain.
@@ -23,7 +30,7 @@ interface ICrossChainRegistry {
   event VaultSet(uint256 indexed chainId, address indexed vault);
 
   /**
-   * @notice Error thrown when attempting to register an already registered chain or Hyperlane domain.
+   * @notice Error thrown when attempting to register a chain that is not registered.
    */
   error ICrossChainRegistry__NotRegistered();
 
@@ -35,7 +42,8 @@ interface ICrossChainRegistry {
   /**
    * @notice Error thrown when attempting to perform an operation on a chain that is not enrolled.
    */
-  error ICrossChainRegistry__NotEnrolled();
+  error ICrossChainRegistry__MitosisVaultEntrypointNotEnrolled();
+  error ICrossChainRegistry__GovernanceEntrypointNotEnrolled();
 
   /**
    * @notice Error thrown when attempting to enroll an already enrolled chain.
@@ -65,23 +73,37 @@ interface ICrossChainRegistry {
   /**
    * @notice Returns the vault address for a specified chain.
    * @param chainId The ID of the chain.
-   * @return The address of the vault.
+   * @return The address of the MitosisVault.
    */
-  function vault(uint256 chainId) external view returns (address);
+  function mitosisVault(uint256 chainId) external view returns (address);
 
   /**
    * @notice Returns the entrypoint address for a specified chain.
    * @param chainId The ID of the chain.
-   * @return The address of the entrypoint.
+   * @return The address of the MitosisVaultEntrypoint.
    */
-  function entrypoint(uint256 chainId) external view returns (address);
+  function mitosisVaultEntrypoint(uint256 chainId) external view returns (address);
+
+  /**
+   * @notice Returns the entrypoint address for a specified chain.
+   * @param chainId The ID of the chain.
+   * @return The address of the GovernanceEntrypoint.
+   */
+  function governanceEntrypoint(uint256 chainId) external view returns (address);
 
   /**
    * @notice Checks if the entrypoint for a specified chain is enrolled.
    * @param chainId The ID of the chain.
-   * @return A boolean indicating whether the entrypoint is enrolled.
+   * @return A boolean indicating whether the MitosisVaultEntrypoint is enrolled.
    */
-  function entrypointEnrolled(uint256 chainId) external view returns (bool);
+  function mitosisVaultEntrypointEnrolled(uint256 chainId) external view returns (bool);
+
+  /**
+   * @notice Checks if the entrypoint for a specified chain is enrolled.
+   * @param chainId The ID of the chain.
+   * @return A boolean indicating whether the GovernanceEntrypoint is enrolled.
+   */
+  function governanceEntrypointEnrolled(uint256 chainId) external view returns (bool);
 
   /**
    * @notice Returns the chain ID associated with a specified Hyperlane domain.
@@ -102,9 +124,16 @@ interface ICrossChainRegistry {
    * @param chainId_ The ID of the chain.
    * @param name The name of the chain.
    * @param hplDomain The Hyperlane domain associated with the chain.
-   * @param entrypoint_ The address of the entrypoint contract for the chain.
+   * @param mitosisVaultEntrypoint_ The address of the MitosisVaultEntrypoint for the chain.
+   * @param governanceEntrypoint_ The address of the GovernanceEntrypoint for the chain.
    */
-  function setChain(uint256 chainId_, string calldata name, uint32 hplDomain, address entrypoint_) external;
+  function setChain(
+    uint256 chainId_,
+    string calldata name,
+    uint32 hplDomain,
+    address mitosisVaultEntrypoint_,
+    address governanceEntrypoint_
+  ) external;
 
   /**
    * @notice Sets the vault for a specified chain.
@@ -114,15 +143,15 @@ interface ICrossChainRegistry {
   function setVault(uint256 chainId_, address vault_) external;
 
   /**
-   * @notice Enrolls the entrypoint for all registered chains.
+   * @notice Enrolls the MitosisVaultEntrypoint for all registered chains.
    * @param hplRouter The address of the Hyperlane router.
    */
-  function enrollEntrypoint(address hplRouter) external;
+  function enrollMitosisVaultEntrypoint(address hplRouter) external;
 
   /**
-   * @notice Enrolls the entrypoint for a specified chain.
+   * @notice Enrolls the GovernanceEntrypoint for a specified chain.
    * @param hplRouter The address of the Hyperlane router.
    * @param chainId_ The ID of the chain.
    */
-  function enrollEntrypoint(address hplRouter, uint256 chainId_) external;
+  function enrollGovernanceEntrypoint(address hplRouter, uint256 chainId_) external;
 }

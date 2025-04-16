@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.27;
+pragma solidity ^0.8.28;
 
 import { ITreasuryStorageV1 } from '../../interfaces/hub/reward/ITreasury.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
@@ -18,8 +18,8 @@ contract TreasuryStorageV1 is ITreasuryStorageV1 {
   }
 
   struct StorageV1 {
-    mapping(address eolVault => mapping(address reward => uint256 balance)) balances;
-    mapping(address eolVault => mapping(address reward => Log[] logs)) history;
+    mapping(address vault => mapping(address reward => uint256 balance)) balances;
+    mapping(address vault => mapping(address reward => Log[] logs)) history;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.TreasuryStorage.v1';
@@ -38,26 +38,26 @@ contract TreasuryStorageV1 is ITreasuryStorageV1 {
   /**
    * @inheritdoc ITreasuryStorageV1
    */
-  function balances(address eolVault, address reward) external view returns (uint256) {
-    return _balances(_getStorageV1(), eolVault, reward);
+  function balances(address vault, address reward) external view returns (uint256) {
+    return _balances(_getStorageV1(), vault, reward);
   }
 
   /**
    * @inheritdoc ITreasuryStorageV1
    */
-  function history(address eolVault, address reward, uint256 offset, uint256 size)
+  function history(address vault, address reward, uint256 offset, uint256 size)
     external
     view
     returns (HistoryResponse[] memory)
   {
     StorageV1 storage $ = _getStorageV1();
 
-    uint256 historyLength = $.history[eolVault][reward].length;
+    uint256 historyLength = $.history[vault][reward].length;
     if (offset + size > historyLength) size = historyLength - offset;
 
     HistoryResponse[] memory history_ = new HistoryResponse[](size);
     for (uint256 i = 0; i < size; i++) {
-      Log memory log = $.history[eolVault][reward][offset + i];
+      Log memory log = $.history[vault][reward][offset + i];
       history_[i] = HistoryResponse(log.timestamp, log.amount, log.sign);
     }
 
@@ -66,7 +66,7 @@ contract TreasuryStorageV1 is ITreasuryStorageV1 {
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _balances(StorageV1 storage $, address eolVault, address reward) internal view returns (uint256) {
-    return $.balances[eolVault][reward];
+  function _balances(StorageV1 storage $, address vault, address reward) internal view returns (uint256) {
+    return $.balances[vault][reward];
   }
 }

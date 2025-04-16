@@ -1,45 +1,51 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
-import { IERC20 } from '@oz-v5/interfaces/IERC20.sol';
-import { SafeERC20 } from '@oz-v5/token/ERC20/utils/SafeERC20.sol';
-import { MerkleProof } from '@oz-v5/utils/cryptography/MerkleProof.sol';
-
-import { AccessControlEnumerableUpgradeable } from '@ozu-v5/access/extensions/AccessControlEnumerableUpgradeable.sol';
+import { IERC20 } from '@oz/interfaces/IERC20.sol';
+import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { MerkleProof } from '@oz/utils/cryptography/MerkleProof.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
+import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { IMerkleRewardDistributor } from '../../interfaces/hub/reward/IMerkleRewardDistributor.sol';
-import { IRewardDistributor } from '../../interfaces/hub/reward/IRewardDistributor.sol';
+import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { BaseHandler } from './BaseHandler.sol';
-import { LibDistributorRewardMetadata, RewardMerkleMetadata } from './LibDistributorRewardMetadata.sol';
 import { MerkleRewardDistributorStorageV1 } from './MerkleRewardDistributorStorageV1.sol';
 
 contract MerkleRewardDistributor is
-  BaseHandler,
   IMerkleRewardDistributor,
-  MerkleRewardDistributorStorageV1,
-  AccessControlEnumerableUpgradeable
+  AccessControlEnumerableUpgradeable,
+  UUPSUpgradeable,
+  MerkleRewardDistributorStorageV1
 {
   using SafeERC20 for IERC20;
   using MerkleProof for bytes32[];
-  using LibDistributorRewardMetadata for bytes;
-  using LibDistributorRewardMetadata for RewardMerkleMetadata;
 
-  /// @notice Role for dispatching rewards (keccak256("DISPATCHER_ROLE"))
-  bytes32 public constant DISPATCHER_ROLE = 0xfbd38eecf51668fdbc772b204dc63dd28c3a3cf32e3025f52a80aa807359f50c;
+  /// @notice Role for manager (keccak256("MANAGER_ROLE"))
+  bytes32 public constant MANAGER_ROLE = 0x241ecf16d79d0f8dbfb92cbc07fe17840425976cf0667f022fe9877caa831b08;
+
+  /// @notice Maximum number of rewards that can be claimed in a single call.
+  uint256 public constant MAX_CLAIM_VAULT_SIZE = 100;
+
+  /// @notice Maximum number of batch claims that can be made in a single call.
+  uint256 public constant MAX_CLAIM_STAGES_SIZE = 10;
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  constructor() BaseHandler(HandlerType.Endpoint, DistributionType.Merkle, 'Merkle Reward Distributor') {
+  constructor() {
     _disableInitializers();
   }
 
-  function initialize(address admin) public initializer {
-    __BaseHandler_init();
+  function initialize(address admin, address treasury_) public initializer {
+    require(admin != address(0), StdError.ZeroAddress('admin'));
+
     __AccessControlEnumerable_init();
+    __UUPSUpgradeable_init();
 
     _grantRole(DEFAULT_ADMIN_ROLE, admin);
-    _setRoleAdmin(DISPATCHER_ROLE, DEFAULT_ADMIN_ROLE);
+    _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+
+    _setTreasury(_getStorageV1(), treasury_);
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
@@ -47,138 +53,295 @@ contract MerkleRewardDistributor is
   /**
    * @inheritdoc IMerkleRewardDistributor
    */
-  function encodeMetadata(address eolVault, uint256 stage_, uint256 amount, bytes32[] calldata proof)
-    external
-    pure
-    returns (bytes memory)
-  {
-    return RewardMerkleMetadata({ eolVault: eolVault, stage: stage_, amount: amount, proof: proof }).encode();
+  function lastStage() external view returns (uint256) {
+    return _getStorageV1().lastStage;
   }
 
   /**
    * @inheritdoc IMerkleRewardDistributor
    */
-  function encodeLeaf(address eolVault, address reward, uint256 stage_, address account, uint256 amount)
-    external
-    pure
-    returns (bytes32 leaf)
-  {
-    return _leaf(eolVault, reward, stage_, account, amount);
+  function root(uint256 stage_) external view returns (bytes32) {
+    return _stage(_getStorageV1(), stage_).root;
   }
 
   /**
-   * @inheritdoc IRewardDistributor
+   * @inheritdoc IMerkleRewardDistributor
    */
-  function claimable(address account, address reward, bytes calldata metadata) external view returns (bool) {
-    return _claimable(account, reward, metadata.decodeRewardMerkleMetadata());
+  function rewardInfo(uint256 stage_) external view returns (address[] memory, uint256[] memory) {
+    Stage storage s = _stage(_getStorageV1(), stage_);
+    return (s.rewards, s.amounts);
   }
 
   /**
-   * @inheritdoc IRewardDistributor
+   * @inheritdoc IMerkleRewardDistributor
    */
-  function claimableAmount(address account, address reward, bytes calldata metadata) external view returns (uint256) {
-    return _claimableAmount(account, reward, metadata.decodeRewardMerkleMetadata());
+  function treasury() external view returns (ITreasury) {
+    return _getStorageV1().treasury;
+  }
+
+  /**
+   * @inheritdoc IMerkleRewardDistributor
+   */
+  function encodeLeaf(
+    address receiver,
+    uint256 stage,
+    address vault,
+    address[] calldata rewards,
+    uint256[] calldata amounts
+  ) external pure returns (bytes32 leaf) {
+    return _leaf(receiver, stage, vault, rewards, amounts);
+  }
+
+  /**
+   * @inheritdoc IMerkleRewardDistributor
+   */
+  function claimable(
+    address receiver,
+    uint256 stage,
+    address vault,
+    address[] calldata rewards,
+    uint256[] calldata amounts,
+    bytes32[] calldata proof
+  ) external view returns (bool) {
+    return _claimable(receiver, stage, vault, rewards, amounts, proof);
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   /**
-   * @inheritdoc IRewardDistributor
+   * @inheritdoc IMerkleRewardDistributor
    */
-  function claim(address reward, bytes calldata metadata) external {
-    _claim(_msgSender(), reward, metadata.decodeRewardMerkleMetadata());
+  function claim(
+    address receiver,
+    uint256 stage,
+    address vault,
+    address[] calldata rewards,
+    uint256[] calldata amounts,
+    bytes32[] calldata proof
+  ) public {
+    _claim(receiver, stage, vault, rewards, amounts, proof);
   }
 
   /**
-   * @inheritdoc IRewardDistributor
+   * @inheritdoc IMerkleRewardDistributor
    */
-  function claim(address receiver, address reward, bytes calldata metadata) external {
-    _claim(receiver, reward, metadata.decodeRewardMerkleMetadata());
+  function claimMultiple(
+    address receiver,
+    uint256 stage,
+    address[] calldata vaults,
+    address[][] calldata rewards,
+    uint256[][] calldata amounts,
+    bytes32[][] calldata proofs
+  ) public {
+    require(vaults.length == rewards.length, StdError.InvalidParameter('rewards.length'));
+    require(vaults.length == amounts.length, StdError.InvalidParameter('amounts.length'));
+    require(vaults.length == proofs.length, StdError.InvalidParameter('proofs.length'));
+    require(vaults.length <= MAX_CLAIM_VAULT_SIZE, StdError.InvalidParameter('vaults.length'));
+
+    for (uint256 i = 0; i < vaults.length; i++) {
+      claim(receiver, stage, vaults[i], rewards[i], amounts[i], proofs[i]);
+    }
   }
 
   /**
-   * @inheritdoc IRewardDistributor
+   * @inheritdoc IMerkleRewardDistributor
    */
-  function claim(address reward, uint256 amount, bytes calldata metadata) external {
-    RewardMerkleMetadata memory metadata_ = metadata.decodeRewardMerkleMetadata();
-    require(metadata_.amount == amount, IMerkleRewardDistributor__InvalidAmount());
+  function claimBatch(
+    address receiver,
+    uint256[] calldata stages,
+    address[][] calldata vaults,
+    address[][][] calldata rewards,
+    uint256[][][] calldata amounts,
+    bytes32[][][] calldata proofs
+  ) public {
+    require(stages.length == vaults.length, StdError.InvalidParameter('vaults.length'));
+    require(stages.length == rewards.length, StdError.InvalidParameter('rewards.length'));
+    require(stages.length == amounts.length, StdError.InvalidParameter('amounts.length'));
+    require(stages.length == proofs.length, StdError.InvalidParameter('proofs.length'));
+    require(stages.length <= MAX_CLAIM_STAGES_SIZE, StdError.InvalidParameter('stages.length'));
 
-    _claim(_msgSender(), reward, metadata_);
+    for (uint256 i = 0; i < stages.length; i++) {
+      claimMultiple(receiver, stages[i], vaults[i], rewards[i], amounts[i], proofs[i]);
+    }
   }
 
-  /**
-   * @inheritdoc IRewardDistributor
-   */
-  function claim(address receiver, address reward, uint256 amount, bytes calldata metadata) external {
-    RewardMerkleMetadata memory metadata_ = metadata.decodeRewardMerkleMetadata();
-    require(metadata_.amount == amount, IMerkleRewardDistributor__InvalidAmount());
+  // ============================ NOTE: ADMIN FUNCTIONS ============================ //
 
-    _claim(receiver, reward, metadata_);
-  }
+  function _authorizeUpgrade(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
 
-  // ============================ NOTE: OVERRIDE FUNCTIONS ============================ //
+  // ============================ NOTE: MANAGER FUNCTIONS ============================ //
 
-  function _isDispatchable(address dispatcher) internal view override returns (bool) {
-    return hasRole(DISPATCHER_ROLE, dispatcher);
-  }
-
-  function _handleReward(address eolVault, address reward, uint256 amount, bytes calldata metadata) internal override {
+  function fetchRewards(uint256 stage, uint256 nonce, address vault, address reward, uint256 amount)
+    external
+    onlyRole(MANAGER_ROLE)
+  {
     StorageV1 storage $ = _getStorageV1();
 
-    IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
+    require(stage == $.lastStage, IMerkleRewardDistributor__NotCurrentStage(stage));
+    require(nonce == _stage($, stage).nonce, IMerkleRewardDistributor__InvalidStageNonce(stage, nonce));
 
-    (uint256 stageNum, bytes32 root) = abi.decode(metadata, (uint256, bytes32));
-    Stage storage stage = $.stages[eolVault][reward][stageNum];
-    stage.amount = amount;
-    stage.root = root;
+    _fetchRewards($, stage, vault, reward, amount);
+  }
 
-    // TODO(eddy): find out what is the proper values to input
-    // eligibleRewardAsset = eolVault
-    // batchTimestamp = nextStage
-    emit RewardHandled(eolVault, reward, amount, stageNum, distributionType(), metadata);
+  function fetchRewardsMultiple(
+    uint256 stage,
+    uint256 nonce,
+    address vault,
+    address[] calldata rewards,
+    uint256[] calldata amounts
+  ) external onlyRole(MANAGER_ROLE) {
+    StorageV1 storage $ = _getStorageV1();
+
+    require(stage == $.lastStage, IMerkleRewardDistributor__NotCurrentStage(stage));
+    require(nonce == _stage($, stage).nonce, IMerkleRewardDistributor__InvalidStageNonce(stage, nonce));
+
+    for (uint256 i = 0; i < rewards.length; i++) {
+      _fetchRewards($, stage, vault, rewards[i], amounts[i]);
+    }
+  }
+
+  function fetchRewardsBatch(
+    uint256 stage,
+    uint256 nonce,
+    address[] calldata vaults,
+    address[][] calldata rewards,
+    uint256[][] calldata amounts
+  ) external onlyRole(MANAGER_ROLE) {
+    StorageV1 storage $ = _getStorageV1();
+
+    require(stage == $.lastStage, IMerkleRewardDistributor__NotCurrentStage(stage));
+    require(nonce == _stage($, stage).nonce, IMerkleRewardDistributor__InvalidStageNonce(stage, nonce));
+    require(vaults.length == rewards.length, StdError.InvalidParameter('rewards.length'));
+
+    for (uint256 i = 0; i < vaults.length; i++) {
+      for (uint256 j = 0; j < rewards[i].length; j++) {
+        _fetchRewards($, stage, vaults[i], rewards[i][j], amounts[i][j]);
+      }
+    }
+  }
+
+  function addStage(
+    bytes32 merkleRoot,
+    uint256 stage,
+    uint256 nonce,
+    address[] calldata rewards,
+    uint256[] calldata amounts
+  ) external onlyRole(MANAGER_ROLE) returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    Stage storage s = _stage($, stage);
+
+    require(stage == $.lastStage, IMerkleRewardDistributor__NotCurrentStage(stage));
+    require(nonce == s.nonce, IMerkleRewardDistributor__InvalidStageNonce(stage, nonce));
+    require(rewards.length == amounts.length, StdError.InvalidParameter('amounts.length'));
+
+    for (uint256 i = 0; i < rewards.length; i++) {
+      address reward = rewards[i];
+      uint256 amount = amounts[i];
+      require(_availableRewardAmount($, reward) >= amount, IMerkleRewardDistributor__InvalidAmount());
+      $.reservedRewardAmounts[reward] += amount;
+    }
+
+    uint256 merkleStage = _addStage($, merkleRoot, rewards, amounts);
+
+    return merkleStage;
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _claimable(address account, address reward, RewardMerkleMetadata memory metadata)
+  function _setTreasury(StorageV1 storage $, address treasury_) internal {
+    require(treasury_.code.length > 0, StdError.InvalidAddress('treasury'));
+
+    ITreasury oldTreasury = $.treasury;
+    $.treasury = ITreasury(treasury_);
+
+    emit TreasuryUpdated(address(oldTreasury), treasury_);
+  }
+
+  function _fetchRewards(StorageV1 storage $, uint256 stage, address vault, address reward, uint256 amount) internal {
+    Stage storage s = _stage($, stage);
+    uint256 nonce = s.nonce++;
+
+    $.treasury.dispatch(vault, reward, amount, address(this));
+
+    emit RewardsFetched(stage, nonce, vault, reward, amount);
+  }
+
+  function _addStage(StorageV1 storage $, bytes32 root_, address[] calldata rewards, uint256[] calldata amounts)
     internal
-    view
-    returns (bool)
+    onlyRole(MANAGER_ROLE)
+    returns (uint256 stage)
   {
+    $.lastStage += 1;
+    Stage storage s = _stage($, $.lastStage);
+    s.root = root_;
+    s.rewards = rewards;
+    s.amounts = amounts;
+
+    emit StageAdded($.lastStage, root_, rewards, amounts);
+
+    return $.lastStage;
+  }
+
+  function _stage(StorageV1 storage $, uint256 stage) internal view returns (Stage storage) {
+    return $.stages[stage];
+  }
+
+  function _claimable(
+    address receiver,
+    uint256 stage,
+    address vault,
+    address[] calldata rewards,
+    uint256[] calldata amounts,
+    bytes32[] calldata proof
+  ) internal view returns (bool) {
     StorageV1 storage $ = _getStorageV1();
-    Stage storage stage = _stage($, metadata.eolVault, reward, metadata.stage);
+    Stage storage s = _stage($, stage);
 
-    bytes32 leaf = _leaf(metadata.eolVault, reward, metadata.stage, account, metadata.amount);
+    bytes32 leaf = _leaf(receiver, stage, vault, rewards, amounts);
 
-    return !stage.claimed[account] && metadata.proof.verify(stage.root, leaf);
+    return !s.claimed[receiver][vault] && proof.verify(s.root, leaf);
   }
 
-  function _claimableAmount(address account, address reward, RewardMerkleMetadata memory metadata)
-    internal
-    view
-    returns (uint256)
-  {
-    return _claimable(account, reward, metadata) ? metadata.amount : 0;
-  }
-
-  function _claim(address account, address reward, RewardMerkleMetadata memory metadata) internal {
+  function _claim(
+    address receiver,
+    uint256 stage,
+    address vault,
+    address[] calldata rewards,
+    uint256[] calldata amounts,
+    bytes32[] calldata proof
+  ) internal {
     StorageV1 storage $ = _getStorageV1();
-    Stage storage stage = _stage($, metadata.eolVault, reward, metadata.stage);
+    Stage storage s = _stage($, stage);
+    require(!s.claimed[receiver][vault], IMerkleRewardDistributor__AlreadyClaimed());
 
-    require(!stage.claimed[account], IMerkleRewardDistributor__AlreadyClaimed());
-    stage.claimed[account] = true;
+    uint256 rewardsLen = rewards.length;
+    bytes32 leaf = _leaf(receiver, stage, vault, rewards, amounts);
+    require(proof.verify(s.root, leaf), IMerkleRewardDistributor__InvalidProof());
+    require(rewardsLen == amounts.length, StdError.InvalidParameter('amounts.length'));
 
-    bytes32 leaf = _leaf(metadata.eolVault, reward, metadata.stage, account, metadata.amount);
-    require(metadata.proof.verify(stage.root, leaf), IMerkleRewardDistributor__InvalidProof());
+    s.claimed[receiver][vault] = true;
+    for (uint256 i = 0; i < rewardsLen; i++) {
+      $.reservedRewardAmounts[rewards[i]] -= amounts[i];
+    }
 
-    IERC20(reward).safeTransfer(account, metadata.amount);
+    for (uint256 i = 0; i < rewardsLen; i++) {
+      IERC20(rewards[i]).safeTransfer(receiver, amounts[i]);
+    }
+
+    emit Claimed(receiver, stage, vault, rewards, amounts);
   }
 
-  function _leaf(address eolVault, address reward, uint256 stage_, address account, uint256 amount)
+  function _availableRewardAmount(StorageV1 storage $, address reward) internal view returns (uint256) {
+    return IERC20(reward).balanceOf(address(this)) - $.reservedRewardAmounts[reward];
+  }
+
+  function _leaf(address receiver, uint256 stage, address vault, address[] calldata rewards, uint256[] calldata amounts)
     internal
     pure
     returns (bytes32 leaf)
   {
-    return keccak256(abi.encodePacked(eolVault, reward, stage_, account, amount));
+    // double-hashing to prevent second preimage attacks:
+    // https://flawed.net.nz/2018/02/21/attacking-merkle-trees-with-a-second-preimage-attack/
+    return keccak256(bytes.concat(keccak256(abi.encodePacked(receiver, stage, vault, rewards, amounts))));
   }
 }
