@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
-
-import { ContextUpgradeable } from '@ozu/utils/ContextUpgradeable.sol';
+pragma solidity ^0.8.27;
 
 import { ERC7201Utils } from './ERC7201Utils.sol';
-import { StdError } from './StdError.sol';
 
-abstract contract Pausable is ContextUpgradeable {
+contract Pausable {
   using ERC7201Utils for string;
 
   /// @custom:storage-location mitosis.storage.Pausable
@@ -39,27 +36,6 @@ abstract contract Pausable is ContextUpgradeable {
     $.global_ = false;
   }
 
-  // =========================== NOTE: MODIFIERS =========================== //
-
-  modifier whenNotPaused() {
-    require(!_isPaused(msg.sig), Pausable__Paused(msg.sig));
-    _;
-  }
-
-  modifier whenPaused() {
-    require(_isPaused(msg.sig), Pausable__NotPaused(msg.sig));
-    _;
-  }
-
-  modifier onlyPauseManager() {
-    _authorizePause(_msgSender());
-    _;
-  }
-
-  // =========================== NOTE: VIRTUAL FUNCTIONS =========================== //
-
-  function _authorizePause(address) internal view virtual;
-
   // =========================== NOTE: MAIN FUNCTIONS =========================== //
 
   function isPaused(bytes4 sig) external view returns (bool) {
@@ -69,24 +45,6 @@ abstract contract Pausable is ContextUpgradeable {
   function isPausedGlobally() external view returns (bool) {
     return _isPausedGlobally();
   }
-
-  function pause() external onlyPauseManager {
-    _pause();
-  }
-
-  function pause(bytes4 sig) external onlyPauseManager {
-    _pause(sig);
-  }
-
-  function unpause() external onlyPauseManager {
-    _unpause();
-  }
-
-  function unpause(bytes4 sig) external onlyPauseManager {
-    _unpause(sig);
-  }
-
-  // =========================== NOTE: INTERNAL FUNCTIONS =========================== //
 
   function _pause() internal virtual {
     _getPausableStorage().global_ = true;
@@ -112,5 +70,21 @@ abstract contract Pausable is ContextUpgradeable {
 
   function _isPausedGlobally() internal view virtual returns (bool) {
     return _getPausableStorage().global_;
+  }
+
+  function _assertNotPaused() internal view virtual {
+    _assertNotPaused(msg.sig);
+  }
+
+  function _assertNotPaused(bytes4 sig) internal view virtual {
+    require(!_isPaused(sig), Pausable__Paused(sig));
+  }
+
+  function _assertPaused() internal view virtual {
+    _assertPaused(msg.sig);
+  }
+
+  function _assertPaused(bytes4 sig) internal view virtual {
+    require(_isPaused(sig), Pausable__NotPaused(sig));
   }
 }

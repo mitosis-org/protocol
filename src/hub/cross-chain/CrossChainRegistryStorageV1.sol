@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.27;
 
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 
@@ -10,11 +10,9 @@ contract CrossChainRegistryStorageV1 {
     string name;
     // Branch info
     uint32 hplDomain;
-    address mitosisVault;
-    address mitosisVaultEntrypoint;
-    address governanceEntrypoint;
-    bool mitosisVaultEntrypointEnrolled;
-    bool governanceEntrypointEnrolled;
+    address vault;
+    address entrypoint;
+    bool entrypointEnrolled;
   }
 
   struct HyperlaneInfo {

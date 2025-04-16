@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.27;
 
-import { IRouter } from '@hpl/interfaces/IRouter.sol';
+import { IRouter } from '@hpl-v5/interfaces/IRouter.sol';
 
-import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
-import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
+import { AccessControlUpgradeable } from '@ozu-v5/access/AccessControlUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu-v5/access/Ownable2StepUpgradeable.sol';
 
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 import { Conv } from '../../lib/Conv.sol';
@@ -14,24 +14,34 @@ import { CrossChainRegistryStorageV1 } from './CrossChainRegistryStorageV1.sol';
 contract CrossChainRegistry is
   ICrossChainRegistry,
   Ownable2StepUpgradeable,
-  UUPSUpgradeable,
+  AccessControlUpgradeable,
   CrossChainRegistryStorageV1
 {
   using Conv for *;
 
-  //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
+  bytes32 public constant REGISTERER_ROLE = keccak256('REGISTERER_ROLE');
+
+  modifier onlyRegisterer() {
+    _checkRole(REGISTERER_ROLE);
+    _;
+  }
+
+  //===========
 
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(address owner_) external initializer {
+  function initialize(address owner) external initializer {
     __Ownable2Step_init();
-    __Ownable_init(owner_);
-    __UUPSUpgradeable_init();
+    __AccessControl_init();
+
+    _transferOwnership(owner);
+    _grantRole(DEFAULT_ADMIN_ROLE, owner);
+    _setRoleAdmin(REGISTERER_ROLE, DEFAULT_ADMIN_ROLE);
   }
 
-  //=========== NOTE: VIEW FUNCTIONS ===========//
+  // View functions
 
   function chainIds() external view returns (uint256[] memory) {
     return _getStorageV1().chainIds;
@@ -45,24 +55,16 @@ contract CrossChainRegistry is
     return _getStorageV1().chains[chainId_].hplDomain;
   }
 
-  function mitosisVaultEntrypoint(uint256 chainId_) external view returns (address) {
-    return _getStorageV1().chains[chainId_].mitosisVaultEntrypoint;
+  function entrypoint(uint256 chainId_) external view returns (address) {
+    return _getStorageV1().chains[chainId_].entrypoint;
   }
 
-  function governanceEntrypoint(uint256 chainId_) external view returns (address) {
-    return _getStorageV1().chains[chainId_].governanceEntrypoint;
+  function vault(uint256 chainId_) external view returns (address) {
+    return _getStorageV1().chains[chainId_].vault;
   }
 
-  function mitosisVault(uint256 chainId_) external view returns (address) {
-    return _getStorageV1().chains[chainId_].mitosisVault;
-  }
-
-  function mitosisVaultEntrypointEnrolled(uint256 chainId_) external view returns (bool) {
-    return _isMitosisVaultEntrypointEnrolled(_getStorageV1().chains[chainId_]);
-  }
-
-  function governanceEntrypointEnrolled(uint256 chainId_) external view returns (bool) {
-    return _isGovernanceEntrypointEnrolled(_getStorageV1().chains[chainId_]);
+  function entrypointEnrolled(uint256 chainId_) external view returns (bool) {
+    return _isEntrypointEnrolled(_getStorageV1().chains[chainId_]);
   }
 
   function chainId(uint32 hplDomain) external view returns (uint256) {
@@ -73,17 +75,14 @@ contract CrossChainRegistry is
     return _isRegisteredChain(_getStorageV1().chains[chainId_]);
   }
 
-  //=========== NOTE: OWNABLE FUNCTIONS ===========//
+  // Mutative functions
+  //
+  // TODO: update methods
 
-  function _authorizeUpgrade(address) internal override onlyOwner { }
-
-  function setChain(
-    uint256 chainId_,
-    string calldata name,
-    uint32 hplDomain,
-    address mitosisVaultEntrypoint_,
-    address governanceEntrypoint_
-  ) external onlyOwner {
+  function setChain(uint256 chainId_, string calldata name, uint32 hplDomain, address entrypoint_)
+    external
+    onlyRegisterer
+  {
     StorageV1 storage $ = _getStorageV1();
 
     require(
@@ -95,77 +94,54 @@ contract CrossChainRegistry is
     $.hplDomains.push(hplDomain);
     $.chains[chainId_].name = name;
     $.chains[chainId_].hplDomain = hplDomain;
-    $.chains[chainId_].mitosisVaultEntrypoint = mitosisVaultEntrypoint_;
-    $.chains[chainId_].governanceEntrypoint = governanceEntrypoint_;
+    $.chains[chainId_].entrypoint = entrypoint_;
     $.hyperlanes[hplDomain].chainId = chainId_;
 
-    emit ChainSet(chainId_, hplDomain, mitosisVaultEntrypoint_, governanceEntrypoint_, name);
+    emit ChainSet(chainId_, hplDomain, entrypoint_, name);
   }
 
-  function setVault(uint256 chainId_, address vault_) external onlyOwner {
+  function setVault(uint256 chainId_, address vault_) external onlyRegisterer {
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId_];
 
     require(_isRegisteredChain(chainInfo), ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
     require(!_isRegisteredVault(chainInfo), ICrossChainRegistry.ICrossChainRegistry__AlreadyRegistered());
 
-    chainInfo.mitosisVault = vault_;
+    chainInfo.vault = vault_;
     emit VaultSet(chainId_, vault_);
   }
 
-  function enrollMitosisVaultEntrypoint(address hplRouter) external onlyOwner {
+  function enrollEntrypoint(address hplRouter) external onlyRegisterer {
     uint256[] memory allChainIds = _getStorageV1().chainIds;
+    // TODO(ray): IRouter.enrollRemoteRouters
     for (uint256 i = 0; i < allChainIds.length; i++) {
-      enrollMitosisVaultEntrypoint(hplRouter, allChainIds[i]);
+      enrollEntrypoint(hplRouter, allChainIds[i]);
     }
   }
 
-  function enrollGovernanceEntrypoint(address hplRouter) external onlyOwner {
-    uint256[] memory allChainIds = _getStorageV1().chainIds;
-    for (uint256 i = 0; i < allChainIds.length; i++) {
-      enrollGovernanceEntrypoint(hplRouter, allChainIds[i]);
-    }
-  }
-
-  function enrollMitosisVaultEntrypoint(address hplRouter, uint256 chainId_) public onlyOwner {
+  function enrollEntrypoint(address hplRouter, uint256 chainId_) public onlyRegisterer {
     ChainInfo storage chainInfo = _getStorageV1().chains[chainId_];
-    if (_isMitosisVaultEntrypointEnrollableChain(chainInfo)) {
-      chainInfo.mitosisVaultEntrypointEnrolled = true;
-      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.mitosisVaultEntrypoint.toBytes32());
+    if (_isEnrollableChain(chainInfo)) {
+      chainInfo.entrypointEnrolled = true;
+      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.entrypoint.toBytes32());
     }
   }
 
-  function enrollGovernanceEntrypoint(address hplRouter, uint256 chainId_) public onlyOwner {
-    ChainInfo storage chainInfo = _getStorageV1().chains[chainId_];
-    if (_isGovernanceEntrypointEnrollableChain(chainInfo)) {
-      chainInfo.governanceEntrypointEnrolled = true;
-      IRouter(hplRouter).enrollRemoteRouter(chainInfo.hplDomain, chainInfo.governanceEntrypoint.toBytes32());
-    }
-  }
-
-  //=========== NOTE: INTERNAL FUNCTIONS ===========//
+  // Internal functions
 
   function _isRegisteredChain(ChainInfo storage chainInfo) internal view returns (bool) {
     return bytes(chainInfo.name).length > 0;
   }
 
   function _isRegisteredVault(ChainInfo storage chainInfo) internal view returns (bool) {
-    return chainInfo.mitosisVault != address(0);
+    return chainInfo.vault != address(0);
   }
 
-  function _isMitosisVaultEntrypointEnrolled(ChainInfo storage chainInfo) internal view returns (bool) {
-    return chainInfo.mitosisVaultEntrypointEnrolled;
+  function _isEntrypointEnrolled(ChainInfo storage chainInfo) internal view returns (bool) {
+    return chainInfo.entrypointEnrolled;
   }
 
-  function _isGovernanceEntrypointEnrolled(ChainInfo storage chainInfo) internal view returns (bool) {
-    return chainInfo.governanceEntrypointEnrolled;
-  }
-
-  function _isMitosisVaultEntrypointEnrollableChain(ChainInfo storage chainInfo) internal view returns (bool) {
-    return _isRegisteredChain(chainInfo) && !_isMitosisVaultEntrypointEnrolled(chainInfo);
-  }
-
-  function _isGovernanceEntrypointEnrollableChain(ChainInfo storage chainInfo) internal view returns (bool) {
-    return _isRegisteredChain(chainInfo) && !_isGovernanceEntrypointEnrolled(chainInfo);
+  function _isEnrollableChain(ChainInfo storage chainInfo) internal view returns (bool) {
+    return _isRegisteredChain(chainInfo) && !_isEntrypointEnrolled(chainInfo);
   }
 
   function _isRegisteredHyperlane(HyperlaneInfo storage hplInfo) internal view returns (bool) {

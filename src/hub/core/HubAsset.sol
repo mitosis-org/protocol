@@ -1,77 +1,37 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.27;
 
-import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
-
-import { ERC20 } from '@solady/tokens/ERC20.sol';
-
-import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { HubAssetStorageV1 } from './HubAssetStorageV1.sol';
+import { ERC20TWABSnapshots } from '../../twab/ERC20TWABSnapshots.sol';
 
-contract HubAsset is Ownable2StepUpgradeable, ERC20, HubAssetStorageV1 {
-  event SupplyManagerUpdated(address indexed previousSupplyManager, address indexed newSupplyManager);
-
+contract HubAsset is ERC20TWABSnapshots {
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(
-    address owner_,
-    address supplyManager_,
-    string memory name_,
-    string memory symbol_,
-    uint8 decimals_
-  ) external initializer {
-    __Ownable2Step_init();
-    __Ownable_init(owner_);
-
-    StorageV1 storage $ = _getStorageV1();
-    $.name = name_;
-    $.symbol = symbol_;
-    $.decimals = decimals_;
-    $.supplyManager = supplyManager_;
+  function initialize(address delegationRegistry_, string memory name_, string memory symbol_) external initializer {
+    __ERC20TWABSnapshots_init(delegationRegistry_, name_, symbol_);
   }
 
-  modifier onlySupplyManager() {
-    require(_msgSender() == _getStorageV1().supplyManager, StdError.Unauthorized());
+  modifier onlyHubAssetMintable() {
+    // TODO(ray): When introduce RoleManagerContract, fill it.
+    //
+    // HubAssetMintable address: AssetManager
     _;
   }
 
-  function name() public view override returns (string memory) {
-    return _getStorageV1().name;
+  modifier onlyHubAssetBurnable() {
+    // TODO(ray): When introduce RoleManagerContract, fill it.
+    //
+    // HubAssetBurnable address: AssetManager
+    _;
   }
 
-  function symbol() public view override returns (string memory) {
-    return _getStorageV1().symbol;
-  }
-
-  function decimals() public view override returns (uint8) {
-    return _getStorageV1().decimals;
-  }
-
-  function supplyManager() external view returns (address) {
-    return _getStorageV1().supplyManager;
-  }
-
-  function mint(address account, uint256 value) external onlySupplyManager {
-    require(value > 0, StdError.ZeroAmount());
-
+  function mint(address account, uint256 value) external onlyHubAssetMintable {
     _mint(account, value);
   }
 
-  function burn(address account, uint256 value) external onlySupplyManager {
-    require(value > 0, StdError.ZeroAmount());
-
+  function burn(address account, uint256 value) external onlyHubAssetBurnable {
     _burn(account, value);
-  }
-
-  function setSupplyManager(address supplyManager_) external onlyOwner {
-    StorageV1 storage $ = _getStorageV1();
-
-    address oldSupplyManager = $.supplyManager;
-    $.supplyManager = supplyManager_;
-
-    emit SupplyManagerUpdated(oldSupplyManager, supplyManager_);
   }
 }
