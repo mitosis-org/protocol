@@ -74,7 +74,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     vm.stopPrank();
   }
 
-  function test_manageVaultWithMerkleVerification() public {
+  function test_manage() public {
     bytes32[][] memory manageProofs;
     address[] memory decodersAndSanitizers;
     address[] memory targets;
@@ -84,26 +84,26 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser1(100 ether);
 
     vm.prank(strategist);
-    _managerWithMerkleVerification.manageVaultWithMerkleVerification(
+    _managerWithMerkleVerification.manage(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
     (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser2(100 ether);
 
     vm.prank(strategist);
-    _managerWithMerkleVerification.manageVaultWithMerkleVerification(
+    _managerWithMerkleVerification.manage(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
     (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser3(100 ether);
 
     vm.prank(strategist);
-    _managerWithMerkleVerification.manageVaultWithMerkleVerification(
+    _managerWithMerkleVerification.manage(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
   }
 
-  function test_manageVaultWithMerkleVerification_NotFound() public {
+  function test_manage_NotFound() public {
     bytes32[][] memory manageProofs;
     address[] memory decodersAndSanitizers;
     address[] memory targets;
@@ -113,17 +113,17 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     (manageProofs, decodersAndSanitizers, targets, targetData, values) = _makeManageParameterForUser1(100 ether);
 
     vm.expectRevert(_errNotFound('manageProof'));
-    _managerWithMerkleVerification.manageVaultWithMerkleVerification(
+    _managerWithMerkleVerification.manage(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
     vm.prank(strategist);
-    _managerWithMerkleVerification.manageVaultWithMerkleVerification(
+    _managerWithMerkleVerification.manage(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
   }
 
-  function test_manageVaultWithMerkleVerification_FailedToVerifyManageProof() public {
+  function test_manage_FailedToVerifyManageProof() public {
     bytes32[][] memory manageProofs;
     address[] memory decodersAndSanitizers;
     address[] memory targets;
@@ -141,7 +141,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
 
     vm.expectRevert(_errFailedToVerifyManageProof(targets[0], targetData[0], values[0]));
     vm.prank(strategist);
-    _managerWithMerkleVerification.manageVaultWithMerkleVerification(
+    _managerWithMerkleVerification.manage(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
@@ -152,7 +152,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
 
     vm.expectRevert(_errFailedToVerifyManageProof(targets[0], targetData[0], values[0]));
     vm.prank(strategist);
-    _managerWithMerkleVerification.manageVaultWithMerkleVerification(
+    _managerWithMerkleVerification.manage(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
@@ -165,7 +165,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
 
     vm.expectRevert();
     vm.prank(strategist);
-    _managerWithMerkleVerification.manageVaultWithMerkleVerification(
+    _managerWithMerkleVerification.manage(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
@@ -173,7 +173,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
     decodersAndSanitizers[0] = address(_token);
     vm.expectRevert();
     vm.prank(strategist);
-    _managerWithMerkleVerification.manageVaultWithMerkleVerification(
+    _managerWithMerkleVerification.manage(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
@@ -184,7 +184,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
 
     vm.expectRevert();
     vm.prank(strategist);
-    _managerWithMerkleVerification.manageVaultWithMerkleVerification(
+    _managerWithMerkleVerification.manage(
       address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
   }

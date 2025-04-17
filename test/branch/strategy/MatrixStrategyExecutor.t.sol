@@ -80,7 +80,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
       address[] memory targets,
       bytes[] memory targetData,
       uint256[] memory values
-    ) = _makeTestVaultManageVaultWithMerkleVerificationParams(makeAddr('user1'), 100 ether);
+    ) = _makeTestVaultmanageParams(makeAddr('user1'), 100 ether);
 
     vm.prank(owner);
     _token.mint(makeAddr('user1'), 100 ether);
@@ -91,7 +91,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
     assertEq(_token.balanceOf(address(_testVault)), 0);
     assertEq(_testVaultTally.totalBalance(''), 0);
 
-    _managerWithMerkleVerification.manageVaultWithMerkleVerification(
+    _managerWithMerkleVerification.manage(
       address(_matrixStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
@@ -110,7 +110,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
       address[] memory targets,
       bytes[] memory targetData,
       uint256[] memory values
-    ) = _makeTestVaultManageVaultWithMerkleVerificationParams(makeAddr('user1'), 100 ether);
+    ) = _makeTestVaultmanageParams(makeAddr('user1'), 100 ether);
 
     vm.prank(owner);
     _token.mint(makeAddr('user1'), 100 ether);
@@ -122,7 +122,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
     assertEq(_testVaultTally.totalBalance(''), 0);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _managerWithMerkleVerification.manageVaultWithMerkleVerification(
+    _managerWithMerkleVerification.manage(
       address(_matrixStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
   }
@@ -134,7 +134,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
       address[] memory targets,
       bytes[] memory targetData,
       uint256[] memory values
-    ) = _makeTestVaultManageVaultWithMerkleVerificationParams(makeAddr('user1'), 100 ether);
+    ) = _makeTestVaultmanageParams(makeAddr('user1'), 100 ether);
 
     MockTestVault testVault2 = new MockTestVault(address(_token));
     targets[0] = address(testVault2);
@@ -145,12 +145,12 @@ contract MatrixStrategyExecutorTest is Toolkit {
     _token.approve(address(testVault2), 100 ether);
 
     vm.expectRevert(_errTallyNotSet(address(testVault2)));
-    _managerWithMerkleVerification.manageVaultWithMerkleVerification(
+    _managerWithMerkleVerification.manage(
       address(_matrixStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
   }
 
-  function _makeTestVaultManageVaultWithMerkleVerificationParams(address from, uint256 amount)
+  function _makeTestVaultmanageParams(address from, uint256 amount)
     internal
     view
     returns (

@@ -44,7 +44,7 @@ contract ManagerWithMerkleVerification is
     emit ManageRootUpdated(strategyExecutor, strategist, oldRoot, _manageRoot);
   }
 
-  function manageVaultWithMerkleVerification(
+  function manage(
     address strategyExecutor,
     bytes32[][] calldata manageProofs,
     address[] calldata decodersAndSanitizers,

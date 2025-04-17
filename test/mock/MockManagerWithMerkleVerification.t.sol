@@ -10,7 +10,7 @@ contract MockManagerWithMerkleVerification is IManagerWithMerkleVerification {
 
   function setManageRoot(address, address strategist, bytes32 _manageRoot) external { }
 
-  function manageVaultWithMerkleVerification(
+  function manage(
     address strategyExecutor,
     bytes32[][] calldata,
     address[] calldata,

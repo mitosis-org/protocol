@@ -16,7 +16,7 @@ interface IManagerWithMerkleVerification {
 
   function manageRoot(address strategyExecutor, address strategist) external view returns (bytes32);
   function setManageRoot(address strategyExecutor, address strategist, bytes32 _manageRoot) external;
-  function manageVaultWithMerkleVerification(
+  function manage(
     address strategyExecutor,
     bytes32[][] calldata manageProofs,
     address[] calldata decodersAndSanitizers,
