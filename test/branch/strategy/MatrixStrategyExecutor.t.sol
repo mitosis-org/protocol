@@ -127,29 +127,6 @@ contract MatrixStrategyExecutorTest is Toolkit {
     );
   }
 
-  function test_execute_InvalidAddress_TallyNotSet() public {
-    (
-      bytes32[][] memory manageProofs,
-      address[] memory decodersAndSanitizers,
-      address[] memory targets,
-      bytes[] memory targetData,
-      uint256[] memory values
-    ) = _makeManageParams(makeAddr('user1'), 100 ether);
-
-    MockTestVault testVault2 = new MockTestVault(address(_token));
-    targets[0] = address(testVault2);
-
-    vm.prank(owner);
-    _token.mint(makeAddr('user1'), 100 ether);
-    vm.prank(makeAddr('user1'));
-    _token.approve(address(testVault2), 100 ether);
-
-    vm.expectRevert(_errTallyNotSet(address(testVault2)));
-    _managerWithMerkleVerification.manage(
-      address(_matrixStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
-    );
-  }
-
   function _makeManageParams(address from, uint256 amount)
     internal
     view

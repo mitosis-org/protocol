@@ -14,10 +14,6 @@ contract MockTestVaultTally is StdTally {
     _testVault = testVault;
   }
 
-  function protocolAddress() external view override returns (address) {
-    return _testVault;
-  }
-
   function _totalBalance(bytes memory) internal view override returns (uint256 totalBalance_) {
     return IERC20(_token).balanceOf(_testVault);
   }
