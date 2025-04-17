@@ -97,6 +97,10 @@ contract Toolkit is Test {
     return abi.encodeWithSelector(StdError.NotSupported.selector);
   }
 
+  function _errEnumOutOfBounds(uint8 max, uint8 actual) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(StdError.EnumOutOfBounds.selector, max, actual);
+  }
+
   function _errAccessControlUnauthorized(address account, bytes32 role) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, account, role);
   }
