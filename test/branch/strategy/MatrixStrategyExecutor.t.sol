@@ -80,7 +80,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
       address[] memory targets,
       bytes[] memory targetData,
       uint256[] memory values
-    ) = _makeTestVaultmanageParams(makeAddr('user1'), 100 ether);
+    ) = _makeManageParams(makeAddr('user1'), 100 ether);
 
     vm.prank(owner);
     _token.mint(makeAddr('user1'), 100 ether);
@@ -110,7 +110,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
       address[] memory targets,
       bytes[] memory targetData,
       uint256[] memory values
-    ) = _makeTestVaultmanageParams(makeAddr('user1'), 100 ether);
+    ) = _makeManageParams(makeAddr('user1'), 100 ether);
 
     vm.prank(owner);
     _token.mint(makeAddr('user1'), 100 ether);
@@ -134,7 +134,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
       address[] memory targets,
       bytes[] memory targetData,
       uint256[] memory values
-    ) = _makeTestVaultmanageParams(makeAddr('user1'), 100 ether);
+    ) = _makeManageParams(makeAddr('user1'), 100 ether);
 
     MockTestVault testVault2 = new MockTestVault(address(_token));
     targets[0] = address(testVault2);
@@ -150,7 +150,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
     );
   }
 
-  function _makeTestVaultmanageParams(address from, uint256 amount)
+  function _makeManageParams(address from, uint256 amount)
     internal
     view
     returns (
