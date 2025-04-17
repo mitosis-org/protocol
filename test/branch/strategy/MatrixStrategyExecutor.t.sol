@@ -152,8 +152,4 @@ contract MatrixStrategyExecutorTest is Toolkit {
     values = new uint256[](1);
     values[0] = 0;
   }
-
-  function _errTallyNotSet(address implementation) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IMatrixStrategyExecutor.IMatrixStrategyExecutor__TallyNotSet.selector, implementation);
-  }
 }
