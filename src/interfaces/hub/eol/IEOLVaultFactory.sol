@@ -27,15 +27,15 @@ interface IEOLVaultFactory {
   error IEOLVaultFactory__InvalidVaultType();
   error IEOLVaultFactory__CallBeaconFailed(bytes ret);
 
-  function beacon(VaultType t) external view returns (address);
+  function beacon(uint8 t) external view returns (address);
   function isInstance(address instance) external view returns (bool);
-  function isInstance(VaultType t, address instance) external view returns (bool);
-  function instances(VaultType t, uint256 index) external view returns (address);
-  function instances(VaultType t, uint256[] memory indexes) external view returns (address[] memory);
-  function instancesLength(VaultType t) external view returns (uint256);
-  function vaultTypeInitialized(VaultType t) external view returns (bool);
+  function isInstance(uint8 t, address instance) external view returns (bool);
+  function instances(uint8 t, uint256 index) external view returns (address);
+  function instances(uint8 t, uint256[] memory indexes) external view returns (address[] memory);
+  function instancesLength(uint8 t) external view returns (uint256);
+  function vaultTypeInitialized(uint8 t) external view returns (bool);
 
-  function callBeacon(VaultType t, bytes calldata data) external returns (bytes memory);
-  function create(VaultType t, bytes calldata args) external returns (address);
-  function migrate(VaultType from, VaultType to, address instance, bytes calldata data) external;
+  function callBeacon(uint8 t, bytes calldata data) external returns (bytes memory);
+  function create(uint8 t, bytes calldata args) external returns (address);
+  function migrate(uint8 from, uint8 to, address instance, bytes calldata data) external;
 }

@@ -23,6 +23,8 @@ contract EOLVaultFactoryTest is Toolkit {
   EOLVault public basicImpl;
   EOLVaultFactory public base;
 
+  uint8 BasicVaultType = uint8(IEOLVaultFactory.VaultType.Basic);
+
   function setUp() public {
     proxyFactory = new ERC1967Factory();
 
@@ -39,45 +41,89 @@ contract EOLVaultFactoryTest is Toolkit {
 
   function test_initVaultType() public {
     vm.startPrank(owner);
-    base.initVaultType(IEOLVaultFactory.VaultType.Basic, address(basicImpl));
+    base.initVaultType(BasicVaultType, address(basicImpl));
     vm.stopPrank();
 
-    assertNotEq(base.beacon(IEOLVaultFactory.VaultType.Basic), address(0));
+    assertNotEq(base.beacon(BasicVaultType), address(0));
 
-    assertTrue(base.vaultTypeInitialized(IEOLVaultFactory.VaultType.Basic));
+    assertTrue(base.vaultTypeInitialized(BasicVaultType));
   }
 
   function test_create_basic() public returns (address) {
     vm.prank(owner);
-    base.initVaultType(IEOLVaultFactory.VaultType.Basic, address(basicImpl));
+    base.initVaultType(BasicVaultType, address(basicImpl));
 
     address instance = _createBasic(owner, owner, address(new WETH()), 'Basic Vault', 'BV');
 
     assertEq(address(0x0), _erc1967Admin(instance));
     assertEq(address(0x0), _erc1967Impl(instance));
-    assertEq(base.beacon(IEOLVaultFactory.VaultType.Basic), _erc1967Beacon(instance));
+    assertEq(base.beacon(BasicVaultType), _erc1967Beacon(instance));
 
-    assertEq(base.instancesLength(IEOLVaultFactory.VaultType.Basic), 1);
-    assertEq(base.instances(IEOLVaultFactory.VaultType.Basic, 0), instance);
+    assertEq(base.instancesLength(BasicVaultType), 1);
+    assertEq(base.instances(BasicVaultType, 0), instance);
 
     return instance;
   }
 
+  function test_VaultType_cast() public {
+    vm.startPrank(owner);
+    base.initVaultType(BasicVaultType, address(basicImpl));
+    vm.stopPrank();
+
+    uint8 maxVaultType = base.MAX_VAULT_TYPE();
+
+    vm.expectRevert(_errEnumOutOfBounds(maxVaultType, maxVaultType + 1));
+    base.beacon(maxVaultType + 1);
+
+    vm.expectRevert(_errEnumOutOfBounds(maxVaultType, maxVaultType + 1));
+    base.isInstance(maxVaultType + 1, address(0));
+
+    vm.expectRevert(_errEnumOutOfBounds(maxVaultType, maxVaultType + 1));
+    base.instances(maxVaultType + 1, 0);
+
+    uint256[] memory indexes;
+    vm.expectRevert(_errEnumOutOfBounds(maxVaultType, maxVaultType + 1));
+    base.instances(maxVaultType + 1, indexes);
+
+    vm.expectRevert(_errEnumOutOfBounds(maxVaultType, maxVaultType + 1));
+    base.instancesLength(maxVaultType + 1);
+
+    vm.expectRevert(_errEnumOutOfBounds(maxVaultType, maxVaultType + 1));
+    base.vaultTypeInitialized(maxVaultType + 1);
+
+    vm.startPrank(owner);
+
+    bytes memory data;
+    vm.expectRevert(_errEnumOutOfBounds(maxVaultType, maxVaultType + 1));
+    base.callBeacon(maxVaultType + 1, data);
+
+    vm.expectRevert(_errEnumOutOfBounds(maxVaultType, maxVaultType + 1));
+    base.create(maxVaultType + 1, data);
+
+    vm.expectRevert(_errEnumOutOfBounds(maxVaultType, maxVaultType + 1));
+    base.migrate(maxVaultType + 1, maxVaultType, address(0), data);
+
+    vm.expectRevert(_errEnumOutOfBounds(maxVaultType, maxVaultType + 1));
+    base.migrate(maxVaultType, maxVaultType + 1, address(0), data);
+
+    vm.stopPrank();
+  }
+
   // function test_migrate() public {
   //   vm.prank(owner);
-  //   base.initVaultType(IEOLVaultFactory.VaultType.Basic, address(basicImpl));
+  //   base.initVaultType(BasicVaultType, address(basicImpl));
 
   //   address instance1 = _createBasic(owner, owner, address(new WETH()), 'Basic Vault 1', 'BV1');
   //   address instance2 = _createBasic(owner, owner, address(new WETH()), 'Basic Vault 2', 'BV2');
   //   address instance3 = _createBasic(owner, owner, address(new WETH()), 'Basic Vault 3', 'BV3');
 
   //   vm.prank(owner);
-  //   base.migrate(IEOLVaultFactory.VaultType.Basic, IEOLVaultFactory.VaultType.Basic, instance1, '');
+  //   base.migrate(BasicVaultType, BasicVaultType, instance1, '');
   // }
 
   function _createBasic(address caller, IEOLVaultFactory.BasicVaultInitArgs memory args) internal returns (address) {
     vm.prank(caller);
-    return base.create(IEOLVaultFactory.VaultType.Basic, abi.encode(args));
+    return base.create(BasicVaultType, abi.encode(args));
   }
 
   function _createBasic(address caller, address owner_, address asset, string memory name, string memory symbol)
