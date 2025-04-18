@@ -13,4 +13,5 @@ library StdError {
   error InvalidParameter(string description);
   error ZeroAmount();
   error ZeroAddress(string description);
+  error EnumOutOfBounds(uint8 max, uint8 actual);
 }
