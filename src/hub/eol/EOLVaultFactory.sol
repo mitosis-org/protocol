@@ -10,6 +10,7 @@ import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 import { IEOLVaultFactory } from '../../interfaces/hub/eol/IEOLVaultFactory.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { BeaconProxy, IBeaconProxy } from '../../lib/proxy/BeaconProxy.sol';
+import { StdError } from '../../lib/StdError.sol';
 import { EOLVault } from './EOLVault.sol';
 
 contract EOLVaultFactory is IEOLVaultFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
@@ -38,6 +39,8 @@ contract EOLVaultFactory is IEOLVaultFactory, Ownable2StepUpgradeable, UUPSUpgra
     }
   }
 
+  uint8 public constant MAX_VAULT_TYPE = uint8(VaultType.Basic);
+
   constructor() {
     _disableInitializers();
   }
@@ -48,24 +51,24 @@ contract EOLVaultFactory is IEOLVaultFactory, Ownable2StepUpgradeable, UUPSUpgra
     __UUPSUpgradeable_init();
   }
 
-  function beacon(VaultType t) external view returns (address) {
-    return address(_getStorage().infos[t].beacon);
+  function beacon(uint8 t) external view returns (address) {
+    return address(_getStorage().infos[_safeVaultTypeCast(t)].beacon);
   }
 
   function isInstance(address instance) external view returns (bool) {
     return _getStorage().isInstance[instance];
   }
 
-  function isInstance(VaultType t, address instance) external view returns (bool) {
-    return _isInstance(_getStorage(), t, instance);
+  function isInstance(uint8 t, address instance) external view returns (bool) {
+    return _isInstance(_getStorage(), _safeVaultTypeCast(t), instance);
   }
 
-  function instances(VaultType t, uint256 index) external view returns (address) {
-    return _getStorage().infos[t].instances[index];
+  function instances(uint8 t, uint256 index) external view returns (address) {
+    return _getStorage().infos[_safeVaultTypeCast(t)].instances[index];
   }
 
-  function instances(VaultType t, uint256[] memory indexes) external view returns (address[] memory) {
-    BeaconInfo storage info = _getStorage().infos[t];
+  function instances(uint8 t, uint256[] memory indexes) external view returns (address[] memory) {
+    BeaconInfo storage info = _getStorage().infos[_safeVaultTypeCast(t)];
 
     address[] memory result = new address[](indexes.length);
     for (uint256 i = 0; i < indexes.length; i++) {
@@ -74,11 +77,12 @@ contract EOLVaultFactory is IEOLVaultFactory, Ownable2StepUpgradeable, UUPSUpgra
     return result;
   }
 
-  function instancesLength(VaultType t) external view returns (uint256) {
-    return _getStorage().infos[t].instances.length;
+  function instancesLength(uint8 t) external view returns (uint256) {
+    return _getStorage().infos[_safeVaultTypeCast(t)].instances.length;
   }
 
-  function initVaultType(VaultType vaultType, address initialImpl) external onlyOwner {
+  function initVaultType(uint8 rawVaultType, address initialImpl) external onlyOwner {
+    VaultType vaultType = _safeVaultTypeCast(rawVaultType);
     require(vaultType != VaultType.Unset, IEOLVaultFactory__InvalidVaultType());
 
     Storage storage $ = _getStorage();
@@ -90,46 +94,50 @@ contract EOLVaultFactory is IEOLVaultFactory, Ownable2StepUpgradeable, UUPSUpgra
     emit VaultTypeInitialized(vaultType, address($.infos[vaultType].beacon));
   }
 
-  function vaultTypeInitialized(VaultType t) external view returns (bool) {
-    return _getStorage().infos[t].initialized;
+  function vaultTypeInitialized(uint8 t) external view returns (bool) {
+    return _getStorage().infos[_safeVaultTypeCast(t)].initialized;
   }
 
   /**
    * @dev used to migrate the beacon implementation - see `UpgradeableBeacon.upgradeTo`
    */
-  function callBeacon(VaultType t, bytes calldata data) external onlyOwner returns (bytes memory) {
+  function callBeacon(uint8 t, bytes calldata data) external onlyOwner returns (bytes memory) {
     Storage storage $ = _getStorage();
-    require($.infos[t].initialized, IEOLVaultFactory__NotInitialized());
+    VaultType vaultType = _safeVaultTypeCast(t);
+    require($.infos[vaultType].initialized, IEOLVaultFactory__NotInitialized());
 
-    (bool success, bytes memory result) = address($.infos[t].beacon).call(data);
+    (bool success, bytes memory result) = address($.infos[vaultType].beacon).call(data);
     require(success, IEOLVaultFactory__CallBeaconFailed(result));
 
-    emit BeaconCalled(_msgSender(), t, data, success, result);
+    emit BeaconCalled(_msgSender(), vaultType, data, success, result);
 
     return result;
   }
 
-  function create(VaultType t, bytes calldata args) external onlyOwner returns (address) {
+  function create(uint8 t, bytes calldata args) external onlyOwner returns (address) {
     Storage storage $ = _getStorage();
-    require($.infos[t].initialized, IEOLVaultFactory__NotInitialized());
+    VaultType vaultType = _safeVaultTypeCast(t);
+    require($.infos[vaultType].initialized, IEOLVaultFactory__NotInitialized());
 
     address instance;
 
-    if (t == VaultType.Basic) instance = _create($, abi.decode(args, (BasicVaultInitArgs)));
+    if (vaultType == VaultType.Basic) instance = _create($, abi.decode(args, (BasicVaultInitArgs)));
     else revert IEOLVaultFactory__InvalidVaultType();
 
-    emit EOLVaultCreated(t, instance, args);
+    emit EOLVaultCreated(vaultType, instance, args);
     return instance;
   }
 
-  function migrate(VaultType from, VaultType to, address instance, bytes calldata data) external onlyOwner {
+  function migrate(uint8 from, uint8 to, address instance, bytes calldata data) external onlyOwner {
     Storage storage $ = _getStorage();
-    BeaconInfo storage fromInfo = $.infos[from];
-    BeaconInfo storage toInfo = $.infos[to];
+    VaultType fromVaultType = _safeVaultTypeCast(from);
+    VaultType toVaultType = _safeVaultTypeCast(to);
+    BeaconInfo storage fromInfo = $.infos[fromVaultType];
+    BeaconInfo storage toInfo = $.infos[toVaultType];
 
     require(fromInfo.initialized, IEOLVaultFactory__NotInitialized());
     require(toInfo.initialized, IEOLVaultFactory__NotInitialized());
-    require(_isInstance($, from, instance), IEOLVaultFactory__NotAnInstance());
+    require(_isInstance($, fromVaultType, instance), IEOLVaultFactory__NotAnInstance());
 
     // Remove instance from 'from' type's tracking
     uint256 index = fromInfo.instanceIndex[instance];
@@ -146,7 +154,7 @@ contract EOLVaultFactory is IEOLVaultFactory, Ownable2StepUpgradeable, UUPSUpgra
     toInfo.instanceIndex[instance] = toInfo.instances.length - 1;
     IBeaconProxy(instance).upgradeBeaconToAndCall(toInfo.beacon, data);
 
-    emit EOLVaultMigrated(from, to, instance);
+    emit EOLVaultMigrated(fromVaultType, toVaultType, instance);
   }
 
   function _isInstance(Storage storage $, VaultType t, address instance) private view returns (bool) {
@@ -169,6 +177,11 @@ contract EOLVaultFactory is IEOLVaultFactory, Ownable2StepUpgradeable, UUPSUpgra
     info.instanceIndex[instance] = info.instances.length - 1;
 
     return instance;
+  }
+
+  function _safeVaultTypeCast(uint8 vaultType) internal pure returns (VaultType) {
+    require(vaultType <= MAX_VAULT_TYPE, StdError.EnumOutOfBounds(MAX_VAULT_TYPE, vaultType));
+    return VaultType(vaultType);
   }
 
   function _authorizeUpgrade(address) internal override onlyOwner { }
