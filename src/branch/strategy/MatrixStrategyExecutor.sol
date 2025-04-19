@@ -156,7 +156,6 @@ contract MatrixStrategyExecutor is
   {
     StorageV1 memory $ = _getStorageV1();
     _assertOnlyExecutor($);
-    _assertOnlyTallyRegisteredProtocol($, target);
 
     result = target.functionCallWithValue(data, value);
   }
@@ -170,7 +169,6 @@ contract MatrixStrategyExecutor is
 
     StorageV1 memory $ = _getStorageV1();
     _assertOnlyExecutor($);
-    _assertOnlyTallyRegisteredProtocol($, targets);
 
     uint256 targetsLength = targets.length;
     results = new bytes[](targetsLength);
@@ -228,18 +226,6 @@ contract MatrixStrategyExecutor is
     address executor_ = $.executor;
     require(executor_ != address(0), IMatrixStrategyExecutor.IMatrixStrategyExecutor__ExecutorNotSet());
     require(_msgSender() == executor_, StdError.Unauthorized());
-  }
-
-  function _assertOnlyTallyRegisteredProtocol(StorageV1 memory $, address target) internal view {
-    require($.tally.protocolAddress() == target, IMatrixStrategyExecutor__TallyNotSet(target));
-  }
-
-  function _assertOnlyTallyRegisteredProtocol(StorageV1 memory $, address[] memory targets) internal view {
-    address expected = $.tally.protocolAddress();
-    for (uint256 i = 0; i < targets.length; i++) {
-      address target = targets[i];
-      require(expected == target, IMatrixStrategyExecutor__TallyNotSet(target));
-    }
   }
 
   function _tallyTotalBalance(StorageV1 storage $) internal view returns (uint256) {

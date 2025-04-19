@@ -11,10 +11,6 @@ contract TheoTally is StdTally {
     _theo = theo_;
   }
 
-  function protocolAddress() external view override returns (address) {
-    return address(_theo);
-  }
-
   function _isWithdrawAsync() internal pure override returns (bool) {
     return true;
   }

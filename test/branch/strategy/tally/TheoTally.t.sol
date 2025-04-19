@@ -117,10 +117,6 @@ contract TheoTallyTest is Toolkit {
     assertEq(_theoTally.pendingWithdrawBalance(''), 200 ether);
   }
 
-  function test_protocolAddress() public view {
-    assertEq(_theoTally.protocolAddress(), address(_theoDepositVault));
-  }
-
   function test_previewDeposit() public view {
     assertEq(_theoTally.previewDeposit(100 ether, ''), 100 ether);
   }

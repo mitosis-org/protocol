@@ -9,8 +9,6 @@ pragma solidity ^0.8.28;
  * @notice Tally is query helper to make easy to track balances
  */
 abstract contract StdTally {
-  function protocolAddress() external view virtual returns (address);
-
   function totalBalance(bytes memory context) external view returns (uint256 totalBalance_) {
     return _totalBalance(context);
   }
