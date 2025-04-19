@@ -12,7 +12,6 @@ interface IMatrixStrategyExecutor is IStrategyExecutor {
   error IMatrixStrategyExecutor__TallyAlreadySet(address implementation);
   error IMatrixStrategyExecutor__StrategistNotSet();
   error IMatrixStrategyExecutor__ExecutorNotSet();
-  error IMatrixStrategyExecutor__TallyNotSet(address implementation);
 
   function vault() external view returns (IMitosisVault);
   function asset() external view returns (IERC20);
