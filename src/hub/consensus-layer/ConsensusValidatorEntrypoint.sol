@@ -79,37 +79,52 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  function registerValidator(address valAddr, bytes calldata pubKey, address collateralRefundAddr)
+  function registerValidator(address valAddr, bytes calldata pubKey, address collateralOwner)
     external
     payable
     onlyPermittedCaller
     verifyPubKeyWithAddress(pubKey, valAddr)
   {
+    require(collateralOwner != address(0), StdError.ZeroAddress('collateralOwner'));
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
     require(msg.value % 1 gwei == 0, StdError.InvalidParameter('msg.value'));
 
-    emit MsgRegisterValidator(valAddr, pubKey, msg.value / 1 gwei, collateralRefundAddr);
+    emit MsgRegisterValidator(valAddr, pubKey, collateralOwner, msg.value / 1 gwei);
 
     payable(address(0)).transfer(msg.value);
   }
 
-  function depositCollateral(address valAddr, address collateralRefundAddr) external payable onlyPermittedCaller {
+  function depositCollateral(address valAddr, address collateralOwner) external payable onlyPermittedCaller {
+    require(collateralOwner != address(0), StdError.ZeroAddress('collateralOwner'));
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
     require(msg.value % 1 gwei == 0, StdError.InvalidParameter('msg.value'));
 
-    emit MsgDepositCollateral(valAddr, msg.value / 1 gwei, collateralRefundAddr);
+    emit MsgDepositCollateral(valAddr, collateralOwner, msg.value / 1 gwei);
 
     payable(address(0)).transfer(msg.value);
   }
 
-  function withdrawCollateral(address valAddr, uint256 amount, address receiver, uint48 maturesAt)
-    external
-    onlyPermittedCaller
-  {
+  function withdrawCollateral(
+    address valAddr,
+    address collateralOwner,
+    address receiver,
+    uint256 amount,
+    uint48 maturesAt
+  ) external onlyPermittedCaller {
+    require(collateralOwner != address(0), StdError.ZeroAddress('collateralOwner'));
     require(amount > 0, StdError.InvalidParameter('amount'));
     require(amount % 1 gwei == 0, StdError.InvalidParameter('amount'));
 
-    emit MsgWithdrawCollateral(valAddr, amount / 1 gwei, receiver, maturesAt);
+    emit MsgWithdrawCollateral(valAddr, collateralOwner, receiver, amount / 1 gwei, maturesAt);
+  }
+
+  function transferCollateralOwnership(address valAddr, address prevOwner, address newOwner)
+    external
+    onlyPermittedCaller
+  {
+    require(newOwner != address(0), StdError.ZeroAddress('newOwner'));
+
+    emit MsgTransferCollateralOwnership(valAddr, prevOwner, newOwner);
   }
 
   function unjail(address valAddr) external onlyPermittedCaller {

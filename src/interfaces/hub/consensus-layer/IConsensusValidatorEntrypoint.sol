@@ -5,10 +5,13 @@ interface IConsensusValidatorEntrypoint {
   event PermittedCallerSet(address caller, bool isPermitted);
 
   event MsgRegisterValidator(
-    address valAddr, bytes pubKey, uint256 initialCollateralAmountGwei, address collateralRefundAddr
+    address valAddr, bytes pubKey, address collateralOwner, uint256 initialCollateralAmountGwei
   );
-  event MsgDepositCollateral(address valAddr, uint256 amountGwei, address collateralRefundAddr);
-  event MsgWithdrawCollateral(address valAddr, uint256 amountGwei, address receiver, uint48 maturesAt);
+  event MsgDepositCollateral(address valAddr, address collateralOwner, uint256 amountGwei);
+  event MsgWithdrawCollateral(
+    address valAddr, address collateralOwner, address receiver, uint256 amountGwei, uint48 maturesAt
+  );
+  event MsgTransferCollateralOwnership(address valAddr, address prevOwner, address newOwner);
   event MsgUnjail(address valAddr);
   event MsgUpdateExtraVotingPower(address valAddr, uint256 extraVotingPowerWei);
 
@@ -17,28 +20,44 @@ interface IConsensusValidatorEntrypoint {
    * @dev The collateral might be returned if the validator is not registered in the consensus layer.
    * @param valAddr The address of the validator.
    * @param pubKey The compressed 33-byte secp256k1 public key of the validator.
-   * @param collateralRefundAddr The address to receive the collateral if registration fails.
+   * @param collateralOwner The address to own the collateral.
    */
-  function registerValidator(address valAddr, bytes calldata pubKey, address collateralRefundAddr) external payable;
+  function registerValidator(address valAddr, bytes calldata pubKey, address collateralOwner) external payable;
 
   /**
    * @notice Deposit collateral to the validator in the consensus layer.
    * @dev The collateral might be returned if the validator is not registered in the consensus layer.
    * @param valAddr The address of the validator.
-   * @param collateralRefundAddr The address to receive the deposited collateral if deposit fails.
+   * @param collateralOwner The address to own the collateral.
    */
-  function depositCollateral(address valAddr, address collateralRefundAddr) external payable;
+  function depositCollateral(address valAddr, address collateralOwner) external payable;
 
   /**
    * @notice Request a withdrawal of collateral from the validator in the consensus layer.
    * The collateral is sent to the receiver address after the request matures.
-   * @dev Nothing happens if the validator is not registered in the consensus layer or has insufficient collateral.
+   * @dev Nothing happens if the validator is not registered in the consensus layer or the collateral owner don't own enough collateral.
    * @param valAddr The address of the validator.
-   * @param amount The amount of collateral to withdraw.
+   * @param collateralOwner The address that owns the collateral.
    * @param receiver The address to receive the withdrawn collateral.
+   * @param amount The amount of collateral to withdraw.
    * @param maturesAt The time when the withdrawal request matures. After this time, the collateral will be sent to the receiver.
    */
-  function withdrawCollateral(address valAddr, uint256 amount, address receiver, uint48 maturesAt) external;
+  function withdrawCollateral(
+    address valAddr,
+    address collateralOwner,
+    address receiver,
+    uint256 amount,
+    uint48 maturesAt
+  ) external;
+
+  /**
+   * @notice Transfer the ownership of the collateral to a new address.
+   * @dev Nothing happens if the validator is not registered in the consensus layer.
+   * @param valAddr The address of the validator.
+   * @param prevOwner The address that owns the collateral.
+   * @param newOwner The address to receive the ownership of the collateral.
+   */
+  function transferCollateralOwnership(address valAddr, address prevOwner, address newOwner) external;
 
   /**
    * @notice Unjail a validator in the consensus layer.
