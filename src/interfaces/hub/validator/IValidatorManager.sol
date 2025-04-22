@@ -86,9 +86,7 @@ interface IValidatorManager {
   event CollateralWithdrawn(
     address indexed valAddr, address indexed collateralOwner, address indexed receiver, uint256 amount
   );
-  event CollateralOwnershipTransferred(
-    address indexed valAddr, address indexed previousOwner, address indexed newOwner
-  );
+  event CollateralOwnershipTransferred(address indexed valAddr, address indexed prevOwner, address indexed newOwner);
   event ValidatorUnjailed(address indexed valAddr);
   event OperatorUpdated(address indexed valAddr, address indexed operator);
   event RewardManagerUpdated(address indexed valAddr, address indexed operator, address indexed rewardManager);
