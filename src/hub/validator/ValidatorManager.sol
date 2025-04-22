@@ -40,7 +40,6 @@ contract ValidatorManagerStorageV1 {
     address valAddr;
     address operator;
     address rewardManager;
-    address _deprecated; // withdrawalRecipient
     bytes pubKey;
     ValidatorRewardConfig rewardConfig;
     bytes metadata;
@@ -119,7 +118,6 @@ contract ValidatorManager is
         genVal.value,
         CreateValidatorRequest({
           operator: genVal.operator,
-          _deprecated: genVal._deprecated,
           rewardManager: genVal.rewardManager,
           commissionRate: genVal.commissionRate,
           metadata: genVal.metadata
@@ -389,7 +387,6 @@ contract ValidatorManager is
       valAddr: info.valAddr,
       pubKey: info.pubKey,
       operator: info.operator,
-      _deprecated: info._deprecated,
       rewardManager: info.rewardManager,
       commissionRate: commissionRate,
       metadata: info.metadata
@@ -470,7 +467,6 @@ contract ValidatorManager is
     Validator storage validator = $.validators[valIndex];
     validator.valAddr = valAddr;
     validator.operator = request.operator;
-    validator._deprecated = request._deprecated;
     validator.rewardManager = request.rewardManager;
     validator.pubKey = pubKey;
     validator.rewardConfig.commissionRates.push(epoch.toUint96(), request.commissionRate.toUint160());
