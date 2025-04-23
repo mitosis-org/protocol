@@ -49,7 +49,7 @@ contract GovMITOEmissionTest is Toolkit {
     vm.deal(owner, total);
     emission.addValidatorRewardEmission{ value: total }();
 
-    govMITO.assertLastCall(abi.encodeCall(IGovMITO.mint, (address(emission))), total);
+    assertEq(address(emission).balance, total);
 
     assertEq(address(emission.govMITO()), address(govMITO));
     assertEq(address(emission.epochFeeder()), address(feeder));
@@ -109,6 +109,8 @@ contract GovMITOEmissionTest is Toolkit {
     vm.deal(owner, total);
     emission.addValidatorRewardEmission{ value: total }();
 
+    assertEq(emission.validatorRewardTotal(), total);
+
     uint256 amount = 1 ether;
     vm.expectEmit();
     emit IGovMITOEmission.ValidatorRewardEmissionAdded(owner, amount);
@@ -118,6 +120,7 @@ contract GovMITOEmissionTest is Toolkit {
     emission.addValidatorRewardEmission{ value: amount }();
 
     assertEq(emission.validatorRewardTotal(), total + amount);
+    assertEq(address(emission).balance, total + amount);
   }
 
   function test_requestValidatorReward() public {
@@ -136,6 +139,8 @@ contract GovMITOEmissionTest is Toolkit {
     vm.deal(owner, total);
     emission.addValidatorRewardEmission{ value: total }();
 
+    assertEq(address(emission).balance, total);
+
     for (uint256 i = 1; i <= 20; i++) {
       feeder.setRet(abi.encodeCall(IEpochFeeder.timeAt, (i)), false, abi.encode((2 * i - 1) * 1 days));
     }
@@ -146,6 +151,7 @@ contract GovMITOEmissionTest is Toolkit {
     vm.prank(recipient);
     emission.requestValidatorReward(1, recipient, 1 gwei);
 
+    assertEq(address(emission).balance, total - 1 gwei);
     assertEq(emission.validatorRewardSpent(), 1 gwei);
   }
 
@@ -165,6 +171,8 @@ contract GovMITOEmissionTest is Toolkit {
 
     vm.deal(owner, total);
     emission.addValidatorRewardEmission{ value: total }();
+
+    assertEq(address(emission).balance, total);
 
     for (uint256 i = 1; i <= 20; i++) {
       feeder.setRet(abi.encodeCall(IEpochFeeder.timeAt, (i)), false, abi.encode((2 * i - 1) * 1 days));
@@ -196,6 +204,8 @@ contract GovMITOEmissionTest is Toolkit {
     vm.deal(owner, total);
     emission.addValidatorRewardEmission{ value: total }();
     emission.grantRole(emission.VALIDATOR_REWARD_MANAGER_ROLE(), rewardManager);
+
+    assertEq(emission.validatorRewardTotal(), total);
 
     vm.expectRevert(_errAccessControlUnauthorized(owner, emission.VALIDATOR_REWARD_MANAGER_ROLE()));
     emission.configureValidatorRewardEmission(2 gwei, 7500, 2 days, 6 days);
