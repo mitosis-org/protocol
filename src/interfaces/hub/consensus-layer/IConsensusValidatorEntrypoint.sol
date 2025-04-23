@@ -5,7 +5,7 @@ interface IConsensusValidatorEntrypoint {
   event PermittedCallerSet(address caller, bool isPermitted);
 
   event MsgRegisterValidator(
-    address valAddr, bytes pubKey, address collateralOwner, uint256 initialCollateralAmountGwei
+    address valAddr, bytes pubKey, address initialCollateralOwner, uint256 initialCollateralAmountGwei
   );
   event MsgDepositCollateral(address valAddr, address collateralOwner, uint256 amountGwei);
   event MsgWithdrawCollateral(
@@ -20,9 +20,9 @@ interface IConsensusValidatorEntrypoint {
    * @dev The collateral might be returned if the validator is not registered in the consensus layer.
    * @param valAddr The address of the validator.
    * @param pubKey The compressed 33-byte secp256k1 public key of the validator.
-   * @param collateralOwner The address to own the collateral.
+   * @param initialCollateralOwner The initial address to own the initial collateral.
    */
-  function registerValidator(address valAddr, bytes calldata pubKey, address collateralOwner) external payable;
+  function registerValidator(address valAddr, bytes calldata pubKey, address initialCollateralOwner) external payable;
 
   /**
    * @notice Deposit collateral to the validator in the consensus layer.

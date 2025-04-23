@@ -208,7 +208,7 @@ contract ValidatorManager is
     uint256 netMsgValue = _burnFee($);
     Validator storage validator = _createValidator($, valAddr, pubKey, netMsgValue, request);
 
-    // operator becomes a collateral owner automatically only at first
+    // operator becomes an initial collateral owner
     _setPermittedCollateralOwner(validator, request.operator, true);
 
     _entrypoint.registerValidator{ value: netMsgValue }(valAddr, pubKey, request.operator);

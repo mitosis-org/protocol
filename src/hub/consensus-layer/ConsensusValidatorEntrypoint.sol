@@ -79,17 +79,17 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  function registerValidator(address valAddr, bytes calldata pubKey, address collateralOwner)
+  function registerValidator(address valAddr, bytes calldata pubKey, address initialCollateralOwner)
     external
     payable
     onlyPermittedCaller
     verifyPubKeyWithAddress(pubKey, valAddr)
   {
-    require(collateralOwner != address(0), StdError.ZeroAddress('collateralOwner'));
+    require(initialCollateralOwner != address(0), StdError.ZeroAddress('initialCollateralOwner'));
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
     require(msg.value % 1 gwei == 0, StdError.InvalidParameter('msg.value'));
 
-    emit MsgRegisterValidator(valAddr, pubKey, collateralOwner, msg.value / 1 gwei);
+    emit MsgRegisterValidator(valAddr, pubKey, initialCollateralOwner, msg.value / 1 gwei);
 
     payable(address(0)).transfer(msg.value);
   }
