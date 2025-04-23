@@ -1,0 +1,108 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import { stdJson } from '@std/StdJson.sol';
+import { Vm, VmSafe } from '@std/Vm.sol';
+
+import { LibString } from '@solady/utils/LibString.sol';
+
+import '../Functions.sol';
+
+library BranchImplT {
+  using LibString for *;
+  using stdJson for string;
+
+  address private constant VM_ADDRESS = address(uint160(uint256(keccak256('hevm cheat code'))));
+  Vm private constant vm = Vm(VM_ADDRESS);
+
+  struct Governance {
+    address governanceEntrypoint;
+  }
+
+  struct StrategyManager {
+    address withMerkleVerification;
+  }
+
+  struct Strategy {
+    StrategyManager manager;
+    address matrixStrategyExecutor;
+    address matrixStrategyExecutorFactory;
+  }
+
+  struct Chain {
+    Governance governance;
+    Strategy strategy;
+    address mitosisVault;
+    address mitosisVaultEntrypoint;
+  }
+
+  function stdPath(string memory name) internal pure returns (string memory) {
+    return cat('./test/testdata/branch-', name, '.impl.json');
+  }
+
+  function read(string memory path) internal view returns (Chain memory o) {
+    string memory json = vm.readFile(path);
+    return decode(json);
+  }
+
+  function write(Chain memory v, string memory path) internal {
+    if (vm.exists(path)) vm.removeFile(path); // replace
+    string memory json = encode(v);
+    vm.writeJson(json, path);
+    vm.writeFile(path, cat(vm.readFile(path), '\n'));
+  }
+
+  //=================================================================================================//
+  // ------ CODEC ------ //
+  //=================================================================================================//
+
+  // --- Encode Functions ---
+
+  function encode(Governance memory v) internal returns (string memory o) {
+    string memory k = vm.randomBytes(32).toHexString();
+    o = k.serialize('governanceEntrypoint', v.governanceEntrypoint);
+  }
+
+  function encode(StrategyManager memory v) internal returns (string memory o) {
+    string memory k = vm.randomBytes(32).toHexString();
+    o = k.serialize('withMerkleVerification', v.withMerkleVerification);
+  }
+
+  function encode(Strategy memory v) internal returns (string memory o) {
+    string memory k = vm.randomBytes(32).toHexString();
+    o = k.serialize('manager', encode(v.manager));
+    o = k.serialize('matrixStrategyExecutor', v.matrixStrategyExecutor);
+    o = k.serialize('matrixStrategyExecutorFactory', v.matrixStrategyExecutorFactory);
+  }
+
+  function encode(Chain memory v) internal returns (string memory o) {
+    string memory k = vm.randomBytes(32).toHexString();
+    o = k.serialize('governance', encode(v.governance));
+    o = k.serialize('strategy', encode(v.strategy));
+    o = k.serialize('mitosisVault', v.mitosisVault);
+    o = k.serialize('mitosisVaultEntrypoint', v.mitosisVaultEntrypoint);
+  }
+
+  // --- Decode Functions ---
+
+  function decodeGovernance(string memory v, string memory base) internal pure returns (Governance memory o) {
+    o.governanceEntrypoint = v.readAddress(cat(base, '.governanceEntrypoint'));
+  }
+
+  function decodeStrategyManager(string memory v, string memory base) internal pure returns (StrategyManager memory o) {
+    o.withMerkleVerification = v.readAddress(cat(base, '.withMerkleVerification'));
+  }
+
+  function decodeStrategy(string memory v, string memory base) internal pure returns (Strategy memory o) {
+    o.manager = decodeStrategyManager(v, cat(base, '.manager'));
+    o.matrixStrategyExecutor = v.readAddress(cat(base, '.matrixStrategyExecutor'));
+    o.matrixStrategyExecutorFactory = v.readAddress(cat(base, '.matrixStrategyExecutorFactory'));
+  }
+
+  function decode(string memory v) internal pure returns (Chain memory o) {
+    o.governance = decodeGovernance(v, '.governance');
+    o.strategy = decodeStrategy(v, '.strategy');
+    o.mitosisVault = v.readAddress('.mitosisVault');
+    o.mitosisVaultEntrypoint = v.readAddress('.mitosisVaultEntrypoint');
+  }
+}
