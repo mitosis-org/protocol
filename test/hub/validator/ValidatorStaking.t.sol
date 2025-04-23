@@ -42,14 +42,8 @@ contract ValidatorStakingTest is Toolkit {
     erc20Vault = ValidatorStaking(
       payable(
         _proxy(
-          address(
-            new ValidatorStaking(
-              address(weth), // erc20
-              IValidatorManager(address(manager)),
-              IValidatorStakingHub(address(hub))
-            )
-          ),
-          abi.encodeCall(ValidatorStaking.initialize, (owner, 1 ether, 1 ether, 1 days, 1 days))
+          address(new ValidatorStaking(IValidatorManager(address(manager)), IValidatorStakingHub(address(hub)))),
+          abi.encodeCall(ValidatorStaking.initialize, (address(weth), owner, 1 ether, 1 ether, 1 days, 1 days))
         )
       )
     );
@@ -57,14 +51,8 @@ contract ValidatorStakingTest is Toolkit {
     nativeVault = ValidatorStaking(
       payable(
         _proxy(
-          address(
-            new ValidatorStaking(
-              address(0), // native
-              IValidatorManager(address(manager)),
-              IValidatorStakingHub(address(hub))
-            )
-          ),
-          abi.encodeCall(ValidatorStaking.initialize, (owner, 1 ether, 1 ether, 1 days, 1 days))
+          address(new ValidatorStaking(IValidatorManager(address(manager)), IValidatorStakingHub(address(hub)))),
+          abi.encodeCall(ValidatorStaking.initialize, (address(0), owner, 1 ether, 1 ether, 1 days, 1 days))
         )
       )
     );

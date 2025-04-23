@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import { Time } from '@oz/utils/types/Time.sol';
 import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
 
+import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
 import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
 import { SudoVotes } from '../../lib/SudoVotes.sol';
@@ -12,13 +13,17 @@ import { ValidatorStaking } from './ValidatorStaking.sol';
 contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
   error ValidatorStakingGovMITO__NonTransferable();
 
-  constructor(address baseAsset_, IValidatorManager manager_, IValidatorStakingHub hub_)
-    ValidatorStaking(baseAsset_, manager_, hub_)
+  IGovMITO public immutable govMITO;
+
+  constructor(IGovMITO govMITO_, IValidatorManager manager_, IValidatorStakingHub hub_)
+    ValidatorStaking(manager_, hub_)
   {
+    govMITO = govMITO_;
     _disableInitializers();
   }
 
   function initialize(
+    address, // baseAsset, ignored
     address initialOwner,
     uint256 initialMinStakingAmount,
     uint256 initialMinUnstakingAmount,
@@ -26,7 +31,8 @@ contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
     uint48 redelegationCooldown_
   ) public override initializer {
     super.initialize(
-      initialOwner, //
+      address(govMITO),
+      initialOwner,
       initialMinStakingAmount,
       initialMinUnstakingAmount,
       unstakeCooldown_,
