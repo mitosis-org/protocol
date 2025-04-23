@@ -169,7 +169,8 @@ contract GovMITOEmission is
     require($.validatorReward.total >= spent + amount, NotEnoughReserve());
 
     $.validatorReward.spent += amount;
-    _govMITO.safeTransfer(recipient, amount);
+
+    _govMITO.mint{ value: amount }(recipient);
 
     emit ValidatorRewardRequested(epoch, recipient, amount);
 
@@ -180,11 +181,7 @@ contract GovMITOEmission is
   function addValidatorRewardEmission() external payable {
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
 
-    StorageV1 storage $ = _getStorageV1();
-
-    $.validatorReward.total += msg.value;
-    _govMITO.mint{ value: msg.value }(address(this));
-
+    _getStorageV1().validatorReward.total += msg.value;
     emit ValidatorRewardEmissionAdded(_msgSender(), msg.value);
   }
 
