@@ -170,8 +170,7 @@ contract GovMITOEmission is
 
     $.validatorReward.spent += amount;
 
-    _govMITO.mint{ value: amount }(address(this));
-    _govMITO.safeTransfer(recipient, amount);
+    _govMITO.mint{ value: amount }(recipient);
 
     emit ValidatorRewardRequested(epoch, recipient, amount);
 
