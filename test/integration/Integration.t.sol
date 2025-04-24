@@ -12,6 +12,8 @@ import { HubProxyT } from '../util/types/HubProxyT.sol';
 
 contract IntegrationTest is Environment {
   address internal owner = makeAddr('owner');
+  address internal govAdmin = makeAddr('govAdmin');
+
   string[] internal branchNames;
 
   function setUp() public override {
@@ -21,7 +23,7 @@ contract IntegrationTest is Environment {
   }
 
   function test_init() public {
-    EnvironmentT memory env = setUpEnv(owner, branchNames);
+    EnvironmentT memory env = setUpEnv(owner, govAdmin, branchNames);
 
     backUpEnv(env);
 

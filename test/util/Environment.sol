@@ -48,16 +48,17 @@ abstract contract Environment is Linker, HubDeployer, BranchDeployer {
     return 'v1';
   }
 
-  function setUpEnv(address owner, address admin, address govAdmin, string[] memory branchNames)
+  function setUpEnv(address owner, address govAdmin, string[] memory branchNames)
     internal
     returns (EnvironmentT memory env)
   {
     // deploy all
-    env.hub = _deployHub(owner, admin, govAdmin);
+    env.hub = _deployHub(owner, govAdmin);
     env.branches = new Branch[](branchNames.length);
     for (uint256 i = 0; i < branchNames.length; i++) {
       env.branches[i] = _deployBranch(
         owner,
+        govAdmin,
         branchNames[i],
         env.hub.domain,
         toBz32(address(env.hub.proxy.core.assetManagerEntrypoint)),
@@ -97,21 +98,24 @@ abstract contract Environment is Linker, HubDeployer, BranchDeployer {
     return (domain, mailbox);
   }
 
-  function _deployHub(address owner, address admin, address govAdmin) private returns (Hub memory hub) {
+  function _deployHub(address owner, address govAdmin) private returns (Hub memory hub) {
     HubConfigs.DeployConfig memory config = HubConfigs.read(_deployConfigPath('hub'));
     (hub.domain, hub.mailbox) = _setUpMailbox();
     (hub.impl, hub.proxy) = deployHub(address(hub.mailbox), owner, config);
 
-    linkHub(owner, admin, govAdmin, hub.proxy, config);
+    linkHub(owner, govAdmin, hub.proxy, config);
   }
 
   function _deployBranch(
     address owner,
+    address govAdmin,
     string memory name,
     uint32 hubDomain,
     bytes32 hubMitosisVaultEntrypointAddress,
     bytes32 hubGovernanceEntrypointAddress
   ) private returns (Branch memory branch) {
+    BranchConfigs.DeployConfig memory config = BranchConfigs.read(_deployConfigPath(cat('branch-', name)));
+
     branch.name = name;
     (branch.domain, branch.mailbox) = _setUpMailbox();
     (branch.impl, branch.proxy) = deployBranch(
@@ -121,8 +125,10 @@ abstract contract Environment is Linker, HubDeployer, BranchDeployer {
       hubDomain,
       hubMitosisVaultEntrypointAddress,
       hubGovernanceEntrypointAddress,
-      BranchConfigs.read(_deployConfigPath(cat('branch-', name)))
+      config
     );
+
+    linkBranch(owner, govAdmin, branch.proxy, config);
   }
 
   function _mailboxes(EnvironmentT memory env) private pure returns (MockMailbox[] memory) {

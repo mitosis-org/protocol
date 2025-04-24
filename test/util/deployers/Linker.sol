@@ -4,33 +4,31 @@ pragma solidity ^0.8.28;
 import { Test } from '@std/Test.sol';
 
 import { ISudoVotes } from '../../../src/interfaces/lib/ISudoVotes.sol';
+import { BranchConfigs } from '../types/BranchConfigs.sol';
 import { BranchProxyT } from '../types/BranchProxyT.sol';
 import { HubConfigs } from '../types/HubConfigs.sol';
 import { HubProxyT } from '../types/HubProxyT.sol';
 
 contract Linker is Test {
-  function linkHub(
-    address owner,
-    address admin,
-    address govAdmin,
-    HubProxyT.Chain memory hub,
-    HubConfigs.DeployConfig memory config
-  ) internal {
+  function linkHub(address owner, address govAdmin, HubProxyT.Chain memory hub, HubConfigs.DeployConfig memory config)
+    internal
+  {
     address govMITOStaking = address(hub.validator.stakings[1].staking);
 
     // ======= LINK CONTRACT EACH OTHER ======= //
     vm.deal(owner, config.govMITOEmission.total);
-    vm.startBroadcast(owner);
+    vm.startPrank(owner);
 
-    hub.govMITO.setMinter(address(hub.govMITOEmission));
+    hub.core.assetManager.setReclaimQueue(address(hub.reclaimQueue));
 
     hub.govMITO.setModule(govMITOStaking, true);
+    hub.govMITO.setMinter(address(hub.govMITOEmission));
     hub.govMITO.setWhitelistedSender(address(hub.govMITOEmission), true);
 
     hub.govMITOEmission.addValidatorRewardEmission{ value: config.govMITOEmission.total }();
     hub.govMITOEmission.setValidatorRewardRecipient(address(hub.validator.rewardDistributor));
 
-    hub.govMITOEmission.grantRole(hub.govMITOEmission.VALIDATOR_REWARD_MANAGER_ROLE(), admin);
+    hub.govMITOEmission.grantRole(hub.govMITOEmission.VALIDATOR_REWARD_MANAGER_ROLE(), owner);
 
     hub.consensusLayer.governanceEntrypoint.setPermittedCaller(address(hub.governance.mitoTimelock), true);
 
@@ -53,6 +51,31 @@ contract Linker is Test {
     hub.governance.mitoTimelock.grantRole(hub.governance.mitoTimelock.EXECUTOR_ROLE(), address(hub.governance.mito));
     hub.governance.mitoTimelock.grantRole(hub.governance.mitoTimelock.EXECUTOR_ROLE(), govAdmin);
 
-    vm.stopBroadcast();
+    vm.stopPrank();
+  }
+
+  function linkBranch(
+    address owner,
+    address govAdmin,
+    BranchProxyT.Chain memory branch,
+    BranchConfigs.DeployConfig memory // config
+  ) internal {
+    vm.startPrank(owner);
+
+    branch.mitosisVault.setEntrypoint(address(branch.mitosisVaultEntrypoint));
+
+    {
+      bytes32 proposerRole = branch.governance.timelock.PROPOSER_ROLE();
+      bytes32 executorRole = branch.governance.timelock.EXECUTOR_ROLE();
+      address entrypoint = address(branch.governance.entrypoint);
+
+      branch.governance.timelock.grantRole(proposerRole, entrypoint);
+      branch.governance.timelock.grantRole(proposerRole, govAdmin);
+
+      branch.governance.timelock.grantRole(executorRole, entrypoint);
+      branch.governance.timelock.grantRole(executorRole, govAdmin);
+    }
+
+    vm.stopPrank();
   }
 }
