@@ -29,8 +29,7 @@ contract GovernanceEntrypoint is IGovernanceEntrypoint, GasRouter, UUPSUpgradeab
   }
 
   function initialize(address owner_, address hook, address ism) public initializer {
-    _MailboxClient_initialize(hook, ism, _msgSender());
-    _transferOwnership(owner_);
+    _MailboxClient_initialize(hook, ism, owner_);
 
     __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
