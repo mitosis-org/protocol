@@ -47,7 +47,8 @@ contract BranchGovernanceEntrypoint is
   function initialize(address owner_, address[] memory managers, address hook, address ism) public initializer {
     __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
-    _MailboxClient_initialize(hook, ism, owner_);
+    _MailboxClient_initialize(hook, ism, _msgSender());
+    _transferOwnership(owner_);
 
     for (uint256 i = 0; i < managers.length; i++) {
       _grantRole(MANAGER_ROLE, managers[i]);
