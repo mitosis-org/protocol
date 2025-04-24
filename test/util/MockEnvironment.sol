@@ -49,6 +49,7 @@ contract Linker is Test {
         branch.domain,
         branch.name,
         branch.domain,
+        address(branch.proxy.mitosisVault),
         address(branch.proxy.mitosisVaultEntrypoint),
         address(branch.proxy.governance.entrypoint)
       );
