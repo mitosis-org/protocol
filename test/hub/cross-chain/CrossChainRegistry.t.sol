@@ -8,6 +8,7 @@ import { Vm } from '@std/Vm.sol';
 import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
 import { CrossChainRegistry } from '../../../src/hub/cross-chain/CrossChainRegistry.sol';
+import { ICrossChainRegistry } from '../../../src/interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 
 contract CrossChainRegistryTest is Test {
   CrossChainRegistry ccRegistry;
@@ -38,6 +39,10 @@ contract CrossChainRegistryTest is Test {
     ccRegistry.transferOwnership(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496);
 
     ccRegistry.acceptOwnership();
+    vm.expectEmit();
+    emit ICrossChainRegistry.ChainSet(
+      chainID, hplDomain, mitosisVault, mitosisVaultEntrypoint, governanceEntrypoint, name
+    );
     ccRegistry.setChain(chainID, name, hplDomain, mitosisVault, mitosisVaultEntrypoint, governanceEntrypoint);
   }
 
@@ -50,6 +55,10 @@ contract CrossChainRegistryTest is Test {
     address governanceEntrypoint = makeAddr('governanceEntrypoint');
 
     vm.startPrank(owner);
+    vm.expectEmit();
+    emit ICrossChainRegistry.ChainSet(
+      chainID, hplDomain, mitosisVault, mitosisVaultEntrypoint, governanceEntrypoint, name
+    );
     ccRegistry.setChain(chainID, name, hplDomain, mitosisVault, mitosisVaultEntrypoint, governanceEntrypoint);
 
     vm.expectRevert(); // 'already registered chain'

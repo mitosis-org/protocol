@@ -101,7 +101,7 @@ contract CrossChainRegistry is
     $.chains[chainId_].governanceEntrypoint = governanceEntrypoint_;
     $.hyperlanes[hplDomain].chainId = chainId_;
 
-    emit ChainSet(chainId_, hplDomain, mitosisVaultEntrypoint_, governanceEntrypoint_, name);
+    emit ChainSet(chainId_, hplDomain, mitosisVault_, mitosisVaultEntrypoint_, governanceEntrypoint_, name);
   }
 
   function enrollMitosisVaultEntrypoint(address hplRouter) external onlyOwner {

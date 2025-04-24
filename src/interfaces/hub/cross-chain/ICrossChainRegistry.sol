@@ -10,6 +10,7 @@ interface ICrossChainRegistry {
    * @notice Emitted when a new chain is registered or updated.
    * @param chainId The ID of the chain being set.
    * @param hplDomain The Hyperlane domain associated with the chain.
+   * @param mitosisVault The address of the MitosisVault contract for the chain.
    * @param mitosisVaultEntrypoint The address of the MitosisVaultEntrypoint contract for the chain.
    * @param governanceEntrypoint The address of the GovernanceEntrypoint contract for the chain.
    * @param name The name of the chain.
@@ -17,6 +18,7 @@ interface ICrossChainRegistry {
   event ChainSet(
     uint256 indexed chainId,
     uint32 indexed hplDomain,
+    address mitosisVault,
     address mitosisVaultEntrypoint,
     address governanceEntrypoint,
     string name
