@@ -34,7 +34,12 @@ struct Branch {
 }
 
 contract Linker is Test {
-  function link(address hubOwner, address branchOwner, Hub memory hub, Branch[] memory branches) internal {
+  function link(address hubOwner, address, Hub memory hub, Branch[] memory branches) internal {
+    for (uint256 i = 0; i < branches.length; i++) {
+      Branch memory branch = branches[i];
+      hub.mailbox.addRemoteMailbox(branch.domain, branch.mailbox);
+    }
+
     vm.startPrank(hubOwner);
 
     for (uint256 i = 0; i < branches.length; i++) {
@@ -125,13 +130,13 @@ contract Linker is Test {
   }
 }
 
-abstract contract Environment is Linker, HubDeployer, BranchDeployer {
+abstract contract MockEnvironment is Linker, HubDeployer, BranchDeployer {
   using HubProxyT for HubProxyT.Chain;
   using HubImplT for HubImplT.Chain;
   using BranchProxyT for BranchProxyT.Chain;
   using BranchImplT for BranchImplT.Chain;
 
-  struct EnvironmentT {
+  struct MockEnv {
     Hub hub;
     Branch[] branches;
   }
@@ -142,10 +147,7 @@ abstract contract Environment is Linker, HubDeployer, BranchDeployer {
     return 'v1';
   }
 
-  function setUpEnv(address owner, address govAdmin, string[] memory branchNames)
-    internal
-    returns (EnvironmentT memory env)
-  {
+  function setUpEnv(address owner, address govAdmin, string[] memory branchNames) internal returns (MockEnv memory env) {
     // deploy all
     env.hub = _deployHub(owner, govAdmin);
     env.branches = new Branch[](branchNames.length);
@@ -160,18 +162,10 @@ abstract contract Environment is Linker, HubDeployer, BranchDeployer {
       );
     }
 
-    // link mailboxes to each other
-    MockMailbox[] memory mailboxes = _mailboxes(env);
-
-    for (uint256 i = 0; i < mailboxes.length; i++) {
-      for (uint256 j = i + 1; j < mailboxes.length; j++) {
-        mailboxes[i].addRemoteMailbox(mailboxes[j].localDomain(), mailboxes[j]);
-        mailboxes[j].addRemoteMailbox(mailboxes[i].localDomain(), mailboxes[i]);
-      }
-    }
+    link(owner, govAdmin, env.hub, env.branches);
   }
 
-  function backUpEnv(EnvironmentT memory env) internal {
+  function backUpEnv(MockEnv memory env) internal {
     for (uint256 i = 0; i < env.branches.length; i++) {
       env.branches[i].impl.write(BranchImplT.stdPath(env.branches[i].name));
       env.branches[i].proxy.write(BranchProxyT.stdPath(env.branches[i].name));
@@ -225,7 +219,7 @@ abstract contract Environment is Linker, HubDeployer, BranchDeployer {
     linkBranch(owner, govAdmin, branch.proxy, config);
   }
 
-  function _mailboxes(EnvironmentT memory env) private pure returns (MockMailbox[] memory) {
+  function _mailboxes(MockEnv memory env) private pure returns (MockMailbox[] memory) {
     MockMailbox[] memory mailboxes = new MockMailbox[](env.branches.length + 1);
     mailboxes[0] = env.hub.mailbox;
     for (uint256 i = 0; i < env.branches.length; i++) {
