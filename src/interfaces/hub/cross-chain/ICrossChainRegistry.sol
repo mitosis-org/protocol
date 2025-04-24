@@ -10,6 +10,7 @@ interface ICrossChainRegistry {
    * @notice Emitted when a new chain is registered or updated.
    * @param chainId The ID of the chain being set.
    * @param hplDomain The Hyperlane domain associated with the chain.
+   * @param mitosisVault The address of the MitosisVault contract for the chain.
    * @param mitosisVaultEntrypoint The address of the MitosisVaultEntrypoint contract for the chain.
    * @param governanceEntrypoint The address of the GovernanceEntrypoint contract for the chain.
    * @param name The name of the chain.
@@ -17,17 +18,11 @@ interface ICrossChainRegistry {
   event ChainSet(
     uint256 indexed chainId,
     uint32 indexed hplDomain,
+    address mitosisVault,
     address mitosisVaultEntrypoint,
     address governanceEntrypoint,
     string name
   );
-
-  /**
-   * @notice Emitted when a vault is set for a chain.
-   * @param chainId The ID of the chain.
-   * @param vault The address of the vault set for the chain.
-   */
-  event VaultSet(uint256 indexed chainId, address indexed vault);
 
   /**
    * @notice Error thrown when attempting to register a chain that is not registered.
@@ -124,6 +119,7 @@ interface ICrossChainRegistry {
    * @param chainId_ The ID of the chain.
    * @param name The name of the chain.
    * @param hplDomain The Hyperlane domain associated with the chain.
+   * @param mitosisVault_ The address of the MitosisVault for the chain.
    * @param mitosisVaultEntrypoint_ The address of the MitosisVaultEntrypoint for the chain.
    * @param governanceEntrypoint_ The address of the GovernanceEntrypoint for the chain.
    */
@@ -131,16 +127,10 @@ interface ICrossChainRegistry {
     uint256 chainId_,
     string calldata name,
     uint32 hplDomain,
+    address mitosisVault_,
     address mitosisVaultEntrypoint_,
     address governanceEntrypoint_
   ) external;
-
-  /**
-   * @notice Sets the vault for a specified chain.
-   * @param chainId_ The ID of the chain.
-   * @param vault_ The address of the vault to be set.
-   */
-  function setVault(uint256 chainId_, address vault_) external;
 
   /**
    * @notice Enrolls the MitosisVaultEntrypoint for all registered chains.

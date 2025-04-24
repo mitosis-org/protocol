@@ -81,6 +81,7 @@ contract CrossChainRegistry is
     uint256 chainId_,
     string calldata name,
     uint32 hplDomain,
+    address mitosisVault_,
     address mitosisVaultEntrypoint_,
     address governanceEntrypoint_
   ) external onlyOwner {
@@ -95,21 +96,12 @@ contract CrossChainRegistry is
     $.hplDomains.push(hplDomain);
     $.chains[chainId_].name = name;
     $.chains[chainId_].hplDomain = hplDomain;
+    $.chains[chainId_].mitosisVault = mitosisVault_;
     $.chains[chainId_].mitosisVaultEntrypoint = mitosisVaultEntrypoint_;
     $.chains[chainId_].governanceEntrypoint = governanceEntrypoint_;
     $.hyperlanes[hplDomain].chainId = chainId_;
 
-    emit ChainSet(chainId_, hplDomain, mitosisVaultEntrypoint_, governanceEntrypoint_, name);
-  }
-
-  function setVault(uint256 chainId_, address vault_) external onlyOwner {
-    ChainInfo storage chainInfo = _getStorageV1().chains[chainId_];
-
-    require(_isRegisteredChain(chainInfo), ICrossChainRegistry.ICrossChainRegistry__NotRegistered());
-    require(!_isRegisteredVault(chainInfo), ICrossChainRegistry.ICrossChainRegistry__AlreadyRegistered());
-
-    chainInfo.mitosisVault = vault_;
-    emit VaultSet(chainId_, vault_);
+    emit ChainSet(chainId_, hplDomain, mitosisVault_, mitosisVaultEntrypoint_, governanceEntrypoint_, name);
   }
 
   function enrollMitosisVaultEntrypoint(address hplRouter) external onlyOwner {
@@ -146,10 +138,6 @@ contract CrossChainRegistry is
 
   function _isRegisteredChain(ChainInfo storage chainInfo) internal view returns (bool) {
     return bytes(chainInfo.name).length > 0;
-  }
-
-  function _isRegisteredVault(ChainInfo storage chainInfo) internal view returns (bool) {
-    return chainInfo.mitosisVault != address(0);
   }
 
   function _isMitosisVaultEntrypointEnrolled(ChainInfo storage chainInfo) internal view returns (bool) {
