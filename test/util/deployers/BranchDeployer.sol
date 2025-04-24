@@ -103,6 +103,25 @@ abstract contract BranchDeployer is AbstractDeployer {
     return (impl, Timelock(proxy));
   }
 
+  function _dpbGovernanceEntrypoint(
+    address owner_,
+    address mailbox,
+    Timelock timelock,
+    uint32 mitosisDomain,
+    bytes32 mitosisAddr
+  ) private returns (address, GovernanceEntrypoint) {
+    (address impl, address payable proxy) = deployImplAndProxy(
+      branchChainName,
+      '.governance.entrypoint',
+      abi.encodePacked(
+        type(GovernanceEntrypoint).creationCode, //
+        abi.encode(mailbox, timelock, mitosisDomain, mitosisAddr)
+      ),
+      abi.encodeCall(GovernanceEntrypoint.initialize, (owner_, address(0), address(0)))
+    );
+    return (impl, GovernanceEntrypoint(proxy));
+  }
+
   function _dpbMitosisVault(address owner_) internal returns (address, MitosisVault) {
     (address impl, address payable proxy) = deployImplAndProxy(
       branchChainName,
@@ -130,25 +149,6 @@ abstract contract BranchDeployer is AbstractDeployer {
       abi.encodeCall(MitosisVaultEntrypoint.initialize, (owner_, address(0), address(0)))
     );
     return (impl, MitosisVaultEntrypoint(proxy));
-  }
-
-  function _dpbGovernanceEntrypoint(
-    address owner_,
-    address mailbox,
-    Timelock timelock,
-    uint32 mitosisDomain,
-    bytes32 mitosisAddr
-  ) private returns (address, GovernanceEntrypoint) {
-    (address impl, address payable proxy) = deployImplAndProxy(
-      branchChainName,
-      '.governance-entrypoint',
-      abi.encodePacked(
-        type(GovernanceEntrypoint).creationCode, //
-        abi.encode(mailbox, timelock, mitosisDomain, mitosisAddr)
-      ),
-      abi.encodeCall(GovernanceEntrypoint.initialize, (owner_, address(0), address(0)))
-    );
-    return (impl, GovernanceEntrypoint(proxy));
   }
 
   function _dpbMatrixStrategyExecutorFactory(address owner_, address matrixStrategyExecutor)
