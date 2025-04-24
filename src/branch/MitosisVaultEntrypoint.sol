@@ -44,7 +44,6 @@ contract MitosisVaultEntrypoint is
 
   function initialize(address owner_, address hook, address ism) public initializer {
     _MailboxClient_initialize(hook, ism, owner_);
-
     __Ownable2Step_init();
     __UUPSUpgradeable_init();
 
