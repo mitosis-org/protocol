@@ -16,7 +16,8 @@ library BranchImplT {
   Vm private constant vm = Vm(VM_ADDRESS);
 
   struct Governance {
-    address governanceEntrypoint;
+    address timelock;
+    address entrypoint;
   }
 
   struct StrategyManager {
@@ -60,7 +61,8 @@ library BranchImplT {
 
   function encode(Governance memory v) internal returns (string memory o) {
     string memory k = vm.randomBytes(32).toHexString();
-    o = k.serialize('governanceEntrypoint', v.governanceEntrypoint);
+    o = k.serialize('timelock', v.timelock);
+    o = k.serialize('entrypoint', v.entrypoint);
   }
 
   function encode(StrategyManager memory v) internal returns (string memory o) {
@@ -86,7 +88,8 @@ library BranchImplT {
   // --- Decode Functions ---
 
   function decodeGovernance(string memory v, string memory base) internal pure returns (Governance memory o) {
-    o.governanceEntrypoint = v.readAddress(cat(base, '.governanceEntrypoint'));
+    o.timelock = v.readAddress(cat(base, '.timelock'));
+    o.entrypoint = v.readAddress(cat(base, '.entrypoint'));
   }
 
   function decodeStrategyManager(string memory v, string memory base) internal pure returns (StrategyManager memory o) {

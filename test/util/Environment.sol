@@ -13,6 +13,7 @@ import { HubImplT } from '../util/types/HubImplT.sol';
 import { HubProxyT } from '../util/types/HubProxyT.sol';
 import { BranchDeployer } from './deployers/BranchDeployer.sol';
 import { HubDeployer } from './deployers/HubDeployer.sol';
+import { Linker } from './deployers/Linker.sol';
 import './Functions.sol';
 
 struct Hub {
@@ -30,7 +31,7 @@ struct Branch {
   BranchProxyT.Chain proxy;
 }
 
-abstract contract Environment is HubDeployer, BranchDeployer {
+abstract contract Environment is Linker, HubDeployer, BranchDeployer {
   using HubProxyT for HubProxyT.Chain;
   using HubImplT for HubImplT.Chain;
   using BranchProxyT for BranchProxyT.Chain;
@@ -47,9 +48,12 @@ abstract contract Environment is HubDeployer, BranchDeployer {
     return 'v1';
   }
 
-  function setUpEnv(address owner, string[] memory branchNames) internal returns (EnvironmentT memory env) {
+  function setUpEnv(address owner, address admin, address govAdmin, string[] memory branchNames)
+    internal
+    returns (EnvironmentT memory env)
+  {
     // deploy all
-    env.hub = _deployHub(owner);
+    env.hub = _deployHub(owner, admin, govAdmin);
     env.branches = new Branch[](branchNames.length);
     for (uint256 i = 0; i < branchNames.length; i++) {
       env.branches[i] = _deployBranch(
@@ -93,13 +97,12 @@ abstract contract Environment is HubDeployer, BranchDeployer {
     return (domain, mailbox);
   }
 
-  function _deployHub(address owner) private returns (Hub memory hub) {
+  function _deployHub(address owner, address admin, address govAdmin) private returns (Hub memory hub) {
+    HubConfigs.DeployConfig memory config = HubConfigs.read(_deployConfigPath('hub'));
     (hub.domain, hub.mailbox) = _setUpMailbox();
-    (hub.impl, hub.proxy) = deployHub(
-      address(hub.mailbox), //
-      owner,
-      HubConfigs.read(_deployConfigPath('hub'))
-    );
+    (hub.impl, hub.proxy) = deployHub(address(hub.mailbox), owner, config);
+
+    linkHub(owner, admin, govAdmin, hub.proxy, config);
   }
 
   function _deployBranch(

@@ -44,6 +44,7 @@ library HubImplT {
     address branchEntrypoint;
     address mito;
     address mitoVP;
+    address mitoTimelock;
   }
 
   struct Reward {
@@ -131,6 +132,7 @@ library HubImplT {
     o = k.serialize('branchEntrypoint', v.branchEntrypoint);
     o = k.serialize('mito', v.mito);
     o = k.serialize('mitoVP', v.mitoVP);
+    o = k.serialize('mitoTimelock', v.mitoTimelock);
   }
 
   function encode(Reward memory v) internal returns (string memory o) {
@@ -192,6 +194,7 @@ library HubImplT {
     o.branchEntrypoint = v.readAddress(cat(base, '.branchEntrypoint'));
     o.mito = v.readAddress(cat(base, '.mito'));
     o.mitoVP = v.readAddress(cat(base, '.mitoVP'));
+    o.mitoTimelock = v.readAddress(cat(base, '.mitoTimelock'));
   }
 
   function decodeReward(string memory v, string memory base) internal pure returns (Reward memory o) {

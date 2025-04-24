@@ -36,6 +36,7 @@ import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
 import { IEOLVault } from '../../../src/interfaces/hub/eol/IEOLVault.sol';
 import { IMatrixVault } from '../../../src/interfaces/hub/matrix/IMatrixVault.sol';
 import { IValidatorStaking } from '../../../src/interfaces/hub/validator/IValidatorStaking.sol';
+import { Timelock } from '../../../src/lib/Timelock.sol';
 import '../Functions.sol';
 
 library HubProxyT {
@@ -104,6 +105,7 @@ library HubProxyT {
     BranchGovernanceEntrypoint branchEntrypoint;
     MITOGovernance mito;
     MITOGovernanceVP mitoVP;
+    Timelock mitoTimelock;
   }
 
   struct Reward {
@@ -221,6 +223,7 @@ library HubProxyT {
     o = k.serialize('branchEntrypoint', address(v.branchEntrypoint));
     o = k.serialize('mito', address(v.mito));
     o = k.serialize('mitoVP', address(v.mitoVP));
+    o = k.serialize('mitoTimelock', address(v.mitoTimelock));
   }
 
   function encode(Reward memory v) internal returns (string memory o) {

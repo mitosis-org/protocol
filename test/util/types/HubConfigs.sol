@@ -45,6 +45,7 @@ library HubConfigs {
 
   struct GovMITOEmissionConfig {
     IGovMITOEmission.ValidatorRewardConfig rewardConfig;
+    uint256 total;
   }
 
   struct MITOGovernanceConfig {
@@ -190,6 +191,7 @@ library HubConfigs {
   function encode(GovMITOEmissionConfig memory v) internal returns (string memory o) {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('rewardConfig', encode(v.rewardConfig));
+    o = k.serialize('total', v.total);
   }
 
   function encode(MITOGovernanceConfig memory v) internal returns (string memory o) {
@@ -318,6 +320,7 @@ library HubConfigs {
     returns (GovMITOEmissionConfig memory o)
   {
     o.rewardConfig = decodeValidatorRewardConfig(v, cat(base, '.rewardConfig'));
+    o.total = v.readUint(cat(base, '.total'));
   }
 
   function decodeMITOGovernanceConfig(string memory v, string memory base)

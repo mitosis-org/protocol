@@ -267,12 +267,19 @@ abstract contract HubDeployer is AbstractDeployer {
     // ----- Governance Contracts -----
     //====================================================================================//
 
-    Timelock timelock = _dphTimelock(owner_, config.timelock);
+    (
+      impl.governance.mitoTimelock, //
+      proxy.governance.mitoTimelock
+    ) = _dphTimelock(owner_, config.timelock);
 
     (
       impl.governance.mito, //
       proxy.governance.mito
-    ) = _dphMITOGovernance(address(proxy.governance.mitoVP), timelock, config.mitoGovernance);
+    ) = _dphMITOGovernance(
+      address(proxy.governance.mitoVP), //
+      proxy.governance.mitoTimelock,
+      config.mitoGovernance
+    );
 
     (
       impl.governance.branchEntrypoint, //
@@ -501,7 +508,7 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, ValidatorRewardDistributor(proxy));
   }
 
-  function _dphValidatorStakingHub(address validatorEntrypoint, address owner)
+  function _dphValidatorStakingHub(address owner, address validatorEntrypoint)
     private
     returns (address, ValidatorStakingHub)
   {
@@ -558,14 +565,14 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, MITOGovernanceVP(proxy));
   }
 
-  function _dphTimelock(address owner, HubConfigs.TimelockConfig memory config) private returns (Timelock) {
-    (, address payable proxy) = deployImplAndProxy(
+  function _dphTimelock(address owner, HubConfigs.TimelockConfig memory config) private returns (address, Timelock) {
+    (address impl, address payable proxy) = deployImplAndProxy(
       'hub',
       '.governance.timelock', //
       type(Timelock).creationCode,
       abi.encodeCall(Timelock.initialize, (config.minDelay, config.proposers, config.executors, owner))
     );
-    return Timelock(proxy);
+    return (impl, Timelock(proxy));
   }
 
   function _dphMITOGovernance(address mitoVP, Timelock timelock, HubConfigs.MITOGovernanceConfig memory config)

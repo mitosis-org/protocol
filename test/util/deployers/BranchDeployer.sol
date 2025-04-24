@@ -3,8 +3,6 @@ pragma solidity ^0.8.28;
 
 import { console } from '@std/console.sol';
 
-import { IMatrixStrategyExecutor } from '../../../src/interfaces/branch/strategy/IMatrixStrategyExecutor.sol';
-import { IMitosisVault } from '../../../src/interfaces/branch/IMitosisVault.sol';
 import { GovernanceEntrypoint } from '../../../src/branch/governance/GovernanceEntrypoint.sol';
 import { MitosisVault } from '../../../src/branch/MitosisVault.sol';
 import { MitosisVaultEntrypoint } from '../../../src/branch/MitosisVaultEntrypoint.sol';
@@ -16,8 +14,9 @@ import { ManagerWithMerkleVerification } from '../../../src/branch/strategy/mana
 import { MatrixStrategyExecutor } from '../../../src/branch/strategy/MatrixStrategyExecutor.sol';
 import { MatrixStrategyExecutorFactory } from '../../../src/branch/strategy/MatrixStrategyExecutorFactory.sol';
 import { TheoTally } from '../../../src/branch/strategy/tally/TheoTally.sol';
+import { IMitosisVault } from '../../../src/interfaces/branch/IMitosisVault.sol';
+import { IMatrixStrategyExecutor } from '../../../src/interfaces/branch/strategy/IMatrixStrategyExecutor.sol';
 import { Timelock } from '../../../src/lib/Timelock.sol';
-
 import '../Functions.sol';
 import { BranchConfigs } from '../types/BranchConfigs.sol';
 import { BranchImplT } from '../types/BranchImplT.sol';
@@ -52,11 +51,15 @@ abstract contract BranchDeployer is AbstractDeployer {
       proxy.mitosisVaultEntrypoint
     ) = _dpbMitosisVaultEntrypoint(owner, mailbox, proxy.mitosisVault, hubDomain, hubMitosisVaultEntrypointAddress);
 
-    Timelock timelock = _dphTimelock(owner, config.timelock);
     (
-      impl.governance.governanceEntrypoint, //
-      proxy.governance.governanceEntrypoint
-    ) = _dpbGovernanceEntrypoint(owner, mailbox, timelock, hubDomain, hubGovernanceEntrypointAddress);
+      impl.governance.timelock, //
+      proxy.governance.timelock
+    ) = _dphTimelock(owner, config.timelock);
+
+    (
+      impl.governance.entrypoint, //
+      proxy.governance.entrypoint
+    ) = _dpbGovernanceEntrypoint(owner, mailbox, proxy.governance.timelock, hubDomain, hubGovernanceEntrypointAddress);
 
     impl.strategy.executor = deploy(
       _urlBI('.matrix.strategy-executor'), //
@@ -90,14 +93,14 @@ abstract contract BranchDeployer is AbstractDeployer {
   // ----- Deployment Helpers ----- (dpb = deployBranch to avoid function conflicts)
   // =================================================================================== //
 
-  function _dphTimelock(address owner, BranchConfigs.TimelockConfig memory config) private returns (Timelock) {
-    (, address payable proxy) = deployImplAndProxy(
+  function _dphTimelock(address owner, BranchConfigs.TimelockConfig memory config) private returns (address, Timelock) {
+    (address impl, address payable proxy) = deployImplAndProxy(
       branchChainName,
       '.governance.timelock', //
       type(Timelock).creationCode,
       abi.encodeCall(Timelock.initialize, (config.minDelay, config.proposers, config.executors, owner))
     );
-    return Timelock(proxy);
+    return (impl, Timelock(proxy));
   }
 
   function _dpbMitosisVault(address owner_) internal returns (address, MitosisVault) {

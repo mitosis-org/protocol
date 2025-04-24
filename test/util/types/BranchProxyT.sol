@@ -17,6 +17,7 @@ import { ManagerWithMerkleVerification } from '../../../src/branch/strategy/mana
 import { MatrixStrategyExecutor } from '../../../src/branch/strategy/MatrixStrategyExecutor.sol';
 import { MatrixStrategyExecutorFactory } from '../../../src/branch/strategy/MatrixStrategyExecutorFactory.sol';
 import { TheoTally } from '../../../src/branch/strategy/tally/TheoTally.sol';
+import { Timelock } from '../../../src/lib/Timelock.sol';
 import '../Functions.sol';
 
 library BranchProxyT {
@@ -35,7 +36,8 @@ library BranchProxyT {
   }
 
   struct Governance {
-    GovernanceEntrypoint governanceEntrypoint;
+    Timelock timelock;
+    GovernanceEntrypoint entrypoint;
   }
 
   struct StrategyDecoderAndSanitizer {
@@ -92,7 +94,8 @@ library BranchProxyT {
 
   function encode(Governance memory v) internal returns (string memory o) {
     string memory k = vm.randomBytes(32).toHexString();
-    o = k.serialize('governanceEntrypoint', address(v.governanceEntrypoint));
+    o = k.serialize('timelock', address(v.timelock));
+    o = k.serialize('entrypoint', address(v.entrypoint));
   }
 
   function encode(StrategyDecoderAndSanitizer memory v) internal returns (string memory o) {
@@ -125,7 +128,8 @@ library BranchProxyT {
   // --- Decode Functions ---
 
   function decodeGovernance(string memory v, string memory base) internal pure returns (Governance memory o) {
-    o.governanceEntrypoint = GovernanceEntrypoint(_r(v, cat(base, '.governanceEntrypoint')));
+    o.timelock = Timelock(_r(v, cat(base, '.timelock')));
+    o.entrypoint = GovernanceEntrypoint(_r(v, cat(base, '.entrypoint')));
   }
 
   function decodeStrategyDecoderAndSanitizer(string memory v, string memory base)

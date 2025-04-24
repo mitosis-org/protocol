@@ -16,7 +16,8 @@
       "renewalPeriod": 86400,
       "rps": 50000000000,
       "startsFrom": 1745218800
-    }
+    },
+    "total": 10000000000000000000
   },
   "govMITOStakingConfig": {
     "minStakingAmount": 100000000000000000,
