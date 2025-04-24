@@ -3,7 +3,6 @@ cache/
 out/*
 !out/script/
 dist/
-types/
 
 # Ignores development broadcast logs
 broadcast/
@@ -80,3 +79,6 @@ abis
 ./TemporaryLeafs.json
 
 bindings
+
+test/testdata/*.impl.json
+test/testdata/*.proxy.json
