@@ -23,13 +23,6 @@ interface ICrossChainRegistry {
   );
 
   /**
-   * @notice Emitted when a vault is set for a chain.
-   * @param chainId The ID of the chain.
-   * @param vault The address of the vault set for the chain.
-   */
-  event VaultSet(uint256 indexed chainId, address indexed vault);
-
-  /**
    * @notice Error thrown when attempting to register a chain that is not registered.
    */
   error ICrossChainRegistry__NotRegistered();
@@ -134,13 +127,6 @@ interface ICrossChainRegistry {
     address mitosisVaultEntrypoint_,
     address governanceEntrypoint_
   ) external;
-
-  /**
-   * @notice Sets the vault for a specified chain.
-   * @param chainId_ The ID of the chain.
-   * @param vault_ The address of the vault to be set.
-   */
-  function setVault(uint256 chainId_, address vault_) external;
 
   /**
    * @notice Enrolls the MitosisVaultEntrypoint for all registered chains.
