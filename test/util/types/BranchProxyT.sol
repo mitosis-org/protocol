@@ -48,13 +48,8 @@ library BranchProxyT {
     ManagerWithMerkleVerification withMerkleVerification;
   }
 
-  struct StrategyTally {
-    TheoTally theo;
-  }
-
   struct Strategy {
     StrategyManager manager;
-    StrategyTally tally;
     MatrixStrategyExecutorInfo[] executors;
     MatrixStrategyExecutorFactory executorFactory;
   }
@@ -112,15 +107,9 @@ library BranchProxyT {
     o = k.serialize('withMerkleVerification', address(v.withMerkleVerification));
   }
 
-  function encode(StrategyTally memory v) internal returns (string memory o) {
-    string memory k = vm.randomBytes(32).toHexString();
-    o = k.serialize('theo', address(v.theo));
-  }
-
   function encode(Strategy memory v) internal returns (string memory o) {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('manager', encode(v.manager));
-    o = k.serialize('tally', encode(v.tally));
     o = k.serialize('executors', extract(v.executors));
     o = k.serialize('executorFactory', address(v.executorFactory));
   }
@@ -153,10 +142,6 @@ library BranchProxyT {
     o.das = decodeStrategyDecoderAndSanitizer(v, cat(base, '.das'));
   }
 
-  function decodeStrategyTally(string memory v, string memory base) internal pure returns (StrategyTally memory o) {
-    o.theo = TheoTally(_r(v, cat(base, '.theo')));
-  }
-
   function decodeMatrixStrategyExecutors(string memory v, string memory path)
     internal
     view
@@ -180,7 +165,6 @@ library BranchProxyT {
 
   function decodeStrategy(string memory v, string memory base) internal view returns (Strategy memory o) {
     o.manager = decodeStrategyManager(v, cat(base, '.manager'));
-    o.tally = decodeStrategyTally(v, cat(base, '.tally'));
     o.executors = decodeMatrixStrategyExecutors(v, cat(base, '.executors'));
     o.executorFactory = MatrixStrategyExecutorFactory(_r(v, cat(base, '.executorFactory')));
   }

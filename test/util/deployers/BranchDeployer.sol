@@ -84,12 +84,6 @@ abstract contract BranchDeployer is AbstractDeployer {
         type(TheoDepositVaultDecoderAndSanitizer).creationCode
       )
     );
-    proxy.strategy.tally.theo = TheoTally(
-      deploy(
-        _urlBP('.matrix.strategy.tally.theo'), //
-        abi.encodePacked(type(TheoTally).creationCode, (config.tally.theoDepositVault))
-      )
-    );
   }
 
   // =================================================================================== //

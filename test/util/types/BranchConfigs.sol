@@ -24,13 +24,8 @@ library BranchConfigs {
     address[] executors;
   }
 
-  struct TallyConfig {
-    address theoDepositVault;
-  }
-
   struct DeployConfig {
     TimelockConfig timelock;
-    TallyConfig tally;
   }
 
   // =================================================================================== //
@@ -53,6 +48,8 @@ library BranchConfigs {
   // ----- Codec Helpers -----
   // =================================================================================== //
 
+  // ----- Encoder ----- //
+
   function encode(TimelockConfig memory v) internal returns (string memory o) {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('minDelay', v.minDelay);
@@ -60,16 +57,12 @@ library BranchConfigs {
     o = o.serialize('executors', v.executors);
   }
 
-  function encode(TallyConfig memory v) internal returns (string memory o) {
-    string memory k = vm.randomBytes(32).toHexString();
-    o = k.serialize('theoDepositVault', v.theoDepositVault);
-  }
-
   function encode(DeployConfig memory v) internal returns (string memory o) {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('timelock', encode(v.timelock));
-    o = o.serialize('tally', encode(v.tally));
   }
+
+  // ----- Decoder ----- //
 
   function decodeTimelockConfig(string memory v, string memory base) internal pure returns (TimelockConfig memory o) {
     o.minDelay = v.readUint(cat(base, '.minDelay'));
@@ -77,12 +70,7 @@ library BranchConfigs {
     o.executors = v.readAddressArray(cat(base, '.executors'));
   }
 
-  function decodeTallyConfig(string memory v, string memory base) internal pure returns (TallyConfig memory o) {
-    o.theoDepositVault = v.readAddress(cat(base, '.theoDepositVault'));
-  }
-
   function decodeDeployConfig(string memory v) internal pure returns (DeployConfig memory o) {
     o.timelock = decodeTimelockConfig(v, '.timelock');
-    o.tally = decodeTallyConfig(v, '.tally');
   }
 }

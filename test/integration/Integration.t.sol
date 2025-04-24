@@ -16,8 +16,8 @@ contract IntegrationTest is Environment {
 
   function setUp() public override {
     super.setUp();
-    branchNames.push('branch-a');
-    branchNames.push('branch-b');
+    branchNames.push('a');
+    branchNames.push('b');
   }
 
   function test_init() public {

@@ -59,11 +59,11 @@ abstract contract AbstractDeployer is Test {
   }
 
   function _urlI(string memory chain, string memory name) internal pure returns (string memory) {
-    return cat('mitosis.test.', chain, '.impl.', name, cat('.', version()));
+    return cat('mitosis.test.', chain, '.impl', name, cat('.', version()));
   }
 
   function _urlP(string memory chain, string memory name) internal pure returns (string memory) {
-    return cat('mitosis.test.', chain, '.proxy.', name);
+    return cat('mitosis.test.', chain, '.proxy', name);
   }
 
   //===============================================================================================//

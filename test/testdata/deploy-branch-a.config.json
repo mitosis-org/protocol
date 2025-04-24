@@ -1,1 +1,7 @@
-{}
+{
+  "timelock": {
+    "executors": [],
+    "minDelay": 60,
+    "proposers": []
+  }
+}

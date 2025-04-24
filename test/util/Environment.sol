@@ -66,7 +66,6 @@ abstract contract Environment is HubDeployer, BranchDeployer {
 
     for (uint256 i = 0; i < mailboxes.length; i++) {
       for (uint256 j = i + 1; j < mailboxes.length; j++) {
-        if (i == j) continue;
         mailboxes[i].addRemoteMailbox(mailboxes[j].localDomain(), mailboxes[j]);
         mailboxes[j].addRemoteMailbox(mailboxes[i].localDomain(), mailboxes[i]);
       }
@@ -110,6 +109,7 @@ abstract contract Environment is HubDeployer, BranchDeployer {
     bytes32 hubMitosisVaultEntrypointAddress,
     bytes32 hubGovernanceEntrypointAddress
   ) private returns (Branch memory branch) {
+    branch.name = name;
     (branch.domain, branch.mailbox) = _setUpMailbox();
     (branch.impl, branch.proxy) = deployBranch(
       name, //
@@ -118,15 +118,15 @@ abstract contract Environment is HubDeployer, BranchDeployer {
       hubDomain,
       hubMitosisVaultEntrypointAddress,
       hubGovernanceEntrypointAddress,
-      BranchConfigs.read(_deployConfigPath(name))
+      BranchConfigs.read(_deployConfigPath(cat('branch-', name)))
     );
   }
 
   function _mailboxes(EnvironmentT memory env) private pure returns (MockMailbox[] memory) {
     MockMailbox[] memory mailboxes = new MockMailbox[](env.branches.length + 1);
     mailboxes[0] = env.hub.mailbox;
-    for (uint256 i = 1; i < env.branches.length; i++) {
-      mailboxes[i] = env.branches[i].mailbox;
+    for (uint256 i = 0; i < env.branches.length; i++) {
+      mailboxes[i + 1] = env.branches[i].mailbox;
     }
     return mailboxes;
   }
