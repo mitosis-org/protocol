@@ -20,6 +20,8 @@ abstract contract AbstractDeployer is Test {
   string private constant _IMPL_URL = 'mitosis.test.create3-deployer.impl';
   string private constant _PROXY_URL = 'mitosis.test.create3-deployer';
 
+  function version() internal pure virtual returns (string memory);
+
   function setUp() public virtual {
     bytes memory initData = abi.encodeCall(Create3Deployer.initialize, (CREATE3_ADMIN));
     address impl = address(new Create3Deployer{ salt: salt(_IMPL_URL) }());
@@ -45,7 +47,27 @@ abstract contract AbstractDeployer is Test {
     return payable(CREATE3.deployTransparentProxy(url, impl, admin, data));
   }
 
+  function deployImplAndProxy(
+    string memory chain,
+    string memory name,
+    bytes memory creationCode,
+    bytes memory initializeCallData
+  ) internal returns (address, address payable) {
+    address impl = deploy(_urlI(chain, name), creationCode);
+    address proxy = deployERC1967Proxy(_urlP(chain, name), impl, initializeCallData);
+    return (impl, payable(proxy));
+  }
+
+  function _urlI(string memory chain, string memory name) internal pure returns (string memory) {
+    return cat('mitosis.test.', chain, '.impl.', name, cat('.', version()));
+  }
+
+  function _urlP(string memory chain, string memory name) internal pure returns (string memory) {
+    return cat('mitosis.test.', chain, '.proxy.', name);
+  }
+
   //===============================================================================================//
+
   // ----- Printer Functions -----
   //===============================================================================================//
 

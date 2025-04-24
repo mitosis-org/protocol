@@ -25,8 +25,8 @@ library BranchImplT {
 
   struct Strategy {
     StrategyManager manager;
-    address matrixStrategyExecutor;
-    address matrixStrategyExecutorFactory;
+    address executor;
+    address executorFactory;
   }
 
   struct Chain {
@@ -71,8 +71,8 @@ library BranchImplT {
   function encode(Strategy memory v) internal returns (string memory o) {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('manager', encode(v.manager));
-    o = k.serialize('matrixStrategyExecutor', v.matrixStrategyExecutor);
-    o = k.serialize('matrixStrategyExecutorFactory', v.matrixStrategyExecutorFactory);
+    o = k.serialize('executor', v.executor);
+    o = k.serialize('executorFactory', v.executorFactory);
   }
 
   function encode(Chain memory v) internal returns (string memory o) {
@@ -95,8 +95,8 @@ library BranchImplT {
 
   function decodeStrategy(string memory v, string memory base) internal pure returns (Strategy memory o) {
     o.manager = decodeStrategyManager(v, cat(base, '.manager'));
-    o.matrixStrategyExecutor = v.readAddress(cat(base, '.matrixStrategyExecutor'));
-    o.matrixStrategyExecutorFactory = v.readAddress(cat(base, '.matrixStrategyExecutorFactory'));
+    o.executor = v.readAddress(cat(base, '.executor'));
+    o.executorFactory = v.readAddress(cat(base, '.executorFactory'));
   }
 
   function decode(string memory v) internal pure returns (Chain memory o) {

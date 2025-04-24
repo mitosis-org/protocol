@@ -43,12 +43,22 @@ abstract contract Environment is HubDeployer, BranchDeployer {
 
   uint32 private _nextDomain = 12345;
 
+  function version() internal pure override returns (string memory) {
+    return 'v1';
+  }
+
   function setUpEnv(address owner, string[] memory branchNames) internal returns (EnvironmentT memory env) {
     // deploy all
     env.hub = _deployHub(owner);
     env.branches = new Branch[](branchNames.length);
     for (uint256 i = 0; i < branchNames.length; i++) {
-      env.branches[i] = _deployBranch(owner, branchNames[i]);
+      env.branches[i] = _deployBranch(
+        owner,
+        branchNames[i],
+        env.hub.domain,
+        toBz32(address(env.hub.proxy.core.assetManagerEntrypoint)),
+        toBz32(address(env.hub.proxy.governance.branchEntrypoint))
+      );
     }
 
     // link mailboxes to each other
@@ -93,22 +103,32 @@ abstract contract Environment is HubDeployer, BranchDeployer {
     );
   }
 
-  function _deployBranch(address owner, string memory name) private returns (Branch memory branch) {
+  function _deployBranch(
+    address owner,
+    string memory name,
+    uint32 hubDomain,
+    bytes32 hubMitosisVaultEntrypointAddress,
+    bytes32 hubGovernanceEntrypointAddress
+  ) private returns (Branch memory branch) {
     (branch.domain, branch.mailbox) = _setUpMailbox();
     (branch.impl, branch.proxy) = deployBranch(
       name, //
       address(branch.mailbox),
       owner,
+      hubDomain,
+      hubMitosisVaultEntrypointAddress,
+      hubGovernanceEntrypointAddress,
       BranchConfigs.read(_deployConfigPath(name))
     );
   }
 
-  function _mailboxes(EnvironmentT memory env) private returns (MockMailbox[] memory) {
+  function _mailboxes(EnvironmentT memory env) private pure returns (MockMailbox[] memory) {
     MockMailbox[] memory mailboxes = new MockMailbox[](env.branches.length + 1);
     mailboxes[0] = env.hub.mailbox;
     for (uint256 i = 1; i < env.branches.length; i++) {
       mailboxes[i] = env.branches[i].mailbox;
     }
+    return mailboxes;
   }
 
   function _deployConfigPath(string memory chain) private pure returns (string memory) {

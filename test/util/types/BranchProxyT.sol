@@ -38,28 +38,30 @@ library BranchProxyT {
     GovernanceEntrypoint governanceEntrypoint;
   }
 
-  struct MatrixStrategyDecoderAndSanitizer {
+  struct StrategyDecoderAndSanitizer {
     BaseDecoderAndSanitizer base;
     TheoDepositVaultDecoderAndSanitizer theoDepositVault;
   }
 
-  struct MatrixStrategyTally {
-    TheoTally theo;
-  }
-
-  struct MatrixStrategyManager {
+  struct StrategyManager {
+    StrategyDecoderAndSanitizer das;
     ManagerWithMerkleVerification withMerkleVerification;
   }
 
-  struct MatrixStrategy {
-    MatrixStrategyManager manager;
+  struct StrategyTally {
+    TheoTally theo;
+  }
+
+  struct Strategy {
+    StrategyManager manager;
+    StrategyTally tally;
     MatrixStrategyExecutorInfo[] executors;
     MatrixStrategyExecutorFactory executorFactory;
   }
 
   struct Chain {
     Governance governance;
-    MatrixStrategy strategy;
+    Strategy strategy;
     MitosisVault mitosisVault;
     MitosisVaultEntrypoint mitosisVaultEntrypoint;
   }
@@ -98,14 +100,27 @@ library BranchProxyT {
     o = k.serialize('governanceEntrypoint', address(v.governanceEntrypoint));
   }
 
-  function encode(MatrixStrategyManager memory v) internal returns (string memory o) {
+  function encode(StrategyDecoderAndSanitizer memory v) internal returns (string memory o) {
     string memory k = vm.randomBytes(32).toHexString();
+    o = k.serialize('base', address(v.base));
+    o = k.serialize('theoDepositVault', address(v.theoDepositVault));
+  }
+
+  function encode(StrategyManager memory v) internal returns (string memory o) {
+    string memory k = vm.randomBytes(32).toHexString();
+    o = k.serialize('das', encode(v.das));
     o = k.serialize('withMerkleVerification', address(v.withMerkleVerification));
   }
 
-  function encode(MatrixStrategy memory v) internal returns (string memory o) {
+  function encode(StrategyTally memory v) internal returns (string memory o) {
+    string memory k = vm.randomBytes(32).toHexString();
+    o = k.serialize('theo', address(v.theo));
+  }
+
+  function encode(Strategy memory v) internal returns (string memory o) {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('manager', encode(v.manager));
+    o = k.serialize('tally', encode(v.tally));
     o = k.serialize('executors', extract(v.executors));
     o = k.serialize('executorFactory', address(v.executorFactory));
   }
@@ -124,12 +139,22 @@ library BranchProxyT {
     o.governanceEntrypoint = GovernanceEntrypoint(_r(v, cat(base, '.governanceEntrypoint')));
   }
 
-  function decodeMatrixStrategyManager(string memory v, string memory base)
+  function decodeStrategyDecoderAndSanitizer(string memory v, string memory base)
     internal
     pure
-    returns (MatrixStrategyManager memory o)
+    returns (StrategyDecoderAndSanitizer memory o)
   {
+    o.base = BaseDecoderAndSanitizer(_r(v, cat(base, '.base')));
+    o.theoDepositVault = TheoDepositVaultDecoderAndSanitizer(_r(v, cat(base, '.theoDepositVault')));
+  }
+
+  function decodeStrategyManager(string memory v, string memory base) internal pure returns (StrategyManager memory o) {
     o.withMerkleVerification = ManagerWithMerkleVerification(_r(v, cat(base, '.withMerkleVerification')));
+    o.das = decodeStrategyDecoderAndSanitizer(v, cat(base, '.das'));
+  }
+
+  function decodeStrategyTally(string memory v, string memory base) internal pure returns (StrategyTally memory o) {
+    o.theo = TheoTally(_r(v, cat(base, '.theo')));
   }
 
   function decodeMatrixStrategyExecutors(string memory v, string memory path)
@@ -153,15 +178,16 @@ library BranchProxyT {
     }
   }
 
-  function decodeMatrixStrategy(string memory v, string memory base) internal view returns (MatrixStrategy memory o) {
-    o.manager = decodeMatrixStrategyManager(v, cat(base, '.manager'));
+  function decodeStrategy(string memory v, string memory base) internal view returns (Strategy memory o) {
+    o.manager = decodeStrategyManager(v, cat(base, '.manager'));
+    o.tally = decodeStrategyTally(v, cat(base, '.tally'));
     o.executors = decodeMatrixStrategyExecutors(v, cat(base, '.executors'));
     o.executorFactory = MatrixStrategyExecutorFactory(_r(v, cat(base, '.executorFactory')));
   }
 
   function decode(string memory v) internal view returns (Chain memory o) {
     o.governance = decodeGovernance(v, '.governance');
-    o.strategy = decodeMatrixStrategy(v, '.strategy');
+    o.strategy = decodeStrategy(v, '.strategy');
     o.mitosisVault = MitosisVault(_r(v, '.mitosisVault'));
     o.mitosisVaultEntrypoint = MitosisVaultEntrypoint(_r(v, '.mitosisVaultEntrypoint'));
   }

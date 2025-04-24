@@ -78,17 +78,17 @@ abstract contract HubDeployer is AbstractDeployer {
     (
       impl.validator.epochFeeder, //
       proxy.validator.epochFeeder
-    ) = _deployEpochFeeder(owner_, config.epochFeeder);
+    ) = _dphEpochFeeder(owner_, config.epochFeeder);
 
     (
       impl.govMITO, //
       proxy.govMITO
-    ) = _deployGovMITO(owner_, config.govMITO);
+    ) = _dphGovMITO(owner_, config.govMITO);
 
     (
       impl.govMITOEmission, //
       proxy.govMITOEmission
-    ) = _deployGovMITOEmission(
+    ) = _dphGovMITOEmission(
       proxy.govMITO, //
       proxy.validator.epochFeeder,
       owner_,
@@ -102,12 +102,12 @@ abstract contract HubDeployer is AbstractDeployer {
     (
       impl.consensusLayer.governanceEntrypoint, //
       proxy.consensusLayer.governanceEntrypoint
-    ) = _deployConsensusGovernanceEntrypoint(owner_);
+    ) = _dphConsensusGovernanceEntrypoint(owner_);
 
     (
       impl.consensusLayer.validatorEntrypoint, //
       proxy.consensusLayer.validatorEntrypoint
-    ) = _deployConsensusValidatorEntrypoint(owner_);
+    ) = _dphConsensusValidatorEntrypoint(owner_);
 
     //====================================================================================//
     // ----- Reward + Core -----
@@ -116,27 +116,27 @@ abstract contract HubDeployer is AbstractDeployer {
     (
       impl.reward.treasury, //
       proxy.reward.treasury
-    ) = _deployTreasury(owner_);
+    ) = _dphTreasury(owner_);
 
     (
       impl.reward.merkleDistributor, //
       proxy.reward.merkleDistributor
-    ) = _deployMerkleDistributor(owner_, address(proxy.reward.treasury));
+    ) = _dphMerkleDistributor(owner_, address(proxy.reward.treasury));
 
     (
       impl.core.crosschainRegistry, //
       proxy.core.crosschainRegistry
-    ) = _deployCrossChainRegistry(owner_);
+    ) = _dphCrossChainRegistry(owner_);
 
     (
       impl.core.assetManager, //
       proxy.core.assetManager
-    ) = _deployAssetManager(owner_, address(proxy.reward.treasury));
+    ) = _dphAssetManager(owner_, address(proxy.reward.treasury));
 
     (
       impl.core.assetManagerEntrypoint, //
       proxy.core.assetManagerEntrypoint
-    ) = _deployAssetManagerEntrypoint(
+    ) = _dphAssetManagerEntrypoint(
       owner_, //
       mailbox_,
       address(proxy.core.assetManager),
@@ -151,14 +151,14 @@ abstract contract HubDeployer is AbstractDeployer {
     (
       impl.core.hubAssetFactory, //
       proxy.core.hubAssetFactory
-    ) = _deployHubAssetFactory(owner_, impl.core.hubAsset);
+    ) = _dphHubAssetFactory(owner_, impl.core.hubAsset);
 
     // TODO: we need to register the impl.eol.vault on "link" phase
     impl.eol.vault = deploy(_urlHI('.eol.vault'), type(EOLVault).creationCode);
     (
       impl.eol.vaultFactory, //
       proxy.eol.vaultFactory
-    ) = _deployEOLVaultFactory(owner_);
+    ) = _dphEOLVaultFactory(owner_);
 
     // TODO: we need to register the impl.matrix.vaultBasic and impl.matrix.vaultCapped on "link" phase
     impl.matrix.vaultBasic = deploy(_urlHI('.matrix.vault-basic'), type(MatrixVaultBasic).creationCode);
@@ -166,13 +166,13 @@ abstract contract HubDeployer is AbstractDeployer {
     (
       impl.matrix.vaultFactory, //
       proxy.matrix.vaultFactory
-    ) = _deployMatrixVaultFactory(owner_);
+    ) = _dphMatrixVaultFactory(owner_);
 
     // Reclaim Queue for EOL / Matrix
     (
       impl.reclaimQueue, //
       proxy.reclaimQueue
-    ) = _deployReclaimQueue(owner_, address(proxy.core.assetManager));
+    ) = _dphReclaimQueue(owner_, address(proxy.core.assetManager));
 
     //====================================================================================//
     // ----- Validator Contracts -----
@@ -181,7 +181,7 @@ abstract contract HubDeployer is AbstractDeployer {
     (
       impl.validator.manager, //
       proxy.validator.manager
-    ) = _deployValidatorManager(
+    ) = _dphValidatorManager(
       proxy.validator.epochFeeder, //
       proxy.consensusLayer.validatorEntrypoint,
       owner_,
@@ -191,12 +191,12 @@ abstract contract HubDeployer is AbstractDeployer {
     (
       impl.validator.contributionFeed, //
       proxy.validator.contributionFeed
-    ) = _deployValidatorContributionFeed(owner_, address(proxy.validator.epochFeeder));
+    ) = _dphValidatorContributionFeed(owner_, address(proxy.validator.epochFeeder));
 
     (
       impl.validator.rewardDistributor, //
       proxy.validator.rewardDistributor
-    ) = _deployValidatorRewardDistributor(
+    ) = _dphValidatorRewardDistributor(
       owner_,
       address(proxy.validator.epochFeeder),
       address(proxy.validator.manager),
@@ -213,7 +213,7 @@ abstract contract HubDeployer is AbstractDeployer {
     (
       impl.validator.stakingHub, //
       proxy.validator.stakingHub
-    ) = _deployValidatorStakingHub(owner_, address(proxy.consensusLayer.validatorEntrypoint));
+    ) = _dphValidatorStakingHub(owner_, address(proxy.consensusLayer.validatorEntrypoint));
 
     impl.validator.staking = deploy(
       _urlHI('.validator.staking'),
@@ -236,14 +236,14 @@ abstract contract HubDeployer is AbstractDeployer {
 
     // Deploy ValidatorStaking for MITO and GovMITO
     proxy.validator.stakings = new HubProxyT.ValidatorStakingInfo[](2);
-    proxy.validator.stakings[0] = _deployValidatorStaking(
+    proxy.validator.stakings[0] = _dphValidatorStaking(
       'MITO', //
       impl.validator.staking,
       address(0),
       owner_,
       config.mitoStakingConfig
     );
-    proxy.validator.stakings[1] = _deployValidatorStaking(
+    proxy.validator.stakings[1] = _dphValidatorStaking(
       'GovMITO', //
       impl.validator.stakingGovMITO,
       address(proxy.govMITO),
@@ -260,24 +260,24 @@ abstract contract HubDeployer is AbstractDeployer {
       (
         impl.governance.mitoVP, //
         proxy.governance.mitoVP
-      ) = _deployMITOGovernanceVP(owner_, mitoVps);
+      ) = _dphMITOGovernanceVP(owner_, mitoVps);
     }
 
     //====================================================================================//
     // ----- Governance Contracts -----
     //====================================================================================//
 
-    Timelock timelock = _deployTimelock(owner_, config.timelock);
+    Timelock timelock = _dphTimelock(owner_, config.timelock);
 
     (
       impl.governance.mito, //
       proxy.governance.mito
-    ) = _deployMITOGovernance(address(proxy.governance.mitoVP), timelock, config.mitoGovernance);
+    ) = _dphMITOGovernance(address(proxy.governance.mitoVP), timelock, config.mitoGovernance);
 
     (
       impl.governance.branchEntrypoint, //
       proxy.governance.branchEntrypoint
-    ) = _deployBranchGovernanceEntrypoint(
+    ) = _dphBranchGovernanceEntrypoint(
       owner_, //
       mailbox_,
       address(proxy.core.crosschainRegistry),
@@ -286,32 +286,15 @@ abstract contract HubDeployer is AbstractDeployer {
   }
 
   // =================================================================================== //
-  // ----- Deployment Helpers -----
+  // ----- Deployment Helpers ----- (dph = deployHub to avoid function conflicts)
   // =================================================================================== //
 
-  /**
-   * @notice Deploys an implementation contract and an ERC1967 proxy pointing to it.
-   * @dev Uses the Create3 deployer inherited from DeployerBase.
-   * @param nameSuffix The suffix to append to the base URL for naming (e.g., ".governance.mito").
-   * @param creationCode The creation bytecode for the implementation contract (including constructor args if needed).
-   * @param initializeCallData The ABI-encoded call data for the proxy's initialize function.
-   * @return impl The address of the deployed implementation contract.
-   * @return proxy The address of the deployed ERC1967 proxy contract.
-   */
-  function _deployImplAndProxy(string memory nameSuffix, bytes memory creationCode, bytes memory initializeCallData)
-    private
-    returns (address, address payable)
-  {
-    address impl = deploy(_urlHI(nameSuffix), creationCode);
-    address proxy = deployERC1967Proxy(_urlHP(nameSuffix), impl, initializeCallData);
-    return (impl, payable(proxy));
-  }
-
-  function _deployEpochFeeder(address owner_, HubConfigs.EpochFeederConfig memory config)
+  function _dphEpochFeeder(address owner_, HubConfigs.EpochFeederConfig memory config)
     private
     returns (address, EpochFeeder)
   {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.validator.epoch-feeder',
       type(EpochFeeder).creationCode,
       abi.encodeCall(EpochFeeder.initialize, (owner_, config.initialEpochTime, config.interval))
@@ -319,8 +302,9 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, EpochFeeder(proxy));
   }
 
-  function _deployGovMITO(address owner_, HubConfigs.GovMITOConfig memory config) private returns (address, GovMITO) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+  function _dphGovMITO(address owner_, HubConfigs.GovMITOConfig memory config) private returns (address, GovMITO) {
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.gov-mito', //
       type(GovMITO).creationCode,
       abi.encodeCall(GovMITO.initialize, (owner_, config.withdrawalPeriod))
@@ -328,13 +312,14 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, GovMITO(proxy));
   }
 
-  function _deployGovMITOEmission(
+  function _dphGovMITOEmission(
     IGovMITO govMITO_,
     IEpochFeeder epochFeeder_,
     address initialOwner,
     HubConfigs.GovMITOEmissionConfig memory config
   ) private returns (address, GovMITOEmission) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.gov-mito-emission',
       pack(type(GovMITOEmission).creationCode, abi.encode(govMITO_, epochFeeder_)),
       abi.encodeCall(GovMITOEmission.initialize, (initialOwner, config.rewardConfig))
@@ -342,8 +327,9 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, GovMITOEmission(proxy));
   }
 
-  function _deployConsensusGovernanceEntrypoint(address owner) private returns (address, ConsensusGovernanceEntrypoint) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+  function _dphConsensusGovernanceEntrypoint(address owner) private returns (address, ConsensusGovernanceEntrypoint) {
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.consensus.governance-entrypoint',
       type(ConsensusGovernanceEntrypoint).creationCode,
       abi.encodeCall(ConsensusGovernanceEntrypoint.initialize, (owner))
@@ -351,8 +337,9 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, ConsensusGovernanceEntrypoint(proxy));
   }
 
-  function _deployConsensusValidatorEntrypoint(address owner) private returns (address, ConsensusValidatorEntrypoint) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+  function _dphConsensusValidatorEntrypoint(address owner) private returns (address, ConsensusValidatorEntrypoint) {
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.consensus.validator-entrypoint',
       type(ConsensusValidatorEntrypoint).creationCode,
       abi.encodeCall(ConsensusValidatorEntrypoint.initialize, (owner))
@@ -360,8 +347,9 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, ConsensusValidatorEntrypoint(proxy));
   }
 
-  function _deployTreasury(address owner) private returns (address, Treasury) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+  function _dphTreasury(address owner) private returns (address, Treasury) {
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.reward.treasury', //
       type(Treasury).creationCode,
       abi.encodeCall(Treasury.initialize, (owner))
@@ -369,8 +357,9 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, Treasury(proxy));
   }
 
-  function _deployMerkleDistributor(address owner, address treasury) private returns (address, MerkleRewardDistributor) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+  function _dphMerkleDistributor(address owner, address treasury) private returns (address, MerkleRewardDistributor) {
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.reward.merkle-distributor',
       type(MerkleRewardDistributor).creationCode,
       abi.encodeCall(MerkleRewardDistributor.initialize, (owner, treasury))
@@ -378,8 +367,9 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, MerkleRewardDistributor(proxy));
   }
 
-  function _deployCrossChainRegistry(address owner) private returns (address, CrossChainRegistry) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+  function _dphCrossChainRegistry(address owner) private returns (address, CrossChainRegistry) {
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.core.crosschain-registry',
       type(CrossChainRegistry).creationCode,
       abi.encodeCall(CrossChainRegistry.initialize, (owner))
@@ -387,8 +377,9 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, CrossChainRegistry(proxy));
   }
 
-  function _deployAssetManager(address owner, address treasury) private returns (address, AssetManager) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+  function _dphAssetManager(address owner, address treasury) private returns (address, AssetManager) {
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.core.asset-manager', //
       type(AssetManager).creationCode,
       abi.encodeCall(AssetManager.initialize, (owner, treasury))
@@ -396,13 +387,12 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, AssetManager(proxy));
   }
 
-  function _deployAssetManagerEntrypoint(
-    address owner,
-    address mailbox,
-    address assetManager,
-    address crossChainRegistry
-  ) private returns (address, AssetManagerEntrypoint) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+  function _dphAssetManagerEntrypoint(address owner, address mailbox, address assetManager, address crossChainRegistry)
+    private
+    returns (address, AssetManagerEntrypoint)
+  {
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.core.asset-manager-entrypoint',
       pack(type(AssetManagerEntrypoint).creationCode, abi.encode(mailbox, assetManager, crossChainRegistry)),
       abi.encodeCall(AssetManagerEntrypoint.initialize, (owner, address(0), address(0)))
@@ -410,8 +400,9 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, AssetManagerEntrypoint(proxy));
   }
 
-  function _deployHubAssetFactory(address owner, address hubAsset) private returns (address, HubAssetFactory) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+  function _dphHubAssetFactory(address owner, address hubAsset) private returns (address, HubAssetFactory) {
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.core.hub-asset-factory', //
       type(HubAssetFactory).creationCode,
       abi.encodeCall(HubAssetFactory.initialize, (owner, hubAsset))
@@ -419,8 +410,9 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, HubAssetFactory(proxy));
   }
 
-  function _deployEOLVaultFactory(address owner) private returns (address, EOLVaultFactory) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+  function _dphEOLVaultFactory(address owner) private returns (address, EOLVaultFactory) {
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.eol.vault-factory', //
       type(EOLVaultFactory).creationCode,
       abi.encodeCall(EOLVaultFactory.initialize, (owner))
@@ -428,8 +420,9 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, EOLVaultFactory(proxy));
   }
 
-  function _deployMatrixVaultFactory(address owner) private returns (address, MatrixVaultFactory) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+  function _dphMatrixVaultFactory(address owner) private returns (address, MatrixVaultFactory) {
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.matrix.vault-factory', //
       type(MatrixVaultFactory).creationCode,
       abi.encodeCall(MatrixVaultFactory.initialize, (owner))
@@ -437,8 +430,9 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, MatrixVaultFactory(proxy));
   }
 
-  function _deployReclaimQueue(address owner, address assetManager) private returns (address, ReclaimQueue) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+  function _dphReclaimQueue(address owner, address assetManager) private returns (address, ReclaimQueue) {
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.reclaim-queue', //
       type(ReclaimQueue).creationCode,
       abi.encodeCall(ReclaimQueue.initialize, (owner, assetManager))
@@ -446,13 +440,14 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, ReclaimQueue(proxy));
   }
 
-  function _deployValidatorManager(
+  function _dphValidatorManager(
     IEpochFeeder epochFeeder_,
     IConsensusValidatorEntrypoint entrypoint_,
     address initialOwner,
     HubConfigs.ValidatorManagerConfig memory config
   ) private returns (address, ValidatorManager) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.validator.manager',
       pack(type(ValidatorManager).creationCode, abi.encode(epochFeeder_, entrypoint_)),
       abi.encodeCall(
@@ -463,11 +458,12 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, ValidatorManager(proxy));
   }
 
-  function _deployValidatorContributionFeed(address owner, address epochFeeder)
+  function _dphValidatorContributionFeed(address owner, address epochFeeder)
     private
     returns (address, ValidatorContributionFeed)
   {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.validator.contribution-feed', //
       pack(type(ValidatorContributionFeed).creationCode, abi.encode(epochFeeder)),
       abi.encodeCall(ValidatorContributionFeed.initialize, (owner))
@@ -475,7 +471,7 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, ValidatorContributionFeed(proxy));
   }
 
-  function _deployValidatorRewardDistributor(
+  function _dphValidatorRewardDistributor(
     address owner,
     address epochFeeder_,
     address validatorManager_,
@@ -484,7 +480,8 @@ abstract contract HubDeployer is AbstractDeployer {
     address govMITOEmission_,
     HubConfigs.ValidatorRewardDistributorConfig memory config
   ) private returns (address, ValidatorRewardDistributor) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.validator.reward-distributor',
       pack(
         type(ValidatorRewardDistributor).creationCode,
@@ -504,11 +501,12 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, ValidatorRewardDistributor(proxy));
   }
 
-  function _deployValidatorStakingHub(address validatorEntrypoint, address owner)
+  function _dphValidatorStakingHub(address validatorEntrypoint, address owner)
     private
     returns (address, ValidatorStakingHub)
   {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.validator.staking-hub', //
       pack(type(ValidatorStakingHub).creationCode, abi.encode(validatorEntrypoint)),
       abi.encodeCall(ValidatorStakingHub.initialize, (owner))
@@ -516,8 +514,8 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, ValidatorStakingHub(proxy));
   }
 
-  // Note: _deployValidatorStaking deploys proxy only, doesn't fit general pattern
-  function _deployValidatorStaking(
+  // Note: _dphValidatorStaking deploys proxy only, doesn't fit general pattern
+  function _dphValidatorStaking(
     string memory label,
     address impl,
     address asset,
@@ -537,7 +535,7 @@ abstract contract HubDeployer is AbstractDeployer {
       )
     );
 
-    // This function deploys only a proxy, not an implementation, so it doesn't use _deployImplAndProxy
+    // This function deploys only a proxy, not an implementation, so it doesn't use deployImplAndProxy
     address proxyAddr = deployERC1967Proxy(_urlHP(_url), impl, init);
 
     return HubProxyT.ValidatorStakingInfo({
@@ -550,11 +548,9 @@ abstract contract HubDeployer is AbstractDeployer {
      });
   }
 
-  function _deployMITOGovernanceVP(address owner, ISudoVotes[] memory tokens)
-    private
-    returns (address, MITOGovernanceVP)
-  {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+  function _dphMITOGovernanceVP(address owner, ISudoVotes[] memory tokens) private returns (address, MITOGovernanceVP) {
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.governance.mito-vp', //
       type(MITOGovernanceVP).creationCode,
       abi.encodeCall(MITOGovernanceVP.initialize, (owner, tokens))
@@ -562,8 +558,9 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, MITOGovernanceVP(proxy));
   }
 
-  function _deployTimelock(address owner, HubConfigs.TimelockConfig memory config) private returns (Timelock) {
-    (, address payable proxy) = _deployImplAndProxy(
+  function _dphTimelock(address owner, HubConfigs.TimelockConfig memory config) private returns (Timelock) {
+    (, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.governance.timelock', //
       type(Timelock).creationCode,
       abi.encodeCall(Timelock.initialize, (config.minDelay, config.proposers, config.executors, owner))
@@ -571,11 +568,12 @@ abstract contract HubDeployer is AbstractDeployer {
     return Timelock(proxy);
   }
 
-  function _deployMITOGovernance(address mitoVP, Timelock timelock, HubConfigs.MITOGovernanceConfig memory config)
+  function _dphMITOGovernance(address mitoVP, Timelock timelock, HubConfigs.MITOGovernanceConfig memory config)
     private
     returns (address, MITOGovernance)
   {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.governance.mito', //
       type(MITOGovernance).creationCode,
       abi.encodeCall(
@@ -593,13 +591,14 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, MITOGovernance(proxy));
   }
 
-  function _deployBranchGovernanceEntrypoint(
+  function _dphBranchGovernanceEntrypoint(
     address owner,
     address mailbox,
     address crossChainRegistry,
     address[] memory managers
   ) private returns (address, BranchGovernanceEntrypoint) {
-    (address impl, address payable proxy) = _deployImplAndProxy(
+    (address impl, address payable proxy) = deployImplAndProxy(
+      'hub',
       '.governance.branch-entrypoint', //
       pack(type(BranchGovernanceEntrypoint).creationCode, abi.encode(mailbox, crossChainRegistry)),
       abi.encodeCall(BranchGovernanceEntrypoint.initialize, (owner, managers, address(0), address(0)))
@@ -612,10 +611,10 @@ abstract contract HubDeployer is AbstractDeployer {
   // =================================================================================== //
 
   function _urlHI(string memory name) private pure returns (string memory) {
-    return cat(_IMPL_BASE, name, '.v1');
+    return _urlI('hub', name);
   }
 
   function _urlHP(string memory name) private pure returns (string memory) {
-    return cat(_PROXY_BASE, name);
+    return _urlP('hub', name);
   }
 }
