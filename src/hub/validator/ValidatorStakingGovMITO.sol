@@ -12,6 +12,7 @@ import { ValidatorStaking } from './ValidatorStaking.sol';
 
 contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
   error ValidatorStakingGovMITO__NonTransferable();
+  error ValidatorStakingGovMITO__ClaimableMismatch();
 
   IGovMITO public immutable govMITO;
 
@@ -88,10 +89,13 @@ contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
 
   /// @dev Burns the voting units from the recipient
   function _claimUnstake(StorageV1 storage $, address receiver) internal override returns (uint256) {
-    uint256 claimed = super._claimUnstake($, receiver);
+    (, uint256 claimable) = unstaking(receiver, clock());
 
     // burn the voting units
-    _moveDelegateVotes(delegates(receiver), address(0), claimed);
+    _moveDelegateVotes(delegates(receiver), address(0), claimable);
+
+    uint256 claimed = super._claimUnstake($, receiver);
+    require(claimed == claimable, ValidatorStakingGovMITO__ClaimableMismatch());
 
     return claimed;
   }
