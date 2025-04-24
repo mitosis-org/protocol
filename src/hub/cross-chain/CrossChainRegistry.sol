@@ -81,6 +81,7 @@ contract CrossChainRegistry is
     uint256 chainId_,
     string calldata name,
     uint32 hplDomain,
+    address mitosisVault_,
     address mitosisVaultEntrypoint_,
     address governanceEntrypoint_
   ) external onlyOwner {
@@ -95,6 +96,7 @@ contract CrossChainRegistry is
     $.hplDomains.push(hplDomain);
     $.chains[chainId_].name = name;
     $.chains[chainId_].hplDomain = hplDomain;
+    $.chains[chainId_].mitosisVault = mitosisVault_;
     $.chains[chainId_].mitosisVaultEntrypoint = mitosisVaultEntrypoint_;
     $.chains[chainId_].governanceEntrypoint = governanceEntrypoint_;
     $.hyperlanes[hplDomain].chainId = chainId_;

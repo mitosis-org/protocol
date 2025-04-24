@@ -117,6 +117,7 @@ interface ICrossChainRegistry {
    * @param chainId_ The ID of the chain.
    * @param name The name of the chain.
    * @param hplDomain The Hyperlane domain associated with the chain.
+   * @param mitosisVault_ The address of the MitosisVault for the chain.
    * @param mitosisVaultEntrypoint_ The address of the MitosisVaultEntrypoint for the chain.
    * @param governanceEntrypoint_ The address of the GovernanceEntrypoint for the chain.
    */
@@ -124,6 +125,7 @@ interface ICrossChainRegistry {
     uint256 chainId_,
     string calldata name,
     uint32 hplDomain,
+    address mitosisVault_,
     address mitosisVaultEntrypoint_,
     address governanceEntrypoint_
   ) external;
