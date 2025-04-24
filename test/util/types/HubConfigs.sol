@@ -44,7 +44,10 @@ library HubConfigs {
   }
 
   struct GovMITOEmissionConfig {
-    IGovMITOEmission.ValidatorRewardConfig rewardConfig;
+    uint256 rps;
+    uint160 rateMultiplier;
+    uint48 renewalPeriod;
+    uint48 startsFrom;
     uint256 total;
   }
 
@@ -179,18 +182,12 @@ library HubConfigs {
     o = k.serialize('withdrawalPeriod', v.withdrawalPeriod);
   }
 
-  function encode(IGovMITOEmission.ValidatorRewardConfig memory v) internal returns (string memory o) {
+  function encode(GovMITOEmissionConfig memory v) internal returns (string memory o) {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('rps', v.rps);
     o = k.serialize('rateMultiplier', v.rateMultiplier);
     o = k.serialize('renewalPeriod', v.renewalPeriod);
     o = k.serialize('startsFrom', v.startsFrom);
-    o = k.serialize('recipient', v.recipient);
-  }
-
-  function encode(GovMITOEmissionConfig memory v) internal returns (string memory o) {
-    string memory k = vm.randomBytes(32).toHexString();
-    o = k.serialize('rewardConfig', encode(v.rewardConfig));
     o = k.serialize('total', v.total);
   }
 
@@ -302,24 +299,15 @@ library HubConfigs {
     o.withdrawalPeriod = v.readUint(cat(base, '.withdrawalPeriod'));
   }
 
-  function decodeValidatorRewardConfig(string memory v, string memory base)
-    internal
-    pure
-    returns (IGovMITOEmission.ValidatorRewardConfig memory o)
-  {
-    o.rps = v.readUint(cat(base, '.rps'));
-    o.rateMultiplier = v.readUint(cat(base, '.rateMultiplier')).toUint160();
-    o.renewalPeriod = v.readUint(cat(base, '.renewalPeriod')).toUint48();
-    o.startsFrom = v.readUint(cat(base, '.startsFrom')).toUint48();
-    o.recipient = v.readAddress(cat(base, '.recipient'));
-  }
-
   function decodeGovMITOEmissionConfig(string memory v, string memory base)
     internal
     pure
     returns (GovMITOEmissionConfig memory o)
   {
-    o.rewardConfig = decodeValidatorRewardConfig(v, cat(base, '.rewardConfig'));
+    o.rps = v.readUint(cat(base, '.rps'));
+    o.rateMultiplier = v.readUint(cat(base, '.rateMultiplier')).toUint160();
+    o.renewalPeriod = v.readUint(cat(base, '.renewalPeriod')).toUint48();
+    o.startsFrom = v.readUint(cat(base, '.startsFrom')).toUint48();
     o.total = v.readUint(cat(base, '.total'));
   }
 

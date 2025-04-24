@@ -329,7 +329,19 @@ abstract contract HubDeployer is AbstractDeployer {
       'hub',
       '.gov-mito-emission',
       pack(type(GovMITOEmission).creationCode, abi.encode(govMITO_, epochFeeder_)),
-      abi.encodeCall(GovMITOEmission.initialize, (initialOwner, config.rewardConfig))
+      abi.encodeCall(
+        GovMITOEmission.initialize,
+        (
+          initialOwner,
+          IGovMITOEmission.ValidatorRewardConfig({
+            rps: config.rps,
+            rateMultiplier: config.rateMultiplier,
+            renewalPeriod: config.renewalPeriod,
+            startsFrom: config.startsFrom,
+            recipient: initialOwner
+          })
+        )
+      )
     );
     return (impl, GovMITOEmission(proxy));
   }
