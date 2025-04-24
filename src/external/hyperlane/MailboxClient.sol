@@ -111,10 +111,10 @@ abstract contract MailboxClient is OwnableUpgradeable, PackageVersioned {
     internal
     onlyInitializing
   {
-    __Ownable_init(_owner);
-
+    __Ownable_init(_msgSender());
     setHook(_hook);
     setInterchainSecurityModule(_interchainSecurityModule);
+    _transferOwnership(_owner);
   }
 
   function _isLatestDispatched(bytes32 id) internal view returns (bool) {
