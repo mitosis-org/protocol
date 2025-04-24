@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { Test } from '@std/Test.sol';
+
 import { MockMailbox } from '@hpl/mock/MockMailbox.sol';
 import { TestInterchainGasPaymaster } from '@hpl/test/TestInterchainGasPaymaster.sol';
 import { TestIsm } from '@hpl/test/TestIsm.sol';
 
+import { ISudoVotes } from '../../src/interfaces/lib/ISudoVotes.sol';
 import { BranchConfigs } from '../util/types/BranchConfigs.sol';
 import { BranchImplT } from '../util/types/BranchImplT.sol';
 import { BranchProxyT } from '../util/types/BranchProxyT.sol';
@@ -13,7 +16,6 @@ import { HubImplT } from '../util/types/HubImplT.sol';
 import { HubProxyT } from '../util/types/HubProxyT.sol';
 import { BranchDeployer } from './deployers/BranchDeployer.sol';
 import { HubDeployer } from './deployers/HubDeployer.sol';
-import { Linker } from './deployers/Linker.sol';
 import './Functions.sol';
 
 struct Hub {
@@ -29,6 +31,98 @@ struct Branch {
   MockMailbox mailbox;
   BranchImplT.Chain impl;
   BranchProxyT.Chain proxy;
+}
+
+contract Linker is Test {
+  function link(address hubOwner, address branchOwner, Hub memory hub, Branch[] memory branches) internal {
+    vm.startPrank(hubOwner);
+
+    for (uint256 i = 0; i < branches.length; i++) {
+      Branch memory branch = branches[i];
+
+      hub.proxy.core.crosschainRegistry.setChain(
+        branch.domain,
+        branch.name,
+        branch.domain,
+        address(branch.proxy.mitosisVaultEntrypoint),
+        address(branch.proxy.governance.entrypoint)
+      );
+    }
+
+    hub.proxy.core.crosschainRegistry.enrollGovernanceEntrypoint(address(hub.proxy.governance.branchEntrypoint));
+    hub.proxy.core.crosschainRegistry.enrollMitosisVaultEntrypoint(address(hub.proxy.core.assetManagerEntrypoint));
+
+    vm.stopPrank();
+  }
+
+  function linkHub(address owner, address govAdmin, HubProxyT.Chain memory hub, HubConfigs.DeployConfig memory config)
+    internal
+  {
+    address govMITOStaking = address(hub.validator.stakings[1].staking);
+
+    // ======= LINK CONTRACT EACH OTHER ======= //
+    vm.deal(owner, config.govMITOEmission.total);
+    vm.startPrank(owner);
+
+    hub.core.assetManager.setReclaimQueue(address(hub.reclaimQueue));
+
+    hub.govMITO.setModule(govMITOStaking, true);
+    hub.govMITO.setMinter(address(hub.govMITOEmission));
+    hub.govMITO.setWhitelistedSender(address(hub.govMITOEmission), true);
+
+    hub.govMITOEmission.addValidatorRewardEmission{ value: config.govMITOEmission.total }();
+    hub.govMITOEmission.setValidatorRewardRecipient(address(hub.validator.rewardDistributor));
+
+    hub.govMITOEmission.grantRole(hub.govMITOEmission.VALIDATOR_REWARD_MANAGER_ROLE(), owner);
+
+    hub.consensusLayer.governanceEntrypoint.setPermittedCaller(address(hub.governance.mitoTimelock), true);
+
+    hub.consensusLayer.validatorEntrypoint.setPermittedCaller(address(hub.validator.manager), true);
+    hub.consensusLayer.validatorEntrypoint.setPermittedCaller(address(hub.validator.stakingHub), true);
+
+    for (uint256 i = 0; i < hub.validator.stakings.length; i++) {
+      address staking = address(hub.validator.stakings[i].staking);
+      hub.validator.stakingHub.addNotifier(staking);
+    }
+
+    hub.govMITO.setDelegationManager(address(hub.governance.mitoVP));
+    ISudoVotes(govMITOStaking).setDelegationManager(address(hub.governance.mitoVP));
+
+    hub.validator.contributionFeed.grantRole(hub.validator.contributionFeed.FEEDER_ROLE(), owner);
+
+    hub.governance.mitoTimelock.grantRole(hub.governance.mitoTimelock.PROPOSER_ROLE(), address(hub.governance.mito));
+    hub.governance.mitoTimelock.grantRole(hub.governance.mitoTimelock.PROPOSER_ROLE(), govAdmin);
+
+    hub.governance.mitoTimelock.grantRole(hub.governance.mitoTimelock.EXECUTOR_ROLE(), address(hub.governance.mito));
+    hub.governance.mitoTimelock.grantRole(hub.governance.mitoTimelock.EXECUTOR_ROLE(), govAdmin);
+
+    vm.stopPrank();
+  }
+
+  function linkBranch(
+    address owner,
+    address govAdmin,
+    BranchProxyT.Chain memory branch,
+    BranchConfigs.DeployConfig memory // config
+  ) internal {
+    vm.startPrank(owner);
+
+    branch.mitosisVault.setEntrypoint(address(branch.mitosisVaultEntrypoint));
+
+    {
+      bytes32 proposerRole = branch.governance.timelock.PROPOSER_ROLE();
+      bytes32 executorRole = branch.governance.timelock.EXECUTOR_ROLE();
+      address entrypoint = address(branch.governance.entrypoint);
+
+      branch.governance.timelock.grantRole(proposerRole, entrypoint);
+      branch.governance.timelock.grantRole(proposerRole, govAdmin);
+
+      branch.governance.timelock.grantRole(executorRole, entrypoint);
+      branch.governance.timelock.grantRole(executorRole, govAdmin);
+    }
+
+    vm.stopPrank();
+  }
 }
 
 abstract contract Environment is Linker, HubDeployer, BranchDeployer {
