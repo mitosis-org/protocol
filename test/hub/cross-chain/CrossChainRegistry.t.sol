@@ -66,24 +66,4 @@ contract CrossChainRegistryTest is Test {
 
     vm.stopPrank();
   }
-
-  function test_setVault() public {
-    uint256 chainID = 1;
-    address vault = makeAddr('vault');
-    address mitosisVaultEntrypoint = makeAddr('mitosisVaultEntrypoint');
-    address governanceEntrypoint = makeAddr('governanceEntrypoint');
-
-    vm.startPrank(owner);
-
-    vm.expectRevert(); // 'not registered chain'
-    ccRegistry.setVault(chainID, vault);
-
-    string memory name = 'Ethereum';
-    uint32 hplDomain = 1;
-    ccRegistry.setChain(chainID, name, hplDomain, mitosisVaultEntrypoint, governanceEntrypoint);
-    ccRegistry.setVault(chainID, vault);
-    require(ccRegistry.mitosisVault(chainID) == vault, 'invalid mitosisVault');
-
-    vm.stopPrank();
-  }
 }
