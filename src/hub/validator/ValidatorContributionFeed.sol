@@ -177,6 +177,8 @@ contract ValidatorContributionFeed is
     uint256 pushWeightsLen = weights.length;
     for (uint256 i = 0; i < pushWeightsLen; i++) {
       ValidatorWeight memory weight = weights[i];
+      require(weight.weight > 0, IValidatorContributionFeed__InvalidWeight());
+
       uint256 index = reward.weightByValAddr[weight.addr];
       require(index == 0, IValidatorContributionFeed__InvalidWeightAddress());
 
