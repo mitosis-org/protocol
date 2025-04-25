@@ -15,7 +15,7 @@ library LibSecp256k1 {
    * @param cmpPubkey The key to be verified if it is a valid compressed 33-byte public key
    */
   function verifyCmpPubkey(bytes memory cmpPubkey) internal pure {
-    uncompressPubkey(cmpPubkey);
+    verifyUncmpPubkey(uncompressPubkey(cmpPubkey));
   }
 
   /**
@@ -44,6 +44,7 @@ library LibSecp256k1 {
    */
   function verifyCmpPubkeyWithAddress(bytes memory cmpPubkey, address expectedAddress) internal pure {
     bytes memory uncmpPubkey = uncompressPubkey(cmpPubkey);
+    verifyUncmpPubkey(uncmpPubkey);
     require(
       deriveAddressFromUncmpPubkey(uncmpPubkey) == expectedAddress,
       StdError.InvalidParameter('uncmpPubkey: the derived address is not expected')
