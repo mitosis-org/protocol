@@ -117,7 +117,9 @@ contract ValidatorManager is
     for (uint256 i = 0; i < genesisValidators.length; i++) {
       GenesisValidatorSet memory genVal = genesisValidators[i];
 
-      address valAddr = genVal.pubKey.deriveAddressFromCmpPubkey();
+      bytes memory uncmpPubKey = genVal.pubKey.uncompressPubkey();
+      uncmpPubKey.verifyUncmpPubkey();
+      address valAddr = uncmpPubKey.deriveAddressFromUncmpPubkey();
 
       _createValidator(
         $,
@@ -165,7 +167,9 @@ contract ValidatorManager is
 
   /// @inheritdoc IValidatorManager
   function validatorPubKeyToAddress(bytes calldata pubKey) external pure returns (address) {
-    return pubKey.deriveAddressFromCmpPubkey();
+    bytes memory uncmpPubKey = pubKey.uncompressPubkey();
+    uncmpPubKey.verifyUncmpPubkey();
+    return uncmpPubKey.deriveAddressFromUncmpPubkey();
   }
 
   /// @inheritdoc IValidatorManager
