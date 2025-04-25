@@ -19,7 +19,6 @@ import { IConsensusValidatorEntrypoint } from
 import { IEpochFeeder } from '../../../src/interfaces/hub/validator/IEpochFeeder.sol';
 import { IValidatorManager } from '../../../src/interfaces/hub/validator/IValidatorManager.sol';
 import { LibSecp256k1 } from '../../../src/lib/LibSecp256k1.sol';
-import { StdError } from '../../../src/lib/StdError.sol';
 import { MockContract } from '../../util/MockContract.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
@@ -384,7 +383,8 @@ contract ValidatorManagerTest is Toolkit {
     bytes memory pubKey = abi.encodePacked(hex'04', wallet.publicKeyX, wallet.publicKeyY);
 
     // verify
-    require(pubKey.deriveAddress() == addr, StdError.InvalidParameter('pubKey'));
+    LibSecp256k1.verifyUncmpPubkey(pubKey);
+    LibSecp256k1.verifyUncmpPubkeyWithAddress(pubKey, addr);
 
     return ValidatorKey({ addr: addr, privKey: privKey, pubKey: pubKey });
   }

@@ -11,7 +11,6 @@ import { StdError } from '../../lib/StdError.sol';
 
 contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2StepUpgradeable, UUPSUpgradeable {
   using ERC7201Utils for string;
-  using LibSecp256k1 for bytes;
 
   /// @custom:storage-location mitosis.storage.ConsensusValidatorEntrypoint
   struct Storage {
@@ -20,6 +19,22 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
 
   modifier onlyPermittedCaller() {
     require(_getStorage().isPermittedCaller[_msgSender()], StdError.Unauthorized());
+    _;
+  }
+
+  /**
+   * @notice Verifies that the given validator key is valid format which is a compressed 33-byte secp256k1 public key.
+   */
+  modifier verifyPubKey(bytes memory pubKey) {
+    LibSecp256k1.verifyCmpPubkey(pubKey);
+    _;
+  }
+
+  /**
+   * @notice Verifies that the given validator key is valid format and corresponds to the expected address.
+   */
+  modifier verifyPubKeyWithAddress(bytes memory pubKey, address expectedAddress) {
+    LibSecp256k1.verifyCmpPubkeyWithAddress(pubKey, expectedAddress);
     _;
   }
 
@@ -68,8 +83,8 @@ contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2
     external
     payable
     onlyPermittedCaller
+    verifyPubKeyWithAddress(pubKey, valAddr)
   {
-    require(pubKey.uncompressPubkey().deriveAddress() == valAddr, StdError.InvalidParameter('pubKey'));
     require(msg.value > 0, StdError.InvalidParameter('msg.value'));
     require(msg.value % 1 gwei == 0, StdError.InvalidParameter('msg.value'));
 

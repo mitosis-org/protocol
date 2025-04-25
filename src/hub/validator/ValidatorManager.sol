@@ -117,7 +117,7 @@ contract ValidatorManager is
     for (uint256 i = 0; i < genesisValidators.length; i++) {
       GenesisValidatorSet memory genVal = genesisValidators[i];
 
-      address valAddr = genVal.pubKey.uncompressPubkey().deriveAddress();
+      address valAddr = genVal.pubKey.deriveAddressFromCmpPubkey();
 
       _createValidator(
         $,
@@ -165,7 +165,7 @@ contract ValidatorManager is
 
   /// @inheritdoc IValidatorManager
   function validatorPubKeyToAddress(bytes calldata pubKey) external pure returns (address) {
-    return pubKey.uncompressPubkey().deriveAddress();
+    return pubKey.deriveAddressFromCmpPubkey();
   }
 
   /// @inheritdoc IValidatorManager
@@ -199,11 +199,12 @@ contract ValidatorManager is
     payable
     nonReentrant
   {
+    require(pubKey.length > 0, StdError.InvalidParameter('pubKey'));
+
     address valAddr = _msgSender();
 
     // verify the pubKey is valid and corresponds to the caller
-    require(pubKey.length > 0, StdError.InvalidParameter('pubKey'));
-    require(pubKey.uncompressPubkey().deriveAddress() == valAddr, StdError.InvalidParameter('pubKey'));
+    pubKey.verifyCmpPubkeyWithAddress(valAddr);
 
     StorageV1 storage $ = _getStorageV1();
 
