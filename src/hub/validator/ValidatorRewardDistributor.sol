@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
 import { Math } from '@oz/utils/math/Math.sol';
 import { SafeCast } from '@oz/utils/math/SafeCast.sol';
-import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
+import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
@@ -60,7 +60,7 @@ contract ValidatorRewardDistributor is
   IValidatorRewardDistributor,
   ValidatorRewardDistributorStorageV1,
   Ownable2StepUpgradeable,
-  ReentrancyGuardTransient,
+  ReentrancyGuard,
   UUPSUpgradeable
 {
   using SafeCast for uint256;

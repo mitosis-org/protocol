@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { SafeCast } from '@oz/utils/math/SafeCast.sol';
-import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
+import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { Checkpoints } from '@oz/utils/structs/Checkpoints.sol';
 import { Time } from '@oz/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
@@ -53,7 +53,7 @@ contract ValidatorStaking is
   IValidatorStaking,
   ValidatorStakingStorageV1,
   Ownable2StepUpgradeable,
-  ReentrancyGuardTransient,
+  ReentrancyGuard,
   UUPSUpgradeable
 {
   using SafeCast for uint256;
