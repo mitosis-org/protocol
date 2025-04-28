@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IMessageRecipient } from '@hpl/interfaces/IMessageRecipient.sol';
 
-import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
+import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
@@ -18,7 +18,7 @@ contract BranchGovernanceEntrypoint is
   IBranchGovernanceEntrypoint,
   GasRouter,
   UUPSUpgradeable,
-  ReentrancyGuardTransient,
+  ReentrancyGuard,
   AccessControlEnumerableUpgradeable
 {
   using Message for *;
