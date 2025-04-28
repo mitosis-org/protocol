@@ -6,7 +6,7 @@ import { IERC4626 } from '@oz/interfaces/IERC4626.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
 import { Math } from '@oz/utils/math/Math.sol';
 import { SafeCast } from '@oz/utils/math/SafeCast.sol';
-import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
+import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { Time } from '@oz/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
@@ -18,7 +18,7 @@ import { LibQueue } from '../lib/LibQueue.sol';
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
 
-contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSUpgradeable, ReentrancyGuardTransient {
+contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSUpgradeable, ReentrancyGuard {
   using SafeERC20 for IERC4626;
   using SafeERC20 for IERC20Metadata;
   using SafeCast for uint256;

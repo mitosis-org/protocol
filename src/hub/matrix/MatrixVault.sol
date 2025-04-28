@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { Math } from '@oz/utils/math/Math.sol';
-import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
+import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 
 import { ERC4626 } from '@solady/tokens/ERC4626.sol';
@@ -17,13 +17,7 @@ import { MatrixVaultStorageV1 } from './MatrixVaultStorageV1.sol';
  * @title MatrixVault
  * @notice Base implementation of an MatrixVault
  */
-abstract contract MatrixVault is
-  MatrixVaultStorageV1,
-  ERC4626,
-  Ownable2StepUpgradeable,
-  Pausable,
-  ReentrancyGuardTransient
-{
+abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgradeable, Pausable, ReentrancyGuard {
   using Math for uint256;
 
   function __MatrixVault_init(
