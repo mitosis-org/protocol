@@ -12,7 +12,7 @@ gen() {
   tmp=$(mktemp -d)
   abifile=${tmp}/${name}.abi
 
-  forge inspect ${target} abi > ${abifile}
+  forge inspect --json ${target} abi > ${abifile}
 
   abigen \
     --abi ${abifile} \
