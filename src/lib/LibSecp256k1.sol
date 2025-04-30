@@ -15,7 +15,7 @@ library LibSecp256k1 {
    * @param cmpPubkey The key to be verified if it is a valid compressed 33-byte public key
    */
   function verifyCmpPubkey(bytes memory cmpPubkey) internal pure {
-    uncompressPubkey(cmpPubkey);
+    verifyUncmpPubkey(uncompressPubkey(cmpPubkey));
   }
 
   /**
@@ -44,6 +44,7 @@ library LibSecp256k1 {
    */
   function verifyCmpPubkeyWithAddress(bytes memory cmpPubkey, address expectedAddress) internal pure {
     bytes memory uncmpPubkey = uncompressPubkey(cmpPubkey);
+    verifyUncmpPubkey(uncmpPubkey);
     require(
       deriveAddressFromUncmpPubkey(uncmpPubkey) == expectedAddress,
       StdError.InvalidParameter('uncmpPubkey: the derived address is not expected')
@@ -120,9 +121,16 @@ library LibSecp256k1 {
   function deriveAddressFromUncmpPubkey(bytes memory uncmpPubkey) internal pure returns (address) {
     bytes memory noPrefix = new bytes(64);
 
-    // Copy uncmpPubkey[1:] to noPrefix
     assembly {
-      mcopy(add(noPrefix, 0x20), add(uncmpPubkey, 0x21), 0x40)
+      // Get the source pointer (uncmpPubkey data start: skip prefix 0x04 and length)
+      let src := add(uncmpPubkey, 0x21)
+      // Get the destination pointer (noPrefix data start: skip length)
+      let dest := add(noPrefix, 0x20)
+
+      // Copy the first 32 bytes
+      mstore(dest, mload(src))
+      // Copy the next 32 bytes (offset by 32)
+      mstore(add(dest, 0x20), mload(add(src, 0x20)))
     }
 
     return address(uint160(uint256(keccak256(noPrefix))));

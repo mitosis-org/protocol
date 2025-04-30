@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IMessageRecipient } from '@hpl/interfaces/IMessageRecipient.sol';
 
-import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
+import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
@@ -18,7 +18,7 @@ contract BranchGovernanceEntrypoint is
   IBranchGovernanceEntrypoint,
   GasRouter,
   UUPSUpgradeable,
-  ReentrancyGuardTransient,
+  ReentrancyGuard,
   AccessControlEnumerableUpgradeable
 {
   using Message for *;
@@ -45,9 +45,9 @@ contract BranchGovernanceEntrypoint is
   }
 
   function initialize(address owner_, address[] memory managers, address hook, address ism) public initializer {
+    _MailboxClient_initialize(hook, ism, owner_);
     __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
-    _MailboxClient_initialize(hook, ism, owner_);
 
     for (uint256 i = 0; i < managers.length; i++) {
       _grantRole(MANAGER_ROLE, managers[i]);

@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import { Time } from '@oz/utils/types/Time.sol';
 import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
 
+import { IGovMITO } from '../../interfaces/hub/IGovMITO.sol';
 import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
 import { SudoVotes } from '../../lib/SudoVotes.sol';
@@ -11,14 +12,19 @@ import { ValidatorStaking } from './ValidatorStaking.sol';
 
 contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
   error ValidatorStakingGovMITO__NonTransferable();
+  error ValidatorStakingGovMITO__ClaimableMismatch();
 
-  constructor(address baseAsset_, IValidatorManager manager_, IValidatorStakingHub hub_)
-    ValidatorStaking(baseAsset_, manager_, hub_)
+  IGovMITO public immutable govMITO;
+
+  constructor(IGovMITO govMITO_, IValidatorManager manager_, IValidatorStakingHub hub_)
+    ValidatorStaking(manager_, hub_)
   {
+    govMITO = govMITO_;
     _disableInitializers();
   }
 
   function initialize(
+    address, // baseAsset, ignored
     address initialOwner,
     uint256 initialMinStakingAmount,
     uint256 initialMinUnstakingAmount,
@@ -26,7 +32,8 @@ contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
     uint48 redelegationCooldown_
   ) public override initializer {
     super.initialize(
-      initialOwner, //
+      address(govMITO),
+      initialOwner,
       initialMinStakingAmount,
       initialMinUnstakingAmount,
       unstakeCooldown_,
@@ -82,10 +89,13 @@ contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
 
   /// @dev Burns the voting units from the recipient
   function _claimUnstake(StorageV1 storage $, address receiver) internal override returns (uint256) {
-    uint256 claimed = super._claimUnstake($, receiver);
+    (, uint256 claimable) = unstaking(receiver, clock());
 
     // burn the voting units
-    _moveDelegateVotes(delegates(receiver), address(0), claimed);
+    _moveDelegateVotes(delegates(receiver), address(0), claimable);
+
+    uint256 claimed = super._claimUnstake($, receiver);
+    require(claimed == claimable, ValidatorStakingGovMITO__ClaimableMismatch());
 
     return claimed;
   }

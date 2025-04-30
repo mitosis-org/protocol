@@ -8,6 +8,7 @@ import { WETH } from '@solady/tokens/WETH.sol';
 import { IVotes } from '@oz/governance/utils/IVotes.sol';
 
 import { ValidatorStakingGovMITO } from '../../../src/hub/validator/ValidatorStakingGovMITO.sol';
+import { IGovMITO } from '../../../src/interfaces/hub/IGovMITO.sol';
 import { IValidatorManager } from '../../../src/interfaces/hub/validator/IValidatorManager.sol';
 import { IValidatorStakingHub } from '../../../src/interfaces/hub/validator/IValidatorStakingHub.sol';
 import { ISudoVotes } from '../../../src/interfaces/lib/ISudoVotes.sol';
@@ -41,15 +42,17 @@ contract ValidatorStakingGovMITOTest is Toolkit {
         _proxy(
           address(
             new ValidatorStakingGovMITO(
-              address(weth), //
+              IGovMITO(payable(address(weth))), //
               IValidatorManager(address(manager)),
+              //
               IValidatorStakingHub(address(hub))
             )
           ),
           abi.encodeCall(
             ValidatorStakingGovMITO.initialize,
             (
-              owner, //
+              address(0), //
+              owner,
               100,
               100,
               UNSTAKING_COOLDOWN,

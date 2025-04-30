@@ -65,12 +65,11 @@ jobs:
         run: |
           apt-get update
           apt-get -y install lcov
-          ./tools/coverage.sh
+          yarn coverage
         id: coverage
 
-      - name: Upload to codecov.io
-        if: ${{ github.repository == 'mitosis-org/protocol' }}
+      - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
-          token: ${{secrets.CODECOV_TOKEN}}
-          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: mitosis-org/protocol

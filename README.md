@@ -1,4 +1,4 @@
-# Mitosis
+# Mitosis [![CI](https://github.com/mitosis-org/protocol/actions/workflows/test.yml/badge.svg)](https://github.com/mitosis-org/protocol/actions/workflows/test.yml) [![Coverage](https://codecov.io/gh/mitosis-org/protocol/graph/badge.svg?token=N10BDMQSVX)](https://codecov.io/gh/mitosis-org/protocol)
 
 Mitosis is an Ecosystem-Owned Liquidity (EOL) blockchain that empowers newly created modular blockchains to capture Total Value Locked (TVL) and attract users through its governance process.
 

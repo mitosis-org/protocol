@@ -25,7 +25,10 @@ remappings = [
     "node_modules/@hyperlane-xyz/core:@openzeppelin=node_modules/@hyperlane-xyz/core/node_modules/@openzeppelin",
     "dependencies/@openzeppelin-contracts-upgradeable-5.1.0:@openzeppelin/contracts=dependencies/@openzeppelin-contracts-5.1.0",
 ]
-fs_permissions = [{ access = "read-write", path = "./TemporaryLeafs.json" }]
+fs_permissions = [
+    { access = "read-write", path = "./TemporaryLeafs.json" },
+    { access = "read-write", path = "./test/testdata/" },
+]
 
 [doc]
 ignore = [

@@ -102,7 +102,7 @@ contract ValidatorManagerTest is Toolkit {
     bytes memory metadata = _buildMetadata(name, 'test-val', 'test validator of mitosis');
 
     uint256 validatorCount = manager.validatorCount();
-    bytes memory compPubKey = LibSecp256k1.compressPubkey(val.pubKey);
+    bytes memory compPubKey = val.pubKey.compressPubkey();
 
     entrypoint.setCall(IConsensusValidatorEntrypoint.registerValidator.selector);
     entrypoint.setRet(
@@ -383,8 +383,7 @@ contract ValidatorManagerTest is Toolkit {
     bytes memory pubKey = abi.encodePacked(hex'04', wallet.publicKeyX, wallet.publicKeyY);
 
     // verify
-    LibSecp256k1.verifyUncmpPubkey(pubKey);
-    LibSecp256k1.verifyUncmpPubkeyWithAddress(pubKey, addr);
+    pubKey.verifyUncmpPubkeyWithAddress(addr);
 
     return ValidatorKey({ addr: addr, privKey: privKey, pubKey: pubKey });
   }

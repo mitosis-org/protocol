@@ -5,7 +5,7 @@ import { IVotes } from '@oz/governance/utils/IVotes.sol';
 import { IERC20 } from '@oz/interfaces/IERC20.sol';
 import { IERC6372 } from '@oz/interfaces/IERC6372.sol';
 import { SafeCast } from '@oz/utils/math/SafeCast.sol';
-import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
+import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { Time } from '@oz/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
@@ -31,7 +31,7 @@ contract GovMITO is
   Ownable2StepUpgradeable,
   UUPSUpgradeable,
   SudoVotes,
-  ReentrancyGuardTransient
+  ReentrancyGuard
 {
   using ERC7201Utils for string;
   using SafeCast for uint256;

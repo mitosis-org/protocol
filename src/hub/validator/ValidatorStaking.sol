@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { SafeCast } from '@oz/utils/math/SafeCast.sol';
-import { ReentrancyGuardTransient } from '@oz/utils/ReentrancyGuardTransient.sol';
+import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { Checkpoints } from '@oz/utils/structs/Checkpoints.sol';
 import { Time } from '@oz/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
@@ -22,6 +22,7 @@ contract ValidatorStakingStorageV1 {
 
   struct StorageV1 {
     // configs
+    address baseAsset;
     uint48 unstakeCooldown;
     uint48 redelegationCooldown;
     uint256 minStakingAmount;
@@ -52,7 +53,7 @@ contract ValidatorStaking is
   IValidatorStaking,
   ValidatorStakingStorageV1,
   Ownable2StepUpgradeable,
-  ReentrancyGuardTransient,
+  ReentrancyGuard,
   UUPSUpgradeable
 {
   using SafeCast for uint256;
@@ -66,8 +67,7 @@ contract ValidatorStaking is
   IValidatorManager private immutable _manager;
   IValidatorStakingHub private immutable _hub;
 
-  constructor(address baseAsset_, IValidatorManager manager_, IValidatorStakingHub hub_) {
-    _baseAsset = baseAsset_ == address(0) ? NATIVE_TOKEN : baseAsset_;
+  constructor(IValidatorManager manager_, IValidatorStakingHub hub_) {
     _manager = manager_;
     _hub = hub_;
 
@@ -75,6 +75,7 @@ contract ValidatorStaking is
   }
 
   function initialize(
+    address baseAsset_,
     address initialOwner,
     uint256 initialMinStakingAmount,
     uint256 initialMinUnstakingAmount,
@@ -86,6 +87,7 @@ contract ValidatorStaking is
     __UUPSUpgradeable_init();
 
     StorageV1 storage $ = _getStorageV1();
+    $.baseAsset = baseAsset_ == address(0) ? NATIVE_TOKEN : baseAsset_;
     _setMinStakingAmount($, initialMinStakingAmount);
     _setMinUnstakingAmount($, initialMinUnstakingAmount);
     _setUnstakeCooldown($, unstakeCooldown_);
@@ -96,7 +98,7 @@ contract ValidatorStaking is
 
   /// @inheritdoc IValidatorStaking
   function baseAsset() external view returns (address) {
-    return _baseAsset;
+    return _getStorageV1().baseAsset;
   }
 
   function manager() external view returns (IValidatorManager) {
@@ -248,12 +250,13 @@ contract ValidatorStaking is
     require(amount > 0, StdError.ZeroAmount());
     require(amount >= $.minStakingAmount, IValidatorStaking__InsufficientMinimumAmount($.minStakingAmount));
 
-    require(_baseAsset != NATIVE_TOKEN || msg.value == amount, StdError.InvalidParameter('amount'));
+    address baseAsset_ = $.baseAsset;
+    require(baseAsset_ != NATIVE_TOKEN || msg.value == amount, StdError.InvalidParameter('amount'));
     require(recipient != address(0), StdError.InvalidParameter('recipient'));
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator(valAddr));
 
     // If the base asset is not native, we need to transfer from the sender to the contract
-    if (_baseAsset != NATIVE_TOKEN) _baseAsset.safeTransferFrom(payer, address(this), amount);
+    if (baseAsset_ != NATIVE_TOKEN) baseAsset_.safeTransferFrom(payer, address(this), amount);
 
     uint48 now_ = Time.timestamp();
 
@@ -314,8 +317,9 @@ contract ValidatorStaking is
       claimed = toValue - fromValue;
     }
 
-    if (_baseAsset == NATIVE_TOKEN) receiver.safeTransferETH(claimed);
-    else _baseAsset.safeTransfer(receiver, claimed);
+    address baseAsset_ = $.baseAsset;
+    if (baseAsset_ == NATIVE_TOKEN) receiver.safeTransferETH(claimed);
+    else baseAsset_.safeTransfer(receiver, claimed);
 
     // apply to state
     _push($.totalUnstaking, now_, claimed.toUint208(), _opSub);

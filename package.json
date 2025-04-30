@@ -7,7 +7,7 @@
   "author": "byeongsu-hong <hong@byeongsu.dev>",
   "license": "MIT",
   "scripts": {
-    "prepare": "husky",
+    "coverage": "./tools/coverage.sh",
     "build": "forge build",
     "abi": "rm -rf abis && mkdir -p abis && forge build --force --skip script --skip test --extra-output-files abi && find ./out -type f | grep '.abi.json' | xargs -I % cp % abis",
     "abi:type": "yarn abi && ts-node ./tools/generate-abi-types.ts && yarn prettier",
