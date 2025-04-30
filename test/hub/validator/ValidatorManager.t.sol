@@ -114,7 +114,6 @@ contract ValidatorManagerTest is Toolkit {
       compPubKey,
       IValidatorManager.CreateValidatorRequest({
         operator: val.addr,
-        withdrawalRecipient: val.addr,
         rewardManager: val.addr,
         commissionRate: 100,
         metadata: metadata
@@ -128,6 +127,7 @@ contract ValidatorManagerTest is Toolkit {
     assertEq(manager.validatorCount(), validatorCount + 1);
     assertEq(manager.validatorAt(validatorCount + 1), val.addr);
     assertTrue(manager.isValidator(val.addr));
+    assertTrue(manager.isPermittedCollateralOwner(val.addr, val.addr)); // initial operator will be the collateral owner
 
     IValidatorManager.ValidatorInfoResponse memory info = manager.validatorInfo(val.addr);
     assertEq(info.valAddr, val.addr);
@@ -154,27 +154,31 @@ contract ValidatorManagerTest is Toolkit {
   function test_depositCollateral() public {
     ValidatorKey memory val = test_createValidator('val-1');
     address operator = makeAddr('operator');
-    address withdrawalRecipient = makeAddr('withdrawalRecipient');
-
+    address collateralOwner = makeAddr('collateralOwner');
     entrypoint.setCall(IConsensusValidatorEntrypoint.depositCollateral.selector);
     entrypoint.setRet(
-      abi.encodeCall(IConsensusValidatorEntrypoint.depositCollateral, (val.addr, withdrawalRecipient)), false, ''
+      abi.encodeCall(IConsensusValidatorEntrypoint.depositCollateral, (val.addr, collateralOwner)), false, ''
     );
 
     vm.prank(val.addr);
     manager.updateOperator(val.addr, operator);
     vm.prank(operator);
-    manager.updateWithdrawalRecipient(val.addr, withdrawalRecipient);
+    manager.setPermittedCollateralOwner(val.addr, collateralOwner, true);
 
     uint256 fee = manager.fee();
     uint256 amount = 1000 ether;
 
     vm.deal(operator, amount + fee);
     vm.prank(operator);
+    vm.expectRevert(_errUnauthorized());
+    manager.depositCollateral{ value: amount + fee }(val.addr);
+
+    vm.deal(collateralOwner, amount + fee);
+    vm.prank(collateralOwner);
     manager.depositCollateral{ value: amount + fee }(val.addr);
 
     entrypoint.assertLastCall(
-      abi.encodeCall(IConsensusValidatorEntrypoint.depositCollateral, (val.addr, withdrawalRecipient)), amount
+      abi.encodeCall(IConsensusValidatorEntrypoint.depositCollateral, (val.addr, collateralOwner)), amount
     );
   }
 
@@ -193,7 +197,9 @@ contract ValidatorManagerTest is Toolkit {
   function test_withdrawCollateral() public {
     ValidatorKey memory val = test_createValidator('val-1');
     address operator = makeAddr('operator');
-    address withdrawalRecipient = makeAddr('withdrawalRecipient');
+    address collateralOwner = makeAddr('collateralOwner');
+    address notPermittedCollateralOwner = makeAddr('notPermittedCollateralOwner');
+    address receiver = makeAddr('receiver');
 
     uint256 fee = manager.fee();
     uint256 amount = 1000 ether;
@@ -202,7 +208,15 @@ contract ValidatorManagerTest is Toolkit {
     entrypoint.setRet(
       abi.encodeCall(
         IConsensusValidatorEntrypoint.withdrawCollateral,
-        (val.addr, amount, withdrawalRecipient, _now48() + 1000 seconds)
+        (val.addr, collateralOwner, receiver, amount, _now48() + 1000 seconds)
+      ),
+      false,
+      ''
+    );
+    entrypoint.setRet(
+      abi.encodeCall(
+        IConsensusValidatorEntrypoint.withdrawCollateral,
+        (val.addr, notPermittedCollateralOwner, receiver, amount, _now48() + 1000 seconds)
       ),
       false,
       ''
@@ -210,24 +224,33 @@ contract ValidatorManagerTest is Toolkit {
 
     vm.prank(val.addr);
     manager.updateOperator(val.addr, operator);
-    vm.prank(operator);
-    manager.updateWithdrawalRecipient(val.addr, withdrawalRecipient);
 
-    vm.prank(operator);
+    vm.prank(collateralOwner);
     if (fee != 0) {
       vm.expectRevert(IValidatorManager.IValidatorManager__InsufficientFee.selector);
     }
-    manager.withdrawCollateral(val.addr, amount);
+    manager.withdrawCollateral(val.addr, receiver, amount);
 
-    vm.deal(operator, fee);
-
-    vm.prank(operator);
-    manager.withdrawCollateral{ value: fee }(val.addr, amount);
+    vm.deal(collateralOwner, fee);
+    vm.prank(collateralOwner);
+    manager.withdrawCollateral{ value: fee }(val.addr, receiver, amount);
 
     entrypoint.assertLastCall(
       abi.encodeCall(
         IConsensusValidatorEntrypoint.withdrawCollateral,
-        (val.addr, amount, withdrawalRecipient, _now48() + 1000 seconds)
+        (val.addr, collateralOwner, receiver, amount, _now48() + 1000 seconds)
+      )
+    );
+
+    // Not permitted collateral owner can call withdrawCollateral too.
+    vm.deal(notPermittedCollateralOwner, fee);
+    vm.prank(notPermittedCollateralOwner);
+    manager.withdrawCollateral{ value: fee }(val.addr, receiver, amount);
+
+    entrypoint.assertLastCall(
+      abi.encodeCall(
+        IConsensusValidatorEntrypoint.withdrawCollateral,
+        (val.addr, notPermittedCollateralOwner, receiver, amount, _now48() + 1000 seconds)
       )
     );
   }
@@ -239,6 +262,70 @@ contract ValidatorManagerTest is Toolkit {
     manager.setFee(0);
 
     test_withdrawCollateral();
+
+    vm.prank(owner);
+    manager.setFee(prevFee);
+  }
+
+  function test_transferCollateralOwnership() public {
+    ValidatorKey memory val = test_createValidator('val-1');
+    address operator = makeAddr('operator');
+    address oldCollateralOwner = makeAddr('oldCollateralOwner');
+    address newCollateralOwner = makeAddr('newCollateralOwner');
+
+    entrypoint.setCall(IConsensusValidatorEntrypoint.transferCollateralOwnership.selector);
+    entrypoint.setRet(
+      abi.encodeCall(
+        IConsensusValidatorEntrypoint.transferCollateralOwnership,
+        (val.addr, oldCollateralOwner, newCollateralOwner)
+      ),
+      false,
+      ''
+    );
+
+    vm.prank(val.addr);
+    manager.updateOperator(val.addr, operator);
+
+    uint256 fee = manager.fee();
+
+    // Should revert if newCollateralOwner is not permitted
+    vm.deal(oldCollateralOwner, fee);
+    vm.prank(oldCollateralOwner);
+    vm.expectRevert(_errInvalidParameter('newOwner'));
+    manager.transferCollateralOwnership{ value: fee }(val.addr, newCollateralOwner);
+
+    // Permit newCollateralOwner
+    vm.prank(operator);
+    manager.setPermittedCollateralOwner(val.addr, newCollateralOwner, true);
+
+    // Should revert if not enough fee  
+    vm.deal(oldCollateralOwner, 0);
+    vm.prank(oldCollateralOwner);
+    if (fee != 0) {
+      vm.expectRevert(IValidatorManager.IValidatorManager__InsufficientFee.selector);
+    }
+    manager.transferCollateralOwnership(val.addr, newCollateralOwner);
+
+    // Should work
+    vm.deal(oldCollateralOwner, fee);
+    vm.prank(oldCollateralOwner);
+    manager.transferCollateralOwnership{ value: fee }(val.addr, newCollateralOwner);
+
+    entrypoint.assertLastCall(
+      abi.encodeCall(
+        IConsensusValidatorEntrypoint.transferCollateralOwnership,
+        (val.addr, oldCollateralOwner, newCollateralOwner)
+      )
+    );
+  }
+
+  function test_transferCollateralOwnership_with_zero_fee() public {
+    uint256 prevFee = manager.fee();
+
+    vm.prank(owner);
+    manager.setFee(0);
+
+    test_transferCollateralOwnership();
 
     vm.prank(owner);
     manager.setFee(prevFee);
@@ -280,6 +367,30 @@ contract ValidatorManagerTest is Toolkit {
 
     vm.prank(owner);
     manager.setFee(prevFee);
+  }
+
+  function test_setPermittedCollateralOwner() public {
+    ValidatorKey memory val = test_createValidator('val-1');
+    address operator = makeAddr('operator');
+    address collateralOwner = makeAddr('collateralOwner');
+
+    vm.prank(val.addr);
+    manager.updateOperator(val.addr, operator);
+
+    assertEq(manager.isPermittedCollateralOwner(val.addr, collateralOwner), false);
+
+    vm.prank(operator);
+    manager.setPermittedCollateralOwner(val.addr, collateralOwner, true);
+    assertEq(manager.isPermittedCollateralOwner(val.addr, collateralOwner), true);
+
+    vm.prank(operator);
+    manager.setPermittedCollateralOwner(val.addr, collateralOwner, false);
+    assertEq(manager.isPermittedCollateralOwner(val.addr, collateralOwner), false);
+
+    // only operator can set permitted collateral owner
+    vm.expectRevert(_errUnauthorized());
+    vm.prank(makeAddr('notOperator'));
+    manager.setPermittedCollateralOwner(val.addr, collateralOwner, true);
   }
 
   function test_setFee() public {

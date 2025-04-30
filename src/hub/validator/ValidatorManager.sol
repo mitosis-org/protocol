@@ -254,17 +254,17 @@ contract ValidatorManager is
   }
 
   /// @inheritdoc IValidatorManager
-  function transferCollateralOwnership(address valAddr, address receiver) external payable nonReentrant {
+  function transferCollateralOwnership(address valAddr, address newOwner) external payable nonReentrant {
     StorageV1 storage $ = _getStorageV1();
 
     _burnFee($);
 
     Validator storage validator = _validator($, valAddr);
-    require(validator.permittedCollateralOwners[receiver], StdError.InvalidParameter('receiver'));
+    require(validator.permittedCollateralOwners[newOwner], StdError.InvalidParameter('newOwner'));
 
-    _entrypoint.transferCollateralOwnership(valAddr, _msgSender(), receiver);
+    _entrypoint.transferCollateralOwnership(valAddr, _msgSender(), newOwner);
 
-    emit CollateralOwnershipTransferred(valAddr, _msgSender(), receiver);
+    emit CollateralOwnershipTransferred(valAddr, _msgSender(), newOwner);
   }
 
   /// @inheritdoc IValidatorManager
