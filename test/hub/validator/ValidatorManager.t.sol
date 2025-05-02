@@ -276,8 +276,7 @@ contract ValidatorManagerTest is Toolkit {
     entrypoint.setCall(IConsensusValidatorEntrypoint.transferCollateralOwnership.selector);
     entrypoint.setRet(
       abi.encodeCall(
-        IConsensusValidatorEntrypoint.transferCollateralOwnership,
-        (val.addr, oldCollateralOwner, newCollateralOwner)
+        IConsensusValidatorEntrypoint.transferCollateralOwnership, (val.addr, oldCollateralOwner, newCollateralOwner)
       ),
       false,
       ''
@@ -298,7 +297,7 @@ contract ValidatorManagerTest is Toolkit {
     vm.prank(operator);
     manager.setPermittedCollateralOwner(val.addr, newCollateralOwner, true);
 
-    // Should revert if not enough fee  
+    // Should revert if not enough fee
     vm.deal(oldCollateralOwner, 0);
     vm.prank(oldCollateralOwner);
     if (fee != 0) {
@@ -313,8 +312,7 @@ contract ValidatorManagerTest is Toolkit {
 
     entrypoint.assertLastCall(
       abi.encodeCall(
-        IConsensusValidatorEntrypoint.transferCollateralOwnership,
-        (val.addr, oldCollateralOwner, newCollateralOwner)
+        IConsensusValidatorEntrypoint.transferCollateralOwnership, (val.addr, oldCollateralOwner, newCollateralOwner)
       )
     );
   }
@@ -369,28 +367,74 @@ contract ValidatorManagerTest is Toolkit {
     manager.setFee(prevFee);
   }
 
+  struct PermittedCollateralOwner {
+    address addr;
+    bool isPermitted;
+  }
+
   function test_setPermittedCollateralOwner() public {
     ValidatorKey memory val = test_createValidator('val-1');
     address operator = makeAddr('operator');
     address collateralOwner = makeAddr('collateralOwner');
+    address collateralOwner2 = makeAddr('collateralOwner2');
 
     vm.prank(val.addr);
     manager.updateOperator(val.addr, operator);
 
-    assertEq(manager.isPermittedCollateralOwner(val.addr, collateralOwner), false);
+    PermittedCollateralOwner[] memory expected;
+
+    expected = new PermittedCollateralOwner[](3);
+    expected[0] = PermittedCollateralOwner(val.addr, true);
+    expected[1] = PermittedCollateralOwner(collateralOwner, false);
+    expected[2] = PermittedCollateralOwner(collateralOwner2, false);
+    _assertPermittedCollateralOwners(manager, val.addr, expected);
 
     vm.prank(operator);
     manager.setPermittedCollateralOwner(val.addr, collateralOwner, true);
-    assertEq(manager.isPermittedCollateralOwner(val.addr, collateralOwner), true);
+
+    expected = new PermittedCollateralOwner[](3);
+    expected[0] = PermittedCollateralOwner(val.addr, true);
+    expected[1] = PermittedCollateralOwner(collateralOwner, true);
+    expected[2] = PermittedCollateralOwner(collateralOwner2, false);
+    _assertPermittedCollateralOwners(manager, val.addr, expected);
+
+    vm.prank(operator);
+    manager.setPermittedCollateralOwner(val.addr, collateralOwner2, true);
+
+    expected = new PermittedCollateralOwner[](3);
+    expected[0] = PermittedCollateralOwner(val.addr, true);
+    expected[1] = PermittedCollateralOwner(collateralOwner, true);
+    expected[2] = PermittedCollateralOwner(collateralOwner2, true);
+    _assertPermittedCollateralOwners(manager, val.addr, expected);
 
     vm.prank(operator);
     manager.setPermittedCollateralOwner(val.addr, collateralOwner, false);
-    assertEq(manager.isPermittedCollateralOwner(val.addr, collateralOwner), false);
+
+    expected = new PermittedCollateralOwner[](2);
+    expected[0] = PermittedCollateralOwner(val.addr, true);
+    expected[1] = PermittedCollateralOwner(collateralOwner2, true);
+    _assertPermittedCollateralOwners(manager, val.addr, expected);
 
     // only operator can set permitted collateral owner
     vm.expectRevert(_errUnauthorized());
     vm.prank(makeAddr('notOperator'));
     manager.setPermittedCollateralOwner(val.addr, collateralOwner, true);
+  }
+
+  function _assertPermittedCollateralOwners(
+    ValidatorManager manager_,
+    address valAddr,
+    PermittedCollateralOwner[] memory expected
+  ) internal view {
+    uint256 j = 0;
+    for (uint256 i = 0; i < expected.length; i++) {
+      assertEq(manager_.isPermittedCollateralOwner(valAddr, expected[i].addr), expected[i].isPermitted);
+      if (expected[i].isPermitted) {
+        assertEq(manager_.permittedCollateralOwnerAt(valAddr, j), expected[i].addr);
+        j++;
+      }
+    }
+    assertEq(manager_.permittedCollateralOwnerSize(valAddr), j);
   }
 
   function test_setFee() public {
