@@ -33,16 +33,16 @@ contract Toolkit is Test {
 
   // proxy
 
-  function _proxy(address impl) internal returns (address) {
-    return address(new ERC1967Proxy(impl, bytes('')));
+  function _proxy(address impl) internal returns (address payable) {
+    return payable(address(new ERC1967Proxy(impl, bytes(''))));
   }
 
-  function _proxy(address impl, bytes memory data) internal returns (address) {
-    return address(new ERC1967Proxy(impl, data));
+  function _proxy(address impl, bytes memory data) internal returns (address payable) {
+    return payable(address(new ERC1967Proxy(impl, data)));
   }
 
-  function _proxy(address impl, bytes memory data, uint256 value) internal returns (address) {
-    return address(new ERC1967Proxy{ value: value }(impl, data));
+  function _proxy(address impl, bytes memory data, uint256 value) internal returns (address payable) {
+    return payable(address(new ERC1967Proxy{ value: value }(impl, data)));
   }
 
   // time
