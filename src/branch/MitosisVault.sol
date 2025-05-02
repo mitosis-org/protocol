@@ -121,6 +121,8 @@ contract MitosisVault is
     _assertOnlyEntrypoint($);
     _assertAssetInitialized(asset);
 
+    $.assets[asset].availableCap += amount;
+
     IERC20(asset).safeTransfer(to, amount);
 
     emit Withdrawn(asset, to, amount);
@@ -189,9 +191,13 @@ contract MitosisVault is
 
   function _setCap(StorageV1 storage $, address asset, uint256 newCap) internal {
     AssetInfo storage assetInfo = $.assets[asset];
+
     uint256 prevCap = assetInfo.maxCap;
+    uint256 prevSpent = prevCap - assetInfo.availableCap;
+
     assetInfo.maxCap = newCap;
-    assetInfo.availableCap = newCap;
+    assetInfo.availableCap = newCap - prevSpent;
+
     emit CapSet(_msgSender(), asset, prevCap, newCap);
   }
 

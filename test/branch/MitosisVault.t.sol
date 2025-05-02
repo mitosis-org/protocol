@@ -74,28 +74,32 @@ contract MitosisVaultTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_deposit() public {
+  function test_deposit(uint256 amount) public {
+    vm.assume(0 < amount && amount <= type(uint64).max);
+
     address user1 = makeAddr('user1');
-    _token.mint(user1, 100 ether);
+    _token.mint(user1, amount);
 
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(_token));
 
     vm.prank(owner);
-    _mitosisVault.setCap(address(_token), type(uint128).max); // set cap to infinite (temp)
+    _mitosisVault.setCap(address(_token), type(uint64).max);
 
     vm.prank(owner);
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
 
     vm.startPrank(user1);
 
-    _token.approve(address(_mitosisVault), 100 ether);
-    _mitosisVault.deposit(address(_token), user1, 100 ether);
-
-    assertEq(_token.balanceOf(user1), 0);
-    assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
+    _token.approve(address(_mitosisVault), amount);
+    _mitosisVault.deposit(address(_token), user1, amount);
 
     vm.stopPrank();
+
+    assertEq(_token.balanceOf(user1), 0);
+    assertEq(_token.balanceOf(address(_mitosisVault)), amount);
+    assertEq(_mitosisVault.maxCap(address(_token)), type(uint64).max);
+    assertEq(_mitosisVault.availableCap(address(_token)), type(uint64).max - amount);
   }
 
   function test_deposit_AssetNotInitialized() public {
@@ -169,16 +173,18 @@ contract MitosisVaultTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_depositWithSupplyMatrix() public {
+  function test_depositWithSupplyMatrix(uint256 amount) public {
+    vm.assume(0 < amount && amount <= type(uint64).max);
+
     address user1 = makeAddr('user1');
 
-    _token.mint(user1, 100 ether);
+    _token.mint(user1, amount);
 
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(_token));
 
     vm.prank(owner);
-    _mitosisVault.setCap(address(_token), type(uint128).max); // set cap to infinite (temp)
+    _mitosisVault.setCap(address(_token), type(uint64).max);
 
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeMatrix(hubMatrixVault, address(_token));
@@ -188,13 +194,15 @@ contract MitosisVaultTest is Toolkit {
 
     vm.startPrank(user1);
 
-    _token.approve(address(_mitosisVault), 100 ether);
-    _mitosisVault.depositWithSupplyMatrix(address(_token), user1, hubMatrixVault, 100 ether);
-
-    assertEq(_token.balanceOf(user1), 0);
-    assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
+    _token.approve(address(_mitosisVault), amount);
+    _mitosisVault.depositWithSupplyMatrix(address(_token), user1, hubMatrixVault, amount);
 
     vm.stopPrank();
+
+    assertEq(_token.balanceOf(user1), 0);
+    assertEq(_token.balanceOf(address(_mitosisVault)), amount);
+    assertEq(_mitosisVault.maxCap(address(_token)), type(uint64).max);
+    assertEq(_mitosisVault.availableCap(address(_token)), type(uint64).max - amount);
   }
 
   function test_depositWithSupplyMatrix_AssetNotInitialized() public {
@@ -305,47 +313,49 @@ contract MitosisVaultTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_withdraw() public {
-    test_deposit(); // (owner) - - - deposit 100 ETH - - -> (_mitosisVault)
-    assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
+  function test_withdraw(uint256 amount) public {
+    test_deposit(amount); // (owner) - - - deposit 100 ETH - - -> (_mitosisVault)
+    assertEq(_token.balanceOf(address(_mitosisVault)), amount);
 
     vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.withdraw(address(_token), address(1), 10 ether);
+    _mitosisVault.withdraw(address(_token), address(1), amount);
 
-    assertEq(_token.balanceOf(address(1)), 10 ether);
-    assertEq(_token.balanceOf(address(_mitosisVault)), 90 ether);
+    assertEq(_token.balanceOf(address(1)), amount);
+    assertEq(_token.balanceOf(address(_mitosisVault)), 0);
+    assertEq(_mitosisVault.maxCap(address(_token)), type(uint64).max);
+    assertEq(_mitosisVault.availableCap(address(_token)), type(uint64).max);
   }
 
-  function test_withdraw_Unauthorized() public {
-    test_deposit();
-    assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
+  function test_withdraw_Unauthorized(uint256 amount) public {
+    test_deposit(amount);
+    assertEq(_token.balanceOf(address(_mitosisVault)), amount);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.withdraw(address(_token), address(1), 10 ether);
+    _mitosisVault.withdraw(address(_token), address(1), amount);
   }
 
-  function test_withdraw_AssetNotInitialized() public {
-    test_deposit();
-    assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
+  function test_withdraw_AssetNotInitialized(uint256 amount) public {
+    test_deposit(amount);
+    assertEq(_token.balanceOf(address(_mitosisVault)), amount);
 
     vm.startPrank(address(_mitosisVaultEntrypoint));
 
     address myToken = address(10);
 
     vm.expectRevert(_errAssetNotInitialized(myToken));
-    _mitosisVault.withdraw(myToken, address(1), 10 ether);
+    _mitosisVault.withdraw(myToken, address(1), amount);
 
     vm.stopPrank();
   }
 
-  function test_withdraw_NotEnoughBalance() public {
-    test_deposit();
-    assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
+  function test_withdraw_NotEnoughBalance(uint256 amount) public {
+    test_deposit(amount);
+    assertEq(_token.balanceOf(address(_mitosisVault)), amount);
 
     vm.startPrank(address(_mitosisVaultEntrypoint));
 
     vm.expectRevert();
-    _mitosisVault.withdraw(address(_token), address(1), 101 ether);
+    _mitosisVault.withdraw(address(_token), address(1), amount + 1);
 
     vm.stopPrank();
   }
@@ -846,6 +856,16 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
 
     assertFalse(_mitosisVault.isAssetActionHalted(address(_token), AssetAction.Deposit));
+  }
+
+  function test_setCap(uint256 amount) public {
+    test_deposit(amount);
+
+    vm.prank(owner);
+    _mitosisVault.setCap(address(_token), type(uint128).max);
+
+    assertEq(_mitosisVault.maxCap(address(_token)), type(uint128).max);
+    assertEq(_mitosisVault.availableCap(address(_token)), type(uint128).max - amount);
   }
 
   function _errAssetAlreadyInitialized(address asset) internal pure returns (bytes memory) {
