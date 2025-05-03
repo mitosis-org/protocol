@@ -5,6 +5,7 @@ import { Math } from '@oz/utils/math/Math.sol';
 import { SafeCast } from '@oz/utils/math/SafeCast.sol';
 import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { Checkpoints } from '@oz/utils/structs/Checkpoints.sol';
+import { EnumerableSet } from '@oz/utils/structs/EnumerableSet.sol';
 import { Time } from '@oz/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
@@ -43,7 +44,7 @@ contract ValidatorManagerStorageV1 {
     bytes pubKey;
     ValidatorRewardConfig rewardConfig;
     bytes metadata;
-    mapping(address => bool) permittedCollateralOwners;
+    EnumerableSet.AddressSet permittedCollateralOwners;
   }
 
   struct StorageV1 {
@@ -77,6 +78,7 @@ contract ValidatorManager is
   using SafeCast for uint256;
   using LibSecp256k1 for bytes;
   using Checkpoints for Checkpoints.Trace160;
+  using EnumerableSet for EnumerableSet.AddressSet;
 
   IEpochFeeder private immutable _epochFeeder;
   IConsensusValidatorEntrypoint private immutable _entrypoint;
@@ -189,9 +191,19 @@ contract ValidatorManager is
   }
 
   /// @inheritdoc IValidatorManager
+  function permittedCollateralOwnerSize(address valAddr) external view returns (uint256) {
+    return _validator(_getStorageV1(), valAddr).permittedCollateralOwners.length();
+  }
+
+  /// @inheritdoc IValidatorManager
+  function permittedCollateralOwnerAt(address valAddr, uint256 index) external view returns (address) {
+    return _validator(_getStorageV1(), valAddr).permittedCollateralOwners.at(index);
+  }
+
+  /// @inheritdoc IValidatorManager
   function isPermittedCollateralOwner(address valAddr, address collateralOwner) external view returns (bool) {
     Validator storage validator = _validator(_getStorageV1(), valAddr);
-    return validator.permittedCollateralOwners[collateralOwner];
+    return validator.permittedCollateralOwners.contains(collateralOwner);
   }
 
   /// @inheritdoc IValidatorManager
@@ -226,7 +238,7 @@ contract ValidatorManager is
     require(netMsgValue > 0, StdError.ZeroAmount());
 
     Validator storage validator = _validator($, valAddr);
-    require(validator.permittedCollateralOwners[_msgSender()], StdError.Unauthorized());
+    require(validator.permittedCollateralOwners.contains(_msgSender()), StdError.Unauthorized());
 
     _entrypoint.depositCollateral{ value: netMsgValue }(valAddr, _msgSender());
 
@@ -260,7 +272,7 @@ contract ValidatorManager is
     _burnFee($);
 
     Validator storage validator = _validator($, valAddr);
-    require(validator.permittedCollateralOwners[newOwner], StdError.InvalidParameter('newOwner'));
+    require(validator.permittedCollateralOwners.contains(newOwner), StdError.InvalidParameter('newOwner'));
 
     _entrypoint.transferCollateralOwnership(valAddr, _msgSender(), newOwner);
 
@@ -413,7 +425,8 @@ contract ValidatorManager is
   {
     require(collateralOwner != address(0), StdError.ZeroAddress('collateralOwner'));
 
-    validator.permittedCollateralOwners[collateralOwner] = isPermitted;
+    if (isPermitted) validator.permittedCollateralOwners.add(collateralOwner);
+    else validator.permittedCollateralOwners.remove(collateralOwner);
 
     emit PermittedCollateralOwnerSet(validator.valAddr, collateralOwner, isPermitted);
   }
