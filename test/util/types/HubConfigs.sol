@@ -151,7 +151,6 @@ library HubConfigs {
       o = nk.serialize('pubKey', v[i].pubKey);
       o = nk.serialize('operator', v[i].operator);
       o = nk.serialize('rewardManager', v[i].rewardManager);
-      o = nk.serialize('withdrawalRecipient', v[i].withdrawalRecipient);
       o = nk.serialize('commissionRate', v[i].commissionRate);
       o = nk.serialize('metadata', v[i].metadata);
       o = nk.serialize('signature', v[i].signature);
@@ -273,7 +272,6 @@ library HubConfigs {
         val.pubKey = v.readBytes(cat(nk, '.pubKey'));
         val.operator = v.readAddress(cat(nk, '.operator'));
         val.rewardManager = v.readAddress(cat(nk, '.rewardManager'));
-        val.withdrawalRecipient = v.readAddress(cat(nk, '.withdrawalRecipient'));
         val.commissionRate = v.readUint(cat(nk, '.commissionRate'));
         val.metadata = v.readBytes(cat(nk, '.metadata'));
         val.signature = v.readBytes(cat(nk, '.signature'));

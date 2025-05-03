@@ -5,6 +5,7 @@ import { Math } from '@oz/utils/math/Math.sol';
 import { SafeCast } from '@oz/utils/math/SafeCast.sol';
 import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { Checkpoints } from '@oz/utils/structs/Checkpoints.sol';
+import { EnumerableSet } from '@oz/utils/structs/EnumerableSet.sol';
 import { Time } from '@oz/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
@@ -40,18 +41,10 @@ contract ValidatorManagerStorageV1 {
     address valAddr;
     address operator;
     address rewardManager;
-    address withdrawalRecipient;
     bytes pubKey;
     ValidatorRewardConfig rewardConfig;
-    // TBD: Metadata format
-    // 1. name
-    // 2. moniker
-    // 3. description
-    // 4. website
-    // 5. image url
-    // 6. ...
-    // This will be applied immediately
     bytes metadata;
+    EnumerableSet.AddressSet permittedCollateralOwners;
   }
 
   struct StorageV1 {
@@ -85,6 +78,7 @@ contract ValidatorManager is
   using SafeCast for uint256;
   using LibSecp256k1 for bytes;
   using Checkpoints for Checkpoints.Trace160;
+  using EnumerableSet for EnumerableSet.AddressSet;
 
   IEpochFeeder private immutable _epochFeeder;
   IConsensusValidatorEntrypoint private immutable _entrypoint;
@@ -128,7 +122,6 @@ contract ValidatorManager is
         genVal.value,
         CreateValidatorRequest({
           operator: genVal.operator,
-          withdrawalRecipient: genVal.withdrawalRecipient,
           rewardManager: genVal.rewardManager,
           commissionRate: genVal.commissionRate,
           metadata: genVal.metadata
@@ -198,6 +191,22 @@ contract ValidatorManager is
   }
 
   /// @inheritdoc IValidatorManager
+  function permittedCollateralOwnerSize(address valAddr) external view returns (uint256) {
+    return _validator(_getStorageV1(), valAddr).permittedCollateralOwners.length();
+  }
+
+  /// @inheritdoc IValidatorManager
+  function permittedCollateralOwnerAt(address valAddr, uint256 index) external view returns (address) {
+    return _validator(_getStorageV1(), valAddr).permittedCollateralOwners.at(index);
+  }
+
+  /// @inheritdoc IValidatorManager
+  function isPermittedCollateralOwner(address valAddr, address collateralOwner) external view returns (bool) {
+    Validator storage validator = _validator(_getStorageV1(), valAddr);
+    return validator.permittedCollateralOwners.contains(collateralOwner);
+  }
+
+  /// @inheritdoc IValidatorManager
   function createValidator(bytes calldata pubKey, CreateValidatorRequest calldata request)
     external
     payable
@@ -213,9 +222,12 @@ contract ValidatorManager is
     StorageV1 storage $ = _getStorageV1();
 
     uint256 netMsgValue = _burnFee($);
-    _createValidator($, valAddr, pubKey, netMsgValue, request);
+    Validator storage validator = _createValidator($, valAddr, pubKey, netMsgValue, request);
 
-    _entrypoint.registerValidator{ value: netMsgValue }(valAddr, pubKey, request.withdrawalRecipient);
+    // operator becomes an initial collateral owner
+    _setPermittedCollateralOwner(validator, request.operator, true);
+
+    _entrypoint.registerValidator{ value: netMsgValue }(valAddr, pubKey, request.operator);
   }
 
   /// @inheritdoc IValidatorManager
@@ -226,30 +238,45 @@ contract ValidatorManager is
     require(netMsgValue > 0, StdError.ZeroAmount());
 
     Validator storage validator = _validator($, valAddr);
-    _entrypoint.depositCollateral{ value: netMsgValue }(valAddr, validator.withdrawalRecipient);
+    require(validator.permittedCollateralOwners.contains(_msgSender()), StdError.Unauthorized());
+
+    _entrypoint.depositCollateral{ value: netMsgValue }(valAddr, _msgSender());
 
     emit CollateralDeposited(valAddr, _msgSender(), netMsgValue);
   }
 
   /// @inheritdoc IValidatorManager
-  function withdrawCollateral(address valAddr, uint256 amount) external payable nonReentrant {
+  function withdrawCollateral(address valAddr, address receiver, uint256 amount) external payable nonReentrant {
     require(amount > 0, StdError.ZeroAmount());
 
     StorageV1 storage $ = _getStorageV1();
 
     _burnFee($);
-    Validator storage validator = _validator($, valAddr);
-
-    _assertOperator(validator);
+    _validator($, valAddr);
 
     _entrypoint.withdrawCollateral(
       valAddr,
+      _msgSender(),
+      receiver,
       amount,
-      validator.withdrawalRecipient,
       Time.timestamp() + $.globalValidatorConfig.collateralWithdrawalDelaySeconds.toUint48()
     );
 
-    emit CollateralWithdrawn(valAddr, validator.withdrawalRecipient, amount);
+    emit CollateralWithdrawn(valAddr, _msgSender(), receiver, amount);
+  }
+
+  /// @inheritdoc IValidatorManager
+  function transferCollateralOwnership(address valAddr, address newOwner) external payable nonReentrant {
+    StorageV1 storage $ = _getStorageV1();
+
+    _burnFee($);
+
+    Validator storage validator = _validator($, valAddr);
+    require(validator.permittedCollateralOwners.contains(newOwner), StdError.InvalidParameter('newOwner'));
+
+    _entrypoint.transferCollateralOwnership(valAddr, _msgSender(), newOwner);
+
+    emit CollateralOwnershipTransferred(valAddr, _msgSender(), newOwner);
   }
 
   /// @inheritdoc IValidatorManager
@@ -277,19 +304,6 @@ contract ValidatorManager is
     $.validators[$.indexByValAddr[valAddr]].operator = operator;
 
     emit OperatorUpdated(valAddr, operator);
-  }
-
-  /// @inheritdoc IValidatorManager
-  function updateWithdrawalRecipient(address valAddr, address withdrawalRecipient) external {
-    require(withdrawalRecipient != address(0), StdError.InvalidParameter('withdrawalRecipient'));
-
-    StorageV1 storage $ = _getStorageV1();
-    Validator storage validator = _validator($, valAddr);
-    _assertOperator(validator);
-
-    $.validators[$.indexByValAddr[valAddr]].withdrawalRecipient = withdrawalRecipient;
-
-    emit WithdrawalRecipientUpdated(valAddr, _msgSender(), withdrawalRecipient);
   }
 
   /// @inheritdoc IValidatorManager
@@ -353,6 +367,18 @@ contract ValidatorManager is
     emit RewardConfigUpdated(valAddr, _msgSender(), request);
   }
 
+  /// @inheritdoc IValidatorManager
+  function setPermittedCollateralOwner(address valAddr, address collateralOwner, bool isPermitted) external {
+    require(collateralOwner != address(0), StdError.InvalidParameter('collateralOwner'));
+
+    StorageV1 storage $ = _getStorageV1();
+    Validator storage validator = _validator($, valAddr);
+    _assertOperator(validator);
+
+    _setPermittedCollateralOwner(validator, collateralOwner, isPermitted);
+  }
+
+  /// @inheritdoc IValidatorManager
   function setFee(uint256 fee_) external onlyOwner {
     _setFee(_getStorageV1(), fee_);
   }
@@ -377,7 +403,6 @@ contract ValidatorManager is
       valAddr: info.valAddr,
       pubKey: info.pubKey,
       operator: info.operator,
-      withdrawalRecipient: info.withdrawalRecipient,
       rewardManager: info.rewardManager,
       commissionRate: commissionRate,
       metadata: info.metadata
@@ -393,6 +418,17 @@ contract ValidatorManager is
       Math.max(response.commissionRate, $.globalValidatorConfig.minimumCommissionRates.upperLookup(epoch.toUint96()));
 
     return response;
+  }
+
+  function _setPermittedCollateralOwner(Validator storage validator, address collateralOwner, bool isPermitted)
+    internal
+  {
+    require(collateralOwner != address(0), StdError.ZeroAddress('collateralOwner'));
+
+    if (isPermitted) validator.permittedCollateralOwners.add(collateralOwner);
+    else validator.permittedCollateralOwners.remove(collateralOwner);
+
+    emit PermittedCollateralOwnerSet(validator.valAddr, collateralOwner, isPermitted);
   }
 
   function _setFee(StorageV1 storage $, uint256 fee_) internal {
@@ -428,7 +464,7 @@ contract ValidatorManager is
     bytes memory pubKey,
     uint256 value,
     CreateValidatorRequest memory request
-  ) internal {
+  ) internal returns (Validator storage) {
     _assertValidatorNotExists($, valAddr);
 
     GlobalValidatorConfig storage globalConfig = $.globalValidatorConfig;
@@ -448,7 +484,6 @@ contract ValidatorManager is
     Validator storage validator = $.validators[valIndex];
     validator.valAddr = valAddr;
     validator.operator = request.operator;
-    validator.withdrawalRecipient = request.withdrawalRecipient;
     validator.rewardManager = request.rewardManager;
     validator.pubKey = pubKey;
     validator.rewardConfig.commissionRates.push(epoch.toUint96(), request.commissionRate.toUint160());
@@ -457,6 +492,8 @@ contract ValidatorManager is
     $.indexByValAddr[valAddr] = valIndex;
 
     emit ValidatorCreated(valAddr, request.operator, pubKey, value, request);
+
+    return validator;
   }
 
   /// @notice Burns the fee amount of ETH
