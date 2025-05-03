@@ -73,6 +73,10 @@ contract EOLVault is ERC4626, Ownable2StepUpgradeable, Pausable, ReentrancyGuard
     return _getStorageV1().decimals;
   }
 
+  function _decimalsOffset() internal pure override returns (uint8) {
+    return 6;
+  }
+
   function deposit(uint256 assets, address receiver) public override nonReentrant whenNotPaused returns (uint256) {
     return super.deposit(assets, receiver);
   }
