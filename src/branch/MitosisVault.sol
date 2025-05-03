@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { Math } from '@oz/utils/math/Math.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
@@ -196,7 +197,7 @@ contract MitosisVault is
     uint256 prevSpent = prevCap - assetInfo.availableCap;
 
     assetInfo.maxCap = newCap;
-    assetInfo.availableCap = newCap - prevSpent;
+    assetInfo.availableCap = newCap - Math.min(prevSpent, newCap);
 
     emit CapSet(_msgSender(), asset, prevCap, newCap);
   }

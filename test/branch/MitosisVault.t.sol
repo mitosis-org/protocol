@@ -859,6 +859,7 @@ contract MitosisVaultTest is Toolkit {
   }
 
   function test_setCap(uint256 amount) public {
+    vm.assume(2 < amount);
     test_deposit(amount);
 
     vm.prank(owner);
@@ -866,6 +867,12 @@ contract MitosisVaultTest is Toolkit {
 
     assertEq(_mitosisVault.maxCap(address(_token)), type(uint128).max);
     assertEq(_mitosisVault.availableCap(address(_token)), type(uint128).max - amount);
+
+    vm.prank(owner);
+    _mitosisVault.setCap(address(_token), amount - 1);
+
+    assertEq(_mitosisVault.maxCap(address(_token)), amount - 1);
+    assertEq(_mitosisVault.availableCap(address(_token)), 0);
   }
 
   function _errAssetAlreadyInitialized(address asset) internal pure returns (bytes memory) {
