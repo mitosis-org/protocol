@@ -63,6 +63,10 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgr
     return _getStorageV1().decimals;
   }
 
+  function _decimalsOffset() internal pure override returns (uint8) {
+    return 6;
+  }
+
   // Mutative functions
 
   function deposit(uint256 assets, address receiver)
