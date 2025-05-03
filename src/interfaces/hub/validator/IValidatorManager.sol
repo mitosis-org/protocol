@@ -32,7 +32,6 @@ interface IValidatorManager {
     bytes pubKey;
     address operator;
     address rewardManager;
-    address withdrawalRecipient;
     uint256 commissionRate;
     bytes metadata;
   }
@@ -48,7 +47,6 @@ interface IValidatorManager {
   struct CreateValidatorRequest {
     address operator;
     address rewardManager;
-    address withdrawalRecipient;
     uint256 commissionRate; // bp e.g.) 10000 = 100%
     bytes metadata;
   }
@@ -61,7 +59,6 @@ interface IValidatorManager {
     bytes pubKey;
     address operator;
     address rewardManager;
-    address withdrawalRecipient;
     uint256 commissionRate;
     bytes metadata;
     bytes signature;
@@ -85,14 +82,17 @@ interface IValidatorManager {
     uint256 initialDeposit,
     CreateValidatorRequest request
   );
-  event CollateralDeposited(address indexed valAddr, address indexed depositor, uint256 amount);
-  event CollateralWithdrawn(address indexed valAddr, address indexed recipient, uint256 amount);
+  event CollateralDeposited(address indexed valAddr, address indexed collateralOwner, uint256 amount);
+  event CollateralWithdrawn(
+    address indexed valAddr, address indexed collateralOwner, address indexed receiver, uint256 amount
+  );
+  event CollateralOwnershipTransferred(address indexed valAddr, address indexed prevOwner, address indexed newOwner);
   event ValidatorUnjailed(address indexed valAddr);
   event OperatorUpdated(address indexed valAddr, address indexed operator);
-  event WithdrawalRecipientUpdated(address indexed valAddr, address indexed operator, address indexed recipient);
   event RewardManagerUpdated(address indexed valAddr, address indexed operator, address indexed rewardManager);
   event MetadataUpdated(address indexed valAddr, address indexed operator, bytes metadata);
   event RewardConfigUpdated(address indexed valAddr, address indexed operator, UpdateRewardConfigRequest request);
+  event PermittedCollateralOwnerSet(address indexed valAddr, address indexed collateralOwner, bool isPermitted);
 
   event GlobalValidatorConfigUpdated(SetGlobalValidatorConfigRequest request);
   event EpochFeederUpdated(IEpochFeeder indexed epochFeeder);
@@ -113,15 +113,15 @@ interface IValidatorManager {
   function validatorPubKeyToAddress(bytes calldata pubKey) external pure returns (address);
 
   function validatorCount() external view returns (uint256);
-
-  /// @notice Returns the validator address at a given index.
-  /// @param index The index (starting from 1) to retrieve the validator address from.
-  /// @return valAddr The validator address at the specified index.
   function validatorAt(uint256 index) external view returns (address);
   function isValidator(address valAddr) external view returns (bool);
 
   function validatorInfo(address valAddr) external view returns (ValidatorInfoResponse memory);
   function validatorInfoAt(uint256 epoch, address valAddr) external view returns (ValidatorInfoResponse memory);
+
+  function permittedCollateralOwnerSize(address valAddr) external view returns (uint256);
+  function permittedCollateralOwnerAt(address valAddr, uint256 index) external view returns (address);
+  function isPermittedCollateralOwner(address valAddr, address collateralOwner) external view returns (bool);
 
   // ========== VALIDATOR ACTIONS ========== //
 
@@ -132,17 +132,15 @@ interface IValidatorManager {
 
   // operator actions
   function depositCollateral(address valAddr) external payable;
-  /**
-   * @dev Be careful, as the withdrawal recipient, not msg.sender, will receive the collateral.
-   */
-  function withdrawCollateral(address valAddr, uint256 amount) external payable;
+  function withdrawCollateral(address valAddr, address receiver, uint256 amount) external payable;
+  function transferCollateralOwnership(address valAddr, address newOwner) external payable;
 
   // operator actions - validator configurations
   function updateOperator(address valAddr, address operator) external;
-  function updateWithdrawalRecipient(address valAddr, address withdrawalRecipient) external;
   function updateRewardManager(address valAddr, address rewardManager) external;
   function updateMetadata(address valAddr, bytes calldata metadata) external;
   function updateRewardConfig(address valAddr, UpdateRewardConfigRequest calldata request) external;
+  function setPermittedCollateralOwner(address valAddr, address collateralOwner, bool isPermitted) external;
 
   // ========== CONTRACT MANAGEMENT ========== //
 
