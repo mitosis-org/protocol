@@ -35,60 +35,70 @@ contract EOLVaultTest is Test {
   function test_init() public view {
     assertEq(vault.name(), 'Mitosis EOL Wrapped ETH');
     assertEq(vault.symbol(), 'miwETH');
-    assertEq(vault.decimals(), 18);
+    assertEq(vault.decimals(), 18 + 6);
     assertEq(vault.asset(), address(weth));
     assertEq(vault.owner(), owner);
   }
 
-  function test_deposit() public {
-    vm.deal(user, 100 ether);
+  function test_deposit(uint256 amount) public {
+    vm.assume(0 < amount && amount < type(uint128).max);
+
+    vm.deal(user, amount);
     vm.startPrank(user);
-    weth.deposit{ value: 100 ether }();
-    weth.approve(address(vault), 100 ether);
-    vault.deposit(100 ether, user);
+
+    weth.deposit{ value: amount }();
+    weth.approve(address(vault), amount);
+    vault.deposit(amount, user);
+
     vm.stopPrank();
 
-    assertEq(vault.balanceOf(user), 100 ether);
-    assertEq(vault.totalAssets(), 100 ether);
-    assertEq(vault.totalSupply(), 100 ether);
+    assertEq(weth.balanceOf(address(vault)), amount);
+    assertEq(vault.balanceOf(user), amount * 1e6);
+    assertEq(vault.totalAssets(), amount);
+    assertEq(vault.totalSupply(), amount * 1e6);
   }
 
-  function test_mint() public {
-    vm.deal(user, 100 ether);
+  function test_mint(uint256 amount) public {
+    vm.assume(0 < amount && amount < type(uint128).max);
+
+    vm.deal(user, amount);
     vm.startPrank(user);
-    weth.deposit{ value: 100 ether }();
-    weth.approve(address(vault), 100 ether);
-    vault.mint(100 ether, user);
+
+    weth.deposit{ value: amount }();
+    weth.approve(address(vault), amount);
+    vault.mint(amount * 1e6, user);
+
     vm.stopPrank();
 
-    assertEq(vault.balanceOf(user), 100 ether);
-    assertEq(vault.totalAssets(), 100 ether);
-    assertEq(vault.totalSupply(), 100 ether);
+    assertEq(weth.balanceOf(address(vault)), amount);
+    assertEq(vault.balanceOf(user), amount * 1e6);
+    assertEq(vault.totalAssets(), amount);
+    assertEq(vault.totalSupply(), amount * 1e6);
   }
 
-  function test_withdraw() public {
-    test_deposit();
+  function test_withdraw(uint256 amount) public {
+    test_deposit(amount);
 
     vm.prank(user);
-    vault.withdraw(100 ether, owner, user);
+    vault.withdraw(amount, owner, user);
 
     assertEq(vault.balanceOf(user), 0);
     assertEq(vault.totalAssets(), 0);
     assertEq(vault.totalSupply(), 0);
     assertEq(weth.balanceOf(address(vault)), 0);
-    assertEq(weth.balanceOf(owner), 100 ether);
+    assertEq(weth.balanceOf(owner), amount);
   }
 
-  function test_redeem() public {
-    test_mint();
+  function test_redeem(uint256 amount) public {
+    test_mint(amount);
 
     vm.prank(user);
-    vault.redeem(100 ether, owner, user);
+    vault.redeem(amount * 1e6, owner, user);
 
     assertEq(vault.balanceOf(user), 0);
     assertEq(vault.totalAssets(), 0);
     assertEq(vault.totalSupply(), 0);
     assertEq(weth.balanceOf(address(vault)), 0);
-    assertEq(weth.balanceOf(owner), 100 ether);
+    assertEq(weth.balanceOf(owner), amount);
   }
 }
