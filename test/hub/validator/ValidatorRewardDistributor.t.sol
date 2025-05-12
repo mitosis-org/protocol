@@ -1853,6 +1853,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
           validatorParam.operatorAddr, // address operator;
           validatorParam.rewardManager, // address rewardManager;
           validatorParam.commissionRate, // uint256 commissionRate;
+          0,
+          0,
           bytes('') // bytes metadata;
         );
 
