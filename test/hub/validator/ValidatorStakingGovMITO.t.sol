@@ -31,7 +31,7 @@ contract ValidatorStakingGovMITOTest is Toolkit {
   uint48 REDELEGATION_COOLDOWN = 1 days;
 
   function setUp() public {
-    // use real time to avoid arithmatic overflow on withdrawalPeriod calculation
+    // use real time to avoid arithmetic overflow on withdrawalPeriod calculation
     vm.warp(1743061332);
 
     weth = new WETH();

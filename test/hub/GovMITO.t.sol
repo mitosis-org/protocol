@@ -27,7 +27,7 @@ contract GovMITOTest is Toolkit {
   uint48 constant WITHDRAWAL_PERIOD = 21 days;
 
   function setUp() public {
-    // use real time to avoid arithmatic overflow on withdrawalPeriod calculation
+    // use real time to avoid arithmetic overflow on withdrawalPeriod calculation
     vm.warp(1743061332);
     govMITO =
       GovMITO(payable(_proxy(address(new GovMITO()), abi.encodeCall(GovMITO.initialize, (owner, WITHDRAWAL_PERIOD)))));
