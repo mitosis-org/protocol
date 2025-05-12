@@ -33,6 +33,8 @@ interface IValidatorManager {
     address operator;
     address rewardManager;
     uint256 commissionRate;
+    uint256 pendingCommissionRate;
+    uint256 pendingCommissionRateUpdateEpoch;
     bytes metadata;
   }
 
