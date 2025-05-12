@@ -28,7 +28,7 @@ contract ValidatorStakingTest is Toolkit {
   ValidatorStaking nativeVault;
 
   function setUp() public {
-    // use real time to avoid arithmatic overflow on withdrawalPeriod calculation
+    // use real time to avoid arithmetic overflow on withdrawalPeriod calculation
     vm.warp(1743061332);
 
     weth = new WETH();
