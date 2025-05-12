@@ -1880,6 +1880,8 @@ contract ValidatorRewardDistributorTest is Toolkit {
           validatorParam.rewardManager, // address rewardManager;
           validatorParam.withdrawalRecipient, // withdrawalRecipient
           validatorParam.commissionRate, // uint256 commissionRate;
+          0,
+          0,
           bytes('') // bytes metadata;
         );
 

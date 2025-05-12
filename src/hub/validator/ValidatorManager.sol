@@ -380,12 +380,17 @@ contract ValidatorManager is
       withdrawalRecipient: info.withdrawalRecipient,
       rewardManager: info.rewardManager,
       commissionRate: commissionRate,
+      pendingCommissionRate: 0,
+      pendingCommissionRateUpdateEpoch: 0,
       metadata: info.metadata
     });
 
     // apply pending rate
     if (info.rewardConfig.pendingCommissionRateUpdateEpoch <= epoch) {
       response.commissionRate = info.rewardConfig.pendingCommissionRate;
+    } else {
+      response.pendingCommissionRate = info.rewardConfig.pendingCommissionRate;
+      response.pendingCommissionRateUpdateEpoch = info.rewardConfig.pendingCommissionRateUpdateEpoch;
     }
 
     // hard limit

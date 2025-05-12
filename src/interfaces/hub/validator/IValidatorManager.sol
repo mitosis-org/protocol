@@ -34,6 +34,8 @@ interface IValidatorManager {
     address rewardManager;
     address withdrawalRecipient;
     uint256 commissionRate;
+    uint256 pendingCommissionRate;
+    uint256 pendingCommissionRateUpdateEpoch;
     bytes metadata;
   }
 
