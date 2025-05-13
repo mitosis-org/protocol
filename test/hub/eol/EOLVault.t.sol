@@ -6,13 +6,18 @@ import { Test } from '@std/Test.sol';
 import { WETH } from '@solady/tokens/WETH.sol';
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 
+import { Ownable } from '@oz/access/Ownable.sol';
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 
 import { EOLVault } from '../../../src/hub/eol/EOLVault.sol';
+import { IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
+import { Toolkit } from '../../util/Toolkit.sol';
 
-contract EOLVaultTest is Test {
+contract EOLVaultTest is Toolkit {
   address owner = makeAddr('owner');
   address user = makeAddr('user');
+  address assetManager = _emptyContract();
+  address reclaimQueue = _emptyContract();
 
   WETH weth;
 
@@ -23,11 +28,21 @@ contract EOLVaultTest is Test {
     weth = new WETH();
     factory = new ERC1967Factory();
 
+    vm.mockCall(
+      address(assetManager),
+      abi.encodeWithSelector(IAssetManagerStorageV1.reclaimQueue.selector),
+      abi.encode(reclaimQueue)
+    );
+
+    vm.mockCall(address(assetManager), abi.encodeWithSelector(Ownable.owner.selector), abi.encode(owner));
+
     vault = EOLVault(
       factory.deployAndCall(
-        address(new EOLVault()), //
+        address(new EOLVault()),
         owner,
-        abi.encodeCall(EOLVault.initialize, (owner, IERC20Metadata(address(weth)), 'Mitosis EOL Wrapped ETH', 'miwETH'))
+        abi.encodeCall(
+          EOLVault.initialize, (assetManager, IERC20Metadata(address(weth)), 'Mitosis EOL Wrapped ETH', 'miwETH')
+        )
       )
     );
   }

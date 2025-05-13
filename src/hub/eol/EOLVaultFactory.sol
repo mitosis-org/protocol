@@ -169,7 +169,7 @@ contract EOLVaultFactory is IEOLVaultFactory, Ownable2StepUpgradeable, UUPSUpgra
 
     bytes memory data = abi.encodeCall(
       EOLVault.initialize, //
-      (args.owner, args.asset, args.name, args.symbol)
+      (args.assetManager, args.asset, args.name, args.symbol)
     );
     address instance = address(new BeaconProxy(address(info.beacon), data));
 
