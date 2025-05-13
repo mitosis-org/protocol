@@ -82,12 +82,8 @@ contract MatrixVaultCapped is MatrixVault {
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  function setCap(uint256 newCap) external {
-    StorageV1 storage $ = _getStorageV1();
+  function setCap(uint256 newCap) external onlyOwner {
     MatrixVaultCappedStorage storage capped = _getMatrixVaultCappedStorage();
-
-    require(Ownable(address($.assetManager)).owner() == _msgSender(), StdError.Unauthorized());
-
     _setCap(capped, newCap);
   }
 
