@@ -172,7 +172,7 @@ contract MatrixVaultFactory is IMatrixVaultFactory, Ownable2StepUpgradeable, UUP
 
     bytes memory data = abi.encodeCall(
       MatrixVaultBasic.initialize, //
-      (args.owner, args.assetManager, args.asset, args.name, args.symbol)
+      (args.assetManager, args.asset, args.name, args.symbol)
     );
     address instance = address(new BeaconProxy(address(info.beacon), data));
 
@@ -187,7 +187,7 @@ contract MatrixVaultFactory is IMatrixVaultFactory, Ownable2StepUpgradeable, UUP
 
     bytes memory data = abi.encodeCall(
       MatrixVaultCapped.initialize, //
-      (args.owner, args.assetManager, args.asset, args.name, args.symbol)
+      (args.assetManager, args.asset, args.name, args.symbol)
     );
     address instance = address(new BeaconProxy(address(info.beacon), data));
 

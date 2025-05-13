@@ -14,8 +14,14 @@ import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 import { Pausable } from '../../src/lib/Pausable.sol';
 import { StdError } from '../../src/lib/StdError.sol';
 
+contract Empty { }
+
 contract Toolkit is Test {
   using SafeCast for uint256;
+
+  function _emptyContract() internal returns (address) {
+    return address(new Empty());
+  }
 
   // erc1967
 

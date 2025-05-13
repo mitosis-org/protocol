@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Ownable } from '@oz/access/Ownable.sol';
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { Math } from '@oz/utils/math/Math.sol';
 
@@ -42,14 +41,11 @@ contract MatrixVaultCapped is MatrixVault {
     _disableInitializers();
   }
 
-  function initialize(
-    address owner_,
-    address assetManager_,
-    IERC20Metadata asset_,
-    string memory name,
-    string memory symbol
-  ) external initializer {
-    __MatrixVault_init(owner_, assetManager_, asset_, name, symbol);
+  function initialize(address assetManager_, IERC20Metadata asset_, string memory name, string memory symbol)
+    external
+    initializer
+  {
+    __MatrixVault_init(assetManager_, asset_, name, symbol);
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //

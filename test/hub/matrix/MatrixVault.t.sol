@@ -11,17 +11,16 @@ import { IBeacon } from '@oz/proxy/beacon/IBeacon.sol';
 
 import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
 import { MatrixVaultCapped } from '../../../src/hub/matrix/MatrixVaultCapped.sol';
+import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
-contract Empty { }
-
 contract MatrixVaultTestBase is IBeacon, Toolkit {
   address owner = makeAddr('owner');
   address user = makeAddr('user');
-  address assetManager = address(new Empty());
-  address reclaimQueue = address(new Empty());
+  address assetManager = _emptyContract();
+  address reclaimQueue = _emptyContract();
 
   WETH weth;
 
@@ -39,10 +38,12 @@ contract MatrixVaultTestBase is IBeacon, Toolkit {
     cappedImpl = new MatrixVaultCapped();
 
     vm.mockCall(
-      address(assetManager), //
+      address(assetManager),
       abi.encodeWithSelector(IAssetManagerStorageV1.reclaimQueue.selector),
       abi.encode(reclaimQueue)
     );
+
+    vm.mockCall(address(assetManager), abi.encodeWithSelector(Ownable.owner.selector), abi.encode(owner));
 
     defaultImpl = address(basicImpl);
     basic = MatrixVaultBasic(
@@ -51,7 +52,7 @@ contract MatrixVaultTestBase is IBeacon, Toolkit {
           address(this),
           abi.encodeCall(
             MatrixVaultBasic.initialize, //
-            (owner, assetManager, IERC20Metadata(address(weth)), 'B', 'B')
+            (assetManager, IERC20Metadata(address(weth)), 'B', 'B')
           )
         )
       )
@@ -64,7 +65,7 @@ contract MatrixVaultTestBase is IBeacon, Toolkit {
           address(this),
           abi.encodeCall(
             MatrixVaultCapped.initialize, //
-            (owner, assetManager, IERC20Metadata(address(weth)), 'C', 'C')
+            (assetManager, IERC20Metadata(address(weth)), 'C', 'C')
           )
         )
       )
