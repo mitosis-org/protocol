@@ -83,8 +83,7 @@ contract MatrixVaultCapped is MatrixVault {
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   function setCap(uint256 newCap) external onlyOwner {
-    MatrixVaultCappedStorage storage capped = _getMatrixVaultCappedStorage();
-    _setCap(capped, newCap);
+    _setCap(_getMatrixVaultCappedStorage(), newCap);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
