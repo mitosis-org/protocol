@@ -364,7 +364,7 @@ contract ValidatorManager is
     validator.rewardConfig.pendingCommissionRate = request.commissionRate.toUint128();
     validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate.toUint128();
 
-    emit RewardConfigUpdated(valAddr, _msgSender(), request);
+    emit RewardConfigUpdated(valAddr, _msgSender(), request, epochToUpdate);
   }
 
   /// @inheritdoc IValidatorManager
