@@ -268,7 +268,6 @@ contract MerkleRewardDistributor is
 
   function _addStage(StorageV1 storage $, bytes32 root_, address[] calldata rewards, uint256[] calldata amounts)
     internal
-    onlyRole(MANAGER_ROLE)
     returns (uint256 stage)
   {
     $.lastStage += 1;
