@@ -57,6 +57,11 @@ interface IValidatorManager {
     uint256 commissionRate; // bp e.g.) 10000 = 100%
   }
 
+  struct UpdateRewardConfigResult {
+    uint128 pendingCommissionRate;
+    uint128 pendingCommissionRateUpdateEpoch;
+  }
+
   struct GenesisValidatorSet {
     bytes pubKey;
     address operator;
@@ -93,7 +98,7 @@ interface IValidatorManager {
   event OperatorUpdated(address indexed valAddr, address indexed operator);
   event RewardManagerUpdated(address indexed valAddr, address indexed operator, address indexed rewardManager);
   event MetadataUpdated(address indexed valAddr, address indexed operator, bytes metadata);
-  event RewardConfigUpdated(address indexed valAddr, address indexed operator, UpdateRewardConfigRequest request);
+  event RewardConfigUpdated(address indexed valAddr, address indexed operator, UpdateRewardConfigResult result);
   event PermittedCollateralOwnerSet(address indexed valAddr, address indexed collateralOwner, bool isPermitted);
 
   event GlobalValidatorConfigUpdated(SetGlobalValidatorConfigRequest request);
