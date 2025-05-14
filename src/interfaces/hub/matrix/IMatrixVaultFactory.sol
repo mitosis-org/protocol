@@ -11,7 +11,6 @@ interface IMatrixVaultFactory {
   }
 
   struct BasicVaultInitArgs {
-    address owner;
     address assetManager;
     IERC20Metadata asset;
     string name;
@@ -19,7 +18,6 @@ interface IMatrixVaultFactory {
   }
 
   struct CappedVaultInitArgs {
-    address owner;
     address assetManager;
     IERC20Metadata asset;
     string name;

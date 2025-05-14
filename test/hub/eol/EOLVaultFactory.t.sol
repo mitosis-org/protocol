@@ -5,6 +5,7 @@ import { WETH } from '@solady/tokens/WETH.sol';
 import { ERC1967Factory } from '@solady/utils/ERC1967Factory.sol';
 import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
+import { Ownable } from '@oz/access/Ownable.sol';
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
@@ -17,6 +18,8 @@ import { Toolkit } from '../../util/Toolkit.sol';
 
 contract EOLVaultFactoryTest is Toolkit {
   address public owner = makeAddr('owner');
+  address assetManager = _emptyContract();
+  address reclaimQueue = _emptyContract();
 
   ERC1967Factory public proxyFactory;
 
@@ -29,6 +32,14 @@ contract EOLVaultFactoryTest is Toolkit {
     proxyFactory = new ERC1967Factory();
 
     basicImpl = new EOLVault();
+
+    vm.mockCall(
+      address(assetManager),
+      abi.encodeWithSelector(IAssetManagerStorageV1.reclaimQueue.selector),
+      abi.encode(reclaimQueue)
+    );
+
+    vm.mockCall(address(assetManager), abi.encodeWithSelector(Ownable.owner.selector), abi.encode(owner));
 
     base = EOLVaultFactory(
       payable(new ERC1967Proxy(address(new EOLVaultFactory()), abi.encodeCall(EOLVaultFactory.initialize, (owner))))
@@ -53,7 +64,7 @@ contract EOLVaultFactoryTest is Toolkit {
     vm.prank(owner);
     base.initVaultType(BasicVaultType, address(basicImpl));
 
-    address instance = _createBasic(owner, owner, address(new WETH()), 'Basic Vault', 'BV');
+    address instance = _createBasic(owner, assetManager, address(new WETH()), 'Basic Vault', 'BV');
 
     assertEq(address(0x0), _erc1967Admin(instance));
     assertEq(address(0x0), _erc1967Impl(instance));
@@ -113,9 +124,9 @@ contract EOLVaultFactoryTest is Toolkit {
   //   vm.prank(owner);
   //   base.initVaultType(BasicVaultType, address(basicImpl));
 
-  //   address instance1 = _createBasic(owner, owner, address(new WETH()), 'Basic Vault 1', 'BV1');
-  //   address instance2 = _createBasic(owner, owner, address(new WETH()), 'Basic Vault 2', 'BV2');
-  //   address instance3 = _createBasic(owner, owner, address(new WETH()), 'Basic Vault 3', 'BV3');
+  //   address instance1 = _createBasic(owner, assetManager, address(new WETH()), 'Basic Vault 1', 'BV1');
+  //   address instance2 = _createBasic(owner, assetManager, address(new WETH()), 'Basic Vault 2', 'BV2');
+  //   address instance3 = _createBasic(owner, assetManager, address(new WETH()), 'Basic Vault 3', 'BV3');
 
   //   vm.prank(owner);
   //   base.migrate(BasicVaultType, BasicVaultType, instance1, '');
@@ -126,13 +137,18 @@ contract EOLVaultFactoryTest is Toolkit {
     return base.create(BasicVaultType, abi.encode(args));
   }
 
-  function _createBasic(address caller, address owner_, address asset, string memory name, string memory symbol)
+  function _createBasic(address caller, address assetManager_, address asset, string memory name, string memory symbol)
     internal
     returns (address)
   {
     return _createBasic(
       caller,
-      IEOLVaultFactory.BasicVaultInitArgs({ owner: owner_, asset: IERC20Metadata(asset), name: name, symbol: symbol })
+      IEOLVaultFactory.BasicVaultInitArgs({
+        assetManager: assetManager_,
+        asset: IERC20Metadata(asset),
+        name: name,
+        symbol: symbol
+      })
     );
   }
 }

@@ -3,14 +3,16 @@ pragma solidity ^0.8.28;
 
 import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 
+import { Ownable } from '@oz/access/Ownable.sol';
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
-import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 
+import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { Pausable } from '../../lib/Pausable.sol';
+import { StdError } from '../../lib/StdError.sol';
 
-contract EOLVault is ERC4626, Ownable2StepUpgradeable, Pausable, ReentrancyGuard {
+contract EOLVault is ERC4626, Pausable, ReentrancyGuard {
   using ERC7201Utils for string;
 
   struct StorageV1 {
@@ -18,6 +20,7 @@ contract EOLVault is ERC4626, Ownable2StepUpgradeable, Pausable, ReentrancyGuard
     string name;
     string symbol;
     uint8 decimals;
+    IAssetManager assetManager;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.EOLVault.v1';
@@ -31,16 +34,19 @@ contract EOLVault is ERC4626, Ownable2StepUpgradeable, Pausable, ReentrancyGuard
     }
   }
 
+  modifier onlyOwner() {
+    require(owner() == _msgSender(), StdError.Unauthorized());
+    _;
+  }
+
   constructor() {
     _disableInitializers();
   }
 
-  function initialize(address owner_, IERC20Metadata asset_, string memory name_, string memory symbol_)
+  function initialize(address assetManager_, IERC20Metadata asset_, string memory name_, string memory symbol_)
     external
     initializer
   {
-    __Ownable2Step_init();
-    __Ownable_init(owner_);
     __Pausable_init();
 
     if (bytes(name_).length == 0 || bytes(symbol_).length == 0) {
@@ -55,6 +61,12 @@ contract EOLVault is ERC4626, Ownable2StepUpgradeable, Pausable, ReentrancyGuard
 
     (bool success, uint8 result) = _tryGetAssetDecimals(address(asset_));
     $.decimals = success ? result : _DEFAULT_UNDERLYING_DECIMALS;
+
+    _setAssetManager($, assetManager_);
+  }
+
+  function owner() public view returns (address) {
+    return Ownable(address(_getStorageV1().assetManager)).owner();
   }
 
   function asset() public view override returns (address) {
@@ -86,25 +98,35 @@ contract EOLVault is ERC4626, Ownable2StepUpgradeable, Pausable, ReentrancyGuard
   }
 
   /// @dev There's no redeem period for EOL vaults for initial phase
-  function withdraw(uint256 assets, address receiver, address owner)
+  function withdraw(uint256 assets, address receiver, address owner_)
     public
     override
     nonReentrant
     whenNotPaused
     returns (uint256)
   {
-    return super.withdraw(assets, receiver, owner);
+    return super.withdraw(assets, receiver, owner_);
   }
 
   /// @dev There's no redeem period for EOL vaults for initial phase
-  function redeem(uint256 shares, address receiver, address owner)
+  function redeem(uint256 shares, address receiver, address owner_)
     public
     override
     nonReentrant
     whenNotPaused
     returns (uint256)
   {
-    return super.redeem(shares, receiver, owner);
+    return super.redeem(shares, receiver, owner_);
+  }
+
+  function _setAssetManager(StorageV1 storage $, address assetManager_) internal {
+    require(assetManager_.code.length > 0, StdError.InvalidAddress('AssetManager'));
+
+    // Verify ReclaimQueue exists
+    address reclaimQueueAddr = IAssetManager(assetManager_).reclaimQueue();
+    require(reclaimQueueAddr.code.length > 0, StdError.InvalidAddress('ReclaimQueue'));
+
+    $.assetManager = IAssetManager(assetManager_);
   }
 
   function _authorizePause(address) internal view override onlyOwner { }

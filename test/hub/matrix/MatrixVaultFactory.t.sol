@@ -72,7 +72,7 @@ contract MatrixVaultFactoryTest is Toolkit {
     vm.prank(owner);
     base.initVaultType(BasicVaultType, address(basicImpl));
 
-    address instance = _createBasic(owner, owner, address(new WETH()), 'Basic Vault', 'BV');
+    address instance = _createBasic(owner, address(new WETH()), 'Basic Vault', 'BV');
 
     assertEq(address(0x0), _erc1967Admin(instance));
     assertEq(address(0x0), _erc1967Impl(instance));
@@ -88,7 +88,7 @@ contract MatrixVaultFactoryTest is Toolkit {
     vm.prank(owner);
     base.initVaultType(CappedVaultType, address(cappedImpl));
 
-    address instance = _createCapped(owner, owner, address(new WETH()), 'Capped Vault', 'CV');
+    address instance = _createCapped(owner, address(new WETH()), 'Capped Vault', 'CV');
 
     assertEq(address(0x0), _erc1967Admin(instance));
     assertEq(address(0x0), _erc1967Impl(instance));
@@ -106,10 +106,10 @@ contract MatrixVaultFactoryTest is Toolkit {
     base.initVaultType(CappedVaultType, address(cappedImpl));
     vm.stopPrank();
 
-    address basicI1 = _createBasic(owner, owner, address(new WETH()), 'Basic Vault 1', 'BV1');
-    address basicI2 = _createBasic(owner, owner, address(new WETH()), 'Basic Vault 2', 'BV2');
-    address cappedI1 = _createCapped(owner, owner, address(new WETH()), 'Capped Vault 1', 'CV1');
-    address cappedI2 = _createCapped(owner, owner, address(new WETH()), 'Capped Vault 2', 'CV2');
+    address basicI1 = _createBasic(owner, address(new WETH()), 'Basic Vault 1', 'BV1');
+    address basicI2 = _createBasic(owner, address(new WETH()), 'Basic Vault 2', 'BV2');
+    address cappedI1 = _createCapped(owner, address(new WETH()), 'Capped Vault 1', 'CV1');
+    address cappedI2 = _createCapped(owner, address(new WETH()), 'Capped Vault 2', 'CV2');
 
     vm.prank(owner);
     base.migrate(BasicVaultType, CappedVaultType, basicI1, '');
@@ -183,14 +183,13 @@ contract MatrixVaultFactoryTest is Toolkit {
     return base.create(BasicVaultType, abi.encode(args));
   }
 
-  function _createBasic(address caller, address owner_, address asset, string memory name, string memory symbol)
+  function _createBasic(address caller, address asset, string memory name, string memory symbol)
     internal
     returns (address)
   {
     return _createBasic(
       caller,
       IMatrixVaultFactory.BasicVaultInitArgs({
-        owner: owner_,
         assetManager: address(assetManager),
         asset: IERC20Metadata(asset),
         name: name,
@@ -207,14 +206,13 @@ contract MatrixVaultFactoryTest is Toolkit {
     return base.create(CappedVaultType, abi.encode(args));
   }
 
-  function _createCapped(address caller, address owner_, address asset, string memory name, string memory symbol)
+  function _createCapped(address caller, address asset, string memory name, string memory symbol)
     internal
     returns (address)
   {
     return _createCapped(
       caller,
       IMatrixVaultFactory.CappedVaultInitArgs({
-        owner: owner_,
         assetManager: address(assetManager),
         asset: IERC20Metadata(asset),
         name: name,

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { Ownable } from '@oz/access/Ownable.sol';
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { Math } from '@oz/utils/math/Math.sol';
 import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
-import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 
 import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 
@@ -17,18 +17,17 @@ import { MatrixVaultStorageV1 } from './MatrixVaultStorageV1.sol';
  * @title MatrixVault
  * @notice Base implementation of an MatrixVault
  */
-abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgradeable, Pausable, ReentrancyGuard {
+abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable, ReentrancyGuard {
   using Math for uint256;
 
-  function __MatrixVault_init(
-    address owner_,
-    address assetManager_,
-    IERC20Metadata asset_,
-    string memory name_,
-    string memory symbol_
-  ) internal {
-    __Ownable2Step_init();
-    __Ownable_init(owner_);
+  modifier onlyOwner() {
+    require(owner() == _msgSender(), StdError.Unauthorized());
+    _;
+  }
+
+  function __MatrixVault_init(address assetManager_, IERC20Metadata asset_, string memory name_, string memory symbol_)
+    internal
+  {
     __Pausable_init();
 
     if (bytes(name_).length == 0 || bytes(symbol_).length == 0) {
@@ -45,6 +44,10 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgr
     $.decimals = success ? result : _DEFAULT_UNDERLYING_DECIMALS;
 
     _setAssetManager($, assetManager_);
+  }
+
+  function owner() public view returns (address) {
+    return Ownable(address(_getStorageV1().assetManager)).owner();
   }
 
   function asset() public view override returns (address) {
@@ -96,7 +99,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgr
     return assets;
   }
 
-  function withdraw(uint256 assets, address receiver, address owner)
+  function withdraw(uint256 assets, address receiver, address owner_)
     public
     override
     nonReentrant
@@ -107,16 +110,16 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgr
 
     _assertOnlyReclaimQueue($);
 
-    uint256 maxAssets = maxWithdraw(owner);
+    uint256 maxAssets = maxWithdraw(owner_);
     require(assets <= maxAssets, WithdrawMoreThanMax());
 
     uint256 shares = previewWithdraw(assets);
-    _withdraw(_msgSender(), receiver, owner, assets, shares);
+    _withdraw(_msgSender(), receiver, owner_, assets, shares);
 
     return shares;
   }
 
-  function redeem(uint256 shares, address receiver, address owner)
+  function redeem(uint256 shares, address receiver, address owner_)
     public
     override
     nonReentrant
@@ -127,11 +130,11 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Ownable2StepUpgr
 
     _assertOnlyReclaimQueue($);
 
-    uint256 maxShares = maxRedeem(owner);
+    uint256 maxShares = maxRedeem(owner_);
     require(shares <= maxShares, RedeemMoreThanMax());
 
     uint256 assets = previewRedeem(shares);
-    _withdraw(_msgSender(), receiver, owner, assets, shares);
+    _withdraw(_msgSender(), receiver, owner_, assets, shares);
 
     return assets;
   }

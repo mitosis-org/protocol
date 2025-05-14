@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import { Ownable } from '@oz/access/Ownable.sol';
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { Math } from '@oz/utils/math/Math.sol';
 
@@ -42,14 +41,11 @@ contract MatrixVaultCapped is MatrixVault {
     _disableInitializers();
   }
 
-  function initialize(
-    address owner_,
-    address assetManager_,
-    IERC20Metadata asset_,
-    string memory name,
-    string memory symbol
-  ) external initializer {
-    __MatrixVault_init(owner_, assetManager_, asset_, name, symbol);
+  function initialize(address assetManager_, IERC20Metadata asset_, string memory name, string memory symbol)
+    external
+    initializer
+  {
+    __MatrixVault_init(assetManager_, asset_, name, symbol);
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
@@ -82,13 +78,8 @@ contract MatrixVaultCapped is MatrixVault {
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  function setCap(uint256 newCap) external {
-    StorageV1 storage $ = _getStorageV1();
-    MatrixVaultCappedStorage storage capped = _getMatrixVaultCappedStorage();
-
-    require(Ownable(address($.assetManager)).owner() == _msgSender(), StdError.Unauthorized());
-
-    _setCap(capped, newCap);
+  function setCap(uint256 newCap) external onlyOwner {
+    _setCap(_getMatrixVaultCappedStorage(), newCap);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
