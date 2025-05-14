@@ -58,8 +58,8 @@ interface IValidatorManager {
   }
 
   struct UpdateRewardConfigResult {
-    uint256 pendingCommissionRate;
-    uint256 pendingCommissionRateUpdateEpoch;
+    uint128 pendingCommissionRate;
+    uint128 pendingCommissionRateUpdateEpoch;
   }
 
   struct GenesisValidatorSet {
