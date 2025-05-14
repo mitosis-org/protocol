@@ -115,7 +115,7 @@ contract ValidatorManager is
       uncmpPubKey.verifyUncmpPubkey();
       address valAddr = uncmpPubKey.deriveAddressFromUncmpPubkey();
 
-      _createValidator(
+      Validator storage validator = _createValidator(
         $,
         valAddr,
         genVal.pubKey,
@@ -127,6 +127,8 @@ contract ValidatorManager is
           metadata: genVal.metadata
         })
       );
+      // operator becomes an initial collateral owner
+      _setPermittedCollateralOwner(validator, genVal.operator, true);
     }
   }
 
