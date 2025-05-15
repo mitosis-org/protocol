@@ -62,6 +62,11 @@ interface IValidatorManager {
     uint128 pendingCommissionRateUpdateEpoch;
   }
 
+  struct PermittedCollateralOwner {
+    address owner;
+    bool isPermitted;
+  }
+
   struct GenesisValidatorSet {
     bytes pubKey;
     address operator;
@@ -70,6 +75,7 @@ interface IValidatorManager {
     bytes metadata;
     bytes signature;
     uint256 value;
+    PermittedCollateralOwner[] permittedCollateralOwners;
   }
 
   struct SetGlobalValidatorConfigRequest {
