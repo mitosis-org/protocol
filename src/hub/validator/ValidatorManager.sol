@@ -129,9 +129,7 @@ contract ValidatorManager is
       );
 
       for (uint256 j = 0; j < genVal.permittedCollateralOwners.length; j++) {
-        _setPermittedCollateralOwner(
-          validator, genVal.permittedCollateralOwners[j].owner, genVal.permittedCollateralOwners[j].isPermitted
-        );
+        _setPermittedCollateralOwner(validator, genVal.permittedCollateralOwners[j], true);
       }
     }
   }
