@@ -70,6 +70,7 @@ interface IValidatorManager {
     bytes metadata;
     bytes signature;
     uint256 value;
+    address[] permittedCollateralOwners;
   }
 
   struct SetGlobalValidatorConfigRequest {

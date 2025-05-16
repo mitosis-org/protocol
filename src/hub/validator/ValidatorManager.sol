@@ -127,8 +127,10 @@ contract ValidatorManager is
           metadata: genVal.metadata
         })
       );
-      // operator becomes an initial collateral owner
-      _setPermittedCollateralOwner(validator, genVal.operator, true);
+
+      for (uint256 j = 0; j < genVal.permittedCollateralOwners.length; j++) {
+        _setPermittedCollateralOwner(validator, genVal.permittedCollateralOwners[j], true);
+      }
     }
   }
 
@@ -366,10 +368,14 @@ contract ValidatorManager is
     validator.rewardConfig.pendingCommissionRate = request.commissionRate.toUint128();
     validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate.toUint128();
 
-    emit RewardConfigUpdated(valAddr, _msgSender(), UpdateRewardConfigResult({
-      pendingCommissionRate: validator.rewardConfig.pendingCommissionRate,
-      pendingCommissionRateUpdateEpoch: validator.rewardConfig.pendingCommissionRateUpdateEpoch
-    }));
+    emit RewardConfigUpdated(
+      valAddr,
+      _msgSender(),
+      UpdateRewardConfigResult({
+        pendingCommissionRate: validator.rewardConfig.pendingCommissionRate,
+        pendingCommissionRateUpdateEpoch: validator.rewardConfig.pendingCommissionRateUpdateEpoch
+      })
+    );
   }
 
   /// @inheritdoc IValidatorManager
