@@ -70,8 +70,8 @@ jobs:
 
       - name: Run Forge coverage
         run: |
-          # apt-get update
-          # apt-get -y install lcov
+          sudo apt-get update
+          sudo apt-get -y install lcov
           yarn coverage
         id: coverage
 
