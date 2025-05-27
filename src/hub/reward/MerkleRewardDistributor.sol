@@ -45,7 +45,9 @@ contract MerkleRewardDistributor is
     _grantRole(DEFAULT_ADMIN_ROLE, admin);
     _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
 
-    _setTreasury(_getStorageV1(), treasury_);
+    StorageV1 storage $ = _getStorageV1();
+    $.lastStage = 0;
+    _setTreasury($, treasury_);
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
