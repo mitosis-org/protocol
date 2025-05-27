@@ -85,8 +85,6 @@ contract MerkleRewardDistributorTest is Toolkit {
     vm.prank(owner);
     uint256 merkleStage = _distributor.addStage(merkleRoot, currentStage, 1, rewards, amounts);
 
-    console.log(merkleStage);
-
     assertEq(merkleStage, currentStage);
     assertEq(_distributor.lastStage(), currentStage);
 
