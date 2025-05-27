@@ -53,6 +53,8 @@ contract MerkleRewardDistributorTest is Toolkit {
   }
 
   function test_fetchRewards() public {
+    uint256 currentStage = _distributor.lastStage() + 1;
+
     _token.mint(rewarder, 100 ether);
 
     vm.startPrank(rewarder);
@@ -61,7 +63,7 @@ contract MerkleRewardDistributorTest is Toolkit {
     vm.stopPrank();
 
     vm.prank(owner);
-    _distributor.fetchRewards(0, 0, matrixVault, address(_token), 100 ether);
+    _distributor.fetchRewards(currentStage, 0, matrixVault, address(_token), 100 ether);
 
     assertEq(_token.balanceOf(address(_treasury)), 0);
     assertEq(_token.balanceOf(address(_distributor)), 100 ether);
@@ -78,16 +80,21 @@ contract MerkleRewardDistributorTest is Toolkit {
     uint256[] memory amounts = new uint256[](1);
     amounts[0] = 50 ether;
 
-    vm.prank(owner);
-    uint256 merkleStage = _distributor.addStage(merkleRoot, 0, 1, rewards, amounts);
-
-    assertEq(merkleStage, 1);
-    assertEq(_distributor.lastStage(), 1);
+    uint256 currentStage = _distributor.lastStage() + 1;
 
     vm.prank(owner);
-    merkleStage = _distributor.addStage(merkleRoot, 1, 0, rewards, amounts);
+    uint256 merkleStage = _distributor.addStage(merkleRoot, currentStage, 1, rewards, amounts);
 
-    assertEq(merkleStage, 2);
-    assertEq(_distributor.lastStage(), 2);
+    console.log(merkleStage);
+
+    assertEq(merkleStage, currentStage);
+    assertEq(_distributor.lastStage(), currentStage);
+
+    currentStage = _distributor.lastStage() + 1;
+    vm.prank(owner);
+    merkleStage = _distributor.addStage(merkleRoot, currentStage, 0, rewards, amounts);
+
+    assertEq(merkleStage, currentStage);
+    assertEq(_distributor.lastStage(), currentStage);
   }
 }
