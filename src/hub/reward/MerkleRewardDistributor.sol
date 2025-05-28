@@ -45,7 +45,9 @@ contract MerkleRewardDistributor is
     _grantRole(DEFAULT_ADMIN_ROLE, admin);
     _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
 
-    _setTreasury(_getStorageV1(), treasury_);
+    StorageV1 storage $ = _getStorageV1();
+    $.lastStage = 0; // note: currentStage starts from 1
+    _setTreasury($, treasury_);
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
@@ -177,7 +179,7 @@ contract MerkleRewardDistributor is
   {
     StorageV1 storage $ = _getStorageV1();
 
-    require(stage == $.lastStage, IMerkleRewardDistributor__NotCurrentStage(stage));
+    require(stage == $.lastStage + 1, IMerkleRewardDistributor__NotCurrentStage(stage));
     require(nonce == _stage($, stage).nonce, IMerkleRewardDistributor__InvalidStageNonce(stage, nonce));
 
     _fetchRewards($, stage, vault, reward, amount);
@@ -192,7 +194,7 @@ contract MerkleRewardDistributor is
   ) external onlyRole(MANAGER_ROLE) {
     StorageV1 storage $ = _getStorageV1();
 
-    require(stage == $.lastStage, IMerkleRewardDistributor__NotCurrentStage(stage));
+    require(stage == $.lastStage + 1, IMerkleRewardDistributor__NotCurrentStage(stage));
     require(nonce == _stage($, stage).nonce, IMerkleRewardDistributor__InvalidStageNonce(stage, nonce));
 
     for (uint256 i = 0; i < rewards.length; i++) {
@@ -209,7 +211,7 @@ contract MerkleRewardDistributor is
   ) external onlyRole(MANAGER_ROLE) {
     StorageV1 storage $ = _getStorageV1();
 
-    require(stage == $.lastStage, IMerkleRewardDistributor__NotCurrentStage(stage));
+    require(stage == $.lastStage + 1, IMerkleRewardDistributor__NotCurrentStage(stage));
     require(nonce == _stage($, stage).nonce, IMerkleRewardDistributor__InvalidStageNonce(stage, nonce));
     require(vaults.length == rewards.length, StdError.InvalidParameter('rewards.length'));
 
@@ -230,9 +232,10 @@ contract MerkleRewardDistributor is
     StorageV1 storage $ = _getStorageV1();
     Stage storage s = _stage($, stage);
 
-    require(stage == $.lastStage, IMerkleRewardDistributor__NotCurrentStage(stage));
-    require(nonce == s.nonce, IMerkleRewardDistributor__InvalidStageNonce(stage, nonce));
     require(rewards.length == amounts.length, StdError.InvalidParameter('amounts.length'));
+    require(nonce == s.nonce, IMerkleRewardDistributor__InvalidStageNonce(stage, nonce));
+
+    _addStage($, stage, merkleRoot, rewards, amounts);
 
     for (uint256 i = 0; i < rewards.length; i++) {
       address reward = rewards[i];
@@ -241,9 +244,7 @@ contract MerkleRewardDistributor is
       $.reservedRewardAmounts[reward] += amount;
     }
 
-    uint256 merkleStage = _addStage($, merkleRoot, rewards, amounts);
-
-    return merkleStage;
+    return stage;
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
@@ -266,19 +267,20 @@ contract MerkleRewardDistributor is
     emit RewardsFetched(stage, nonce, vault, reward, amount);
   }
 
-  function _addStage(StorageV1 storage $, bytes32 root_, address[] calldata rewards, uint256[] calldata amounts)
-    internal
-    returns (uint256 stage)
-  {
-    $.lastStage += 1;
-    Stage storage s = _stage($, $.lastStage);
+  function _addStage(
+    StorageV1 storage $,
+    uint256 stage_,
+    bytes32 root_,
+    address[] calldata rewards,
+    uint256[] calldata amounts
+  ) internal {
+    require(stage_ == $.lastStage + 1, IMerkleRewardDistributor__NotCurrentStage(stage_));
+    Stage storage s = _stage($, stage_);
     s.root = root_;
     s.rewards = rewards;
     s.amounts = amounts;
-
-    emit StageAdded($.lastStage, root_, rewards, amounts);
-
-    return $.lastStage;
+    $.lastStage = stage_;
+    emit StageAdded(stage_, root_, rewards, amounts);
   }
 
   function _stage(StorageV1 storage $, uint256 stage) internal view returns (Stage storage) {
