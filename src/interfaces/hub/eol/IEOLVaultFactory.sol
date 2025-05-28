@@ -10,7 +10,7 @@ interface IEOLVaultFactory {
   }
 
   struct BasicVaultInitArgs {
-    address owner;
+    address assetManager;
     IERC20Metadata asset;
     string name;
     string symbol;

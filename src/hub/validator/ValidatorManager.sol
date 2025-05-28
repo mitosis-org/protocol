@@ -115,7 +115,7 @@ contract ValidatorManager is
       uncmpPubKey.verifyUncmpPubkey();
       address valAddr = uncmpPubKey.deriveAddressFromUncmpPubkey();
 
-      _createValidator(
+      Validator storage validator = _createValidator(
         $,
         valAddr,
         genVal.pubKey,
@@ -127,6 +127,10 @@ contract ValidatorManager is
           metadata: genVal.metadata
         })
       );
+
+      for (uint256 j = 0; j < genVal.permittedCollateralOwners.length; j++) {
+        _setPermittedCollateralOwner(validator, genVal.permittedCollateralOwners[j], true);
+      }
     }
   }
 
@@ -364,7 +368,14 @@ contract ValidatorManager is
     validator.rewardConfig.pendingCommissionRate = request.commissionRate.toUint128();
     validator.rewardConfig.pendingCommissionRateUpdateEpoch = epochToUpdate.toUint128();
 
-    emit RewardConfigUpdated(valAddr, _msgSender(), request);
+    emit RewardConfigUpdated(
+      valAddr,
+      _msgSender(),
+      UpdateRewardConfigResult({
+        pendingCommissionRate: validator.rewardConfig.pendingCommissionRate,
+        pendingCommissionRateUpdateEpoch: validator.rewardConfig.pendingCommissionRateUpdateEpoch
+      })
+    );
   }
 
   /// @inheritdoc IValidatorManager
@@ -405,12 +416,17 @@ contract ValidatorManager is
       operator: info.operator,
       rewardManager: info.rewardManager,
       commissionRate: commissionRate,
+      pendingCommissionRate: 0,
+      pendingCommissionRateUpdateEpoch: 0,
       metadata: info.metadata
     });
 
     // apply pending rate
     if (info.rewardConfig.pendingCommissionRateUpdateEpoch <= epoch) {
       response.commissionRate = info.rewardConfig.pendingCommissionRate;
+    } else {
+      response.pendingCommissionRate = info.rewardConfig.pendingCommissionRate;
+      response.pendingCommissionRateUpdateEpoch = info.rewardConfig.pendingCommissionRateUpdateEpoch;
     }
 
     // hard limit

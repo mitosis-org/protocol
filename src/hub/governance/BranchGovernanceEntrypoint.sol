@@ -49,6 +49,9 @@ contract BranchGovernanceEntrypoint is
     __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
 
+    _grantRole(DEFAULT_ADMIN_ROLE, owner_);
+    _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+
     for (uint256 i = 0; i < managers.length; i++) {
       _grantRole(MANAGER_ROLE, managers[i]);
     }
@@ -138,5 +141,5 @@ contract BranchGovernanceEntrypoint is
     _setDestinationGas(domain, gas);
   }
 
-  function _authorizeUpgrade(address newImplementation) internal override onlyRole(MANAGER_ROLE) { }
+  function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
 }
