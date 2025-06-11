@@ -38,8 +38,13 @@ interface IMitosisVault is IMitosisVaultMatrix, IMitosisVaultEOL {
 
   //=========== NOTE: Asset ===========//
 
+  /// @dev Hyperlane message receiver
   function initializeAsset(address asset) external;
-  function deposit(address asset, address to, uint256 amount) external;
+
+  /// @dev Hyperlane message sender
+  function deposit(address asset, address to, uint256 amount) external payable;
+
+  /// @dev Hyperlane message receiver
   function withdraw(address asset, address to, uint256 amount) external;
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//

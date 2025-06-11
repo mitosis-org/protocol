@@ -11,17 +11,17 @@ contract MockMitosisVaultEntrypoint is IMitosisVaultEntrypoint {
 
   function mitosisAddr() external view returns (bytes32) { }
 
-  function deposit(address asset, address to, uint256 amount) external { }
+  function deposit(address asset, address to, uint256 amount) external payable { }
 
-  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount) external { }
+  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount) external payable { }
 
-  function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount) external { }
+  function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount) external payable { }
 
-  function deallocateMatrix(address hubMatrixVault, uint256 amount) external { }
+  function deallocateMatrix(address hubMatrixVault, uint256 amount) external payable { }
 
-  function settleMatrixYield(address hubMatrixVault, uint256 amount) external { }
+  function settleMatrixYield(address hubMatrixVault, uint256 amount) external payable { }
 
-  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external { }
+  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external payable { }
 
-  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external { }
+  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external payable { }
 }

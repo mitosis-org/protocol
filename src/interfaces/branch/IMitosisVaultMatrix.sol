@@ -42,21 +42,21 @@ interface IMitosisVaultMatrix {
 
   //=========== NOTE: Asset ===========//
 
-  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount) external;
+  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount) external payable;
 
   //=========== NOTE: Matrix ===========//
 
   function initializeMatrix(address hubMatrixVault, address asset) external;
 
-  function allocateMatrix(address hubMatrixVault, uint256 amount) external;
-  function deallocateMatrix(address hubMatrixVault, uint256 amount) external;
+  function allocateMatrix(address hubMatrixVault, uint256 amount) external payable;
+  function deallocateMatrix(address hubMatrixVault, uint256 amount) external payable;
 
   function fetchMatrix(address hubMatrixVault, uint256 amount) external;
   function returnMatrix(address hubMatrixVault, uint256 amount) external;
 
-  function settleMatrixYield(address hubMatrixVault, uint256 amount) external;
-  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external;
-  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external;
+  function settleMatrixYield(address hubMatrixVault, uint256 amount) external payable;
+  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external payable;
+  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external payable;
 
   //=========== NOTE: Ownable ===========//
 

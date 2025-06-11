@@ -27,7 +27,7 @@ interface IMitosisVaultEOL {
 
   //=========== NOTE: Asset ===========//
 
-  function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount) external;
+  function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount) external payable;
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 

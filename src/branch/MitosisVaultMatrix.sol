@@ -66,6 +66,7 @@ abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2S
 
   function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount)
     external
+    payable
     whenNotPaused
   {
     _deposit(asset, to, amount);
@@ -74,7 +75,7 @@ abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2S
     _assertMatrixInitialized($, hubMatrixVault);
     require(asset == $.matrices[hubMatrixVault].asset, IMitosisVaultMatrix__InvalidMatrixVault(hubMatrixVault, asset));
 
-    IMitosisVaultEntrypoint(entrypoint()).depositWithSupplyMatrix(asset, to, hubMatrixVault, amount);
+    IMitosisVaultEntrypoint(entrypoint()).depositWithSupplyMatrix{ value: msg.value }(asset, to, hubMatrixVault, amount);
 
     emit MatrixDepositedWithSupply(asset, to, hubMatrixVault, amount);
   }
@@ -95,7 +96,7 @@ abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2S
     emit MatrixInitialized(hubMatrixVault, asset);
   }
 
-  function allocateMatrix(address hubMatrixVault, uint256 amount) external whenNotPaused {
+  function allocateMatrix(address hubMatrixVault, uint256 amount) external payable whenNotPaused {
     require(entrypoint() == _msgSender(), StdError.Unauthorized());
 
     MatrixStorageV1 storage $ = _getMatrixStorageV1();
@@ -106,7 +107,7 @@ abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2S
     emit MatrixAllocated(hubMatrixVault, amount);
   }
 
-  function deallocateMatrix(address hubMatrixVault, uint256 amount) external whenNotPaused {
+  function deallocateMatrix(address hubMatrixVault, uint256 amount) external payable whenNotPaused {
     MatrixStorageV1 storage $ = _getMatrixStorageV1();
 
     _assertMatrixInitialized($, hubMatrixVault);
@@ -147,7 +148,7 @@ abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2S
     emit MatrixReturned(hubMatrixVault, amount);
   }
 
-  function settleMatrixYield(address hubMatrixVault, uint256 amount) external whenNotPaused {
+  function settleMatrixYield(address hubMatrixVault, uint256 amount) external payable whenNotPaused {
     MatrixStorageV1 storage $ = _getMatrixStorageV1();
 
     _assertMatrixInitialized($, hubMatrixVault);
@@ -158,7 +159,7 @@ abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2S
     emit MatrixYieldSettled(hubMatrixVault, amount);
   }
 
-  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external whenNotPaused {
+  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external payable whenNotPaused {
     MatrixStorageV1 storage $ = _getMatrixStorageV1();
 
     _assertMatrixInitialized($, hubMatrixVault);
@@ -169,7 +170,11 @@ abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2S
     emit MatrixLossSettled(hubMatrixVault, amount);
   }
 
-  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external whenNotPaused {
+  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount)
+    external
+    payable
+    whenNotPaused
+  {
     MatrixStorageV1 storage $ = _getMatrixStorageV1();
 
     _assertMatrixInitialized($, hubMatrixVault);
