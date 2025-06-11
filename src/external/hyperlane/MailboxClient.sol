@@ -6,7 +6,6 @@
 // CHANGES:
 // - Use ERC7201 Namespaced Storage for storage variables.
 pragma solidity >=0.6.11;
-
 import { IPostDispatchHook } from '@hpl/interfaces/hooks/IPostDispatchHook.sol';
 import { IInterchainSecurityModule } from '@hpl/interfaces/IInterchainSecurityModule.sol';
 import { IMailbox } from '@hpl/interfaces/IMailbox.sol';
@@ -14,9 +13,17 @@ import { Message } from '@hpl/libs/Message.sol';
 import { PackageVersioned } from '@hpl/PackageVersioned.sol';
 
 import { Address } from '@oz/utils/Address.sol';
-import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
+import { ContextUpgradeable } from '@ozu/utils/ContextUpgradeable.sol';
 
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
+
+
+
+
+
+
+
+
 
 /*@@@@@@@       @@@@@@@@@
  @@@@@@@@@       @@@@@@@@@
@@ -29,7 +36,7 @@ import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
   @@@@@@@@@       @@@@@@@@@
  @@@@@@@@@       @@@@@@@@@
 @@@@@@@@@       @@@@@@@@*/
-abstract contract MailboxClient is OwnableUpgradeable, PackageVersioned {
+abstract contract MailboxClient is PackageVersioned, ContextUpgradeable {
   using Message for bytes;
   using ERC7201Utils for string;
 
@@ -82,17 +89,25 @@ abstract contract MailboxClient is OwnableUpgradeable, PackageVersioned {
     _;
   }
 
+  modifier onlyMailboxManager() {
+    _authorizeManageMailbox(_msgSender());
+    _;
+  }
+
   constructor(address _mailbox) onlyContract(_mailbox) {
     mailbox = IMailbox(_mailbox);
     localDomain = mailbox.localDomain();
-    _transferOwnership(msg.sender);
   }
+
+  // =========================== NOTE: VIRTUAL FUNCTIONS =========================== //
+
+  function _authorizeManageMailbox(address) internal virtual;
 
   /**
    * @notice Sets the address of the application's custom hook.
    * @param _hook The address of the hook contract.
    */
-  function setHook(address _hook) public virtual onlyContractOrNull(_hook) onlyOwner {
+  function setHook(address _hook) public virtual onlyContractOrNull(_hook) onlyMailboxManager {
     _getHplMailboxClientStorage().hook = IPostDispatchHook(_hook);
     emit HookSet(_hook);
   }
@@ -101,20 +116,15 @@ abstract contract MailboxClient is OwnableUpgradeable, PackageVersioned {
    * @notice Sets the address of the application's custom interchain security module.
    * @param _module The address of the interchain security module contract.
    */
-  function setInterchainSecurityModule(address _module) public onlyContractOrNull(_module) onlyOwner {
+  function setInterchainSecurityModule(address _module) public onlyContractOrNull(_module) onlyMailboxManager {
     _getHplMailboxClientStorage().interchainSecurityModule = IInterchainSecurityModule(_module);
     emit IsmSet(_module);
   }
 
   // ======== Initializer =========
-  function _MailboxClient_initialize(address _hook, address _interchainSecurityModule, address _owner)
-    internal
-    onlyInitializing
-  {
-    __Ownable_init(_msgSender());
+  function _MailboxClient_initialize(address _hook, address _interchainSecurityModule) internal onlyInitializing {
     setHook(_hook);
     setInterchainSecurityModule(_interchainSecurityModule);
-    _transferOwnership(_owner);
   }
 
   function _isLatestDispatched(bytes32 id) internal view returns (bool) {

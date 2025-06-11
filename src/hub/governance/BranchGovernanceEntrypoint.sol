@@ -5,6 +5,7 @@ import { IMessageRecipient } from '@hpl/interfaces/IMessageRecipient.sol';
 
 import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
+import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { GasRouter } from '../../external/hyperlane/GasRouter.sol';
@@ -17,6 +18,7 @@ import '../../message/Message.sol';
 contract BranchGovernanceEntrypoint is
   IBranchGovernanceEntrypoint,
   GasRouter,
+  Ownable2StepUpgradeable,
   UUPSUpgradeable,
   ReentrancyGuard,
   AccessControlEnumerableUpgradeable
@@ -45,10 +47,15 @@ contract BranchGovernanceEntrypoint is
   }
 
   function initialize(address owner_, address[] memory managers, address hook, address ism) public initializer {
-    _MailboxClient_initialize(hook, ism, owner_);
-    __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
 
+    __Ownable_init(_msgSender());
+    __Ownable2Step_init();
+
+    _MailboxClient_initialize(hook, ism);
+    _transferOwnership(owner_);
+
+    __AccessControlEnumerable_init();
     _grantRole(DEFAULT_ADMIN_ROLE, owner_);
     _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
 
@@ -73,16 +80,17 @@ contract BranchGovernanceEntrypoint is
       salt: salt
     }).encode();
 
-    _dispatchToBranch(chainId, enc);
+    _dispatchToBranch(chainId, MsgType.MsgDispatchGovernanceExecution, enc);
 
     emit ExecutionDispatched(chainId, targets, values, data, predecessor, salt);
   }
 
-  function _dispatchToBranch(uint256 chainId, bytes memory enc) internal {
+  function _dispatchToBranch(uint256 chainId, MsgType msgType, bytes memory enc) internal {
     uint32 hplDomain = _ccRegistry.hyperlaneDomain(chainId);
 
-    uint256 fee = _GasRouter_quoteDispatch(hplDomain, enc, address(hook()));
-    _GasRouter_dispatch(hplDomain, fee, enc, address(hook()));
+    uint96 action = uint96(msgType);
+    uint256 fee = _GasRouter_quoteDispatch(hplDomain, action, enc, address(hook()));
+    _GasRouter_dispatch(hplDomain, action, fee, enc, address(hook()));
   }
 
   function _handle(uint32, bytes32, bytes calldata) internal override { }
@@ -98,46 +106,15 @@ contract BranchGovernanceEntrypoint is
     }
   }
 
-  //=========== NOTE: ROUTER OVERRIDES ============//
+  function _authorizeUpgrade(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
 
-  function enrollRemoteRouter(uint32 domain_, bytes32 router_) external override {
-    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
-    _enrollRemoteRouter(domain_, router_);
+  function _authorizeManageMailbox(address) internal override onlyOwner { }
+
+  function _authorizeConfigureGas(address sender) internal view override {
+    require(sender == owner() || sender == address(_ccRegistry), StdError.Unauthorized());
   }
 
-  function enrollRemoteRouters(uint32[] calldata domain_, bytes32[] calldata addresses_) external override {
-    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
-    require(domain_.length == addresses_.length, '!length');
-    uint256 length = domain_.length;
-    for (uint256 i = 0; i < length; i += 1) {
-      _enrollRemoteRouter(domain_[i], addresses_[i]);
-    }
+  function _authorizeConfigureRoute(address sender) internal view override {
+    require(sender == owner() || sender == address(_ccRegistry), StdError.Unauthorized());
   }
-
-  function unenrollRemoteRouter(uint32 domain_) external override {
-    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
-    _unenrollRemoteRouter(domain_);
-  }
-
-  function unenrollRemoteRouters(uint32[] calldata domains_) external override {
-    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
-    uint256 length = domains_.length;
-    for (uint256 i = 0; i < length; i += 1) {
-      _unenrollRemoteRouter(domains_[i]);
-    }
-  }
-
-  function setDestGas(GasRouterConfig[] calldata gasConfigs) external {
-    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
-    for (uint256 i = 0; i < gasConfigs.length; i += 1) {
-      _setDestinationGas(gasConfigs[i].domain, gasConfigs[i].gas);
-    }
-  }
-
-  function setDestGas(uint32 domain, uint256 gas) external {
-    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
-    _setDestinationGas(domain, gas);
-  }
-
-  function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
 }

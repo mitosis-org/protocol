@@ -49,6 +49,15 @@ abstract contract Router is MailboxClient, IMessageRecipient {
 
   constructor(address _mailbox) MailboxClient(_mailbox) { }
 
+  modifier onlyRouterManager() {
+    _authorizeConfigureRoute(_msgSender());
+    _;
+  }
+
+  // =========================== NOTE: VIRTUAL FUNCTIONS =========================== //
+
+  function _authorizeConfigureRoute(address) internal virtual;
+
   // ============ External functions ============
   function domains() external view returns (uint32[] memory) {
     return _getHplRouterStorage().routers.uint32Keys();
@@ -69,7 +78,7 @@ abstract contract Router is MailboxClient, IMessageRecipient {
    * @notice Unregister the domain
    * @param _domain The domain of the remote Application Router
    */
-  function unenrollRemoteRouter(uint32 _domain) external virtual onlyOwner {
+  function unenrollRemoteRouter(uint32 _domain) external virtual onlyRouterManager {
     _unenrollRemoteRouter(_domain);
   }
 
@@ -78,7 +87,7 @@ abstract contract Router is MailboxClient, IMessageRecipient {
    * @param _domain The domain of the remote Application Router
    * @param _router The address of the remote Application Router
    */
-  function enrollRemoteRouter(uint32 _domain, bytes32 _router) external virtual onlyOwner {
+  function enrollRemoteRouter(uint32 _domain, bytes32 _router) external virtual onlyRouterManager {
     _enrollRemoteRouter(_domain, _router);
   }
 
@@ -87,7 +96,11 @@ abstract contract Router is MailboxClient, IMessageRecipient {
    * @param _domains The domains of the remote Application Routers
    * @param _addresses The addresses of the remote Application Routers
    */
-  function enrollRemoteRouters(uint32[] calldata _domains, bytes32[] calldata _addresses) external virtual onlyOwner {
+  function enrollRemoteRouters(uint32[] calldata _domains, bytes32[] calldata _addresses)
+    external
+    virtual
+    onlyRouterManager
+  {
     require(_domains.length == _addresses.length, '!length');
     uint256 length = _domains.length;
     for (uint256 i = 0; i < length; i += 1) {
@@ -99,7 +112,7 @@ abstract contract Router is MailboxClient, IMessageRecipient {
    * @notice Batch version of `unenrollRemoteRouter`
    * @param _domains The domains of the remote Application Routers
    */
-  function unenrollRemoteRouters(uint32[] calldata _domains) external virtual onlyOwner {
+  function unenrollRemoteRouters(uint32[] calldata _domains) external virtual onlyRouterManager {
     uint256 length = _domains.length;
     for (uint256 i = 0; i < length; i += 1) {
       _unenrollRemoteRouter(_domains[i]);

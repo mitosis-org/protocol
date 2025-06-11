@@ -26,17 +26,18 @@ import { Router } from './Router.sol';
 abstract contract GasRouter is Router {
   using ERC7201Utils for string;
 
-  event GasSet(uint32 domain, uint256 gas);
+  event GasSet(uint32 domain, uint96 action, uint128 gas);
 
   // ============ Mutable Storage ============
 
   struct GasRouterConfig {
     uint32 domain;
-    uint256 gas;
+    uint96 action;
+    uint128 gas;
   }
 
   struct GasRouterStorage {
-    mapping(uint32 => uint256) destinationGas;
+    mapping(uint32 => mapping(uint96 => uint128)) destinationGas;
   }
 
   string private constant _GAS_ROUTER_STORAGE_NAMESPACE = 'hyperlane.storage.GasRouter';
@@ -51,55 +52,71 @@ abstract contract GasRouter is Router {
 
   constructor(address _mailbox) Router(_mailbox) { }
 
+  // =========================== NOTE: MODIFIERS =========================== //
+
+  modifier onlyGasManager() {
+    _authorizeConfigureGas(_msgSender());
+    _;
+  }
+
+  // =========================== NOTE: VIRTUAL FUNCTIONS =========================== //
+
+  function _authorizeConfigureGas(address) internal virtual;
+
   /**
    * @notice Sets the gas amount dispatched for each configured domain.
    * @param gasConfigs The array of GasRouterConfig structs
    */
-  function setDestinationGas(GasRouterConfig[] calldata gasConfigs) external onlyOwner {
+  function setDestinationGas(GasRouterConfig[] calldata gasConfigs) external onlyGasManager {
     for (uint256 i = 0; i < gasConfigs.length; i += 1) {
-      _setDestinationGas(gasConfigs[i].domain, gasConfigs[i].gas);
+      _setDestinationGas(gasConfigs[i].domain, gasConfigs[i].action, gasConfigs[i].gas);
     }
   }
 
   /**
    * @notice Sets the gas amount dispatched for each configured domain.
    * @param domain The destination domain ID
+   * @param action The action to set the gas for
    * @param gas The gas limit
    */
-  function setDestinationGas(uint32 domain, uint256 gas) external onlyOwner {
-    _setDestinationGas(domain, gas);
+  function setDestinationGas(uint32 domain, uint96 action, uint128 gas) external onlyGasManager {
+    _setDestinationGas(domain, action, gas);
   }
 
   /**
    * @notice Returns the gas payment required to dispatch a message to the given domain's router.
    * @param _destinationDomain The domain of the router.
+   * @param _action The action to quote the gas for
    * @return _gasPayment Payment computed by the registered InterchainGasPaymaster.
    */
-  function quoteGasPayment(uint32 _destinationDomain) external view virtual returns (uint256) {
-    return _GasRouter_quoteDispatch(_destinationDomain, '', address(hook()));
+  function quoteGasPayment(uint32 _destinationDomain, uint96 _action) external view virtual returns (uint256) {
+    return _GasRouter_quoteDispatch(_destinationDomain, _action, '', address(hook()));
   }
 
-  function _GasRouter_hookMetadata(uint32 _destination) internal view returns (bytes memory) {
-    return StandardHookMetadata.overrideGasLimit(_getHplGasRouterStorage().destinationGas[_destination]);
+  function _GasRouter_hookMetadata(uint32 _destination, uint96 _action) internal view returns (bytes memory) {
+    return StandardHookMetadata.overrideGasLimit(_getHplGasRouterStorage().destinationGas[_destination][_action]);
   }
 
-  function _setDestinationGas(uint32 domain, uint256 gas) internal {
-    _getHplGasRouterStorage().destinationGas[domain] = gas;
-    emit GasSet(domain, gas);
+  function _setDestinationGas(uint32 domain, uint96 action, uint128 gas) internal {
+    _getHplGasRouterStorage().destinationGas[domain][action] = gas;
+    emit GasSet(domain, action, gas);
   }
 
-  function _GasRouter_dispatch(uint32 _destination, uint256 _value, bytes memory _messageBody, address _hook)
-    internal
-    returns (bytes32)
-  {
-    return _Router_dispatch(_destination, _value, _messageBody, _GasRouter_hookMetadata(_destination), _hook);
+  function _GasRouter_dispatch(
+    uint32 _destination,
+    uint96 _action,
+    uint256 _value,
+    bytes memory _messageBody,
+    address _hook
+  ) internal returns (bytes32) {
+    return _Router_dispatch(_destination, _value, _messageBody, _GasRouter_hookMetadata(_destination, _action), _hook);
   }
 
-  function _GasRouter_quoteDispatch(uint32 _destination, bytes memory _messageBody, address _hook)
+  function _GasRouter_quoteDispatch(uint32 _destination, uint96 _action, bytes memory _messageBody, address _hook)
     internal
     view
     returns (uint256)
   {
-    return _Router_quoteDispatch(_destination, _messageBody, _GasRouter_hookMetadata(_destination), _hook);
+    return _Router_quoteDispatch(_destination, _messageBody, _GasRouter_hookMetadata(_destination, _action), _hook);
   }
 }

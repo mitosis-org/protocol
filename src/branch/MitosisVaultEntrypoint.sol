@@ -4,7 +4,6 @@ pragma solidity ^0.8.28;
 import { IMessageRecipient } from '@hpl/interfaces/IMessageRecipient.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
-import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { GasRouter } from '../external/hyperlane/GasRouter.sol';
@@ -17,8 +16,8 @@ import '../message/Message.sol';
 contract MitosisVaultEntrypoint is
   IMitosisVaultEntrypoint,
   IMessageRecipient,
-  GasRouter,
   Ownable2StepUpgradeable,
+  GasRouter,
   UUPSUpgradeable
 {
   using Message for *;
@@ -43,10 +42,13 @@ contract MitosisVaultEntrypoint is
   }
 
   function initialize(address owner_, address hook, address ism) public initializer {
-    _MailboxClient_initialize(hook, ism, owner_);
-    __Ownable2Step_init();
     __UUPSUpgradeable_init();
 
+    __Ownable_init(_msgSender());
+    __Ownable2Step_init();
+
+    _MailboxClient_initialize(hook, ism);
+    _transferOwnership(owner_);
     _enrollRemoteRouter(_mitosisDomain, _mitosisAddr);
   }
 
@@ -66,7 +68,7 @@ contract MitosisVaultEntrypoint is
 
   function deposit(address asset, address to, uint256 amount) external payable onlyVault {
     bytes memory enc = MsgDeposit({ asset: asset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
-    _dispatchToMitosis(enc);
+    _dispatchToMitosis(enc, MsgType.MsgDeposit);
   }
 
   function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount)
@@ -80,7 +82,7 @@ contract MitosisVaultEntrypoint is
       matrixVault: hubMatrixVault.toBytes32(),
       amount: amount
     }).encode();
-    _dispatchToMitosis(enc);
+    _dispatchToMitosis(enc, MsgType.MsgDepositWithSupplyMatrix);
   }
 
   function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount)
@@ -94,22 +96,22 @@ contract MitosisVaultEntrypoint is
       eolVault: hubEOLVault.toBytes32(),
       amount: amount
     }).encode();
-    _dispatchToMitosis(enc);
+    _dispatchToMitosis(enc, MsgType.MsgDepositWithSupplyEOL);
   }
 
   function deallocateMatrix(address hubMatrixVault, uint256 amount) external payable onlyVault {
     bytes memory enc = MsgDeallocateMatrix({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
-    _dispatchToMitosis(enc);
+    _dispatchToMitosis(enc, MsgType.MsgDeallocateMatrix);
   }
 
   function settleMatrixYield(address hubMatrixVault, uint256 amount) external payable onlyVault {
     bytes memory enc = MsgSettleMatrixYield({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
-    _dispatchToMitosis(enc);
+    _dispatchToMitosis(enc, MsgType.MsgSettleMatrixYield);
   }
 
   function settleMatrixLoss(address hubMatrixVault, uint256 amount) external payable onlyVault {
     bytes memory enc = MsgSettleMatrixLoss({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
-    _dispatchToMitosis(enc);
+    _dispatchToMitosis(enc, MsgType.MsgSettleMatrixLoss);
   }
 
   function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external payable onlyVault {
@@ -118,12 +120,13 @@ contract MitosisVaultEntrypoint is
       reward: reward.toBytes32(),
       amount: amount
     }).encode();
-    _dispatchToMitosis(enc);
+    _dispatchToMitosis(enc, MsgType.MsgSettleMatrixExtraRewards);
   }
 
-  function _dispatchToMitosis(bytes memory enc) internal {
-    uint256 fee = _GasRouter_quoteDispatch(_mitosisDomain, enc, address(hook()));
-    _GasRouter_dispatch(_mitosisDomain, fee, enc, address(hook()));
+  function _dispatchToMitosis(bytes memory enc, MsgType msgType) internal {
+    uint96 action = uint96(msgType);
+    uint256 fee = _GasRouter_quoteDispatch(_mitosisDomain, action, enc, address(hook()));
+    _GasRouter_dispatch(_mitosisDomain, action, fee, enc, address(hook()));
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//
@@ -163,13 +166,9 @@ contract MitosisVaultEntrypoint is
 
   function _authorizeUpgrade(address) internal override onlyOwner { }
 
-  //=========== NOTE: OwnableUpgradeable & Ownable2StepUpgradeable
+  function _authorizeConfigureGas(address) internal override onlyOwner { }
 
-  function transferOwnership(address owner) public override(Ownable2StepUpgradeable, OwnableUpgradeable) {
-    Ownable2StepUpgradeable.transferOwnership(owner);
-  }
+  function _authorizeConfigureRoute(address) internal override onlyOwner { }
 
-  function _transferOwnership(address owner) internal override(Ownable2StepUpgradeable, OwnableUpgradeable) {
-    Ownable2StepUpgradeable._transferOwnership(owner);
-  }
+  function _authorizeManageMailbox(address) internal override onlyOwner { }
 }
