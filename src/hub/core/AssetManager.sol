@@ -126,7 +126,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     _assertBranchLiquidityThresholdSatisfied($, hubAsset, chainId, amount);
 
     _burn($, chainId, hubAsset, _msgSender(), amount);
-    $.entrypoint.withdraw(chainId, branchAsset, to, amount);
+    $.entrypoint.withdraw{ value: msg.value }(chainId, branchAsset, to, amount);
 
     emit Withdrawn(chainId, hubAsset, to, amount);
   }
@@ -143,7 +143,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     uint256 idle = _matrixIdle($, matrixVault);
     require(amount <= idle, IAssetManager__MatrixInsufficient(matrixVault));
 
-    $.entrypoint.allocateMatrix(chainId, matrixVault, amount);
+    $.entrypoint.allocateMatrix{ value: msg.value }(chainId, matrixVault, amount);
 
     address hubAsset = IMatrixVault(matrixVault).asset();
     _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, amount);
@@ -248,7 +248,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    $.entrypoint.initializeAsset(chainId, branchAsset);
+    $.entrypoint.initializeAsset{ value: msg.value }(chainId, branchAsset);
     emit AssetInitialized(hubAsset, chainId, branchAsset);
   }
 
@@ -282,7 +282,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     _assertMatrixNotInitialized($, chainId, matrixVault);
     $.matrixInitialized[chainId][matrixVault] = true;
 
-    $.entrypoint.initializeMatrix(chainId, matrixVault, branchAsset);
+    $.entrypoint.initializeMatrix{ value: msg.value }(chainId, matrixVault, branchAsset);
     emit MatrixInitialized(hubAsset, chainId, matrixVault, branchAsset);
   }
 
@@ -298,7 +298,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     _assertEOLNotInitialized($, chainId, eolVault);
     $.eolInitialized[chainId][eolVault] = true;
 
-    $.entrypoint.initializeEOL(chainId, eolVault, branchAsset);
+    $.entrypoint.initializeEOL{ value: msg.value }(chainId, eolVault, branchAsset);
     emit EOLInitialized(hubAsset, chainId, eolVault, branchAsset);
   }
 

@@ -114,7 +114,7 @@ abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2S
     _assertOnlyStrategyExecutor($, hubMatrixVault);
 
     $.matrices[hubMatrixVault].availableLiquidity -= amount;
-    IMitosisVaultEntrypoint(entrypoint()).deallocateMatrix(hubMatrixVault, amount);
+    IMitosisVaultEntrypoint(entrypoint()).deallocateMatrix{ value: msg.value }(hubMatrixVault, amount);
 
     emit MatrixDeallocated(hubMatrixVault, amount);
   }
@@ -154,7 +154,7 @@ abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2S
     _assertMatrixInitialized($, hubMatrixVault);
     _assertOnlyStrategyExecutor($, hubMatrixVault);
 
-    IMitosisVaultEntrypoint(entrypoint()).settleMatrixYield(hubMatrixVault, amount);
+    IMitosisVaultEntrypoint(entrypoint()).settleMatrixYield{ value: msg.value }(hubMatrixVault, amount);
 
     emit MatrixYieldSettled(hubMatrixVault, amount);
   }
@@ -165,7 +165,7 @@ abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2S
     _assertMatrixInitialized($, hubMatrixVault);
     _assertOnlyStrategyExecutor($, hubMatrixVault);
 
-    IMitosisVaultEntrypoint(entrypoint()).settleMatrixLoss(hubMatrixVault, amount);
+    IMitosisVaultEntrypoint(entrypoint()).settleMatrixLoss{ value: msg.value }(hubMatrixVault, amount);
 
     emit MatrixLossSettled(hubMatrixVault, amount);
   }
@@ -183,7 +183,7 @@ abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2S
     require(reward != $.matrices[hubMatrixVault].asset, StdError.InvalidAddress('reward'));
 
     IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
-    IMitosisVaultEntrypoint(entrypoint()).settleMatrixExtraRewards(hubMatrixVault, reward, amount);
+    IMitosisVaultEntrypoint(entrypoint()).settleMatrixExtraRewards{ value: msg.value }(hubMatrixVault, reward, amount);
 
     emit MatrixExtraRewardsSettled(hubMatrixVault, reward, amount);
   }
