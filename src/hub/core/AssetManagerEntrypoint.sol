@@ -115,13 +115,19 @@ contract AssetManagerEntrypoint is
 
   //=========== NOTE: ASSETMANAGER FUNCTIONS ===========//
 
-  function initializeAsset(uint256 chainId, address branchAsset) external onlyAssetManager onlyDispatchable(chainId) {
+  function initializeAsset(uint256 chainId, address branchAsset)
+    external
+    payable
+    onlyAssetManager
+    onlyDispatchable(chainId)
+  {
     bytes memory enc = MsgInitializeAsset({ asset: branchAsset.toBytes32() }).encode();
     _dispatchToBranch(chainId, enc);
   }
 
   function initializeMatrix(uint256 chainId, address matrixVault, address branchAsset)
     external
+    payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
@@ -132,6 +138,7 @@ contract AssetManagerEntrypoint is
 
   function initializeEOL(uint256 chainId, address eolVault, address branchAsset)
     external
+    payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
@@ -141,6 +148,7 @@ contract AssetManagerEntrypoint is
 
   function withdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
     external
+    payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
@@ -150,6 +158,7 @@ contract AssetManagerEntrypoint is
 
   function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount)
     external
+    payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {

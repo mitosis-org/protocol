@@ -57,8 +57,6 @@ contract BranchGovernanceEntrypoint is
     }
   }
 
-  receive() external payable nonReentrant { }
-
   function dispatchGovernanceExecution(
     uint256 chainId,
     address[] calldata targets,
@@ -66,7 +64,7 @@ contract BranchGovernanceEntrypoint is
     uint256[] calldata values,
     bytes32 predecessor,
     bytes32 salt
-  ) external onlyRole(MANAGER_ROLE) onlyDispatchable(chainId) {
+  ) external payable onlyRole(MANAGER_ROLE) onlyDispatchable(chainId) {
     bytes memory enc = MsgDispatchGovernanceExecution({
       targets: _convertAddressArrayToBytes32Array(targets),
       values: values,

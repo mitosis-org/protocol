@@ -40,7 +40,7 @@ interface IAssetManagerEntrypoint {
    * @param chainId The ID of the branch chain
    * @param branchAsset The address of the asset on the branch chain
    */
-  function initializeAsset(uint256 chainId, address branchAsset) external;
+  function initializeAsset(uint256 chainId, address branchAsset) external payable;
 
   /**
    * @notice Initializes a MatrixVault on a specified branch chain
@@ -48,7 +48,7 @@ interface IAssetManagerEntrypoint {
    * @param matrixVault The address of the MatrixVault
    * @param branchAsset The address of the associated asset on the branch chain
    */
-  function initializeMatrix(uint256 chainId, address matrixVault, address branchAsset) external;
+  function initializeMatrix(uint256 chainId, address matrixVault, address branchAsset) external payable;
 
   /**
    * @notice Initializes a EOL vault on a specified branch chain
@@ -56,7 +56,7 @@ interface IAssetManagerEntrypoint {
    * @param eolVault The address of the EOL vault
    * @param branchAsset The address of the associated asset on the branch chain
    */
-  function initializeEOL(uint256 chainId, address eolVault, address branchAsset) external;
+  function initializeEOL(uint256 chainId, address eolVault, address branchAsset) external payable;
 
   /**
    * @notice Initiates a withdrawal of assets from a branch chain
@@ -65,7 +65,7 @@ interface IAssetManagerEntrypoint {
    * @param to The address that will receive the withdrawn assets
    * @param amount The amount of assets to withdraw
    */
-  function withdraw(uint256 chainId, address branchAsset, address to, uint256 amount) external;
+  function withdraw(uint256 chainId, address branchAsset, address to, uint256 amount) external payable;
 
   /**
    * @notice Allocates assets to the StrategyExecutor for MatrixVault on branch chain
@@ -73,5 +73,5 @@ interface IAssetManagerEntrypoint {
    * @param matrixVault The address of the MatrixVault
    * @param amount The amount of assets to allocate
    */
-  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external;
+  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external payable;
 }

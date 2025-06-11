@@ -113,7 +113,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     emit DepositedWithSupplyEOL(chainId, hubAsset, to, eolVault, amount, supplyAmount);
   }
 
-  function withdraw(uint256 chainId, address hubAsset, address to, uint256 amount) external whenNotPaused {
+  function withdraw(uint256 chainId, address hubAsset, address to, uint256 amount) external payable whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     require(to != address(0), StdError.ZeroAddress('to'));
@@ -134,7 +134,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
   //=========== NOTE: MATRIX FUNCTIONS ===========//
 
   /// @dev only strategist
-  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external whenNotPaused {
+  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external payable whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($, matrixVault);
@@ -240,7 +240,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function _authorizePause(address) internal view override onlyOwner { }
 
-  function initializeAsset(uint256 chainId, address hubAsset) external onlyOwner whenNotPaused {
+  function initializeAsset(uint256 chainId, address hubAsset) external payable onlyOwner whenNotPaused {
     _assertOnlyContract(hubAsset, 'hubAsset');
 
     StorageV1 storage $ = _getStorageV1();
@@ -270,7 +270,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     }
   }
 
-  function initializeMatrix(uint256 chainId, address matrixVault) external onlyOwner whenNotPaused {
+  function initializeMatrix(uint256 chainId, address matrixVault) external payable onlyOwner whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
     _assertMatrixVaultFactorySet($);
     _assertMatrixVaultInstance($, matrixVault);
@@ -286,7 +286,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     emit MatrixInitialized(hubAsset, chainId, matrixVault, branchAsset);
   }
 
-  function initializeEOL(uint256 chainId, address eolVault) external onlyOwner whenNotPaused {
+  function initializeEOL(uint256 chainId, address eolVault) external payable onlyOwner whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
     _assertEOLVaultFactorySet($);
     _assertEOLVaultInstance($, eolVault);

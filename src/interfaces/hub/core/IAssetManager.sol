@@ -403,7 +403,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param to The address receiving the withdrawn assets
    * @param amount The amount to withdraw
    */
-  function withdraw(uint256 chainId, address hubAsset, address to, uint256 amount) external;
+  function withdraw(uint256 chainId, address hubAsset, address to, uint256 amount) external payable;
 
   /**
    * @notice Allocate the assets to the branch chain for a specific MatrixVault
@@ -413,7 +413,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param matrixVault The address of the MatrixVault to be affected
    * @param amount The amount to allocate
    */
-  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external;
+  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external payable;
 
   /**
    * @notice Deallocate the assets from the branch chain for a specific MatrixVault
@@ -465,7 +465,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param chainId The ID of the chain where the asset is initialized
    * @param hubAsset The address of the hub asset to initialize on the branch chain
    */
-  function initializeAsset(uint256 chainId, address hubAsset) external;
+  function initializeAsset(uint256 chainId, address hubAsset) external payable;
 
   /**
    * @notice Sets the withdrawable deposit threshold for a specific asset on a given chain
@@ -493,14 +493,14 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param chainId The ID of the chain where the MatrixVault is initialized
    * @param matrixVault The address of the MatrixVault to initialize
    */
-  function initializeMatrix(uint256 chainId, address matrixVault) external;
+  function initializeMatrix(uint256 chainId, address matrixVault) external payable;
 
   /**
    * @notice Initialize a EOL vault for branch asset on a given chain
    * @param chainId The ID of the chain where the EOL vault is initialized
    * @param eolVault The address of the EOL vault to initialize
    */
-  function initializeEOL(uint256 chainId, address eolVault) external;
+  function initializeEOL(uint256 chainId, address eolVault) external payable;
 
   /**
    * @notice Set an asset pair

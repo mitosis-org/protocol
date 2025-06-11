@@ -13,5 +13,5 @@ interface IBranchGovernanceEntrypoint {
     uint256[] calldata values,
     bytes32 predecessor,
     bytes32 salt
-  ) external;
+  ) external payable;
 }
