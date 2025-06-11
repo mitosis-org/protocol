@@ -92,6 +92,10 @@ contract MitosisVault is
     return address(_getStorageV1().entrypoint);
   }
 
+  function quoteDeposit(address asset, address to, uint256 amount) external view returns (uint256) {
+    return _getStorageV1().entrypoint.quoteDeposit(asset, to, amount);
+  }
+
   //=========== NOTE: MUTATIVE - ASSET FUNCTIONS ===========//
 
   function initializeAsset(address asset) external whenNotPaused {

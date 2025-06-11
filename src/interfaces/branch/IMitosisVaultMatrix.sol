@@ -40,6 +40,21 @@ interface IMitosisVaultMatrix {
   function availableMatrix(address hubMatrixVault) external view returns (uint256);
   function matrixStrategyExecutor(address hubMatrixVault) external view returns (address);
 
+  //=========== NOTE: QUOTE FUNCTIONS ===========//
+
+  function quoteDepositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount)
+    external
+    view
+    returns (uint256);
+
+  function quoteDeallocateMatrix(address hubMatrixVault, uint256 amount) external view returns (uint256);
+  function quoteSettleMatrixYield(address hubMatrixVault, uint256 amount) external view returns (uint256);
+  function quoteSettleMatrixLoss(address hubMatrixVault, uint256 amount) external view returns (uint256);
+  function quoteSettleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount)
+    external
+    view
+    returns (uint256);
+
   //=========== NOTE: Asset ===========//
 
   function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount) external payable;

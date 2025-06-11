@@ -42,6 +42,14 @@ abstract contract MitosisVaultEOL is IMitosisVaultEOL, Pausable, Ownable2StepUpg
     return _isEOLInitialized(_getEOLStorageV1(), hubEOLVault);
   }
 
+  function quoteDepositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount)
+    external
+    view
+    returns (uint256)
+  {
+    return IMitosisVaultEntrypoint(entrypoint()).quoteDepositWithSupplyEOL(asset, to, hubEOLVault, amount);
+  }
+
   //=========== NOTE: Asset ===========//
 
   function _deposit(address asset, address to, uint256 amount) internal virtual;

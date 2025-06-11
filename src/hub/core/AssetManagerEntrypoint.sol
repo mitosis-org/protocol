@@ -75,6 +75,47 @@ contract AssetManagerEntrypoint is
     return _ccRegistry.mitosisVaultEntrypoint(chainId);
   }
 
+  function quoteInitializeAsset(uint256 chainId, address branchAsset) external view returns (uint256) {
+    bytes memory enc = MsgInitializeAsset({ asset: branchAsset.toBytes32() }).encode();
+    return _quoteToBranch(chainId, MsgType.MsgInitializeAsset, enc);
+  }
+
+  function quoteInitializeMatrix(uint256 chainId, address matrixVault, address branchAsset)
+    external
+    view
+    returns (uint256)
+  {
+    bytes memory enc =
+      MsgInitializeMatrix({ matrixVault: matrixVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
+    return _quoteToBranch(chainId, MsgType.MsgInitializeMatrix, enc);
+  }
+
+  function quoteInitializeEOL(uint256 chainId, address eolVault, address branchAsset) external view returns (uint256) {
+    bytes memory enc = MsgInitializeEOL({ eolVault: eolVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
+    return _quoteToBranch(chainId, MsgType.MsgInitializeEOL, enc);
+  }
+
+  function quoteWithdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
+    external
+    view
+    returns (uint256)
+  {
+    bytes memory enc = MsgWithdraw({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
+    return _quoteToBranch(chainId, MsgType.MsgWithdraw, enc);
+  }
+
+  function quoteAllocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external view returns (uint256) {
+    bytes memory enc = MsgAllocateMatrix({ matrixVault: matrixVault.toBytes32(), amount: amount }).encode();
+    return _quoteToBranch(chainId, MsgType.MsgAllocateMatrix, enc);
+  }
+
+  function _quoteToBranch(uint256 chainId, MsgType msgType, bytes memory enc) internal view returns (uint256) {
+    uint32 hplDomain = _ccRegistry.hyperlaneDomain(chainId);
+    uint96 action = uint96(msgType);
+    uint256 fee = _GasRouter_quoteDispatch(hplDomain, action, enc, address(hook()));
+    return fee;
+  }
+
   //=========== NOTE: ASSETMANAGER FUNCTIONS ===========//
 
   function initializeAsset(uint256 chainId, address branchAsset)

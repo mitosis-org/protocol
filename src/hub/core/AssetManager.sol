@@ -33,6 +33,41 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     _setTreasury(_getStorageV1(), treasury_);
   }
 
+  //=========== NOTE: QUOTE FUNCTIONS ===========//
+
+  function quoteInitializeAsset(uint256 chainId, address branchAsset) external view returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    return $.entrypoint.quoteInitializeAsset(chainId, branchAsset);
+  }
+
+  function quoteInitializeMatrix(uint256 chainId, address matrixVault, address branchAsset)
+    external
+    view
+    returns (uint256)
+  {
+    StorageV1 storage $ = _getStorageV1();
+    return $.entrypoint.quoteInitializeMatrix(chainId, matrixVault, branchAsset);
+  }
+
+  function quoteInitializeEOL(uint256 chainId, address eolVault, address branchAsset) external view returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    return $.entrypoint.quoteInitializeEOL(chainId, eolVault, branchAsset);
+  }
+
+  function quoteWithdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
+    external
+    view
+    returns (uint256)
+  {
+    StorageV1 storage $ = _getStorageV1();
+    return $.entrypoint.quoteWithdraw(chainId, branchAsset, to, amount);
+  }
+
+  function quoteAllocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external view returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    return $.entrypoint.quoteAllocateMatrix(chainId, matrixVault, amount);
+  }
+
   //=========== NOTE: ASSET FUNCTIONS ===========//
 
   function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external whenNotPaused {

@@ -64,6 +64,73 @@ contract MitosisVaultEntrypoint is
     return _mitosisAddr;
   }
 
+  function quoteDeposit(address asset, address to, uint256 amount) external view returns (uint256) {
+    bytes memory enc = MsgDeposit({ asset: asset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
+    return _quoteToMitosis(enc, MsgType.MsgDeposit);
+  }
+
+  function quoteDepositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount)
+    external
+    view
+    returns (uint256)
+  {
+    bytes memory enc = MsgDepositWithSupplyMatrix({
+      asset: asset.toBytes32(),
+      to: to.toBytes32(),
+      matrixVault: hubMatrixVault.toBytes32(),
+      amount: amount
+    }).encode();
+    return _quoteToMitosis(enc, MsgType.MsgDepositWithSupplyMatrix);
+  }
+
+  function quoteDepositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount)
+    external
+    view
+    returns (uint256)
+  {
+    bytes memory enc = MsgDepositWithSupplyEOL({
+      asset: asset.toBytes32(),
+      to: to.toBytes32(),
+      eolVault: hubEOLVault.toBytes32(),
+      amount: amount
+    }).encode();
+    return _quoteToMitosis(enc, MsgType.MsgDepositWithSupplyEOL);
+  }
+
+  function quoteDeallocateMatrix(address hubMatrixVault, uint256 amount) external view returns (uint256) {
+    bytes memory enc = MsgDeallocateMatrix({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
+    return _quoteToMitosis(enc, MsgType.MsgDeallocateMatrix);
+  }
+
+  function quoteSettleMatrixYield(address hubMatrixVault, uint256 amount) external view returns (uint256) {
+    bytes memory enc = MsgSettleMatrixYield({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
+    return _quoteToMitosis(enc, MsgType.MsgSettleMatrixYield);
+  }
+
+  function quoteSettleMatrixLoss(address hubMatrixVault, uint256 amount) external view returns (uint256) {
+    bytes memory enc = MsgSettleMatrixLoss({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
+    return _quoteToMitosis(enc, MsgType.MsgSettleMatrixLoss);
+  }
+
+  function quoteSettleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount)
+    external
+    view
+    returns (uint256)
+  {
+    bytes memory enc = MsgSettleMatrixExtraRewards({
+      matrixVault: hubMatrixVault.toBytes32(),
+      reward: reward.toBytes32(),
+      amount: amount
+    }).encode();
+    return _quoteToMitosis(enc, MsgType.MsgSettleMatrixExtraRewards);
+  }
+
+  function _quoteToMitosis(bytes memory enc, MsgType msgType) internal view returns (uint256) {
+    uint96 action = uint96(msgType);
+    uint256 fee = _GasRouter_quoteDispatch(_mitosisDomain, action, enc, address(hook()));
+    return fee;
+  }
+
   //=========== NOTE: VAULT FUNCTIONS ===========//
 
   function deposit(address asset, address to, uint256 amount) external payable onlyVault {

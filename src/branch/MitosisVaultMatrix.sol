@@ -56,6 +56,34 @@ abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2S
     return _getMatrixStorageV1().matrices[hubMatrixVault].strategyExecutor;
   }
 
+  function quoteDepositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount)
+    external
+    view
+    returns (uint256)
+  {
+    return IMitosisVaultEntrypoint(entrypoint()).quoteDepositWithSupplyMatrix(asset, to, hubMatrixVault, amount);
+  }
+
+  function quoteDeallocateMatrix(address hubMatrixVault, uint256 amount) external view returns (uint256) {
+    return IMitosisVaultEntrypoint(entrypoint()).quoteDeallocateMatrix(hubMatrixVault, amount);
+  }
+
+  function quoteSettleMatrixYield(address hubMatrixVault, uint256 amount) external view returns (uint256) {
+    return IMitosisVaultEntrypoint(entrypoint()).quoteSettleMatrixYield(hubMatrixVault, amount);
+  }
+
+  function quoteSettleMatrixLoss(address hubMatrixVault, uint256 amount) external view returns (uint256) {
+    return IMitosisVaultEntrypoint(entrypoint()).quoteSettleMatrixLoss(hubMatrixVault, amount);
+  }
+
+  function quoteSettleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount)
+    external
+    view
+    returns (uint256)
+  {
+    return IMitosisVaultEntrypoint(entrypoint()).quoteSettleMatrixExtraRewards(hubMatrixVault, reward, amount);
+  }
+
   //=========== NOTE: Asset ===========//
 
   function _deposit(address asset, address to, uint256 amount) internal virtual;

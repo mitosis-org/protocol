@@ -357,6 +357,57 @@ interface IAssetManager is IAssetManagerStorageV1 {
   error IAssetManager__MatrixInsufficient(address matrixVault);
 
   /**
+   * @notice Quotes the gas fee for initializing an asset on a specified branch chain
+   * @param chainId The ID of the branch chain
+   * @param branchAsset The address of the asset on the branch chain
+   * @return The gas fee required for the operation
+   */
+  function quoteInitializeAsset(uint256 chainId, address branchAsset) external view returns (uint256);
+
+  /**
+   * @notice Quotes the gas fee for initializing a MatrixVault on a specified branch chain
+   * @param chainId The ID of the branch chain
+   * @param matrixVault The address of the MatrixVault
+   * @param branchAsset The address of the associated asset on the branch chain
+   * @return The gas fee required for the operation
+   */
+  function quoteInitializeMatrix(uint256 chainId, address matrixVault, address branchAsset)
+    external
+    view
+    returns (uint256);
+
+  /**
+   * @notice Quotes the gas fee for initializing an EOL vault on a specified branch chain
+   * @param chainId The ID of the branch chain
+   * @param eolVault The address of the EOL vault
+   * @param branchAsset The address of the associated asset on the branch chain
+   * @return The gas fee required for the operation
+   */
+  function quoteInitializeEOL(uint256 chainId, address eolVault, address branchAsset) external view returns (uint256);
+
+  /**
+   * @notice Quotes the gas fee for withdrawing assets from a branch chain
+   * @param chainId The ID of the branch chain
+   * @param branchAsset The address of the asset on the branch chain
+   * @param to The address that will receive the withdrawn assets
+   * @param amount The amount of assets to withdraw
+   * @return The gas fee required for the operation
+   */
+  function quoteWithdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
+    external
+    view
+    returns (uint256);
+
+  /**
+   * @notice Quotes the gas fee for allocating assets to a MatrixVault on a specified branch chain
+   * @param chainId The ID of the branch chain
+   * @param matrixVault The address of the MatrixVault
+   * @param amount The amount of assets to allocate
+   * @return The gas fee required for the operation
+   */
+  function quoteAllocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external view returns (uint256);
+
+  /**
    * @notice Deposit branch assets
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the deposit is made

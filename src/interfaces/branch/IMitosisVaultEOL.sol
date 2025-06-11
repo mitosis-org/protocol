@@ -25,6 +25,11 @@ interface IMitosisVaultEOL {
 
   function isEOLInitialized(address hubEOLVault) external view returns (bool);
 
+  function quoteDepositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount)
+    external
+    view
+    returns (uint256);
+
   //=========== NOTE: Asset ===========//
 
   function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount) external payable;

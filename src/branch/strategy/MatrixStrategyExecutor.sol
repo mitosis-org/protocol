@@ -83,6 +83,26 @@ contract MatrixStrategyExecutor is
     return _getStorageV1().storedTotalBalance;
   }
 
+  function quoteDeallocateLiquidity(uint256 amount) external view returns (uint256) {
+    StorageV1 memory $ = _getStorageV1();
+    return $.vault.quoteDeallocateMatrix($.hubMatrixVault, amount);
+  }
+
+  function quoteSettleYield(uint256 amount) external view returns (uint256) {
+    StorageV1 memory $ = _getStorageV1();
+    return $.vault.quoteSettleMatrixYield($.hubMatrixVault, amount);
+  }
+
+  function quoteSettleLoss(uint256 amount) external view returns (uint256) {
+    StorageV1 memory $ = _getStorageV1();
+    return $.vault.quoteSettleMatrixLoss($.hubMatrixVault, amount);
+  }
+
+  function quoteSettleExtraRewards(address reward, uint256 amount) external view returns (uint256) {
+    StorageV1 memory $ = _getStorageV1();
+    return $.vault.quoteSettleMatrixExtraRewards($.hubMatrixVault, reward, amount);
+  }
+
   //=========== NOTE: STRATEGIST FUNCTIONS ===========//
 
   function deallocateLiquidity(uint256 amount) external payable {

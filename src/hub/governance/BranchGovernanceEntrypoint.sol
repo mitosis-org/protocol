@@ -64,6 +64,25 @@ contract BranchGovernanceEntrypoint is
     }
   }
 
+  function quoteGovernanceExecution(
+    uint256 chainId,
+    address[] calldata targets,
+    bytes[] calldata data,
+    uint256[] calldata values,
+    bytes32 predecessor,
+    bytes32 salt
+  ) external view returns (uint256) {
+    bytes memory enc = MsgDispatchGovernanceExecution({
+      targets: _convertAddressArrayToBytes32Array(targets),
+      values: values,
+      data: data,
+      predecessor: predecessor,
+      salt: salt
+    }).encode();
+
+    return _quoteToBranch(chainId, MsgType.MsgDispatchGovernanceExecution, enc);
+  }
+
   function dispatchGovernanceExecution(
     uint256 chainId,
     address[] calldata targets,
@@ -83,6 +102,12 @@ contract BranchGovernanceEntrypoint is
     _dispatchToBranch(chainId, MsgType.MsgDispatchGovernanceExecution, enc);
 
     emit ExecutionDispatched(chainId, targets, values, data, predecessor, salt);
+  }
+
+  function _quoteToBranch(uint256 chainId, MsgType msgType, bytes memory enc) internal view returns (uint256) {
+    uint32 hplDomain = _ccRegistry.hyperlaneDomain(chainId);
+    uint96 action = uint96(msgType);
+    return _GasRouter_quoteDispatch(hplDomain, action, enc, address(hook()));
   }
 
   function _dispatchToBranch(uint256 chainId, MsgType msgType, bytes memory enc) internal {
