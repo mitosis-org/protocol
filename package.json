@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "5.2.2",
-    "@types/node": "^22.0.3",
+    "@types/node": "24.0.1",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.8.0",
@@ -36,8 +36,8 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@hyperlane-xyz/core": "^6.0.3",
-    "commander": "13.1.0",
+    "@hyperlane-xyz/core": "8.0.0",
+    "commander": "14.0.0",
     "glob": "^11.0.0",
     "toml": "^3.0.0",
     "viem": "^2.18.7"
