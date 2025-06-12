@@ -28,6 +28,8 @@ abstract contract GasRouter is Router {
 
   event GasSet(uint32 domain, uint96 action, uint128 gas);
 
+  error GasRouter__GasLimitNotSet(uint32 domain, uint96 action);
+
   // ============ Mutable Storage ============
 
   struct GasRouterConfig {
@@ -94,7 +96,11 @@ abstract contract GasRouter is Router {
   }
 
   function _GasRouter_hookMetadata(uint32 _destination, uint96 _action) internal view returns (bytes memory) {
-    return StandardHookMetadata.overrideGasLimit(_getHplGasRouterStorage().destinationGas[_destination][_action]);
+    uint256 gasLimit = _getHplGasRouterStorage().destinationGas[_destination][_action];
+    // IGP does not overrides gas limit even if it is set to zero.
+    // So we need to check if the gas limit is properly set.
+    require(gasLimit > 0, GasRouter__GasLimitNotSet(_destination, _action));
+    return StandardHookMetadata.overrideGasLimit(gasLimit);
   }
 
   function _setDestinationGas(uint32 domain, uint96 action, uint128 gas) internal {
