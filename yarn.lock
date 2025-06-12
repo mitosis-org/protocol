@@ -1344,6 +1344,7 @@ __metadata:
     eslint-config-prettier: "npm:10.0.1"
     eslint-plugin-prettier: "npm:^5.2.1"
     glob: "npm:^11.0.0"
+    husky: "npm:^9.1.7"
     prettier: "npm:^3.3.3"
     prettier-plugin-sort-json: "npm:^4.0.0"
     solc: "npm:^0.8.28"
@@ -4615,6 +4616,15 @@ __metadata:
   dependencies:
     ms: "npm:^2.0.0"
   checksum: 10c0/f34a2c20161d02303c2807badec2f3b49cbfbbb409abd4f95a07377ae01cfe6b59e3d15ac609cffcd8f2521f0eb37b7e1091acf65da99aa2a4f1ad63c21e7e7a
+  languageName: node
+  linkType: hard
+
+"husky@npm:^9.1.7":
+  version: 9.1.7
+  resolution: "husky@npm:9.1.7"
+  bin:
+    husky: bin.js
+  checksum: 10c0/35bb110a71086c48906aa7cd3ed4913fb913823715359d65e32e0b964cb1e255593b0ae8014a5005c66a68e6fa66c38dcfa8056dbbdfb8b0187c0ffe7ee3a58f
   languageName: node
   linkType: hard
 

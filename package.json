@@ -19,7 +19,9 @@
     "format-json": "ts-node ./tools/format-json.ts -i './{script,src,test,addresses}/**/*.json'",
     "format-json:check": "ts-node ./tools/format-json.ts -i './{script,src,test,addresses}/**/*.json' -c",
     "sort-imports": "ts-node ./tools/sort-imports.ts -i './{script,src,test}/**/*.sol'",
-    "sort-imports:check": "ts-node ./tools/sort-imports.ts -i './{script,src,test}/**/*.sol' -c"
+    "sort-imports:check": "ts-node ./tools/sort-imports.ts -i './{script,src,test}/**/*.sol' -c",
+    "gen:versioned": "./tools/gen-versioned.sh",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "5.2.2",
@@ -29,6 +31,7 @@
     "eslint": "^9.8.0",
     "eslint-config-prettier": "10.0.1",
     "eslint-plugin-prettier": "^5.2.1",
+    "husky": "^9.1.7",
     "prettier": "^3.3.3",
     "prettier-plugin-sort-json": "^4.0.0",
     "solc": "^0.8.28",

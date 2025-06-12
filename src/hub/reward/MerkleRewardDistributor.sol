@@ -10,13 +10,15 @@ import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 import { IMerkleRewardDistributor } from '../../interfaces/hub/reward/IMerkleRewardDistributor.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 import { MerkleRewardDistributorStorageV1 } from './MerkleRewardDistributorStorageV1.sol';
 
 contract MerkleRewardDistributor is
   IMerkleRewardDistributor,
   AccessControlEnumerableUpgradeable,
   UUPSUpgradeable,
-  MerkleRewardDistributorStorageV1
+  MerkleRewardDistributorStorageV1,
+  Versioned
 {
   using SafeERC20 for IERC20;
   using MerkleProof for bytes32[];

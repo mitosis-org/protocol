@@ -13,13 +13,15 @@ import { IStrategyExecutor } from '../../../interfaces/branch/strategy/IStrategy
 import { IManagerWithMerkleVerification } from
   '../../../interfaces/branch/strategy/manager/IManagerWithMerkleVerification.sol';
 import { StdError } from '../../../lib/StdError.sol';
+import { Versioned } from '../../../lib/Versioned.sol';
 import { ManagerWithMerkleVerificationStorageV1 } from './ManagerWithMerkleVerificationStorageV1.sol';
 
 contract ManagerWithMerkleVerification is
   IManagerWithMerkleVerification,
   Ownable2StepUpgradeable,
   UUPSUpgradeable,
-  ManagerWithMerkleVerificationStorageV1
+  ManagerWithMerkleVerificationStorageV1,
+  Versioned
 {
   using Address for address;
 

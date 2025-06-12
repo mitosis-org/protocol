@@ -11,13 +11,14 @@ import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 import { MatrixVaultStorageV1 } from './MatrixVaultStorageV1.sol';
 
 /**
  * @title MatrixVault
  * @notice Base implementation of an MatrixVault
  */
-abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable, ReentrancyGuard {
+abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable, ReentrancyGuard, Versioned {
   using Math for uint256;
 
   modifier onlyOwner() {

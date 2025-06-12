@@ -8,8 +8,14 @@ import { IConsensusValidatorEntrypoint } from '../../interfaces/hub/consensus-la
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibSecp256k1 } from '../../lib/LibSecp256k1.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 
-contract ConsensusValidatorEntrypoint is IConsensusValidatorEntrypoint, Ownable2StepUpgradeable, UUPSUpgradeable {
+contract ConsensusValidatorEntrypoint is
+  IConsensusValidatorEntrypoint,
+  Ownable2StepUpgradeable,
+  UUPSUpgradeable,
+  Versioned
+{
   using ERC7201Utils for string;
 
   /// @custom:storage-location mitosis.storage.ConsensusValidatorEntrypoint

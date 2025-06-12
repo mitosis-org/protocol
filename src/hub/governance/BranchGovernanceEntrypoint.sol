@@ -13,6 +13,7 @@ import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChai
 import { IBranchGovernanceEntrypoint } from '../../interfaces/hub/governance/IBranchGovernanceEntrypoint.sol';
 import { Conv } from '../../lib/Conv.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 import '../../message/Message.sol';
 
 contract BranchGovernanceEntrypoint is
@@ -21,7 +22,8 @@ contract BranchGovernanceEntrypoint is
   Ownable2StepUpgradeable,
   UUPSUpgradeable,
   ReentrancyGuard,
-  AccessControlEnumerableUpgradeable
+  AccessControlEnumerableUpgradeable,
+  Versioned
 {
   using Message for *;
   using Conv for *;

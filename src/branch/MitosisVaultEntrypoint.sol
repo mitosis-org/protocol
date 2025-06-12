@@ -11,6 +11,7 @@ import { IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { Conv } from '../lib/Conv.sol';
 import { StdError } from '../lib/StdError.sol';
+import { Versioned } from '../lib/Versioned.sol';
 import '../message/Message.sol';
 
 contract MitosisVaultEntrypoint is
@@ -18,7 +19,8 @@ contract MitosisVaultEntrypoint is
   IMessageRecipient,
   Ownable2StepUpgradeable,
   GasRouter,
-  UUPSUpgradeable
+  UUPSUpgradeable,
+  Versioned
 {
   using Message for *;
   using Conv for *;

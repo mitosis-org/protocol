@@ -8,6 +8,7 @@ import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 import { Conv } from '../../lib/Conv.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 import { CrossChainRegistryStorageV1 } from './CrossChainRegistryStorageV1.sol';
 
 /// Note: This contract stores data that needs to be shared across chains.
@@ -15,7 +16,8 @@ contract CrossChainRegistry is
   ICrossChainRegistry,
   Ownable2StepUpgradeable,
   UUPSUpgradeable,
-  CrossChainRegistryStorageV1
+  CrossChainRegistryStorageV1,
+  Versioned
 {
   using Conv for *;
 
