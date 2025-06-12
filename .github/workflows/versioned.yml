@@ -1,0 +1,28 @@
+name: Apply new version
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REPO_NAME: ${{ github.event.repository.name }}
+
+jobs:
+  versioned:
+    name: update Versioned.sol
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: run update
+        run: |
+          git config --global --add safe.directory /__w/${{ env.REPO_NAME }}/${{ env.REPO_NAME }}
+          yarn gen:versioned
+          git add -A ./src/lib/Versioned.sol
+          git commit -m "feat(lib): applied new version"
+          git push
