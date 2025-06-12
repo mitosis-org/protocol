@@ -6,6 +6,7 @@
 // CHANGES:
 // - Use ERC7201 Namespaced Storage for storage variables.
 pragma solidity >=0.6.11;
+
 import { IPostDispatchHook } from '@hpl/interfaces/hooks/IPostDispatchHook.sol';
 import { IInterchainSecurityModule } from '@hpl/interfaces/IInterchainSecurityModule.sol';
 import { IMailbox } from '@hpl/interfaces/IMailbox.sol';
@@ -16,14 +17,6 @@ import { Address } from '@oz/utils/Address.sol';
 import { ContextUpgradeable } from '@ozu/utils/ContextUpgradeable.sol';
 
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
-
-
-
-
-
-
-
-
 
 /*@@@@@@@       @@@@@@@@@
  @@@@@@@@@       @@@@@@@@@
