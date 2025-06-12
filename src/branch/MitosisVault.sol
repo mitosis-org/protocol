@@ -92,6 +92,10 @@ contract MitosisVault is
     return address(_getStorageV1().entrypoint);
   }
 
+  function quoteDeposit(address asset, address to, uint256 amount) external view returns (uint256) {
+    return _getStorageV1().entrypoint.quoteDeposit(asset, to, amount);
+  }
+
   //=========== NOTE: MUTATIVE - ASSET FUNCTIONS ===========//
 
   function initializeAsset(address asset) external whenNotPaused {
@@ -107,12 +111,12 @@ contract MitosisVault is
     _haltAsset($, asset, AssetAction.Deposit);
   }
 
-  function deposit(address asset, address to, uint256 amount) external whenNotPaused {
+  function deposit(address asset, address to, uint256 amount) external payable whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _deposit(asset, to, amount);
 
-    $.entrypoint.deposit(asset, to, amount);
+    $.entrypoint.deposit{ value: msg.value }(asset, to, amount);
     emit Deposited(asset, to, amount);
   }
 

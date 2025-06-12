@@ -44,7 +44,15 @@ contract MockMatrixStrategyExecutor is IMatrixStrategyExecutor {
 
   function storedTotalBalance() external view returns (uint256) { }
 
-  function deallocateLiquidity(uint256 amount) external { }
+  function quoteDeallocateLiquidity(uint256 amount) external view returns (uint256) { }
+
+  function quoteSettleYield(uint256 amount) external view returns (uint256) { }
+
+  function quoteSettleLoss(uint256 amount) external view returns (uint256) { }
+
+  function quoteSettleExtraRewards(address reward, uint256 amount) external view returns (uint256) { }
+
+  function deallocateLiquidity(uint256 amount) external payable { }
 
   function fetchLiquidity(uint256 amount) external { }
 
@@ -53,9 +61,9 @@ contract MockMatrixStrategyExecutor is IMatrixStrategyExecutor {
     _vault.returnMatrix(_hubMatrixVault, amount);
   }
 
-  function settle() external { }
+  function settle() external payable { }
 
-  function settleExtraRewards(address reward, uint256 amount) external { }
+  function settleExtraRewards(address reward, uint256 amount) external payable { }
 
   function execute(address target, bytes calldata data, uint256 value) external returns (bytes memory result) { }
 
