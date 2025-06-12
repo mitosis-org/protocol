@@ -23,11 +23,16 @@ interface IMatrixStrategyExecutor is IStrategyExecutor {
   function totalBalance() external view returns (uint256);
   function storedTotalBalance() external view returns (uint256);
 
-  function deallocateLiquidity(uint256 amount) external;
+  function quoteDeallocateLiquidity(uint256 amount) external view returns (uint256);
+  function quoteSettleYield(uint256 amount) external view returns (uint256);
+  function quoteSettleLoss(uint256 amount) external view returns (uint256);
+  function quoteSettleExtraRewards(address reward, uint256 amount) external view returns (uint256);
+
+  function deallocateLiquidity(uint256 amount) external payable;
   function fetchLiquidity(uint256 amount) external;
   function returnLiquidity(uint256 amount) external;
-  function settle() external;
-  function settleExtraRewards(address reward, uint256 amount) external;
+  function settle() external payable;
+  function settleExtraRewards(address reward, uint256 amount) external payable;
 
   function setTally(address implementation) external;
   function setStrategist(address strategist_) external;

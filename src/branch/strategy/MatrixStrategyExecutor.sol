@@ -83,16 +83,36 @@ contract MatrixStrategyExecutor is
     return _getStorageV1().storedTotalBalance;
   }
 
+  function quoteDeallocateLiquidity(uint256 amount) external view returns (uint256) {
+    StorageV1 memory $ = _getStorageV1();
+    return $.vault.quoteDeallocateMatrix($.hubMatrixVault, amount);
+  }
+
+  function quoteSettleYield(uint256 amount) external view returns (uint256) {
+    StorageV1 memory $ = _getStorageV1();
+    return $.vault.quoteSettleMatrixYield($.hubMatrixVault, amount);
+  }
+
+  function quoteSettleLoss(uint256 amount) external view returns (uint256) {
+    StorageV1 memory $ = _getStorageV1();
+    return $.vault.quoteSettleMatrixLoss($.hubMatrixVault, amount);
+  }
+
+  function quoteSettleExtraRewards(address reward, uint256 amount) external view returns (uint256) {
+    StorageV1 memory $ = _getStorageV1();
+    return $.vault.quoteSettleMatrixExtraRewards($.hubMatrixVault, reward, amount);
+  }
+
   //=========== NOTE: STRATEGIST FUNCTIONS ===========//
 
-  function deallocateLiquidity(uint256 amount) external {
+  function deallocateLiquidity(uint256 amount) external payable {
     require(amount > 0, StdError.ZeroAmount());
 
     StorageV1 memory $ = _getStorageV1();
 
     _assertOnlyStrategist($);
 
-    $.vault.deallocateMatrix($.hubMatrixVault, amount);
+    $.vault.deallocateMatrix{ value: msg.value }($.hubMatrixVault, amount);
   }
 
   function fetchLiquidity(uint256 amount) external {
@@ -118,7 +138,7 @@ contract MatrixStrategyExecutor is
     $.storedTotalBalance -= amount;
   }
 
-  function settle() external nonReentrant {
+  function settle() external payable nonReentrant {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($);
@@ -129,13 +149,13 @@ contract MatrixStrategyExecutor is
     $.storedTotalBalance = totalBalance_;
 
     if (totalBalance_ >= storedTotalBalance_) {
-      $.vault.settleMatrixYield($.hubMatrixVault, totalBalance_ - storedTotalBalance_);
+      $.vault.settleMatrixYield{ value: msg.value }($.hubMatrixVault, totalBalance_ - storedTotalBalance_);
     } else {
-      $.vault.settleMatrixLoss($.hubMatrixVault, storedTotalBalance_ - totalBalance_);
+      $.vault.settleMatrixLoss{ value: msg.value }($.hubMatrixVault, storedTotalBalance_ - totalBalance_);
     }
   }
 
-  function settleExtraRewards(address reward, uint256 amount) external {
+  function settleExtraRewards(address reward, uint256 amount) external payable {
     require(amount > 0, StdError.ZeroAmount());
 
     StorageV1 memory $ = _getStorageV1();
@@ -144,7 +164,7 @@ contract MatrixStrategyExecutor is
     require(reward != address($.asset), StdError.InvalidAddress('reward'));
 
     IERC20(reward).approve(address($.vault), amount);
-    $.vault.settleMatrixExtraRewards($.hubMatrixVault, reward, amount);
+    $.vault.settleMatrixExtraRewards{ value: msg.value }($.hubMatrixVault, reward, amount);
   }
 
   //=========== NOTE: EXECUTOR FUNCTIONS ===========//

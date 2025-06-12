@@ -6,6 +6,15 @@ interface IBranchGovernanceEntrypoint {
     uint256 indexed chainId, address[] targets, uint256[] values, bytes[] data, bytes32 predecessor, bytes32 salt
   );
 
+  function quoteGovernanceExecution(
+    uint256 chainId,
+    address[] calldata targets,
+    bytes[] calldata data,
+    uint256[] calldata values,
+    bytes32 predecessor,
+    bytes32 salt
+  ) external view returns (uint256);
+
   function dispatchGovernanceExecution(
     uint256 chainId,
     address[] calldata targets,
@@ -13,5 +22,5 @@ interface IBranchGovernanceEntrypoint {
     uint256[] calldata values,
     bytes32 predecessor,
     bytes32 salt
-  ) external;
+  ) external payable;
 }

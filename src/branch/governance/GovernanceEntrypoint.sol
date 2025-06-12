@@ -29,10 +29,13 @@ contract GovernanceEntrypoint is IGovernanceEntrypoint, GasRouter, UUPSUpgradeab
   }
 
   function initialize(address owner_, address hook, address ism) public initializer {
-    _MailboxClient_initialize(hook, ism, owner_);
-    __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
 
+    __AccessControlEnumerable_init();
+    _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
+
+    _MailboxClient_initialize(hook, ism);
+    _revokeRole(DEFAULT_ADMIN_ROLE, _msgSender());
     _grantRole(DEFAULT_ADMIN_ROLE, owner_);
 
     _enrollRemoteRouter(_mitosisDomain, _mitosisAddr);
@@ -74,4 +77,10 @@ contract GovernanceEntrypoint is IGovernanceEntrypoint, GasRouter, UUPSUpgradeab
   //=========== NOTE: Internal methods ===========//
 
   function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
+
+  function _authorizeConfigureGas(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
+
+  function _authorizeConfigureRoute(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
+
+  function _authorizeManageMailbox(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
 }

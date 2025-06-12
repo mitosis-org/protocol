@@ -10,17 +10,44 @@ interface IMitosisVaultEntrypoint {
 
   function mitosisAddr() external view returns (bytes32);
 
-  function deposit(address asset, address to, uint256 amount) external;
+  //=========== NOTE: QUOTE FUNCTIONS ===========//
 
-  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount) external;
+  function quoteDeposit(address asset, address to, uint256 amount) external view returns (uint256);
 
-  function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount) external;
+  function quoteDepositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount)
+    external
+    view
+    returns (uint256);
 
-  function deallocateMatrix(address hubMatrixVault, uint256 amount) external;
+  function quoteDepositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount)
+    external
+    view
+    returns (uint256);
 
-  function settleMatrixYield(address hubMatrixVault, uint256 amount) external;
+  function quoteDeallocateMatrix(address hubMatrixVault, uint256 amount) external view returns (uint256);
 
-  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external;
+  function quoteSettleMatrixYield(address hubMatrixVault, uint256 amount) external view returns (uint256);
 
-  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external;
+  function quoteSettleMatrixLoss(address hubMatrixVault, uint256 amount) external view returns (uint256);
+
+  function quoteSettleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount)
+    external
+    view
+    returns (uint256);
+
+  //=========== NOTE: MUTATIVE FUNCTIONS ===========//
+
+  function deposit(address asset, address to, uint256 amount) external payable;
+
+  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount) external payable;
+
+  function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount) external payable;
+
+  function deallocateMatrix(address hubMatrixVault, uint256 amount) external payable;
+
+  function settleMatrixYield(address hubMatrixVault, uint256 amount) external payable;
+
+  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external payable;
+
+  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external payable;
 }

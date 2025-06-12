@@ -33,6 +33,41 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     _setTreasury(_getStorageV1(), treasury_);
   }
 
+  //=========== NOTE: QUOTE FUNCTIONS ===========//
+
+  function quoteInitializeAsset(uint256 chainId, address branchAsset) external view returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    return $.entrypoint.quoteInitializeAsset(chainId, branchAsset);
+  }
+
+  function quoteInitializeMatrix(uint256 chainId, address matrixVault, address branchAsset)
+    external
+    view
+    returns (uint256)
+  {
+    StorageV1 storage $ = _getStorageV1();
+    return $.entrypoint.quoteInitializeMatrix(chainId, matrixVault, branchAsset);
+  }
+
+  function quoteInitializeEOL(uint256 chainId, address eolVault, address branchAsset) external view returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    return $.entrypoint.quoteInitializeEOL(chainId, eolVault, branchAsset);
+  }
+
+  function quoteWithdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
+    external
+    view
+    returns (uint256)
+  {
+    StorageV1 storage $ = _getStorageV1();
+    return $.entrypoint.quoteWithdraw(chainId, branchAsset, to, amount);
+  }
+
+  function quoteAllocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external view returns (uint256) {
+    StorageV1 storage $ = _getStorageV1();
+    return $.entrypoint.quoteAllocateMatrix(chainId, matrixVault, amount);
+  }
+
   //=========== NOTE: ASSET FUNCTIONS ===========//
 
   function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external whenNotPaused {
@@ -113,7 +148,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     emit DepositedWithSupplyEOL(chainId, hubAsset, to, eolVault, amount, supplyAmount);
   }
 
-  function withdraw(uint256 chainId, address hubAsset, address to, uint256 amount) external whenNotPaused {
+  function withdraw(uint256 chainId, address hubAsset, address to, uint256 amount) external payable whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     require(to != address(0), StdError.ZeroAddress('to'));
@@ -126,7 +161,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     _assertBranchLiquidityThresholdSatisfied($, hubAsset, chainId, amount);
 
     _burn($, chainId, hubAsset, _msgSender(), amount);
-    $.entrypoint.withdraw(chainId, branchAsset, to, amount);
+    $.entrypoint.withdraw{ value: msg.value }(chainId, branchAsset, to, amount);
 
     emit Withdrawn(chainId, hubAsset, to, amount);
   }
@@ -134,7 +169,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
   //=========== NOTE: MATRIX FUNCTIONS ===========//
 
   /// @dev only strategist
-  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external whenNotPaused {
+  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external payable whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyStrategist($, matrixVault);
@@ -143,7 +178,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     uint256 idle = _matrixIdle($, matrixVault);
     require(amount <= idle, IAssetManager__MatrixInsufficient(matrixVault));
 
-    $.entrypoint.allocateMatrix(chainId, matrixVault, amount);
+    $.entrypoint.allocateMatrix{ value: msg.value }(chainId, matrixVault, amount);
 
     address hubAsset = IMatrixVault(matrixVault).asset();
     _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, amount);
@@ -240,7 +275,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function _authorizePause(address) internal view override onlyOwner { }
 
-  function initializeAsset(uint256 chainId, address hubAsset) external onlyOwner whenNotPaused {
+  function initializeAsset(uint256 chainId, address hubAsset) external payable onlyOwner whenNotPaused {
     _assertOnlyContract(hubAsset, 'hubAsset');
 
     StorageV1 storage $ = _getStorageV1();
@@ -248,7 +283,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    $.entrypoint.initializeAsset(chainId, branchAsset);
+    $.entrypoint.initializeAsset{ value: msg.value }(chainId, branchAsset);
     emit AssetInitialized(hubAsset, chainId, branchAsset);
   }
 
@@ -270,7 +305,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     }
   }
 
-  function initializeMatrix(uint256 chainId, address matrixVault) external onlyOwner whenNotPaused {
+  function initializeMatrix(uint256 chainId, address matrixVault) external payable onlyOwner whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
     _assertMatrixVaultFactorySet($);
     _assertMatrixVaultInstance($, matrixVault);
@@ -282,11 +317,11 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     _assertMatrixNotInitialized($, chainId, matrixVault);
     $.matrixInitialized[chainId][matrixVault] = true;
 
-    $.entrypoint.initializeMatrix(chainId, matrixVault, branchAsset);
+    $.entrypoint.initializeMatrix{ value: msg.value }(chainId, matrixVault, branchAsset);
     emit MatrixInitialized(hubAsset, chainId, matrixVault, branchAsset);
   }
 
-  function initializeEOL(uint256 chainId, address eolVault) external onlyOwner whenNotPaused {
+  function initializeEOL(uint256 chainId, address eolVault) external payable onlyOwner whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
     _assertEOLVaultFactorySet($);
     _assertEOLVaultInstance($, eolVault);
@@ -298,7 +333,7 @@ contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSU
     _assertEOLNotInitialized($, chainId, eolVault);
     $.eolInitialized[chainId][eolVault] = true;
 
-    $.entrypoint.initializeEOL(chainId, eolVault, branchAsset);
+    $.entrypoint.initializeEOL{ value: msg.value }(chainId, eolVault, branchAsset);
     emit EOLInitialized(hubAsset, chainId, eolVault, branchAsset);
   }
 

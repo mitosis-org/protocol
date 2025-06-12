@@ -4,7 +4,6 @@ pragma solidity ^0.8.28;
 import { IMessageRecipient } from '@hpl/interfaces/IMessageRecipient.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
-import { OwnableUpgradeable } from '@ozu/access/OwnableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { GasRouter } from '../../external/hyperlane/GasRouter.sol';
@@ -19,8 +18,8 @@ import { AssetManager } from './AssetManager.sol';
 contract AssetManagerEntrypoint is
   IAssetManagerEntrypoint,
   IMessageRecipient,
-  GasRouter,
   Ownable2StepUpgradeable,
+  GasRouter,
   UUPSUpgradeable
 {
   using Message for *;
@@ -49,9 +48,13 @@ contract AssetManagerEntrypoint is
   }
 
   function initialize(address owner_, address hook, address ism) public initializer {
-    _MailboxClient_initialize(hook, ism, owner_);
-    __Ownable2Step_init();
     __UUPSUpgradeable_init();
+
+    __Ownable_init(_msgSender());
+    __Ownable2Step_init();
+
+    _MailboxClient_initialize(hook, ism);
+    _transferOwnership(owner_);
   }
 
   receive() external payable { }
@@ -72,96 +75,106 @@ contract AssetManagerEntrypoint is
     return _ccRegistry.mitosisVaultEntrypoint(chainId);
   }
 
-  //=========== NOTE: ROUTER OVERRIDES ============//
-
-  function enrollRemoteRouter(uint32 domain_, bytes32 router_) external override {
-    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
-    _enrollRemoteRouter(domain_, router_);
+  function quoteInitializeAsset(uint256 chainId, address branchAsset) external view returns (uint256) {
+    bytes memory enc = MsgInitializeAsset({ asset: branchAsset.toBytes32() }).encode();
+    return _quoteToBranch(chainId, MsgType.MsgInitializeAsset, enc);
   }
 
-  function enrollRemoteRouters(uint32[] calldata domain_, bytes32[] calldata addresses_) external override {
-    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
-    require(domain_.length == addresses_.length, '!length');
-    uint256 length = domain_.length;
-    for (uint256 i = 0; i < length; i += 1) {
-      _enrollRemoteRouter(domain_[i], addresses_[i]);
-    }
+  function quoteInitializeMatrix(uint256 chainId, address matrixVault, address branchAsset)
+    external
+    view
+    returns (uint256)
+  {
+    bytes memory enc =
+      MsgInitializeMatrix({ matrixVault: matrixVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
+    return _quoteToBranch(chainId, MsgType.MsgInitializeMatrix, enc);
   }
 
-  function unenrollRemoteRouter(uint32 domain_) external override {
-    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
-    _unenrollRemoteRouter(domain_);
+  function quoteInitializeEOL(uint256 chainId, address eolVault, address branchAsset) external view returns (uint256) {
+    bytes memory enc = MsgInitializeEOL({ eolVault: eolVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
+    return _quoteToBranch(chainId, MsgType.MsgInitializeEOL, enc);
   }
 
-  function unenrollRemoteRouters(uint32[] calldata domains_) external override {
-    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
-    uint256 length = domains_.length;
-    for (uint256 i = 0; i < length; i += 1) {
-      _unenrollRemoteRouter(domains_[i]);
-    }
+  function quoteWithdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
+    external
+    view
+    returns (uint256)
+  {
+    bytes memory enc = MsgWithdraw({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
+    return _quoteToBranch(chainId, MsgType.MsgWithdraw, enc);
   }
 
-  function setDestGas(GasRouterConfig[] calldata gasConfigs) external {
-    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
-    for (uint256 i = 0; i < gasConfigs.length; i += 1) {
-      _setDestinationGas(gasConfigs[i].domain, gasConfigs[i].gas);
-    }
+  function quoteAllocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external view returns (uint256) {
+    bytes memory enc = MsgAllocateMatrix({ matrixVault: matrixVault.toBytes32(), amount: amount }).encode();
+    return _quoteToBranch(chainId, MsgType.MsgAllocateMatrix, enc);
   }
 
-  function setDestGas(uint32 domain, uint256 gas) external {
-    require(_msgSender() == owner() || _msgSender() == address(_ccRegistry), StdError.Unauthorized());
-    _setDestinationGas(domain, gas);
+  function _quoteToBranch(uint256 chainId, MsgType msgType, bytes memory enc) internal view returns (uint256) {
+    uint32 hplDomain = _ccRegistry.hyperlaneDomain(chainId);
+    uint96 action = uint96(msgType);
+    uint256 fee = _GasRouter_quoteDispatch(hplDomain, action, enc, address(hook()));
+    return fee;
   }
 
   //=========== NOTE: ASSETMANAGER FUNCTIONS ===========//
 
-  function initializeAsset(uint256 chainId, address branchAsset) external onlyAssetManager onlyDispatchable(chainId) {
+  function initializeAsset(uint256 chainId, address branchAsset)
+    external
+    payable
+    onlyAssetManager
+    onlyDispatchable(chainId)
+  {
     bytes memory enc = MsgInitializeAsset({ asset: branchAsset.toBytes32() }).encode();
-    _dispatchToBranch(chainId, enc);
+    _dispatchToBranch(chainId, MsgType.MsgInitializeAsset, enc);
   }
 
   function initializeMatrix(uint256 chainId, address matrixVault, address branchAsset)
     external
+    payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
     bytes memory enc =
       MsgInitializeMatrix({ matrixVault: matrixVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
-    _dispatchToBranch(chainId, enc);
+    _dispatchToBranch(chainId, MsgType.MsgInitializeMatrix, enc);
   }
 
   function initializeEOL(uint256 chainId, address eolVault, address branchAsset)
     external
+    payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
     bytes memory enc = MsgInitializeEOL({ eolVault: eolVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
-    _dispatchToBranch(chainId, enc);
+    _dispatchToBranch(chainId, MsgType.MsgInitializeEOL, enc);
   }
 
   function withdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
     external
+    payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
     bytes memory enc = MsgWithdraw({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
-    _dispatchToBranch(chainId, enc);
+    _dispatchToBranch(chainId, MsgType.MsgWithdraw, enc);
   }
 
   function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount)
     external
+    payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
     bytes memory enc = MsgAllocateMatrix({ matrixVault: matrixVault.toBytes32(), amount: amount }).encode();
-    _dispatchToBranch(chainId, enc);
+    _dispatchToBranch(chainId, MsgType.MsgAllocateMatrix, enc);
   }
 
-  function _dispatchToBranch(uint256 chainId, bytes memory enc) internal {
+  function _dispatchToBranch(uint256 chainId, MsgType msgType, bytes memory enc) internal {
     uint32 hplDomain = _ccRegistry.hyperlaneDomain(chainId);
 
-    uint256 fee = _GasRouter_quoteDispatch(hplDomain, enc, address(hook()));
-    _GasRouter_dispatch(hplDomain, fee, enc, address(hook()));
+    uint96 action = uint96(msgType);
+    uint256 fee = _GasRouter_quoteDispatch(hplDomain, action, enc, address(hook()));
+    _GasRouter_dispatch(hplDomain, action, fee, enc, address(hook()));
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//
@@ -228,13 +241,13 @@ contract AssetManagerEntrypoint is
 
   function _authorizeUpgrade(address) internal override onlyOwner { }
 
-  //=========== NOTE: OwnableUpgradeable & Ownable2StepUpgradeable
-
-  function transferOwnership(address owner) public override(Ownable2StepUpgradeable, OwnableUpgradeable) {
-    Ownable2StepUpgradeable.transferOwnership(owner);
+  function _authorizeConfigureGas(address sender) internal view override {
+    require(sender == owner() || sender == address(_ccRegistry), StdError.Unauthorized());
   }
 
-  function _transferOwnership(address owner) internal override(Ownable2StepUpgradeable, OwnableUpgradeable) {
-    Ownable2StepUpgradeable._transferOwnership(owner);
+  function _authorizeConfigureRoute(address sender) internal view override {
+    require(sender == owner() || sender == address(_ccRegistry), StdError.Unauthorized());
   }
+
+  function _authorizeManageMailbox(address) internal override onlyOwner { }
 }
