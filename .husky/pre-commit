@@ -1,1 +1,3 @@
 yarn gen:versioned
+
+git add -A ./src/lib/Versioned.sol
