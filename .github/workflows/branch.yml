@@ -36,11 +36,11 @@ jobs:
               - 'soldeer.lock'
               - '.gitignore'
 
-  clean-branch:
+  refine-branch:
     needs: changes
     if: ${{ needs.changes.outputs.contracts == 'true' }}
 
-    name: update clean branch
+    name: update refine branch
     runs-on: ubuntu-latest
 
     permissions:
@@ -49,15 +49,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: clean
+          ref: ⭐️
 
       - name: run update
         run: |
           git config --global --add safe.directory /__w/${{ env.REPO_NAME }}/${{ env.REPO_NAME }}
           git fetch
           git checkout origin/main src foundry.toml soldeer.lock .gitignore
+
+          sed \
+            -e "s/{{git_tag}}/$(git describe --abbrev=0 --tags origin/main)/g" \
+            -e "s/{{git_commit}}/$(git rev-parse HEAD)/g" \
+            src/lib/Versioned.sol > src/lib/Versioned.sol.tmp
+
+          mv src/lib/Versioned.sol.tmp src/lib/Versioned.sol
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "cleaned $GITHUB_SHA"
+
+          git commit -m "refined $GITHUB_SHA"
           git push

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import { Versioned } from '../../../lib/Versioned.sol';
+
 // TODO(ray):
 //      How to query cases like Uniswap v3 (when there are multiple positions)
 //      How to manage claimId, etc., when a redeem period exists.
@@ -8,7 +10,7 @@ pragma solidity ^0.8.28;
  * @title StdTally
  * @notice Tally is query helper to make easy to track balances
  */
-abstract contract StdTally {
+abstract contract StdTally is Versioned {
   function totalBalance(bytes memory context) external view returns (uint256 totalBalance_) {
     return _totalBalance(context);
   }

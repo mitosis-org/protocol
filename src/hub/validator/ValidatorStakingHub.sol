@@ -12,6 +12,7 @@ import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorS
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibCheckpoint } from '../../lib/LibCheckpoint.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 
 contract ValidatorStakingHubStorage {
   using ERC7201Utils for string;
@@ -43,7 +44,8 @@ contract ValidatorStakingHub is
   IValidatorStakingHub,
   ValidatorStakingHubStorage,
   Ownable2StepUpgradeable,
-  UUPSUpgradeable
+  UUPSUpgradeable,
+  Versioned
 {
   using LibCheckpoint for LibCheckpoint.TraceTWAB;
 
