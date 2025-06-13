@@ -58,7 +58,7 @@ jobs:
           git checkout origin/main src foundry.toml soldeer.lock .gitignore
 
           sed \
-            -e "s/{{git_tag}}/$(git describe --tags --abbrev=0)/g" \
+            -e "s/{{git_tag}}/$(git describe --abbrev=0 --tags origin/main)/g" \
             -e "s/{{git_commit}}/$(git rev-parse HEAD)/g" \
             src/lib/Versioned.sol > src/lib/Versioned.sol.tmp
 
