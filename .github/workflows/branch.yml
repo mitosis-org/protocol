@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+  # TEMP
+  pull_request:
+    branches:
+      - main
 
 env:
   REPO_NAME: ${{ github.event.repository.name }}
