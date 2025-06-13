@@ -9,9 +9,16 @@ import { IGovernanceEntrypoint } from '../../interfaces/branch/governance/IGover
 import { Conv } from '../../lib/Conv.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { Timelock } from '../../lib/Timelock.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 import '../../message/Message.sol';
 
-contract GovernanceEntrypoint is IGovernanceEntrypoint, GasRouter, UUPSUpgradeable, AccessControlEnumerableUpgradeable {
+contract GovernanceEntrypoint is
+  IGovernanceEntrypoint,
+  GasRouter,
+  UUPSUpgradeable,
+  AccessControlEnumerableUpgradeable,
+  Versioned
+{
   using Message for *;
   using Conv for *;
 

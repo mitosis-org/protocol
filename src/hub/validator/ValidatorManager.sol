@@ -18,6 +18,7 @@ import { IValidatorManager } from '../../interfaces/hub/validator/IValidatorMana
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibSecp256k1 } from '../../lib/LibSecp256k1.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 
 /// @notice Storage layout for ValidatorManager
 /// @dev Uses ERC7201 for storage slot management
@@ -73,7 +74,8 @@ contract ValidatorManager is
   ValidatorManagerStorageV1,
   Ownable2StepUpgradeable,
   ReentrancyGuard,
-  UUPSUpgradeable
+  UUPSUpgradeable,
+  Versioned
 {
   using SafeCast for uint256;
   using LibSecp256k1 for bytes;

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-contract BaseDecoderAndSanitizer {
+import { Versioned } from '../../../../lib/Versioned.sol';
+
+contract BaseDecoderAndSanitizer is Versioned {
   error BaseDecoderAndSanitizer__FunctionSelectorNotSupported();
 
   //============================== FALLBACK ===============================

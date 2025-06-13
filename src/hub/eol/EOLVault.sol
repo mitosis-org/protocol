@@ -11,8 +11,9 @@ import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 
-contract EOLVault is ERC4626, Pausable, ReentrancyGuard {
+contract EOLVault is ERC4626, Pausable, ReentrancyGuard, Versioned {
   using ERC7201Utils for string;
 
   struct StorageV1 {

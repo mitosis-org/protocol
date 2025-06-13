@@ -7,9 +7,10 @@ import { ERC20 } from '@solady/tokens/ERC20.sol';
 
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 import { HubAssetStorageV1 } from './HubAssetStorageV1.sol';
 
-contract HubAsset is Ownable2StepUpgradeable, ERC20, HubAssetStorageV1 {
+contract HubAsset is Ownable2StepUpgradeable, ERC20, HubAssetStorageV1, Versioned {
   event SupplyManagerUpdated(address indexed previousSupplyManager, address indexed newSupplyManager);
 
   constructor() {

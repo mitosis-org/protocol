@@ -17,8 +17,9 @@ import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { LibQueue } from '../lib/LibQueue.sol';
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
+import { Versioned } from '../lib/Versioned.sol';
 
-contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSUpgradeable, ReentrancyGuard {
+contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSUpgradeable, ReentrancyGuard, Versioned {
   using SafeERC20 for IERC4626;
   using SafeERC20 for IERC20Metadata;
   using SafeCast for uint256;

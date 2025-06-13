@@ -10,9 +10,10 @@ import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 
 import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
 import { BeaconBase } from '../../lib/proxy/BeaconBase.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 import { MatrixStrategyExecutor } from './MatrixStrategyExecutor.sol';
 
-contract MatrixStrategyExecutorFactory is BeaconBase, Ownable2StepUpgradeable, UUPSUpgradeable {
+contract MatrixStrategyExecutorFactory is BeaconBase, Ownable2StepUpgradeable, UUPSUpgradeable, Versioned {
   constructor() {
     _disableInitializers();
   }

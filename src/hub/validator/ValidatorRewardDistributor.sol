@@ -17,6 +17,7 @@ import { IValidatorRewardDistributor } from '../../interfaces/hub/validator/IVal
 import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorStakingHub.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 
 /// @title ValidatorRewardDistributor Storage Contract
 /// @notice Storage contract for ValidatorRewardDistributor that uses ERC-7201 namespaced storage pattern
@@ -61,7 +62,8 @@ contract ValidatorRewardDistributor is
   ValidatorRewardDistributorStorageV1,
   Ownable2StepUpgradeable,
   ReentrancyGuard,
-  UUPSUpgradeable
+  UUPSUpgradeable,
+  Versioned
 {
   using SafeCast for uint256;
   using SafeERC20 for IGovMITO;

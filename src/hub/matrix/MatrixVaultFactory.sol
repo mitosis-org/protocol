@@ -10,10 +10,11 @@ import { IMatrixVaultFactory } from '../../interfaces/hub/matrix/IMatrixVaultFac
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { BeaconProxy, IBeaconProxy } from '../../lib/proxy/BeaconProxy.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 import { MatrixVaultBasic } from './MatrixVaultBasic.sol';
 import { MatrixVaultCapped } from './MatrixVaultCapped.sol';
 
-contract MatrixVaultFactory is IMatrixVaultFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
+contract MatrixVaultFactory is IMatrixVaultFactory, Ownable2StepUpgradeable, UUPSUpgradeable, Versioned {
   using ERC7201Utils for string;
 
   struct BeaconInfo {
