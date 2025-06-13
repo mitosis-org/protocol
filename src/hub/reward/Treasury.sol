@@ -10,13 +10,14 @@ import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 import { TreasuryStorageV1 } from './TreasuryStorageV1.sol';
 
 /**
  * @title Treasury
  * @notice A reward handler that stores rewards for later dispatch
  */
-contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradeable, TreasuryStorageV1 {
+contract Treasury is ITreasury, AccessControlEnumerableUpgradeable, UUPSUpgradeable, TreasuryStorageV1, Versioned {
   using SafeERC20 for IERC20;
   using SafeCast for uint256;
 

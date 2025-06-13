@@ -15,9 +15,17 @@ import { IMatrixVaultFactory } from '../../interfaces/hub/matrix/IMatrixVaultFac
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 import { AssetManagerStorageV1 } from './AssetManagerStorageV1.sol';
 
-contract AssetManager is IAssetManager, Pausable, Ownable2StepUpgradeable, UUPSUpgradeable, AssetManagerStorageV1 {
+contract AssetManager is
+  IAssetManager,
+  Pausable,
+  Ownable2StepUpgradeable,
+  UUPSUpgradeable,
+  AssetManagerStorageV1,
+  Versioned
+{
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
   constructor() {

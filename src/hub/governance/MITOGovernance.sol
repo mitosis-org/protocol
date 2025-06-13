@@ -16,6 +16,7 @@ import { GovernorUpgradeable } from '@ozu/governance/GovernorUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { Timelock } from '../../lib/Timelock.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 import { GovernorCountingBravoUpgradeable } from './GovernorCountingBravoUpgradeable.sol';
 
 contract MITOGovernance is
@@ -27,7 +28,8 @@ contract MITOGovernance is
   GovernorVotesQuorumFractionUpgradeable,
   GovernorTimelockControlUpgradeable,
   AccessControlEnumerableUpgradeable,
-  UUPSUpgradeable
+  UUPSUpgradeable,
+  Versioned
 {
   bytes32 public constant PROPOSER_ROLE = keccak256('PROPOSER_ROLE');
 

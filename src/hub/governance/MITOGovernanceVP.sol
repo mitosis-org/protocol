@@ -11,8 +11,16 @@ import { NoncesUpgradeable } from '@ozu/utils/NoncesUpgradeable.sol';
 import { ISudoVotes } from '../../interfaces/lib/ISudoVotes.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 
-contract MITOGovernanceVP is IVotes, Ownable2StepUpgradeable, UUPSUpgradeable, EIP712Upgradeable, NoncesUpgradeable {
+contract MITOGovernanceVP is
+  IVotes,
+  Ownable2StepUpgradeable,
+  UUPSUpgradeable,
+  EIP712Upgradeable,
+  NoncesUpgradeable,
+  Versioned
+{
   using ERC7201Utils for string;
 
   event TokensUpdated(ISudoVotes[] oldTokens, ISudoVotes[] newTokens);

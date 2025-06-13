@@ -23,6 +23,7 @@ import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { LibQueue } from '../lib/LibQueue.sol';
 import { StdError } from '../lib/StdError.sol';
 import { SudoVotes } from '../lib/SudoVotes.sol';
+import { Versioned } from '../lib/Versioned.sol';
 
 contract GovMITO is
   IGovMITO,
@@ -31,7 +32,8 @@ contract GovMITO is
   Ownable2StepUpgradeable,
   UUPSUpgradeable,
   SudoVotes,
-  ReentrancyGuard
+  ReentrancyGuard,
+  Versioned
 {
   using ERC7201Utils for string;
   using SafeCast for uint256;

@@ -10,6 +10,7 @@ import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 import { IEpochFeeder } from '../../interfaces/hub/validator/IEpochFeeder.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 
 contract EpochFeederStorageV1 {
   using ERC7201Utils for string;
@@ -41,7 +42,7 @@ contract EpochFeederStorageV1 {
  * @notice Manages epoch transitions and timing for the protocol
  * @dev This contract is upgradeable using UUPS pattern
  */
-contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradeable, UUPSUpgradeable {
+contract EpochFeeder is IEpochFeeder, EpochFeederStorageV1, Ownable2StepUpgradeable, UUPSUpgradeable, Versioned {
   using SafeCast for uint256;
 
   constructor() {

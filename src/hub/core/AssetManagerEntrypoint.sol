@@ -12,6 +12,7 @@ import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManager
 import { ICrossChainRegistry } from '../../interfaces/hub/cross-chain/ICrossChainRegistry.sol';
 import { Conv } from '../../lib/Conv.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 import '../../message/Message.sol';
 import { AssetManager } from './AssetManager.sol';
 
@@ -20,7 +21,8 @@ contract AssetManagerEntrypoint is
   IMessageRecipient,
   Ownable2StepUpgradeable,
   GasRouter,
-  UUPSUpgradeable
+  UUPSUpgradeable,
+  Versioned
 {
   using Message for *;
   using Conv for *;

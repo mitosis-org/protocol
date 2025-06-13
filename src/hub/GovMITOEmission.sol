@@ -14,6 +14,7 @@ import { IGovMITOEmission } from '../interfaces/hub/IGovMITOEmission.sol';
 import { IEpochFeeder } from '../interfaces/hub/validator/IEpochFeeder.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { StdError } from '../lib/StdError.sol';
+import { Versioned } from '../lib/Versioned.sol';
 
 contract GovMITOEmissionStorageV1 {
   using ERC7201Utils for string;
@@ -55,7 +56,8 @@ contract GovMITOEmission is
   GovMITOEmissionStorageV1,
   UUPSUpgradeable,
   Ownable2StepUpgradeable,
-  AccessControlEnumerableUpgradeable
+  AccessControlEnumerableUpgradeable,
+  Versioned
 {
   using SafeERC20 for IGovMITO;
   using SafeCast for uint256;

@@ -12,6 +12,7 @@ import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntry
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
+import { Versioned } from '../lib/Versioned.sol';
 import { MitosisVaultEOL } from './MitosisVaultEOL.sol';
 import { MitosisVaultMatrix } from './MitosisVaultMatrix.sol';
 
@@ -21,7 +22,8 @@ contract MitosisVault is
   Ownable2StepUpgradeable,
   UUPSUpgradeable,
   MitosisVaultMatrix,
-  MitosisVaultEOL
+  MitosisVaultEOL,
+  Versioned
 {
   using SafeERC20 for IERC20;
   using ERC7201Utils for string;

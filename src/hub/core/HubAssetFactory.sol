@@ -8,9 +8,10 @@ import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { BeaconBase } from '../../lib/proxy/BeaconBase.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 import { HubAsset } from './HubAsset.sol';
 
-contract HubAssetFactory is BeaconBase, Ownable2StepUpgradeable, UUPSUpgradeable {
+contract HubAssetFactory is BeaconBase, Ownable2StepUpgradeable, UUPSUpgradeable, Versioned {
   constructor() {
     _disableInitializers();
   }

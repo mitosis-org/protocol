@@ -12,6 +12,7 @@ import { IMatrixStrategyExecutor } from '../../interfaces/branch/strategy/IMatri
 import { IStrategyExecutor } from '../../interfaces/branch/strategy/IStrategyExecutor.sol';
 import { ITally } from '../../interfaces/branch/strategy/tally/ITally.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 import { MatrixStrategyExecutorStorageV1 } from './MatrixStrategyExecutorStorageV1.sol';
 
 contract MatrixStrategyExecutor is
@@ -19,7 +20,8 @@ contract MatrixStrategyExecutor is
   IMatrixStrategyExecutor,
   Ownable2StepUpgradeable,
   ReentrancyGuard,
-  MatrixStrategyExecutorStorageV1
+  MatrixStrategyExecutorStorageV1,
+  Versioned
 {
   using SafeERC20 for IERC20;
   using Address for address;

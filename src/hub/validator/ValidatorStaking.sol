@@ -16,6 +16,7 @@ import { IValidatorStakingHub } from '../../interfaces/hub/validator/IValidatorS
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { LibQueue } from '../../lib/LibQueue.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 
 contract ValidatorStakingStorageV1 {
   using ERC7201Utils for string;
@@ -54,7 +55,8 @@ contract ValidatorStaking is
   ValidatorStakingStorageV1,
   Ownable2StepUpgradeable,
   ReentrancyGuard,
-  UUPSUpgradeable
+  UUPSUpgradeable,
+  Versioned
 {
   using SafeCast for uint256;
   using SafeTransferLib for address;
