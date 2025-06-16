@@ -5,7 +5,7 @@ pragma solidity ^0.8.28;
 import { IVersioned } from '../interfaces/lib/IVersioned.sol';
 
 contract Versioned is IVersioned {
-  string public constant GIT_TAG = '';
+  string public constant GIT_TAG = 'v0.2.0-alpha';
 
-  string public constant GIT_COMMIT = '584c7b210c1f197852147ac1f17e042741eefe88';
+  string public constant GIT_COMMIT = '0af4ae761d2aa1631f3bd35cd5d2021de8cbe9e0';
 }
