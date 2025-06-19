@@ -36,7 +36,7 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@hyperlane-xyz/core": "^6.0.3",
+    "@hyperlane-xyz/core": "8.0.0",
     "commander": "14.0.0",
     "glob": "^11.0.0",
     "toml": "^3.0.0",
