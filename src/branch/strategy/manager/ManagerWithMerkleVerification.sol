@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 // Based on https://github.com/Se7en-Seas/boring-vault
 pragma solidity ^0.8.28;
 
