@@ -4,8 +4,7 @@
   "description": "Mitosis is an Ecosystem-Owned Liquidity (EOL) blockchain that facilitates newly created modular blockchains to capture TVL and attract users through the Mitosis governance process.",
   "main": "index.js",
   "repository": "https://github.com/mitosis-org/protocol",
-  "author": "byeongsu-hong <hong@byeongsu.dev>",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "scripts": {
     "coverage": "./tools/coverage.sh",
     "build": "forge build",

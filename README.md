@@ -46,4 +46,4 @@ forge doc --build --serve
 
 ## License
 
-MIT
+Apache-2.0

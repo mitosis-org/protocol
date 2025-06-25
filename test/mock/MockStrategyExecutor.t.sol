@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.27;
 
 import { IStrategyExecutor } from '../../src/interfaces/branch/strategy/IStrategyExecutor.sol';
