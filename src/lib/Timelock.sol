@@ -6,7 +6,9 @@ import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/Acces
 import { TimelockControllerUpgradeable } from '@ozu/governance/TimelockControllerUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
-contract Timelock is TimelockControllerUpgradeable, AccessControlEnumerableUpgradeable, UUPSUpgradeable {
+import { Versioned } from './Versioned.sol';
+
+contract Timelock is TimelockControllerUpgradeable, AccessControlEnumerableUpgradeable, UUPSUpgradeable, Versioned {
   constructor() {
     _disableInitializers();
   }
