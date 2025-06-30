@@ -154,12 +154,6 @@ When reviewing smart contracts:
 - Track completed vs. pending features in responses
 - Respond with appropriate urgency for critical issues
 
-## Documentation
-
-- Generate brief markdown docs in `/docs/[feature].md` for major features
-- Update `/docs/overview.md` accordingly
-- Include comprehensive code comments and NatSpec documentation
-
 ---
 
 **Remember**: This project handles sensitive financial protocols. Security and code quality are paramount.
