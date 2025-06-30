@@ -1,18 +1,8 @@
 # Security Policy
 
-## Supported Versions
-
-We actively support and provide security updates for the following versions of Mitosis Chain:
-
-| Version | Supported          |
-| ------- | ------------------ |
-| main    | :white_check_mark: |
-| latest  | :white_check_mark: |
-| < 1.0   | :x:                |
-
 ## Reporting a Vulnerability
 
-The Mitosis Chain team takes security vulnerabilities seriously. We appreciate your efforts to responsibly disclose any vulnerabilities you find.
+The team takes security vulnerabilities seriously. We appreciate your efforts to responsibly disclose any vulnerabilities you find.
 
 ### How to Report
 
@@ -21,7 +11,7 @@ The Mitosis Chain team takes security vulnerabilities seriously. We appreciate y
 Instead, please report them via one of the following methods:
 
 1. **Email**: Send details to [security@mitosis.org](mailto:security@mitosis.org)
-2. **GitHub Security Advisories**: Use the [private vulnerability reporting feature](https://github.com/mitosis-org/chain/security/advisories/new)
+2. **GitHub Security Advisories**: Use the [private vulnerability reporting feature](https://github.com/mitosis-org/protocol/security/advisories/new)
 
 ### What to Include
 
@@ -53,23 +43,13 @@ We believe in responsible disclosure and ask that you:
 
 ### Security Features
 
-Mitosis Chain implements several security measures:
+protocol implements several security measures:
 
 - **Code Audits**: Regular security audits of critical components
 - **Dependency Scanning**: Automated scanning for known vulnerabilities in dependencies
 - **Static Analysis**: Continuous static code analysis for security issues
 - **Access Controls**: Strict access controls for critical infrastructure
 - **Encryption**: All sensitive data is encrypted at rest and in transit
-
-### Security Best Practices for Users
-
-When using Mitosis Chain, please follow these security best practices:
-
-1. **Keep Software Updated**: Always use the latest supported version
-2. **Secure Private Keys**: Never share private keys or store them in unsecured locations
-3. **Network Security**: Use secure networks and VPNs when possible
-4. **Backup Strategy**: Implement proper backup strategies for critical data
-5. **Monitor Activity**: Regularly monitor your validator and transaction activity
 
 ### Security Advisories
 
@@ -92,7 +72,7 @@ For security-related questions or concerns:
 
 ### Legal Safe Harbor
 
-Mitosis Labs will not pursue legal action against security researchers who:
+We will not pursue legal action against security researchers who:
 
 - Follow this responsible disclosure process
 - Act in good faith
@@ -101,4 +81,4 @@ Mitosis Labs will not pursue legal action against security researchers who:
 
 ---
 
-Thank you for helping us keep Mitosis Chain secure! 🔒
+Thank you for helping us keep Mitosis secure! 🔒
