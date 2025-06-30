@@ -101,4 +101,4 @@ Mitosis Labs will not pursue legal action against security researchers who:
 
 ---
 
-Thank you for helping us keep Mitosis Chain secure! 🔒 
+Thank you for helping us keep Mitosis Chain secure! 🔒

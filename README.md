@@ -1,7 +1,7 @@
-# protocol 
+# protocol
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![CI](https://github.com/mitosis-org/protocol/actions/workflows/test.yml/badge.svg)](https://github.com/mitosis-org/protocol/actions/workflows/test.yml) 
+[![CI](https://github.com/mitosis-org/protocol/actions/workflows/test.yml/badge.svg)](https://github.com/mitosis-org/protocol/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/mitosis-org/protocol/branch/main/graph/badge.svg?token=N10BDMQSVX)](https://codecov.io/gh/mitosis-org/protocol)
 
 **Next-generation DeFi network enabling programmable liquidity across multiple protocols**
@@ -67,7 +67,7 @@ If you have any questions:
 
 See [SECURITY.md](SECURITY.md).
 
-
 ## License
+
 This project is licensed under the Apache License 2.0.
 See the [LICENSE](LICENSE) file for details.
