@@ -33,14 +33,6 @@ foundryup
    forge test
    ```
 
-## Technical Stack
-
-- **Contracts**: Solidity, Foundry, Soldeer
-- **Scripting**: TypeScript, Yarn
-- **Package Management**: Soldeer + Yarn (via `forge soldeer` command)
-
-⚠️ **Important**: Always check `foundry.toml` for remappings configuration before working with contract imports.
-
 ## Coding Standards
 
 ### Core Principles
@@ -61,41 +53,7 @@ foundryup
 - Use **ReentrancyGuardTransient** only when necessary
 - **Must use** OpenZeppelin's SafeERC20 or Solady's SafeTransferLib for all token transfers
 
-### Security Requirements
-
-- This project is **extremely sensitive** to security vulnerabilities
-- **Never** mock data for dev or prod environments (only for tests)
-- **Never** introduce new patterns/technologies unless existing options are exhausted
-- **Never** overwrite `.env` files without explicit confirmation
-
-## Development Workflow
-
-### Task Execution
-
-- Focus **only** on code relevant to your task
-- Break complex tasks into logical stages with confirmation checkpoints
-- For simple tasks: implement fully; for complex tasks: use review checkpoints
-
-### Planning Process
-
-1. **Large Changes**: Create `plan.md` with implementation steps and wait for approval
-2. **Progress Tracking**: Update `progress.md` after each component completion
-3. **Next Steps**: Update `TODO.txt` with pending tasks
-
-### Change Classification
-
-- **Small**: Minor changes (bug fixes, small improvements)
-- **Medium**: Moderate changes (feature additions, refactoring)
-- **Large**: Significant changes (architecture changes, major features)
-
 ## Testing
-
-### Requirements
-
-- Write thorough tests for all major functionality
-- Include edge case tests
-- Maintain or improve test coverage
-- Test all security-critical functions
 
 ### Commands
 
@@ -113,46 +71,24 @@ forge coverage
 forge test --gas-report
 ```
 
-## Security Reviews
-
-When reviewing smart contracts:
-
-- Review with **strong responsibility**
-- Reference `slither-detectors.mdc` for static analysis
-- Read corresponding interface files (e.g., `GovMITO.sol` → `IGovMITO.sol`)
-- **Read entire files** - don't miss anything
-- Create detailed reports in severity order with suggestions
-- Detect unused variables, functions, and imports
-- Review from **system design perspective** and suggest improvements
-- Use random emojis (✅,✨) for lines with no issues
-
 ## Pull Request Process
 
-1. **Before Submitting**
+1. Open an issue
+   - If the issue is security-related, please check the [How to Security Report](#how-to-security-report) section.
+2. Create a new branch from main
+3. Follow the PR template
+4. Ensure all tests pass
+5. Update documentation as needed
+6. Get at least one review before merging
 
-   - Ensure code compiles without warnings
-   - Run full test suite
-   - Check that coverage doesn't decrease
-   - Follow all coding standards
+## How to Security Report
 
-2. **PR Requirements**
+**Please do NOT report security vulnerabilities through public GitHub issues.**
 
-   - Clear description with motivation
-   - Testing methodology explained
-   - List any breaking changes
-   - Link related issues
+Instead, please report them via one of the following methods:
 
-3. **Review Process**
-   - All CI checks must pass
-   - Security-sensitive changes require additional review
-   - At least one maintainer approval required
-
-## Communication
-
-- Provide brief summaries after completing components
-- Ask clarifying questions when uncertain about scope
-- Track completed vs. pending features in responses
-- Respond with appropriate urgency for critical issues
+1. **Email**: Send details to [security@mitosis.org](mailto:security@mitosis.org)
+2. **GitHub Security Advisories**: Use the [private vulnerability reporting feature](https://github.com/mitosis-org/protocol/security/advisories/new)
 
 ---
 
