@@ -19,7 +19,7 @@
     "@mitosis-org/tools": "git+https://github.com/mitosis-org/tools.git"
   },
   "dependencies": {
-    "@hyperlane-xyz/core": "8.0.0"
+    "@hyperlane-xyz/core": "^8.0.0"
   },
   "packageManager": "yarn@4.9.2"
 }
