@@ -4,7 +4,7 @@
 [![CI](https://github.com/mitosis-org/protocol/actions/workflows/test.yml/badge.svg)](https://github.com/mitosis-org/protocol/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/mitosis-org/protocol/branch/main/graph/badge.svg?token=N10BDMQSVX)](https://codecov.io/gh/mitosis-org/protocol)
 
-**Next-generation DeFi network enabling programmable liquidity across multiple protocols**
+**DeFi protocol enabling programmable liquidity across multiple chains and protocols**
 
 ## Getting Started
 
@@ -52,14 +52,14 @@ forge doc --build --serve
 
 If you want to contribute, or follow along with contributor discussion, you can use our GitHub discussions and issues.
 
-- Our contributor guidelines can be found in [CONTRIBUTING.md](CONTRIBUTING.md).
-- See our [Security Policy](SECURITY.md) for security-related contributions.
+- Our contributor guidelines can be found in [CONTRIBUTING.md](CONTRIBUTING.md)
+- See our [Security Policy](SECURITY.md) for security-related contributions
 
 ## Getting Help
 
 If you have any questions:
 
-- Open a discussion with your question, or
+- Open a discussion with your question
 - Open an issue with the bug
 - Check our documentation at [docs.mitosis.org](https://docs.mitosis.org)
 

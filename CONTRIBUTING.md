@@ -74,7 +74,7 @@ forge test --gas-report
 ## Pull Request Process
 
 1. Open an issue
-   - If the issue is security-related, please check the [SECURITY.md](SECURITY.md) section.
+   - If the issue is security-related, please check the [SECURITY.md](SECURITY.md)
 2. Create a new branch from main
 3. Follow the PR template
 4. Ensure all tests pass
