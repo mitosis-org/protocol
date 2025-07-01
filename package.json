@@ -8,8 +8,8 @@
   "scripts": {
     "coverage": "./tools/coverage.sh",
     "build": "forge build",
-    "lint": "forge fmt && pnpm format-json && pnpm sort-imports",
-    "lint:check": "forge fmt --check && pnpm format-json:check && pnpm sort-imports:check",
+    "lint": "forge fmt && yarn format-json && yarn sort-imports",
+    "lint:check": "forge fmt --check && yarn format-json:check && yarn sort-imports:check",
     "format-json": "mito-tools format-json -i './{script,src,test,addresses}/**/*.json'",
     "format-json:check": "mito-tools format-json -i './{script,src,test,addresses}/**/*.json' -c",
     "sort-imports": "mito-tools sort-imports -i './{script,src,test}/**/*.sol'",
