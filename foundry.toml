@@ -22,7 +22,7 @@ remappings = [
     "forge-std-1.9.6/=dependencies/forge-std-1.9.6/",
     "solady-0.1.12/=dependencies/solady-0.1.12/",
     # context aware remappings
-    "node_modules/@hyperlane-xyz/core:@openzeppelin=node_modules/@hyperlane-xyz/core/node_modules/@openzeppelin",
+    "node_modules/@hyperlane-xyz/core:@openzeppelin=node_modules/@openzeppelin",
     "dependencies/@openzeppelin-contracts-upgradeable-5.1.0:@openzeppelin/contracts=dependencies/@openzeppelin-contracts-5.1.0",
 ]
 fs_permissions = [
