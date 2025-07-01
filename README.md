@@ -1,10 +1,12 @@
-# protocol
+# Mitosis Protocol
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![CI](https://github.com/mitosis-org/protocol/actions/workflows/test.yml/badge.svg)](https://github.com/mitosis-org/protocol/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/mitosis-org/protocol/branch/main/graph/badge.svg?token=N10BDMQSVX)](https://codecov.io/gh/mitosis-org/protocol)
 
 **DeFi protocol enabling programmable liquidity across multiple chains and protocols**
+
+![Mitosis Protocol Banner](assets/banner.png)
 
 ## Getting Started
 
