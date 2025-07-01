@@ -74,21 +74,12 @@ forge test --gas-report
 ## Pull Request Process
 
 1. Open an issue
-   - If the issue is security-related, please check the [How to Security Report](#how-to-security-report) section.
+   - If the issue is security-related, please check the [SECURITY.md](SECURITY.md) section.
 2. Create a new branch from main
 3. Follow the PR template
 4. Ensure all tests pass
 5. Update documentation as needed
 6. Get at least one review before merging
-
-## How to Security Report
-
-**Please do NOT report security vulnerabilities through public GitHub issues.**
-
-Instead, please report them via one of the following methods:
-
-1. **Email**: Send details to [security@mitosis.org](mailto:security@mitosis.org)
-2. **GitHub Security Advisories**: Use the [private vulnerability reporting feature](https://github.com/mitosis-org/protocol/security/advisories/new)
 
 ---
 
