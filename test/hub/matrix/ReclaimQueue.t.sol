@@ -244,7 +244,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
   }
 
   function test_init() public view {
-    assertEq(queue.assetManager(), assetManager, 'assetManager');
+    assertEq(queue.resolver(), assetManager, 'assetManager');
     assertTrue(queue.isEnabled(vault), 'vault1 enabled');
     assertFalse(queue.isEnabled(vault2), 'vault2 disabled');
 
