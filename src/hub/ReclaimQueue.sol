@@ -11,7 +11,6 @@ import { Time } from '@oz/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
-import { IAssetManager } from '../interfaces/hub/core/IAssetManager.sol';
 import { IReclaimQueue } from '../interfaces/hub/matrix/IReclaimQueue.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { LibQueue } from '../lib/LibQueue.sol';
@@ -48,7 +47,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
   }
 
   struct StorageV1 {
-    IAssetManager assetManager;
+    address resolver;
     mapping(address vault => QueueState) queues;
     mapping(address vault => VaultState) vaults;
   }
@@ -74,7 +73,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     _disableInitializers();
   }
 
-  function initialize(address owner_, address assetManager_) public initializer {
+  function initialize(address owner_, address resolver_) public initializer {
     __Pausable_init();
     __Ownable2Step_init();
     __Ownable_init(owner_);
@@ -82,13 +81,13 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
     StorageV1 storage $ = _getStorageV1();
 
-    _setAssetManager($, assetManager_);
+    _setResolver($, resolver_);
   }
 
   // =========================== NOTE: QUERY FUNCTIONS =========================== //
 
-  function assetManager() external view returns (address) {
-    return address(_getStorageV1().assetManager);
+  function resolver() external view returns (address) {
+    return address(_getStorageV1().resolver);
   }
 
   function reclaimPeriod(address vault) external view returns (uint256) {
@@ -226,11 +225,10 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
   {
     StorageV1 storage $ = _getStorageV1();
 
-    require(_msgSender() == address($.assetManager), StdError.Unauthorized());
+    require(_msgSender() == $.resolver, StdError.Unauthorized());
     require($.queues[vault].isEnabled, IReclaimQueue__QueueNotEnabled(vault));
 
     SyncResult memory res = _sync($, vault, requestCount);
-
     emit Synced(executor, vault, res);
 
     return (res.totalSharesSynced, Math.min(res.totalAssetsOnRequest, res.totalAssetsOnReserve));
@@ -246,8 +244,8 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     _enableQueue(_getStorageV1(), vault);
   }
 
-  function setAssetManager(address assetManager_) external onlyOwner {
-    _setAssetManager(_getStorageV1(), assetManager_);
+  function setResolver(address resolver_) external onlyOwner {
+    _setResolver(_getStorageV1(), resolver_);
   }
 
   function setReclaimPeriod(address vault, uint256 reclaimPeriod_) external onlyOwner {
@@ -508,12 +506,9 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     emit QueueEnabled(vault);
   }
 
-  function _setAssetManager(StorageV1 storage $, address assetManager_) internal {
-    require(assetManager_.code.length > 0, StdError.InvalidAddress('AssetManager'));
-
-    $.assetManager = IAssetManager(assetManager_);
-
-    emit AssetManagerSet(assetManager_);
+  function _setResolver(StorageV1 storage $, address resolver_) internal {
+    $.resolver = resolver_;
+    emit ResolverSet(resolver_);
   }
 
   function _setReclaimPeriod(StorageV1 storage $, address vault, uint256 reclaimPeriod_) internal {
