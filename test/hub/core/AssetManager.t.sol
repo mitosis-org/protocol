@@ -731,14 +731,14 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
   function test_isLiquidityManager() public {
     bytes32 liquidityManagerRole = assetManager.LIQUIDITY_MANAGER_ROLE();
-    
+
     // Initially user1 should not be a liquidity manager
     assertFalse(assetManager.isLiquidityManager(user1));
-    
+
     vm.prank(owner);
     assetManager.grantRole(liquidityManagerRole, user1);
     assertTrue(assetManager.isLiquidityManager(user1));
-    
+
     vm.prank(owner);
     assetManager.revokeRole(liquidityManagerRole, user1);
     assertFalse(assetManager.isLiquidityManager(user1));
