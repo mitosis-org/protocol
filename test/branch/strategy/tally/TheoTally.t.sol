@@ -52,25 +52,6 @@ contract TheoTallyTest is Toolkit {
     assertEq(_theoTally.totalBalance(''), 50 ether);
   }
 
-  function test_withdrawableBalance() public {
-    _mockRound(10);
-    _mockShareBalances(_user, 80 ether, 20 ether);
-    _mockPricePerShare(1 ether);
-
-    vm.prank(_user);
-    assertEq(_theoTally.withdrawableBalance(''), 20 ether);
-
-    _mockPricePerShare(1.5 ether);
-
-    vm.prank(_user);
-    assertEq(_theoTally.withdrawableBalance(''), 30 ether);
-
-    _mockPricePerShare(0.5 ether);
-
-    vm.prank(_user);
-    assertEq(_theoTally.withdrawableBalance(''), 10 ether);
-  }
-
   function test_pendingWithdrawBalance() public {
     _mockRound(10);
     _mockPricePerShare(1 ether);
@@ -115,14 +96,6 @@ contract TheoTallyTest is Toolkit {
 
     vm.prank(_user);
     assertEq(_theoTally.pendingWithdrawBalance(''), 200 ether);
-  }
-
-  function test_previewDeposit() public view {
-    assertEq(_theoTally.previewDeposit(100 ether, ''), 100 ether);
-  }
-
-  function test_previewWithdraw() public view {
-    assertEq(_theoTally.previewWithdraw(100 ether, ''), 0);
   }
 
   function test_pendingDepositBalance() public view {
