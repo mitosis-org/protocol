@@ -357,6 +357,13 @@ interface IAssetManager is IAssetManagerStorageV1 {
   error IAssetManager__MatrixInsufficient(address matrixVault);
 
   /**
+   * @notice Check if an address is a liquidity manager
+   * @param account The address to check
+   * @return True if the address is a liquidity manager, false otherwise
+   */
+  function isLiquidityManager(address account) external view returns (bool);
+
+  /**
    * @notice Quotes the gas fee for initializing an asset on a specified branch chain
    * @param chainId The ID of the branch chain
    * @param branchAsset The address of the asset on the branch chain

@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { Math } from '@oz/utils/math/Math.sol';
 
+import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { MatrixVault } from './MatrixVault.sol';
@@ -21,6 +22,13 @@ contract MatrixVaultCapped is MatrixVault {
   }
 
   event CapSet(address indexed setter, uint256 prevCap, uint256 newCap);
+
+  // ============================ NOTE: MODIFIERS ============================ //
+
+  modifier onlyLiquidityManager() {
+    require(_getStorageV1().assetManager.isLiquidityManager(_msgSender()), StdError.Unauthorized());
+    _;
+  }
 
   // =========================== NOTE: STORAGE DEFINITIONS =========================== //
 
@@ -78,7 +86,7 @@ contract MatrixVaultCapped is MatrixVault {
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
-  function setCap(uint256 newCap) external onlyOwner {
+  function setCap(uint256 newCap) external onlyLiquidityManager {
     _setCap(_getMatrixVaultCappedStorage(), newCap);
   }
 
