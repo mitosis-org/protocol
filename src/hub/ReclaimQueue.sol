@@ -165,7 +165,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
   // =========================== NOTE: QUEUE FUNCTIONS =========================== //
 
-  function request(uint256 shares, address receiver, address vault) external whenNotPaused returns (uint256) {
+  function request(uint256 shares, address receiver, address vault) public whenNotPaused returns (uint256) {
     QueueState storage q$ = _getStorageV1().queues[vault];
 
     require(q$.isEnabled, IReclaimQueue__QueueNotEnabled(vault));
