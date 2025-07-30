@@ -470,6 +470,11 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     uint256 withdrawAmount = Math.min(res.totalAssetsOnRequest, res.totalAssetsOnReserve);
     IERC4626(vault).withdraw(withdrawAmount, address(this), address(this));
 
+    if (res.totalAssetsOnRequest < res.totalAssetsOnReserve) {
+      uint256 diff = res.totalAssetsOnReserve - res.totalAssetsOnRequest;
+      IERC4626(vault).withdraw(diff, vault, address(this));
+    }
+
     {
       SyncLog[] storage syncLogs = q$.logs;
 
