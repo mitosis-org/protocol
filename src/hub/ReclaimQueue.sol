@@ -73,7 +73,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     _disableInitializers();
   }
 
-  function initialize(address owner_, address resolver_) public initializer {
+  function initialize(address owner_, address resolver_) public virtual initializer {
     __Pausable_init();
     __Ownable2Step_init();
     __Ownable_init(owner_);
