@@ -25,8 +25,8 @@ import { MITOGovernanceVP } from '../../../src/hub/governance/MITOGovernanceVP.s
 import { GovMITO } from '../../../src/hub/GovMITO.sol';
 import { GovMITOEmission } from '../../../src/hub/GovMITOEmission.sol';
 import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
-import { MatrixVaultCapped } from '../../../src/hub/matrix/MatrixVaultCapped.sol';
 import { MatrixVaultFactory } from '../../../src/hub/matrix/MatrixVaultFactory.sol';
+import { MatrixVaultStaticCap } from '../../../src/hub/matrix/MatrixVaultStaticCap.sol';
 import { ReclaimQueue } from '../../../src/hub/ReclaimQueue.sol';
 import { MerkleRewardDistributor } from '../../../src/hub/reward/MerkleRewardDistributor.sol';
 import { Treasury } from '../../../src/hub/reward/Treasury.sol';
@@ -162,7 +162,7 @@ abstract contract HubDeployer is AbstractDeployer {
 
     // TODO: we need to register the impl.matrix.vaultBasic and impl.matrix.vaultCapped on "link" phase
     impl.matrix.vaultBasic = deploy(_urlHI('.matrix.vault-basic'), type(MatrixVaultBasic).creationCode);
-    impl.matrix.vaultCapped = deploy(_urlHI('.matrix.vault-capped'), type(MatrixVaultCapped).creationCode);
+    impl.matrix.vaultCapped = deploy(_urlHI('.matrix.vault-capped'), type(MatrixVaultStaticCap).creationCode);
     (
       impl.matrix.vaultFactory, //
       proxy.matrix.vaultFactory

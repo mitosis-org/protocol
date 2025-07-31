@@ -10,7 +10,7 @@ import { BeaconProxy } from '@oz/proxy/beacon/BeaconProxy.sol';
 import { IBeacon } from '@oz/proxy/beacon/IBeacon.sol';
 
 import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
-import { MatrixVaultCapped } from '../../../src/hub/matrix/MatrixVaultCapped.sol';
+import { MatrixVaultStaticCap } from '../../../src/hub/matrix/MatrixVaultStaticCap.sol';
 import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
@@ -25,17 +25,17 @@ contract MatrixVaultTestBase is IBeacon, Toolkit {
   WETH weth;
 
   MatrixVaultBasic basicImpl;
-  MatrixVaultCapped cappedImpl;
+  MatrixVaultStaticCap cappedImpl;
   address private defaultImpl;
 
   MatrixVaultBasic basic;
-  MatrixVaultCapped capped;
+  MatrixVaultStaticCap capped;
 
   function setUp() public virtual {
     weth = new WETH();
 
     basicImpl = new MatrixVaultBasic();
-    cappedImpl = new MatrixVaultCapped();
+    cappedImpl = new MatrixVaultStaticCap();
 
     vm.mockCall(
       address(assetManager),
@@ -59,12 +59,12 @@ contract MatrixVaultTestBase is IBeacon, Toolkit {
     );
 
     defaultImpl = address(cappedImpl);
-    capped = MatrixVaultCapped(
+    capped = MatrixVaultStaticCap(
       address(
         new BeaconProxy(
           address(this),
           abi.encodeCall(
-            MatrixVaultCapped.initialize, //
+            MatrixVaultStaticCap.initialize, //
             (assetManager, IERC20Metadata(address(weth)), 'C', 'C')
           )
         )
@@ -181,7 +181,7 @@ contract MatrixVaultBasicTest is MatrixVaultTestBase {
   }
 }
 
-contract MatrixVaultCappedTest is MatrixVaultTestBase {
+contract MatrixVaultStaticCapTest is MatrixVaultTestBase {
   function setUp() public override {
     super.setUp();
 

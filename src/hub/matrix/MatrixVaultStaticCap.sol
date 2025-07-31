@@ -9,14 +9,14 @@ import { StdError } from '../../lib/StdError.sol';
 import { MatrixVault } from './MatrixVault.sol';
 
 /**
- * @title MatrixVaultCapped
+ * @title MatrixVaultStaticCap
  * @notice Adds a cap to the MatrixVault's deposit / mint function
  */
-contract MatrixVaultCapped is MatrixVault {
+contract MatrixVaultStaticCap is MatrixVault {
   using ERC7201Utils for string;
 
-  /// @custom:storage-location mitosis.storage.MatrixVaultCapped
-  struct MatrixVaultCappedStorage {
+  /// @custom:storage-location mitosis.storage.MatrixVaultStaticCap
+  struct MatrixVaultStaticCapStorage {
     uint256 cap;
   }
 
@@ -24,10 +24,10 @@ contract MatrixVaultCapped is MatrixVault {
 
   // =========================== NOTE: STORAGE DEFINITIONS =========================== //
 
-  string private constant _NAMESPACE = 'mitosis.storage.MatrixVaultCapped';
+  string private constant _NAMESPACE = 'mitosis.storage.MatrixVaultStaticCap';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
-  function _getMatrixVaultCappedStorage() private view returns (MatrixVaultCappedStorage storage $) {
+  function _getMatrixVaultStaticCapStorage() private view returns (MatrixVaultStaticCapStorage storage $) {
     bytes32 slot = _slot;
     // slither-disable-next-line assembly
     assembly {
@@ -51,40 +51,28 @@ contract MatrixVaultCapped is MatrixVault {
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
   function loadCap() external view returns (uint256) {
-    return _getMatrixVaultCappedStorage().cap;
+    return _getMatrixVaultStaticCapStorage().cap;
   }
 
-  function maxDeposit(address) public view override returns (uint256) {
-    uint256 totalShares = totalSupply();
-    uint256 cap = _getMatrixVaultCappedStorage().cap;
-
-    if (totalShares >= cap) {
-      return 0;
-    }
-
-    return convertToAssets(cap - totalShares);
+  function maxDeposit(address) public view override returns (uint256 maxAssets) {
+    uint256 _cap = _getMatrixVaultStaticCapStorage().cap;
+    uint256 _totalAssets = totalAssets();
+    return _totalAssets >= _cap ? 0 : _cap - _totalAssets;
   }
 
-  function maxMint(address) public view override returns (uint256) {
-    uint256 totalShares = totalSupply();
-    uint256 cap = _getMatrixVaultCappedStorage().cap;
-
-    if (totalShares >= cap) {
-      return 0;
-    }
-
-    return cap - totalShares;
+  function maxMint(address account) public view override returns (uint256 maxShares) {
+    return convertToShares(maxDeposit(account));
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   function setCap(uint256 newCap) external onlyOwner {
-    _setCap(_getMatrixVaultCappedStorage(), newCap);
+    _setCap(_getMatrixVaultStaticCapStorage(), newCap);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _setCap(MatrixVaultCappedStorage storage $, uint256 newCap) internal {
+  function _setCap(MatrixVaultStaticCapStorage storage $, uint256 newCap) internal {
     uint256 prevCap = $.cap;
     $.cap = newCap;
     emit CapSet(_msgSender(), prevCap, newCap);
