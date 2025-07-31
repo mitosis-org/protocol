@@ -17,8 +17,6 @@ import { AssetManagerEntrypoint } from '../../../src/hub/core/AssetManagerEntryp
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { HubAssetFactory } from '../../../src/hub/core/HubAssetFactory.sol';
 import { CrossChainRegistry } from '../../../src/hub/cross-chain/CrossChainRegistry.sol';
-import { EOLVault } from '../../../src/hub/eol/EOLVault.sol';
-import { EOLVaultFactory } from '../../../src/hub/eol/EOLVaultFactory.sol';
 import { BranchGovernanceEntrypoint } from '../../../src/hub/governance/BranchGovernanceEntrypoint.sol';
 import { MITOGovernance } from '../../../src/hub/governance/MITOGovernance.sol';
 import { MITOGovernanceVP } from '../../../src/hub/governance/MITOGovernanceVP.sol';
@@ -144,7 +142,7 @@ abstract contract HubDeployer is AbstractDeployer {
     );
 
     //====================================================================================//
-    // ----- Hub / EOL / Matrix -----
+    // ----- Hub / Matrix -----
     //====================================================================================//
 
     impl.core.hubAsset = deploy(_urlHI('.core.hub-asset'), type(HubAsset).creationCode);
@@ -152,13 +150,6 @@ abstract contract HubDeployer is AbstractDeployer {
       impl.core.hubAssetFactory, //
       proxy.core.hubAssetFactory
     ) = _dphHubAssetFactory(owner_, impl.core.hubAsset);
-
-    // TODO: we need to register the impl.eol.vault on "link" phase
-    impl.eol.vault = deploy(_urlHI('.eol.vault'), type(EOLVault).creationCode);
-    (
-      impl.eol.vaultFactory, //
-      proxy.eol.vaultFactory
-    ) = _dphEOLVaultFactory(owner_);
 
     // TODO: we need to register the impl.matrix.vaultBasic and impl.matrix.vaultCapped on "link" phase
     impl.matrix.vaultBasic = deploy(_urlHI('.matrix.vault-basic'), type(MatrixVaultBasic).creationCode);
@@ -168,7 +159,7 @@ abstract contract HubDeployer is AbstractDeployer {
       proxy.matrix.vaultFactory
     ) = _dphMatrixVaultFactory(owner_);
 
-    // Reclaim Queue for EOL / Matrix
+    // Reclaim Queue for  Matrix
     (
       impl.reclaimQueue, //
       proxy.reclaimQueue
@@ -427,16 +418,6 @@ abstract contract HubDeployer is AbstractDeployer {
       abi.encodeCall(HubAssetFactory.initialize, (owner, hubAsset))
     );
     return (impl, HubAssetFactory(proxy));
-  }
-
-  function _dphEOLVaultFactory(address owner) private returns (address, EOLVaultFactory) {
-    (address impl, address payable proxy) = deployImplAndProxy(
-      'hub',
-      '.eol.vault-factory', //
-      type(EOLVaultFactory).creationCode,
-      abi.encodeCall(EOLVaultFactory.initialize, (owner))
-    );
-    return (impl, EOLVaultFactory(proxy));
   }
 
   function _dphMatrixVaultFactory(address owner) private returns (address, MatrixVaultFactory) {

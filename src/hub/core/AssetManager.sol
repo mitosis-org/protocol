@@ -8,8 +8,6 @@ import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
-import { IEOLVault } from '../../interfaces/hub/eol/IEOLVault.sol';
-import { IEOLVaultFactory } from '../../interfaces/hub/eol/IEOLVaultFactory.sol';
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
 import { IMatrixVaultFactory } from '../../interfaces/hub/matrix/IMatrixVaultFactory.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
@@ -55,11 +53,6 @@ contract AssetManager is
   {
     StorageV1 storage $ = _getStorageV1();
     return $.entrypoint.quoteInitializeMatrix(chainId, matrixVault, branchAsset);
-  }
-
-  function quoteInitializeEOL(uint256 chainId, address eolVault, address branchAsset) external view returns (uint256) {
-    StorageV1 storage $ = _getStorageV1();
-    return $.entrypoint.quoteInitializeEOL(chainId, eolVault, branchAsset);
   }
 
   function quoteWithdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
@@ -125,35 +118,6 @@ contract AssetManager is
     }
 
     emit DepositedWithSupplyMatrix(chainId, hubAsset, to, matrixVault, amount, supplyAmount);
-  }
-
-  function depositWithSupplyEOL(uint256 chainId, address branchAsset, address to, address eolVault, uint256 amount)
-    external
-    whenNotPaused
-  {
-    StorageV1 storage $ = _getStorageV1();
-
-    _assertOnlyEntrypoint($);
-    _assertBranchAssetPairExist($, chainId, branchAsset);
-    _assertEOLInitialized($, chainId, eolVault);
-
-    // NOTE: We don't need to check if the eolVault is registered instance of EOLVaultFactory
-
-    address hubAsset = _branchAssetState($, chainId, branchAsset).hubAsset;
-    uint256 supplyAmount = 0;
-
-    if (hubAsset != IEOLVault(eolVault).asset()) {
-      _mint($, chainId, hubAsset, to, amount);
-    } else {
-      _mint($, chainId, hubAsset, address(this), amount);
-
-      supplyAmount = amount;
-
-      IHubAsset(hubAsset).approve(eolVault, amount);
-      IEOLVault(eolVault).deposit(amount, to);
-    }
-
-    emit DepositedWithSupplyEOL(chainId, hubAsset, to, eolVault, amount, supplyAmount);
   }
 
   function withdraw(uint256 chainId, address hubAsset, address to, uint256 amount) external payable whenNotPaused {
@@ -329,22 +293,6 @@ contract AssetManager is
     emit MatrixInitialized(hubAsset, chainId, matrixVault, branchAsset);
   }
 
-  function initializeEOL(uint256 chainId, address eolVault) external payable onlyOwner whenNotPaused {
-    StorageV1 storage $ = _getStorageV1();
-    _assertEOLVaultFactorySet($);
-    _assertEOLVaultInstance($, eolVault);
-
-    address hubAsset = IEOLVault(eolVault).asset();
-    address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
-    _assertBranchAssetPairExist($, chainId, branchAsset);
-
-    _assertEOLNotInitialized($, chainId, eolVault);
-    $.eolInitialized[chainId][eolVault] = true;
-
-    $.entrypoint.initializeEOL{ value: msg.value }(chainId, eolVault, branchAsset);
-    emit EOLInitialized(hubAsset, chainId, eolVault, branchAsset);
-  }
-
   function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external onlyOwner {
     StorageV1 storage $ = _getStorageV1();
     _assertHubAssetFactorySet($);
@@ -374,10 +322,6 @@ contract AssetManager is
 
   function setMatrixVaultFactory(address matrixVaultFactory_) external onlyOwner {
     _setMatrixVaultFactory(_getStorageV1(), matrixVaultFactory_);
-  }
-
-  function setEOLVaultFactory(address eolVaultFactory_) external onlyOwner {
-    _setEOLVaultFactory(_getStorageV1(), eolVaultFactory_);
   }
 
   function setStrategist(address matrixVault, address strategist) external onlyOwner {

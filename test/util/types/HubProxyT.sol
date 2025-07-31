@@ -14,7 +14,6 @@ import { AssetManagerEntrypoint } from '../../../src/hub/core/AssetManagerEntryp
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { HubAssetFactory } from '../../../src/hub/core/HubAssetFactory.sol';
 import { CrossChainRegistry } from '../../../src/hub/cross-chain/CrossChainRegistry.sol';
-import { EOLVaultFactory } from '../../../src/hub/eol/EOLVaultFactory.sol';
 import { BranchGovernanceEntrypoint } from '../../../src/hub/governance/BranchGovernanceEntrypoint.sol';
 import { MITOGovernance } from '../../../src/hub/governance/MITOGovernance.sol';
 import { MITOGovernanceVP } from '../../../src/hub/governance/MITOGovernanceVP.sol';
@@ -33,7 +32,6 @@ import { ValidatorStakingGovMITO } from '../../../src/hub/validator/ValidatorSta
 import { ValidatorStakingHub } from '../../../src/hub/validator/ValidatorStakingHub.sol';
 import { WMITO } from '../../../src/hub/WMITO.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
-import { IEOLVault } from '../../../src/interfaces/hub/eol/IEOLVault.sol';
 import { IMatrixVault } from '../../../src/interfaces/hub/matrix/IMatrixVault.sol';
 import { IValidatorStaking } from '../../../src/interfaces/hub/validator/IValidatorStaking.sol';
 import { Timelock } from '../../../src/lib/Timelock.sol';
@@ -51,14 +49,6 @@ library HubProxyT {
     string symbol;
     uint8 decimals;
     IHubAsset asset;
-  }
-
-  struct EOLVaultInfo {
-    string name;
-    string symbol;
-    uint8 decimals;
-    IHubAsset asset;
-    IEOLVault vault;
   }
 
   struct MatrixVaultInfo {
@@ -91,11 +81,6 @@ library HubProxyT {
     CrossChainRegistry crosschainRegistry;
   }
 
-  struct EOL {
-    EOLVaultInfo[] vaults;
-    EOLVaultFactory vaultFactory;
-  }
-
   struct Matrix {
     MatrixVaultInfo[] vaults;
     MatrixVaultFactory vaultFactory;
@@ -126,7 +111,6 @@ library HubProxyT {
     //
     ConsensusLayer consensusLayer;
     Core core;
-    EOL eol;
     Matrix matrix;
     Governance governance;
     Reward reward;
@@ -170,13 +154,6 @@ library HubProxyT {
     }
   }
 
-  function extract(EOLVaultInfo[] memory v) private pure returns (address[] memory o) {
-    o = new address[](v.length);
-    for (uint256 i = 0; i < v.length; i++) {
-      o[i] = address(v[i].vault);
-    }
-  }
-
   function extract(MatrixVaultInfo[] memory v) private pure returns (address[] memory o) {
     o = new address[](v.length);
     for (uint256 i = 0; i < v.length; i++) {
@@ -204,12 +181,6 @@ library HubProxyT {
     o = k.serialize('hubAssets', extract(v.hubAssets));
     o = k.serialize('hubAssetFactory', address(v.hubAssetFactory));
     o = k.serialize('crosschainRegistry', address(v.crosschainRegistry));
-  }
-
-  function encode(EOL memory v) internal returns (string memory o) {
-    string memory k = vm.randomBytes(32).toHexString();
-    o = k.serialize('vaults', extract(v.vaults));
-    o = k.serialize('vaultFactory', address(v.vaultFactory));
   }
 
   function encode(Matrix memory v) internal returns (string memory o) {
@@ -246,7 +217,6 @@ library HubProxyT {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('consensusLayer', encode(v.consensusLayer));
     o = k.serialize('core', encode(v.core));
-    o = k.serialize('eol', encode(v.eol));
     o = k.serialize('matrix', encode(v.matrix));
     o = k.serialize('governance', encode(v.governance));
     o = k.serialize('reward', encode(v.reward));
@@ -286,28 +256,6 @@ library HubProxyT {
     o.hubAssets = decodeHubAssets(v, cat(base, '.hubAssets'));
     o.hubAssetFactory = HubAssetFactory(_r(v, cat(base, '.hubAssetFactory')));
     o.crosschainRegistry = CrossChainRegistry(_r(v, cat(base, '.crosschainRegistry')));
-  }
-
-  function decodeEOLVaults(string memory v, string memory path) internal view returns (EOLVaultInfo[] memory o) {
-    address payable[] memory vaults = _ra(v, path);
-    o = new EOLVaultInfo[](vaults.length);
-
-    for (uint256 i = 0; i < vaults.length; i++) {
-      IEOLVault vault = IEOLVault(vaults[i]);
-
-      o[i] = EOLVaultInfo({
-        name: vault.name(),
-        symbol: vault.symbol(),
-        decimals: vault.decimals(),
-        asset: IHubAsset(vault.asset()),
-        vault: vault
-      });
-    }
-  }
-
-  function decodeEOL(string memory v, string memory base) internal view returns (EOL memory o) {
-    o.vaults = decodeEOLVaults(v, cat(base, '.vaults'));
-    o.vaultFactory = EOLVaultFactory(_r(v, cat(base, '.vaultFactory')));
   }
 
   function decodeMatrixVaults(string memory v, string memory path) internal view returns (MatrixVaultInfo[] memory o) {
@@ -377,7 +325,6 @@ library HubProxyT {
   function decode(string memory v) internal view returns (Chain memory o) {
     o.consensusLayer = decodeConsensusLayer(v, '.consensusLayer');
     o.core = decodeCore(v, '.core');
-    o.eol = decodeEOL(v, '.eol');
     o.matrix = decodeMatrix(v, '.matrix');
     o.governance = decodeGovernance(v, '.governance');
     o.reward = decodeReward(v, '.reward');

@@ -19,11 +19,6 @@ interface IMitosisVaultEntrypoint {
     view
     returns (uint256);
 
-  function quoteDepositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount)
-    external
-    view
-    returns (uint256);
-
   function quoteDeallocateMatrix(address hubMatrixVault, uint256 amount) external view returns (uint256);
 
   function quoteSettleMatrixYield(address hubMatrixVault, uint256 amount) external view returns (uint256);
@@ -40,8 +35,6 @@ interface IMitosisVaultEntrypoint {
   function deposit(address asset, address to, uint256 amount) external payable;
 
   function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount) external payable;
-
-  function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount) external payable;
 
   function deallocateMatrix(address hubMatrixVault, uint256 amount) external payable;
 

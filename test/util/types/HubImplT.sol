@@ -29,11 +29,6 @@ library HubImplT {
     address crosschainRegistry;
   }
 
-  struct EOL {
-    address vault;
-    address vaultFactory;
-  }
-
   struct Matrix {
     address vaultBasic;
     address vaultCapped;
@@ -66,7 +61,6 @@ library HubImplT {
     //
     ConsensusLayer consensusLayer;
     Core core;
-    EOL eol;
     Matrix matrix;
     Governance governance;
     Reward reward;
@@ -114,12 +108,6 @@ library HubImplT {
     o = k.serialize('crosschainRegistry', v.crosschainRegistry);
   }
 
-  function encode(EOL memory v) internal returns (string memory o) {
-    string memory k = vm.randomBytes(32).toHexString();
-    o = k.serialize('vault', v.vault);
-    o = k.serialize('vaultFactory', v.vaultFactory);
-  }
-
   function encode(Matrix memory v) internal returns (string memory o) {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('vaultBasic', v.vaultBasic);
@@ -156,7 +144,6 @@ library HubImplT {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('consensusLayer', encode(v.consensusLayer));
     o = k.serialize('core', encode(v.core));
-    o = k.serialize('eol', encode(v.eol));
     o = k.serialize('matrix', encode(v.matrix));
     o = k.serialize('governance', encode(v.governance));
     o = k.serialize('reward', encode(v.reward));
@@ -177,11 +164,6 @@ library HubImplT {
     o.hubAsset = v.readAddress(cat(base, '.hubAsset'));
     o.hubAssetFactory = v.readAddress(cat(base, '.hubAssetFactory'));
     o.crosschainRegistry = v.readAddress(cat(base, '.crosschainRegistry'));
-  }
-
-  function decodeEOL(string memory v, string memory base) internal pure returns (EOL memory o) {
-    o.vault = v.readAddress(cat(base, '.vault'));
-    o.vaultFactory = v.readAddress(cat(base, '.vaultFactory'));
   }
 
   function decodeMatrix(string memory v, string memory base) internal pure returns (Matrix memory o) {
@@ -215,7 +197,6 @@ library HubImplT {
   function decode(string memory v) internal pure returns (Chain memory o) {
     o.consensusLayer = decodeConsensusLayer(v, '.consensusLayer');
     o.core = decodeCore(v, '.core');
-    o.eol = decodeEOL(v, '.eol');
     o.matrix = decodeMatrix(v, '.matrix');
     o.governance = decodeGovernance(v, '.governance');
     o.reward = decodeReward(v, '.reward');

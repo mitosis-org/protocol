@@ -6,7 +6,7 @@ enum MsgType {
   MsgInitializeAsset,
   MsgDeposit,
   MsgDepositWithSupplyMatrix,
-  MsgDepositWithSupplyEOL,
+  __Reserved, // MsgDepositWithSupplyEOL
   MsgWithdraw,
   //=========== NOTE: Matrix ===========//
   MsgInitializeMatrix,
@@ -15,8 +15,7 @@ enum MsgType {
   MsgSettleMatrixYield,
   MsgSettleMatrixLoss,
   MsgSettleMatrixExtraRewards,
-  //=========== NOTE: EOL ===========//
-  MsgInitializeEOL,
+  __Reserved2, // MsgInitializeEOL
   //=========== NOTE: MITOGovernance ===========//
   MsgDispatchGovernanceExecution
 }
@@ -38,13 +37,6 @@ struct MsgDepositWithSupplyMatrix {
   bytes32 asset;
   bytes32 to;
   bytes32 matrixVault;
-  uint256 amount;
-}
-
-struct MsgDepositWithSupplyEOL {
-  bytes32 asset;
-  bytes32 to;
-  bytes32 eolVault;
   uint256 amount;
 }
 
@@ -92,11 +84,6 @@ struct MsgSettleMatrixExtraRewards {
   uint256 amount;
 }
 
-struct MsgInitializeEOL {
-  bytes32 eolVault;
-  bytes32 asset;
-}
-
 // hub -> branch
 struct MsgDispatchGovernanceExecution {
   bytes32[] targets;
@@ -113,7 +100,6 @@ library Message {
   uint256 public constant LEN_MSG_INITIALIZE_ASSET = 33;
   uint256 public constant LEN_MSG_DEPOSIT = 97;
   uint256 public constant LEN_MSG_DEPOSIT_WITH_SUPPLY_MATRIX = 129;
-  uint256 public constant LEN_MSG_DEPOSIT_WITH_SUPPLY_EOL = 129;
   uint256 public constant LEN_MSG_WITHDRAW = 97;
   uint256 public constant LEN_MSG_INITIALIZE_MATRIX = 65;
   uint256 public constant LEN_MSG_ALLOCATE_MATRIX = 65;
@@ -121,7 +107,6 @@ library Message {
   uint256 public constant LEN_MSG_SETTLE_MATRIX_YIELD = 65;
   uint256 public constant LEN_MSG_SETTLE_MATRIX_LOSS = 65;
   uint256 public constant LEN_MSG_SETTLE_MATRIX_EXTRA_REWARDS = 97;
-  uint256 public constant LEN_MSG_INITIALIZE_EOL = 65;
 
   function msgType(bytes calldata msg_) internal pure returns (MsgType) {
     return MsgType(uint8(msg_[0]));
@@ -169,23 +154,6 @@ library Message {
     decoded.asset = bytes32(msg_[1:33]);
     decoded.to = bytes32(msg_[33:65]);
     decoded.matrixVault = bytes32(msg_[65:97]);
-    decoded.amount = uint256(bytes32(msg_[97:]));
-  }
-
-  function encode(MsgDepositWithSupplyEOL memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgDepositWithSupplyEOL), msg_.asset, msg_.to, msg_.eolVault, msg_.amount);
-  }
-
-  function decodeDepositWithSupplyEOL(bytes calldata msg_)
-    internal
-    pure
-    returns (MsgDepositWithSupplyEOL memory decoded)
-  {
-    assertMsg(msg_, MsgType.MsgDepositWithSupplyEOL, LEN_MSG_DEPOSIT_WITH_SUPPLY_EOL);
-
-    decoded.asset = bytes32(msg_[1:33]);
-    decoded.to = bytes32(msg_[33:65]);
-    decoded.eolVault = bytes32(msg_[65:97]);
     decoded.amount = uint256(bytes32(msg_[97:]));
   }
 
@@ -270,17 +238,6 @@ library Message {
     decoded.matrixVault = bytes32(msg_[1:33]);
     decoded.reward = bytes32(msg_[33:65]);
     decoded.amount = uint256(bytes32(msg_[65:]));
-  }
-
-  function encode(MsgInitializeEOL memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgInitializeEOL), msg_.eolVault, msg_.asset);
-  }
-
-  function decodeInitializeEOL(bytes calldata msg_) internal pure returns (MsgInitializeEOL memory decoded) {
-    assertMsg(msg_, MsgType.MsgInitializeEOL, LEN_MSG_INITIALIZE_EOL);
-
-    decoded.eolVault = bytes32(msg_[1:33]);
-    decoded.asset = bytes32(msg_[33:]);
   }
 
   function encode(MsgDispatchGovernanceExecution memory msg_) internal pure returns (bytes memory) {
