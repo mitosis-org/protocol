@@ -6,7 +6,6 @@ enum MsgType {
   MsgInitializeAsset,
   MsgDeposit,
   MsgDepositWithSupplyMatrix,
-  __Reserved, // MsgDepositWithSupplyEOL
   MsgWithdraw,
   //=========== NOTE: Matrix ===========//
   MsgInitializeMatrix,
@@ -15,7 +14,6 @@ enum MsgType {
   MsgSettleMatrixYield,
   MsgSettleMatrixLoss,
   MsgSettleMatrixExtraRewards,
-  __Reserved2, // MsgInitializeEOL
   //=========== NOTE: MITOGovernance ===========//
   MsgDispatchGovernanceExecution
 }

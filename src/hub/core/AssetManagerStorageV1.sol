@@ -37,7 +37,6 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     IReclaimQueue reclaimQueue;
     ITreasury treasury;
     IHubAssetFactory hubAssetFactory;
-    uint256 __reserved; // IEOLVaultFactory eolVaultFactory;
     IMatrixVaultFactory matrixVaultFactory;
     // Asset states
     mapping(address hubAsset => mapping(uint256 chainId => HubAssetState)) hubAssetStates;
@@ -45,7 +44,6 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     // Matrix states
     mapping(address matrixVault => MatrixState state) matrixStates;
     mapping(uint256 chainId => mapping(address matrixVault => bool initialized)) matrixInitialized;
-    uint256 __reserved2; // mapping(uint256 chainId => mapping(address eolVault => bool initialized)) eolInitialized;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.AssetManagerStorage.v1';
