@@ -17,6 +17,8 @@ abstract contract OracleManagedTally is StdTally, AccessControlEnumerable, Pausa
 
   error OracleManagedTally__AlreadyFed(uint256 blockNumber);
 
+  event OracleFeedUpdated(uint256 totalBalance, uint256 pendingDepositBalance, uint256 pendingWithdrawBalance);
+
   /// @notice keccak256('mitosis.role.OracleTally.oracle')
   bytes32 public constant ORACLE_ROLE = 0xdb6af33022b6eb75115bfe118916016a510a3f87734665ccd940367c2f0e048e;
 
@@ -51,6 +53,8 @@ abstract contract OracleManagedTally is StdTally, AccessControlEnumerable, Pausa
     _oracleFeed.reportedTotalBalance = newTotalBalance;
     _oracleFeed.reportedPendingDepositBalance = newPendingDepositBalance;
     _oracleFeed.reportedPendingWithdrawBalance = newPendingWithdrawBalance;
+
+    emit OracleFeedUpdated(newTotalBalance, newPendingDepositBalance, newPendingWithdrawBalance);
   }
 
   function _totalBalance(bytes memory) internal view virtual override returns (uint256) {
