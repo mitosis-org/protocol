@@ -54,26 +54,14 @@ contract MatrixVaultCapped is MatrixVault {
     return _getMatrixVaultCappedStorage().cap;
   }
 
-  function maxDeposit(address) public view override returns (uint256) {
-    uint256 totalShares = totalSupply();
-    uint256 cap = _getMatrixVaultCappedStorage().cap;
-
-    if (totalShares >= cap) {
-      return 0;
-    }
-
-    return convertToAssets(cap - totalShares);
+  function maxDeposit(address) public view override returns (uint256 maxAssets) {
+    uint256 _cap = _getMatrixVaultCappedStorage().cap;
+    uint256 _totalAssets = totalAssets();
+    return _totalAssets >= _cap ? 0 : _cap - _totalAssets;
   }
 
-  function maxMint(address) public view override returns (uint256) {
-    uint256 totalShares = totalSupply();
-    uint256 cap = _getMatrixVaultCappedStorage().cap;
-
-    if (totalShares >= cap) {
-      return 0;
-    }
-
-    return cap - totalShares;
+  function maxMint(address account) public view override returns (uint256 maxShares) {
+    return convertToShares(maxDeposit(account));
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
