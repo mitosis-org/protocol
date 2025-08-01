@@ -13,7 +13,6 @@ import {
 } from '../../../src/branch/strategy/MatrixStrategyExecutor.sol';
 import { IMitosisVault } from '../../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
-import { IMitosisVaultEOL, EOLAction } from '../../../src/interfaces/branch/IMitosisVaultEOL.sol';
 import { IMitosisVaultMatrix, MatrixAction } from '../../../src/interfaces/branch/IMitosisVaultMatrix.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { MockERC20Snapshots } from '../../mock/MockERC20Snapshots.t.sol';

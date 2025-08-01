@@ -85,20 +85,6 @@ contract MitosisVaultEntrypoint is
     return _quoteToMitosis(enc, MsgType.MsgDepositWithSupplyMatrix);
   }
 
-  function quoteDepositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount)
-    external
-    view
-    returns (uint256)
-  {
-    bytes memory enc = MsgDepositWithSupplyEOL({
-      asset: asset.toBytes32(),
-      to: to.toBytes32(),
-      eolVault: hubEOLVault.toBytes32(),
-      amount: amount
-    }).encode();
-    return _quoteToMitosis(enc, MsgType.MsgDepositWithSupplyEOL);
-  }
-
   function quoteDeallocateMatrix(address hubMatrixVault, uint256 amount) external view returns (uint256) {
     bytes memory enc = MsgDeallocateMatrix({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
     return _quoteToMitosis(enc, MsgType.MsgDeallocateMatrix);
@@ -152,20 +138,6 @@ contract MitosisVaultEntrypoint is
       amount: amount
     }).encode();
     _dispatchToMitosis(enc, MsgType.MsgDepositWithSupplyMatrix);
-  }
-
-  function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount)
-    external
-    payable
-    onlyVault
-  {
-    bytes memory enc = MsgDepositWithSupplyEOL({
-      asset: asset.toBytes32(),
-      to: to.toBytes32(),
-      eolVault: hubEOLVault.toBytes32(),
-      amount: amount
-    }).encode();
-    _dispatchToMitosis(enc, MsgType.MsgDepositWithSupplyEOL);
   }
 
   function deallocateMatrix(address hubMatrixVault, uint256 amount) external payable onlyVault {
@@ -223,11 +195,6 @@ contract MitosisVaultEntrypoint is
     if (msgType == MsgType.MsgAllocateMatrix) {
       MsgAllocateMatrix memory decoded = msg_.decodeAllocateMatrix();
       _vault.allocateMatrix(decoded.matrixVault.toAddress(), decoded.amount);
-    }
-
-    if (msgType == MsgType.MsgInitializeEOL) {
-      MsgInitializeEOL memory decoded = msg_.decodeInitializeEOL();
-      _vault.initializeEOL(decoded.eolVault.toAddress(), decoded.asset.toAddress());
     }
   }
 

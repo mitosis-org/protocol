@@ -19,8 +19,6 @@ import { Treasury } from '../../../src/hub/reward/Treasury.sol';
 import { IAssetManager, IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../../src/interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
-import { IEOLVault } from '../../../src/interfaces/hub/eol/IEOLVault.sol';
-import { IEOLVaultFactory } from '../../../src/interfaces/hub/eol/IEOLVaultFactory.sol';
 import { IMatrixVault } from '../../../src/interfaces/hub/matrix/IMatrixVault.sol';
 import { IMatrixVaultFactory } from '../../../src/interfaces/hub/matrix/IMatrixVaultFactory.sol';
 import { IReclaimQueue } from '../../../src/interfaces/hub/matrix/IReclaimQueue.sol';
@@ -66,22 +64,6 @@ contract AssetManagerErrors {
     );
   }
 
-  function _errEOLVaultFactoryNotSet() internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__EOLVaultFactoryNotSet.selector);
-  }
-
-  function _errEOLNotInitialized(uint256 chainId, address eolVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(
-      IAssetManagerStorageV1.IAssetManagerStorageV1__EOLNotInitialized.selector, chainId, eolVault
-    );
-  }
-
-  function _errEOLAlreadyInitialized(uint256 chainId, address eolVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(
-      IAssetManagerStorageV1.IAssetManagerStorageV1__EOLAlreadyInitialized.selector, chainId, eolVault
-    );
-  }
-
   function _errBranchAvailableLiquidityInsufficient(
     uint256 chainId,
     address hubAsset,
@@ -99,10 +81,6 @@ contract AssetManagerErrors {
 
   function _errInvalidHubAsset(address hubAsset) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__InvalidHubAsset.selector, hubAsset);
-  }
-
-  function _errInvalidEOLVault(address eolVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__InvalidEOLVault.selector, eolVault);
   }
 
   function _errInvalidMatrixVault(address matrixVault) internal pure returns (bytes memory) {
@@ -140,8 +118,6 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   MockContract treasury;
   MockContract matrixVault;
   MockContract matrixVaultFactory;
-  MockContract eolVault;
-  MockContract eolVaultFactory;
   MockContract hubAsset;
   MockContract hubAssetFactory;
 
@@ -167,7 +143,6 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     entrypoint.setCall(IAssetManagerEntrypoint.allocateMatrix.selector);
     entrypoint.setCall(IAssetManagerEntrypoint.initializeAsset.selector);
     entrypoint.setCall(IAssetManagerEntrypoint.initializeMatrix.selector);
-    entrypoint.setCall(IAssetManagerEntrypoint.initializeEOL.selector);
 
     treasury = new MockContract();
     treasury.setCall(ITreasury.storeRewards.selector);
@@ -175,10 +150,6 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     matrixVault = new MockContract();
     matrixVault.setCall(IERC4626.deposit.selector);
     matrixVaultFactory = new MockContract();
-
-    eolVault = new MockContract();
-    eolVault.setCall(IERC4626.deposit.selector);
-    eolVaultFactory = new MockContract();
 
     hubAsset = new MockContract();
     hubAsset.setCall(IHubAsset.mint.selector);
@@ -190,7 +161,6 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     hubAssetFactory = new MockContract();
 
     matrixVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
-    eolVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
 
     assetManager = AssetManager(
       payable(
@@ -312,61 +282,6 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     vm.prank(address(entrypoint));
     vm.expectRevert(_errMatrixNotInitialized(branchChainId1, address(matrixVault)));
     assetManager.depositWithSupplyMatrix(branchChainId1, branchAsset1, user1, address(matrixVault), 100 ether);
-  }
-
-  function test_depositWithSupplyEOL() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setEOLVaultFactory();
-    _setEOLVaultInstance(address(eolVault), true);
-
-    vm.prank(owner);
-    assetManager.initializeEOL(branchChainId1, address(eolVault));
-
-    // vault.asset != hubAsset
-    eolVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(branchAsset1)));
-
-    vm.prank(address(entrypoint));
-    emit IAssetManager.DepositedWithSupplyEOL(branchChainId1, address(hubAsset), user1, address(eolVault), 100 ether, 0);
-    assetManager.depositWithSupplyEOL(branchChainId1, branchAsset1, user1, address(eolVault), 100 ether);
-
-    hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (user1, 100 ether)));
-
-    // vault.asset == hubAsset
-    hubAsset.setRet(abi.encodeCall(IERC20.approve, (address(eolVault), 100 ether)), false, abi.encode(true));
-    eolVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
-    eolVault.setRet(abi.encodeCall(IERC4626.deposit, (100 ether, user1)), false, abi.encode(100 ether));
-
-    vm.prank(address(entrypoint));
-    vm.expectEmit();
-    emit IAssetManager.DepositedWithSupplyEOL(
-      branchChainId1, address(hubAsset), user1, address(eolVault), 100 ether, 100 ether
-    );
-    assetManager.depositWithSupplyEOL(branchChainId1, branchAsset1, user1, address(eolVault), 100 ether);
-
-    hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (address(assetManager), 100 ether)));
-    hubAsset.assertLastCall(abi.encodeCall(IERC20.approve, (address(eolVault), 100 ether)));
-    eolVault.assertLastCall(abi.encodeCall(IERC4626.deposit, (100 ether, user1)));
-  }
-
-  function test_depositWithSupplyEOL_Unauthorized() public {
-    vm.prank(user1);
-    vm.expectRevert(_errUnauthorized());
-    assetManager.depositWithSupplyEOL(branchChainId1, branchAsset1, user1, address(eolVault), 100 ether);
-  }
-
-  /// @dev No occurrence case until methods like unsetAssetPair are added.
-  function test_depositWithSupplyEOL_BranchAssetPairNotExist() public {
-    vm.prank(address(entrypoint));
-    vm.expectRevert(_errBranchAssetPairNotExist(branchChainId1, branchAsset1));
-    assetManager.depositWithSupplyEOL(branchChainId1, branchAsset1, user1, address(eolVault), 100 ether);
-  }
-
-  function test_depositWithSupplyEOL_EOLNotInitialized() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-
-    vm.prank(address(entrypoint));
-    vm.expectRevert(_errEOLNotInitialized(branchChainId1, address(eolVault)));
-    assetManager.depositWithSupplyEOL(branchChainId1, branchAsset1, user1, address(eolVault), 100 ether);
   }
 
   function test_withdraw() public {
@@ -1142,14 +1057,5 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
   function _setMatrixVaultInstance(address matrixVault_, bool isInstance) internal {
     matrixVaultFactory.setRet(abi.encodeCall(IBeaconBase.isInstance, (matrixVault_)), false, abi.encode(isInstance));
-  }
-
-  function _setEOLVaultFactory() internal {
-    vm.prank(owner);
-    assetManager.setEOLVaultFactory(address(eolVaultFactory));
-  }
-
-  function _setEOLVaultInstance(address eolVault_, bool isInstance) internal {
-    eolVaultFactory.setRet(abi.encodeCall(IBeaconBase.isInstance, (eolVault_)), false, abi.encode(isInstance));
   }
 }

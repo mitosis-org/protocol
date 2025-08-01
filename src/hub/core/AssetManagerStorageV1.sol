@@ -6,7 +6,6 @@ import { ContextUpgradeable } from '@ozu/utils/ContextUpgradeable.sol';
 import { IAssetManagerStorageV1 } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAssetFactory } from '../../interfaces/hub/core/IHubAssetFactory.sol';
-import { IEOLVaultFactory } from '../../interfaces/hub/eol/IEOLVaultFactory.sol';
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
 import { IMatrixVaultFactory } from '../../interfaces/hub/matrix/IMatrixVaultFactory.sol';
 import { IReclaimQueue } from '../../interfaces/hub/matrix/IReclaimQueue.sol';
@@ -38,7 +37,6 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     IReclaimQueue reclaimQueue;
     ITreasury treasury;
     IHubAssetFactory hubAssetFactory;
-    IEOLVaultFactory eolVaultFactory;
     IMatrixVaultFactory matrixVaultFactory;
     // Asset states
     mapping(address hubAsset => mapping(uint256 chainId => HubAssetState)) hubAssetStates;
@@ -46,8 +44,6 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     // Matrix states
     mapping(address matrixVault => MatrixState state) matrixStates;
     mapping(uint256 chainId => mapping(address matrixVault => bool initialized)) matrixInitialized;
-    // EOL states
-    mapping(uint256 chainId => mapping(address eolVault => bool initialized)) eolInitialized;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.AssetManagerStorage.v1';
@@ -77,10 +73,6 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
 
   function hubAssetFactory() external view returns (address) {
     return address(_getStorageV1().hubAssetFactory);
-  }
-
-  function eolVaultFactory() external view returns (address) {
-    return address(_getStorageV1().eolVaultFactory);
   }
 
   function matrixVaultFactory() external view returns (address) {
@@ -113,10 +105,6 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
 
   function matrixInitialized(uint256 chainId, address matrixVault) external view returns (bool) {
     return _getStorageV1().matrixInitialized[chainId][matrixVault];
-  }
-
-  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool) {
-    return _getStorageV1().eolInitialized[chainId][eolVault];
   }
 
   function matrixIdle(address matrixVault) external view returns (uint256) {
@@ -171,14 +159,6 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     $.matrixVaultFactory = IMatrixVaultFactory(matrixVaultFactory_);
 
     emit MatrixVaultFactorySet(matrixVaultFactory_);
-  }
-
-  function _setEOLVaultFactory(StorageV1 storage $, address eolVaultFactory_) internal {
-    require(eolVaultFactory_.code.length > 0, StdError.InvalidParameter('EOLVaultFactory'));
-
-    $.eolVaultFactory = IEOLVaultFactory(eolVaultFactory_);
-
-    emit EOLVaultFactorySet(eolVaultFactory_);
   }
 
   function _setStrategist(StorageV1 storage $, address matrixVault, address strategist_) internal {
@@ -316,23 +296,5 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
   {
     bool initialized = $.matrixInitialized[chainId][matrixVault_];
     require(!initialized, IAssetManagerStorageV1__MatrixAlreadyInitialized(chainId, matrixVault_));
-  }
-
-  function _assertEOLVaultFactorySet(StorageV1 storage $) internal view virtual {
-    require(address($.eolVaultFactory) != address(0), IAssetManagerStorageV1__EOLVaultFactoryNotSet());
-  }
-
-  function _assertEOLVaultInstance(StorageV1 storage $, address eolVault_) internal view virtual {
-    require($.eolVaultFactory.isInstance(eolVault_), IAssetManagerStorageV1__InvalidEOLVault(eolVault_));
-  }
-
-  function _assertEOLInitialized(StorageV1 storage $, uint256 chainId, address eolVault_) internal view virtual {
-    bool initialized = $.eolInitialized[chainId][eolVault_];
-    require(initialized, IAssetManagerStorageV1__EOLNotInitialized(chainId, eolVault_));
-  }
-
-  function _assertEOLNotInitialized(StorageV1 storage $, uint256 chainId, address eolVault_) internal view virtual {
-    bool initialized = $.eolInitialized[chainId][eolVault_];
-    require(!initialized, IAssetManagerStorageV1__EOLAlreadyInitialized(chainId, eolVault_));
   }
 }
