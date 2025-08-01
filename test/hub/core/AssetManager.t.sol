@@ -621,8 +621,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_initializeAsset_Unauthorized() public {
+    vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
     assetManager.initializeAsset(branchChainId1, address(hubAsset));
   }
 
@@ -835,8 +835,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_initializeMatrix_Unauthorized() public {
+    vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
     assetManager.initializeMatrix(branchChainId1, address(matrixVault));
   }
 
@@ -883,7 +883,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_setAssetPair_Unauthorized() public {
-    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
+    vm.expectRevert(_errAccessControlUnauthorized(address(this), assetManager.DEFAULT_ADMIN_ROLE()));
     assetManager.setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
   }
 
@@ -920,8 +920,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   function test_setEntrypoint_Unauthorized() public {
     address newEntrypoint = address(new MockContract());
 
+    vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
     assetManager.setEntrypoint(newEntrypoint);
   }
 
@@ -953,8 +953,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   function test_setReclaimQueue_Unauthorized() public {
     address newReclaimQueue = address(new MockContract());
 
+    vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
     assetManager.setReclaimQueue(newReclaimQueue);
   }
 
@@ -986,8 +986,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   function test_setTreasury_Unauthorized() public {
     address newTreasury = address(new MockContract());
 
+    vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
     assetManager.setTreasury(newTreasury);
   }
 
@@ -1029,8 +1029,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_setStrategist_Unauthorized() public {
+    vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
     assetManager.setStrategist(address(matrixVault), strategist);
   }
 

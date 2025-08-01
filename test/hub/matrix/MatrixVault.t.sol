@@ -102,7 +102,6 @@ contract MatrixVaultBasicTest is MatrixVaultTestBase {
     assertEq(basic.symbol(), 'B');
     assertEq(basic.decimals(), 18 + 6);
 
-    assertEq(basic.owner(), owner);
     assertEq(basic.assetManager(), assetManager);
     assertEq(basic.reclaimQueue(), reclaimQueue);
 
@@ -205,7 +204,6 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
     assertEq(capped.symbol(), 'C');
     assertEq(capped.decimals(), 18 + 6);
 
-    assertEq(capped.owner(), owner);
     assertEq(capped.assetManager(), assetManager);
     assertEq(capped.reclaimQueue(), reclaimQueue);
 

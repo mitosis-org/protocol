@@ -23,8 +23,6 @@ contract MatrixVaultCapped is MatrixVault {
 
   event CapSet(address indexed setter, uint256 prevCap, uint256 newCap);
 
-  // ============================ NOTE: MODIFIERS ============================ //
-
   modifier onlyLiquidityManager() {
     require(_getStorageV1().assetManager.isLiquidityManager(_msgSender()), StdError.Unauthorized());
     _;

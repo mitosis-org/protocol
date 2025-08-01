@@ -307,6 +307,13 @@ interface IAssetManager is IAssetManagerStorageV1 {
   error IAssetManager__MatrixInsufficient(address matrixVault);
 
   /**
+   * @notice Check if an address is the owner of the contract
+   * @param account The address to check
+   * @return True if the address is the owner, false otherwise
+   */
+  function isOwner(address account) external view returns (bool);
+
+  /**
    * @notice Check if an address is a liquidity manager
    * @param account The address to check
    * @return True if the address is a liquidity manager, false otherwise

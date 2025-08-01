@@ -20,7 +20,6 @@ import { AssetManagerStorageV1 } from './AssetManagerStorageV1.sol';
 contract AssetManager is
   IAssetManager,
   Pausable,
-  Ownable2StepUpgradeable,
   AccessControlEnumerableUpgradeable,
   UUPSUpgradeable,
   AssetManagerStorageV1,
@@ -31,6 +30,11 @@ contract AssetManager is
   /// @dev Role for managing liquidity thresholds and caps
   bytes32 public constant LIQUIDITY_MANAGER_ROLE = keccak256('LIQUIDITY_MANAGER_ROLE');
 
+  modifier onlyOwner() {
+    _checkRole(DEFAULT_ADMIN_ROLE);
+    _;
+  }
+
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
   constructor() {
@@ -39,8 +43,6 @@ contract AssetManager is
 
   function initialize(address owner_, address treasury_) public initializer {
     __Pausable_init();
-    __Ownable2Step_init();
-    __Ownable_init(owner_);
     __AccessControl_init();
     __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
@@ -51,6 +53,10 @@ contract AssetManager is
   }
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
+
+  function isOwner(address account) external view returns (bool) {
+    return hasRole(DEFAULT_ADMIN_ROLE, account);
+  }
 
   function isLiquidityManager(address account) external view returns (bool) {
     return hasRole(LIQUIDITY_MANAGER_ROLE, account);
