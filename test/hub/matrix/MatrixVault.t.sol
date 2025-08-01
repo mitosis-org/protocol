@@ -234,7 +234,7 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
     vm.assume(amount <= cap && cap < type(uint64).max);
 
     vm.prank(liquidityManager);
-    capped.setCap(cap * 1e6);
+    capped.setCap(cap);
 
     vm.deal(user, amount);
     vm.startPrank(user);
@@ -251,7 +251,7 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
     vm.assume(cap < amount);
 
     vm.prank(liquidityManager);
-    capped.setCap(cap * 1e6);
+    capped.setCap(cap);
 
     vm.deal(user, amount);
     vm.startPrank(user);
@@ -270,7 +270,7 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
     vm.assume(amount <= cap && cap < type(uint64).max);
 
     vm.prank(liquidityManager);
-    capped.setCap(cap * 1e6);
+    capped.setCap(cap);
 
     vm.deal(user, amount);
     vm.startPrank(user);
@@ -287,7 +287,7 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
     vm.assume(amount > cap);
 
     vm.prank(liquidityManager);
-    capped.setCap(cap * 1e6);
+    capped.setCap(cap);
 
     vm.deal(user, amount);
     vm.startPrank(user);
