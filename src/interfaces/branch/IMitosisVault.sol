@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
-import { IMitosisVaultEOL } from './IMitosisVaultEOL.sol';
 import { IMitosisVaultMatrix } from './IMitosisVaultMatrix.sol';
 
 enum AssetAction {
@@ -9,7 +8,7 @@ enum AssetAction {
   Deposit
 }
 
-interface IMitosisVault is IMitosisVaultMatrix, IMitosisVaultEOL {
+interface IMitosisVault is IMitosisVaultMatrix {
   //=========== NOTE: EVENT DEFINITIONS ===========//
 
   event CapSet(address indexed setter, address indexed asset, uint256 prevMaxCap, uint256 newMaxCap);

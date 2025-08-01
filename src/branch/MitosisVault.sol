@@ -13,7 +13,6 @@ import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
 import { Versioned } from '../lib/Versioned.sol';
-import { MitosisVaultEOL } from './MitosisVaultEOL.sol';
 import { MitosisVaultMatrix } from './MitosisVaultMatrix.sol';
 
 contract MitosisVault is
@@ -22,7 +21,6 @@ contract MitosisVault is
   Ownable2StepUpgradeable,
   UUPSUpgradeable,
   MitosisVaultMatrix,
-  MitosisVaultEOL,
   Versioned
 {
   using SafeERC20 for IERC20;
@@ -90,7 +88,7 @@ contract MitosisVault is
     return _isAssetInitialized(_getStorageV1(), asset);
   }
 
-  function entrypoint() public view override(IMitosisVault, MitosisVaultMatrix, MitosisVaultEOL) returns (address) {
+  function entrypoint() public view override(IMitosisVault, MitosisVaultMatrix) returns (address) {
     return address(_getStorageV1().entrypoint);
   }
 
@@ -176,7 +174,7 @@ contract MitosisVault is
     require(available >= amount, IMitosisVault__ExceededCap(asset, amount, available));
   }
 
-  function _assertAssetInitialized(address asset) internal view override(MitosisVaultMatrix, MitosisVaultEOL) {
+  function _assertAssetInitialized(address asset) internal view override {
     require(_isAssetInitialized(_getStorageV1(), asset), IMitosisVault__AssetNotInitialized(asset));
   }
 
@@ -218,7 +216,7 @@ contract MitosisVault is
     emit AssetResumed(asset, action);
   }
 
-  function _deposit(address asset, address to, uint256 amount) internal override(MitosisVaultMatrix, MitosisVaultEOL) {
+  function _deposit(address asset, address to, uint256 amount) internal override {
     StorageV1 storage $ = _getStorageV1();
     require(to != address(0), StdError.ZeroAddress('to'));
     require(amount != 0, StdError.ZeroAmount());

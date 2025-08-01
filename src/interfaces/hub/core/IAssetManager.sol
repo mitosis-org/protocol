@@ -37,12 +37,6 @@ interface IAssetManagerStorageV1 {
   event MatrixVaultFactorySet(address indexed matrixVaultFactory);
 
   /**
-   * @notice Emitted when a new EOL vault factory is set
-   * @param eolVaultFactory The address of the new EOL vault factory
-   */
-  event EOLVaultFactorySet(address indexed eolVaultFactory);
-
-  /**
    * @notice Emitted when a new strategist is set for a MatrixVault
    * @param matrixVault The address of the MatrixVault
    * @param strategist The address of the new strategist
@@ -71,11 +65,6 @@ interface IAssetManagerStorageV1 {
   error IAssetManagerStorageV1__InvalidMatrixVault(address matrixVault);
   error IAssetManagerStorageV1__MatrixNotInitialized(uint256 chainId, address matrixVault);
   error IAssetManagerStorageV1__MatrixAlreadyInitialized(uint256 chainId, address matrixVault);
-
-  error IAssetManagerStorageV1__EOLVaultFactoryNotSet();
-  error IAssetManagerStorageV1__InvalidEOLVault(address eolVault);
-  error IAssetManagerStorageV1__EOLNotInitialized(uint256 chainId, address eolVault);
-  error IAssetManagerStorageV1__EOLAlreadyInitialized(uint256 chainId, address eolVault);
 
   error IAssetManagerStorageV1__BranchAvailableLiquidityInsufficient(
     uint256 chainId, address hubAsset, uint256 available, uint256 amount
@@ -111,11 +100,6 @@ interface IAssetManagerStorageV1 {
    * @notice Get the current Matrix vault factory address (see IMatrixVaultFactory)
    */
   function matrixVaultFactory() external view returns (address);
-
-  /**
-   * @notice Get the current EOL vault factory address (see IEOLVaultFactory)
-   */
-  function eolVaultFactory() external view returns (address);
 
   /**
    * @notice Get the branch asset address for a given hub asset and chain ID
@@ -169,13 +153,6 @@ interface IAssetManagerStorageV1 {
   function matrixInitialized(uint256 chainId, address matrixVault) external view returns (bool);
 
   /**
-   * @notice Check if a EOL vault is initialized for a given chain and branch asset (EOLVault -> hubAsset -> branchAsset)
-   * @param chainId The ID of the chain
-   * @param eolVault The address of the EOL vault
-   */
-  function eolInitialized(uint256 chainId, address eolVault) external view returns (bool);
-
-  /**
    * @notice Get the idle balance of a MatrixVault
    * @dev The idle balance will be calculated like this:
    * @dev (total supplied amount - total utilized amount - total pending reclaim amount)
@@ -219,15 +196,6 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event MatrixInitialized(address indexed hubAsset, uint256 indexed chainId, address matrixVault, address branchAsset);
 
   /**
-   * @notice Emitted when a EOL vault is initialized
-   * @param hubAsset The address of the hub asset
-   * @param chainId The ID of the chain where the EOL vault is initialized
-   * @param eolVault The address of the initialized EOL vault
-   * @param branchAsset The address of the branch asset associated with the EOL vault
-   */
-  event EOLInitialized(address indexed hubAsset, uint256 indexed chainId, address eolVault, address branchAsset);
-
-  /**
    * @notice Emitted when a deposit is made
    * @param chainId The ID of the chain where the deposit is made
    * @param hubAsset The address of the asset that correspond to the branch asset
@@ -250,24 +218,6 @@ interface IAssetManager is IAssetManagerStorageV1 {
     address indexed hubAsset,
     address indexed to,
     address matrixVault,
-    uint256 amount,
-    uint256 supplyAmount
-  );
-
-  /**
-   * @notice Emitted when a deposit is made with supply to a EOL vault
-   * @param chainId The ID of the chain where the deposit is made
-   * @param hubAsset The address of the asset that correspond to the branch asset
-   * @param to The address receiving the miAsset
-   * @param eolVault The address of the EOL vault supplied into
-   * @param amount The amount deposited
-   * @param supplyAmount The amount supplied into the EOL vault
-   */
-  event DepositedWithSupplyEOL(
-    uint256 indexed chainId,
-    address indexed hubAsset,
-    address indexed to,
-    address eolVault,
     uint256 amount,
     uint256 supplyAmount
   );
@@ -384,15 +334,6 @@ interface IAssetManager is IAssetManagerStorageV1 {
     returns (uint256);
 
   /**
-   * @notice Quotes the gas fee for initializing an EOL vault on a specified branch chain
-   * @param chainId The ID of the branch chain
-   * @param eolVault The address of the EOL vault
-   * @param branchAsset The address of the associated asset on the branch chain
-   * @return The gas fee required for the operation
-   */
-  function quoteInitializeEOL(uint256 chainId, address eolVault, address branchAsset) external view returns (uint256);
-
-  /**
    * @notice Quotes the gas fee for withdrawing assets from a branch chain
    * @param chainId The ID of the branch chain
    * @param branchAsset The address of the asset on the branch chain
@@ -440,18 +381,6 @@ interface IAssetManager is IAssetManagerStorageV1 {
     address matrixVault,
     uint256 amount
   ) external;
-
-  /**
-   * @notice Deposit branch assets with supply to a EOL vault
-   * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
-   * @param chainId The ID of the chain where the deposit is made
-   * @param branchAsset The address of the branch asset being deposited
-   * @param to The address receiving the deposit
-   * @param eolVault The address of the EOL vault to supply into
-   * @param amount The amount to deposit
-   */
-  function depositWithSupplyEOL(uint256 chainId, address branchAsset, address to, address eolVault, uint256 amount)
-    external;
 
   /**
    * @notice Withdraw hub assets and receive the asset on the branch chain
@@ -554,13 +483,6 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function initializeMatrix(uint256 chainId, address matrixVault) external payable;
 
   /**
-   * @notice Initialize a EOL vault for branch asset on a given chain
-   * @param chainId The ID of the chain where the EOL vault is initialized
-   * @param eolVault The address of the EOL vault to initialize
-   */
-  function initializeEOL(uint256 chainId, address eolVault) external payable;
-
-  /**
    * @notice Set an asset pair
    * @param hubAsset The address of the hub asset
    * @param branchChainId The ID of the branch chain
@@ -597,13 +519,6 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param matrixVaultFactory_ The new Matrix vault factory address
    */
   function setMatrixVaultFactory(address matrixVaultFactory_) external;
-
-  /**
-   * `
-   * @notice Set the EOL vault factory address
-   * @param eolVaultFactory_ The new EOL vault factory address
-   */
-  function setEOLVaultFactory(address eolVaultFactory_) external;
 
   /**
    * @notice Set the strategist for a MatrixVault
