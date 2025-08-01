@@ -92,11 +92,6 @@ contract AssetManagerEntrypoint is
     return _quoteToBranch(chainId, MsgType.MsgInitializeMatrix, enc);
   }
 
-  function quoteInitializeEOL(uint256 chainId, address eolVault, address branchAsset) external view returns (uint256) {
-    bytes memory enc = MsgInitializeEOL({ eolVault: eolVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
-    return _quoteToBranch(chainId, MsgType.MsgInitializeEOL, enc);
-  }
-
   function quoteWithdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
     external
     view
@@ -139,16 +134,6 @@ contract AssetManagerEntrypoint is
     bytes memory enc =
       MsgInitializeMatrix({ matrixVault: matrixVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
     _dispatchToBranch(chainId, MsgType.MsgInitializeMatrix, enc);
-  }
-
-  function initializeEOL(uint256 chainId, address eolVault, address branchAsset)
-    external
-    payable
-    onlyAssetManager
-    onlyDispatchable(chainId)
-  {
-    bytes memory enc = MsgInitializeEOL({ eolVault: eolVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
-    _dispatchToBranch(chainId, MsgType.MsgInitializeEOL, enc);
   }
 
   function withdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
@@ -200,14 +185,6 @@ contract AssetManagerEntrypoint is
       MsgDepositWithSupplyMatrix memory decoded = msg_.decodeDepositWithSupplyMatrix();
       _assetManager.depositWithSupplyMatrix(
         chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.matrixVault.toAddress(), decoded.amount
-      );
-      return;
-    }
-
-    if (msgType == MsgType.MsgDepositWithSupplyEOL) {
-      MsgDepositWithSupplyEOL memory decoded = msg_.decodeDepositWithSupplyEOL();
-      _assetManager.depositWithSupplyEOL(
-        chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.eolVault.toAddress(), decoded.amount
       );
       return;
     }

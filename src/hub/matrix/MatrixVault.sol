@@ -31,11 +31,6 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable, Reentr
   {
     __Pausable_init();
 
-    if (bytes(name_).length == 0 || bytes(symbol_).length == 0) {
-      name_ = string.concat('Mitosis Matrix ', asset_.name());
-      symbol_ = string.concat('ma', asset_.symbol());
-    }
-
     StorageV1 storage $ = _getStorageV1();
     $.asset = address(asset_);
     $.name = name_;
