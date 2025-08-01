@@ -18,6 +18,7 @@ import { Toolkit } from '../../util/Toolkit.sol';
 
 contract MatrixVaultTestBase is IBeacon, Toolkit {
   address owner = makeAddr('owner');
+  address liquidityManager = makeAddr('liquidityManager');
   address user = makeAddr('user');
   address assetManager = _emptyContract();
   address reclaimQueue = _emptyContract();
@@ -44,6 +45,18 @@ contract MatrixVaultTestBase is IBeacon, Toolkit {
     );
 
     vm.mockCall(address(assetManager), abi.encodeWithSelector(Ownable.owner.selector), abi.encode(owner));
+
+    vm.mockCall(
+      address(assetManager),
+      abi.encodeWithSelector(IAssetManager.isLiquidityManager.selector, liquidityManager),
+      abi.encode(true)
+    );
+    vm.mockCall(
+      address(assetManager), abi.encodeWithSelector(IAssetManager.isLiquidityManager.selector, owner), abi.encode(false)
+    );
+    vm.mockCall(
+      address(assetManager), abi.encodeWithSelector(IAssetManager.isLiquidityManager.selector, user), abi.encode(false)
+    );
 
     defaultImpl = address(basicImpl);
     basic = MatrixVaultBasic(
@@ -89,7 +102,6 @@ contract MatrixVaultBasicTest is MatrixVaultTestBase {
     assertEq(basic.symbol(), 'B');
     assertEq(basic.decimals(), 18 + 6);
 
-    assertEq(basic.owner(), owner);
     assertEq(basic.assetManager(), assetManager);
     assertEq(basic.reclaimQueue(), reclaimQueue);
 
@@ -184,12 +196,6 @@ contract MatrixVaultBasicTest is MatrixVaultTestBase {
 contract MatrixVaultCappedTest is MatrixVaultTestBase {
   function setUp() public override {
     super.setUp();
-
-    vm.mockCall(
-      address(assetManager), //
-      abi.encodeWithSelector(Ownable.owner.selector),
-      abi.encode(owner)
-    );
   }
 
   function test_initialize() public view {
@@ -198,7 +204,6 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
     assertEq(capped.symbol(), 'C');
     assertEq(capped.decimals(), 18 + 6);
 
-    assertEq(capped.owner(), owner);
     assertEq(capped.assetManager(), assetManager);
     assertEq(capped.reclaimQueue(), reclaimQueue);
 
@@ -210,7 +215,7 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
 
     assertEq(capped.loadCap(), 0);
 
-    vm.prank(owner);
+    vm.prank(liquidityManager);
     capped.setCap(amount);
 
     assertEq(capped.loadCap(), amount);
@@ -219,7 +224,7 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
   function test_setCap_revertsIfUnauthorized(uint256 amount) public {
     vm.assume(0 < amount && amount < type(uint64).max);
 
-    vm.prank(user);
+    vm.prank(owner);
     vm.expectRevert(StdError.Unauthorized.selector);
     capped.setCap(amount);
   }
@@ -228,7 +233,7 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
     vm.assume(0 < amount && amount < type(uint64).max);
     vm.assume(amount <= cap && cap < type(uint64).max);
 
-    vm.prank(owner);
+    vm.prank(liquidityManager);
     capped.setCap(cap);
 
     vm.deal(user, amount);
@@ -245,8 +250,8 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
     vm.assume(0 < amount && amount < type(uint64).max);
     vm.assume(cap < amount);
 
-    vm.prank(owner);
-    capped.setCap(cap); // cap should be in assets, not shares
+    vm.prank(liquidityManager);
+    capped.setCap(cap);
 
     vm.deal(user, amount);
     vm.startPrank(user);
@@ -264,8 +269,8 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
     vm.assume(0 < amount && amount < type(uint64).max);
     vm.assume(amount <= cap && cap < type(uint64).max);
 
-    vm.prank(owner);
-    capped.setCap(cap); // cap should be in assets, not shares
+    vm.prank(liquidityManager);
+    capped.setCap(cap);
 
     vm.deal(user, amount);
     vm.startPrank(user);
@@ -281,8 +286,8 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
     vm.assume(0 < amount && amount < type(uint64).max);
     vm.assume(amount > cap);
 
-    vm.prank(owner);
-    capped.setCap(cap); // cap should be in assets, not shares
+    vm.prank(liquidityManager);
+    capped.setCap(cap);
 
     vm.deal(user, amount);
     vm.startPrank(user);

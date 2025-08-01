@@ -124,6 +124,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   AssetManager assetManager;
 
   address owner = makeAddr('owner');
+  address liquidityManager = makeAddr('liquidityManager');
   address user1 = makeAddr('user1');
   address immutable mitosis = makeAddr('mitosis');
 
@@ -171,6 +172,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     );
 
     vm.startPrank(owner);
+    assetManager.grantRole(assetManager.LIQUIDITY_MANAGER_ROLE(), liquidityManager);
     assetManager.setReclaimQueue(address(reclaimQueue));
     assetManager.setEntrypoint(address(entrypoint));
     vm.stopPrank();
@@ -347,7 +349,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     vm.prank(address(entrypoint));
     assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
 
-    vm.prank(owner);
+    vm.prank(liquidityManager);
     assetManager.setBranchLiquidityThreshold(branchChainId1, address(hubAsset), 80 ether);
 
     vm.prank(user1);
@@ -619,8 +621,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_initializeAsset_Unauthorized() public {
+    vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
     assetManager.initializeAsset(branchChainId1, address(hubAsset));
   }
 
@@ -642,11 +644,26 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     assetManager.initializeAsset(branchChainId1, address(hubAsset));
   }
 
+  function test_isLiquidityManager() public {
+    bytes32 liquidityManagerRole = assetManager.LIQUIDITY_MANAGER_ROLE();
+
+    // Initially user1 should not be a liquidity manager
+    assertFalse(assetManager.isLiquidityManager(user1));
+
+    vm.prank(owner);
+    assetManager.grantRole(liquidityManagerRole, user1);
+    assertTrue(assetManager.isLiquidityManager(user1));
+
+    vm.prank(owner);
+    assetManager.revokeRole(liquidityManagerRole, user1);
+    assertFalse(assetManager.isLiquidityManager(user1));
+  }
+
   function test_setBranchLiquidityThreshold() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
     _setAssetPair(address(hubAsset), branchChainId2, branchAsset2);
 
-    vm.startPrank(owner);
+    vm.startPrank(liquidityManager);
 
     vm.expectEmit();
     emit IAssetManagerStorageV1.BranchLiquidityThresholdSet(address(hubAsset), branchChainId1, 100 ether);
@@ -682,13 +699,13 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_setBranchLiquidityThreshold_Unauthorized() public {
+    vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.LIQUIDITY_MANAGER_ROLE()));
     vm.prank(user1);
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
     assetManager.setBranchLiquidityThreshold(branchChainId1, address(hubAsset), 100 ether);
   }
 
   function test_setBranchLiquidityThreshold_HubAssetPairNotExist() public {
-    vm.startPrank(owner);
+    vm.startPrank(liquidityManager);
     vm.expectRevert(_errHubAssetPairNotExist(address(hubAsset)));
     assetManager.setBranchLiquidityThreshold(branchChainId1, address(hubAsset), 100 ether);
   }
@@ -697,7 +714,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
     _setAssetPair(address(hubAsset), branchChainId2, branchAsset2);
 
-    vm.startPrank(owner);
+    vm.startPrank(liquidityManager);
 
     uint256[] memory chainIds = new uint256[](2);
     address[] memory hubAssets = new address[](2);
@@ -782,8 +799,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     hubAssets[1] = address(hubAsset);
     thresholds[1] = 100 ether;
 
+    vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.LIQUIDITY_MANAGER_ROLE()));
     vm.prank(user1);
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
     assetManager.setBranchLiquidityThreshold(chainIds, hubAssets, thresholds);
   }
 
@@ -799,7 +816,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     hubAssets[1] = address(hubAsset);
     thresholds[1] = 100 ether;
 
-    vm.prank(owner);
+    vm.prank(liquidityManager);
     vm.expectRevert(_errHubAssetPairNotExist(address(hubAsset)));
     assetManager.setBranchLiquidityThreshold(chainIds, hubAssets, thresholds);
   }
@@ -818,8 +835,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_initializeMatrix_Unauthorized() public {
+    vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
     assetManager.initializeMatrix(branchChainId1, address(matrixVault));
   }
 
@@ -866,7 +883,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_setAssetPair_Unauthorized() public {
-    vm.expectRevert(_errOwnableUnauthorizedAccount(address(this)));
+    vm.expectRevert(_errAccessControlUnauthorized(address(this), assetManager.DEFAULT_ADMIN_ROLE()));
     assetManager.setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
   }
 
@@ -903,8 +920,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   function test_setEntrypoint_Unauthorized() public {
     address newEntrypoint = address(new MockContract());
 
+    vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
     assetManager.setEntrypoint(newEntrypoint);
   }
 
@@ -936,8 +953,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   function test_setReclaimQueue_Unauthorized() public {
     address newReclaimQueue = address(new MockContract());
 
+    vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
     assetManager.setReclaimQueue(newReclaimQueue);
   }
 
@@ -969,8 +986,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   function test_setTreasury_Unauthorized() public {
     address newTreasury = address(new MockContract());
 
+    vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
     assetManager.setTreasury(newTreasury);
   }
 
@@ -1012,8 +1029,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_setStrategist_Unauthorized() public {
+    vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    vm.expectRevert(_errOwnableUnauthorizedAccount(user1));
     assetManager.setStrategist(address(matrixVault), strategist);
   }
 

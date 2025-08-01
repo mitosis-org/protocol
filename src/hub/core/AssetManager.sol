@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { Time } from '@oz/utils/types/Time.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
@@ -19,11 +20,21 @@ import { AssetManagerStorageV1 } from './AssetManagerStorageV1.sol';
 contract AssetManager is
   IAssetManager,
   Pausable,
-  Ownable2StepUpgradeable,
+  AccessControlEnumerableUpgradeable,
   UUPSUpgradeable,
   AssetManagerStorageV1,
   Versioned
 {
+  // ============================ NOTE: ROLE DEFINITIONS ============================ //
+
+  /// @dev Role for managing liquidity thresholds and caps
+  bytes32 public constant LIQUIDITY_MANAGER_ROLE = keccak256('LIQUIDITY_MANAGER_ROLE');
+
+  modifier onlyOwner() {
+    _checkRole(DEFAULT_ADMIN_ROLE);
+    _;
+  }
+
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
   constructor() {
@@ -32,11 +43,23 @@ contract AssetManager is
 
   function initialize(address owner_, address treasury_) public initializer {
     __Pausable_init();
-    __Ownable2Step_init();
-    __Ownable_init(owner_);
+    __AccessControl_init();
+    __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
 
+    _grantRole(DEFAULT_ADMIN_ROLE, owner_);
+
     _setTreasury(_getStorageV1(), treasury_);
+  }
+
+  //=========== NOTE: VIEW FUNCTIONS ===========//
+
+  function isOwner(address account) external view returns (bool) {
+    return hasRole(DEFAULT_ADMIN_ROLE, account);
+  }
+
+  function isLiquidityManager(address account) external view returns (bool) {
+    return hasRole(LIQUIDITY_MANAGER_ROLE, account);
   }
 
   //=========== NOTE: QUOTE FUNCTIONS ===========//
@@ -241,6 +264,27 @@ contract AssetManager is
     $.treasury.storeRewards(matrixVault, hubReward, amount);
   }
 
+  function setBranchLiquidityThreshold(uint256 chainId, address hubAsset, uint256 threshold)
+    external
+    onlyRole(LIQUIDITY_MANAGER_ROLE)
+  {
+    _setBranchLiquidityThreshold(_getStorageV1(), hubAsset, chainId, threshold);
+  }
+
+  function setBranchLiquidityThreshold(
+    uint256[] calldata chainIds,
+    address[] calldata hubAssets,
+    uint256[] calldata thresholds
+  ) external onlyRole(LIQUIDITY_MANAGER_ROLE) {
+    require(chainIds.length == hubAssets.length, StdError.InvalidParameter('hubAssets'));
+    require(chainIds.length == thresholds.length, StdError.InvalidParameter('thresholds'));
+
+    StorageV1 storage $ = _getStorageV1();
+    for (uint256 i = 0; i < chainIds.length; i++) {
+      _setBranchLiquidityThreshold($, hubAssets[i], chainIds[i], thresholds[i]);
+    }
+  }
+
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
   function _authorizeUpgrade(address) internal override onlyOwner { }
@@ -257,24 +301,6 @@ contract AssetManager is
 
     $.entrypoint.initializeAsset{ value: msg.value }(chainId, branchAsset);
     emit AssetInitialized(hubAsset, chainId, branchAsset);
-  }
-
-  function setBranchLiquidityThreshold(uint256 chainId, address hubAsset, uint256 threshold) external onlyOwner {
-    _setBranchLiquidityThreshold(_getStorageV1(), hubAsset, chainId, threshold);
-  }
-
-  function setBranchLiquidityThreshold(
-    uint256[] calldata chainIds,
-    address[] calldata hubAssets,
-    uint256[] calldata thresholds
-  ) external onlyOwner {
-    require(chainIds.length == hubAssets.length, StdError.InvalidParameter('hubAssets'));
-    require(chainIds.length == thresholds.length, StdError.InvalidParameter('thresholds'));
-
-    StorageV1 storage $ = _getStorageV1();
-    for (uint256 i = 0; i < chainIds.length; i++) {
-      _setBranchLiquidityThreshold($, hubAssets[i], chainIds[i], thresholds[i]);
-    }
   }
 
   function initializeMatrix(uint256 chainId, address matrixVault) external payable onlyOwner whenNotPaused {
