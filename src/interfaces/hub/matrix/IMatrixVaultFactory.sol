@@ -7,7 +7,7 @@ interface IMatrixVaultFactory {
   enum VaultType {
     Unset,
     Basic,
-    StaticCap
+    Capped
   }
 
   struct BasicVaultInitArgs {
@@ -17,7 +17,7 @@ interface IMatrixVaultFactory {
     string symbol;
   }
 
-  struct StaticCapVaultInitArgs {
+  struct CappedVaultInitArgs {
     address assetManager;
     IERC20Metadata asset;
     string name;

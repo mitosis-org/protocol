@@ -9,14 +9,14 @@ import { StdError } from '../../lib/StdError.sol';
 import { MatrixVault } from './MatrixVault.sol';
 
 /**
- * @title MatrixVaultStaticCap
+ * @title MatrixVaultCapped
  * @notice Adds a cap to the MatrixVault's deposit / mint function
  */
-contract MatrixVaultStaticCap is MatrixVault {
+contract MatrixVaultCapped is MatrixVault {
   using ERC7201Utils for string;
 
-  /// @custom:storage-location mitosis.storage.MatrixVaultStaticCap
-  struct MatrixVaultStaticCapStorage {
+  /// @custom:storage-location mitosis.storage.MatrixVaultCapped
+  struct MatrixVaultCappedStorage {
     uint256 cap;
   }
 
@@ -24,10 +24,10 @@ contract MatrixVaultStaticCap is MatrixVault {
 
   // =========================== NOTE: STORAGE DEFINITIONS =========================== //
 
-  string private constant _NAMESPACE = 'mitosis.storage.MatrixVaultStaticCap';
+  string private constant _NAMESPACE = 'mitosis.storage.MatrixVaultCapped';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
-  function _getMatrixVaultStaticCapStorage() private view returns (MatrixVaultStaticCapStorage storage $) {
+  function _getMatrixVaultCappedStorage() private view returns (MatrixVaultCappedStorage storage $) {
     bytes32 slot = _slot;
     // slither-disable-next-line assembly
     assembly {
@@ -51,11 +51,11 @@ contract MatrixVaultStaticCap is MatrixVault {
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
   function loadCap() external view returns (uint256) {
-    return _getMatrixVaultStaticCapStorage().cap;
+    return _getMatrixVaultCappedStorage().cap;
   }
 
   function maxDeposit(address) public view override returns (uint256 maxAssets) {
-    uint256 _cap = _getMatrixVaultStaticCapStorage().cap;
+    uint256 _cap = _getMatrixVaultCappedStorage().cap;
     uint256 _totalAssets = totalAssets();
     return _totalAssets >= _cap ? 0 : _cap - _totalAssets;
   }
@@ -67,12 +67,12 @@ contract MatrixVaultStaticCap is MatrixVault {
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   function setCap(uint256 newCap) external onlyOwner {
-    _setCap(_getMatrixVaultStaticCapStorage(), newCap);
+    _setCap(_getMatrixVaultCappedStorage(), newCap);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _setCap(MatrixVaultStaticCapStorage storage $, uint256 newCap) internal {
+  function _setCap(MatrixVaultCappedStorage storage $, uint256 newCap) internal {
     uint256 prevCap = $.cap;
     $.cap = newCap;
     emit CapSet(_msgSender(), prevCap, newCap);

@@ -12,7 +12,7 @@ import { BeaconProxy, IBeaconProxy } from '../../lib/proxy/BeaconProxy.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { Versioned } from '../../lib/Versioned.sol';
 import { MatrixVaultBasic } from './MatrixVaultBasic.sol';
-import { MatrixVaultStaticCap } from './MatrixVaultStaticCap.sol';
+import { MatrixVaultCapped } from './MatrixVaultCapped.sol';
 
 contract MatrixVaultFactory is IMatrixVaultFactory, Ownable2StepUpgradeable, UUPSUpgradeable, Versioned {
   using ERC7201Utils for string;
@@ -40,7 +40,7 @@ contract MatrixVaultFactory is IMatrixVaultFactory, Ownable2StepUpgradeable, UUP
     }
   }
 
-  uint8 public constant MAX_VAULT_TYPE = uint8(VaultType.StaticCap);
+  uint8 public constant MAX_VAULT_TYPE = uint8(VaultType.Capped);
 
   constructor() {
     _disableInitializers();
@@ -123,7 +123,7 @@ contract MatrixVaultFactory is IMatrixVaultFactory, Ownable2StepUpgradeable, UUP
     address instance;
 
     if (vaultType == VaultType.Basic) instance = _create($, abi.decode(args, (BasicVaultInitArgs)));
-    else if (vaultType == VaultType.StaticCap) instance = _create($, abi.decode(args, (StaticCapVaultInitArgs)));
+    else if (vaultType == VaultType.Capped) instance = _create($, abi.decode(args, (CappedVaultInitArgs)));
     else revert IMatrixVaultFactory__InvalidVaultType();
 
     $.isInstance[instance] = true;
@@ -183,11 +183,11 @@ contract MatrixVaultFactory is IMatrixVaultFactory, Ownable2StepUpgradeable, UUP
     return instance;
   }
 
-  function _create(Storage storage $, StaticCapVaultInitArgs memory args) private returns (address) {
-    BeaconInfo storage info = $.infos[VaultType.StaticCap];
+  function _create(Storage storage $, CappedVaultInitArgs memory args) private returns (address) {
+    BeaconInfo storage info = $.infos[VaultType.Capped];
 
     bytes memory data = abi.encodeCall(
-      MatrixVaultStaticCap.initialize, //
+      MatrixVaultCapped.initialize, //
       (args.assetManager, args.asset, args.name, args.symbol)
     );
     address instance = address(new BeaconProxy(address(info.beacon), data));
