@@ -22,7 +22,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable, Reentr
   using Math for uint256;
 
   modifier onlyOwner() {
-    require(owner() == _msgSender(), StdError.Unauthorized());
+    require(_getStorageV1().assetManager.isOwner(_msgSender()), StdError.Unauthorized());
     _;
   }
 
@@ -40,10 +40,6 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable, Reentr
     $.decimals = success ? result : _DEFAULT_UNDERLYING_DECIMALS;
 
     _setAssetManager($, assetManager_);
-  }
-
-  function owner() public view returns (address) {
-    return Ownable(address(_getStorageV1().assetManager)).owner();
   }
 
   function asset() public view override returns (address) {
