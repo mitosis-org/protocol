@@ -150,6 +150,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable, Reentr
     returns (uint256)
   {
     _assertOnlyAssetManager(_getStorageV1());
+
     uint256 maxAssets = maxDepositFromChainId(receiver, chainId);
     require(assets <= maxAssets, DepositMoreThanMax());
 
