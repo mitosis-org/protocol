@@ -132,11 +132,12 @@ contract AssetManager is
       _mint($, chainId, hubAsset, address(this), amount);
 
       uint256 maxAssets;
-      try IMatrixVaultAdvancedCapped(matrixVault).maxDepositForChainId(to, chainId) returns (uint256 result) {
-        maxAssets = result;
-      } catch {
+      if (IMatrixVault(matrixVault).vaultType() == IMatrixVaultFactory.VaultType.AdvancedCapped) {
+        maxAssets = IMatrixVaultAdvancedCapped(matrixVault).maxDepositForChainId(to, chainId);
+      } else {
         maxAssets = IMatrixVault(matrixVault).maxDeposit(to);
       }
+
       supplyAmount = amount < maxAssets ? amount : maxAssets;
 
       IHubAsset(hubAsset).approve(matrixVault, supplyAmount);

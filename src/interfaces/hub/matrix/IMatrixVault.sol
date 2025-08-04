@@ -3,6 +3,8 @@ pragma solidity ^0.8.28;
 
 import { IERC4626 } from '@oz/interfaces/IERC4626.sol';
 
+import { IMatrixVaultFactory } from './IMatrixVaultFactory.sol';
+
 /**
  * @title IMatrixVaultStorageV1
  * @dev Interface for the storage of MatrixVault version 1.
@@ -24,4 +26,6 @@ interface IMatrixVaultStorageV1 {
  * @title IMatrixVault
  * @dev Interface for the MatrixVault, combining ERC4626 functionality with TWAB snapshots.
  */
-interface IMatrixVault is IERC4626, IMatrixVaultStorageV1 { }
+interface IMatrixVault is IERC4626, IMatrixVaultStorageV1 {
+  function vaultType() external pure returns (IMatrixVaultFactory.VaultType);
+}

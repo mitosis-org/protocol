@@ -9,6 +9,7 @@ import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
+import { IMatrixVaultFactory } from '../../interfaces/hub/matrix/IMatrixVaultFactory.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { Versioned } from '../../lib/Versioned.sol';
@@ -41,6 +42,8 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable, Reentr
 
     _setAssetManager($, assetManager_);
   }
+
+  function vaultType() public pure virtual returns (IMatrixVaultFactory.VaultType);
 
   function asset() public view override returns (address) {
     return _getStorageV1().asset;

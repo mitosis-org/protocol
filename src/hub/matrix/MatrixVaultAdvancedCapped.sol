@@ -6,6 +6,7 @@ import { Math } from '@oz/utils/math/Math.sol';
 import { EnumerableSet } from '@oz/utils/structs/EnumerableSet.sol';
 
 import { IMatrixVaultAdvancedCapped } from '../../interfaces/hub/matrix/IMatrixVaultAdvancedCapped.sol';
+import { IMatrixVaultFactory } from '../../interfaces/hub/matrix/IMatrixVaultFactory.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { MatrixVaultCapped } from './MatrixVaultCapped.sol';
@@ -52,6 +53,10 @@ contract MatrixVaultAdvancedCapped is IMatrixVaultAdvancedCapped, MatrixVaultCap
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
+
+  function vaultType() public pure virtual override returns (IMatrixVaultFactory.VaultType) {
+    return IMatrixVaultFactory.VaultType.AdvancedCapped;
+  }
 
   function maxDeposit(address receiver) public view override returns (uint256) {
     return _maxDepositInternal(_getAdvancedCappedStorage(), receiver, true, 0);

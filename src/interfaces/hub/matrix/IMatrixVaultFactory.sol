@@ -7,7 +7,8 @@ interface IMatrixVaultFactory {
   enum VaultType {
     Unset,
     Basic,
-    Capped
+    Capped,
+    AdvancedCapped
   }
 
   struct BasicVaultInitArgs {
