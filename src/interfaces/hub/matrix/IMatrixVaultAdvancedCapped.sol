@@ -7,25 +7,7 @@ import { IMatrixVaultCapped } from './IMatrixVaultCapped.sol';
  * @title IMatrixVaultAdvancedCapped
  * @notice Extended interface for MatrixVaultCapped with soft cap and preferred chain bypass features
  */
-interface IMatrixVaultAdvancedCapped {
-  /**
-   * @notice Emitted when the soft cap is set
-   * @param newSoftCap The new soft cap value
-   */
-  event SoftCapSet(uint256 newSoftCap);
-
-  /**
-   * @notice Emitted when a preferred chain is added
-   * @param chainId The chain ID that was added
-   */
-  event PreferredChainAdded(uint256 chainId);
-
-  /**
-   * @notice Emitted when a preferred chain is removed
-   * @param chainId The chain ID that was removed
-   */
-  event PreferredChainRemoved(uint256 chainId);
-
+interface IMatrixVaultAdvancedCapped is IMatrixVaultCapped {
   /**
    * @notice Returns the maximum amount of assets that can be deposited for a specific chain
    * @param receiver The address receiving the shares

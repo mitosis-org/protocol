@@ -15,7 +15,7 @@ import { MatrixVaultCapped } from './MatrixVaultCapped.sol';
  * @title MatrixVaultAdvancedCapped
  * @notice Advanced capped MatrixVault with soft cap and preferred chain bypass functionality
  */
-contract MatrixVaultAdvancedCapped is IMatrixVaultAdvancedCapped, MatrixVaultCapped {
+contract MatrixVaultAdvancedCapped is MatrixVaultCapped {
   using ERC7201Utils for string;
   using EnumerableSet for EnumerableSet.UintSet;
 
@@ -24,6 +24,10 @@ contract MatrixVaultAdvancedCapped is IMatrixVaultAdvancedCapped, MatrixVaultCap
     uint256 softCap;
     EnumerableSet.UintSet preferredChainIds;
   }
+
+  event SoftCapSet(uint256 oldSoftCap, uint256 newSoftCap);
+  event PreferredChainAdded(uint256 indexed chainId);
+  event PreferredChainRemoved(uint256 indexed chainId);
 
   // =========================== NOTE: STORAGE DEFINITIONS =========================== //
 
@@ -79,6 +83,11 @@ contract MatrixVaultAdvancedCapped is IMatrixVaultAdvancedCapped, MatrixVaultCap
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
+  function depositForChainId(uint256 assets, address receiver, uint256 chainId) external returns (uint256 shares) {
+    uint256 maxAssets = maxDepositForChainId(receiver, chainId);
+    require(assets <= maxAssets, DepositMoreThanMax());
+    return super.deposit(assets, receiver);
+  }
 
   function setSoftCap(uint256 newSoftCap) external onlyLiquidityManager {
     _setSoftCap(_getAdvancedCappedStorage(), newSoftCap);
@@ -94,17 +103,6 @@ contract MatrixVaultAdvancedCapped is IMatrixVaultAdvancedCapped, MatrixVaultCap
     if (_getAdvancedCappedStorage().preferredChainIds.remove(chainId)) {
       emit PreferredChainRemoved(chainId);
     }
-  }
-
-  function depositForChainId(uint256 assets, address receiver, uint256 chainId)
-    external
-    virtual
-    override
-    returns (uint256 shares)
-  {
-    uint256 maxAssets = maxDepositForChainId(receiver, chainId);
-    require(assets <= maxAssets, DepositMoreThanMax());
-    return super.deposit(assets, receiver);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
@@ -130,7 +128,8 @@ contract MatrixVaultAdvancedCapped is IMatrixVaultAdvancedCapped, MatrixVaultCap
   }
 
   function _setSoftCap(MatrixVaultAdvancedCappedStorage storage $, uint256 newSoftCap) internal {
+    uint256 oldSoftCap = $.softCap;
     $.softCap = newSoftCap;
-    emit SoftCapSet(newSoftCap);
+    emit SoftCapSet(oldSoftCap, newSoftCap);
   }
 }
