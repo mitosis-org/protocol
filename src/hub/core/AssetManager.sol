@@ -10,6 +10,7 @@ import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
+import { IMatrixVaultAdvancedCapped } from '../../interfaces/hub/matrix/IMatrixVaultAdvancedCapped.sol';
 import { IMatrixVaultFactory } from '../../interfaces/hub/matrix/IMatrixVaultFactory.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { Pausable } from '../../lib/Pausable.sol';
@@ -130,7 +131,12 @@ contract AssetManager is
     } else {
       _mint($, chainId, hubAsset, address(this), amount);
 
-      uint256 maxAssets = IMatrixVault(matrixVault).maxDeposit(to);
+      uint256 maxAssets;
+      try IMatrixVaultAdvancedCapped(matrixVault).maxDepositForChainId(to, chainId) returns (uint256 result) {
+        maxAssets = result;
+      } catch {
+        maxAssets = IMatrixVault(matrixVault).maxDeposit(to);
+      }
       supplyAmount = amount < maxAssets ? amount : maxAssets;
 
       IHubAsset(hubAsset).approve(matrixVault, supplyAmount);

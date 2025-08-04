@@ -48,7 +48,8 @@ contract MatrixVaultCapped is MatrixVault {
   }
 
   function initialize(address assetManager_, IERC20Metadata asset_, string memory name, string memory symbol)
-    external
+    public
+    virtual
     initializer
   {
     __MatrixVault_init(assetManager_, asset_, name, symbol);
@@ -60,7 +61,7 @@ contract MatrixVaultCapped is MatrixVault {
     return _getMatrixVaultCappedStorage().cap;
   }
 
-  function maxDeposit(address) public view override returns (uint256 maxAssets) {
+  function maxDeposit(address) public view virtual override returns (uint256 maxAssets) {
     uint256 _cap = _getMatrixVaultCappedStorage().cap;
     uint256 _totalAssets = totalAssets();
     return _totalAssets >= _cap ? 0 : _cap - _totalAssets;
