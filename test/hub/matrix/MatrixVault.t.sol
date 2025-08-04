@@ -196,7 +196,13 @@ contract MatrixVaultBasicTest is MatrixVaultTestBase {
 contract MatrixVaultCappedTest is MatrixVaultTestBase {
   function setUp() public override {
     super.setUp();
+
+    // Initialize soft cap as disabled by default
+    vm.prank(liquidityManager);
+    capped.setSoftCap(type(uint256).max);
   }
+
+  // ============================ NOTE: BASIC & HARD CAP TESTS ============================ //
 
   function test_initialize() public view {
     assertEq(capped.asset(), address(weth));
@@ -211,8 +217,6 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
   }
 
   function test_setCap(uint256 amount) public {
-    vm.assume(0 < amount && amount < type(uint64).max);
-
     assertEq(capped.loadCap(), 0);
 
     vm.prank(liquidityManager);
@@ -222,8 +226,6 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
   }
 
   function test_setCap_revertsIfUnauthorized(uint256 amount) public {
-    vm.assume(0 < amount && amount < type(uint64).max);
-
     vm.prank(owner);
     vm.expectRevert(StdError.Unauthorized.selector);
     capped.setCap(amount);
@@ -231,7 +233,7 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
 
   function test_deposit(uint256 cap, uint256 amount) public {
     vm.assume(0 < amount && amount < type(uint64).max);
-    vm.assume(amount <= cap && cap < type(uint64).max);
+    vm.assume(amount <= cap);
 
     vm.prank(liquidityManager);
     capped.setCap(cap);
@@ -267,7 +269,7 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
 
   function test_mint(uint256 cap, uint256 amount) public {
     vm.assume(0 < amount && amount < type(uint64).max);
-    vm.assume(amount <= cap && cap < type(uint64).max);
+    vm.assume(amount <= cap && cap < type(uint64).max); // TODO:
 
     vm.prank(liquidityManager);
     capped.setCap(cap);
@@ -335,5 +337,406 @@ contract MatrixVaultCappedTest is MatrixVaultTestBase {
     vm.prank(user);
     vm.expectRevert(StdError.Unauthorized.selector);
     capped.redeem(amount * 1e6, user, user);
+  }
+
+  // ============================ NOTE: SOFT CAP &PREFERRED CHAIN TESTS ============================ //
+
+  function test_setSoftCap(uint256 amount) public {
+    vm.prank(liquidityManager);
+    capped.setSoftCap(amount);
+
+    assertEq(capped.loadSoftCap(), amount);
+  }
+
+  function test_setSoftCap_revertsIfUnauthorized(uint256 amount) public {
+    vm.prank(user);
+    vm.expectRevert(StdError.Unauthorized.selector);
+    capped.setSoftCap(amount);
+  }
+
+  function test_addPreferredChainId(uint256 chainId) public {
+    assertEq(capped.isPreferredChain(chainId), false);
+
+    vm.prank(liquidityManager);
+    capped.addPreferredChainId(chainId);
+
+    assertEq(capped.isPreferredChain(chainId), true);
+
+    uint256[] memory chainIds = capped.preferredChainIds();
+    assertEq(chainIds.length, 1);
+    assertEq(chainIds[0], chainId);
+  }
+
+  function test_addPreferredChainId_revertsIfUnauthorized(uint256 chainId) public {
+    vm.prank(user);
+    vm.expectRevert(StdError.Unauthorized.selector);
+    capped.addPreferredChainId(chainId);
+  }
+
+  function test_removePreferredChainId(uint256 chainId) public {
+    // Add first
+    vm.prank(liquidityManager);
+    capped.addPreferredChainId(chainId);
+    assertEq(capped.isPreferredChain(chainId), true);
+
+    // Remove
+    vm.prank(liquidityManager);
+    capped.removePreferredChainId(chainId);
+    assertEq(capped.isPreferredChain(chainId), false);
+
+    uint256[] memory chainIds = capped.preferredChainIds();
+    assertEq(chainIds.length, 0);
+  }
+
+  function test_preferredChainIds_multiple() public {
+    uint256 chainId1 = 8453; // Base
+    uint256 chainId2 = 42161; // Arbitrum
+    uint256 chainId3 = 1; // Ethereum
+
+    vm.startPrank(liquidityManager);
+    capped.addPreferredChainId(chainId1);
+    capped.addPreferredChainId(chainId2);
+    capped.addPreferredChainId(chainId3);
+    vm.stopPrank();
+
+    uint256[] memory chainIds = capped.preferredChainIds();
+    assertEq(chainIds.length, 3);
+
+    assertEq(capped.isPreferredChain(chainId1), true);
+    assertEq(capped.isPreferredChain(chainId2), true);
+    assertEq(capped.isPreferredChain(chainId3), true);
+    assertEq(capped.isPreferredChain(999), false); // Non-added chain
+  }
+
+  function test_maxDeposit_withSoftCap(uint256 hardCap, uint256 softCap) public {
+    vm.assume(softCap < hardCap);
+
+    vm.startPrank(liquidityManager);
+    capped.setCap(hardCap);
+    capped.setSoftCap(softCap);
+    vm.stopPrank();
+
+    // When totalAssets = 0, maxDeposit should be softCap (smaller of two)
+    assertEq(capped.maxDeposit(user), softCap);
+  }
+
+  function test_maxDeposit_softCapDisabled(uint256 hardCap) public {
+    vm.startPrank(liquidityManager);
+    capped.setCap(hardCap);
+    capped.setSoftCap(type(uint256).max); // Disable soft cap
+    vm.stopPrank();
+
+    // When softCap is max, should return hardCap limit
+    assertEq(capped.maxDeposit(user), hardCap);
+  }
+
+  function test_maxDepositFromChainId_preferredChain(uint256 hardCap, uint256 softCap, uint256 chainId) public {
+    vm.assume(softCap < hardCap);
+    vm.assume(chainId != 9622);
+
+    vm.startPrank(liquidityManager);
+    capped.setCap(hardCap);
+    capped.setSoftCap(softCap);
+    capped.addPreferredChainId(chainId);
+    vm.stopPrank();
+
+    // Preferred chain should bypass soft cap
+    assertEq(capped.maxDepositFromChainId(user, chainId), hardCap);
+    // Non-preferred chain should respect soft cap
+    assertEq(capped.maxDepositFromChainId(user, 9622), softCap);
+  }
+
+  function test_maxDepositFromChainId_nonPreferredChain(uint256 hardCap, uint256 softCap, uint256 chainId) public {
+    vm.assume(softCap < hardCap);
+
+    vm.startPrank(liquidityManager);
+    capped.setCap(hardCap);
+    capped.setSoftCap(softCap);
+    // Don't add chainId as preferred
+    vm.stopPrank();
+
+    // Non-preferred chain should apply soft cap
+    assertEq(capped.maxDepositFromChainId(user, chainId), softCap);
+  }
+
+  function test_maxDepositFromChainId_withExistingDeposits() public {
+    uint256 hardCap = 1000 ether;
+    uint256 softCap = 500 ether;
+    uint256 depositAmount = 300 ether;
+    uint256 preferredChainId = 8453;
+    uint256 nonPreferredChainId = 42161;
+
+    vm.startPrank(liquidityManager);
+    capped.setCap(hardCap);
+    capped.setSoftCap(softCap);
+    capped.addPreferredChainId(preferredChainId);
+    vm.stopPrank();
+
+    // Make some deposits first
+    vm.deal(user, depositAmount);
+    vm.startPrank(user);
+    weth.deposit{ value: depositAmount }();
+    weth.approve(address(capped), depositAmount);
+    capped.deposit(depositAmount, user);
+    vm.stopPrank();
+
+    // Preferred chain: hardCap - totalAssets = 1000 - 300 = 700
+    assertEq(capped.maxDepositFromChainId(user, preferredChainId), hardCap - depositAmount);
+
+    // Non-preferred chain: softCap - totalAssets = 500 - 300 = 200
+    assertEq(capped.maxDepositFromChainId(user, nonPreferredChainId), softCap - depositAmount);
+  }
+
+  function test_maxDepositFromChainId_softCapExceeded() public {
+    uint256 hardCap = 1000 ether;
+    uint256 softCap = 500 ether;
+    uint256 depositAmount = 600 ether; // Exceeds soft cap
+    uint256 preferredChainId = 8453;
+    uint256 nonPreferredChainId = 42161;
+
+    vm.startPrank(liquidityManager);
+    capped.setCap(hardCap);
+    // Don't set soft cap yet, allow deposit first
+    capped.addPreferredChainId(preferredChainId);
+    vm.stopPrank();
+
+    // Make deposits first (without soft cap restriction)
+    vm.deal(user, depositAmount);
+    vm.startPrank(user);
+    weth.deposit{ value: depositAmount }();
+    weth.approve(address(capped), depositAmount);
+    capped.deposit(depositAmount, user);
+    vm.stopPrank();
+
+    // Now set soft cap after deposit (creates "exceeded" condition)
+    vm.prank(liquidityManager);
+    capped.setSoftCap(softCap);
+
+    // Preferred chain: can still deposit up to hard cap
+    assertEq(capped.maxDepositFromChainId(user, preferredChainId), hardCap - depositAmount);
+
+    // Non-preferred chain: soft cap exceeded, should return 0
+    assertEq(capped.maxDepositFromChainId(user, nonPreferredChainId), 0);
+  }
+
+  function test_deposit_exceedsSoftCap() public {
+    uint256 hardCap = 1000 ether;
+    uint256 softCap = 500 ether;
+    uint256 depositAmount = 600 ether; // Exceeds soft cap
+
+    vm.startPrank(liquidityManager);
+    capped.setCap(hardCap);
+    capped.setSoftCap(softCap);
+    vm.stopPrank();
+
+    vm.deal(user, depositAmount);
+    vm.startPrank(user);
+
+    weth.deposit{ value: depositAmount }();
+    weth.approve(address(capped), depositAmount);
+
+    // Should revert because it exceeds soft cap (which is applied to maxDeposit)
+    vm.expectRevert(ERC4626.DepositMoreThanMax.selector);
+    capped.deposit(depositAmount, user);
+
+    vm.stopPrank();
+  }
+
+  function test_deposit_withinSoftCap() public {
+    uint256 hardCap = 1000 ether;
+    uint256 softCap = 500 ether;
+    uint256 depositAmount = 400 ether; // Within soft cap
+
+    vm.startPrank(liquidityManager);
+    capped.setCap(hardCap);
+    capped.setSoftCap(softCap);
+    vm.stopPrank();
+
+    vm.deal(user, depositAmount);
+    vm.startPrank(user);
+
+    weth.deposit{ value: depositAmount }();
+    weth.approve(address(capped), depositAmount);
+    capped.deposit(depositAmount, user);
+
+    vm.stopPrank();
+
+    assertEq(capped.balanceOf(user), depositAmount * 1e6);
+    assertEq(capped.totalAssets(), depositAmount);
+  }
+
+  function test_depositFromChainId_onlyAssetManager(uint256 amount, uint256 chainId) public {
+    vm.assume(0 < amount && amount < type(uint64).max);
+
+    vm.deal(user, amount);
+    vm.startPrank(user);
+
+    weth.deposit{ value: amount }();
+    weth.approve(address(capped), amount);
+
+    // Should revert because only AssetManager can call depositFromChainId
+    vm.expectRevert(StdError.Unauthorized.selector);
+    capped.depositFromChainId(amount, user, chainId);
+
+    vm.stopPrank();
+  }
+
+  function test_depositFromChainId_preferredChain() public {
+    uint256 hardCap = 1000 ether;
+    uint256 softCap = 500 ether;
+    uint256 depositAmount = 600 ether; // Exceeds soft cap but should bypass
+    uint256 chainId = 8453; // Base
+
+    vm.startPrank(liquidityManager);
+    capped.setCap(hardCap);
+    capped.setSoftCap(softCap);
+    capped.addPreferredChainId(chainId);
+    vm.stopPrank();
+
+    bool isPreferred = capped.isPreferredChain(chainId);
+    assertTrue(isPreferred);
+
+    uint256 maxPreferred = capped.maxDepositFromChainId(user, chainId);
+    uint256 maxNonPreferred = capped.maxDepositFromChainId(user, 999); // Different non-preferred chain
+    assertEq(maxPreferred, hardCap, 'Preferred chain should allow hard cap');
+    assertEq(maxNonPreferred, softCap, 'Non-preferred chain should be limited by soft cap');
+
+    // Prepare assets for AssetManager
+    vm.deal(assetManager, depositAmount);
+    vm.startPrank(assetManager);
+    weth.deposit{ value: depositAmount }();
+    weth.approve(address(capped), depositAmount);
+
+    // Preferred chain should bypass soft cap
+    capped.depositFromChainId(depositAmount, user, chainId);
+
+    vm.stopPrank();
+
+    assertEq(capped.balanceOf(user), depositAmount * 1e6);
+    assertEq(capped.totalAssets(), depositAmount);
+  }
+
+  function test_depositFromChainId_nonPreferredChain() public {
+    uint256 hardCap = 1000 ether;
+    uint256 softCap = 500 ether;
+    uint256 depositAmount = 400 ether; // Within soft cap
+    uint256 chainId = 42161; // Arbitrum (not preferred)
+
+    vm.startPrank(liquidityManager);
+    capped.setCap(hardCap);
+    capped.setSoftCap(softCap);
+    // Don't add chainId as preferred
+    vm.stopPrank();
+
+    // Prepare assets for AssetManager
+    vm.deal(assetManager, depositAmount);
+    vm.startPrank(assetManager);
+    weth.deposit{ value: depositAmount }();
+    weth.approve(address(capped), depositAmount);
+
+    // Non-preferred chain should respect soft cap
+    capped.depositFromChainId(depositAmount, user, chainId);
+
+    vm.stopPrank();
+
+    assertEq(capped.balanceOf(user), depositAmount * 1e6);
+    assertEq(capped.totalAssets(), depositAmount);
+  }
+
+  function test_depositFromChainId_exceedsSoftCap() public {
+    uint256 hardCap = 1000 ether;
+    uint256 softCap = 500 ether;
+    uint256 depositAmount = 600 ether; // Exceeds soft cap
+    uint256 chainId = 42161; // Arbitrum (not preferred)
+
+    vm.startPrank(liquidityManager);
+    capped.setCap(hardCap);
+    capped.setSoftCap(softCap);
+    // Don't add chainId as preferred
+    vm.stopPrank();
+
+    // Prepare assets for AssetManager
+    vm.deal(assetManager, depositAmount);
+    vm.startPrank(assetManager);
+    weth.deposit{ value: depositAmount }();
+    weth.approve(address(capped), depositAmount);
+
+    // Should revert because non-preferred chain exceeds soft cap
+    vm.expectRevert(abi.encodeWithSignature('DepositMoreThanMax()'));
+    capped.depositFromChainId(depositAmount, user, chainId);
+
+    vm.stopPrank();
+  }
+
+  function test_depositFromChainId_withinSoftCap() public {
+    uint256 hardCap = 1000 ether;
+    uint256 softCap = 500 ether;
+    uint256 depositAmount = 400 ether; // Within soft cap
+    uint256 chainId = 42161; // Arbitrum (not preferred)
+
+    vm.startPrank(liquidityManager);
+    capped.setCap(hardCap);
+    capped.setSoftCap(softCap);
+    vm.stopPrank();
+
+    // Prepare assets for AssetManager
+    vm.deal(assetManager, depositAmount);
+    vm.startPrank(assetManager);
+    weth.deposit{ value: depositAmount }();
+    weth.approve(address(capped), depositAmount);
+
+    // Should succeed because it's within soft cap
+    capped.depositFromChainId(depositAmount, user, chainId);
+
+    vm.stopPrank();
+
+    assertEq(capped.balanceOf(user), depositAmount * 1e6);
+    assertEq(capped.totalAssets(), depositAmount);
+  }
+
+  function test_mint_exceedsSoftCap() public {
+    uint256 hardCap = 1000 ether;
+    uint256 softCap = 500 ether;
+    uint256 sharesAmount = 600 ether * 1e6; // Exceeds soft cap (600 ether worth of shares)
+
+    vm.startPrank(liquidityManager);
+    capped.setCap(hardCap);
+    capped.setSoftCap(softCap);
+    vm.stopPrank();
+
+    vm.deal(user, 600 ether);
+    vm.startPrank(user);
+
+    weth.deposit{ value: 600 ether }();
+    weth.approve(address(capped), 600 ether);
+
+    // Should revert because it exceeds soft cap (which is applied to maxMint)
+    vm.expectRevert(ERC4626.MintMoreThanMax.selector);
+    capped.mint(sharesAmount, user);
+
+    vm.stopPrank();
+  }
+
+  function test_mint_withinSoftCap() public {
+    uint256 hardCap = 1000 ether;
+    uint256 softCap = 500 ether;
+    uint256 sharesAmount = 400 ether * 1e6; // Within soft cap (400 ether worth of shares)
+
+    vm.startPrank(liquidityManager);
+    capped.setCap(hardCap);
+    capped.setSoftCap(softCap);
+    vm.stopPrank();
+
+    vm.deal(user, 400 ether);
+    vm.startPrank(user);
+
+    weth.deposit{ value: 400 ether }();
+    weth.approve(address(capped), 400 ether);
+    capped.mint(sharesAmount, user);
+
+    vm.stopPrank();
+
+    assertEq(capped.balanceOf(user), sharesAmount);
+    assertEq(capped.totalAssets(), 400 ether);
   }
 }

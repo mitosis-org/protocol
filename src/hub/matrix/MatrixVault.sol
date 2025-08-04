@@ -131,6 +131,35 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable, Reentr
     return assets;
   }
 
+  // Direct deposit from external chain functions
+
+  function maxDepositFromChainId(address receiver, uint256 /*chainId*/ )
+    public
+    view
+    virtual
+    returns (uint256 maxAssets)
+  {
+    return maxDeposit(receiver);
+  }
+
+  function depositFromChainId(uint256 assets, address receiver, uint256 chainId)
+    public
+    virtual
+    nonReentrant
+    whenNotPaused
+    returns (uint256)
+  {
+    _assertOnlyAssetManager(_getStorageV1());
+
+    uint256 maxAssets = maxDepositFromChainId(receiver, chainId);
+    require(assets <= maxAssets, DepositMoreThanMax());
+
+    uint256 shares = previewDeposit(assets);
+    _deposit(_msgSender(), receiver, assets, shares);
+
+    return shares;
+  }
+
   // general overrides
 
   function _authorizePause(address) internal view override onlyOwner { }

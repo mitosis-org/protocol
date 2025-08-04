@@ -130,11 +130,11 @@ contract AssetManager is
     } else {
       _mint($, chainId, hubAsset, address(this), amount);
 
-      uint256 maxAssets = IMatrixVault(matrixVault).maxDeposit(to);
+      uint256 maxAssets = IMatrixVault(matrixVault).maxDepositFromChainId(to, chainId);
       supplyAmount = amount < maxAssets ? amount : maxAssets;
 
       IHubAsset(hubAsset).approve(matrixVault, supplyAmount);
-      IMatrixVault(matrixVault).deposit(supplyAmount, to);
+      IMatrixVault(matrixVault).depositFromChainId(supplyAmount, to, chainId);
 
       // transfer remaining hub assets to `to` because there could be remaining hub assets due to the cap of Matrix Vault.
       if (supplyAmount < amount) IHubAsset(hubAsset).transfer(to, amount - supplyAmount);
