@@ -6,7 +6,6 @@ import { Math } from '@oz/utils/math/Math.sol';
 import { EnumerableSet } from '@oz/utils/structs/EnumerableSet.sol';
 
 import { IMatrixVaultAdvancedCapped } from '../../interfaces/hub/matrix/IMatrixVaultAdvancedCapped.sol';
-import { IMatrixVaultFactory } from '../../interfaces/hub/matrix/IMatrixVaultFactory.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { MatrixVaultCapped } from './MatrixVaultCapped.sol';
@@ -58,15 +57,11 @@ contract MatrixVaultAdvancedCapped is MatrixVaultCapped {
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
-  function vaultType() public pure virtual override returns (IMatrixVaultFactory.VaultType) {
-    return IMatrixVaultFactory.VaultType.AdvancedCapped;
-  }
-
   function maxDeposit(address receiver) public view override returns (uint256) {
     return _maxDepositInternal(_getAdvancedCappedStorage(), receiver, true, 0);
   }
 
-  function maxDepositForChainId(address receiver, uint256 chainId) public view virtual returns (uint256) {
+  function maxDepositFromChainId(address receiver, uint256 chainId) public view override returns (uint256) {
     return _maxDepositInternal(_getAdvancedCappedStorage(), receiver, false, chainId);
   }
 
@@ -83,14 +78,6 @@ contract MatrixVaultAdvancedCapped is MatrixVaultCapped {
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
-  function depositForChainId(uint256 assets, address receiver, uint256 chainId) external returns (uint256 shares) {
-    _assertOnlyAssetManager(_getStorageV1());
-
-    uint256 maxAssets = maxDepositForChainId(receiver, chainId);
-    require(assets <= maxAssets, DepositMoreThanMax());
-    return super.deposit(assets, receiver);
-  }
-
   function setSoftCap(uint256 newSoftCap) external onlyLiquidityManager {
     _setSoftCap(_getAdvancedCappedStorage(), newSoftCap);
   }

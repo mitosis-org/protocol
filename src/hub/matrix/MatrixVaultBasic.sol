@@ -3,7 +3,6 @@ pragma solidity ^0.8.28;
 
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 
-import { IMatrixVaultFactory } from '../../interfaces/hub/matrix/IMatrixVaultFactory.sol';
 import { MatrixVault } from './MatrixVault.sol';
 
 /**
@@ -20,9 +19,5 @@ contract MatrixVaultBasic is MatrixVault {
     initializer
   {
     __MatrixVault_init(assetManager_, asset_, name, symbol);
-  }
-
-  function vaultType() public pure override returns (IMatrixVaultFactory.VaultType) {
-    return IMatrixVaultFactory.VaultType.Basic;
   }
 }

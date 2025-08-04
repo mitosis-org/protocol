@@ -3,8 +3,6 @@ pragma solidity ^0.8.28;
 
 import { IERC4626 } from '@oz/interfaces/IERC4626.sol';
 
-import { IMatrixVaultFactory } from './IMatrixVaultFactory.sol';
-
 /**
  * @title IMatrixVaultStorageV1
  * @dev Interface for the storage of MatrixVault version 1.
@@ -27,5 +25,22 @@ interface IMatrixVaultStorageV1 {
  * @dev Interface for the MatrixVault, combining ERC4626 functionality with TWAB snapshots.
  */
 interface IMatrixVault is IERC4626, IMatrixVaultStorageV1 {
-  function vaultType() external pure returns (IMatrixVaultFactory.VaultType);
+  /**
+   * @notice Returns the maximum amount of assets that can be deposited from a specific chain
+   * @dev This function is only callable by the AssetManager
+   * @param receiver The address receiving the shares
+   * @param chainId The chain ID where the deposit originates
+   * @return maxAssets The maximum deposit amount considering chain-specific bypass rules
+   */
+  function maxDepositFromChainId(address receiver, uint256 chainId) external view returns (uint256 maxAssets);
+
+  /**
+   * @notice Deposit assets with chain-specific soft cap bypass consideration
+   * @dev This function is only callable by the AssetManager
+   * @param assets The amount of assets to deposit
+   * @param receiver The address receiving the shares
+   * @param chainId The chain ID where the deposit originates
+   * @return shares The amount of shares minted
+   */
+  function depositFromChainId(uint256 assets, address receiver, uint256 chainId) external returns (uint256 shares);
 }

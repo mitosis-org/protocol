@@ -9,7 +9,6 @@ import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
-import { IMatrixVaultFactory } from '../../interfaces/hub/matrix/IMatrixVaultFactory.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { Versioned } from '../../lib/Versioned.sol';
@@ -42,8 +41,6 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable, Reentr
 
     _setAssetManager($, assetManager_);
   }
-
-  function vaultType() public pure virtual returns (IMatrixVaultFactory.VaultType);
 
   function asset() public view override returns (address) {
     return _getStorageV1().asset;
@@ -132,6 +129,28 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable, Reentr
     _withdraw(_msgSender(), receiver, owner_, assets, shares);
 
     return assets;
+  }
+
+  // Direct deposit from external chain functions
+
+  function maxDepositFromChainId(address receiver, uint256 /*chainId*/ )
+    public
+    view
+    virtual
+    returns (uint256 maxAssets)
+  {
+    return maxDeposit(receiver);
+  }
+
+  function depositFromChainId(uint256 assets, address receiver, uint256 chainId)
+    public
+    virtual
+    returns (uint256 shares)
+  {
+    _assertOnlyAssetManager(_getStorageV1());
+    uint256 maxAssets = maxDepositFromChainId(receiver, chainId);
+    require(assets <= maxAssets, DepositMoreThanMax());
+    return deposit(assets, receiver);
   }
 
   // general overrides
