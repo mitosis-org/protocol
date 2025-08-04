@@ -56,12 +56,17 @@ contract MatrixVaultAdvancedCapped is MatrixVaultCapped {
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
-  function maxDeposit(address receiver) public view override returns (uint256) {
-    return _maxDepositInternal(_getAdvancedCappedStorage(), receiver, true, 0);
+  function maxDeposit(address receiver) public view virtual override returns (uint256) {
+    return _maxDeposit(_getAdvancedCappedStorage(), receiver);
   }
 
-  function maxDepositFromChainId(address receiver, uint256 chainId) public view override returns (uint256) {
-    return _maxDepositInternal(_getAdvancedCappedStorage(), receiver, false, chainId);
+  function maxDepositFromChainId(address receiver, uint256 chainId) public view virtual override returns (uint256) {
+    MatrixVaultAdvancedCappedStorage storage $ = _getAdvancedCappedStorage();
+    if ($.preferredChainIds.contains(chainId)) {
+      return super.maxDeposit(receiver);
+    }
+
+    return _maxDeposit($, receiver);
   }
 
   function loadSoftCap() external view returns (uint256) {
@@ -92,20 +97,9 @@ contract MatrixVaultAdvancedCapped is MatrixVaultCapped {
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _maxDepositInternal(
-    MatrixVaultAdvancedCappedStorage storage $,
-    address receiver,
-    bool enforceSoftCap,
-    uint256 chainId
-  ) internal view returns (uint256) {
-    uint256 hardCapLimit = MatrixVaultCapped.maxDeposit(receiver);
+  function _maxDeposit(MatrixVaultAdvancedCappedStorage storage $, address receiver) internal view returns (uint256) {
+    uint256 hardCapLimit = super.maxDeposit(receiver);
 
-    // If this is a preferred chain (when enforceSoftCap is false), bypass soft cap
-    if (!enforceSoftCap && $.preferredChainIds.contains(chainId)) {
-      return hardCapLimit;
-    }
-
-    // Otherwise apply soft cap
     uint256 currentAssets = totalAssets();
     uint256 softCapLimit = currentAssets >= $.softCap ? 0 : $.softCap - currentAssets;
 
