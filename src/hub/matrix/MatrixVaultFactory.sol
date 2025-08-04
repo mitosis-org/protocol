@@ -11,6 +11,7 @@ import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { BeaconProxy, IBeaconProxy } from '../../lib/proxy/BeaconProxy.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { Versioned } from '../../lib/Versioned.sol';
+import { MatrixVaultAdvancedCapped } from './MatrixVaultAdvancedCapped.sol';
 import { MatrixVaultBasic } from './MatrixVaultBasic.sol';
 import { MatrixVaultCapped } from './MatrixVaultCapped.sol';
 
@@ -40,7 +41,7 @@ contract MatrixVaultFactory is IMatrixVaultFactory, Ownable2StepUpgradeable, UUP
     }
   }
 
-  uint8 public constant MAX_VAULT_TYPE = uint8(VaultType.Capped);
+  uint8 public constant MAX_VAULT_TYPE = uint8(VaultType.AdvancedCapped);
 
   constructor() {
     _disableInitializers();
@@ -122,9 +123,15 @@ contract MatrixVaultFactory is IMatrixVaultFactory, Ownable2StepUpgradeable, UUP
 
     address instance;
 
-    if (vaultType == VaultType.Basic) instance = _create($, abi.decode(args, (BasicVaultInitArgs)));
-    else if (vaultType == VaultType.Capped) instance = _create($, abi.decode(args, (CappedVaultInitArgs)));
-    else revert IMatrixVaultFactory__InvalidVaultType();
+    if (vaultType == VaultType.Basic) {
+      instance = _create($, abi.decode(args, (BasicVaultInitArgs)));
+    } else if (vaultType == VaultType.Capped) {
+      instance = _create($, abi.decode(args, (CappedVaultInitArgs)));
+    } else if (vaultType == VaultType.AdvancedCapped) {
+      instance = _create($, abi.decode(args, (AdvancedCappedVaultInitArgs)));
+    } else {
+      revert IMatrixVaultFactory__InvalidVaultType();
+    }
 
     $.isInstance[instance] = true;
 
@@ -188,6 +195,21 @@ contract MatrixVaultFactory is IMatrixVaultFactory, Ownable2StepUpgradeable, UUP
 
     bytes memory data = abi.encodeCall(
       MatrixVaultCapped.initialize, //
+      (args.assetManager, args.asset, args.name, args.symbol)
+    );
+    address instance = address(new BeaconProxy(address(info.beacon), data));
+
+    info.instances.push(instance);
+    info.instanceIndex[instance] = info.instances.length - 1;
+
+    return instance;
+  }
+
+  function _create(Storage storage $, AdvancedCappedVaultInitArgs memory args) private returns (address) {
+    BeaconInfo storage info = $.infos[VaultType.AdvancedCapped];
+
+    bytes memory data = abi.encodeCall(
+      MatrixVaultAdvancedCapped.initialize, //
       (args.assetManager, args.asset, args.name, args.symbol)
     );
     address instance = address(new BeaconProxy(address(info.beacon), data));

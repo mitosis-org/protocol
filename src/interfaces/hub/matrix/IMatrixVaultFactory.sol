@@ -25,6 +25,13 @@ interface IMatrixVaultFactory {
     string symbol;
   }
 
+  struct AdvancedCappedVaultInitArgs {
+    address assetManager;
+    IERC20Metadata asset;
+    string name;
+    string symbol;
+  }
+
   event VaultTypeInitialized(VaultType indexed vaultType, address indexed beacon);
   event MatrixVaultCreated(VaultType indexed vaultType, address indexed instance, bytes initArgs);
   event MatrixVaultMigrated(VaultType indexed from, VaultType indexed to, address indexed instance);
