@@ -23,7 +23,7 @@ contract MatrixVaultAdvancedCapped is MatrixVaultCapped {
     EnumerableSet.UintSet preferredChainIds;
   }
 
-  event SoftCapSet(uint256 oldSoftCap, uint256 newSoftCap);
+  event SoftCapSet(uint256 prevSoftCap, uint256 newSoftCap);
   event PreferredChainAdded(uint256 indexed chainId);
   event PreferredChainRemoved(uint256 indexed chainId);
 
@@ -77,20 +77,17 @@ contract MatrixVaultAdvancedCapped is MatrixVaultCapped {
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
+
   function setSoftCap(uint256 newSoftCap) external onlyLiquidityManager {
     _setSoftCap(_getAdvancedCappedStorage(), newSoftCap);
   }
 
   function addPreferredChainId(uint256 chainId) external onlyLiquidityManager {
-    if (_getAdvancedCappedStorage().preferredChainIds.add(chainId)) {
-      emit PreferredChainAdded(chainId);
-    }
+    _addPreferredChainId(_getAdvancedCappedStorage(), chainId);
   }
 
   function removePreferredChainId(uint256 chainId) external onlyLiquidityManager {
-    if (_getAdvancedCappedStorage().preferredChainIds.remove(chainId)) {
-      emit PreferredChainRemoved(chainId);
-    }
+    _removePreferredChainId(_getAdvancedCappedStorage(), chainId);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
@@ -116,8 +113,18 @@ contract MatrixVaultAdvancedCapped is MatrixVaultCapped {
   }
 
   function _setSoftCap(MatrixVaultAdvancedCappedStorage storage $, uint256 newSoftCap) internal {
-    uint256 oldSoftCap = $.softCap;
+    uint256 prevSoftCap = $.softCap;
     $.softCap = newSoftCap;
-    emit SoftCapSet(oldSoftCap, newSoftCap);
+    emit SoftCapSet(prevSoftCap, newSoftCap);
+  }
+
+  function _addPreferredChainId(MatrixVaultAdvancedCappedStorage storage $, uint256 chainId) internal {
+    $.preferredChainIds.add(chainId);
+    emit PreferredChainAdded(chainId);
+  }
+
+  function _removePreferredChainId(MatrixVaultAdvancedCappedStorage storage $, uint256 chainId) internal {
+    $.preferredChainIds.remove(chainId);
+    emit PreferredChainRemoved(chainId);
   }
 }

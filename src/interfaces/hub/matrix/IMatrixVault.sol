@@ -22,7 +22,7 @@ interface IMatrixVaultStorageV1 {
 
 /**
  * @title IMatrixVault
- * @dev Interface for the MatrixVault, combining ERC4626 functionality with TWAB snapshots.
+ * @dev Interface for the MatrixVault, combining ERC4626 functionality.
  */
 interface IMatrixVault is IERC4626, IMatrixVaultStorageV1 {
   /**
