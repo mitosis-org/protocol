@@ -5,7 +5,6 @@ import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { Math } from '@oz/utils/math/Math.sol';
 import { EnumerableSet } from '@oz/utils/structs/EnumerableSet.sol';
 
-import { IMatrixVaultAdvancedCapped } from '../../interfaces/hub/matrix/IMatrixVaultAdvancedCapped.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { MatrixVaultCapped } from './MatrixVaultCapped.sol';

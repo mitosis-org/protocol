@@ -10,7 +10,6 @@ import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
-import { IMatrixVaultAdvancedCapped } from '../../interfaces/hub/matrix/IMatrixVaultAdvancedCapped.sol';
 import { IMatrixVaultFactory } from '../../interfaces/hub/matrix/IMatrixVaultFactory.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { Pausable } from '../../lib/Pausable.sol';
