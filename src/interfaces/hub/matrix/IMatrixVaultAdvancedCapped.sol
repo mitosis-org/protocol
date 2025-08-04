@@ -35,6 +35,15 @@ interface IMatrixVaultAdvancedCapped {
   function maxDepositForChainId(address receiver, uint256 chainId) external view returns (uint256);
 
   /**
+   * @notice Deposit assets with chain-specific soft cap bypass consideration
+   * @param assets The amount of assets to deposit
+   * @param receiver The address receiving the shares
+   * @param chainId The chain ID where the deposit originates
+   * @return shares The amount of shares minted
+   */
+  function depositForChainId(uint256 assets, address receiver, uint256 chainId) external returns (uint256 shares);
+
+  /**
    * @notice Returns the current soft cap value
    * @return The soft cap amount
    */

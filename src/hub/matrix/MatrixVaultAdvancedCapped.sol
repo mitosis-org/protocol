@@ -62,7 +62,7 @@ contract MatrixVaultAdvancedCapped is IMatrixVaultAdvancedCapped, MatrixVaultCap
     return _maxDepositInternal(_getAdvancedCappedStorage(), receiver, true, 0);
   }
 
-  function maxDepositForChainId(address receiver, uint256 chainId) external view virtual returns (uint256) {
+  function maxDepositForChainId(address receiver, uint256 chainId) public view virtual returns (uint256) {
     return _maxDepositInternal(_getAdvancedCappedStorage(), receiver, false, chainId);
   }
 
@@ -94,6 +94,17 @@ contract MatrixVaultAdvancedCapped is IMatrixVaultAdvancedCapped, MatrixVaultCap
     if (_getAdvancedCappedStorage().preferredChainIds.remove(chainId)) {
       emit PreferredChainRemoved(chainId);
     }
+  }
+
+  function depositForChainId(uint256 assets, address receiver, uint256 chainId)
+    external
+    virtual
+    override
+    returns (uint256 shares)
+  {
+    uint256 maxAssets = maxDepositForChainId(receiver, chainId);
+    require(assets <= maxAssets, DepositMoreThanMax());
+    return super.deposit(assets, receiver);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //

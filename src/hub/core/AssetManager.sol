@@ -131,8 +131,9 @@ contract AssetManager is
     } else {
       _mint($, chainId, hubAsset, address(this), amount);
 
+      bool isAdvancedCapped = IMatrixVault(matrixVault).vaultType() == IMatrixVaultFactory.VaultType.AdvancedCapped;
       uint256 maxAssets;
-      if (IMatrixVault(matrixVault).vaultType() == IMatrixVaultFactory.VaultType.AdvancedCapped) {
+      if (isAdvancedCapped) {
         maxAssets = IMatrixVaultAdvancedCapped(matrixVault).maxDepositForChainId(to, chainId);
       } else {
         maxAssets = IMatrixVault(matrixVault).maxDeposit(to);
@@ -141,7 +142,12 @@ contract AssetManager is
       supplyAmount = amount < maxAssets ? amount : maxAssets;
 
       IHubAsset(hubAsset).approve(matrixVault, supplyAmount);
-      IMatrixVault(matrixVault).deposit(supplyAmount, to);
+
+      if (isAdvancedCapped) {
+        IMatrixVaultAdvancedCapped(matrixVault).depositForChainId(supplyAmount, to, chainId);
+      } else {
+        IMatrixVault(matrixVault).deposit(supplyAmount, to);
+      }
 
       // transfer remaining hub assets to `to` because there could be remaining hub assets due to the cap of Matrix Vault.
       if (supplyAmount < amount) IHubAsset(hubAsset).transfer(to, amount - supplyAmount);
