@@ -6,5 +6,9 @@ import { IMatrixVault } from './IMatrixVault.sol';
 interface IMatrixVaultCapped is IMatrixVault {
   function loadCap() external view returns (uint256);
 
-  function setCap(uint256 cap_) external;
+  function loadSoftCap() external view returns (uint256);
+
+  function isPreferredChain(uint256 chainId) external view returns (bool);
+
+  function preferredChainIds() external view returns (uint256[] memory);
 }

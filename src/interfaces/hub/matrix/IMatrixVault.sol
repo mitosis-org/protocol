@@ -22,6 +22,25 @@ interface IMatrixVaultStorageV1 {
 
 /**
  * @title IMatrixVault
- * @dev Interface for the MatrixVault, combining ERC4626 functionality with TWAB snapshots.
+ * @dev Interface for the MatrixVault, combining ERC4626 functionality.
  */
-interface IMatrixVault is IERC4626, IMatrixVaultStorageV1 { }
+interface IMatrixVault is IERC4626, IMatrixVaultStorageV1 {
+  /**
+   * @notice Returns the maximum amount of assets that can be deposited from a specific chain
+   * @dev This function is only callable by the AssetManager
+   * @param receiver The address receiving the shares
+   * @param chainId The chain ID where the deposit originates
+   * @return maxAssets The maximum deposit amount considering chain-specific bypass rules
+   */
+  function maxDepositFromChainId(address receiver, uint256 chainId) external view returns (uint256 maxAssets);
+
+  /**
+   * @notice Deposit assets with chain-specific soft cap bypass consideration
+   * @dev This function is only callable by the AssetManager
+   * @param assets The amount of assets to deposit
+   * @param receiver The address receiving the shares
+   * @param chainId The chain ID where the deposit originates
+   * @return shares The amount of shares minted
+   */
+  function depositFromChainId(uint256 assets, address receiver, uint256 chainId) external returns (uint256 shares);
+}
