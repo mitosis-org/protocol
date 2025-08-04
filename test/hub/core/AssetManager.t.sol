@@ -150,6 +150,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     matrixVault = new MockContract();
     matrixVault.setCall(IERC4626.deposit.selector);
+    matrixVault.setCall(IMatrixVault.depositFromChainId.selector);
     matrixVaultFactory = new MockContract();
 
     hubAsset = new MockContract();
@@ -224,12 +225,16 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (user1, 100 ether)));
 
-    // maxDeposit > amount
+    // maxDepositFromChainId > amount
 
     hubAsset.setRet(abi.encodeCall(IERC20.approve, (address(matrixVault), 100 ether)), false, abi.encode(true));
     matrixVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
-    matrixVault.setRet(abi.encodeCall(IERC4626.maxDeposit, (user1)), false, abi.encode(101 ether));
-    matrixVault.setRet(abi.encodeCall(IERC4626.deposit, (100 ether, user1)), false, abi.encode(100 ether));
+    matrixVault.setRet(
+      abi.encodeCall(IMatrixVault.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(101 ether)
+    );
+    matrixVault.setRet(
+      abi.encodeCall(IMatrixVault.depositFromChainId, (100 ether, user1, branchChainId1)), false, abi.encode(100 ether)
+    );
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
@@ -240,15 +245,19 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (address(assetManager), 100 ether)));
     hubAsset.assertLastCall(abi.encodeCall(IERC20.approve, (address(matrixVault), 100 ether)));
-    matrixVault.assertLastCall(abi.encodeCall(IERC4626.deposit, (100 ether, user1)));
+    matrixVault.assertLastCall(abi.encodeCall(IMatrixVault.depositFromChainId, (100 ether, user1, branchChainId1)));
 
-    // maxDeposit < amount
+    // maxDepositFromChainId < amount
 
     hubAsset.setRet(abi.encodeCall(IERC20.approve, (address(matrixVault), 99 ether)), false, abi.encode(true));
     hubAsset.setRet(abi.encodeCall(IERC20.transfer, (user1, 1 ether)), false, abi.encode(true));
     matrixVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
-    matrixVault.setRet(abi.encodeCall(IERC4626.maxDeposit, (user1)), false, abi.encode(99 ether));
-    matrixVault.setRet(abi.encodeCall(IERC4626.deposit, (99 ether, user1)), false, abi.encode(99 ether));
+    matrixVault.setRet(
+      abi.encodeCall(IMatrixVault.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(99 ether)
+    );
+    matrixVault.setRet(
+      abi.encodeCall(IMatrixVault.depositFromChainId, (99 ether, user1, branchChainId1)), false, abi.encode(99 ether)
+    );
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
@@ -260,7 +269,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (address(assetManager), 100 ether)));
     hubAsset.assertLastCall(abi.encodeCall(IERC20.approve, (address(matrixVault), 99 ether)));
     hubAsset.assertLastCall(abi.encodeCall(IERC20.transfer, (address(user1), 1 ether)));
-    matrixVault.assertLastCall(abi.encodeCall(IERC4626.deposit, (99 ether, user1)));
+    matrixVault.assertLastCall(abi.encodeCall(IMatrixVault.depositFromChainId, (99 ether, user1, branchChainId1)));
   }
 
   function test_depositWithSupplyMatrix_Unauthorized() public {
@@ -418,7 +427,18 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     vm.stopPrank();
 
     // mint 100 of hubAsset to user1 for each branch chains
-    matrixVault.setRet(abi.encodeCall(IERC4626.maxDeposit, (user1)), false, abi.encode(100 ether));
+    matrixVault.setRet(
+      abi.encodeCall(IMatrixVault.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(100 ether)
+    );
+    matrixVault.setRet(
+      abi.encodeCall(IMatrixVault.maxDepositFromChainId, (user1, branchChainId2)), false, abi.encode(100 ether)
+    );
+    matrixVault.setRet(
+      abi.encodeCall(IMatrixVault.depositFromChainId, (100 ether, user1, branchChainId1)), false, abi.encode(100 ether)
+    );
+    matrixVault.setRet(
+      abi.encodeCall(IMatrixVault.depositFromChainId, (100 ether, user1, branchChainId2)), false, abi.encode(100 ether)
+    );
     vm.startPrank(address(entrypoint));
     assetManager.depositWithSupplyMatrix(branchChainId1, branchAsset1, user1, address(matrixVault), 100 ether);
     assetManager.depositWithSupplyMatrix(branchChainId2, branchAsset2, user1, address(matrixVault), 100 ether);
