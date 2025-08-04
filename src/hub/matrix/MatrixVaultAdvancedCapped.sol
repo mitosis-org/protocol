@@ -84,6 +84,8 @@ contract MatrixVaultAdvancedCapped is MatrixVaultCapped {
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
   function depositForChainId(uint256 assets, address receiver, uint256 chainId) external returns (uint256 shares) {
+    _assertOnlyAssetManager(_getStorageV1());
+
     uint256 maxAssets = maxDepositForChainId(receiver, chainId);
     require(assets <= maxAssets, DepositMoreThanMax());
     return super.deposit(assets, receiver);
