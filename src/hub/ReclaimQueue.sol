@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
+import { WETH } from '@solady/tokens/WETH.sol';
+
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { IERC4626 } from '@oz/interfaces/IERC4626.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { Address } from '@oz/utils/Address.sol';
 import { Math } from '@oz/utils/math/Math.sol';
 import { SafeCast } from '@oz/utils/math/SafeCast.sol';
 import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
@@ -69,8 +72,19 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
   // =========================== NOTE: INITIALIZATION =========================== //
 
-  constructor() {
+  WETH public immutable weth;
+
+  constructor(WETH _weth) {
     _disableInitializers();
+    weth = _weth;
+  }
+
+  fallback() external {
+    revert StdError.Unauthorized();
+  }
+
+  receive() external payable {
+    require(_msgSender() == address(weth), StdError.Unauthorized());
   }
 
   function initialize(address owner_, address resolver_) public virtual initializer {
@@ -213,7 +227,14 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     emit ClaimSucceeded(receiver, vault, res);
 
     // send total claim amount to receiver
-    IERC20Metadata(IERC4626(vault).asset()).safeTransfer(receiver, res.totalAssetsClaimed);
+    address asset = IERC4626(vault).asset();
+    if (asset == address(weth)) {
+      // NOTE: SET UNWRAP AND TRANSFER AS A DEFAULT BEHAVIOR FOR WRAPPED NATIVE TOKENS
+      weth.withdraw(res.totalAssetsClaimed);
+      Address.sendValue(payable(receiver), res.totalAssetsClaimed);
+    } else {
+      IERC20Metadata(asset).safeTransfer(receiver, res.totalAssetsClaimed);
+    }
 
     return (res.totalSharesClaimed, res.totalAssetsClaimed);
   }

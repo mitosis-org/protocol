@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
+import { WETH } from '@solady/tokens/WETH.sol';
+
 import { IERC20 } from '@oz/interfaces/IERC20.sol';
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
@@ -10,16 +12,13 @@ import { SafeCast } from '@oz/utils/math/SafeCast.sol';
 
 import { Test } from '@std/Test.sol';
 
-import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
-import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
-import { ReclaimQueue } from '../../../src/hub/ReclaimQueue.sol';
-import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.sol';
-import { IReclaimQueue } from '../../../src/interfaces/hub/matrix/IReclaimQueue.sol';
-import { LibMockERC20 } from '../../mock/LibMockERC20.sol';
-import { LibMockERC4626 } from '../../mock/LibMockERC4626.sol';
-import { SimpleERC4626Vault } from '../../mock/SimpleERC4626Vault.sol';
-import { MockContract } from '../../util/MockContract.sol';
-import { Toolkit } from '../../util/Toolkit.sol';
+import { ReclaimQueue } from '../../src/hub/ReclaimQueue.sol';
+import { IReclaimQueue } from '../../src/interfaces/hub/matrix/IReclaimQueue.sol';
+import { LibMockERC20 } from '../mock/LibMockERC20.sol';
+import { LibMockERC4626 } from '../mock/LibMockERC4626.sol';
+import { SimpleERC4626Vault } from '../mock/SimpleERC4626Vault.sol';
+import { MockContract } from '../util/MockContract.sol';
+import { Toolkit } from '../util/Toolkit.sol';
 
 contract ReclaimQueueTestHelper is Test {
   using SafeCast for uint256;
@@ -203,6 +202,8 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
   address vault;
   address asset2;
   address vault2;
+  address weth;
+  address wethVault;
   ReclaimQueue queue;
 
   function setUp() public {
@@ -227,9 +228,15 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       vault2 = address(new SimpleERC4626Vault(asset2, 'vault2', 'vault2'));
     }
 
+    // setup weth and vault
+    {
+      weth = address(new WETH());
+      wethVault = address(new SimpleERC4626Vault(weth, 'wethVault', 'wethVault'));
+    }
+
     // deploy reclaim queue
     {
-      address impl = address(new ReclaimQueue());
+      address impl = address(new ReclaimQueue(WETH(payable(weth))));
       bytes memory initData = abi.encodeCall(ReclaimQueue.initialize, (owner, address(assetManager)));
       queue = ReclaimQueue(payable(_proxy(impl, initData)));
     }
@@ -239,6 +246,14 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       vm.startPrank(owner);
       queue.enableQueue(vault);
       queue.setReclaimPeriod(vault, 1 days);
+      vm.stopPrank();
+    }
+
+    // enable weth vault
+    {
+      vm.startPrank(owner);
+      queue.enableQueue(wethVault);
+      queue.setReclaimPeriod(wethVault, 1 days);
       vm.stopPrank();
     }
   }
@@ -262,7 +277,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     SimpleERC4626Vault(vault).mint(user, amount);
     asset.setRetERC20BalanceOf(vault, amount);
 
-    IReclaimQueue.Request memory expected = _request(amount, amount, 0);
+    IReclaimQueue.Request memory expected = _request(vault, amount, amount, 0);
 
     _compareQueueInfo(queue.queueInfo(vault), makeQueueInfo(true, 1 days, 0, 1, 0));
     _compareQueueIndexInfo(queue.queueIndex(vault, user), makeQueueIndexInfo(0, 1));
@@ -284,9 +299,9 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       SimpleERC4626Vault(vault).mint(user, 300 ether);
       asset.setRetERC20BalanceOf(vault, 300 ether);
 
-      _request(100 ether, 100 ether, 0);
-      _request(100 ether, 100 ether, 1);
-      _request(100 ether, 100 ether, 2);
+      _request(vault, 100 ether, 100 ether, 0);
+      _request(vault, 100 ether, 100 ether, 1);
+      _request(vault, 100 ether, 100 ether, 2);
     }
 
     // # 1
@@ -366,9 +381,9 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       SimpleERC4626Vault(vault).mint(user, 300 ether);
       asset.setRetERC20BalanceOf(vault, 300 ether);
 
-      _request(100 ether, 100 ether, 0);
-      _request(100 ether, 100 ether, 1);
-      _request(100 ether, 100 ether, 2);
+      _request(vault, 100 ether, 100 ether, 0);
+      _request(vault, 100 ether, 100 ether, 1);
+      _request(vault, 100 ether, 100 ether, 2);
     }
 
     uint256 totalSupply = 300 ether;
@@ -414,9 +429,9 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       SimpleERC4626Vault(vault).mint(user, 300 ether);
       asset.setRetERC20BalanceOf(vault, 300 ether);
 
-      _request(100 ether, 100 ether, 0);
-      _request(100 ether, 100 ether, 1);
-      _request(100 ether, 100 ether, 2);
+      _request(vault, 100 ether, 100 ether, 0);
+      _request(vault, 100 ether, 100 ether, 1);
+      _request(vault, 100 ether, 100 ether, 2);
     }
 
     uint256 totalSupply = 300 ether;
@@ -490,12 +505,12 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       SimpleERC4626Vault(vault).mint(user, 600 ether);
       asset.setRetERC20BalanceOf(vault, 600 ether);
 
-      _request(100 ether, 100 ether, 0);
-      _request(100 ether, 100 ether, 1);
-      _request(100 ether, 100 ether, 2);
-      _request(100 ether, 100 ether, 3);
-      _request(100 ether, 100 ether, 4);
-      _request(100 ether, 100 ether, 5);
+      _request(vault, 100 ether, 100 ether, 0);
+      _request(vault, 100 ether, 100 ether, 1);
+      _request(vault, 100 ether, 100 ether, 2);
+      _request(vault, 100 ether, 100 ether, 3);
+      _request(vault, 100 ether, 100 ether, 4);
+      _request(vault, 100 ether, 100 ether, 5);
     }
 
     // # 1 sync
@@ -553,6 +568,35 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     _compareQueueIndexInfo(queue.queueIndex(vault, user), makeQueueIndexInfo(3, 6));
   }
 
+  function test_claim_weth() public {
+    // setup
+    {
+      vm.prank(user);
+      SimpleERC4626Vault(wethVault).approve(address(queue), 600 ether);
+      SimpleERC4626Vault(wethVault).mint(user, 600 ether);
+
+      vm.deal(wethVault, 600 ether);
+      vm.prank(wethVault);
+      WETH(payable(weth)).deposit{ value: 600 ether }();
+
+      _request(wethVault, 100 ether, 100 ether, 0);
+    }
+
+    // # 1 sync
+    vm.prank(assetManager);
+    queue.sync(owner, wethVault, 1);
+
+    // pass reclaim period
+    vm.warp(block.timestamp + 1 days);
+
+    (uint256 totalSharesClaimed, uint256 totalAssetsClaimed) = queue.claim(user, wethVault);
+    assertEq(totalSharesClaimed, 100 ether, 'totalSharesClaimed');
+    assertEq(totalAssetsClaimed, 100 ether - 1, 'totalAssetsClaimed');
+
+    assertEq(SimpleERC4626Vault(wethVault).balanceOf(user), 500 ether, 'balanceOf');
+    assertEq(address(user).balance, 100 ether - 1, 'user balance');
+  }
+
   function test_claim_queueNotEnabled() public {
     vm.prank(user);
     vm.expectRevert(_errQueueNotEnabled(vault2));
@@ -603,14 +647,14 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     queue.queueSyncLog(vault, 3);
   }
 
-  function _request(uint256 shares, uint256 assets, uint256 expectedReqId)
+  function _request(address vault_, uint256 shares, uint256 assets, uint256 expectedReqId)
     internal
     returns (IReclaimQueue.Request memory)
   {
     vm.prank(user);
     vm.expectEmit();
-    emit IReclaimQueue.Requested(user, vault, expectedReqId, shares, assets);
-    uint256 reqId = queue.request(shares, user, vault);
+    emit IReclaimQueue.Requested(user, vault_, expectedReqId, shares, assets);
+    uint256 reqId = queue.request(shares, user, vault_);
     assertEq(reqId, expectedReqId, 'reqId');
 
     return makeRequest(_now48(), assets, shares);
