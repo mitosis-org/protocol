@@ -6,7 +6,6 @@ import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 
 import { IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IWrappedNativeToken } from '../interfaces/IWrappedNativeToken.sol';
-
 import { StdError } from '../lib/StdError.sol';
 
 contract MitosisVaultNativeDepositProxy is ReentrancyGuard {
