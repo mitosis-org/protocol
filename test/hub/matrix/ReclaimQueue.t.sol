@@ -14,7 +14,7 @@ import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
 import { ReclaimQueue } from '../../../src/hub/ReclaimQueue.sol';
 import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.sol';
-import { IReclaimQueue } from '../../../src/interfaces/hub/matrix/IReclaimQueue.sol';
+import { IReclaimQueue } from '../../../src/interfaces/hub/IReclaimQueue.sol';
 import { LibMockERC20 } from '../../mock/LibMockERC20.sol';
 import { LibMockERC4626 } from '../../mock/LibMockERC4626.sol';
 import { SimpleERC4626Vault } from '../../mock/SimpleERC4626Vault.sol';
