@@ -450,7 +450,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
       res.totalSharesSynced += shares;
       res.totalAssetsOnRequest += req.assets;
-      res.totalAssetsOnReserve += IERC4626(vault).convertToAssets(shares);
+      res.totalAssetsOnReserve += IERC4626(vault).previewRedeem(shares);
 
       unchecked {
         ++i;
