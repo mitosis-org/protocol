@@ -450,7 +450,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
       res.totalSharesSynced += shares;
       res.totalAssetsOnRequest += req.assets;
-      res.totalAssetsOnReserve += IERC4626(vault).convertToAssets(shares);
+      res.totalAssetsOnReserve += IERC4626(vault).previewRedeem(shares);
 
       unchecked {
         ++i;
@@ -469,6 +469,11 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
     uint256 withdrawAmount = Math.min(res.totalAssetsOnRequest, res.totalAssetsOnReserve);
     IERC4626(vault).withdraw(withdrawAmount, address(this), address(this));
+
+    if (res.totalAssetsOnRequest < res.totalAssetsOnReserve) {
+      uint256 diff = res.totalAssetsOnReserve - res.totalAssetsOnRequest;
+      IERC4626(vault).withdraw(diff, vault, address(this));
+    }
 
     {
       SyncLog[] storage syncLogs = q$.logs;
