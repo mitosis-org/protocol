@@ -3,12 +3,15 @@ pragma solidity ^0.8.28;
 
 import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { Address } from '@oz/utils/Address.sol';
 import { Math } from '@oz/utils/math/Math.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
+import { ReentrancyGuardUpgradeable } from '@ozu/utils/ReentrancyGuardUpgradeable.sol';
 
 import { AssetAction, IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
+import { IWrappedNativeToken } from '../interfaces/IWrappedNativeToken.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
@@ -19,6 +22,7 @@ contract MitosisVault is
   IMitosisVault,
   Pausable,
   Ownable2StepUpgradeable,
+  ReentrancyGuardUpgradeable,
   UUPSUpgradeable,
   MitosisVaultMatrix,
   Versioned
@@ -51,8 +55,13 @@ contract MitosisVault is
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  constructor() {
+  address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+  IWrappedNativeToken public immutable wrappedNative;
+
+  constructor(IWrappedNativeToken wrappedNative_) {
     _disableInitializers();
+    wrappedNative = wrappedNative_;
   }
 
   fallback() external payable {
@@ -120,7 +129,7 @@ contract MitosisVault is
     emit Deposited(asset, to, amount);
   }
 
-  function withdraw(address asset, address to, uint256 amount) external whenNotPaused {
+  function withdraw(address asset, address to, uint256 amount) external whenNotPaused nonReentrant {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -128,7 +137,12 @@ contract MitosisVault is
 
     $.assets[asset].availableCap += amount;
 
-    IERC20(asset).safeTransfer(to, amount);
+    if (asset == NATIVE_TOKEN) {
+      wrappedNative.withdraw(amount);
+      Address.sendValue(payable(to), amount);
+    } else {
+      IERC20(asset).safeTransfer(to, amount);
+    }
 
     emit Withdrawn(asset, to, amount);
   }

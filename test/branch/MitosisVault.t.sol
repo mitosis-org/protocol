@@ -6,10 +6,13 @@ import { console } from '@std/console.sol';
 import { IERC20 } from '@oz/interfaces/IERC20.sol';
 import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
+import { WETH } from '@solady/tokens/WETH.sol';
+
 import { MitosisVault, AssetAction } from '../../src/branch/MitosisVault.sol';
 import { IMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IMitosisVaultMatrix, MatrixAction } from '../../src/interfaces/branch/IMitosisVaultMatrix.sol';
+import { IWrappedNativeToken } from '../../src/interfaces/IWrappedNativeToken.sol';
 import { StdError } from '../../src/lib/StdError.sol';
 import { MockERC20Snapshots } from '../mock/MockERC20Snapshots.t.sol';
 import { MockMatrixStrategyExecutor } from '../mock/MockMatrixStrategyExecutor.t.sol';
@@ -22,13 +25,18 @@ contract MitosisVaultTest is Toolkit {
   MockERC20Snapshots internal _token;
   MockMatrixStrategyExecutor internal _matrixStrategyExecutor;
 
+  IWrappedNativeToken internal _wrappedNative;
   address immutable owner = makeAddr('owner');
   address immutable mitosis = makeAddr('mitosis');
   address immutable hubMatrixVault = makeAddr('hubMatrixVault');
 
   function setUp() public {
+    _wrappedNative = IWrappedNativeToken(payable(address(new WETH())));
+
     _mitosisVault = MitosisVault(
-      payable(new ERC1967Proxy(address(new MitosisVault()), abi.encodeCall(MitosisVault.initialize, (owner))))
+      payable(
+        new ERC1967Proxy(address(new MitosisVault(_wrappedNative)), abi.encodeCall(MitosisVault.initialize, (owner)))
+      )
     );
 
     _mitosisVaultEntrypoint = new MockMitosisVaultEntrypoint();
