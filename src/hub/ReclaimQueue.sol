@@ -11,7 +11,7 @@ import { Time } from '@oz/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
-import { IReclaimQueue } from '../interfaces/hub/matrix/IReclaimQueue.sol';
+import { IReclaimQueue } from '../interfaces/hub/IReclaimQueue.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { LibQueue } from '../lib/LibQueue.sol';
 import { Pausable } from '../lib/Pausable.sol';
