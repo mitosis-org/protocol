@@ -230,7 +230,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     // deploy reclaim queue
     {
       address impl = address(new ReclaimQueue());
-      bytes memory initData = abi.encodeCall(ReclaimQueue.initialize, (owner, address(assetManager)));
+      bytes memory initData = abi.encodeCall(ReclaimQueue.initialize, (owner, address(assetManager), address(0)));
       queue = ReclaimQueue(payable(_proxy(impl, initData)));
     }
 

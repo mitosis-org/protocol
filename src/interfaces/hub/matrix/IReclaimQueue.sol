@@ -50,6 +50,7 @@ interface IReclaimQueue {
 
   event QueueEnabled(address indexed vault);
   event ResolverSet(address indexed resolver);
+  event CollectorSet(address indexed collector);
   event ReclaimPeriodSet(address indexed vault, uint256 reclaimPeriod);
   event Requested(address indexed receiver, address indexed vault, uint256 reqId, uint256 shares, uint256 assets);
   event Claimed(
@@ -72,6 +73,7 @@ interface IReclaimQueue {
   error IReclaimQueue__OutOfBounds(uint256 max, uint256 actual);
 
   function resolver() external view returns (address);
+  function collector() external view returns (address);
   function reclaimPeriod(address vault) external view returns (uint256);
   function isEnabled(address vault) external view returns (bool);
 
@@ -90,5 +92,6 @@ interface IReclaimQueue {
 
   function enableQueue(address vault) external;
   function setResolver(address resolver_) external;
+  function setCollector(address collector_) external;
   function setReclaimPeriod(address vault, uint256 reclaimPeriod_) external;
 }
