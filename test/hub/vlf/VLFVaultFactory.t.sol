@@ -139,7 +139,7 @@ contract VLFVaultFactoryTest is Toolkit {
     base.initVLFVaultType(CappedVLFVaultType, address(cappedImpl));
     vm.stopPrank();
 
-    uint8 maxVLFVaultType = base.MAX_VLFVault_TYPE();
+    uint8 maxVLFVaultType = base.MAX_VLF_VAULT_TYPE();
 
     vm.expectRevert(_errEnumOutOfBounds(maxVLFVaultType, maxVLFVaultType + 1));
     base.beacon(maxVLFVaultType + 1);
