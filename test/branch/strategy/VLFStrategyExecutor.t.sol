@@ -8,9 +8,7 @@ import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 import { Strings } from '@oz/utils/Strings.sol';
 
 import { MitosisVault, AssetAction } from '../../../src/branch/MitosisVault.sol';
-import {
-  VLFStrategyExecutor, IVLFStrategyExecutor
-} from '../../../src/branch/strategy/VLFStrategyExecutor.sol';
+import { VLFStrategyExecutor, IVLFStrategyExecutor } from '../../../src/branch/strategy/VLFStrategyExecutor.sol';
 import { IMitosisVault } from '../../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IMitosisVaultVLF, VLFAction } from '../../../src/interfaces/branch/IMitosisVaultVLF.sol';

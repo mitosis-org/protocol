@@ -9,14 +9,14 @@ import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { BeaconProxy } from '@oz/proxy/beacon/BeaconProxy.sol';
 import { IBeacon } from '@oz/proxy/beacon/IBeacon.sol';
 
-import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
-import { MatrixVaultCapped } from '../../../src/hub/matrix/MatrixVaultCapped.sol';
+import { VLFBasic } from '../../../src/hub/vlf/VLFBasic.sol';
+import { VLFCapped } from '../../../src/hub/vlf/VLFCapped.sol';
 import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
-contract MatrixVaultTestBase is IBeacon, Toolkit {
+contract VLFBaseTest is IBeacon, Toolkit {
   address owner = makeAddr('owner');
   address liquidityManager = makeAddr('liquidityManager');
   address user = makeAddr('user');
@@ -25,18 +25,18 @@ contract MatrixVaultTestBase is IBeacon, Toolkit {
 
   WETH weth;
 
-  MatrixVaultBasic basicImpl;
-  MatrixVaultCapped cappedImpl;
+  VLFBasic basicImpl;
+  VLFCapped cappedImpl;
   address private defaultImpl;
 
-  MatrixVaultBasic basic;
-  MatrixVaultCapped capped;
+  VLFBasic basic;
+  VLFCapped capped;
 
   function setUp() public virtual {
     weth = new WETH();
 
-    basicImpl = new MatrixVaultBasic();
-    cappedImpl = new MatrixVaultCapped();
+    basicImpl = new VLFBasic();
+    cappedImpl = new VLFCapped();
 
     vm.mockCall(
       address(assetManager),
@@ -59,12 +59,12 @@ contract MatrixVaultTestBase is IBeacon, Toolkit {
     );
 
     defaultImpl = address(basicImpl);
-    basic = MatrixVaultBasic(
+    basic = VLFBasic(
       address(
         new BeaconProxy(
           address(this),
           abi.encodeCall(
-            MatrixVaultBasic.initialize, //
+            VLFBasic.initialize, //
             (assetManager, IERC20Metadata(address(weth)), 'B', 'B')
           )
         )
@@ -72,12 +72,12 @@ contract MatrixVaultTestBase is IBeacon, Toolkit {
     );
 
     defaultImpl = address(cappedImpl);
-    capped = MatrixVaultCapped(
+    capped = VLFCapped(
       address(
         new BeaconProxy(
           address(this),
           abi.encodeCall(
-            MatrixVaultCapped.initialize, //
+            VLFCapped.initialize, //
             (assetManager, IERC20Metadata(address(weth)), 'C', 'C')
           )
         )
@@ -95,7 +95,7 @@ contract MatrixVaultTestBase is IBeacon, Toolkit {
   }
 }
 
-contract MatrixVaultBasicTest is MatrixVaultTestBase {
+contract VLFBasicTest is VLFBaseTest {
   function test_initialize() public view {
     assertEq(basic.asset(), address(weth));
     assertEq(basic.name(), 'B');
@@ -193,7 +193,7 @@ contract MatrixVaultBasicTest is MatrixVaultTestBase {
   }
 }
 
-contract MatrixVaultCappedTest is MatrixVaultTestBase {
+contract VLFCappedTest is VLFBaseTest {
   function setUp() public override {
     super.setUp();
 

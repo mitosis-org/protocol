@@ -14,9 +14,9 @@ import { BaseDecoderAndSanitizer } from
 import { TheoDepositVaultDecoderAndSanitizer } from
   '../../../src/branch/strategy/manager/DecodersAndSanitizers/TheoDepositVaultDecoderAndSanitizer.sol';
 import { ManagerWithMerkleVerification } from '../../../src/branch/strategy/manager/ManagerWithMerkleVerification.sol';
-import { MatrixStrategyExecutor } from '../../../src/branch/strategy/MatrixStrategyExecutor.sol';
-import { MatrixStrategyExecutorFactory } from '../../../src/branch/strategy/MatrixStrategyExecutorFactory.sol';
 import { TheoTally } from '../../../src/branch/strategy/tally/TheoTally.sol';
+import { VLFStrategyExecutor } from '../../../src/branch/strategy/VLFStrategyExecutor.sol';
+import { VLFStrategyExecutorFactory } from '../../../src/branch/strategy/VLFStrategyExecutorFactory.sol';
 import { Timelock } from '../../../src/lib/Timelock.sol';
 import '../Functions.sol';
 
@@ -27,12 +27,12 @@ library BranchProxyT {
   address private constant VM_ADDRESS = address(uint160(uint256(keccak256('hevm cheat code'))));
   Vm private constant vm = Vm(VM_ADDRESS);
 
-  struct MatrixStrategyExecutorInfo {
+  struct VLFStrategyExecutorInfo {
     address owner;
     address branchAsset;
     address branchVault;
-    address hubMatrixVault;
-    MatrixStrategyExecutor executor;
+    address hubVLF;
+    VLFStrategyExecutor executor;
   }
 
   struct Governance {
@@ -52,8 +52,8 @@ library BranchProxyT {
 
   struct Strategy {
     StrategyManager manager;
-    MatrixStrategyExecutorInfo[] executors;
-    MatrixStrategyExecutorFactory executorFactory;
+    VLFStrategyExecutorInfo[] executors;
+    VLFStrategyExecutorFactory executorFactory;
   }
 
   struct Chain {
@@ -85,7 +85,7 @@ library BranchProxyT {
 
   // --- Encode Functions ---
 
-  function extract(MatrixStrategyExecutorInfo[] memory v) private pure returns (address[] memory o) {
+  function extract(VLFStrategyExecutorInfo[] memory v) private pure returns (address[] memory o) {
     o = new address[](v.length);
     for (uint256 i = 0; i < v.length; i++) {
       o[i] = address(v[i].executor);
@@ -146,22 +146,22 @@ library BranchProxyT {
     o.das = decodeStrategyDecoderAndSanitizer(v, cat(base, '.das'));
   }
 
-  function decodeMatrixStrategyExecutors(string memory v, string memory path)
+  function decodeVLFStrategyExecutors(string memory v, string memory path)
     internal
     view
-    returns (MatrixStrategyExecutorInfo[] memory o)
+    returns (VLFStrategyExecutorInfo[] memory o)
   {
     address payable[] memory executors = _ra(v, path);
-    o = new MatrixStrategyExecutorInfo[](executors.length);
+    o = new VLFStrategyExecutorInfo[](executors.length);
 
     for (uint256 i = 0; i < executors.length; i++) {
-      MatrixStrategyExecutor executor = MatrixStrategyExecutor(executors[i]);
+      VLFStrategyExecutor executor = VLFStrategyExecutor(executors[i]);
 
-      o[i] = MatrixStrategyExecutorInfo({
+      o[i] = VLFStrategyExecutorInfo({
         owner: executor.owner(),
         branchAsset: address(executor.asset()),
         branchVault: address(executor.vault()),
-        hubMatrixVault: executor.hubMatrixVault(),
+        hubVLF: executor.hubVLF(),
         executor: executor
       });
     }
@@ -169,8 +169,8 @@ library BranchProxyT {
 
   function decodeStrategy(string memory v, string memory base) internal view returns (Strategy memory o) {
     o.manager = decodeStrategyManager(v, cat(base, '.manager'));
-    o.executors = decodeMatrixStrategyExecutors(v, cat(base, '.executors'));
-    o.executorFactory = MatrixStrategyExecutorFactory(_r(v, cat(base, '.executorFactory')));
+    o.executors = decodeVLFStrategyExecutors(v, cat(base, '.executors'));
+    o.executorFactory = VLFStrategyExecutorFactory(_r(v, cat(base, '.executorFactory')));
   }
 
   function decode(string memory v) internal view returns (Chain memory o) {

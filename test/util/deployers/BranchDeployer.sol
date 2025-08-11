@@ -11,11 +11,11 @@ import { BaseDecoderAndSanitizer } from
 import { TheoDepositVaultDecoderAndSanitizer } from
   '../../../src/branch/strategy/manager/DecodersAndSanitizers/TheoDepositVaultDecoderAndSanitizer.sol';
 import { ManagerWithMerkleVerification } from '../../../src/branch/strategy/manager/ManagerWithMerkleVerification.sol';
-import { MatrixStrategyExecutor } from '../../../src/branch/strategy/MatrixStrategyExecutor.sol';
-import { MatrixStrategyExecutorFactory } from '../../../src/branch/strategy/MatrixStrategyExecutorFactory.sol';
 import { TheoTally } from '../../../src/branch/strategy/tally/TheoTally.sol';
+import { VLFStrategyExecutor } from '../../../src/branch/strategy/VLFStrategyExecutor.sol';
+import { VLFStrategyExecutorFactory } from '../../../src/branch/strategy/VLFStrategyExecutorFactory.sol';
 import { IMitosisVault } from '../../../src/interfaces/branch/IMitosisVault.sol';
-import { IMatrixStrategyExecutor } from '../../../src/interfaces/branch/strategy/IMatrixStrategyExecutor.sol';
+import { IVLFStrategyExecutor } from '../../../src/interfaces/branch/strategy/IVLFStrategyExecutor.sol';
 import { Timelock } from '../../../src/lib/Timelock.sol';
 import '../Functions.sol';
 import { BranchConfigs } from '../types/BranchConfigs.sol';
@@ -63,17 +63,17 @@ abstract contract BranchDeployer is AbstractDeployer {
 
     impl.strategy.executor = deploy(
       _urlBI('.matrix.strategy-executor'), //
-      type(MatrixStrategyExecutor).creationCode
+      type(VLFStrategyExecutor).creationCode
     );
     (
       impl.strategy.executorFactory, //
       proxy.strategy.executorFactory
-    ) = _dpbMatrixStrategyExecutorFactory(owner, impl.strategy.executor);
+    ) = _dpbVLFStrategyExecutorFactory(owner, impl.strategy.executor);
 
     (
       impl.strategy.manager.withMerkleVerification, //
       proxy.strategy.manager.withMerkleVerification
-    ) = _dpbMatrixStrategyManager(owner);
+    ) = _dpbVLFStrategyManager(owner);
 
     proxy.strategy.manager.das.base = BaseDecoderAndSanitizer(
       deploy(
@@ -151,20 +151,20 @@ abstract contract BranchDeployer is AbstractDeployer {
     return (impl, MitosisVaultEntrypoint(proxy));
   }
 
-  function _dpbMatrixStrategyExecutorFactory(address owner_, address matrixStrategyExecutor)
+  function _dpbVLFStrategyExecutorFactory(address owner_, address matrixStrategyExecutor)
     private
-    returns (address, MatrixStrategyExecutorFactory)
+    returns (address, VLFStrategyExecutorFactory)
   {
     (address impl, address payable proxy) = deployImplAndProxy(
       branchChainName,
       '.matrix-strategy-executor-factory',
-      type(MatrixStrategyExecutorFactory).creationCode,
-      abi.encodeCall(MatrixStrategyExecutorFactory.initialize, (owner_, matrixStrategyExecutor))
+      type(VLFStrategyExecutorFactory).creationCode,
+      abi.encodeCall(VLFStrategyExecutorFactory.initialize, (owner_, matrixStrategyExecutor))
     );
-    return (impl, MatrixStrategyExecutorFactory(proxy));
+    return (impl, VLFStrategyExecutorFactory(proxy));
   }
 
-  function _dpbMatrixStrategyManager(address owner_) private returns (address, ManagerWithMerkleVerification) {
+  function _dpbVLFStrategyManager(address owner_) private returns (address, ManagerWithMerkleVerification) {
     (address impl, address payable proxy) = deployImplAndProxy(
       branchChainName,
       '.matrix-strategy-manager',

@@ -9,7 +9,7 @@ import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 import { MitosisVault, AssetAction } from '../../../../src/branch/MitosisVault.sol';
 import { ManagerWithMerkleVerification } from
   '../../../../src/branch/strategy/manager/ManagerWithMerkleVerification.sol';
-import { MatrixStrategyExecutor } from '../../../../src/branch/strategy/MatrixStrategyExecutor.sol';
+import { VLFStrategyExecutor } from '../../../../src/branch/strategy/VLFStrategyExecutor.sol';
 import { IMitosisVault } from '../../../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IManagerWithMerkleVerification } from
@@ -41,7 +41,7 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
   MockTestVaultTally internal _testVaultTally;
 
   address immutable owner = makeAddr('owner');
-  address immutable hubMatrixVault = makeAddr('hubMatrixVault');
+  address immutable hubVLF = makeAddr('hubVLF');
   address immutable strategist = makeAddr('strategist');
 
   address immutable user1 = makeAddr('user1');

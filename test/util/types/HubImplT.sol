@@ -29,7 +29,7 @@ library HubImplT {
     address crosschainRegistry;
   }
 
-  struct Matrix {
+  struct VLF {
     address vaultBasic;
     address vaultCapped;
     address vaultFactory;
@@ -61,7 +61,7 @@ library HubImplT {
     //
     ConsensusLayer consensusLayer;
     Core core;
-    Matrix matrix;
+    VLF vlf;
     Governance governance;
     Reward reward;
     Validator validator;
@@ -108,7 +108,7 @@ library HubImplT {
     o = k.serialize('crosschainRegistry', v.crosschainRegistry);
   }
 
-  function encode(Matrix memory v) internal returns (string memory o) {
+  function encode(VLF memory v) internal returns (string memory o) {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('vaultBasic', v.vaultBasic);
     o = k.serialize('vaultCapped', v.vaultCapped);
@@ -144,7 +144,7 @@ library HubImplT {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('consensusLayer', encode(v.consensusLayer));
     o = k.serialize('core', encode(v.core));
-    o = k.serialize('matrix', encode(v.matrix));
+    o = k.serialize('vlf', encode(v.vlf));
     o = k.serialize('governance', encode(v.governance));
     o = k.serialize('reward', encode(v.reward));
     o = k.serialize('validator', encode(v.validator));
@@ -166,7 +166,7 @@ library HubImplT {
     o.crosschainRegistry = v.readAddress(cat(base, '.crosschainRegistry'));
   }
 
-  function decodeMatrix(string memory v, string memory base) internal pure returns (Matrix memory o) {
+  function decodeVLF(string memory v, string memory base) internal pure returns (VLF memory o) {
     o.vaultBasic = v.readAddress(cat(base, '.vaultBasic'));
     o.vaultCapped = v.readAddress(cat(base, '.vaultCapped'));
     o.vaultFactory = v.readAddress(cat(base, '.vaultFactory'));
@@ -197,7 +197,7 @@ library HubImplT {
   function decode(string memory v) internal pure returns (Chain memory o) {
     o.consensusLayer = decodeConsensusLayer(v, '.consensusLayer');
     o.core = decodeCore(v, '.core');
-    o.matrix = decodeMatrix(v, '.matrix');
+    o.vlf = decodeVLF(v, '.vlf');
     o.governance = decodeGovernance(v, '.governance');
     o.reward = decodeReward(v, '.reward');
     o.validator = decodeValidator(v, '.validator');
