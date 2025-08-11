@@ -144,6 +144,7 @@ contract GovMITOEmission is
     uint256 rps = emission.rps;
     uint160 rateMultiplier = emission.rateMultiplier;
     uint48 renewalPeriod = emission.renewalPeriod;
+    if (renewalPeriod == 0) return (rps, rateMultiplier, renewalPeriod);
 
     uint48 lastDeducted = emission.timestamp;
     uint48 endTime = Time.timestamp();
@@ -152,9 +153,6 @@ contract GovMITOEmission is
       uint48 nextDeduction = lastDeducted + renewalPeriod;
       rps = Math.mulDiv(rps, rateMultiplier, RATE_DENOMINATOR);
       lastDeducted = nextDeduction;
-
-      // renewal period is 0, so we can break after the first iteration
-      if (renewalPeriod == 0) break;
     }
 
     return (rps, rateMultiplier, renewalPeriod);
@@ -263,9 +261,6 @@ contract GovMITOEmission is
       }
       rps = Math.mulDiv(rps, rateMultiplier, RATE_DENOMINATOR);
       lastDeducted = nextDeduction;
-
-      // renewal period is 0, so we can break after the first iteration
-      if (renewalPeriod == 0) break;
     }
   }
 
