@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
-import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
 
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IMitosisVaultMatrix, MatrixAction } from '../interfaces/branch/IMitosisVaultMatrix.sol';
@@ -12,7 +12,7 @@ import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
 
-abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2StepUpgradeable {
+abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, AccessControlEnumerableUpgradeable {
   using ERC7201Utils for string;
   using SafeERC20 for IERC20;
 
@@ -218,19 +218,22 @@ abstract contract MitosisVaultMatrix is IMitosisVaultMatrix, Pausable, Ownable2S
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
-  function haltMatrix(address hubMatrixVault, MatrixAction action) external onlyOwner {
+  function haltMatrix(address hubMatrixVault, MatrixAction action) external onlyRole(DEFAULT_ADMIN_ROLE) {
     MatrixStorageV1 storage $ = _getMatrixStorageV1();
     _assertMatrixInitialized($, hubMatrixVault);
     return _haltMatrix($, hubMatrixVault, action);
   }
 
-  function resumeMatrix(address hubMatrixVault, MatrixAction action) external onlyOwner {
+  function resumeMatrix(address hubMatrixVault, MatrixAction action) external onlyRole(DEFAULT_ADMIN_ROLE) {
     MatrixStorageV1 storage $ = _getMatrixStorageV1();
     _assertMatrixInitialized($, hubMatrixVault);
     return _resumeMatrix($, hubMatrixVault, action);
   }
 
-  function setMatrixStrategyExecutor(address hubMatrixVault, address strategyExecutor_) external onlyOwner {
+  function setMatrixStrategyExecutor(address hubMatrixVault, address strategyExecutor_)
+    external
+    onlyRole(DEFAULT_ADMIN_ROLE)
+  {
     MatrixStorageV1 storage $ = _getMatrixStorageV1();
     MatrixInfo storage matrixInfo = $.matrices[hubMatrixVault];
 
