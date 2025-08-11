@@ -23,6 +23,7 @@ contract MitosisVaultTest is Toolkit {
   MockVLFStrategyExecutor internal _vlfStrategyExecutor;
 
   address immutable owner = makeAddr('owner');
+  address immutable liquidityManager = makeAddr('liquidityManager');
   address immutable mitosis = makeAddr('mitosis');
   address immutable hubVLFVault = makeAddr('hubVLFVault');
 
@@ -38,8 +39,10 @@ contract MitosisVaultTest is Toolkit {
 
     _vlfStrategyExecutor = new MockVLFStrategyExecutor(_mitosisVault, _token, hubVLFVault);
 
-    vm.prank(owner);
+    vm.startPrank(owner);
+    _mitosisVault.grantRole(_mitosisVault.LIQUIDITY_MANAGER_ROLE(), liquidityManager);
     _mitosisVault.setEntrypoint(address(_mitosisVaultEntrypoint));
+    vm.stopPrank();
   }
 
   function test_initializeAsset() public {
@@ -82,7 +85,7 @@ contract MitosisVaultTest is Toolkit {
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(_token));
 
-    vm.prank(owner);
+    vm.prank(liquidityManager);
     _mitosisVault.setCap(address(_token), type(uint64).max);
 
     vm.prank(owner);
@@ -182,7 +185,7 @@ contract MitosisVaultTest is Toolkit {
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(_token));
 
-    vm.prank(owner);
+    vm.prank(liquidityManager);
     _mitosisVault.setCap(address(_token), type(uint64).max);
 
     vm.prank(address(_mitosisVaultEntrypoint));
@@ -245,7 +248,7 @@ contract MitosisVaultTest is Toolkit {
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(_token));
 
-    vm.prank(owner);
+    vm.prank(liquidityManager);
     _mitosisVault.setCap(address(_token), type(uint128).max); // set cap to infinite (temp)
 
     // vm.prank(address(_mitosisVaultEntrypoint));
@@ -860,17 +863,33 @@ contract MitosisVaultTest is Toolkit {
     vm.assume(2 < amount);
     test_deposit(amount);
 
-    vm.prank(owner);
+    vm.prank(liquidityManager);
     _mitosisVault.setCap(address(_token), type(uint128).max);
 
     assertEq(_mitosisVault.maxCap(address(_token)), type(uint128).max);
     assertEq(_mitosisVault.availableCap(address(_token)), type(uint128).max - amount);
 
-    vm.prank(owner);
+    vm.prank(liquidityManager);
     _mitosisVault.setCap(address(_token), amount - 1);
 
     assertEq(_mitosisVault.maxCap(address(_token)), amount - 1);
     assertEq(_mitosisVault.availableCap(address(_token)), 0);
+  }
+
+  function test_setCap_Unauthorized() public {
+    vm.prank(address(_mitosisVaultEntrypoint));
+    _mitosisVault.initializeAsset(address(_token));
+
+    address unauthorizedUser = makeAddr('unauthorizedUser');
+
+    vm.expectRevert(_errAccessControlUnauthorized(unauthorizedUser, _mitosisVault.LIQUIDITY_MANAGER_ROLE()));
+    vm.prank(unauthorizedUser);
+    _mitosisVault.setCap(address(_token), 100 ether);
+
+    // Owner also cannot call setCap without LIQUIDITY_MANAGER_ROLE
+    vm.expectRevert(_errAccessControlUnauthorized(owner, _mitosisVault.LIQUIDITY_MANAGER_ROLE()));
+    vm.prank(owner);
+    _mitosisVault.setCap(address(_token), 100 ether);
   }
 
   function _errAssetAlreadyInitialized(address asset) internal pure returns (bytes memory) {

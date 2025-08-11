@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
-import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
 
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IMitosisVaultVLF, VLFAction } from '../interfaces/branch/IMitosisVaultVLF.sol';
@@ -12,7 +12,7 @@ import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
 
-abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, Ownable2StepUpgradeable {
+abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEnumerableUpgradeable {
   using ERC7201Utils for string;
   using SafeERC20 for IERC20;
 
@@ -214,19 +214,19 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, Ownable2StepUpg
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
-  function haltVLF(address hubVLFVault, VLFAction action) external onlyOwner {
+  function haltVLF(address hubVLFVault, VLFAction action) external onlyRole(DEFAULT_ADMIN_ROLE) {
     VLFStorageV1 storage $ = _getVLFStorageV1();
     _assertVLFInitialized($, hubVLFVault);
     return _haltVLF($, hubVLFVault, action);
   }
 
-  function resumeVLF(address hubVLFVault, VLFAction action) external onlyOwner {
+  function resumeVLF(address hubVLFVault, VLFAction action) external onlyRole(DEFAULT_ADMIN_ROLE) {
     VLFStorageV1 storage $ = _getVLFStorageV1();
     _assertVLFInitialized($, hubVLFVault);
     return _resumeVLF($, hubVLFVault, action);
   }
 
-  function setVLFStrategyExecutor(address hubVLFVault, address strategyExecutor_) external onlyOwner {
+  function setVLFStrategyExecutor(address hubVLFVault, address strategyExecutor_) external onlyRole(DEFAULT_ADMIN_ROLE) {
     VLFStorageV1 storage $ = _getVLFStorageV1();
     VLFInfo storage vlfInfo = $.vlfs[hubVLFVault];
 
