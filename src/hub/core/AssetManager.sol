@@ -69,9 +69,9 @@ contract AssetManager is
     return $.entrypoint.quoteInitializeAsset(chainId, branchAsset);
   }
 
-  function quoteInitializeVLF(uint256 chainId, address vlf, address branchAsset) external view returns (uint256) {
+  function quoteInitializeVLF(uint256 chainId, address vlfVault, address branchAsset) external view returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
-    return $.entrypoint.quoteInitializeVLF(chainId, vlf, branchAsset);
+    return $.entrypoint.quoteInitializeVLF(chainId, vlfVault, branchAsset);
   }
 
   function quoteWithdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
@@ -83,9 +83,9 @@ contract AssetManager is
     return $.entrypoint.quoteWithdraw(chainId, branchAsset, to, amount);
   }
 
-  function quoteAllocateVLF(uint256 chainId, address vlf, uint256 amount) external view returns (uint256) {
+  function quoteAllocateVLF(uint256 chainId, address vlfVault, uint256 amount) external view returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
-    return $.entrypoint.quoteAllocateVLF(chainId, vlf, amount);
+    return $.entrypoint.quoteAllocateVLF(chainId, vlfVault, amount);
   }
 
   //=========== NOTE: ASSET FUNCTIONS ===========//
@@ -102,7 +102,7 @@ contract AssetManager is
     emit Deposited(chainId, hubAsset, to, amount);
   }
 
-  function depositWithSupplyVLF(uint256 chainId, address branchAsset, address to, address vlf, uint256 amount)
+  function depositWithSupplyVLF(uint256 chainId, address branchAsset, address to, address vlfVault, uint256 amount)
     external
     whenNotPaused
   {
@@ -110,30 +110,30 @@ contract AssetManager is
 
     _assertOnlyEntrypoint($);
     _assertBranchAssetPairExist($, chainId, branchAsset);
-    _assertVLFInitialized($, chainId, vlf);
+    _assertVLFInitialized($, chainId, vlfVault);
 
-    // NOTE: We don't need to check if the vlf is registered instance of VLFVaultFactory
+    // NOTE: We don't need to check if the vlfVault is registered instance of VLFVaultFactory
 
     address hubAsset = _branchAssetState($, chainId, branchAsset).hubAsset;
     uint256 supplyAmount = 0;
 
-    if (hubAsset != IVLFVault(vlf).asset()) {
+    if (hubAsset != IVLFVault(vlfVault).asset()) {
       // just transfer hubAsset if it's not the same as the VLFVault's asset
       _mint($, chainId, hubAsset, to, amount);
     } else {
       _mint($, chainId, hubAsset, address(this), amount);
 
-      uint256 maxAssets = IVLFVault(vlf).maxDepositFromChainId(to, chainId);
+      uint256 maxAssets = IVLFVault(vlfVault).maxDepositFromChainId(to, chainId);
       supplyAmount = amount < maxAssets ? amount : maxAssets;
 
-      IHubAsset(hubAsset).approve(vlf, supplyAmount);
-      IVLFVault(vlf).depositFromChainId(supplyAmount, to, chainId);
+      IHubAsset(hubAsset).approve(vlfVault, supplyAmount);
+      IVLFVault(vlfVault).depositFromChainId(supplyAmount, to, chainId);
 
       // transfer remaining hub assets to `to` because there could be remaining hub assets due to the cap of VLF vault.
       if (supplyAmount < amount) IHubAsset(hubAsset).transfer(to, amount - supplyAmount);
     }
 
-    emit DepositedWithSupplyVLF(chainId, hubAsset, to, vlf, amount, supplyAmount);
+    emit DepositedWithSupplyVLF(chainId, hubAsset, to, vlfVault, amount, supplyAmount);
   }
 
   function withdraw(uint256 chainId, address hubAsset, address to, uint256 amount) external payable whenNotPaused {
@@ -157,88 +157,88 @@ contract AssetManager is
   //=========== NOTE: VLF FUNCTIONS ===========//
 
   /// @dev only strategist
-  function allocateVLF(uint256 chainId, address vlf, uint256 amount) external payable whenNotPaused {
+  function allocateVLF(uint256 chainId, address vlfVault, uint256 amount) external payable whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertOnlyStrategist($, vlf);
-    _assertVLFInitialized($, chainId, vlf);
+    _assertOnlyStrategist($, vlfVault);
+    _assertVLFInitialized($, chainId, vlfVault);
 
-    uint256 idle = _vlfIdle($, vlf);
-    require(amount <= idle, IAssetManager__VLFInsufficient(vlf));
+    uint256 idle = _vlfIdle($, vlfVault);
+    require(amount <= idle, IAssetManager__VLFInsufficient(vlfVault));
 
-    $.entrypoint.allocateVLF{ value: msg.value }(chainId, vlf, amount);
+    $.entrypoint.allocateVLF{ value: msg.value }(chainId, vlfVault, amount);
 
-    address hubAsset = IVLFVault(vlf).asset();
+    address hubAsset = IVLFVault(vlfVault).asset();
     _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, amount);
     _hubAssetState($, hubAsset, chainId).branchAllocated += amount;
-    $.vlfStates[vlf].allocation += amount;
+    $.vlfStates[vlfVault].allocation += amount;
 
-    emit VLFAllocated(_msgSender(), chainId, vlf, amount);
+    emit VLFAllocated(_msgSender(), chainId, vlfVault, amount);
   }
 
   /// @dev only entrypoint
-  function deallocateVLF(uint256 chainId, address vlf, uint256 amount) external whenNotPaused {
+  function deallocateVLF(uint256 chainId, address vlfVault, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
 
-    address hubAsset = IVLFVault(vlf).asset();
+    address hubAsset = IVLFVault(vlfVault).asset();
     _hubAssetState($, hubAsset, chainId).branchAllocated -= amount;
-    $.vlfStates[vlf].allocation -= amount;
+    $.vlfStates[vlfVault].allocation -= amount;
 
-    emit VLFDeallocated(chainId, vlf, amount);
+    emit VLFDeallocated(chainId, vlfVault, amount);
   }
 
   /// @dev only strategist
-  function reserveVLF(address vlf, uint256 claimCount) external whenNotPaused {
+  function reserveVLF(address vlfVault, uint256 claimCount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertOnlyStrategist($, vlf);
+    _assertOnlyStrategist($, vlfVault);
 
-    uint256 idle = _vlfIdle($, vlf);
-    (, uint256 simulatedTotalReservedAssets) = $.reclaimQueue.previewSync(vlf, claimCount);
-    require(simulatedTotalReservedAssets > 0, IAssetManager__NothingToReserve(vlf));
-    require(simulatedTotalReservedAssets <= idle, IAssetManager__VLFInsufficient(vlf));
+    uint256 idle = _vlfIdle($, vlfVault);
+    (, uint256 simulatedTotalReservedAssets) = $.reclaimQueue.previewSync(vlfVault, claimCount);
+    require(simulatedTotalReservedAssets > 0, IAssetManager__NothingToReserve(vlfVault));
+    require(simulatedTotalReservedAssets <= idle, IAssetManager__VLFInsufficient(vlfVault));
 
-    (uint256 totalReservedShares, uint256 totalReservedAssets) = $.reclaimQueue.sync(_msgSender(), vlf, claimCount);
+    (uint256 totalReservedShares, uint256 totalReservedAssets) = $.reclaimQueue.sync(_msgSender(), vlfVault, claimCount);
 
-    emit VLFReserved(_msgSender(), vlf, claimCount, totalReservedShares, totalReservedAssets);
+    emit VLFReserved(_msgSender(), vlfVault, claimCount, totalReservedShares, totalReservedAssets);
   }
 
   /// @dev only entrypoint
-  function settleVLFYield(uint256 chainId, address vlf, uint256 amount) external whenNotPaused {
+  function settleVLFYield(uint256 chainId, address vlfVault, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
 
     // Increase VLFVault's shares value.
-    address asset = IVLFVault(vlf).asset();
-    _mint($, chainId, asset, address(vlf), amount);
+    address asset = IVLFVault(vlfVault).asset();
+    _mint($, chainId, asset, address(vlfVault), amount);
 
     _hubAssetState($, asset, chainId).branchAllocated += amount;
-    $.vlfStates[vlf].allocation += amount;
+    $.vlfStates[vlfVault].allocation += amount;
 
-    emit VLFRewardSettled(chainId, vlf, asset, amount);
+    emit VLFRewardSettled(chainId, vlfVault, asset, amount);
   }
 
   /// @dev only entrypoint
-  function settleVLFLoss(uint256 chainId, address vlf, uint256 amount) external whenNotPaused {
+  function settleVLFLoss(uint256 chainId, address vlfVault, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
 
     // Decrease VLFVault's shares value.
-    address asset = IVLFVault(vlf).asset();
-    _burn($, chainId, asset, vlf, amount);
+    address asset = IVLFVault(vlfVault).asset();
+    _burn($, chainId, asset, vlfVault, amount);
 
     _hubAssetState($, asset, chainId).branchAllocated -= amount;
-    $.vlfStates[vlf].allocation -= amount;
+    $.vlfStates[vlfVault].allocation -= amount;
 
-    emit VLFLossSettled(chainId, vlf, asset, amount);
+    emit VLFLossSettled(chainId, vlfVault, asset, amount);
   }
 
   /// @dev only entrypoint
-  function settleVLFExtraRewards(uint256 chainId, address vlf, address branchReward, uint256 amount)
+  function settleVLFExtraRewards(uint256 chainId, address vlfVault, address branchReward, uint256 amount)
     external
     whenNotPaused
   {
@@ -250,10 +250,10 @@ contract AssetManager is
 
     address hubReward = _branchAssetState($, chainId, branchReward).hubAsset;
     _mint($, chainId, hubReward, address(this), amount);
-    emit VLFRewardSettled(chainId, vlf, hubReward, amount);
+    emit VLFRewardSettled(chainId, vlfVault, hubReward, amount);
 
     IHubAsset(hubReward).approve(address($.treasury), amount);
-    $.treasury.storeRewards(vlf, hubReward, amount);
+    $.treasury.storeRewards(vlfVault, hubReward, amount);
   }
 
   function setBranchLiquidityThreshold(uint256 chainId, address hubAsset, uint256 threshold)
@@ -295,20 +295,20 @@ contract AssetManager is
     emit AssetInitialized(hubAsset, chainId, branchAsset);
   }
 
-  function initializeVLF(uint256 chainId, address vlf) external payable onlyOwner whenNotPaused {
+  function initializeVLF(uint256 chainId, address vlfVault) external payable onlyOwner whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
     _assertVLFVaultFactorySet($);
-    _assertVLFVaultInstance($, vlf);
+    _assertVLFVaultInstance($, vlfVault);
 
-    address hubAsset = IVLFVault(vlf).asset();
+    address hubAsset = IVLFVault(vlfVault).asset();
     address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    _assertVLFNotInitialized($, chainId, vlf);
-    $.vlfInitialized[chainId][vlf] = true;
+    _assertVLFNotInitialized($, chainId, vlfVault);
+    $.vlfInitialized[chainId][vlfVault] = true;
 
-    $.entrypoint.initializeVLF{ value: msg.value }(chainId, vlf, branchAsset);
-    emit VLFInitialized(hubAsset, chainId, vlf, branchAsset);
+    $.entrypoint.initializeVLF{ value: msg.value }(chainId, vlfVault, branchAsset);
+    emit VLFInitialized(hubAsset, chainId, vlfVault, branchAsset);
   }
 
   function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external onlyOwner {
@@ -338,12 +338,12 @@ contract AssetManager is
     _setHubAssetFactory(_getStorageV1(), hubAssetFactory_);
   }
 
-  function setVLFVaultFactory(address vlfFactory_) external onlyOwner {
-    _setVLFVaultFactory(_getStorageV1(), vlfFactory_);
+  function setVLFVaultFactory(address vlfVaultFactory_) external onlyOwner {
+    _setVLFVaultFactory(_getStorageV1(), vlfVaultFactory_);
   }
 
-  function setStrategist(address vlf, address strategist) external onlyOwner {
-    _setStrategist(_getStorageV1(), vlf, strategist);
+  function setStrategist(address vlfVault, address strategist) external onlyOwner {
+    _setStrategist(_getStorageV1(), vlfVault, strategist);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//

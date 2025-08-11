@@ -38,10 +38,10 @@ interface IAssetManagerStorageV1 {
 
   /**
    * @notice Emitted when a new strategist is set for a VLF
-   * @param vlf The address of the VLF
+   * @param vlfVault The address of the VLF
    * @param strategist The address of the new strategist
    */
-  event StrategistSet(address indexed vlf, address indexed strategist);
+  event StrategistSet(address indexed vlfVault, address indexed strategist);
 
   /**
    * @notice Emitted when the withdrawable deposit threshold is updated for a hub asset on a specific chain
