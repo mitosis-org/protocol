@@ -23,7 +23,7 @@ import { Toolkit } from '../../util/Toolkit.sol';
 
 contract VLFStrategyExecutorTest is Toolkit {
   MitosisVault internal _mitosisVault;
-  VLFStrategyExecutor internal _matrixStrategyExecutor;
+  VLFStrategyExecutor internal _vlfStrategyExecutor;
   MockManagerWithMerkleVerification internal _managerWithMerkleVerification;
   MockMitosisVaultEntrypoint internal _mitosisVaultEntrypoint;
   MockERC20Snapshots internal _token;
@@ -45,7 +45,7 @@ contract VLFStrategyExecutorTest is Toolkit {
     _token = new MockERC20Snapshots();
     _token.initialize('Token', 'TKN');
 
-    _matrixStrategyExecutor = VLFStrategyExecutor(
+    _vlfStrategyExecutor = VLFStrategyExecutor(
       payable(
         _proxy(
           address(new VLFStrategyExecutor()),
@@ -64,8 +64,8 @@ contract VLFStrategyExecutorTest is Toolkit {
 
     _mitosisVault.setEntrypoint(address(_mitosisVaultEntrypoint));
 
-    _matrixStrategyExecutor.setTally(address(_testVaultTally));
-    _matrixStrategyExecutor.setExecutor(address(_managerWithMerkleVerification));
+    _vlfStrategyExecutor.setTally(address(_testVaultTally));
+    _vlfStrategyExecutor.setExecutor(address(_managerWithMerkleVerification));
 
     vm.stopPrank();
   }
@@ -89,7 +89,7 @@ contract VLFStrategyExecutorTest is Toolkit {
     assertEq(_testVaultTally.totalBalance(''), 0);
 
     _managerWithMerkleVerification.manage(
-      address(_matrixStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_vlfStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
     assertEq(_token.balanceOf(makeAddr('user1')), 0);
@@ -99,7 +99,7 @@ contract VLFStrategyExecutorTest is Toolkit {
 
   function test_execute_InvalidAddress_executor() public {
     vm.prank(owner);
-    _matrixStrategyExecutor.setExecutor(makeAddr('fakeExecutor'));
+    _vlfStrategyExecutor.setExecutor(makeAddr('fakeExecutor'));
 
     (
       bytes32[][] memory manageProofs,
@@ -120,7 +120,7 @@ contract VLFStrategyExecutorTest is Toolkit {
 
     vm.expectRevert(StdError.Unauthorized.selector);
     _managerWithMerkleVerification.manage(
-      address(_matrixStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_vlfStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
   }
 

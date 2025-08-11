@@ -24,7 +24,7 @@ contract MitosisVaultTest is Toolkit {
 
   address immutable owner = makeAddr('owner');
   address immutable mitosis = makeAddr('mitosis');
-  address immutable hubVLF = makeAddr('hubVLF');
+  address immutable hubVLFVault = makeAddr('hubVLFVault');
 
   function setUp() public {
     _mitosisVault = MitosisVault(
@@ -36,7 +36,7 @@ contract MitosisVaultTest is Toolkit {
     _token = new MockERC20Snapshots();
     _token.initialize('Token', 'TKN');
 
-    _vlfStrategyExecutor = new MockVLFStrategyExecutor(_mitosisVault, _token, hubVLF);
+    _vlfStrategyExecutor = new MockVLFStrategyExecutor(_mitosisVault, _token, hubVLFVault);
 
     vm.prank(owner);
     _mitosisVault.setEntrypoint(address(_mitosisVaultEntrypoint));
@@ -186,7 +186,7 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.setCap(address(_token), type(uint64).max);
 
     vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.initializeVLF(hubVLF, address(_token));
+    _mitosisVault.initializeVLF(hubVLFVault, address(_token));
 
     vm.prank(owner);
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
@@ -194,7 +194,7 @@ contract MitosisVaultTest is Toolkit {
     vm.startPrank(user1);
 
     _token.approve(address(_mitosisVault), amount);
-    _mitosisVault.depositWithSupplyVLF(address(_token), user1, hubVLF, amount);
+    _mitosisVault.depositWithSupplyVLF(address(_token), user1, hubVLFVault, amount);
 
     vm.stopPrank();
 
@@ -214,7 +214,7 @@ contract MitosisVaultTest is Toolkit {
     _token.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(_errAssetNotInitialized(address(_token)));
-    _mitosisVault.depositWithSupplyVLF(address(_token), user1, hubVLF, 100 ether);
+    _mitosisVault.depositWithSupplyVLF(address(_token), user1, hubVLFVault, 100 ether);
 
     vm.stopPrank();
   }
@@ -232,7 +232,7 @@ contract MitosisVaultTest is Toolkit {
     _token.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(StdError.Halted.selector);
-    _mitosisVault.depositWithSupplyVLF(address(_token), user1, hubVLF, 100 ether);
+    _mitosisVault.depositWithSupplyVLF(address(_token), user1, hubVLFVault, 100 ether);
 
     vm.stopPrank();
   }
@@ -249,7 +249,7 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.setCap(address(_token), type(uint128).max); // set cap to infinite (temp)
 
     // vm.prank(address(_mitosisVaultEntrypoint));
-    // _mitosisVault.initializeVLF(hubVLF, address(_token));
+    // _mitosisVault.initializeVLF(hubVLFVault, address(_token));
 
     vm.prank(owner);
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
@@ -258,8 +258,8 @@ contract MitosisVaultTest is Toolkit {
 
     _token.approve(address(_mitosisVault), 100 ether);
 
-    vm.expectRevert(_errVLFNotInitialized(hubVLF));
-    _mitosisVault.depositWithSupplyVLF(address(_token), user1, hubVLF, 100 ether);
+    vm.expectRevert(_errVLFNotInitialized(hubVLFVault));
+    _mitosisVault.depositWithSupplyVLF(address(_token), user1, hubVLFVault, 100 ether);
 
     vm.stopPrank();
   }
@@ -273,7 +273,7 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.initializeAsset(address(_token));
 
     vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.initializeVLF(hubVLF, address(_token));
+    _mitosisVault.initializeVLF(hubVLFVault, address(_token));
 
     vm.prank(owner);
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
@@ -283,7 +283,7 @@ contract MitosisVaultTest is Toolkit {
     _token.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(_errZeroToAddress());
-    _mitosisVault.depositWithSupplyVLF(address(_token), address(0), hubVLF, 100 ether);
+    _mitosisVault.depositWithSupplyVLF(address(_token), address(0), hubVLFVault, 100 ether);
 
     vm.stopPrank();
   }
@@ -297,7 +297,7 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.initializeAsset(address(_token));
 
     vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.initializeVLF(hubVLF, address(_token));
+    _mitosisVault.initializeVLF(hubVLFVault, address(_token));
 
     vm.prank(owner);
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
@@ -307,7 +307,7 @@ contract MitosisVaultTest is Toolkit {
     _token.approve(address(_mitosisVault), 0);
 
     vm.expectRevert(StdError.ZeroAmount.selector);
-    _mitosisVault.depositWithSupplyVLF(address(_token), user1, hubVLF, 0);
+    _mitosisVault.depositWithSupplyVLF(address(_token), user1, hubVLFVault, 0);
 
     vm.stopPrank();
   }
@@ -360,12 +360,12 @@ contract MitosisVaultTest is Toolkit {
   }
 
   function test_initializeVLF() public {
-    assertFalse(_mitosisVault.isVLFInitialized(hubVLF));
+    assertFalse(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     vm.startPrank(address(_mitosisVaultEntrypoint));
 
     _mitosisVault.initializeAsset(address(_token));
-    _mitosisVault.initializeVLF(hubVLF, address(_token));
+    _mitosisVault.initializeVLF(hubVLFVault, address(_token));
 
     vm.stopPrank();
 
@@ -373,35 +373,35 @@ contract MitosisVaultTest is Toolkit {
   }
 
   function test_initializeVLF_Unauthorized() public {
-    assertFalse(_mitosisVault.isVLFInitialized(hubVLF));
+    assertFalse(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     vm.prank(address(_mitosisVaultEntrypoint));
     _mitosisVault.initializeAsset(address(_token));
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.initializeVLF(hubVLF, address(_token));
+    _mitosisVault.initializeVLF(hubVLFVault, address(_token));
   }
 
   function test_initializeVLF_VLFAlreadyInitialized() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     vm.startPrank(address(_mitosisVaultEntrypoint));
 
-    vm.expectRevert(_errVLFAlreadyInitialized(hubVLF));
-    _mitosisVault.initializeVLF(hubVLF, address(_token));
+    vm.expectRevert(_errVLFAlreadyInitialized(hubVLFVault));
+    _mitosisVault.initializeVLF(hubVLFVault, address(_token));
 
     vm.stopPrank();
   }
 
   function test_initializeVLF_AssetNotInitialized() public {
-    assertFalse(_mitosisVault.isVLFInitialized(hubVLF));
+    assertFalse(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     vm.startPrank(address(_mitosisVaultEntrypoint));
 
     // _mitosisVault.initializeAsset(address(_token));
     vm.expectRevert(_errAssetNotInitialized(address(_token)));
-    _mitosisVault.initializeVLF(hubVLF, address(_token));
+    _mitosisVault.initializeVLF(hubVLFVault, address(_token));
 
     vm.stopPrank();
   }
@@ -410,11 +410,11 @@ contract MitosisVaultTest is Toolkit {
     vm.startPrank(address(_mitosisVaultEntrypoint));
 
     _mitosisVault.initializeAsset(address(_token));
-    _mitosisVault.initializeVLF(hubVLF, address(_token));
+    _mitosisVault.initializeVLF(hubVLFVault, address(_token));
 
-    _mitosisVault.allocateVLF(hubVLF, 100 ether);
+    _mitosisVault.allocateVLF(hubVLFVault, 100 ether);
 
-    assertEq(_mitosisVault.availableVLF(hubVLF), 100 ether);
+    assertEq(_mitosisVault.availableVLF(hubVLFVault), 100 ether);
 
     vm.stopPrank();
   }
@@ -424,7 +424,7 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.initializeAsset(address(_token));
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.initializeVLF(hubVLF, address(_token));
+    _mitosisVault.initializeVLF(hubVLFVault, address(_token));
   }
 
   function test_allocateVLF_VLFNotInitialized() public {
@@ -432,66 +432,66 @@ contract MitosisVaultTest is Toolkit {
 
     _mitosisVault.initializeAsset(address(_token));
 
-    // _mitosisVault.initializeVLF(hubVLF, address(_token));
+    // _mitosisVault.initializeVLF(hubVLFVault, address(_token));
 
-    vm.expectRevert(_errVLFNotInitialized(hubVLF));
-    _mitosisVault.allocateVLF(hubVLF, 100 ether);
+    vm.expectRevert(_errVLFNotInitialized(hubVLFVault));
+    _mitosisVault.allocateVLF(hubVLFVault, 100 ether);
 
     vm.stopPrank();
   }
 
   function test_deallocateVLF() public {
     test_allocateVLF();
-    assertEq(_mitosisVault.availableVLF(hubVLF), 100 ether);
+    assertEq(_mitosisVault.availableVLF(hubVLFVault), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     vm.prank(address(_vlfStrategyExecutor));
-    _mitosisVault.deallocateVLF(hubVLF, 10 ether);
-    assertEq(_mitosisVault.availableVLF(hubVLF), 90 ether);
+    _mitosisVault.deallocateVLF(hubVLFVault, 10 ether);
+    assertEq(_mitosisVault.availableVLF(hubVLFVault), 90 ether);
 
     vm.prank(address(_vlfStrategyExecutor));
-    _mitosisVault.deallocateVLF(hubVLF, 90 ether);
-    assertEq(_mitosisVault.availableVLF(hubVLF), 0 ether);
+    _mitosisVault.deallocateVLF(hubVLFVault, 90 ether);
+    assertEq(_mitosisVault.availableVLF(hubVLFVault), 0 ether);
   }
 
   function test_deallocateVLF_Unauthorized() public {
     test_allocateVLF();
-    assertEq(_mitosisVault.availableVLF(hubVLF), 100 ether);
+    assertEq(_mitosisVault.availableVLF(hubVLFVault), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.deallocateVLF(hubVLF, 10 ether);
+    _mitosisVault.deallocateVLF(hubVLFVault, 10 ether);
   }
 
   function test_deallocateVLF_InsufficientVLF() public {
     test_allocateVLF();
-    assertEq(_mitosisVault.availableVLF(hubVLF), 100 ether);
+    assertEq(_mitosisVault.availableVLF(hubVLFVault), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     vm.expectRevert();
-    _mitosisVault.deallocateVLF(hubVLF, 101 ether);
+    _mitosisVault.deallocateVLF(hubVLFVault, 101 ether);
   }
 
   function test_fetchVLF() public {
     test_allocateVLF();
     _token.mint(address(_mitosisVault), 100 ether);
-    assertEq(_mitosisVault.availableVLF(hubVLF), 100 ether);
+    assertEq(_mitosisVault.availableVLF(hubVLFVault), 100 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     vm.startPrank(address(_vlfStrategyExecutor));
-    _mitosisVault.fetchVLF(hubVLF, 10 ether);
+    _mitosisVault.fetchVLF(hubVLFVault, 10 ether);
     assertEq(_token.balanceOf(address(_vlfStrategyExecutor)), 10 ether);
 
-    _mitosisVault.fetchVLF(hubVLF, 90 ether);
+    _mitosisVault.fetchVLF(hubVLFVault, 90 ether);
     assertEq(_token.balanceOf(address(_vlfStrategyExecutor)), 100 ether);
 
     vm.stopPrank();
@@ -504,33 +504,33 @@ contract MitosisVaultTest is Toolkit {
   function test_fetchVLF_Unauthorized() public {
     test_allocateVLF();
     _token.mint(address(_mitosisVault), 100 ether);
-    assertEq(_mitosisVault.availableVLF(hubVLF), 100 ether);
+    assertEq(_mitosisVault.availableVLF(hubVLFVault), 100 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.fetchVLF(hubVLF, 10 ether);
+    _mitosisVault.fetchVLF(hubVLFVault, 10 ether);
   }
 
   function test_fetchVLF_AssetHalted() public {
     test_allocateVLF();
     _token.mint(address(_mitosisVault), 100 ether);
-    assertEq(_mitosisVault.availableVLF(hubVLF), 100 ether);
+    assertEq(_mitosisVault.availableVLF(hubVLFVault), 100 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     vm.prank(owner);
 
-    _mitosisVault.haltVLF(hubVLF, VLFAction.FetchVLF);
+    _mitosisVault.haltVLF(hubVLFVault, VLFAction.FetchVLF);
 
     vm.startPrank(address(_vlfStrategyExecutor));
 
     vm.expectRevert(StdError.Halted.selector);
-    _mitosisVault.fetchVLF(hubVLF, 10 ether);
+    _mitosisVault.fetchVLF(hubVLFVault, 10 ether);
 
     vm.stopPrank();
   }
@@ -538,16 +538,16 @@ contract MitosisVaultTest is Toolkit {
   function test_fetchVLF_InsufficientVLF() public {
     test_allocateVLF();
     _token.mint(address(_mitosisVault), 100 ether);
-    assertEq(_mitosisVault.availableVLF(hubVLF), 100 ether);
+    assertEq(_mitosisVault.availableVLF(hubVLFVault), 100 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     vm.startPrank(address(_vlfStrategyExecutor));
 
     vm.expectRevert();
-    _mitosisVault.fetchVLF(hubVLF, 101 ether);
+    _mitosisVault.fetchVLF(hubVLFVault, 101 ether);
 
     vm.stopPrank();
   }
@@ -556,15 +556,15 @@ contract MitosisVaultTest is Toolkit {
     test_fetchVLF();
     assertEq(_token.balanceOf(address(_vlfStrategyExecutor)), 100 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 0);
-    assertEq(_mitosisVault.availableVLF(hubVLF), 0);
+    assertEq(_mitosisVault.availableVLF(hubVLFVault), 0);
 
     vm.startPrank(address(_vlfStrategyExecutor));
 
     _token.approve(address(_mitosisVault), 100 ether);
-    _mitosisVault.returnVLF(hubVLF, 100 ether);
+    _mitosisVault.returnVLF(hubVLFVault, 100 ether);
 
     assertEq(_token.balanceOf(address(_mitosisVault)), 100 ether);
-    assertEq(_mitosisVault.availableVLF(hubVLF), 100 ether);
+    assertEq(_mitosisVault.availableVLF(hubVLFVault), 100 ether);
 
     vm.stopPrank();
   }
@@ -577,24 +577,24 @@ contract MitosisVaultTest is Toolkit {
     test_fetchVLF();
     assertEq(_token.balanceOf(address(_vlfStrategyExecutor)), 100 ether);
     assertEq(_token.balanceOf(address(_mitosisVault)), 0);
-    assertEq(_mitosisVault.availableVLF(hubVLF), 0);
+    assertEq(_mitosisVault.availableVLF(hubVLFVault), 0);
 
     vm.prank(address(_vlfStrategyExecutor));
     _token.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.returnVLF(hubVLF, 100 ether);
+    _mitosisVault.returnVLF(hubVLFVault, 100 ether);
   }
 
   function test_settleVLFYield() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     vm.prank(address(_vlfStrategyExecutor));
-    _mitosisVault.settleVLFYield(hubVLF, 100 ether);
+    _mitosisVault.settleVLFYield(hubVLFVault, 100 ether);
   }
 
   function test_settleVLFYield_VLFNotInitialized() public {
@@ -603,24 +603,24 @@ contract MitosisVaultTest is Toolkit {
 
   function test_settleVLFYield_Unauthorized() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.settleVLFYield(hubVLF, 100 ether);
+    _mitosisVault.settleVLFYield(hubVLFVault, 100 ether);
   }
 
   function test_settleVLFLoss() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     vm.prank(address(_vlfStrategyExecutor));
-    _mitosisVault.settleVLFLoss(hubVLF, 100 ether);
+    _mitosisVault.settleVLFLoss(hubVLFVault, 100 ether);
   }
 
   function test_settleVLFLoss_VLFNotInitialized() public {
@@ -629,21 +629,21 @@ contract MitosisVaultTest is Toolkit {
 
   function test_settleVLFLoss_Unauthorized() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.settleVLFLoss(hubVLF, 100 ether);
+    _mitosisVault.settleVLFLoss(hubVLFVault, 100 ether);
   }
 
   function test_settleVLFExtraRewards() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     MockERC20Snapshots reward = new MockERC20Snapshots();
     reward.initialize('Reward', 'REWARD');
@@ -656,7 +656,7 @@ contract MitosisVaultTest is Toolkit {
     reward.mint(address(_vlfStrategyExecutor), 100 ether);
     reward.approve(address(_mitosisVault), 100 ether);
 
-    _mitosisVault.settleVLFExtraRewards(hubVLF, address(reward), 100 ether);
+    _mitosisVault.settleVLFExtraRewards(hubVLFVault, address(reward), 100 ether);
 
     vm.stopPrank();
   }
@@ -667,10 +667,10 @@ contract MitosisVaultTest is Toolkit {
 
   function test_settleVLFExtraRewards_Unauthorized() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     MockERC20Snapshots reward = new MockERC20Snapshots();
     reward.initialize('Reward', 'REWARD');
@@ -684,15 +684,15 @@ contract MitosisVaultTest is Toolkit {
     reward.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(StdError.Unauthorized.selector);
-    _mitosisVault.settleVLFExtraRewards(hubVLF, address(reward), 100 ether);
+    _mitosisVault.settleVLFExtraRewards(hubVLFVault, address(reward), 100 ether);
   }
 
   function test_settleVLFExtraRewards_AssetNotInitialized() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     MockERC20Snapshots reward = new MockERC20Snapshots();
     reward.initialize('Reward', 'REWARD');
@@ -706,17 +706,17 @@ contract MitosisVaultTest is Toolkit {
     reward.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(_errAssetNotInitialized(address(reward)));
-    _mitosisVault.settleVLFExtraRewards(hubVLF, address(reward), 100 ether);
+    _mitosisVault.settleVLFExtraRewards(hubVLFVault, address(reward), 100 ether);
 
     vm.stopPrank();
   }
 
   function test_settleVLFExtraRewards_InvalidRewardAddress() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     vm.startPrank(address(_vlfStrategyExecutor));
 
@@ -724,7 +724,7 @@ contract MitosisVaultTest is Toolkit {
     _token.approve(address(_mitosisVault), 100 ether);
 
     vm.expectRevert(_errInvalidAddress('reward'));
-    _mitosisVault.settleVLFExtraRewards(hubVLF, address(_token), 100 ether);
+    _mitosisVault.settleVLFExtraRewards(hubVLFVault, address(_token), 100 ether);
 
     vm.stopPrank();
   }
@@ -736,37 +736,37 @@ contract MitosisVaultTest is Toolkit {
 
   function test_setVLFStrategyExecutor() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
   }
 
   function test_setVLFStrategyExecutor_VLFNotInitialized() public {
     vm.startPrank(owner);
 
-    vm.expectRevert(_errVLFNotInitialized(hubVLF));
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    vm.expectRevert(_errVLFNotInitialized(hubVLFVault));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     vm.stopPrank();
   }
 
   function test_setVLFStrategyExecutor_VLFStrategyExecutorNotDrained() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(_vlfStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(_vlfStrategyExecutor));
 
     _token.mint(address(_vlfStrategyExecutor), 100 ether);
     assertTrue(_vlfStrategyExecutor.totalBalance() > 0);
 
-    MockVLFStrategyExecutor newVLFStrategyExecutor = new MockVLFStrategyExecutor(_mitosisVault, _token, hubVLF);
+    MockVLFStrategyExecutor newVLFStrategyExecutor = new MockVLFStrategyExecutor(_mitosisVault, _token, hubVLFVault);
 
     vm.startPrank(owner);
 
-    vm.expectRevert(_errVLFStrategyExecutorNotDraind(hubVLF, address(_vlfStrategyExecutor)));
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(newVLFStrategyExecutor));
+    vm.expectRevert(_errVLFStrategyExecutorNotDraind(hubVLFVault, address(_vlfStrategyExecutor)));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(newVLFStrategyExecutor));
 
     vm.stopPrank();
 
@@ -776,44 +776,44 @@ contract MitosisVaultTest is Toolkit {
     assertEq(_vlfStrategyExecutor.totalBalance(), 0);
 
     vm.prank(owner);
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(newVLFStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(newVLFStrategyExecutor));
 
-    assertEq(_mitosisVault.vlfStrategyExecutor(hubVLF), address(newVLFStrategyExecutor));
+    assertEq(_mitosisVault.vlfStrategyExecutor(hubVLFVault), address(newVLFStrategyExecutor));
   }
 
   function test_setVLFStrategyExecutor_InvalidVaultAddress() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     MockVLFStrategyExecutor newVLFStrategyExecutor =
-      new MockVLFStrategyExecutor(IMitosisVault(address(0)), _token, hubVLF);
+      new MockVLFStrategyExecutor(IMitosisVault(address(0)), _token, hubVLFVault);
 
     vm.startPrank(owner);
 
     vm.expectRevert(_errInvalidAddress('vlfStrategyExecutor.vault'));
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(newVLFStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(newVLFStrategyExecutor));
 
     vm.stopPrank();
   }
 
   function test_setVLFStrategyExecutor_InvalidAssetAddress() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     MockVLFStrategyExecutor newVLFStrategyExecutor =
-      new MockVLFStrategyExecutor(_mitosisVault, IERC20(address(0)), hubVLF);
+      new MockVLFStrategyExecutor(_mitosisVault, IERC20(address(0)), hubVLFVault);
 
     vm.startPrank(owner);
 
     vm.expectRevert(_errInvalidAddress('vlfStrategyExecutor.asset'));
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(newVLFStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(newVLFStrategyExecutor));
 
     vm.stopPrank();
   }
 
-  function test_setVLFStrategyExecutor_InvalidhubVLF() public {
+  function test_setVLFStrategyExecutor_InvalidhubVLFVault() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
     MockVLFStrategyExecutor newVLFStrategyExecutor;
     newVLFStrategyExecutor = new MockVLFStrategyExecutor(_mitosisVault, _token, address(0));
@@ -821,9 +821,9 @@ contract MitosisVaultTest is Toolkit {
     vm.startPrank(owner);
 
     vm.expectRevert();
-    _mitosisVault.setVLFStrategyExecutor(hubVLF, address(newVLFStrategyExecutor));
+    _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(newVLFStrategyExecutor));
 
-    newVLFStrategyExecutor = new MockVLFStrategyExecutor(_mitosisVault, _token, hubVLF);
+    newVLFStrategyExecutor = new MockVLFStrategyExecutor(_mitosisVault, _token, hubVLFVault);
 
     vm.expectRevert();
     _mitosisVault.setVLFStrategyExecutor(address(0), address(newVLFStrategyExecutor));
@@ -833,15 +833,15 @@ contract MitosisVaultTest is Toolkit {
 
   function test_isVLFActionHalted() public {
     test_initializeVLF();
-    assertTrue(_mitosisVault.isVLFInitialized(hubVLF));
+    assertTrue(_mitosisVault.isVLFInitialized(hubVLFVault));
 
-    assertFalse(_mitosisVault.isVLFActionHalted(hubVLF, VLFAction.FetchVLF)); // default to not halted
+    assertFalse(_mitosisVault.isVLFActionHalted(hubVLFVault, VLFAction.FetchVLF)); // default to not halted
 
     vm.prank(owner);
 
-    _mitosisVault.haltVLF(hubVLF, VLFAction.FetchVLF);
+    _mitosisVault.haltVLF(hubVLFVault, VLFAction.FetchVLF);
 
-    assertTrue(_mitosisVault.isVLFActionHalted(hubVLF, VLFAction.FetchVLF));
+    assertTrue(_mitosisVault.isVLFActionHalted(hubVLFVault, VLFAction.FetchVLF));
   }
 
   function test_isAssetActionHalted() public {
@@ -881,21 +881,21 @@ contract MitosisVaultTest is Toolkit {
     return abi.encodeWithSelector(IMitosisVault.IMitosisVault__AssetNotInitialized.selector, asset);
   }
 
-  function _errVLFAlreadyInitialized(address _hubVLF) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IMitosisVaultVLF.IMitosisVaultVLF__VLFAlreadyInitialized.selector, _hubVLF);
+  function _errVLFAlreadyInitialized(address _hubVLFVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IMitosisVaultVLF.IMitosisVaultVLF__VLFAlreadyInitialized.selector, _hubVLFVault);
   }
 
-  function _errVLFNotInitialized(address _hubVLF) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IMitosisVaultVLF.IMitosisVaultVLF__VLFNotInitialized.selector, _hubVLF);
+  function _errVLFNotInitialized(address _hubVLFVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IMitosisVaultVLF.IMitosisVaultVLF__VLFNotInitialized.selector, _hubVLFVault);
   }
 
-  function _errVLFStrategyExecutorNotDraind(address _hubVLF, address vlfStrategyExecutor_)
+  function _errVLFStrategyExecutorNotDraind(address _hubVLFVault, address vlfStrategyExecutor_)
     internal
     pure
     returns (bytes memory)
   {
     return abi.encodeWithSelector(
-      IMitosisVaultVLF.IMitosisVaultVLF__StrategyExecutorNotDrained.selector, _hubVLF, vlfStrategyExecutor_
+      IMitosisVaultVLF.IMitosisVaultVLF__StrategyExecutorNotDrained.selector, _hubVLFVault, vlfStrategyExecutor_
     );
   }
 }

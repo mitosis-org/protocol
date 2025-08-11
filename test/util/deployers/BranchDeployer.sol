@@ -62,7 +62,7 @@ abstract contract BranchDeployer is AbstractDeployer {
     ) = _dpbGovernanceEntrypoint(owner, mailbox, proxy.governance.timelock, hubDomain, hubGovernanceEntrypointAddress);
 
     impl.strategy.executor = deploy(
-      _urlBI('.matrix.strategy-executor'), //
+      _urlBI('.vlf.strategy-executor'), //
       type(VLFStrategyExecutor).creationCode
     );
     (
@@ -77,13 +77,13 @@ abstract contract BranchDeployer is AbstractDeployer {
 
     proxy.strategy.manager.das.base = BaseDecoderAndSanitizer(
       deploy(
-        _urlBP('.matrix.strategy.manager.das.base'), //
+        _urlBP('.vlf.strategy.manager.das.base'), //
         type(BaseDecoderAndSanitizer).creationCode
       )
     );
     proxy.strategy.manager.das.theoDepositVault = TheoDepositVaultDecoderAndSanitizer(
       deploy(
-        _urlBP('.matrix.strategy.manager.das.theoDepositVault'), //
+        _urlBP('.vlf.strategy.manager.das.theoDepositVault'), //
         type(TheoDepositVaultDecoderAndSanitizer).creationCode
       )
     );
@@ -151,15 +151,15 @@ abstract contract BranchDeployer is AbstractDeployer {
     return (impl, MitosisVaultEntrypoint(proxy));
   }
 
-  function _dpbVLFStrategyExecutorFactory(address owner_, address matrixStrategyExecutor)
+  function _dpbVLFStrategyExecutorFactory(address owner_, address vlfStrategyExecutor)
     private
     returns (address, VLFStrategyExecutorFactory)
   {
     (address impl, address payable proxy) = deployImplAndProxy(
       branchChainName,
-      '.matrix-strategy-executor-factory',
+      '.vlf-strategy-executor-factory',
       type(VLFStrategyExecutorFactory).creationCode,
-      abi.encodeCall(VLFStrategyExecutorFactory.initialize, (owner_, matrixStrategyExecutor))
+      abi.encodeCall(VLFStrategyExecutorFactory.initialize, (owner_, vlfStrategyExecutor))
     );
     return (impl, VLFStrategyExecutorFactory(proxy));
   }
@@ -167,7 +167,7 @@ abstract contract BranchDeployer is AbstractDeployer {
   function _dpbVLFStrategyManager(address owner_) private returns (address, ManagerWithMerkleVerification) {
     (address impl, address payable proxy) = deployImplAndProxy(
       branchChainName,
-      '.matrix-strategy-manager',
+      '.vlf-strategy-manager',
       type(ManagerWithMerkleVerification).creationCode,
       abi.encodeCall(ManagerWithMerkleVerification.initialize, (owner_))
     );

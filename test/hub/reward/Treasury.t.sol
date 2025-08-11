@@ -13,7 +13,7 @@ contract TreasuryTest is Toolkit {
 
   address immutable owner = makeAddr('owner');
   address immutable rewarder = makeAddr('rewarder');
-  address immutable matrixVault = makeAddr('matrixVault');
+  address immutable vlfVault = makeAddr('vlfVault');
 
   function setUp() public {
     _token = new MockERC20Snapshots();
@@ -32,7 +32,7 @@ contract TreasuryTest is Toolkit {
 
     vm.startPrank(rewarder);
     _token.approve(address(_treasury), 100 ether);
-    _treasury.storeRewards(matrixVault, address(_token), 100 ether);
+    _treasury.storeRewards(vlfVault, address(_token), 100 ether);
     vm.stopPrank();
 
     assertEq(_token.balanceOf(address(_treasury)), 100 ether);
@@ -49,7 +49,7 @@ contract TreasuryTest is Toolkit {
     _treasury.grantRole(dispatcherRole, dispatcher);
 
     vm.prank(dispatcher);
-    _treasury.dispatch(matrixVault, address(_token), 100 ether, distributor);
+    _treasury.dispatch(vlfVault, address(_token), 100 ether, distributor);
 
     assertEq(_token.balanceOf(address(_treasury)), 0);
     assertEq(_token.balanceOf(distributor), 100 ether);
