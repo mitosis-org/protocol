@@ -32,7 +32,7 @@ interface IAssetManagerStorageV1 {
 
   /**
    * @notice Emitted when a new VLF vault factory is set
-   * @param vlfFactory The address of the new VLF vault factory
+   * @param vlfVaultFactory The address of the new VLF vault factory
    */
   event VLFVaultFactorySet(address indexed vlfFactory);
 
