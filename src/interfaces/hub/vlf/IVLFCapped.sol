@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
-import { IMatrixVault } from './IMatrixVault.sol';
+import { IVLF } from './IVLF.sol';
 
-interface IMatrixVaultCapped is IMatrixVault {
+interface IVLFCapped is IVLF {
   function loadCap() external view returns (uint256);
 
   function loadSoftCap() external view returns (uint256);

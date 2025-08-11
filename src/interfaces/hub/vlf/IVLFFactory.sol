@@ -3,37 +3,37 @@ pragma solidity >=0.8.23 <0.9.0;
 
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 
-interface IMatrixVaultFactory {
-  enum VaultType {
+interface IVLFFactory {
+  enum VLFType {
     Unset,
     Basic,
     Capped
   }
 
-  struct BasicVaultInitArgs {
+  struct BasicVLFInitArgs {
     address assetManager;
     IERC20Metadata asset;
     string name;
     string symbol;
   }
 
-  struct CappedVaultInitArgs {
+  struct CappedVLFInitArgs {
     address assetManager;
     IERC20Metadata asset;
     string name;
     string symbol;
   }
 
-  event VaultTypeInitialized(VaultType indexed vaultType, address indexed beacon);
-  event MatrixVaultCreated(VaultType indexed vaultType, address indexed instance, bytes initArgs);
-  event MatrixVaultMigrated(VaultType indexed from, VaultType indexed to, address indexed instance);
-  event BeaconCalled(address indexed caller, VaultType indexed vaultType, bytes data, bool success, bytes ret);
+  event VLFTypeInitialized(VLFType indexed vlfType, address indexed beacon);
+  event VLFCreated(VLFType indexed vlfType, address indexed instance, bytes initArgs);
+  event VLFMigrated(VLFType indexed from, VLFType indexed to, address indexed instance);
+  event BeaconCalled(address indexed caller, VLFType indexed vlfType, bytes data, bool success, bytes ret);
 
-  error IMatrixVaultFactory__AlreadyInitialized();
-  error IMatrixVaultFactory__NotInitialized();
-  error IMatrixVaultFactory__NotAnInstance();
-  error IMatrixVaultFactory__InvalidVaultType();
-  error IMatrixVaultFactory__CallBeaconFailed(bytes ret);
+  error IVLFFactory__AlreadyInitialized();
+  error IVLFFactory__NotInitialized();
+  error IVLFFactory__NotAnInstance();
+  error IVLFFactory__InvalidVLFType();
+  error IVLFFactory__CallBeaconFailed(bytes ret);
 
   function beacon(uint8 t) external view returns (address);
   function isInstance(address instance) external view returns (bool);
@@ -41,7 +41,7 @@ interface IMatrixVaultFactory {
   function instances(uint8 t, uint256 index) external view returns (address);
   function instances(uint8 t, uint256[] memory indexes) external view returns (address[] memory);
   function instancesLength(uint8 t) external view returns (uint256);
-  function vaultTypeInitialized(uint8 t) external view returns (bool);
+  function vlfTypeInitialized(uint8 t) external view returns (bool);
 
   function callBeacon(uint8 t, bytes calldata data) external returns (bytes memory);
   function create(uint8 t, bytes calldata args) external returns (address);

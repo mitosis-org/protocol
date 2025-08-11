@@ -13,7 +13,7 @@ abstract contract MerkleRewardDistributorStorageV1 {
     bytes32 root;
     address[] rewards;
     uint256[] amounts;
-    mapping(address receiver => mapping(address matrixVault => bool)) claimed;
+    mapping(address receiver => mapping(address vault => bool)) claimed;
   }
 
   struct StorageV1 {

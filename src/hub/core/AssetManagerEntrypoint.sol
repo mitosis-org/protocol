@@ -82,14 +82,14 @@ contract AssetManagerEntrypoint is
     return _quoteToBranch(chainId, MsgType.MsgInitializeAsset, enc);
   }
 
-  function quoteInitializeMatrix(uint256 chainId, address matrixVault, address branchAsset)
+  function quoteInitializeVLF(uint256 chainId, address vlf, address branchAsset)
     external
     view
     returns (uint256)
   {
     bytes memory enc =
-      MsgInitializeMatrix({ matrixVault: matrixVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
-    return _quoteToBranch(chainId, MsgType.MsgInitializeMatrix, enc);
+      MsgInitializeVLF({ vlf: vlf.toBytes32(), asset: branchAsset.toBytes32() }).encode();
+    return _quoteToBranch(chainId, MsgType.MsgInitializeVLF, enc);
   }
 
   function quoteWithdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
@@ -101,9 +101,9 @@ contract AssetManagerEntrypoint is
     return _quoteToBranch(chainId, MsgType.MsgWithdraw, enc);
   }
 
-  function quoteAllocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external view returns (uint256) {
-    bytes memory enc = MsgAllocateMatrix({ matrixVault: matrixVault.toBytes32(), amount: amount }).encode();
-    return _quoteToBranch(chainId, MsgType.MsgAllocateMatrix, enc);
+  function quoteAllocateVLF(uint256 chainId, address vlf, uint256 amount) external view returns (uint256) {
+    bytes memory enc = MsgAllocateVLF({ vlf: vlf.toBytes32(), amount: amount }).encode();
+    return _quoteToBranch(chainId, MsgType.MsgAllocateVLF, enc);
   }
 
   function _quoteToBranch(uint256 chainId, MsgType msgType, bytes memory enc) internal view returns (uint256) {
@@ -125,15 +125,15 @@ contract AssetManagerEntrypoint is
     _dispatchToBranch(chainId, MsgType.MsgInitializeAsset, enc);
   }
 
-  function initializeMatrix(uint256 chainId, address matrixVault, address branchAsset)
+  function initializeVLF(uint256 chainId, address vlf, address branchAsset)
     external
     payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
     bytes memory enc =
-      MsgInitializeMatrix({ matrixVault: matrixVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
-    _dispatchToBranch(chainId, MsgType.MsgInitializeMatrix, enc);
+      MsgInitializeVLF({ vlf: vlf.toBytes32(), asset: branchAsset.toBytes32() }).encode();
+    _dispatchToBranch(chainId, MsgType.MsgInitializeVLF, enc);
   }
 
   function withdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
@@ -146,14 +146,14 @@ contract AssetManagerEntrypoint is
     _dispatchToBranch(chainId, MsgType.MsgWithdraw, enc);
   }
 
-  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount)
+  function allocateVLF(uint256 chainId, address vlf, uint256 amount)
     external
     payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
-    bytes memory enc = MsgAllocateMatrix({ matrixVault: matrixVault.toBytes32(), amount: amount }).encode();
-    _dispatchToBranch(chainId, MsgType.MsgAllocateMatrix, enc);
+    bytes memory enc = MsgAllocateVLF({ vlf: vlf.toBytes32(), amount: amount }).encode();
+    _dispatchToBranch(chainId, MsgType.MsgAllocateVLF, enc);
   }
 
   function _dispatchToBranch(uint256 chainId, MsgType msgType, bytes memory enc) internal {
@@ -181,36 +181,36 @@ contract AssetManagerEntrypoint is
       return;
     }
 
-    if (msgType == MsgType.MsgDepositWithSupplyMatrix) {
-      MsgDepositWithSupplyMatrix memory decoded = msg_.decodeDepositWithSupplyMatrix();
-      _assetManager.depositWithSupplyMatrix(
-        chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.matrixVault.toAddress(), decoded.amount
+    if (msgType == MsgType.MsgDepositWithSupplyVLF) {
+      MsgDepositWithSupplyVLF memory decoded = msg_.decodeDepositWithSupplyVLF();
+      _assetManager.depositWithSupplyVLF(
+        chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.vlf.toAddress(), decoded.amount
       );
       return;
     }
 
-    if (msgType == MsgType.MsgDeallocateMatrix) {
-      MsgDeallocateMatrix memory decoded = msg_.decodeDeallocateMatrix();
-      _assetManager.deallocateMatrix(chainId, decoded.matrixVault.toAddress(), decoded.amount);
+    if (msgType == MsgType.MsgDeallocateVLF) {
+      MsgDeallocateVLF memory decoded = msg_.decodeDeallocateVLF();
+      _assetManager.deallocateVLF(chainId, decoded.vlf.toAddress(), decoded.amount);
       return;
     }
 
-    if (msgType == MsgType.MsgSettleMatrixYield) {
-      MsgSettleMatrixYield memory decoded = msg_.decodeSettleMatrixYield();
-      _assetManager.settleMatrixYield(chainId, decoded.matrixVault.toAddress(), decoded.amount);
+    if (msgType == MsgType.MsgSettleVLFYield) {
+      MsgSettleVLFYield memory decoded = msg_.decodeSettleVLFYield();
+      _assetManager.settleVLFYield(chainId, decoded.vlf.toAddress(), decoded.amount);
       return;
     }
 
-    if (msgType == MsgType.MsgSettleMatrixLoss) {
-      MsgSettleMatrixLoss memory decoded = msg_.decodeSettleMatrixLoss();
-      _assetManager.settleMatrixLoss(chainId, decoded.matrixVault.toAddress(), decoded.amount);
+    if (msgType == MsgType.MsgSettleVLFLoss) {
+      MsgSettleVLFLoss memory decoded = msg_.decodeSettleVLFLoss();
+      _assetManager.settleVLFLoss(chainId, decoded.vlf.toAddress(), decoded.amount);
       return;
     }
 
-    if (msgType == MsgType.MsgSettleMatrixExtraRewards) {
-      MsgSettleMatrixExtraRewards memory decoded = msg_.decodeSettleMatrixExtraRewards();
-      _assetManager.settleMatrixExtraRewards(
-        chainId, decoded.matrixVault.toAddress(), decoded.reward.toAddress(), decoded.amount
+    if (msgType == MsgType.MsgSettleVLFExtraRewards) {
+      MsgSettleVLFExtraRewards memory decoded = msg_.decodeSettleVLFExtraRewards();
+      _assetManager.settleVLFExtraRewards(
+        chainId, decoded.vlf.toAddress(), decoded.reward.toAddress(), decoded.amount
       );
       return;
     }

@@ -13,14 +13,14 @@ import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
 import { Versioned } from '../lib/Versioned.sol';
-import { MitosisVaultMatrix } from './MitosisVaultMatrix.sol';
+import { MitosisVaultVLF } from './MitosisVaultVLF.sol';
 
 contract MitosisVault is
   IMitosisVault,
   Pausable,
   Ownable2StepUpgradeable,
   UUPSUpgradeable,
-  MitosisVaultMatrix,
+  MitosisVaultVLF,
   Versioned
 {
   using SafeERC20 for IERC20;
@@ -88,7 +88,7 @@ contract MitosisVault is
     return _isAssetInitialized(_getStorageV1(), asset);
   }
 
-  function entrypoint() public view override(IMitosisVault, MitosisVaultMatrix) returns (address) {
+  function entrypoint() public view override(IMitosisVault, MitosisVaultVLF) returns (address) {
     return address(_getStorageV1().entrypoint);
   }
 
