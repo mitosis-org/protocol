@@ -100,16 +100,9 @@ contract MitosisVaultEntrypoint is
     return _quoteToMitosis(enc, MsgType.MsgSettleVLFLoss);
   }
 
-  function quoteSettleVLFExtraRewards(address hubVLF, address reward, uint256 amount)
-    external
-    view
-    returns (uint256)
-  {
-    bytes memory enc = MsgSettleVLFExtraRewards({
-      vlf: hubVLF.toBytes32(),
-      reward: reward.toBytes32(),
-      amount: amount
-    }).encode();
+  function quoteSettleVLFExtraRewards(address hubVLF, address reward, uint256 amount) external view returns (uint256) {
+    bytes memory enc =
+      MsgSettleVLFExtraRewards({ vlf: hubVLF.toBytes32(), reward: reward.toBytes32(), amount: amount }).encode();
     return _quoteToMitosis(enc, MsgType.MsgSettleVLFExtraRewards);
   }
 
@@ -126,11 +119,7 @@ contract MitosisVaultEntrypoint is
     _dispatchToMitosis(enc, MsgType.MsgDeposit);
   }
 
-  function depositWithSupplyVLF(address asset, address to, address hubVLF, uint256 amount)
-    external
-    payable
-    onlyVault
-  {
+  function depositWithSupplyVLF(address asset, address to, address hubVLF, uint256 amount) external payable onlyVault {
     bytes memory enc = MsgDepositWithSupplyVLF({
       asset: asset.toBytes32(),
       to: to.toBytes32(),
@@ -156,11 +145,8 @@ contract MitosisVaultEntrypoint is
   }
 
   function settleVLFExtraRewards(address hubVLF, address reward, uint256 amount) external payable onlyVault {
-    bytes memory enc = MsgSettleVLFExtraRewards({
-      vlf: hubVLF.toBytes32(),
-      reward: reward.toBytes32(),
-      amount: amount
-    }).encode();
+    bytes memory enc =
+      MsgSettleVLFExtraRewards({ vlf: hubVLF.toBytes32(), reward: reward.toBytes32(), amount: amount }).encode();
     _dispatchToMitosis(enc, MsgType.MsgSettleVLFExtraRewards);
   }
 

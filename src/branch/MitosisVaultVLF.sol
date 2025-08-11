@@ -76,11 +76,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, Ownable2StepUpg
     return IMitosisVaultEntrypoint(entrypoint()).quoteSettleVLFLoss(hubVLF, amount);
   }
 
-  function quoteSettleVLFExtraRewards(address hubVLF, address reward, uint256 amount)
-    external
-    view
-    returns (uint256)
-  {
+  function quoteSettleVLFExtraRewards(address hubVLF, address reward, uint256 amount) external view returns (uint256) {
     return IMitosisVaultEntrypoint(entrypoint()).quoteSettleVLFExtraRewards(hubVLF, reward, amount);
   }
 
@@ -198,11 +194,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, Ownable2StepUpg
     emit VLFLossSettled(hubVLF, amount);
   }
 
-  function settleVLFExtraRewards(address hubVLF, address reward, uint256 amount)
-    external
-    payable
-    whenNotPaused
-  {
+  function settleVLFExtraRewards(address hubVLF, address reward, uint256 amount) external payable whenNotPaused {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
     _assertVLFInitialized($, hubVLF);
@@ -244,8 +236,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, Ownable2StepUpg
     }
 
     require(
-      hubVLF == IVLFStrategyExecutor(strategyExecutor_).hubVLF(),
-      StdError.InvalidId('vlfStrategyExecutor.hubVLF')
+      hubVLF == IVLFStrategyExecutor(strategyExecutor_).hubVLF(), StdError.InvalidId('vlfStrategyExecutor.hubVLF')
     );
     require(
       address(this) == address(IVLFStrategyExecutor(strategyExecutor_).vault()),
@@ -262,11 +253,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, Ownable2StepUpg
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _isVLFHalted(VLFStorageV1 storage $, address hubVLF, VLFAction action)
-    internal
-    view
-    returns (bool)
-  {
+  function _isVLFHalted(VLFStorageV1 storage $, address hubVLF, VLFAction action) internal view returns (bool) {
     return $.matrices[hubVLF].isHalted[action];
   }
 

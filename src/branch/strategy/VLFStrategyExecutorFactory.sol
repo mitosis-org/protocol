@@ -11,9 +11,9 @@ import { UpgradeableBeacon } from '@solady/utils/UpgradeableBeacon.sol';
 import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
 import { BeaconBase } from '../../lib/proxy/BeaconBase.sol';
 import { Versioned } from '../../lib/Versioned.sol';
-import { MatrixStrategyExecutor } from './MatrixStrategyExecutor.sol';
+import { VLFStrategyExecutor } from './VLFStrategyExecutor.sol';
 
-contract MatrixStrategyExecutorFactory is BeaconBase, Ownable2StepUpgradeable, UUPSUpgradeable, Versioned {
+contract VLFStrategyExecutorFactory is BeaconBase, Ownable2StepUpgradeable, UUPSUpgradeable, Versioned {
   constructor() {
     _disableInitializers();
   }
@@ -25,12 +25,12 @@ contract MatrixStrategyExecutorFactory is BeaconBase, Ownable2StepUpgradeable, U
     __UUPSUpgradeable_init();
   }
 
-  function create(IMitosisVault vault_, IERC20 asset_, address hubMatrixVault_, address owner_)
+  function create(IMitosisVault vault_, IERC20 asset_, address hubVLF_, address owner_)
     external
     onlyOwner
     returns (address)
   {
-    bytes memory args = abi.encodeCall(MatrixStrategyExecutor.initialize, (vault_, asset_, hubMatrixVault_, owner_));
+    bytes memory args = abi.encodeCall(VLFStrategyExecutor.initialize, (vault_, asset_, hubVLF_, owner_));
     address instance = address(new BeaconProxy(address(beacon()), args));
 
     _pushInstance(instance);

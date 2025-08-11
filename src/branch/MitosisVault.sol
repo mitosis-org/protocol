@@ -15,14 +15,7 @@ import { StdError } from '../lib/StdError.sol';
 import { Versioned } from '../lib/Versioned.sol';
 import { MitosisVaultVLF } from './MitosisVaultVLF.sol';
 
-contract MitosisVault is
-  IMitosisVault,
-  Pausable,
-  Ownable2StepUpgradeable,
-  UUPSUpgradeable,
-  MitosisVaultVLF,
-  Versioned
-{
+contract MitosisVault is IMitosisVault, Pausable, Ownable2StepUpgradeable, UUPSUpgradeable, MitosisVaultVLF, Versioned {
   using SafeERC20 for IERC20;
   using ERC7201Utils for string;
 
