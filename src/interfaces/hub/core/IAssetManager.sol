@@ -34,7 +34,7 @@ interface IAssetManagerStorageV1 {
    * @notice Emitted when a new VLF vault factory is set
    * @param vlfVaultFactory The address of the new VLF vault factory
    */
-  event VLFVaultFactorySet(address indexed vlfFactory);
+  event VLFVaultFactorySet(address indexed vlfVaultFactory);
 
   /**
    * @notice Emitted when a new strategist is set for a VLF
