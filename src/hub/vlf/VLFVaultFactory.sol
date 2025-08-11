@@ -40,7 +40,7 @@ contract VLFVaultFactory is IVLFVaultFactory, Ownable2StepUpgradeable, UUPSUpgra
     }
   }
 
-  uint8 public constant MAX_VLFVault_TYPE = uint8(VLFVaultType.Capped);
+  uint8 public constant MAX_VLF_VAULT_TYPE = uint8(VLFVaultType.Capped);
 
   constructor() {
     _disableInitializers();
