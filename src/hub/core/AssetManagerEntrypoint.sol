@@ -82,13 +82,8 @@ contract AssetManagerEntrypoint is
     return _quoteToBranch(chainId, MsgType.MsgInitializeAsset, enc);
   }
 
-  function quoteInitializeVLF(uint256 chainId, address vlf, address branchAsset)
-    external
-    view
-    returns (uint256)
-  {
-    bytes memory enc =
-      MsgInitializeVLF({ vlf: vlf.toBytes32(), asset: branchAsset.toBytes32() }).encode();
+  function quoteInitializeVLF(uint256 chainId, address vlf, address branchAsset) external view returns (uint256) {
+    bytes memory enc = MsgInitializeVLF({ vlf: vlf.toBytes32(), asset: branchAsset.toBytes32() }).encode();
     return _quoteToBranch(chainId, MsgType.MsgInitializeVLF, enc);
   }
 
@@ -131,8 +126,7 @@ contract AssetManagerEntrypoint is
     onlyAssetManager
     onlyDispatchable(chainId)
   {
-    bytes memory enc =
-      MsgInitializeVLF({ vlf: vlf.toBytes32(), asset: branchAsset.toBytes32() }).encode();
+    bytes memory enc = MsgInitializeVLF({ vlf: vlf.toBytes32(), asset: branchAsset.toBytes32() }).encode();
     _dispatchToBranch(chainId, MsgType.MsgInitializeVLF, enc);
   }
 
@@ -209,9 +203,7 @@ contract AssetManagerEntrypoint is
 
     if (msgType == MsgType.MsgSettleVLFExtraRewards) {
       MsgSettleVLFExtraRewards memory decoded = msg_.decodeSettleVLFExtraRewards();
-      _assetManager.settleVLFExtraRewards(
-        chainId, decoded.vlf.toAddress(), decoded.reward.toAddress(), decoded.amount
-      );
+      _assetManager.settleVLFExtraRewards(chainId, decoded.vlf.toAddress(), decoded.reward.toAddress(), decoded.amount);
       return;
     }
   }

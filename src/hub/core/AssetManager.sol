@@ -9,9 +9,9 @@ import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
+import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { IVLF } from '../../interfaces/hub/vlf/IVLF.sol';
 import { IVLFFactory } from '../../interfaces/hub/vlf/IVLFFactory.sol';
-import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { Versioned } from '../../lib/Versioned.sol';
@@ -69,11 +69,7 @@ contract AssetManager is
     return $.entrypoint.quoteInitializeAsset(chainId, branchAsset);
   }
 
-  function quoteInitializeVLF(uint256 chainId, address vlf, address branchAsset)
-    external
-    view
-    returns (uint256)
-  {
+  function quoteInitializeVLF(uint256 chainId, address vlf, address branchAsset) external view returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
     return $.entrypoint.quoteInitializeVLF(chainId, vlf, branchAsset);
   }
@@ -106,13 +102,10 @@ contract AssetManager is
     emit Deposited(chainId, hubAsset, to, amount);
   }
 
-  function depositWithSupplyVLF(
-    uint256 chainId,
-    address branchAsset,
-    address to,
-    address vlf,
-    uint256 amount
-  ) external whenNotPaused {
+  function depositWithSupplyVLF(uint256 chainId, address branchAsset, address to, address vlf, uint256 amount)
+    external
+    whenNotPaused
+  {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -207,8 +200,7 @@ contract AssetManager is
     require(simulatedTotalReservedAssets > 0, IAssetManager__NothingToReserve(vlf));
     require(simulatedTotalReservedAssets <= idle, IAssetManager__VLFInsufficient(vlf));
 
-    (uint256 totalReservedShares, uint256 totalReservedAssets) =
-      $.reclaimQueue.sync(_msgSender(), vlf, claimCount);
+    (uint256 totalReservedShares, uint256 totalReservedAssets) = $.reclaimQueue.sync(_msgSender(), vlf, claimCount);
 
     emit VLFReserved(_msgSender(), vlf, claimCount, totalReservedShares, totalReservedAssets);
   }

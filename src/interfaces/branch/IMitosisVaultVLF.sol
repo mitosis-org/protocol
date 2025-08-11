@@ -10,9 +10,7 @@ interface IMitosisVaultVLF {
   //=========== NOTE: EVENT DEFINITIONS ===========//
 
   event VLFInitialized(address hubVLF, address asset);
-  event VLFDepositedWithSupply(
-    address indexed asset, address indexed to, address indexed hubVLF, uint256 amount
-  );
+  event VLFDepositedWithSupply(address indexed asset, address indexed to, address indexed hubVLF, uint256 amount);
   event VLFAllocated(address indexed hubVLF, uint256 amount);
   event VLFDeallocated(address indexed hubVLF, uint256 amount);
   event VLFFetched(address indexed hubVLF, uint256 amount);
@@ -50,10 +48,7 @@ interface IMitosisVaultVLF {
   function quoteDeallocateVLF(address hubVLF, uint256 amount) external view returns (uint256);
   function quoteSettleVLFYield(address hubVLF, uint256 amount) external view returns (uint256);
   function quoteSettleVLFLoss(address hubVLF, uint256 amount) external view returns (uint256);
-  function quoteSettleVLFExtraRewards(address hubVLF, address reward, uint256 amount)
-    external
-    view
-    returns (uint256);
+  function quoteSettleVLFExtraRewards(address hubVLF, address reward, uint256 amount) external view returns (uint256);
 
   //=========== NOTE: Asset ===========//
 

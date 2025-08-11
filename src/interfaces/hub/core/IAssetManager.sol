@@ -238,9 +238,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param asset The address of the reward asset
    * @param amount The amount of the reward
    */
-  event VLFRewardSettled(
-    uint256 indexed chainId, address indexed vlf, address indexed asset, uint256 amount
-  );
+  event VLFRewardSettled(uint256 indexed chainId, address indexed vlf, address indexed asset, uint256 amount);
 
   /**
    * @notice Emitted when a loss is settled from the branch chain to the hub chain for a specific VLF
@@ -258,9 +256,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param vlf The address of the VLF to be reported the allocation
    * @param amount The amount allocated
    */
-  event VLFAllocated(
-    address indexed strategist, uint256 indexed chainId, address indexed vlf, uint256 amount
-  );
+  event VLFAllocated(address indexed strategist, uint256 indexed chainId, address indexed vlf, uint256 amount);
 
   /**
    * @notice Emitted when assets are deallocated from the branch chain for a specific VLF
@@ -335,10 +331,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param branchAsset The address of the associated asset on the branch chain
    * @return The gas fee required for the operation
    */
-  function quoteInitializeVLF(uint256 chainId, address vlf, address branchAsset)
-    external
-    view
-    returns (uint256);
+  function quoteInitializeVLF(uint256 chainId, address vlf, address branchAsset) external view returns (uint256);
 
   /**
    * @notice Quotes the gas fee for withdrawing assets from a branch chain
@@ -381,13 +374,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param vlf The address of the VLF to supply into
    * @param amount The amount to deposit
    */
-  function depositWithSupplyVLF(
-    uint256 chainId,
-    address branchAsset,
-    address to,
-    address vlf,
-    uint256 amount
-  ) external;
+  function depositWithSupplyVLF(uint256 chainId, address branchAsset, address to, address vlf, uint256 amount) external;
 
   /**
    * @notice Withdraw hub assets and receive the asset on the branch chain
@@ -451,8 +438,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param branchReward The address of the reward asset on the branch chain
    * @param amount The amount of extra rewards to settle
    */
-  function settleVLFExtraRewards(uint256 chainId, address vlf, address branchReward, uint256 amount)
-    external;
+  function settleVLFExtraRewards(uint256 chainId, address vlf, address branchReward, uint256 amount) external;
 
   /**
    * @notice Initialize an asset for a given chain's MitosisVault

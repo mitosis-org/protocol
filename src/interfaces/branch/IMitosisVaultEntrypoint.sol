@@ -25,10 +25,7 @@ interface IMitosisVaultEntrypoint {
 
   function quoteSettleVLFLoss(address hubVLF, uint256 amount) external view returns (uint256);
 
-  function quoteSettleVLFExtraRewards(address hubVLF, address reward, uint256 amount)
-    external
-    view
-    returns (uint256);
+  function quoteSettleVLFExtraRewards(address hubVLF, address reward, uint256 amount) external view returns (uint256);
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
 

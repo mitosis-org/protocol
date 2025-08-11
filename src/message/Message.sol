@@ -138,8 +138,7 @@ library Message {
   }
 
   function encode(MsgDepositWithSupplyVLF memory msg_) internal pure returns (bytes memory) {
-    return
-      abi.encodePacked(uint8(MsgType.MsgDepositWithSupplyVLF), msg_.asset, msg_.to, msg_.vlf, msg_.amount);
+    return abi.encodePacked(uint8(MsgType.MsgDepositWithSupplyVLF), msg_.asset, msg_.to, msg_.vlf, msg_.amount);
   }
 
   function decodeDepositWithSupplyVLF(bytes calldata msg_)

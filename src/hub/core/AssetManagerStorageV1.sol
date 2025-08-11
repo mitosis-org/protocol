@@ -7,9 +7,9 @@ import { IAssetManagerStorageV1 } from '../../interfaces/hub/core/IAssetManager.
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAssetFactory } from '../../interfaces/hub/core/IHubAssetFactory.sol';
 import { IReclaimQueue } from '../../interfaces/hub/IReclaimQueue.sol';
+import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { IVLF } from '../../interfaces/hub/vlf/IVLF.sol';
 import { IVLFFactory } from '../../interfaces/hub/vlf/IVLFFactory.sol';
-import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
@@ -289,11 +289,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     require(initialized, IAssetManagerStorageV1__VLFNotInitialized(chainId, vlf_));
   }
 
-  function _assertVLFNotInitialized(StorageV1 storage $, uint256 chainId, address vlf_)
-    internal
-    view
-    virtual
-  {
+  function _assertVLFNotInitialized(StorageV1 storage $, uint256 chainId, address vlf_) internal view virtual {
     bool initialized = $.vlfInitialized[chainId][vlf_];
     require(!initialized, IAssetManagerStorageV1__VLFAlreadyInitialized(chainId, vlf_));
   }

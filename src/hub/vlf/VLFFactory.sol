@@ -82,7 +82,7 @@ contract VLFFactory is IVLFFactory, Ownable2StepUpgradeable, UUPSUpgradeable, Ve
     return _getStorage().infos[_safeVLFTypeCast(t)].instances.length;
   }
 
-  function initVaultType(uint8 rawVaultType, address initialImpl) external onlyOwner {
+  function initVLFType(uint8 rawVaultType, address initialImpl) external onlyOwner {
     VLFType vlfType = _safeVLFTypeCast(rawVaultType);
     require(vlfType != VLFType.Unset, IVLFFactory__InvalidVLFType());
 

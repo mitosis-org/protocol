@@ -50,10 +50,7 @@ interface IAssetManagerEntrypoint {
    * @param branchAsset The address of the associated asset on the branch chain
    * @return The gas fee required for the operation
    */
-  function quoteInitializeVLF(uint256 chainId, address vlf, address branchAsset)
-    external
-    view
-    returns (uint256);
+  function quoteInitializeVLF(uint256 chainId, address vlf, address branchAsset) external view returns (uint256);
 
   /**
    * @notice Quotes the gas fee for withdrawing assets from a branch chain
