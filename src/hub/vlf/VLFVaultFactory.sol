@@ -199,7 +199,7 @@ contract VLFVaultFactory is IVLFVaultFactory, Ownable2StepUpgradeable, UUPSUpgra
   }
 
   function _safeVLFVaultTypeCast(uint8 vlfType) internal pure returns (VLFVaultType) {
-    require(vlfType <= MAX_VLFVault_TYPE, StdError.EnumOutOfBounds(MAX_VLFVault_TYPE, vlfType));
+    require(vlfType <= MAX_VLF_VAULT_TYPE, StdError.EnumOutOfBounds(MAX_VLF_VAULT_TYPE, vlfType));
     return VLFVaultType(vlfType);
   }
 
