@@ -12,7 +12,7 @@ import { Test } from '@std/Test.sol';
 
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { ReclaimQueue } from '../../../src/hub/ReclaimQueue.sol';
-import { VLFBasic } from '../../../src/hub/vlf/VLFBasic.sol';
+import { VLFVaultBasic } from '../../../src/hub/vlf/VLFVaultBasic.sol';
 import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IReclaimQueue } from '../../../src/interfaces/hub/IReclaimQueue.sol';
 import { LibMockERC20 } from '../../mock/LibMockERC20.sol';

@@ -31,7 +31,7 @@ library BranchProxyT {
     address owner;
     address branchAsset;
     address branchVault;
-    address hubVLF;
+    address hubVLFVault;
     VLFStrategyExecutor executor;
   }
 
@@ -161,7 +161,7 @@ library BranchProxyT {
         owner: executor.owner(),
         branchAsset: address(executor.asset()),
         branchVault: address(executor.vault()),
-        hubVLF: executor.hubVLF(),
+        hubVLFVault: executor.hubVLFVault(),
         executor: executor
       });
     }

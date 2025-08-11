@@ -10,8 +10,8 @@ import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
-import { IVLF } from '../../interfaces/hub/vlf/IVLF.sol';
-import { IVLFFactory } from '../../interfaces/hub/vlf/IVLFFactory.sol';
+import { IVLFVault } from '../../interfaces/hub/vlf/IVLFVault.sol';
+import { IVLFVaultFactory } from '../../interfaces/hub/vlf/IVLFVaultFactory.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { Versioned } from '../../lib/Versioned.sol';
@@ -112,24 +112,24 @@ contract AssetManager is
     _assertBranchAssetPairExist($, chainId, branchAsset);
     _assertVLFInitialized($, chainId, vlf);
 
-    // NOTE: We don't need to check if the vlf is registered instance of VLFFactory
+    // NOTE: We don't need to check if the vlf is registered instance of VLFVaultFactory
 
     address hubAsset = _branchAssetState($, chainId, branchAsset).hubAsset;
     uint256 supplyAmount = 0;
 
-    if (hubAsset != IVLF(vlf).asset()) {
-      // just transfer hubAsset if it's not the same as the VLF's asset
+    if (hubAsset != IVLFVault(vlf).asset()) {
+      // just transfer hubAsset if it's not the same as the VLFVault's asset
       _mint($, chainId, hubAsset, to, amount);
     } else {
       _mint($, chainId, hubAsset, address(this), amount);
 
-      uint256 maxAssets = IVLF(vlf).maxDepositFromChainId(to, chainId);
+      uint256 maxAssets = IVLFVault(vlf).maxDepositFromChainId(to, chainId);
       supplyAmount = amount < maxAssets ? amount : maxAssets;
 
       IHubAsset(hubAsset).approve(vlf, supplyAmount);
-      IVLF(vlf).depositFromChainId(supplyAmount, to, chainId);
+      IVLFVault(vlf).depositFromChainId(supplyAmount, to, chainId);
 
-      // transfer remaining hub assets to `to` because there could be remaining hub assets due to the cap of VLF Vault.
+      // transfer remaining hub assets to `to` because there could be remaining hub assets due to the cap of VLF vault.
       if (supplyAmount < amount) IHubAsset(hubAsset).transfer(to, amount - supplyAmount);
     }
 
@@ -168,7 +168,7 @@ contract AssetManager is
 
     $.entrypoint.allocateVLF{ value: msg.value }(chainId, vlf, amount);
 
-    address hubAsset = IVLF(vlf).asset();
+    address hubAsset = IVLFVault(vlf).asset();
     _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, amount);
     _hubAssetState($, hubAsset, chainId).branchAllocated += amount;
     $.vlfStates[vlf].allocation += amount;
@@ -182,7 +182,7 @@ contract AssetManager is
 
     _assertOnlyEntrypoint($);
 
-    address hubAsset = IVLF(vlf).asset();
+    address hubAsset = IVLFVault(vlf).asset();
     _hubAssetState($, hubAsset, chainId).branchAllocated -= amount;
     $.vlfStates[vlf].allocation -= amount;
 
@@ -211,8 +211,8 @@ contract AssetManager is
 
     _assertOnlyEntrypoint($);
 
-    // Increase VLF's shares value.
-    address asset = IVLF(vlf).asset();
+    // Increase VLFVault's shares value.
+    address asset = IVLFVault(vlf).asset();
     _mint($, chainId, asset, address(vlf), amount);
 
     _hubAssetState($, asset, chainId).branchAllocated += amount;
@@ -227,8 +227,8 @@ contract AssetManager is
 
     _assertOnlyEntrypoint($);
 
-    // Decrease VLF's shares value.
-    address asset = IVLF(vlf).asset();
+    // Decrease VLFVault's shares value.
+    address asset = IVLFVault(vlf).asset();
     _burn($, chainId, asset, vlf, amount);
 
     _hubAssetState($, asset, chainId).branchAllocated -= amount;
@@ -297,10 +297,10 @@ contract AssetManager is
 
   function initializeVLF(uint256 chainId, address vlf) external payable onlyOwner whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
-    _assertVLFFactorySet($);
-    _assertVLFInstance($, vlf);
+    _assertVLFVaultFactorySet($);
+    _assertVLFVaultInstance($, vlf);
 
-    address hubAsset = IVLF(vlf).asset();
+    address hubAsset = IVLFVault(vlf).asset();
     address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
@@ -338,8 +338,8 @@ contract AssetManager is
     _setHubAssetFactory(_getStorageV1(), hubAssetFactory_);
   }
 
-  function setVLFFactory(address vlfFactory_) external onlyOwner {
-    _setVLFFactory(_getStorageV1(), vlfFactory_);
+  function setVLFVaultFactory(address vlfFactory_) external onlyOwner {
+    _setVLFVaultFactory(_getStorageV1(), vlfFactory_);
   }
 
   function setStrategist(address vlf, address strategist) external onlyOwner {

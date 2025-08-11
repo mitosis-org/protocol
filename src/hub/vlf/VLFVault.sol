@@ -8,17 +8,17 @@ import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 
 import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 
-import { IVLF } from '../../interfaces/hub/vlf/IVLF.sol';
+import { IVLFVault } from '../../interfaces/hub/vlf/IVLFVault.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { Versioned } from '../../lib/Versioned.sol';
-import { VLFStorageV1 } from './VLFStorageV1.sol';
+import { VLFVaultStorageV1 } from './VLFVaultStorageV1.sol';
 
 /**
- * @title VLF
- * @notice Base implementation of an VLF
+ * @title VLFVault
+ * @notice Base implementation of an VLFVault
  */
-abstract contract VLF is VLFStorageV1, ERC4626, Pausable, ReentrancyGuard, Versioned {
+abstract contract VLFVault is VLFVaultStorageV1, ERC4626, Pausable, ReentrancyGuard, Versioned {
   using Math for uint256;
 
   modifier onlyOwner() {
@@ -26,7 +26,7 @@ abstract contract VLF is VLFStorageV1, ERC4626, Pausable, ReentrancyGuard, Versi
     _;
   }
 
-  function __VLF_init(address assetManager_, IERC20Metadata asset_, string memory name_, string memory symbol_)
+  function __VLFVault_init(address assetManager_, IERC20Metadata asset_, string memory name_, string memory symbol_)
     internal
   {
     __Pausable_init();

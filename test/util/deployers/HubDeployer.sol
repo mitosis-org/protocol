@@ -32,9 +32,9 @@ import { ValidatorRewardDistributor } from '../../../src/hub/validator/Validator
 import { ValidatorStaking } from '../../../src/hub/validator/ValidatorStaking.sol';
 import { ValidatorStakingGovMITO } from '../../../src/hub/validator/ValidatorStakingGovMITO.sol';
 import { ValidatorStakingHub } from '../../../src/hub/validator/ValidatorStakingHub.sol';
-import { VLFBasic } from '../../../src/hub/vlf/VLFBasic.sol';
-import { VLFCapped } from '../../../src/hub/vlf/VLFCapped.sol';
-import { VLFFactory } from '../../../src/hub/vlf/VLFFactory.sol';
+import { VLFVaultBasic } from '../../../src/hub/vlf/VLFVaultBasic.sol';
+import { VLFVaultCapped } from '../../../src/hub/vlf/VLFVaultCapped.sol';
+import { VLFVaultFactory } from '../../../src/hub/vlf/VLFVaultFactory.sol';
 import { WMITO } from '../../../src/hub/WMITO.sol';
 import { IConsensusValidatorEntrypoint } from
   '../../../src/interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
@@ -152,12 +152,12 @@ abstract contract HubDeployer is AbstractDeployer {
     ) = _dphHubAssetFactory(owner_, impl.core.hubAsset);
 
     // TODO: we need to register the impl.vlf.vaultBasic and impl.vlf.vaultCapped on "link" phase
-    impl.vlf.vaultBasic = deploy(_urlHI('.vlf.vault-basic'), type(VLFBasic).creationCode);
-    impl.vlf.vaultCapped = deploy(_urlHI('.vlf.vault-capped'), type(VLFCapped).creationCode);
+    impl.vlf.vaultBasic = deploy(_urlHI('.vlf.vault-basic'), type(VLFVaultBasic).creationCode);
+    impl.vlf.vaultCapped = deploy(_urlHI('.vlf.vault-capped'), type(VLFVaultCapped).creationCode);
     (
       impl.vlf.vaultFactory, //
       proxy.vlf.vaultFactory
-    ) = _dphVLFFactory(owner_);
+    ) = _dphVLFVaultFactory(owner_);
 
     // Reclaim Queue for  VLf
     (
@@ -420,14 +420,14 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, HubAssetFactory(proxy));
   }
 
-  function _dphVLFFactory(address owner) private returns (address, VLFFactory) {
+  function _dphVLFVaultFactory(address owner) private returns (address, VLFVaultFactory) {
     (address impl, address payable proxy) = deployImplAndProxy(
       'hub',
       '.vlf.vault-factory', //
-      type(VLFFactory).creationCode,
-      abi.encodeCall(VLFFactory.initialize, (owner))
+      type(VLFVaultFactory).creationCode,
+      abi.encodeCall(VLFVaultFactory.initialize, (owner))
     );
-    return (impl, VLFFactory(proxy));
+    return (impl, VLFVaultFactory(proxy));
   }
 
   function _dphReclaimQueue(address owner, address assetManager) private returns (address, ReclaimQueue) {

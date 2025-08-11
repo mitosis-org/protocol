@@ -25,12 +25,12 @@ contract VLFStrategyExecutorFactory is BeaconBase, Ownable2StepUpgradeable, UUPS
     __UUPSUpgradeable_init();
   }
 
-  function create(IMitosisVault vault_, IERC20 asset_, address hubVLF_, address owner_)
+  function create(IMitosisVault vault_, IERC20 asset_, address hubVLFVault_, address owner_)
     external
     onlyOwner
     returns (address)
   {
-    bytes memory args = abi.encodeCall(VLFStrategyExecutor.initialize, (vault_, asset_, hubVLF_, owner_));
+    bytes memory args = abi.encodeCall(VLFStrategyExecutor.initialize, (vault_, asset_, hubVLFVault_, owner_));
     address instance = address(new BeaconProxy(address(beacon()), args));
 
     _pushInstance(instance);

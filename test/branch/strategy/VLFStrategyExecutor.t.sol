@@ -33,7 +33,7 @@ contract VLFStrategyExecutorTest is Toolkit {
 
   address immutable owner = makeAddr('owner');
   address immutable mitosis = makeAddr('mitosis');
-  address immutable hubVLF = makeAddr('hubVLF');
+  address immutable hubVLFVault = makeAddr('hubVLFVault');
 
   function setUp() public {
     _mitosisVault = MitosisVault(
@@ -49,7 +49,7 @@ contract VLFStrategyExecutorTest is Toolkit {
       payable(
         _proxy(
           address(new VLFStrategyExecutor()),
-          abi.encodeCall(VLFStrategyExecutor.initialize, (_mitosisVault, _token, hubVLF, owner))
+          abi.encodeCall(VLFStrategyExecutor.initialize, (_mitosisVault, _token, hubVLFVault, owner))
         )
       )
     );

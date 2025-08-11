@@ -82,8 +82,8 @@ contract AssetManagerEntrypoint is
     return _quoteToBranch(chainId, MsgType.MsgInitializeAsset, enc);
   }
 
-  function quoteInitializeVLF(uint256 chainId, address vlf, address branchAsset) external view returns (uint256) {
-    bytes memory enc = MsgInitializeVLF({ vlf: vlf.toBytes32(), asset: branchAsset.toBytes32() }).encode();
+  function quoteInitializeVLF(uint256 chainId, address vlfVault, address branchAsset) external view returns (uint256) {
+    bytes memory enc = MsgInitializeVLF({ vlfVault: vlfVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
     return _quoteToBranch(chainId, MsgType.MsgInitializeVLF, enc);
   }
 
@@ -96,8 +96,8 @@ contract AssetManagerEntrypoint is
     return _quoteToBranch(chainId, MsgType.MsgWithdraw, enc);
   }
 
-  function quoteAllocateVLF(uint256 chainId, address vlf, uint256 amount) external view returns (uint256) {
-    bytes memory enc = MsgAllocateVLF({ vlf: vlf.toBytes32(), amount: amount }).encode();
+  function quoteAllocateVLF(uint256 chainId, address vlfVault, uint256 amount) external view returns (uint256) {
+    bytes memory enc = MsgAllocateVLF({ vlfVault: vlfVault.toBytes32(), amount: amount }).encode();
     return _quoteToBranch(chainId, MsgType.MsgAllocateVLF, enc);
   }
 
@@ -120,13 +120,13 @@ contract AssetManagerEntrypoint is
     _dispatchToBranch(chainId, MsgType.MsgInitializeAsset, enc);
   }
 
-  function initializeVLF(uint256 chainId, address vlf, address branchAsset)
+  function initializeVLF(uint256 chainId, address vlfVault, address branchAsset)
     external
     payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
-    bytes memory enc = MsgInitializeVLF({ vlf: vlf.toBytes32(), asset: branchAsset.toBytes32() }).encode();
+    bytes memory enc = MsgInitializeVLF({ vlfVault: vlfVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
     _dispatchToBranch(chainId, MsgType.MsgInitializeVLF, enc);
   }
 
@@ -140,13 +140,13 @@ contract AssetManagerEntrypoint is
     _dispatchToBranch(chainId, MsgType.MsgWithdraw, enc);
   }
 
-  function allocateVLF(uint256 chainId, address vlf, uint256 amount)
+  function allocateVLF(uint256 chainId, address vlfVault, uint256 amount)
     external
     payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
-    bytes memory enc = MsgAllocateVLF({ vlf: vlf.toBytes32(), amount: amount }).encode();
+    bytes memory enc = MsgAllocateVLF({ vlfVault: vlfVault.toBytes32(), amount: amount }).encode();
     _dispatchToBranch(chainId, MsgType.MsgAllocateVLF, enc);
   }
 
@@ -178,32 +178,34 @@ contract AssetManagerEntrypoint is
     if (msgType == MsgType.MsgDepositWithSupplyVLF) {
       MsgDepositWithSupplyVLF memory decoded = msg_.decodeDepositWithSupplyVLF();
       _assetManager.depositWithSupplyVLF(
-        chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.vlf.toAddress(), decoded.amount
+        chainId, decoded.asset.toAddress(), decoded.to.toAddress(), decoded.vlfVault.toAddress(), decoded.amount
       );
       return;
     }
 
     if (msgType == MsgType.MsgDeallocateVLF) {
       MsgDeallocateVLF memory decoded = msg_.decodeDeallocateVLF();
-      _assetManager.deallocateVLF(chainId, decoded.vlf.toAddress(), decoded.amount);
+      _assetManager.deallocateVLF(chainId, decoded.vlfVault.toAddress(), decoded.amount);
       return;
     }
 
     if (msgType == MsgType.MsgSettleVLFYield) {
       MsgSettleVLFYield memory decoded = msg_.decodeSettleVLFYield();
-      _assetManager.settleVLFYield(chainId, decoded.vlf.toAddress(), decoded.amount);
+      _assetManager.settleVLFYield(chainId, decoded.vlfVault.toAddress(), decoded.amount);
       return;
     }
 
     if (msgType == MsgType.MsgSettleVLFLoss) {
       MsgSettleVLFLoss memory decoded = msg_.decodeSettleVLFLoss();
-      _assetManager.settleVLFLoss(chainId, decoded.vlf.toAddress(), decoded.amount);
+      _assetManager.settleVLFLoss(chainId, decoded.vlfVault.toAddress(), decoded.amount);
       return;
     }
 
     if (msgType == MsgType.MsgSettleVLFExtraRewards) {
       MsgSettleVLFExtraRewards memory decoded = msg_.decodeSettleVLFExtraRewards();
-      _assetManager.settleVLFExtraRewards(chainId, decoded.vlf.toAddress(), decoded.reward.toAddress(), decoded.amount);
+      _assetManager.settleVLFExtraRewards(
+        chainId, decoded.vlfVault.toAddress(), decoded.reward.toAddress(), decoded.amount
+      );
       return;
     }
   }

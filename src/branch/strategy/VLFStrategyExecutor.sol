@@ -40,7 +40,7 @@ contract VLFStrategyExecutor is
     revert StdError.NotSupported();
   }
 
-  function initialize(IMitosisVault vault_, IERC20 asset_, address hubVLF_, address owner_) public initializer {
+  function initialize(IMitosisVault vault_, IERC20 asset_, address hubVLFVault_, address owner_) public initializer {
     __Ownable2Step_init();
     __Ownable_init(owner_);
 
@@ -48,7 +48,7 @@ contract VLFStrategyExecutor is
 
     $.vault = vault_;
     $.asset = asset_;
-    $.hubVLF = hubVLF_;
+    $.hubVLFVault = hubVLFVault_;
   }
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
@@ -61,8 +61,8 @@ contract VLFStrategyExecutor is
     return _getStorageV1().asset;
   }
 
-  function hubVLF() external view returns (address) {
-    return _getStorageV1().hubVLF;
+  function hubVLFVault() external view returns (address) {
+    return _getStorageV1().hubVLFVault;
   }
 
   function strategist() external view returns (address) {
@@ -87,22 +87,22 @@ contract VLFStrategyExecutor is
 
   function quoteDeallocateLiquidity(uint256 amount) external view returns (uint256) {
     StorageV1 memory $ = _getStorageV1();
-    return $.vault.quoteDeallocateVLF($.hubVLF, amount);
+    return $.vault.quoteDeallocateVLF($.hubVLFVault, amount);
   }
 
   function quoteSettleYield(uint256 amount) external view returns (uint256) {
     StorageV1 memory $ = _getStorageV1();
-    return $.vault.quoteSettleVLFYield($.hubVLF, amount);
+    return $.vault.quoteSettleVLFYield($.hubVLFVault, amount);
   }
 
   function quoteSettleLoss(uint256 amount) external view returns (uint256) {
     StorageV1 memory $ = _getStorageV1();
-    return $.vault.quoteSettleVLFLoss($.hubVLF, amount);
+    return $.vault.quoteSettleVLFLoss($.hubVLFVault, amount);
   }
 
   function quoteSettleExtraRewards(address reward, uint256 amount) external view returns (uint256) {
     StorageV1 memory $ = _getStorageV1();
-    return $.vault.quoteSettleVLFExtraRewards($.hubVLF, reward, amount);
+    return $.vault.quoteSettleVLFExtraRewards($.hubVLFVault, reward, amount);
   }
 
   //=========== NOTE: STRATEGIST FUNCTIONS ===========//
@@ -114,7 +114,7 @@ contract VLFStrategyExecutor is
 
     _assertOnlyStrategist($);
 
-    $.vault.deallocateVLF{ value: msg.value }($.hubVLF, amount);
+    $.vault.deallocateVLF{ value: msg.value }($.hubVLFVault, amount);
   }
 
   function fetchLiquidity(uint256 amount) external {
@@ -124,7 +124,7 @@ contract VLFStrategyExecutor is
 
     _assertOnlyStrategist($);
 
-    $.vault.fetchVLF($.hubVLF, amount);
+    $.vault.fetchVLF($.hubVLFVault, amount);
     $.storedTotalBalance += amount;
   }
 
@@ -136,7 +136,7 @@ contract VLFStrategyExecutor is
     _assertOnlyStrategist($);
 
     $.asset.approve(address($.vault), amount);
-    $.vault.returnVLF($.hubVLF, amount);
+    $.vault.returnVLF($.hubVLFVault, amount);
     $.storedTotalBalance -= amount;
   }
 
@@ -151,9 +151,9 @@ contract VLFStrategyExecutor is
     $.storedTotalBalance = totalBalance_;
 
     if (totalBalance_ >= storedTotalBalance_) {
-      $.vault.settleVLFYield{ value: msg.value }($.hubVLF, totalBalance_ - storedTotalBalance_);
+      $.vault.settleVLFYield{ value: msg.value }($.hubVLFVault, totalBalance_ - storedTotalBalance_);
     } else {
-      $.vault.settleVLFLoss{ value: msg.value }($.hubVLF, storedTotalBalance_ - totalBalance_);
+      $.vault.settleVLFLoss{ value: msg.value }($.hubVLFVault, storedTotalBalance_ - totalBalance_);
     }
   }
 
@@ -166,7 +166,7 @@ contract VLFStrategyExecutor is
     require(reward != address($.asset), StdError.InvalidAddress('reward'));
 
     IERC20(reward).approve(address($.vault), amount);
-    $.vault.settleVLFExtraRewards{ value: msg.value }($.hubVLF, reward, amount);
+    $.vault.settleVLFExtraRewards{ value: msg.value }($.hubVLFVault, reward, amount);
   }
 
   //=========== NOTE: EXECUTOR FUNCTIONS ===========//

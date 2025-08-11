@@ -8,8 +8,8 @@ import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManager
 import { IHubAssetFactory } from '../../interfaces/hub/core/IHubAssetFactory.sol';
 import { IReclaimQueue } from '../../interfaces/hub/IReclaimQueue.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
-import { IVLF } from '../../interfaces/hub/vlf/IVLF.sol';
-import { IVLFFactory } from '../../interfaces/hub/vlf/IVLFFactory.sol';
+import { IVLFVault } from '../../interfaces/hub/vlf/IVLFVault.sol';
+import { IVLFVaultFactory } from '../../interfaces/hub/vlf/IVLFVaultFactory.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
@@ -37,13 +37,13 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     IReclaimQueue reclaimQueue;
     ITreasury treasury;
     IHubAssetFactory hubAssetFactory;
-    IVLFFactory vlfFactory;
+    IVLFVaultFactory vlfVaultFactory;
     // Asset states
     mapping(address hubAsset => mapping(uint256 chainId => HubAssetState)) hubAssetStates;
     mapping(uint256 chainId => mapping(address branchAsset => BranchAssetState)) branchAssetStates;
     // VLF states
-    mapping(address vlf => VLFState state) vlfStates;
-    mapping(uint256 chainId => mapping(address vlf => bool initialized)) vlfInitialized;
+    mapping(address vlfVault => VLFState state) vlfStates;
+    mapping(uint256 chainId => mapping(address vlfVault => bool initialized)) vlfInitialized;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.AssetManagerStorage.v1';
@@ -75,8 +75,8 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return address(_getStorageV1().hubAssetFactory);
   }
 
-  function vlfFactory() external view returns (address) {
-    return address(_getStorageV1().vlfFactory);
+  function vlfVaultFactory() external view returns (address) {
+    return address(_getStorageV1().vlfVaultFactory);
   }
 
   function branchAsset(address hubAsset_, uint256 chainId) external view returns (address) {
@@ -103,20 +103,20 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return _branchAssetState(_getStorageV1(), chainId, branchAsset_).hubAsset;
   }
 
-  function vlfInitialized(uint256 chainId, address vlf) external view returns (bool) {
-    return _getStorageV1().vlfInitialized[chainId][vlf];
+  function vlfInitialized(uint256 chainId, address vlfVault) external view returns (bool) {
+    return _getStorageV1().vlfInitialized[chainId][vlfVault];
   }
 
-  function vlfIdle(address vlf) external view returns (uint256) {
-    return _vlfIdle(_getStorageV1(), vlf);
+  function vlfIdle(address vlfVault) external view returns (uint256) {
+    return _vlfIdle(_getStorageV1(), vlfVault);
   }
 
-  function vlfAlloc(address vlf) external view returns (uint256) {
-    return _getStorageV1().vlfStates[vlf].allocation;
+  function vlfAlloc(address vlfVault) external view returns (uint256) {
+    return _getStorageV1().vlfStates[vlfVault].allocation;
   }
 
-  function strategist(address vlf) external view returns (address) {
-    return _getStorageV1().vlfStates[vlf].strategist;
+  function strategist(address vlfVault) external view returns (address) {
+    return _getStorageV1().vlfStates[vlfVault].strategist;
   }
 
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
@@ -153,21 +153,21 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     emit HubAssetFactorySet(hubAssetFactory_);
   }
 
-  function _setVLFFactory(StorageV1 storage $, address vlfFactory_) internal {
-    require(vlfFactory_.code.length > 0, StdError.InvalidParameter('VLFFactory'));
+  function _setVLFVaultFactory(StorageV1 storage $, address vlfVaultFactory_) internal {
+    require(vlfVaultFactory_.code.length > 0, StdError.InvalidParameter('VLFVaultFactory'));
 
-    $.vlfFactory = IVLFFactory(vlfFactory_);
+    $.vlfVaultFactory = IVLFVaultFactory(vlfVaultFactory_);
 
-    emit VLFFactorySet(vlfFactory_);
+    emit VLFVaultFactorySet(vlfVaultFactory_);
   }
 
-  function _setStrategist(StorageV1 storage $, address vlf, address strategist_) internal {
-    _assertVLFFactorySet($);
-    _assertVLFInstance($, vlf);
+  function _setStrategist(StorageV1 storage $, address vlfVault, address strategist_) internal {
+    _assertVLFVaultFactorySet($);
+    _assertVLFVaultInstance($, vlfVault);
 
-    $.vlfStates[vlf].strategist = strategist_;
+    $.vlfStates[vlfVault].strategist = strategist_;
 
-    emit StrategistSet(vlf, strategist_);
+    emit StrategistSet(vlfVault, strategist_);
   }
 
   function _setBranchLiquidityThreshold(StorageV1 storage $, address hubAsset_, uint256 chainId, uint256 threshold)
@@ -208,9 +208,9 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     return hubAssetState.branchLiquidity - hubAssetState.branchAllocated;
   }
 
-  function _vlfIdle(StorageV1 storage $, address vlf) internal view returns (uint256) {
-    uint256 total = IVLF(vlf).totalAssets();
-    uint256 allocated = $.vlfStates[vlf].allocation;
+  function _vlfIdle(StorageV1 storage $, address vlfVault) internal view returns (uint256) {
+    uint256 total = IVLFVault(vlfVault).totalAssets();
+    uint256 allocated = $.vlfStates[vlfVault].allocation;
 
     return total - allocated;
   }
@@ -221,8 +221,8 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     require(_msgSender() == address($.entrypoint), StdError.Unauthorized());
   }
 
-  function _assertOnlyStrategist(StorageV1 storage $, address vlf) internal view virtual {
-    require(_msgSender() == $.vlfStates[vlf].strategist, StdError.Unauthorized());
+  function _assertOnlyStrategist(StorageV1 storage $, address vlfVault) internal view virtual {
+    require(_msgSender() == $.vlfStates[vlfVault].strategist, StdError.Unauthorized());
   }
 
   function _assertBranchAssetPairExist(StorageV1 storage $, uint256 chainId, address branchAsset_)
@@ -276,21 +276,21 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     require($.hubAssetFactory.isInstance(hubAsset_), IAssetManagerStorageV1__InvalidHubAsset(hubAsset_));
   }
 
-  function _assertVLFFactorySet(StorageV1 storage $) internal view virtual {
-    require(address($.vlfFactory) != address(0), IAssetManagerStorageV1__VLFFactoryNotSet());
+  function _assertVLFVaultFactorySet(StorageV1 storage $) internal view virtual {
+    require(address($.vlfVaultFactory) != address(0), IAssetManagerStorageV1__VLFVaultFactoryNotSet());
   }
 
-  function _assertVLFInstance(StorageV1 storage $, address vlf_) internal view virtual {
-    require($.vlfFactory.isInstance(vlf_), IAssetManagerStorageV1__InvalidVLF(vlf_));
+  function _assertVLFVaultInstance(StorageV1 storage $, address vlfVault_) internal view virtual {
+    require($.vlfVaultFactory.isInstance(vlfVault_), IAssetManagerStorageV1__InvalidVLFVault(vlfVault_));
   }
 
-  function _assertVLFInitialized(StorageV1 storage $, uint256 chainId, address vlf_) internal view virtual {
-    bool initialized = $.vlfInitialized[chainId][vlf_];
-    require(initialized, IAssetManagerStorageV1__VLFNotInitialized(chainId, vlf_));
+  function _assertVLFInitialized(StorageV1 storage $, uint256 chainId, address vlfVault_) internal view virtual {
+    bool initialized = $.vlfInitialized[chainId][vlfVault_];
+    require(initialized, IAssetManagerStorageV1__VLFNotInitialized(chainId, vlfVault_));
   }
 
-  function _assertVLFNotInitialized(StorageV1 storage $, uint256 chainId, address vlf_) internal view virtual {
-    bool initialized = $.vlfInitialized[chainId][vlf_];
-    require(!initialized, IAssetManagerStorageV1__VLFAlreadyInitialized(chainId, vlf_));
+  function _assertVLFNotInitialized(StorageV1 storage $, uint256 chainId, address vlfVault_) internal view virtual {
+    bool initialized = $.vlfInitialized[chainId][vlfVault_];
+    require(!initialized, IAssetManagerStorageV1__VLFAlreadyInitialized(chainId, vlfVault_));
   }
 }

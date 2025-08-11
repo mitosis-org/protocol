@@ -25,7 +25,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, Ownable2StepUpg
   }
 
   struct VLFStorageV1 {
-    mapping(address hubVLF => VLFInfo) matrices;
+    mapping(address hubVLFVault => VLFInfo) vlfs;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.MitosisVault.VLF.v1';
@@ -40,44 +40,48 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, Ownable2StepUpg
 
   //=========== NOTE: View ===========//
 
-  function isVLFActionHalted(address hubVLF, VLFAction action) external view returns (bool) {
-    return _isVLFHalted(_getVLFStorageV1(), hubVLF, action);
+  function isVLFActionHalted(address hubVLFVault, VLFAction action) external view returns (bool) {
+    return _isVLFHalted(_getVLFStorageV1(), hubVLFVault, action);
   }
 
-  function isVLFInitialized(address hubVLF) external view returns (bool) {
-    return _isVLFInitialized(_getVLFStorageV1(), hubVLF);
+  function isVLFInitialized(address hubVLFVault) external view returns (bool) {
+    return _isVLFInitialized(_getVLFStorageV1(), hubVLFVault);
   }
 
-  function availableVLF(address hubVLF) external view returns (uint256) {
-    return _getVLFStorageV1().matrices[hubVLF].availableLiquidity;
+  function availableVLF(address hubVLFVault) external view returns (uint256) {
+    return _getVLFStorageV1().vlfs[hubVLFVault].availableLiquidity;
   }
 
-  function vlfStrategyExecutor(address hubVLF) external view returns (address) {
-    return _getVLFStorageV1().matrices[hubVLF].strategyExecutor;
+  function vlfStrategyExecutor(address hubVLFVault) external view returns (address) {
+    return _getVLFStorageV1().vlfs[hubVLFVault].strategyExecutor;
   }
 
-  function quoteDepositWithSupplyVLF(address asset, address to, address hubVLF, uint256 amount)
+  function quoteDepositWithSupplyVLF(address asset, address to, address hubVLFVault, uint256 amount)
     external
     view
     returns (uint256)
   {
-    return IMitosisVaultEntrypoint(entrypoint()).quoteDepositWithSupplyVLF(asset, to, hubVLF, amount);
+    return IMitosisVaultEntrypoint(entrypoint()).quoteDepositWithSupplyVLF(asset, to, hubVLFVault, amount);
   }
 
-  function quoteDeallocateVLF(address hubVLF, uint256 amount) external view returns (uint256) {
-    return IMitosisVaultEntrypoint(entrypoint()).quoteDeallocateVLF(hubVLF, amount);
+  function quoteDeallocateVLF(address hubVLFVault, uint256 amount) external view returns (uint256) {
+    return IMitosisVaultEntrypoint(entrypoint()).quoteDeallocateVLF(hubVLFVault, amount);
   }
 
-  function quoteSettleVLFYield(address hubVLF, uint256 amount) external view returns (uint256) {
-    return IMitosisVaultEntrypoint(entrypoint()).quoteSettleVLFYield(hubVLF, amount);
+  function quoteSettleVLFYield(address hubVLFVault, uint256 amount) external view returns (uint256) {
+    return IMitosisVaultEntrypoint(entrypoint()).quoteSettleVLFYield(hubVLFVault, amount);
   }
 
-  function quoteSettleVLFLoss(address hubVLF, uint256 amount) external view returns (uint256) {
-    return IMitosisVaultEntrypoint(entrypoint()).quoteSettleVLFLoss(hubVLF, amount);
+  function quoteSettleVLFLoss(address hubVLFVault, uint256 amount) external view returns (uint256) {
+    return IMitosisVaultEntrypoint(entrypoint()).quoteSettleVLFLoss(hubVLFVault, amount);
   }
 
-  function quoteSettleVLFExtraRewards(address hubVLF, address reward, uint256 amount) external view returns (uint256) {
-    return IMitosisVaultEntrypoint(entrypoint()).quoteSettleVLFExtraRewards(hubVLF, reward, amount);
+  function quoteSettleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount)
+    external
+    view
+    returns (uint256)
+  {
+    return IMitosisVaultEntrypoint(entrypoint()).quoteSettleVLFExtraRewards(hubVLFVault, reward, amount);
   }
 
   //=========== NOTE: Asset ===========//
@@ -88,7 +92,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, Ownable2StepUpg
 
   function entrypoint() public view virtual returns (address);
 
-  function depositWithSupplyVLF(address asset, address to, address hubVLF, uint256 amount)
+  function depositWithSupplyVLF(address asset, address to, address hubVLFVault, uint256 amount)
     external
     payable
     whenNotPaused
@@ -96,147 +100,148 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, Ownable2StepUpg
     _deposit(asset, to, amount);
 
     VLFStorageV1 storage $ = _getVLFStorageV1();
-    _assertVLFInitialized($, hubVLF);
-    require(asset == $.matrices[hubVLF].asset, IMitosisVaultVLF__InvalidVLF(hubVLF, asset));
+    _assertVLFInitialized($, hubVLFVault);
+    require(asset == $.vlfs[hubVLFVault].asset, IMitosisVaultVLF__InvalidVLF(hubVLFVault, asset));
 
-    IMitosisVaultEntrypoint(entrypoint()).depositWithSupplyVLF{ value: msg.value }(asset, to, hubVLF, amount);
+    IMitosisVaultEntrypoint(entrypoint()).depositWithSupplyVLF{ value: msg.value }(asset, to, hubVLFVault, amount);
 
-    emit VLFDepositedWithSupply(asset, to, hubVLF, amount);
+    emit VLFDepositedWithSupply(asset, to, hubVLFVault, amount);
   }
 
   //=========== NOTE: VLF Lifecycle ===========//
 
-  function initializeVLF(address hubVLF, address asset) external whenNotPaused {
+  function initializeVLF(address hubVLFVault, address asset) external whenNotPaused {
     require(entrypoint() == _msgSender(), StdError.Unauthorized());
 
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
-    _assertVLFNotInitialized($, hubVLF);
+    _assertVLFNotInitialized($, hubVLFVault);
     _assertAssetInitialized(asset);
 
-    $.matrices[hubVLF].initialized = true;
-    $.matrices[hubVLF].asset = asset;
+    $.vlfs[hubVLFVault].initialized = true;
+    $.vlfs[hubVLFVault].asset = asset;
 
-    emit VLFInitialized(hubVLF, asset);
+    emit VLFInitialized(hubVLFVault, asset);
   }
 
-  function allocateVLF(address hubVLF, uint256 amount) external payable whenNotPaused {
+  function allocateVLF(address hubVLFVault, uint256 amount) external payable whenNotPaused {
     require(entrypoint() == _msgSender(), StdError.Unauthorized());
 
     VLFStorageV1 storage $ = _getVLFStorageV1();
-    _assertVLFInitialized($, hubVLF);
+    _assertVLFInitialized($, hubVLFVault);
 
-    $.matrices[hubVLF].availableLiquidity += amount;
+    $.vlfs[hubVLFVault].availableLiquidity += amount;
 
-    emit VLFAllocated(hubVLF, amount);
+    emit VLFAllocated(hubVLFVault, amount);
   }
 
-  function deallocateVLF(address hubVLF, uint256 amount) external payable whenNotPaused {
+  function deallocateVLF(address hubVLFVault, uint256 amount) external payable whenNotPaused {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
-    _assertVLFInitialized($, hubVLF);
-    _assertOnlyStrategyExecutor($, hubVLF);
+    _assertVLFInitialized($, hubVLFVault);
+    _assertOnlyStrategyExecutor($, hubVLFVault);
 
-    $.matrices[hubVLF].availableLiquidity -= amount;
-    IMitosisVaultEntrypoint(entrypoint()).deallocateVLF{ value: msg.value }(hubVLF, amount);
+    $.vlfs[hubVLFVault].availableLiquidity -= amount;
+    IMitosisVaultEntrypoint(entrypoint()).deallocateVLF{ value: msg.value }(hubVLFVault, amount);
 
-    emit VLFDeallocated(hubVLF, amount);
+    emit VLFDeallocated(hubVLFVault, amount);
   }
 
-  function fetchVLF(address hubVLF, uint256 amount) external whenNotPaused {
+  function fetchVLF(address hubVLFVault, uint256 amount) external whenNotPaused {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
-    _assertVLFInitialized($, hubVLF);
-    _assertOnlyStrategyExecutor($, hubVLF);
-    _assertNotHalted($, hubVLF, VLFAction.FetchVLF);
+    _assertVLFInitialized($, hubVLFVault);
+    _assertOnlyStrategyExecutor($, hubVLFVault);
+    _assertNotHalted($, hubVLFVault, VLFAction.FetchVLF);
 
-    VLFInfo storage vlfInfo = $.matrices[hubVLF];
+    VLFInfo storage vlfInfo = $.vlfs[hubVLFVault];
 
     vlfInfo.availableLiquidity -= amount;
     IERC20(vlfInfo.asset).safeTransfer(vlfInfo.strategyExecutor, amount);
 
-    emit VLFFetched(hubVLF, amount);
+    emit VLFFetched(hubVLFVault, amount);
   }
 
-  function returnVLF(address hubVLF, uint256 amount) external whenNotPaused {
+  function returnVLF(address hubVLFVault, uint256 amount) external whenNotPaused {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
-    _assertVLFInitialized($, hubVLF);
-    _assertOnlyStrategyExecutor($, hubVLF);
+    _assertVLFInitialized($, hubVLFVault);
+    _assertOnlyStrategyExecutor($, hubVLFVault);
 
-    VLFInfo storage vlfInfo = $.matrices[hubVLF];
+    VLFInfo storage vlfInfo = $.vlfs[hubVLFVault];
 
     vlfInfo.availableLiquidity += amount;
     IERC20(vlfInfo.asset).safeTransferFrom(vlfInfo.strategyExecutor, address(this), amount);
 
-    emit VLFReturned(hubVLF, amount);
+    emit VLFReturned(hubVLFVault, amount);
   }
 
-  function settleVLFYield(address hubVLF, uint256 amount) external payable whenNotPaused {
+  function settleVLFYield(address hubVLFVault, uint256 amount) external payable whenNotPaused {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
-    _assertVLFInitialized($, hubVLF);
-    _assertOnlyStrategyExecutor($, hubVLF);
+    _assertVLFInitialized($, hubVLFVault);
+    _assertOnlyStrategyExecutor($, hubVLFVault);
 
-    IMitosisVaultEntrypoint(entrypoint()).settleVLFYield{ value: msg.value }(hubVLF, amount);
+    IMitosisVaultEntrypoint(entrypoint()).settleVLFYield{ value: msg.value }(hubVLFVault, amount);
 
-    emit VLFYieldSettled(hubVLF, amount);
+    emit VLFYieldSettled(hubVLFVault, amount);
   }
 
-  function settleVLFLoss(address hubVLF, uint256 amount) external payable whenNotPaused {
+  function settleVLFLoss(address hubVLFVault, uint256 amount) external payable whenNotPaused {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
-    _assertVLFInitialized($, hubVLF);
-    _assertOnlyStrategyExecutor($, hubVLF);
+    _assertVLFInitialized($, hubVLFVault);
+    _assertOnlyStrategyExecutor($, hubVLFVault);
 
-    IMitosisVaultEntrypoint(entrypoint()).settleVLFLoss{ value: msg.value }(hubVLF, amount);
+    IMitosisVaultEntrypoint(entrypoint()).settleVLFLoss{ value: msg.value }(hubVLFVault, amount);
 
-    emit VLFLossSettled(hubVLF, amount);
+    emit VLFLossSettled(hubVLFVault, amount);
   }
 
-  function settleVLFExtraRewards(address hubVLF, address reward, uint256 amount) external payable whenNotPaused {
+  function settleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount) external payable whenNotPaused {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
-    _assertVLFInitialized($, hubVLF);
-    _assertOnlyStrategyExecutor($, hubVLF);
+    _assertVLFInitialized($, hubVLFVault);
+    _assertOnlyStrategyExecutor($, hubVLFVault);
     _assertAssetInitialized(reward);
-    require(reward != $.matrices[hubVLF].asset, StdError.InvalidAddress('reward'));
+    require(reward != $.vlfs[hubVLFVault].asset, StdError.InvalidAddress('reward'));
 
     IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
-    IMitosisVaultEntrypoint(entrypoint()).settleVLFExtraRewards{ value: msg.value }(hubVLF, reward, amount);
+    IMitosisVaultEntrypoint(entrypoint()).settleVLFExtraRewards{ value: msg.value }(hubVLFVault, reward, amount);
 
-    emit VLFExtraRewardsSettled(hubVLF, reward, amount);
+    emit VLFExtraRewardsSettled(hubVLFVault, reward, amount);
   }
 
   //=========== NOTE: OWNABLE FUNCTIONS ===========//
 
-  function haltVLF(address hubVLF, VLFAction action) external onlyOwner {
+  function haltVLF(address hubVLFVault, VLFAction action) external onlyOwner {
     VLFStorageV1 storage $ = _getVLFStorageV1();
-    _assertVLFInitialized($, hubVLF);
-    return _haltVLF($, hubVLF, action);
+    _assertVLFInitialized($, hubVLFVault);
+    return _haltVLF($, hubVLFVault, action);
   }
 
-  function resumeVLF(address hubVLF, VLFAction action) external onlyOwner {
+  function resumeVLF(address hubVLFVault, VLFAction action) external onlyOwner {
     VLFStorageV1 storage $ = _getVLFStorageV1();
-    _assertVLFInitialized($, hubVLF);
-    return _resumeVLF($, hubVLF, action);
+    _assertVLFInitialized($, hubVLFVault);
+    return _resumeVLF($, hubVLFVault, action);
   }
 
-  function setVLFStrategyExecutor(address hubVLF, address strategyExecutor_) external onlyOwner {
+  function setVLFStrategyExecutor(address hubVLFVault, address strategyExecutor_) external onlyOwner {
     VLFStorageV1 storage $ = _getVLFStorageV1();
-    VLFInfo storage vlfInfo = $.matrices[hubVLF];
+    VLFInfo storage vlfInfo = $.vlfs[hubVLFVault];
 
-    _assertVLFInitialized($, hubVLF);
+    _assertVLFInitialized($, hubVLFVault);
 
     if (vlfInfo.strategyExecutor != address(0)) {
       // NOTE: no way to check if every extra rewards are settled.
       bool drained = IVLFStrategyExecutor(vlfInfo.strategyExecutor).totalBalance() == 0
         && IVLFStrategyExecutor(vlfInfo.strategyExecutor).storedTotalBalance() == 0;
-      require(drained, IMitosisVaultVLF__StrategyExecutorNotDrained(hubVLF, vlfInfo.strategyExecutor));
+      require(drained, IMitosisVaultVLF__StrategyExecutorNotDrained(hubVLFVault, vlfInfo.strategyExecutor));
     }
 
     require(
-      hubVLF == IVLFStrategyExecutor(strategyExecutor_).hubVLF(), StdError.InvalidId('vlfStrategyExecutor.hubVLF')
+      hubVLFVault == IVLFStrategyExecutor(strategyExecutor_).hubVLFVault(),
+      StdError.InvalidId('vlfStrategyExecutor.hubVLFVault')
     );
     require(
       address(this) == address(IVLFStrategyExecutor(strategyExecutor_).vault()),
@@ -248,42 +253,42 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, Ownable2StepUpg
     );
 
     vlfInfo.strategyExecutor = strategyExecutor_;
-    emit VLFStrategyExecutorSet(hubVLF, strategyExecutor_);
+    emit VLFStrategyExecutorSet(hubVLFVault, strategyExecutor_);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _isVLFHalted(VLFStorageV1 storage $, address hubVLF, VLFAction action) internal view returns (bool) {
-    return $.matrices[hubVLF].isHalted[action];
+  function _isVLFHalted(VLFStorageV1 storage $, address hubVLFVault, VLFAction action) internal view returns (bool) {
+    return $.vlfs[hubVLFVault].isHalted[action];
   }
 
-  function _haltVLF(VLFStorageV1 storage $, address hubVLF, VLFAction action) internal {
-    $.matrices[hubVLF].isHalted[action] = true;
-    emit VLFHalted(hubVLF, action);
+  function _haltVLF(VLFStorageV1 storage $, address hubVLFVault, VLFAction action) internal {
+    $.vlfs[hubVLFVault].isHalted[action] = true;
+    emit VLFHalted(hubVLFVault, action);
   }
 
-  function _resumeVLF(VLFStorageV1 storage $, address hubVLF, VLFAction action) internal {
-    $.matrices[hubVLF].isHalted[action] = false;
-    emit VLFResumed(hubVLF, action);
+  function _resumeVLF(VLFStorageV1 storage $, address hubVLFVault, VLFAction action) internal {
+    $.vlfs[hubVLFVault].isHalted[action] = false;
+    emit VLFResumed(hubVLFVault, action);
   }
 
-  function _assertNotHalted(VLFStorageV1 storage $, address hubVLF, VLFAction action) internal view {
-    require(!_isVLFHalted($, hubVLF, action), StdError.Halted());
+  function _assertNotHalted(VLFStorageV1 storage $, address hubVLFVault, VLFAction action) internal view {
+    require(!_isVLFHalted($, hubVLFVault, action), StdError.Halted());
   }
 
-  function _isVLFInitialized(VLFStorageV1 storage $, address hubVLF) internal view returns (bool) {
-    return $.matrices[hubVLF].initialized;
+  function _isVLFInitialized(VLFStorageV1 storage $, address hubVLFVault) internal view returns (bool) {
+    return $.vlfs[hubVLFVault].initialized;
   }
 
-  function _assertVLFInitialized(VLFStorageV1 storage $, address hubVLF) internal view {
-    require(_isVLFInitialized($, hubVLF), IMitosisVaultVLF__VLFNotInitialized(hubVLF));
+  function _assertVLFInitialized(VLFStorageV1 storage $, address hubVLFVault) internal view {
+    require(_isVLFInitialized($, hubVLFVault), IMitosisVaultVLF__VLFNotInitialized(hubVLFVault));
   }
 
-  function _assertVLFNotInitialized(VLFStorageV1 storage $, address hubVLF) internal view {
-    require(!_isVLFInitialized($, hubVLF), IMitosisVaultVLF__VLFAlreadyInitialized(hubVLF));
+  function _assertVLFNotInitialized(VLFStorageV1 storage $, address hubVLFVault) internal view {
+    require(!_isVLFInitialized($, hubVLFVault), IMitosisVaultVLF__VLFAlreadyInitialized(hubVLFVault));
   }
 
-  function _assertOnlyStrategyExecutor(VLFStorageV1 storage $, address hubVLF) internal view {
-    require(_msgSender() == $.matrices[hubVLF].strategyExecutor, StdError.Unauthorized());
+  function _assertOnlyStrategyExecutor(VLFStorageV1 storage $, address hubVLFVault) internal view {
+    require(_msgSender() == $.vlfs[hubVLFVault].strategyExecutor, StdError.Unauthorized());
   }
 }

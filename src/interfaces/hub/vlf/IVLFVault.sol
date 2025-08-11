@@ -4,10 +4,10 @@ pragma solidity ^0.8.28;
 import { IERC4626 } from '@oz/interfaces/IERC4626.sol';
 
 /**
- * @title IVLFStorageV1
+ * @title IVLFVaultStorageV1
  * @dev Interface for the storage of VLF version 1.
  */
-interface IVLFStorageV1 {
+interface IVLFVaultStorageV1 {
   /**
    * @notice Emitted when the asset manager is set.
    * @param assetManager_ The address of the new asset manager.
@@ -21,10 +21,10 @@ interface IVLFStorageV1 {
 }
 
 /**
- * @title IVLF
+ * @title IVLFVault
  * @dev Interface for the VLF, combining ERC4626 functionality.
  */
-interface IVLF is IERC4626, IVLFStorageV1 {
+interface IVLFVault is IERC4626, IVLFVaultStorageV1 {
   /**
    * @notice Returns the maximum amount of assets that can be deposited from a specific chain
    * @dev This function is only callable by the AssetManager

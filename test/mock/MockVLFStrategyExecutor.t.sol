@@ -10,12 +10,12 @@ import { ITally } from '../../src/interfaces/branch/strategy/tally/ITally.sol';
 contract MockVLFStrategyExecutor is IVLFStrategyExecutor {
   IMitosisVault _vault;
   IERC20 _asset;
-  address _hubVLF;
+  address _hubVLFVault;
 
-  constructor(IMitosisVault vault_, IERC20 asset_, address hubVLF_) {
+  constructor(IMitosisVault vault_, IERC20 asset_, address hubVLFVault_) {
     _vault = vault_;
     _asset = asset_;
-    _hubVLF = hubVLF_;
+    _hubVLFVault = hubVLFVault_;
   }
 
   function vault() external view returns (IMitosisVault) {
@@ -26,8 +26,8 @@ contract MockVLFStrategyExecutor is IVLFStrategyExecutor {
     return _asset;
   }
 
-  function hubVLF() external view returns (address) {
-    return _hubVLF;
+  function hubVLFVault() external view returns (address) {
+    return _hubVLFVault;
   }
 
   function strategist() external view returns (address) { }
@@ -58,7 +58,7 @@ contract MockVLFStrategyExecutor is IVLFStrategyExecutor {
 
   function returnLiquidity(uint256 amount) external {
     _asset.approve(address(_vault), amount);
-    _vault.returnVLF(_hubVLF, amount);
+    _vault.returnVLF(_hubVLFVault, amount);
   }
 
   function settle() external payable { }

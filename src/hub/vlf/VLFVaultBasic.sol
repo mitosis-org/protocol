@@ -3,13 +3,13 @@ pragma solidity ^0.8.28;
 
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 
-import { VLF } from './VLF.sol';
+import { VLFVault } from './VLFVault.sol';
 
 /**
- * @title VLFBasic
- * @notice Basic implementation of a VLF that simply inherits the VLF contract
+ * @title VLFVault
+ * @notice Basic implementation of a VLFVault that simply inherits the VLF Vault contract
  */
-contract VLFBasic is VLF {
+contract VLFVaultBasic is VLFVault {
   constructor() {
     _disableInitializers();
   }
@@ -18,6 +18,6 @@ contract VLFBasic is VLF {
     external
     initializer
   {
-    __VLF_init(assetManager_, asset_, name, symbol);
+    __VLFVault_init(assetManager_, asset_, name, symbol);
   }
 }

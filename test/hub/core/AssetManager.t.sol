@@ -15,14 +15,14 @@ import { AssetManagerStorageV1 } from '../../../src/hub/core/AssetManagerStorage
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { ReclaimQueue } from '../../../src/hub/ReclaimQueue.sol';
 import { Treasury } from '../../../src/hub/reward/Treasury.sol';
-import { VLFBasic } from '../../../src/hub/vlf/VLFBasic.sol';
+import { VLFVaultBasic } from '../../../src/hub/vlf/VLFVaultBasic.sol';
 import { IAssetManager, IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../../src/interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
 import { IReclaimQueue } from '../../../src/interfaces/hub/IReclaimQueue.sol';
 import { ITreasury } from '../../../src/interfaces/hub/reward/ITreasury.sol';
-import { IVLF } from '../../../src/interfaces/hub/vlf/IVLF.sol';
-import { IVLFFactory } from '../../../src/interfaces/hub/vlf/IVLFFactory.sol';
+import { IVLFVault } from '../../../src/interfaces/hub/vlf/IVLFVault.sol';
+import { IVLFVaultFactory } from '../../../src/interfaces/hub/vlf/IVLFVaultFactory.sol';
 import { IBeaconBase } from '../../../src/interfaces/lib/proxy/IBeaconBase.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { MockContract } from '../../util/MockContract.sol';
@@ -48,18 +48,19 @@ contract AssetManagerErrors {
     return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__HubAssetFactoryNotSet.selector);
   }
 
-  function _errVLFFactoryNotSet() internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__VLFFactoryNotSet.selector);
+  function _errVLFVaultFactoryNotSet() internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__VLFVaultFactoryNotSet.selector);
   }
 
-  function _errVLFNotInitialized(uint256 chainId, address vlf) internal pure returns (bytes memory) {
-    return
-      abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__VLFNotInitialized.selector, chainId, vlf);
-  }
-
-  function _errVLFAlreadyInitialized(uint256 chainId, address vlf) internal pure returns (bytes memory) {
+  function _errVLFNotInitialized(uint256 chainId, address vlfVault) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
-      IAssetManagerStorageV1.IAssetManagerStorageV1__VLFAlreadyInitialized.selector, chainId, vlf
+      IAssetManagerStorageV1.IAssetManagerStorageV1__VLFNotInitialized.selector, chainId, vlfVault
+    );
+  }
+
+  function _errVLFAlreadyInitialized(uint256 chainId, address vlfVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(
+      IAssetManagerStorageV1.IAssetManagerStorageV1__VLFAlreadyInitialized.selector, chainId, vlfVault
     );
   }
 
@@ -82,16 +83,16 @@ contract AssetManagerErrors {
     return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__InvalidHubAsset.selector, hubAsset);
   }
 
-  function _errInvalidVLF(address vlf) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__InvalidVLF.selector, vlf);
+  function _errInvalidVLFVault(address vlfVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__InvalidVLFVault.selector, vlfVault);
   }
 
-  function _errVLFNothingToReserve(address vlf) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IAssetManager.IAssetManager__NothingToReserve.selector, vlf);
+  function _errVLFNothingToReserve(address vlfVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAssetManager.IAssetManager__NothingToReserve.selector, vlfVault);
   }
 
-  function _errVLFInsufficient(address vlf) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IAssetManager.IAssetManager__VLFInsufficient.selector, vlf);
+  function _errVLFInsufficient(address vlfVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAssetManager.IAssetManager__VLFInsufficient.selector, vlfVault);
   }
 
   function _errBranchLiquidityThresholdNotSatisfied(
@@ -114,7 +115,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   MockContract reclaimQueue;
   MockContract entrypoint;
   MockContract treasury;
-  MockContract vlf;
+  MockContract vlfVault;
   MockContract vlfFactory;
   MockContract hubAsset;
   MockContract hubAssetFactory;
@@ -146,9 +147,9 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     treasury = new MockContract();
     treasury.setCall(ITreasury.storeRewards.selector);
 
-    vlf = new MockContract();
-    vlf.setCall(IERC4626.deposit.selector);
-    vlf.setCall(IVLF.depositFromChainId.selector);
+    vlfVault = new MockContract();
+    vlfVault.setCall(IERC4626.deposit.selector);
+    vlfVault.setCall(IVLFVault.depositFromChainId.selector);
     vlfFactory = new MockContract();
 
     hubAsset = new MockContract();
@@ -160,7 +161,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     hubAssetFactory = new MockContract();
 
-    vlf.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
 
     assetManager = AssetManager(
       payable(
@@ -204,85 +205,91 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
   function test_depositWithSupplyVLF() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setVLFFactory();
-    _setVLFInstance(address(vlf), true);
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), true);
 
     vm.prank(owner);
-    assetManager.initializeVLF(branchChainId1, address(vlf));
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
 
     // vault.asset != hubAsset
 
-    vlf.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(branchAsset1)));
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(branchAsset1)));
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
-    emit IAssetManager.DepositedWithSupplyVLF(branchChainId1, address(hubAsset), user1, address(vlf), 100 ether, 0);
-    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlf), 100 ether);
+    emit IAssetManager.DepositedWithSupplyVLF(branchChainId1, address(hubAsset), user1, address(vlfVault), 100 ether, 0);
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
 
     hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (user1, 100 ether)));
 
     // maxDepositFromChainId > amount
 
-    hubAsset.setRet(abi.encodeCall(IERC20.approve, (address(vlf), 100 ether)), false, abi.encode(true));
-    vlf.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
-    vlf.setRet(abi.encodeCall(IVLF.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(101 ether));
-    vlf.setRet(
-      abi.encodeCall(IVLF.depositFromChainId, (100 ether, user1, branchChainId1)), false, abi.encode(100 ether)
+    hubAsset.setRet(abi.encodeCall(IERC20.approve, (address(vlfVault), 100 ether)), false, abi.encode(true));
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(101 ether)
+    );
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.depositFromChainId, (100 ether, user1, branchChainId1)), false, abi.encode(100 ether)
     );
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
     emit IAssetManager.DepositedWithSupplyVLF(
-      branchChainId1, address(hubAsset), user1, address(vlf), 100 ether, 100 ether
+      branchChainId1, address(hubAsset), user1, address(vlfVault), 100 ether, 100 ether
     );
-    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlf), 100 ether);
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
 
     hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (address(assetManager), 100 ether)));
-    hubAsset.assertLastCall(abi.encodeCall(IERC20.approve, (address(vlf), 100 ether)));
-    vlf.assertLastCall(abi.encodeCall(IVLF.depositFromChainId, (100 ether, user1, branchChainId1)));
+    hubAsset.assertLastCall(abi.encodeCall(IERC20.approve, (address(vlfVault), 100 ether)));
+    vlfVault.assertLastCall(abi.encodeCall(IVLFVault.depositFromChainId, (100 ether, user1, branchChainId1)));
 
     // maxDepositFromChainId < amount
 
-    hubAsset.setRet(abi.encodeCall(IERC20.approve, (address(vlf), 99 ether)), false, abi.encode(true));
+    hubAsset.setRet(abi.encodeCall(IERC20.approve, (address(vlfVault), 99 ether)), false, abi.encode(true));
     hubAsset.setRet(abi.encodeCall(IERC20.transfer, (user1, 1 ether)), false, abi.encode(true));
-    vlf.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
-    vlf.setRet(abi.encodeCall(IVLF.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(99 ether));
-    vlf.setRet(abi.encodeCall(IVLF.depositFromChainId, (99 ether, user1, branchChainId1)), false, abi.encode(99 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(99 ether)
+    );
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.depositFromChainId, (99 ether, user1, branchChainId1)), false, abi.encode(99 ether)
+    );
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
     emit IAssetManager.DepositedWithSupplyVLF(
-      branchChainId1, address(hubAsset), user1, address(vlf), 100 ether, 99 ether
+      branchChainId1, address(hubAsset), user1, address(vlfVault), 100 ether, 99 ether
     );
-    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlf), 100 ether);
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
 
     hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (address(assetManager), 100 ether)));
-    hubAsset.assertLastCall(abi.encodeCall(IERC20.approve, (address(vlf), 99 ether)));
+    hubAsset.assertLastCall(abi.encodeCall(IERC20.approve, (address(vlfVault), 99 ether)));
     hubAsset.assertLastCall(abi.encodeCall(IERC20.transfer, (address(user1), 1 ether)));
-    vlf.assertLastCall(abi.encodeCall(IVLF.depositFromChainId, (99 ether, user1, branchChainId1)));
+    vlfVault.assertLastCall(abi.encodeCall(IVLFVault.depositFromChainId, (99 ether, user1, branchChainId1)));
   }
 
   function test_depositWithSupplyVLF_Unauthorized() public {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
-    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlf), 100 ether);
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
   }
 
   /// @dev No occurrence case until methods like unsetAssetPair are added.
   function test_depositWithSupplyVLF_BranchAssetPairNotExist() public {
     vm.prank(address(entrypoint));
     vm.expectRevert(_errBranchAssetPairNotExist(branchChainId1, branchAsset1));
-    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlf), 100 ether);
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
   }
 
-  function test_depositWithSupplyVLF_VLFNotInitialized() public {
+  function test_depositWithSupplyVLF_VLFVaultNotInitialized() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setVLFFactory();
-    _setVLFInstance(address(vlf), true);
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), true);
 
     vm.prank(address(entrypoint));
-    vm.expectRevert(_errVLFNotInitialized(branchChainId1, address(vlf)));
-    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlf), 100 ether);
+    vm.expectRevert(_errVLFNotInitialized(branchChainId1, address(vlfVault)));
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
   }
 
   function test_withdraw() public {
@@ -360,51 +367,51 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     test_depositWithSupplyVLF();
 
     vm.prank(owner);
-    assetManager.setStrategist(address(vlf), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
 
-    vlf.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(200 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(200 ether));
 
     vm.prank(strategist);
     vm.expectEmit();
-    emit IAssetManager.VLFAllocated(strategist, branchChainId1, address(vlf), 100 ether);
-    assetManager.allocateVLF(branchChainId1, address(vlf), 100 ether);
+    emit IAssetManager.VLFAllocated(strategist, branchChainId1, address(vlfVault), 100 ether);
+    assetManager.allocateVLF(branchChainId1, address(vlfVault), 100 ether);
   }
 
   function test_allocateVLF_Unauthorized() public {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
-    assetManager.allocateVLF(branchChainId1, address(vlf), 100 ether);
+    assetManager.allocateVLF(branchChainId1, address(vlfVault), 100 ether);
   }
 
-  function test_allocateVLF_VLFNotInitialized() public {
+  function test_allocateVLF_VLFVaultNotInitialized() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setVLFFactory();
-    _setVLFInstance(address(vlf), true);
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), true);
 
     vm.prank(owner);
-    assetManager.setStrategist(address(vlf), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
 
     vm.prank(strategist);
-    vm.expectRevert(_errVLFNotInitialized(branchChainId1, address(vlf)));
-    assetManager.allocateVLF(branchChainId1, address(vlf), 100 ether);
+    vm.expectRevert(_errVLFNotInitialized(branchChainId1, address(vlfVault)));
+    assetManager.allocateVLF(branchChainId1, address(vlfVault), 100 ether);
   }
 
   function test_allocateVLF_VLFInsufficient() public {
     test_depositWithSupplyVLF();
 
     vm.prank(owner);
-    assetManager.setStrategist(address(vlf), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
 
     // mint 100 of hubAsset to user1
-    vlf.setRet(abi.encodeCall(IERC4626.maxDeposit, (user1)), false, abi.encode(100 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.maxDeposit, (user1)), false, abi.encode(100 ether));
     vm.prank(address(entrypoint));
-    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlf), 100 ether);
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
 
-    vlf.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(100 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(100 ether));
 
     vm.prank(strategist);
-    vm.expectRevert(_errVLFInsufficient(address(vlf)));
-    assetManager.allocateVLF(branchChainId1, address(vlf), 101 ether);
+    vm.expectRevert(_errVLFInsufficient(address(vlfVault)));
+    assetManager.allocateVLF(branchChainId1, address(vlfVault), 101 ether);
   }
 
   function test_allocateVLF_BranchAvailableLiquidityInsufficient() public {
@@ -412,165 +419,173 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     vm.startPrank(owner);
     assetManager.setAssetPair(address(hubAsset), branchChainId2, branchAsset2);
-    assetManager.initializeVLF(branchChainId2, address(vlf));
-    assetManager.setStrategist(address(vlf), strategist);
+    assetManager.initializeVLF(branchChainId2, address(vlfVault));
+    assetManager.setStrategist(address(vlfVault), strategist);
     vm.stopPrank();
 
     // mint 100 of hubAsset to user1 for each branch chains
-    vlf.setRet(abi.encodeCall(IVLF.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(100 ether));
-    vlf.setRet(abi.encodeCall(IVLF.maxDepositFromChainId, (user1, branchChainId2)), false, abi.encode(100 ether));
-    vlf.setRet(
-      abi.encodeCall(IVLF.depositFromChainId, (100 ether, user1, branchChainId1)), false, abi.encode(100 ether)
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(100 ether)
     );
-    vlf.setRet(
-      abi.encodeCall(IVLF.depositFromChainId, (100 ether, user1, branchChainId2)), false, abi.encode(100 ether)
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.maxDepositFromChainId, (user1, branchChainId2)), false, abi.encode(100 ether)
+    );
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.depositFromChainId, (100 ether, user1, branchChainId1)), false, abi.encode(100 ether)
+    );
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.depositFromChainId, (100 ether, user1, branchChainId2)), false, abi.encode(100 ether)
     );
     vm.startPrank(address(entrypoint));
-    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlf), 100 ether);
-    assetManager.depositWithSupplyVLF(branchChainId2, branchAsset2, user1, address(vlf), 100 ether);
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
+    assetManager.depositWithSupplyVLF(branchChainId2, branchAsset2, user1, address(vlfVault), 100 ether);
     vm.stopPrank();
 
-    vlf.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(500 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(500 ether));
 
     assertEq(assetManager.branchAvailableLiquidity(address(hubAsset), branchChainId1), 400 ether);
     assertEq(assetManager.branchAvailableLiquidity(address(hubAsset), branchChainId2), 100 ether);
-    assertEq(assetManager.vlfIdle(address(vlf)), 500 ether);
-    assertEq(assetManager.vlfAlloc(address(vlf)), 0 ether);
+    assertEq(assetManager.vlfIdle(address(vlfVault)), 500 ether);
+    assertEq(assetManager.vlfAlloc(address(vlfVault)), 0 ether);
 
     vm.startPrank(strategist);
-    assetManager.allocateVLF(branchChainId1, address(vlf), 30 ether);
-    assetManager.allocateVLF(branchChainId2, address(vlf), 50 ether);
+    assetManager.allocateVLF(branchChainId1, address(vlfVault), 30 ether);
+    assetManager.allocateVLF(branchChainId2, address(vlfVault), 50 ether);
     vm.stopPrank();
 
     assertEq(assetManager.branchAvailableLiquidity(address(hubAsset), branchChainId1), 370 ether);
     assertEq(assetManager.branchAvailableLiquidity(address(hubAsset), branchChainId2), 50 ether);
-    assertEq(assetManager.vlfIdle(address(vlf)), 420 ether);
-    assertEq(assetManager.vlfAlloc(address(vlf)), 80 ether);
+    assertEq(assetManager.vlfIdle(address(vlfVault)), 420 ether);
+    assertEq(assetManager.vlfAlloc(address(vlfVault)), 80 ether);
 
     vm.prank(strategist);
     vm.expectRevert(_errBranchAvailableLiquidityInsufficient(branchChainId1, address(hubAsset), 370 ether, 371 ether));
-    assetManager.allocateVLF(branchChainId1, address(vlf), 371 ether);
+    assetManager.allocateVLF(branchChainId1, address(vlfVault), 371 ether);
 
     vm.prank(strategist);
     vm.expectRevert(_errBranchAvailableLiquidityInsufficient(branchChainId2, address(hubAsset), 50 ether, 51 ether));
-    assetManager.allocateVLF(branchChainId2, address(vlf), 51 ether);
+    assetManager.allocateVLF(branchChainId2, address(vlfVault), 51 ether);
   }
 
   function test_deallocateVLF() public {
     test_allocateVLF(); // load 200 hubAssets
-    assertEq(assetManager.vlfIdle(address(vlf)), 100 ether);
-    assertEq(assetManager.vlfAlloc(address(vlf)), 100 ether);
+    assertEq(assetManager.vlfIdle(address(vlfVault)), 100 ether);
+    assertEq(assetManager.vlfAlloc(address(vlfVault)), 100 ether);
 
-    vlf.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
-    vlf.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(100 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(100 ether));
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
-    emit IAssetManager.VLFDeallocated(branchChainId1, address(vlf), 100 ether);
-    assetManager.deallocateVLF(branchChainId1, address(vlf), 100 ether);
+    emit IAssetManager.VLFDeallocated(branchChainId1, address(vlfVault), 100 ether);
+    assetManager.deallocateVLF(branchChainId1, address(vlfVault), 100 ether);
 
-    assertEq(assetManager.vlfIdle(address(vlf)), 100 ether);
-    assertEq(assetManager.vlfAlloc(address(vlf)), 0);
+    assertEq(assetManager.vlfIdle(address(vlfVault)), 100 ether);
+    assertEq(assetManager.vlfAlloc(address(vlfVault)), 0);
   }
 
   function test_deallocateVLF_Unauthorized() public {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
-    assetManager.deallocateVLF(branchChainId1, address(vlf), 100 ether);
+    assetManager.deallocateVLF(branchChainId1, address(vlfVault), 100 ether);
   }
 
   function test_reserveVLF() public {
-    _setVLFFactory();
-    _setVLFInstance(address(vlf), true);
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), true);
 
-    vlf.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(200 ether));
-    reclaimQueue.setRet(abi.encodeCall(IReclaimQueue.previewSync, (address(vlf), 100)), false, abi.encode(0, 100 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(200 ether));
     reclaimQueue.setRet(
-      abi.encodeCall(IReclaimQueue.sync, (strategist, address(vlf), 100)), false, abi.encode(100, 100 ether)
+      abi.encodeCall(IReclaimQueue.previewSync, (address(vlfVault), 100)), false, abi.encode(0, 100 ether)
+    );
+    reclaimQueue.setRet(
+      abi.encodeCall(IReclaimQueue.sync, (strategist, address(vlfVault), 100)), false, abi.encode(100, 100 ether)
     );
 
     vm.prank(owner);
-    assetManager.setStrategist(address(vlf), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
 
     vm.prank(strategist);
     vm.expectEmit();
-    emit IAssetManager.VLFReserved(strategist, address(vlf), 100, 100, 100 ether);
-    assetManager.reserveVLF(address(vlf), 100);
+    emit IAssetManager.VLFReserved(strategist, address(vlfVault), 100, 100, 100 ether);
+    assetManager.reserveVLF(address(vlfVault), 100);
 
-    reclaimQueue.assertLastCall(abi.encodeCall(IReclaimQueue.sync, (strategist, address(vlf), 100)));
+    reclaimQueue.assertLastCall(abi.encodeCall(IReclaimQueue.sync, (strategist, address(vlfVault), 100)));
   }
 
   function test_reserveVLF_Unauthorized() public {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
-    assetManager.reserveVLF(address(vlf), 10);
+    assetManager.reserveVLF(address(vlfVault), 10);
   }
 
   function test_reserveVLF_VLFNothingToReserve() public {
-    _setVLFFactory();
-    _setVLFInstance(address(vlf), true);
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), true);
 
-    vlf.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(200 ether));
-    reclaimQueue.setRet(abi.encodeCall(IReclaimQueue.previewSync, (address(vlf), 100)), false, abi.encode(0, 0));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(200 ether));
+    reclaimQueue.setRet(abi.encodeCall(IReclaimQueue.previewSync, (address(vlfVault), 100)), false, abi.encode(0, 0));
 
     vm.prank(owner);
-    assetManager.setStrategist(address(vlf), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
 
     vm.prank(strategist);
-    vm.expectRevert(_errVLFNothingToReserve(address(vlf)));
-    assetManager.reserveVLF(address(vlf), 100);
+    vm.expectRevert(_errVLFNothingToReserve(address(vlfVault)));
+    assetManager.reserveVLF(address(vlfVault), 100);
   }
 
-  function test_reserveVLF_VLFInsufficient() public {
+  function test_reserveVLF_VLFVaultInsufficient() public {
     test_initializeVLF();
 
     vm.prank(owner);
-    assetManager.setStrategist(address(vlf), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
 
-    vlf.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(100 ether));
-    reclaimQueue.setRet(abi.encodeCall(IReclaimQueue.previewSync, (address(vlf), 100)), false, abi.encode(0, 200 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(100 ether));
+    reclaimQueue.setRet(
+      abi.encodeCall(IReclaimQueue.previewSync, (address(vlfVault), 100)), false, abi.encode(0, 200 ether)
+    );
 
     vm.prank(strategist);
-    vm.expectRevert(_errVLFInsufficient(address(vlf)));
-    assetManager.reserveVLF(address(vlf), 100);
+    vm.expectRevert(_errVLFInsufficient(address(vlfVault)));
+    assetManager.reserveVLF(address(vlfVault), 100);
   }
 
   function test_settleVLFYield() public {
     test_allocateVLF();
 
-    vlf.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
-    emit IAssetManager.VLFRewardSettled(branchChainId1, address(vlf), address(hubAsset), 100 ether);
-    assetManager.settleVLFYield(branchChainId1, address(vlf), 100 ether);
+    emit IAssetManager.VLFRewardSettled(branchChainId1, address(vlfVault), address(hubAsset), 100 ether);
+    assetManager.settleVLFYield(branchChainId1, address(vlfVault), 100 ether);
 
-    hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (address(vlf), 100 ether)));
+    hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (address(vlfVault), 100 ether)));
   }
 
   function test_settleVLFYield_Unauthorized() public {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
-    assetManager.settleVLFYield(branchChainId1, address(vlf), 100 ether);
+    assetManager.settleVLFYield(branchChainId1, address(vlfVault), 100 ether);
   }
 
   function test_settleVLFLoss() public {
     test_allocateVLF();
 
-    vlf.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
-    emit IAssetManager.VLFLossSettled(branchChainId1, address(vlf), address(hubAsset), 100 ether);
-    assetManager.settleVLFLoss(branchChainId1, address(vlf), 100 ether);
+    emit IAssetManager.VLFLossSettled(branchChainId1, address(vlfVault), address(hubAsset), 100 ether);
+    assetManager.settleVLFLoss(branchChainId1, address(vlfVault), 100 ether);
 
-    hubAsset.assertLastCall(abi.encodeCall(IHubAsset.burn, (address(vlf), 100 ether)));
+    hubAsset.assertLastCall(abi.encodeCall(IHubAsset.burn, (address(vlfVault), 100 ether)));
   }
 
   function test_settleVLFLoss_Unauthorized() public {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
-    assetManager.settleVLFLoss(branchChainId1, address(vlf), 10 ether);
+    assetManager.settleVLFLoss(branchChainId1, address(vlfVault), 10 ether);
   }
 
   function test_settleVLFExtraRewards() public {
@@ -586,25 +601,27 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
-    emit IAssetManager.VLFRewardSettled(branchChainId1, address(vlf), address(rewardToken), 100 ether);
-    assetManager.settleVLFExtraRewards(branchChainId1, address(vlf), branchRewardTokenAddress, 100 ether);
+    emit IAssetManager.VLFRewardSettled(branchChainId1, address(vlfVault), address(rewardToken), 100 ether);
+    assetManager.settleVLFExtraRewards(branchChainId1, address(vlfVault), branchRewardTokenAddress, 100 ether);
 
     rewardToken.assertLastCall(abi.encodeCall(IHubAsset.mint, (address(assetManager), 100 ether)));
     rewardToken.assertLastCall(abi.encodeCall(IERC20.approve, (address(treasury), 100 ether)));
 
-    treasury.assertLastCall(abi.encodeCall(ITreasury.storeRewards, (address(vlf), address(rewardToken), 100 ether)));
+    treasury.assertLastCall(
+      abi.encodeCall(ITreasury.storeRewards, (address(vlfVault), address(rewardToken), 100 ether))
+    );
   }
 
   function test_settleVLFExtraRewards_Unauthorized() public {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
-    assetManager.settleVLFExtraRewards(branchChainId1, address(vlf), branchRewardTokenAddress, 100 ether);
+    assetManager.settleVLFExtraRewards(branchChainId1, address(vlfVault), branchRewardTokenAddress, 100 ether);
   }
 
   function test_settleVLFExtraRewards_BranchAssetPairNotExist() public {
     vm.prank(address(entrypoint));
     vm.expectRevert(_errBranchAssetPairNotExist(branchChainId1, branchRewardTokenAddress));
-    assetManager.settleVLFExtraRewards(branchChainId1, address(vlf), branchRewardTokenAddress, 100 ether);
+    assetManager.settleVLFExtraRewards(branchChainId1, address(vlfVault), branchRewardTokenAddress, 100 ether);
   }
 
   function test_initializeAsset() public {
@@ -823,57 +840,57 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
   function test_initializeVLF() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setVLFFactory();
-    _setVLFInstance(address(vlf), true);
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), true);
 
     vm.prank(owner);
     vm.expectEmit();
-    emit IAssetManager.VLFInitialized(address(hubAsset), branchChainId1, address(vlf), branchAsset1);
-    assetManager.initializeVLF(branchChainId1, address(vlf));
+    emit IAssetManager.VLFInitialized(address(hubAsset), branchChainId1, address(vlfVault), branchAsset1);
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
 
-    assertTrue(assetManager.vlfInitialized(branchChainId1, address(vlf)));
+    assertTrue(assetManager.vlfInitialized(branchChainId1, address(vlfVault)));
   }
 
   function test_initializeVLF_Unauthorized() public {
     vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    assetManager.initializeVLF(branchChainId1, address(vlf));
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
   }
 
-  function test_initializeVLF_VLFFactoryNotSet() public {
+  function test_initializeVLF_VLFVaultFactoryNotSet() public {
     vm.prank(owner);
-    vm.expectRevert(_errVLFFactoryNotSet());
-    assetManager.initializeVLF(branchChainId1, address(vlf));
+    vm.expectRevert(_errVLFVaultFactoryNotSet());
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
   }
 
-  function test_initializeVLF_InvalidVLF() public {
+  function test_initializeVLF_InvalidVLFVault() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setVLFFactory();
-    _setVLFInstance(address(vlf), false);
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), false);
 
     vm.prank(owner);
-    vm.expectRevert(_errInvalidVLF(address(vlf)));
-    assetManager.initializeVLF(branchChainId1, address(vlf));
+    vm.expectRevert(_errInvalidVLFVault(address(vlfVault)));
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
   }
 
   function test_initializeVLF_BranchAssetPairNotExist() public {
-    _setVLFInstance(address(vlf), true);
+    _setVLFVaultInstance(address(vlfVault), true);
 
     vm.prank(owner);
-    assetManager.setVLFFactory(address(vlfFactory));
+    assetManager.setVLFVaultFactory(address(vlfFactory));
 
     vm.prank(owner);
     vm.expectRevert(_errBranchAssetPairNotExist(branchChainId1, address(0)));
-    assetManager.initializeVLF(branchChainId1, address(vlf));
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
   }
 
   function test_initializeVLF_VLFAlreadyInitialized() public {
     test_initializeVLF();
-    assertTrue(assetManager.vlfInitialized(branchChainId1, address(vlf)));
+    assertTrue(assetManager.vlfInitialized(branchChainId1, address(vlfVault)));
 
     vm.prank(owner);
-    vm.expectRevert(_errVLFAlreadyInitialized(branchChainId1, address(vlf)));
-    assetManager.initializeVLF(branchChainId1, address(vlf));
+    vm.expectRevert(_errVLFAlreadyInitialized(branchChainId1, address(vlfVault)));
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
   }
 
   function test_setAssetPair() public {
@@ -1004,50 +1021,50 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_setStrategist() public {
-    assertEq(assetManager.strategist(address(vlf)), address(0));
+    assertEq(assetManager.strategist(address(vlfVault)), address(0));
 
     vm.prank(owner);
-    assetManager.setVLFFactory(address(vlfFactory));
+    assetManager.setVLFVaultFactory(address(vlfFactory));
 
-    _setVLFInstance(address(vlf), true);
+    _setVLFVaultInstance(address(vlfVault), true);
 
     vm.prank(owner);
     vm.expectEmit();
-    emit IAssetManagerStorageV1.StrategistSet(address(vlf), strategist);
-    assetManager.setStrategist(address(vlf), strategist);
+    emit IAssetManagerStorageV1.StrategistSet(address(vlfVault), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
 
-    assertEq(assetManager.strategist(address(vlf)), strategist);
+    assertEq(assetManager.strategist(address(vlfVault)), strategist);
 
     address newStrategist = makeAddr('newStrategist');
 
     vm.prank(owner);
     vm.expectEmit();
-    emit IAssetManagerStorageV1.StrategistSet(address(vlf), newStrategist);
-    assetManager.setStrategist(address(vlf), newStrategist);
+    emit IAssetManagerStorageV1.StrategistSet(address(vlfVault), newStrategist);
+    assetManager.setStrategist(address(vlfVault), newStrategist);
 
-    assertEq(assetManager.strategist(address(vlf)), newStrategist);
+    assertEq(assetManager.strategist(address(vlfVault)), newStrategist);
   }
 
   function test_setStrategist_Unauthorized() public {
     vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    assetManager.setStrategist(address(vlf), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
   }
 
-  function test_setStrategist_VLFFactoryNotSet() public {
+  function test_setStrategist_VLFVaultFactoryNotSet() public {
     vm.prank(owner);
-    vm.expectRevert(_errVLFFactoryNotSet());
-    assetManager.setStrategist(address(vlf), strategist);
+    vm.expectRevert(_errVLFVaultFactoryNotSet());
+    assetManager.setStrategist(address(vlfVault), strategist);
   }
 
   function test_setStrategist_InvalidVLF() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setVLFFactory();
-    _setVLFInstance(address(vlf), false);
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), false);
 
     vm.prank(owner);
-    vm.expectRevert(_errInvalidVLF(address(vlf)));
-    assetManager.setStrategist(address(vlf), strategist);
+    vm.expectRevert(_errInvalidVLFVault(address(vlfVault)));
+    assetManager.setStrategist(address(vlfVault), strategist);
   }
 
   function _setAssetPair(address hubAsset_, uint256 chainId_, address branchAsset_) internal {
@@ -1067,12 +1084,12 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     hubAssetFactory.setRet(abi.encodeCall(IBeaconBase.isInstance, (hubAsset_)), false, abi.encode(isInstance));
   }
 
-  function _setVLFFactory() internal {
+  function _setVLFVaultFactory() internal {
     vm.prank(owner);
-    assetManager.setVLFFactory(address(vlfFactory));
+    assetManager.setVLFVaultFactory(address(vlfFactory));
   }
 
-  function _setVLFInstance(address vlf_, bool isInstance) internal {
+  function _setVLFVaultInstance(address vlf_, bool isInstance) internal {
     vlfFactory.setRet(abi.encodeCall(IBeaconBase.isInstance, (vlf_)), false, abi.encode(isInstance));
   }
 }

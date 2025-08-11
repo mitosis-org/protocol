@@ -9,14 +9,14 @@ import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { BeaconProxy } from '@oz/proxy/beacon/BeaconProxy.sol';
 import { IBeacon } from '@oz/proxy/beacon/IBeacon.sol';
 
-import { VLFBasic } from '../../../src/hub/vlf/VLFBasic.sol';
-import { VLFCapped } from '../../../src/hub/vlf/VLFCapped.sol';
+import { VLFVaultBasic } from '../../../src/hub/vlf/VLFVaultBasic.sol';
+import { VLFVaultCapped } from '../../../src/hub/vlf/VLFVaultCapped.sol';
 import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
-contract VLFBaseTest is IBeacon, Toolkit {
+contract VLFVaultBaseTest is IBeacon, Toolkit {
   address owner = makeAddr('owner');
   address liquidityManager = makeAddr('liquidityManager');
   address user = makeAddr('user');
@@ -25,18 +25,18 @@ contract VLFBaseTest is IBeacon, Toolkit {
 
   WETH weth;
 
-  VLFBasic basicImpl;
-  VLFCapped cappedImpl;
+  VLFVaultBasic basicImpl;
+  VLFVaultCapped cappedImpl;
   address private defaultImpl;
 
-  VLFBasic basic;
-  VLFCapped capped;
+  VLFVaultBasic basic;
+  VLFVaultCapped capped;
 
   function setUp() public virtual {
     weth = new WETH();
 
-    basicImpl = new VLFBasic();
-    cappedImpl = new VLFCapped();
+    basicImpl = new VLFVaultBasic();
+    cappedImpl = new VLFVaultCapped();
 
     vm.mockCall(
       address(assetManager),
@@ -59,12 +59,12 @@ contract VLFBaseTest is IBeacon, Toolkit {
     );
 
     defaultImpl = address(basicImpl);
-    basic = VLFBasic(
+    basic = VLFVaultBasic(
       address(
         new BeaconProxy(
           address(this),
           abi.encodeCall(
-            VLFBasic.initialize, //
+            VLFVaultBasic.initialize, //
             (assetManager, IERC20Metadata(address(weth)), 'B', 'B')
           )
         )
@@ -72,12 +72,12 @@ contract VLFBaseTest is IBeacon, Toolkit {
     );
 
     defaultImpl = address(cappedImpl);
-    capped = VLFCapped(
+    capped = VLFVaultCapped(
       address(
         new BeaconProxy(
           address(this),
           abi.encodeCall(
-            VLFCapped.initialize, //
+            VLFVaultCapped.initialize, //
             (assetManager, IERC20Metadata(address(weth)), 'C', 'C')
           )
         )
@@ -95,7 +95,7 @@ contract VLFBaseTest is IBeacon, Toolkit {
   }
 }
 
-contract VLFBasicTest is VLFBaseTest {
+contract VLFVaultBasicTest is VLFVaultBaseTest {
   function test_initialize() public view {
     assertEq(basic.asset(), address(weth));
     assertEq(basic.name(), 'B');
@@ -193,7 +193,7 @@ contract VLFBasicTest is VLFBaseTest {
   }
 }
 
-contract VLFCappedTest is VLFBaseTest {
+contract VLFVaultCappedTest is VLFVaultBaseTest {
   function setUp() public override {
     super.setUp();
 

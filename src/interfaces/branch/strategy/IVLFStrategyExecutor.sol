@@ -15,7 +15,7 @@ interface IVLFStrategyExecutor is IStrategyExecutor {
 
   function vault() external view returns (IMitosisVault);
   function asset() external view returns (IERC20);
-  function hubVLF() external view returns (address);
+  function hubVLFVault() external view returns (address);
 
   function strategist() external view returns (address);
   function executor() external view returns (address);

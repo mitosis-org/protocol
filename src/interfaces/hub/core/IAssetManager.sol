@@ -31,10 +31,10 @@ interface IAssetManagerStorageV1 {
   event HubAssetFactorySet(address indexed hubAssetFactory);
 
   /**
-   * @notice Emitted when a new VLF factory is set
-   * @param vlfFactory The address of the new VLF factory
+   * @notice Emitted when a new VLF vault factory is set
+   * @param vlfFactory The address of the new VLF vault factory
    */
-  event VLFFactorySet(address indexed vlfFactory);
+  event VLFVaultFactorySet(address indexed vlfFactory);
 
   /**
    * @notice Emitted when a new strategist is set for a VLF
@@ -61,10 +61,10 @@ interface IAssetManagerStorageV1 {
   error IAssetManagerStorageV1__HubAssetFactoryNotSet();
   error IAssetManagerStorageV1__InvalidHubAsset(address hubAsset);
 
-  error IAssetManagerStorageV1__VLFFactoryNotSet();
-  error IAssetManagerStorageV1__InvalidVLF(address vlf);
-  error IAssetManagerStorageV1__VLFNotInitialized(uint256 chainId, address vlf);
-  error IAssetManagerStorageV1__VLFAlreadyInitialized(uint256 chainId, address vlf);
+  error IAssetManagerStorageV1__VLFVaultFactoryNotSet();
+  error IAssetManagerStorageV1__InvalidVLFVault(address vlfVault);
+  error IAssetManagerStorageV1__VLFNotInitialized(uint256 chainId, address vlfVault);
+  error IAssetManagerStorageV1__VLFAlreadyInitialized(uint256 chainId, address vlfVault);
 
   error IAssetManagerStorageV1__BranchAvailableLiquidityInsufficient(
     uint256 chainId, address hubAsset, uint256 available, uint256 amount
@@ -97,9 +97,9 @@ interface IAssetManagerStorageV1 {
   function hubAssetFactory() external view returns (address);
 
   /**
-   * @notice Get the current VLF factory address (see IVLFFactory)
+   * @notice Get the current VLF vault factory address (see IVLFVaultFactory)
    */
-  function vlfFactory() external view returns (address);
+  function vlfVaultFactory() external view returns (address);
 
   /**
    * @notice Get the branch asset address for a given hub asset and chain ID
@@ -148,29 +148,29 @@ interface IAssetManagerStorageV1 {
   /**
    * @notice Check if a VLF is initialized for a given chain and branch asset (VLF -> hubAsset -> branchAsset)
    * @param chainId The ID of the chain
-   * @param vlf The address of the VLF
+   * @param vlfVault The address of the VLF vault
    */
-  function vlfInitialized(uint256 chainId, address vlf) external view returns (bool);
+  function vlfInitialized(uint256 chainId, address vlfVault) external view returns (bool);
 
   /**
    * @notice Get the idle balance of a VLF
    * @dev The idle balance will be calculated like this:
    * @dev (total supplied amount - total utilized amount - total pending reclaim amount)
-   * @param vlf The address of the VLF
+   * @param vlfVault The address of the VLF
    */
-  function vlfIdle(address vlf) external view returns (uint256);
+  function vlfIdle(address vlfVault) external view returns (uint256);
 
   /**
    * @notice Get the total utilized balance (hubAsset/branchAsset) of a VLF
-   * @param vlf The address of the VLF
+   * @param vlfVault The address of the VLF
    */
-  function vlfAlloc(address vlf) external view returns (uint256);
+  function vlfAlloc(address vlfVault) external view returns (uint256);
 
   /**
    * @notice Get the strategist address for a VLF
-   * @param vlf The address of the VLF
+   * @param vlfVault The address of the VLF
    */
-  function strategist(address vlf) external view returns (address);
+  function strategist(address vlfVault) external view returns (address);
 }
 
 /**
@@ -190,10 +190,10 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @notice Emitted when a VLF is initialized
    * @param hubAsset The address of the hub asset
    * @param chainId The ID of the chain where the VLF is initialized
-   * @param vlf The address of the initialized VLF
+   * @param vlfVault The address of the initialized VLF
    * @param branchAsset The address of the branch asset associated with the VLF
    */
-  event VLFInitialized(address indexed hubAsset, uint256 indexed chainId, address vlf, address branchAsset);
+  event VLFInitialized(address indexed hubAsset, uint256 indexed chainId, address vlfVault, address branchAsset);
 
   /**
    * @notice Emitted when a deposit is made
@@ -209,7 +209,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param chainId The ID of the chain where the deposit is made
    * @param hubAsset The address of the asset that correspond to the branch asset
    * @param to The address receiving the miAsset
-   * @param vlf The address of the VLF supplied into
+   * @param vlfVault The address of the VLF supplied into
    * @param amount The amount deposited
    * @param supplyAmount The amount supplied into the VLF
    */
@@ -217,7 +217,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
     uint256 indexed chainId,
     address indexed hubAsset,
     address indexed to,
-    address vlf,
+    address vlfVault,
     uint256 amount,
     uint256 supplyAmount
   );
@@ -232,51 +232,51 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event Withdrawn(uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount);
 
   /**
-   * @notice Emitted when a reward is settled from the branch chain to the hub chain for a specific VLF
+   * @notice Emitted when a reward is settled from the branch chain to the hub chain for a specific VLF vault
    * @param chainId The ID of the chain where the reward is reported
-   * @param vlf The address of the VLF receiving the reward
+   * @param vlfVault The address of the VLF vault receiving the reward
    * @param asset The address of the reward asset
    * @param amount The amount of the reward
    */
-  event VLFRewardSettled(uint256 indexed chainId, address indexed vlf, address indexed asset, uint256 amount);
+  event VLFRewardSettled(uint256 indexed chainId, address indexed vlfVault, address indexed asset, uint256 amount);
 
   /**
    * @notice Emitted when a loss is settled from the branch chain to the hub chain for a specific VLF
    * @param chainId The ID of the chain where the loss is reported
-   * @param vlf The address of the VLF incurring the loss
+   * @param vlfVault The address of the VLF incurring the loss
    * @param asset The address of the asset lost
    * @param amount The amount of the loss
    */
-  event VLFLossSettled(uint256 indexed chainId, address indexed vlf, address indexed asset, uint256 amount);
+  event VLFLossSettled(uint256 indexed chainId, address indexed vlfVault, address indexed asset, uint256 amount);
 
   /**
    * @notice Emitted when assets are allocated to the branch chain for a specific VLF
    * @param strategist The address of the strategist
    * @param chainId The ID of the chain where the allocation occurs
-   * @param vlf The address of the VLF to be reported the allocation
+   * @param vlfVault The address of the VLF to be reported the allocation
    * @param amount The amount allocated
    */
-  event VLFAllocated(address indexed strategist, uint256 indexed chainId, address indexed vlf, uint256 amount);
+  event VLFAllocated(address indexed strategist, uint256 indexed chainId, address indexed vlfVault, uint256 amount);
 
   /**
    * @notice Emitted when assets are deallocated from the branch chain for a specific VLF
    * @param chainId The ID of the chain where the deallocation occurs
-   * @param vlf The address of the VLF to be reported the deallocation
+   * @param vlfVault The address of the VLF to be reported the deallocation
    * @param amount The amount deallocated
    */
-  event VLFDeallocated(uint256 indexed chainId, address indexed vlf, uint256 amount);
+  event VLFDeallocated(uint256 indexed chainId, address indexed vlfVault, uint256 amount);
 
   /**
    * @notice Emitted when a claim request is reserved from the reclaim queue
    * @param strategist The address of the strategist
-   * @param vlf The address of the VLF to be reported the claim request
+   * @param vlfVault The address of the VLF to be reported the claim request
    * @param claimCount The amount of the claim request
    * @param totalReservedShares The total amount of shares reserved
    * @param totalReservedAssets The total amount of assets reserved
    */
   event VLFReserved(
     address indexed strategist,
-    address indexed vlf,
+    address indexed vlfVault,
     uint256 claimCount,
     uint256 totalReservedShares,
     uint256 totalReservedAssets
@@ -292,15 +292,15 @@ interface IAssetManager is IAssetManagerStorageV1 {
 
   /**
    * @notice Error thrown when a VLF has no claimable amount
-   * @param vlf The address of the VLF with no claimable amount
+   * @param vlfVault The address of the VLF with no claimable amount
    */
-  error IAssetManager__NothingToReserve(address vlf);
+  error IAssetManager__NothingToReserve(address vlfVault);
 
   /**
    * @notice Error thrown when a VLF has insufficient funds
-   * @param vlf The address of the VLF with insufficient funds
+   * @param vlfVault The address of the VLF with insufficient funds
    */
-  error IAssetManager__VLFInsufficient(address vlf);
+  error IAssetManager__VLFInsufficient(address vlfVault);
 
   /**
    * @notice Check if an address is the owner of the contract
@@ -327,11 +327,11 @@ interface IAssetManager is IAssetManagerStorageV1 {
   /**
    * @notice Quotes the gas fee for initializing a VLF on a specified branch chain
    * @param chainId The ID of the branch chain
-   * @param vlf The address of the VLF
+   * @param vlfVault The address of the VLF
    * @param branchAsset The address of the associated asset on the branch chain
    * @return The gas fee required for the operation
    */
-  function quoteInitializeVLF(uint256 chainId, address vlf, address branchAsset) external view returns (uint256);
+  function quoteInitializeVLF(uint256 chainId, address vlfVault, address branchAsset) external view returns (uint256);
 
   /**
    * @notice Quotes the gas fee for withdrawing assets from a branch chain
@@ -349,11 +349,11 @@ interface IAssetManager is IAssetManagerStorageV1 {
   /**
    * @notice Quotes the gas fee for allocating assets to a VLF on a specified branch chain
    * @param chainId The ID of the branch chain
-   * @param vlf The address of the VLF
+   * @param vlfVault The address of the VLF
    * @param amount The amount of assets to allocate
    * @return The gas fee required for the operation
    */
-  function quoteAllocateVLF(uint256 chainId, address vlf, uint256 amount) external view returns (uint256);
+  function quoteAllocateVLF(uint256 chainId, address vlfVault, uint256 amount) external view returns (uint256);
 
   /**
    * @notice Deposit branch assets
@@ -371,10 +371,11 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param chainId The ID of the chain where the deposit is made
    * @param branchAsset The address of the branch asset being deposited
    * @param to The address receiving the deposit
-   * @param vlf The address of the VLF to supply into
+   * @param vlfVault The address of the VLF to supply into
    * @param amount The amount to deposit
    */
-  function depositWithSupplyVLF(uint256 chainId, address branchAsset, address to, address vlf, uint256 amount) external;
+  function depositWithSupplyVLF(uint256 chainId, address branchAsset, address to, address vlfVault, uint256 amount)
+    external;
 
   /**
    * @notice Withdraw hub assets and receive the asset on the branch chain
@@ -391,54 +392,54 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @dev Only the strategist of the VLF can allocate assets
    * @dev Dispatches the cross-chain message to branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the allocation occurs
-   * @param vlf The address of the VLF to be affected
+   * @param vlfVault The address of the VLF to be affected
    * @param amount The amount to allocate
    */
-  function allocateVLF(uint256 chainId, address vlf, uint256 amount) external payable;
+  function allocateVLF(uint256 chainId, address vlfVault, uint256 amount) external payable;
 
   /**
    * @notice Deallocate the assets from the branch chain for a specific VLF
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the deallocation occurs
-   * @param vlf The address of the VLF to be affected
+   * @param vlfVault The address of the VLF to be affected
    * @param amount The amount to deallocate
    */
-  function deallocateVLF(uint256 chainId, address vlf, uint256 amount) external;
+  function deallocateVLF(uint256 chainId, address vlfVault, uint256 amount) external;
 
   /**
    * @notice Resolves the pending reclaim request amount from the reclaim queue using the idle balance of a VLF
-   * @param vlf The address of the VLF
+   * @param vlfVault The address of the VLF
    * @param claimCount The amount of claim requests to resolve
    */
-  function reserveVLF(address vlf, uint256 claimCount) external;
+  function reserveVLF(address vlfVault, uint256 claimCount) external;
 
   /**
    * @notice Settles an yield generated from VLF Protocol
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the yield is settled
-   * @param vlf The address of the VLF to be affected
+   * @param vlfVault The address of the VLF to be affected
    * @param amount The amount of yield to settle
    */
-  function settleVLFYield(uint256 chainId, address vlf, uint256 amount) external;
+  function settleVLFYield(uint256 chainId, address vlfVault, uint256 amount) external;
 
   /**
    * @notice Settles a loss incurred by the VLF Protocol
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the loss is settled
-   * @param vlf The address of the VLF to be affected
+   * @param vlfVault The address of the VLF to be affected
    * @param amount The amount of loss to settle
    */
-  function settleVLFLoss(uint256 chainId, address vlf, uint256 amount) external;
+  function settleVLFLoss(uint256 chainId, address vlfVault, uint256 amount) external;
 
   /**
    * @notice Settle extra rewards generated from VLF Protocol
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the rewards are settled
-   * @param vlf The address of the VLF
+   * @param vlfVault The address of the VLF
    * @param branchReward The address of the reward asset on the branch chain
    * @param amount The amount of extra rewards to settle
    */
-  function settleVLFExtraRewards(uint256 chainId, address vlf, address branchReward, uint256 amount) external;
+  function settleVLFExtraRewards(uint256 chainId, address vlfVault, address branchReward, uint256 amount) external;
 
   /**
    * @notice Initialize an asset for a given chain's MitosisVault
@@ -471,9 +472,9 @@ interface IAssetManager is IAssetManagerStorageV1 {
   /**
    * @notice Initialize a VLF for branch asset (VLF) on a given chain
    * @param chainId The ID of the chain where the VLF is initialized
-   * @param vlf The address of the VLF to initialize
+   * @param vlfVault The address of the VLF to initialize
    */
-  function initializeVLF(uint256 chainId, address vlf) external payable;
+  function initializeVLF(uint256 chainId, address vlfVault) external payable;
 
   /**
    * @notice Set an asset pair
@@ -509,14 +510,14 @@ interface IAssetManager is IAssetManagerStorageV1 {
 
   /**
    * @notice Set the VLF factory address
-   * @param vlfFactory_ The new VLF factory address
+   * @param vlfVaultFactory_ The new VLF factory address
    */
-  function setVLFFactory(address vlfFactory_) external;
+  function setVLFVaultFactory(address vlfVaultFactory_) external;
 
   /**
    * @notice Set the strategist for a VLF
-   * @param vlf The address of the VLF
+   * @param vlfVault The address of the VLF
    * @param strategist The address of the new strategist
    */
-  function setStrategist(address vlf, address strategist) external;
+  function setStrategist(address vlfVault, address strategist) external;
 }

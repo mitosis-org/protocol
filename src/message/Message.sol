@@ -34,7 +34,7 @@ struct MsgDeposit {
 struct MsgDepositWithSupplyVLF {
   bytes32 asset;
   bytes32 to;
-  bytes32 vlf;
+  bytes32 vlfVault;
   uint256 amount;
 }
 
@@ -47,37 +47,37 @@ struct MsgWithdraw {
 
 // hub -> branch
 struct MsgInitializeVLF {
-  bytes32 vlf;
+  bytes32 vlfVault;
   bytes32 asset;
 }
 
 // hub -> branch
 struct MsgAllocateVLF {
-  bytes32 vlf;
+  bytes32 vlfVault;
   uint256 amount;
 }
 
 // branch -> hub
 struct MsgDeallocateVLF {
-  bytes32 vlf;
+  bytes32 vlfVault;
   uint256 amount;
 }
 
 // branch -> hub
 struct MsgSettleVLFYield {
-  bytes32 vlf;
+  bytes32 vlfVault;
   uint256 amount;
 }
 
 // branch -> hub
 struct MsgSettleVLFLoss {
-  bytes32 vlf;
+  bytes32 vlfVault;
   uint256 amount;
 }
 
 // branch -> hub
 struct MsgSettleVLFExtraRewards {
-  bytes32 vlf;
+  bytes32 vlfVault;
   bytes32 reward;
   uint256 amount;
 }
@@ -138,7 +138,7 @@ library Message {
   }
 
   function encode(MsgDepositWithSupplyVLF memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgDepositWithSupplyVLF), msg_.asset, msg_.to, msg_.vlf, msg_.amount);
+    return abi.encodePacked(uint8(MsgType.MsgDepositWithSupplyVLF), msg_.asset, msg_.to, msg_.vlfVault, msg_.amount);
   }
 
   function decodeDepositWithSupplyVLF(bytes calldata msg_)
@@ -150,7 +150,7 @@ library Message {
 
     decoded.asset = bytes32(msg_[1:33]);
     decoded.to = bytes32(msg_[33:65]);
-    decoded.vlf = bytes32(msg_[65:97]);
+    decoded.vlfVault = bytes32(msg_[65:97]);
     decoded.amount = uint256(bytes32(msg_[97:]));
   }
 
@@ -167,62 +167,62 @@ library Message {
   }
 
   function encode(MsgInitializeVLF memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgInitializeVLF), msg_.vlf, msg_.asset);
+    return abi.encodePacked(uint8(MsgType.MsgInitializeVLF), msg_.vlfVault, msg_.asset);
   }
 
   function decodeInitializeVLF(bytes calldata msg_) internal pure returns (MsgInitializeVLF memory decoded) {
     assertMsg(msg_, MsgType.MsgInitializeVLF, LEN_MSG_INITIALIZE_VLF);
 
-    decoded.vlf = bytes32(msg_[1:33]);
+    decoded.vlfVault = bytes32(msg_[1:33]);
     decoded.asset = bytes32(msg_[33:]);
   }
 
   function encode(MsgAllocateVLF memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgAllocateVLF), msg_.vlf, msg_.amount);
+    return abi.encodePacked(uint8(MsgType.MsgAllocateVLF), msg_.vlfVault, msg_.amount);
   }
 
   function decodeAllocateVLF(bytes calldata msg_) internal pure returns (MsgAllocateVLF memory decoded) {
     assertMsg(msg_, MsgType.MsgAllocateVLF, LEN_MSG_ALLOCATE_VLF);
 
-    decoded.vlf = bytes32(msg_[1:33]);
+    decoded.vlfVault = bytes32(msg_[1:33]);
     decoded.amount = uint256(bytes32(msg_[33:]));
   }
 
   function encode(MsgDeallocateVLF memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgDeallocateVLF), msg_.vlf, msg_.amount);
+    return abi.encodePacked(uint8(MsgType.MsgDeallocateVLF), msg_.vlfVault, msg_.amount);
   }
 
   function decodeDeallocateVLF(bytes calldata msg_) internal pure returns (MsgDeallocateVLF memory decoded) {
     assertMsg(msg_, MsgType.MsgDeallocateVLF, LEN_MSG_DEALLOCATE_VLF);
 
-    decoded.vlf = bytes32(msg_[1:33]);
+    decoded.vlfVault = bytes32(msg_[1:33]);
     decoded.amount = uint256(bytes32(msg_[33:]));
   }
 
   function encode(MsgSettleVLFYield memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgSettleVLFYield), msg_.vlf, msg_.amount);
+    return abi.encodePacked(uint8(MsgType.MsgSettleVLFYield), msg_.vlfVault, msg_.amount);
   }
 
   function decodeSettleVLFYield(bytes calldata msg_) internal pure returns (MsgSettleVLFYield memory decoded) {
     assertMsg(msg_, MsgType.MsgSettleVLFYield, LEN_MSG_SETTLE_VLF_YIELD);
 
-    decoded.vlf = bytes32(msg_[1:33]);
+    decoded.vlfVault = bytes32(msg_[1:33]);
     decoded.amount = uint256(bytes32(msg_[33:]));
   }
 
   function encode(MsgSettleVLFLoss memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgSettleVLFLoss), msg_.vlf, msg_.amount);
+    return abi.encodePacked(uint8(MsgType.MsgSettleVLFLoss), msg_.vlfVault, msg_.amount);
   }
 
   function decodeSettleVLFLoss(bytes calldata msg_) internal pure returns (MsgSettleVLFLoss memory decoded) {
     assertMsg(msg_, MsgType.MsgSettleVLFLoss, LEN_MSG_SETTLE_VLF_LOSS);
 
-    decoded.vlf = bytes32(msg_[1:33]);
+    decoded.vlfVault = bytes32(msg_[1:33]);
     decoded.amount = uint256(bytes32(msg_[33:]));
   }
 
   function encode(MsgSettleVLFExtraRewards memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgSettleVLFExtraRewards), msg_.vlf, msg_.reward, msg_.amount);
+    return abi.encodePacked(uint8(MsgType.MsgSettleVLFExtraRewards), msg_.vlfVault, msg_.reward, msg_.amount);
   }
 
   function decodeSettleVLFExtraRewards(bytes calldata msg_)
@@ -232,7 +232,7 @@ library Message {
   {
     assertMsg(msg_, MsgType.MsgSettleVLFExtraRewards, LEN_MSG_SETTLE_VLF_EXTRA_REWARDS);
 
-    decoded.vlf = bytes32(msg_[1:33]);
+    decoded.vlfVault = bytes32(msg_[1:33]);
     decoded.reward = bytes32(msg_[33:65]);
     decoded.amount = uint256(bytes32(msg_[65:]));
   }

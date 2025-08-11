@@ -13,7 +13,7 @@ abstract contract VLFStrategyExecutorStorageV1 {
   struct StorageV1 {
     IMitosisVault vault;
     IERC20 asset;
-    address hubVLF;
+    address hubVLFVault;
     address strategist;
     address executor;
     uint256 storedTotalBalance;

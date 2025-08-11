@@ -29,11 +29,11 @@ import { ValidatorRewardDistributor } from '../../../src/hub/validator/Validator
 import { ValidatorStaking } from '../../../src/hub/validator/ValidatorStaking.sol';
 import { ValidatorStakingGovMITO } from '../../../src/hub/validator/ValidatorStakingGovMITO.sol';
 import { ValidatorStakingHub } from '../../../src/hub/validator/ValidatorStakingHub.sol';
-import { VLFFactory } from '../../../src/hub/vlf/VLFFactory.sol';
+import { VLFVaultFactory } from '../../../src/hub/vlf/VLFVaultFactory.sol';
 import { WMITO } from '../../../src/hub/WMITO.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
 import { IValidatorStaking } from '../../../src/interfaces/hub/validator/IValidatorStaking.sol';
-import { IVLF } from '../../../src/interfaces/hub/vlf/IVLF.sol';
+import { IVLFVault } from '../../../src/interfaces/hub/vlf/IVLFVault.sol';
 import { Timelock } from '../../../src/lib/Timelock.sol';
 import '../Functions.sol';
 
@@ -51,12 +51,12 @@ library HubProxyT {
     IHubAsset asset;
   }
 
-  struct VLFInfo {
+  struct VLFVaultInfo {
     string name;
     string symbol;
     uint8 decimals;
     IHubAsset asset;
-    IVLF vault;
+    IVLFVault vault;
   }
 
   struct ValidatorStakingInfo {
@@ -82,8 +82,8 @@ library HubProxyT {
   }
 
   struct vlf {
-    VLFInfo[] vaults;
-    VLFFactory vaultFactory;
+    VLFVaultInfo[] vaults;
+    VLFVaultFactory vaultFactory;
   }
 
   struct Governance {
@@ -154,7 +154,7 @@ library HubProxyT {
     }
   }
 
-  function extract(VLFInfo[] memory v) private pure returns (address[] memory o) {
+  function extract(VLFVaultInfo[] memory v) private pure returns (address[] memory o) {
     o = new address[](v.length);
     for (uint256 i = 0; i < v.length; i++) {
       o[i] = address(v[i].vault);
@@ -258,14 +258,14 @@ library HubProxyT {
     o.crosschainRegistry = CrossChainRegistry(_r(v, cat(base, '.crosschainRegistry')));
   }
 
-  function decodeVLFs(string memory v, string memory path) internal view returns (VLFInfo[] memory o) {
+  function decodeVLFVaults(string memory v, string memory path) internal view returns (VLFVaultInfo[] memory o) {
     address payable[] memory vaults = _ra(v, path);
-    o = new VLFInfo[](vaults.length);
+    o = new VLFVaultInfo[](vaults.length);
 
     for (uint256 i = 0; i < vaults.length; i++) {
-      IVLF vault = IVLF(vaults[i]);
+      IVLFVault vault = IVLFVault(vaults[i]);
 
-      o[i] = VLFInfo({
+      o[i] = VLFVaultInfo({
         name: vault.name(),
         symbol: vault.symbol(),
         decimals: vault.decimals(),
@@ -276,8 +276,8 @@ library HubProxyT {
   }
 
   function decodevlf(string memory v, string memory base) internal view returns (vlf memory o) {
-    o.vaults = decodeVLFs(v, cat(base, '.vaults'));
-    o.vaultFactory = VLFFactory(_r(v, cat(base, '.vaultFactory')));
+    o.vaults = decodeVLFVaults(v, cat(base, '.vaults'));
+    o.vaultFactory = VLFVaultFactory(_r(v, cat(base, '.vaultFactory')));
   }
 
   function decodeGovernance(string memory v, string memory base) internal pure returns (Governance memory o) {
