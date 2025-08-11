@@ -148,7 +148,7 @@ interface IAssetManagerStorageV1 {
   /**
    * @notice Check if a VLF is initialized for a given chain and branch asset (VLF -> hubAsset -> branchAsset)
    * @param chainId The ID of the chain
-   * @param vlfVault The address of the VLF vault
+   * @param vlfVault The address of the VLFVault
    */
   function vlfInitialized(uint256 chainId, address vlfVault) external view returns (bool);
 
