@@ -105,7 +105,6 @@ abstract contract MitosisVaultVLF is
     external
     payable
     whenNotPaused
-    nonReentrant
   {
     IMitosisVaultEntrypoint entry = _entrypoint();
 
