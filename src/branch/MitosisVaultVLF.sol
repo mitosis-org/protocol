@@ -5,6 +5,7 @@ import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
 import { Address } from '@oz/utils/Address.sol';
 import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
+import { ReentrancyGuardUpgradeable } from '@ozu/utils/ReentrancyGuardUpgradeable.sol';
 
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IMitosisVaultVLF, VLFAction } from '../interfaces/branch/IMitosisVaultVLF.sol';
@@ -14,7 +15,12 @@ import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
 
-abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEnumerableUpgradeable {
+abstract contract MitosisVaultVLF is
+  IMitosisVaultVLF,
+  Pausable,
+  AccessControlEnumerableUpgradeable,
+  ReentrancyGuardUpgradeable
+{
   using ERC7201Utils for string;
   using SafeERC20 for IERC20;
 
@@ -99,6 +105,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
     external
     payable
     whenNotPaused
+    nonReentrant
   {
     IMitosisVaultEntrypoint entry = _entrypoint();
 
@@ -132,7 +139,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
     emit VLFInitialized(hubVLFVault, asset);
   }
 
-  function allocateVLF(address hubVLFVault, uint256 amount) external payable whenNotPaused {
+  function allocateVLF(address hubVLFVault, uint256 amount) external whenNotPaused {
     require(address(_entrypoint()) == _msgSender(), StdError.Unauthorized());
 
     VLFStorageV1 storage $ = _getVLFStorageV1();
@@ -144,7 +151,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
   }
 
   /// @dev _msgSender() must be able to receive native token, or provided msg.value must be the same as the gas needed
-  function deallocateVLF(address hubVLFVault, uint256 amount) external payable whenNotPaused {
+  function deallocateVLF(address hubVLFVault, uint256 amount) external payable whenNotPaused nonReentrant {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
     _assertVLFInitialized($, hubVLFVault);
@@ -194,7 +201,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
   }
 
   /// @dev _msgSender() must be able to receive native token, or provided msg.value must be the same as the gas needed
-  function settleVLFYield(address hubVLFVault, uint256 amount) external payable whenNotPaused {
+  function settleVLFYield(address hubVLFVault, uint256 amount) external payable whenNotPaused nonReentrant {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
     _assertVLFInitialized($, hubVLFVault);
@@ -213,7 +220,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
   }
 
   /// @dev _msgSender() must be able to receive native token, or provided msg.value must be the same as the gas needed
-  function settleVLFLoss(address hubVLFVault, uint256 amount) external payable whenNotPaused {
+  function settleVLFLoss(address hubVLFVault, uint256 amount) external payable whenNotPaused nonReentrant {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
     _assertVLFInitialized($, hubVLFVault);
@@ -232,7 +239,12 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
   }
 
   /// @dev _msgSender() must be able to receive native token, or provided msg.value must be the same as the gas needed
-  function settleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount) external payable whenNotPaused {
+  function settleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount)
+    external
+    payable
+    whenNotPaused
+    nonReentrant
+  {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
     _assertVLFInitialized($, hubVLFVault);

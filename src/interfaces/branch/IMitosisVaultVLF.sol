@@ -61,7 +61,7 @@ interface IMitosisVaultVLF {
 
   function initializeVLF(address hubVLFVault, address asset) external;
 
-  function allocateVLF(address hubVLFVault, uint256 amount) external payable;
+  function allocateVLF(address hubVLFVault, uint256 amount) external;
   function deallocateVLF(address hubVLFVault, uint256 amount) external payable;
 
   function fetchVLF(address hubVLFVault, uint256 amount) external;
