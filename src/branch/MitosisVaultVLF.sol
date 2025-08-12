@@ -241,15 +241,15 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
 
     require(
       hubVLFVault == IVLFStrategyExecutor(strategyExecutor_).hubVLFVault(),
-      StdError.InvalidId('vlfStrategyExecutor.hubVLFVault')
+      StdError.InvalidId('VLFStrategyExecutor.hubVLFVault')
     );
     require(
       address(this) == address(IVLFStrategyExecutor(strategyExecutor_).vault()),
-      StdError.InvalidAddress('vlfStrategyExecutor.vault')
+      StdError.InvalidAddress('VLFStrategyExecutor.vault')
     );
     require(
       vlfInfo.asset == address(IVLFStrategyExecutor(strategyExecutor_).asset()),
-      StdError.InvalidAddress('vlfStrategyExecutor.asset')
+      StdError.InvalidAddress('VLFStrategyExecutor.asset')
     );
 
     vlfInfo.strategyExecutor = strategyExecutor_;
