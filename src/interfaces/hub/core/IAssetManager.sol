@@ -31,17 +31,17 @@ interface IAssetManagerStorageV1 {
   event HubAssetFactorySet(address indexed hubAssetFactory);
 
   /**
-   * @notice Emitted when a new Matrix vault factory is set
-   * @param matrixVaultFactory The address of the new Matrix vault factory
+   * @notice Emitted when a new VLFVaultFactory is set
+   * @param vlfVaultFactory The address of the new VLFVaultFactory
    */
-  event MatrixVaultFactorySet(address indexed matrixVaultFactory);
+  event VLFVaultFactorySet(address indexed vlfVaultFactory);
 
   /**
-   * @notice Emitted when a new strategist is set for a MatrixVault
-   * @param matrixVault The address of the MatrixVault
+   * @notice Emitted when a new strategist is set for a VLFVault
+   * @param vlfVault The address of the VLFVault
    * @param strategist The address of the new strategist
    */
-  event StrategistSet(address indexed matrixVault, address indexed strategist);
+  event StrategistSet(address indexed vlfVault, address indexed strategist);
 
   /**
    * @notice Emitted when the withdrawable deposit threshold is updated for a hub asset on a specific chain
@@ -61,10 +61,10 @@ interface IAssetManagerStorageV1 {
   error IAssetManagerStorageV1__HubAssetFactoryNotSet();
   error IAssetManagerStorageV1__InvalidHubAsset(address hubAsset);
 
-  error IAssetManagerStorageV1__MatrixVaultFactoryNotSet();
-  error IAssetManagerStorageV1__InvalidMatrixVault(address matrixVault);
-  error IAssetManagerStorageV1__MatrixNotInitialized(uint256 chainId, address matrixVault);
-  error IAssetManagerStorageV1__MatrixAlreadyInitialized(uint256 chainId, address matrixVault);
+  error IAssetManagerStorageV1__VLFVaultFactoryNotSet();
+  error IAssetManagerStorageV1__InvalidVLFVault(address vlfVault);
+  error IAssetManagerStorageV1__VLFNotInitialized(uint256 chainId, address vlfVault);
+  error IAssetManagerStorageV1__VLFAlreadyInitialized(uint256 chainId, address vlfVault);
 
   error IAssetManagerStorageV1__BranchAvailableLiquidityInsufficient(
     uint256 chainId, address hubAsset, uint256 available, uint256 amount
@@ -97,9 +97,9 @@ interface IAssetManagerStorageV1 {
   function hubAssetFactory() external view returns (address);
 
   /**
-   * @notice Get the current Matrix vault factory address (see IMatrixVaultFactory)
+   * @notice Get the current VLFVaultFactory address (see IVLFVaultFactory)
    */
-  function matrixVaultFactory() external view returns (address);
+  function vlfVaultFactory() external view returns (address);
 
   /**
    * @notice Get the branch asset address for a given hub asset and chain ID
@@ -146,31 +146,31 @@ interface IAssetManagerStorageV1 {
   function hubAsset(uint256 chainId, address branchAsset_) external view returns (address);
 
   /**
-   * @notice Check if a MatrixVault is initialized for a given chain and branch asset (MatrixVault -> hubAsset -> branchAsset)
+   * @notice Check if a VLF is initialized for a given chain and branch asset (VLFVault -> hubAsset -> branchAsset)
    * @param chainId The ID of the chain
-   * @param matrixVault The address of the MatrixVault
+   * @param vlfVault The address of the VLFVault
    */
-  function matrixInitialized(uint256 chainId, address matrixVault) external view returns (bool);
+  function vlfInitialized(uint256 chainId, address vlfVault) external view returns (bool);
 
   /**
-   * @notice Get the idle balance of a MatrixVault
+   * @notice Get the idle balance of a VLF
    * @dev The idle balance will be calculated like this:
    * @dev (total supplied amount - total utilized amount - total pending reclaim amount)
-   * @param matrixVault The address of the MatrixVault
+   * @param vlfVault The address of the VLFVault
    */
-  function matrixIdle(address matrixVault) external view returns (uint256);
+  function vlfIdle(address vlfVault) external view returns (uint256);
 
   /**
-   * @notice Get the total utilized balance (hubAsset/branchAsset) of a MatrixVault
-   * @param matrixVault The address of the MatrixVault
+   * @notice Get the total utilized balance (hubAsset/branchAsset) of a VLF
+   * @param vlfVault The address of the VLFVault
    */
-  function matrixAlloc(address matrixVault) external view returns (uint256);
+  function vlfAlloc(address vlfVault) external view returns (uint256);
 
   /**
-   * @notice Get the strategist address for a MatrixVault
-   * @param matrixVault The address of the MatrixVault
+   * @notice Get the strategist address for a VLF
+   * @param vlfVault The address of the VLFVault
    */
-  function strategist(address matrixVault) external view returns (address);
+  function strategist(address vlfVault) external view returns (address);
 }
 
 /**
@@ -187,13 +187,13 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event AssetInitialized(address indexed hubAsset, uint256 indexed chainId, address branchAsset);
 
   /**
-   * @notice Emitted when a MatrixVault is initialized
+   * @notice Emitted when a VLF is initialized
    * @param hubAsset The address of the hub asset
-   * @param chainId The ID of the chain where the MatrixVault is initialized
-   * @param matrixVault The address of the initialized MatrixVault
-   * @param branchAsset The address of the branch asset associated with the MatrixVault
+   * @param chainId The ID of the chain where the VLF is initialized
+   * @param vlfVault The address of the initialized VLFVault
+   * @param branchAsset The address of the branch asset associated with the VLF
    */
-  event MatrixInitialized(address indexed hubAsset, uint256 indexed chainId, address matrixVault, address branchAsset);
+  event VLFInitialized(address indexed hubAsset, uint256 indexed chainId, address vlfVault, address branchAsset);
 
   /**
    * @notice Emitted when a deposit is made
@@ -205,19 +205,19 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event Deposited(uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount);
 
   /**
-   * @notice Emitted when a deposit is made with supply to a MatrixVault
+   * @notice Emitted when a deposit is made with supply to a VLF
    * @param chainId The ID of the chain where the deposit is made
    * @param hubAsset The address of the asset that correspond to the branch asset
    * @param to The address receiving the miAsset
-   * @param matrixVault The address of the MatrixVault supplied into
+   * @param vlfVault The address of the VLFVault supplied into
    * @param amount The amount deposited
-   * @param supplyAmount The amount supplied into the MatrixVault
+   * @param supplyAmount The amount supplied into the VLF
    */
-  event DepositedWithSupplyMatrix(
+  event DepositedWithSupplyVLF(
     uint256 indexed chainId,
     address indexed hubAsset,
     address indexed to,
-    address matrixVault,
+    address vlfVault,
     uint256 amount,
     uint256 supplyAmount
   );
@@ -232,55 +232,51 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event Withdrawn(uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount);
 
   /**
-   * @notice Emitted when a reward is settled from the branch chain to the hub chain for a specific MatrixVault
+   * @notice Emitted when a reward is settled from the branch chain to the hub chain for a specific VLF
    * @param chainId The ID of the chain where the reward is reported
-   * @param matrixVault The address of the MatrixVault receiving the reward
+   * @param vlfVault The address of the VLFVault receiving the reward
    * @param asset The address of the reward asset
    * @param amount The amount of the reward
    */
-  event MatrixRewardSettled(
-    uint256 indexed chainId, address indexed matrixVault, address indexed asset, uint256 amount
-  );
+  event VLFRewardSettled(uint256 indexed chainId, address indexed vlfVault, address indexed asset, uint256 amount);
 
   /**
-   * @notice Emitted when a loss is settled from the branch chain to the hub chain for a specific MatrixVault
+   * @notice Emitted when a loss is settled from the branch chain to the hub chain for a specific VLF
    * @param chainId The ID of the chain where the loss is reported
-   * @param matrixVault The address of the MatrixVault incurring the loss
+   * @param vlfVault The address of the VLFVault incurring the loss
    * @param asset The address of the asset lost
    * @param amount The amount of the loss
    */
-  event MatrixLossSettled(uint256 indexed chainId, address indexed matrixVault, address indexed asset, uint256 amount);
+  event VLFLossSettled(uint256 indexed chainId, address indexed vlfVault, address indexed asset, uint256 amount);
 
   /**
-   * @notice Emitted when assets are allocated to the branch chain for a specific MatrixVault
+   * @notice Emitted when assets are allocated to the branch chain for a specific VLF
    * @param strategist The address of the strategist
    * @param chainId The ID of the chain where the allocation occurs
-   * @param matrixVault The address of the MatrixVault to be reported the allocation
+   * @param vlfVault The address of the VLFVault to be reported the allocation
    * @param amount The amount allocated
    */
-  event MatrixAllocated(
-    address indexed strategist, uint256 indexed chainId, address indexed matrixVault, uint256 amount
-  );
+  event VLFAllocated(address indexed strategist, uint256 indexed chainId, address indexed vlfVault, uint256 amount);
 
   /**
-   * @notice Emitted when assets are deallocated from the branch chain for a specific MatrixVault
+   * @notice Emitted when assets are deallocated from the branch chain for a specific VLF
    * @param chainId The ID of the chain where the deallocation occurs
-   * @param matrixVault The address of the MatrixVault to be reported the deallocation
+   * @param vlfVault The address of the VLFVault to be reported the deallocation
    * @param amount The amount deallocated
    */
-  event MatrixDeallocated(uint256 indexed chainId, address indexed matrixVault, uint256 amount);
+  event VLFDeallocated(uint256 indexed chainId, address indexed vlfVault, uint256 amount);
 
   /**
    * @notice Emitted when a claim request is reserved from the reclaim queue
    * @param strategist The address of the strategist
-   * @param matrixVault The address of the MatrixVault to be reported the claim request
+   * @param vlfVault The address of the VLFVault to be reported the claim request
    * @param claimCount The amount of the claim request
    * @param totalReservedShares The total amount of shares reserved
    * @param totalReservedAssets The total amount of assets reserved
    */
-  event MatrixReserved(
+  event VLFReserved(
     address indexed strategist,
-    address indexed matrixVault,
+    address indexed vlfVault,
     uint256 claimCount,
     uint256 totalReservedShares,
     uint256 totalReservedAssets
@@ -295,16 +291,16 @@ interface IAssetManager is IAssetManagerStorageV1 {
   event AssetPairSet(address hubAsset, uint256 branchChainId, address branchAsset);
 
   /**
-   * @notice Error thrown when a MatrixVault has no claimable amount
-   * @param matrixVault The address of the MatrixVault with no claimable amount
+   * @notice Error thrown when a VLF has no claimable amount
+   * @param vlfVault The address of the VLFVault with no claimable amount
    */
-  error IAssetManager__NothingToReserve(address matrixVault);
+  error IAssetManager__NothingToVLFReserve(address vlfVault);
 
   /**
-   * @notice Error thrown when a MatrixVault has insufficient funds
-   * @param matrixVault The address of the MatrixVault with insufficient funds
+   * @notice Error thrown when a VLF has insufficient funds
+   * @param vlfVault The address of the VLFVault with insufficient funds
    */
-  error IAssetManager__MatrixInsufficient(address matrixVault);
+  error IAssetManager__VLFLiquidityInsufficient(address vlfVault);
 
   /**
    * @notice Check if an address is the owner of the contract
@@ -329,16 +325,13 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function quoteInitializeAsset(uint256 chainId, address branchAsset) external view returns (uint256);
 
   /**
-   * @notice Quotes the gas fee for initializing a MatrixVault on a specified branch chain
+   * @notice Quotes the gas fee for initializing a VLF on a specified branch chain
    * @param chainId The ID of the branch chain
-   * @param matrixVault The address of the MatrixVault
+   * @param vlfVault The address of the VLFVault
    * @param branchAsset The address of the associated asset on the branch chain
    * @return The gas fee required for the operation
    */
-  function quoteInitializeMatrix(uint256 chainId, address matrixVault, address branchAsset)
-    external
-    view
-    returns (uint256);
+  function quoteInitializeVLF(uint256 chainId, address vlfVault, address branchAsset) external view returns (uint256);
 
   /**
    * @notice Quotes the gas fee for withdrawing assets from a branch chain
@@ -354,13 +347,13 @@ interface IAssetManager is IAssetManagerStorageV1 {
     returns (uint256);
 
   /**
-   * @notice Quotes the gas fee for allocating assets to a MatrixVault on a specified branch chain
+   * @notice Quotes the gas fee for allocating assets to a VLF on a specified branch chain
    * @param chainId The ID of the branch chain
-   * @param matrixVault The address of the MatrixVault
+   * @param vlfVault The address of the VLFVault
    * @param amount The amount of assets to allocate
    * @return The gas fee required for the operation
    */
-  function quoteAllocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external view returns (uint256);
+  function quoteAllocateVLF(uint256 chainId, address vlfVault, uint256 amount) external view returns (uint256);
 
   /**
    * @notice Deposit branch assets
@@ -373,21 +366,16 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function deposit(uint256 chainId, address branchAsset, address to, uint256 amount) external;
 
   /**
-   * @notice Deposit branch assets with supply to a MatrixVault
+   * @notice Deposit branch assets with supply to a VLF
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the deposit is made
    * @param branchAsset The address of the branch asset being deposited
    * @param to The address receiving the deposit
-   * @param matrixVault The address of the MatrixVault to supply into
+   * @param vlfVault The address of the VLFVault to supply into
    * @param amount The amount to deposit
    */
-  function depositWithSupplyMatrix(
-    uint256 chainId,
-    address branchAsset,
-    address to,
-    address matrixVault,
-    uint256 amount
-  ) external;
+  function depositWithSupplyVLF(uint256 chainId, address branchAsset, address to, address vlfVault, uint256 amount)
+    external;
 
   /**
    * @notice Withdraw hub assets and receive the asset on the branch chain
@@ -400,59 +388,58 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function withdraw(uint256 chainId, address hubAsset, address to, uint256 amount) external payable;
 
   /**
-   * @notice Allocate the assets to the branch chain for a specific MatrixVault
-   * @dev Only the strategist of the MatrixVault can allocate assets
+   * @notice Allocate the assets to the branch chain for a specific VLF
+   * @dev Only the strategist of the VLF can allocate assets
    * @dev Dispatches the cross-chain message to branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the allocation occurs
-   * @param matrixVault The address of the MatrixVault to be affected
+   * @param vlfVault The address of the VLFVault to be affected
    * @param amount The amount to allocate
    */
-  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external payable;
+  function allocateVLF(uint256 chainId, address vlfVault, uint256 amount) external payable;
 
   /**
-   * @notice Deallocate the assets from the branch chain for a specific MatrixVault
+   * @notice Deallocate the assets from the branch chain for a specific VLF
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the deallocation occurs
-   * @param matrixVault The address of the MatrixVault to be affected
+   * @param vlfVault The address of the VLFVault to be affected
    * @param amount The amount to deallocate
    */
-  function deallocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external;
+  function deallocateVLF(uint256 chainId, address vlfVault, uint256 amount) external;
 
   /**
-   * @notice Resolves the pending reclaim request amount from the reclaim queue using the idle balance of a MatrixVault
-   * @param matrixVault The address of the MatrixVault
+   * @notice Resolves the pending reclaim request amount from the reclaim queue using the idle balance of a VLF
+   * @param vlfVault The address of the VLFVault
    * @param claimCount The amount of claim requests to resolve
    */
-  function reserveMatrix(address matrixVault, uint256 claimCount) external;
+  function reserveVLF(address vlfVault, uint256 claimCount) external;
 
   /**
-   * @notice Settles an yield generated from Matrix Protocol
+   * @notice Settles an yield generated from VLF Protocol
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the yield is settled
-   * @param matrixVault The address of the MatrixVault to be affected
+   * @param vlfVault The address of the VLFVault to be affected
    * @param amount The amount of yield to settle
    */
-  function settleMatrixYield(uint256 chainId, address matrixVault, uint256 amount) external;
+  function settleVLFYield(uint256 chainId, address vlfVault, uint256 amount) external;
 
   /**
-   * @notice Settles a loss incurred by the Matrix Protocol
+   * @notice Settles a loss incurred by the VLF Protocol
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the loss is settled
-   * @param matrixVault The address of the MatrixVault to be affected
+   * @param vlfVault The address of the VLFVault to be affected
    * @param amount The amount of loss to settle
    */
-  function settleMatrixLoss(uint256 chainId, address matrixVault, uint256 amount) external;
+  function settleVLFLoss(uint256 chainId, address vlfVault, uint256 amount) external;
 
   /**
-   * @notice Settle extra rewards generated from Matrix Protocol
+   * @notice Settle extra rewards generated from VLF Protocol
    * @dev Processes the cross-chain message from the branch chain (see IAssetManagerEntrypoint)
    * @param chainId The ID of the chain where the rewards are settled
-   * @param matrixVault The address of the MatrixVault
+   * @param vlfVault The address of the VLFVault
    * @param branchReward The address of the reward asset on the branch chain
    * @param amount The amount of extra rewards to settle
    */
-  function settleMatrixExtraRewards(uint256 chainId, address matrixVault, address branchReward, uint256 amount)
-    external;
+  function settleVLFExtraRewards(uint256 chainId, address vlfVault, address branchReward, uint256 amount) external;
 
   /**
    * @notice Initialize an asset for a given chain's MitosisVault
@@ -483,11 +470,11 @@ interface IAssetManager is IAssetManagerStorageV1 {
   ) external;
 
   /**
-   * @notice Initialize a Matrix for branch asset (MatrixVault) on a given chain
-   * @param chainId The ID of the chain where the MatrixVault is initialized
-   * @param matrixVault The address of the MatrixVault to initialize
+   * @notice Initialize a VLF for branch asset (VLF) on a given chain
+   * @param chainId The ID of the chain where the VLF is initialized
+   * @param vlfVault The address of the VLFVault to initialize
    */
-  function initializeMatrix(uint256 chainId, address matrixVault) external payable;
+  function initializeVLF(uint256 chainId, address vlfVault) external payable;
 
   /**
    * @notice Set an asset pair
@@ -522,15 +509,15 @@ interface IAssetManager is IAssetManagerStorageV1 {
   function setHubAssetFactory(address hubAssetFactory_) external;
 
   /**
-   * @notice Set the Matrix vault factory address
-   * @param matrixVaultFactory_ The new Matrix vault factory address
+   * @notice Set the VLFVaultFactory address
+   * @param vlfVaultFactory_ The new VLFVaultFactory address
    */
-  function setMatrixVaultFactory(address matrixVaultFactory_) external;
+  function setVLFVaultFactory(address vlfVaultFactory_) external;
 
   /**
-   * @notice Set the strategist for a MatrixVault
-   * @param matrixVault The address of the MatrixVault
+   * @notice Set the strategist for a VLF
+   * @param vlfVault The address of the VLFVault
    * @param strategist The address of the new strategist
    */
-  function setStrategist(address matrixVault, address strategist) external;
+  function setStrategist(address vlfVault, address strategist) external;
 }
