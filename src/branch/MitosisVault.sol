@@ -130,16 +130,9 @@ contract MitosisVault is
     _haltAsset($, asset, AssetAction.Deposit);
   }
 
-  /// @dev _msgSender() must be able to receive native token, or provided msg.value must be the same as the gas needed
   function deposit(address asset, address to, uint256 amount) external payable whenNotPaused {
-    IMitosisVaultEntrypoint entry = _entrypoint();
-
     uint256 gasPaid = _deposit(asset, to, amount);
-    uint256 gasNeeded = entry.quoteDeposit(asset, to, amount);
-    require(gasNeeded <= gasPaid, StdError.InvalidParameter('gasNeeded > gasPaid'));
-
-    entry.deposit{ value: gasNeeded }(asset, to, amount);
-    if (gasPaid > gasNeeded) Address.sendValue(payable(_msgSender()), gasPaid - gasNeeded);
+    _entrypoint().deposit{ value: gasPaid }(asset, to, amount, _msgSender());
 
     emit Deposited(asset, to, amount);
   }

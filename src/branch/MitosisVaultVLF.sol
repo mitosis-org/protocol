@@ -106,18 +106,13 @@ abstract contract MitosisVaultVLF is
     payable
     whenNotPaused
   {
-    IMitosisVaultEntrypoint entry = _entrypoint();
-
     uint256 gasPaid = _deposit(asset, to, amount);
-    uint256 gasNeeded = entry.quoteDepositWithSupplyVLF(asset, to, hubVLFVault, amount);
-    require(gasNeeded <= gasPaid, StdError.InvalidParameter('gasNeeded > gasPaid'));
 
     VLFStorageV1 storage $ = _getVLFStorageV1();
     _assertVLFInitialized($, hubVLFVault);
     require(asset == $.vlfs[hubVLFVault].asset, IMitosisVaultVLF__InvalidVLF(hubVLFVault, asset));
 
-    entry.depositWithSupplyVLF{ value: gasNeeded }(asset, to, hubVLFVault, amount);
-    if (gasPaid > gasNeeded) Address.sendValue(payable(_msgSender()), gasPaid - gasNeeded);
+    _entrypoint().depositWithSupplyVLF{ value: gasPaid }(asset, to, hubVLFVault, amount, _msgSender());
 
     emit VLFDepositedWithSupply(asset, to, hubVLFVault, amount);
   }
@@ -158,14 +153,7 @@ abstract contract MitosisVaultVLF is
 
     $.vlfs[hubVLFVault].availableLiquidity -= amount;
 
-    IMitosisVaultEntrypoint entry = _entrypoint();
-
-    uint256 gasPaid = msg.value;
-    uint256 gasNeeded = entry.quoteDeallocateVLF(hubVLFVault, amount);
-    require(gasNeeded <= gasPaid, StdError.InvalidParameter('gasNeeded > gasPaid'));
-
-    entry.deallocateVLF{ value: gasNeeded }(hubVLFVault, amount);
-    if (gasPaid > gasNeeded) Address.sendValue(payable(_msgSender()), gasPaid - gasNeeded);
+    _entrypoint().deallocateVLF{ value: msg.value }(hubVLFVault, amount, _msgSender());
 
     emit VLFDeallocated(hubVLFVault, amount);
   }
@@ -206,14 +194,7 @@ abstract contract MitosisVaultVLF is
     _assertVLFInitialized($, hubVLFVault);
     _assertOnlyStrategyExecutor($, hubVLFVault);
 
-    IMitosisVaultEntrypoint entry = _entrypoint();
-
-    uint256 gasPaid = msg.value;
-    uint256 gasNeeded = entry.quoteSettleVLFYield(hubVLFVault, amount);
-    require(gasNeeded <= gasPaid, StdError.InvalidParameter('gasNeeded > gasPaid'));
-
-    entry.settleVLFYield{ value: gasNeeded }(hubVLFVault, amount);
-    if (gasPaid > gasNeeded) Address.sendValue(payable(_msgSender()), gasPaid - gasNeeded);
+    _entrypoint().settleVLFYield{ value: msg.value }(hubVLFVault, amount, _msgSender());
 
     emit VLFYieldSettled(hubVLFVault, amount);
   }
@@ -225,14 +206,7 @@ abstract contract MitosisVaultVLF is
     _assertVLFInitialized($, hubVLFVault);
     _assertOnlyStrategyExecutor($, hubVLFVault);
 
-    IMitosisVaultEntrypoint entry = _entrypoint();
-
-    uint256 gasPaid = msg.value;
-    uint256 gasNeeded = entry.quoteSettleVLFLoss(hubVLFVault, amount);
-    require(gasNeeded <= gasPaid, StdError.InvalidParameter('gasNeeded > gasPaid'));
-
-    entry.settleVLFLoss{ value: gasNeeded }(hubVLFVault, amount);
-    if (gasPaid > gasNeeded) Address.sendValue(payable(_msgSender()), gasPaid - gasNeeded);
+    _entrypoint().settleVLFLoss{ value: msg.value }(hubVLFVault, amount, _msgSender());
 
     emit VLFLossSettled(hubVLFVault, amount);
   }
@@ -253,14 +227,7 @@ abstract contract MitosisVaultVLF is
 
     IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
 
-    IMitosisVaultEntrypoint entry = _entrypoint();
-
-    uint256 gasPaid = msg.value;
-    uint256 gasNeeded = entry.quoteSettleVLFExtraRewards(hubVLFVault, reward, amount);
-    require(gasNeeded <= gasPaid, StdError.InvalidParameter('gasNeeded > gasPaid'));
-
-    entry.settleVLFExtraRewards{ value: gasNeeded }(hubVLFVault, reward, amount);
-    if (gasPaid > gasNeeded) Address.sendValue(payable(_msgSender()), gasPaid - gasNeeded);
+    _entrypoint().settleVLFExtraRewards{ value: msg.value }(hubVLFVault, reward, amount, _msgSender());
 
     emit VLFExtraRewardsSettled(hubVLFVault, reward, amount);
   }

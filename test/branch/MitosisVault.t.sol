@@ -109,6 +109,7 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
 
     // set quote deposit gas to 1 ether
+    _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.deposit.selector, 1 ether);
     _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.quoteDeposit.selector, 1 ether);
 
     vm.deal(user1, 100 ether);
@@ -141,6 +142,7 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.resumeAsset(address(_weth), AssetAction.Deposit);
 
     // set quote deposit gas to 1 ether
+    _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.deposit.selector, 1 ether);
     _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.quoteDeposit.selector, 1 ether);
 
     vm.deal(user1, amount + 100 ether);
@@ -246,10 +248,6 @@ contract MitosisVaultTest is Toolkit {
     vm.prank(user1);
     vm.expectRevert(abi.encodeWithSelector(StdError.InvalidParameter.selector, 'msg.value'));
     _mitosisVault.deposit{ value: amount - 1 }(address(_weth), user1, amount);
-
-    vm.prank(user1);
-    vm.expectRevert(abi.encodeWithSelector(StdError.InvalidParameter.selector, 'gasNeeded > gasPaid'));
-    _mitosisVault.deposit{ value: amount + 1 }(address(_weth), user1, amount);
   }
 
   function test_depositWithSupplyVLF(uint256 amount) public {
@@ -302,6 +300,7 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.resumeAsset(address(_weth), AssetAction.Deposit);
 
     // set quote deposit with supply vlf gas to 1 ether
+    _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.depositWithSupplyVLF.selector, 1 ether);
     _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.quoteDepositWithSupplyVLF.selector, 1 ether);
 
     vm.deal(user1, amount + 100 ether);
@@ -440,6 +439,7 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.resumeAsset(address(_weth), AssetAction.Deposit);
 
     // set quote deposit with supply vlf gas to 1 ether
+    _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.depositWithSupplyVLF.selector, 1 ether);
     _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.quoteDepositWithSupplyVLF.selector, 1 ether);
 
     vm.deal(user1, amount + 100 ether);
@@ -447,10 +447,6 @@ contract MitosisVaultTest is Toolkit {
     vm.prank(user1);
     vm.expectRevert(abi.encodeWithSelector(StdError.InvalidParameter.selector, 'msg.value'));
     _mitosisVault.depositWithSupplyVLF{ value: amount - 1 }(address(_weth), user1, hubVLFVault, amount);
-
-    vm.prank(user1);
-    vm.expectRevert(abi.encodeWithSelector(StdError.InvalidParameter.selector, 'gasNeeded > gasPaid'));
-    _mitosisVault.depositWithSupplyVLF{ value: amount + 1 }(address(_weth), user1, hubVLFVault, amount);
   }
 
   function test_withdraw(uint256 amount) public {
