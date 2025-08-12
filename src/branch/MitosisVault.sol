@@ -3,12 +3,15 @@ pragma solidity ^0.8.28;
 
 import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { Address } from '@oz/utils/Address.sol';
 import { Math } from '@oz/utils/math/Math.sol';
 import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
+import { ReentrancyGuardUpgradeable } from '@ozu/utils/ReentrancyGuardUpgradeable.sol';
 
 import { AssetAction, IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
+import { INativeWrappedToken } from '../interfaces/branch/INativeWrappedToken.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
@@ -19,11 +22,13 @@ contract MitosisVault is
   IMitosisVault,
   Pausable,
   AccessControlEnumerableUpgradeable,
+  ReentrancyGuardUpgradeable,
   UUPSUpgradeable,
   MitosisVaultVLF,
   Versioned
 {
   using SafeERC20 for IERC20;
+  using SafeERC20 for INativeWrappedToken;
   using ERC7201Utils for string;
 
   /// @dev Role for managing caps
@@ -44,6 +49,8 @@ contract MitosisVault is
   string private constant _NAMESPACE = 'mitosis.storage.MitosisVaultStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
+  address private immutable _nativeWrappedToken;
+
   function _getStorageV1() internal view returns (StorageV1 storage $) {
     bytes32 slot = _slot;
     // slither-disable-next-line assembly
@@ -54,8 +61,10 @@ contract MitosisVault is
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
-  constructor() {
+  constructor(address nativeWrappedToken_) {
     _disableInitializers();
+
+    _nativeWrappedToken = nativeWrappedToken_;
   }
 
   fallback() external payable {
@@ -63,7 +72,7 @@ contract MitosisVault is
   }
 
   receive() external payable {
-    revert StdError.NotSupported();
+    require(_msgSender() == _nativeWrappedToken, StdError.Unauthorized());
   }
 
   function initialize(address owner_) public initializer {
@@ -71,6 +80,7 @@ contract MitosisVault is
     __AccessControl_init();
     __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
+    __ReentrancyGuard_init();
 
     _grantRole(DEFAULT_ADMIN_ROLE, owner_);
   }
@@ -93,7 +103,11 @@ contract MitosisVault is
     return _isAssetInitialized(_getStorageV1(), asset);
   }
 
-  function entrypoint() public view override(IMitosisVault, MitosisVaultVLF) returns (address) {
+  function nativeWrappedToken() external view override returns (address) {
+    return _nativeWrappedToken;
+  }
+
+  function entrypoint() external view override returns (address) {
     return address(_getStorageV1().entrypoint);
   }
 
@@ -116,16 +130,21 @@ contract MitosisVault is
     _haltAsset($, asset, AssetAction.Deposit);
   }
 
+  /// @dev _msgSender() must be able to receive native token, or provided msg.value must be the same as the gas needed
   function deposit(address asset, address to, uint256 amount) external payable whenNotPaused {
-    StorageV1 storage $ = _getStorageV1();
+    IMitosisVaultEntrypoint entry = _entrypoint();
 
-    _deposit(asset, to, amount);
+    uint256 gasPaid = _deposit(asset, to, amount);
+    uint256 gasNeeded = entry.quoteDeposit(asset, to, amount);
+    require(gasNeeded <= gasPaid, StdError.InvalidParameter('gasNeeded > gasPaid'));
 
-    $.entrypoint.deposit{ value: msg.value }(asset, to, amount);
+    entry.deposit{ value: gasNeeded }(asset, to, amount);
+    if (gasPaid > gasNeeded) Address.sendValue(payable(_msgSender()), gasPaid - gasNeeded);
+
     emit Deposited(asset, to, amount);
   }
 
-  function withdraw(address asset, address to, uint256 amount) external whenNotPaused {
+  function withdraw(address asset, address to, uint256 amount) external nonReentrant whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
@@ -133,7 +152,28 @@ contract MitosisVault is
 
     $.assets[asset].availableCap += amount;
 
-    IERC20(asset).safeTransfer(to, amount);
+    if (asset == _nativeWrappedToken) {
+      INativeWrappedToken native = INativeWrappedToken(_nativeWrappedToken);
+
+      uint256 balance = native.balanceOf(address(this));
+      require(balance >= amount, IMitosisVault__InsufficientBalance(asset, amount));
+
+      native.withdraw(amount);
+
+      // try to send native token to the recipient
+      (bool success,) = payable(to).call{ value: amount }('');
+
+      // if the recipient is not able to receive native token, then send wrapped token instead.
+      if (!success) {
+        native.deposit{ value: amount }();
+        native.safeTransfer(to, amount);
+      }
+    } else {
+      uint256 balance = IERC20(asset).balanceOf(address(this));
+      require(balance >= amount, IMitosisVault__InsufficientBalance(asset, amount));
+
+      IERC20(asset).safeTransfer(to, amount);
+    }
 
     emit Withdrawn(asset, to, amount);
   }
@@ -169,6 +209,10 @@ contract MitosisVault is
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
+
+  function _entrypoint() internal view override returns (IMitosisVaultEntrypoint) {
+    return IMitosisVaultEntrypoint(_getStorageV1().entrypoint);
+  }
 
   function _assertOnlyEntrypoint(StorageV1 storage $) internal view {
     require(_msgSender() == address($.entrypoint), StdError.Unauthorized());
@@ -221,7 +265,7 @@ contract MitosisVault is
     emit AssetResumed(asset, action);
   }
 
-  function _deposit(address asset, address to, uint256 amount) internal override {
+  function _deposit(address asset, address to, uint256 amount) internal override nonReentrant returns (uint256 gasPaid) {
     StorageV1 storage $ = _getStorageV1();
     require(to != address(0), StdError.ZeroAddress('to'));
     require(amount != 0, StdError.ZeroAmount());
@@ -231,6 +275,15 @@ contract MitosisVault is
     _assertCapNotExceeded($, asset, amount);
 
     $.assets[asset].availableCap -= amount;
-    IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
+
+    gasPaid = msg.value;
+
+    if (asset == _nativeWrappedToken) {
+      require(msg.value >= amount, StdError.InvalidParameter('msg.value'));
+      INativeWrappedToken(asset).deposit{ value: amount }();
+      gasPaid -= amount;
+    } else {
+      IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
+    }
   }
 }

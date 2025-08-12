@@ -5,41 +5,51 @@ import { IMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
 
 contract MockMitosisVaultEntrypoint is IMitosisVaultEntrypoint {
+  mapping(bytes4 => uint256) public gas;
+
+  function setGas(bytes4 selector, uint256 gas_) external {
+    gas[selector] = gas_;
+  }
+
   function vault() external view returns (IMitosisVault) { }
 
   function mitosisDomain() external view returns (uint32) { }
 
   function mitosisAddr() external view returns (bytes32) { }
 
-  function quoteDeposit(address asset, address to, uint256 amount) external view returns (uint256) { }
+  function quoteDeposit(address, address, uint256) external view returns (uint256) {
+    return gas[msg.sig];
+  }
 
-  function quoteDepositWithSupplyVLF(address asset, address to, address hubVLFVault, uint256 amount)
-    external
-    view
-    returns (uint256)
-  { }
+  function quoteDepositWithSupplyVLF(address, address, address, uint256) external view returns (uint256) {
+    return gas[msg.sig];
+  }
 
-  function quoteDeallocateVLF(address hubVLFVault, uint256 amount) external view returns (uint256) { }
+  function quoteDeallocateVLF(address, uint256) external view returns (uint256) {
+    return gas[msg.sig];
+  }
 
-  function quoteSettleVLFYield(address hubVLFVault, uint256 amount) external view returns (uint256) { }
+  function quoteSettleVLFYield(address, uint256) external view returns (uint256) {
+    return gas[msg.sig];
+  }
 
-  function quoteSettleVLFLoss(address hubVLFVault, uint256 amount) external view returns (uint256) { }
+  function quoteSettleVLFLoss(address, uint256) external view returns (uint256) {
+    return gas[msg.sig];
+  }
 
-  function quoteSettleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount)
-    external
-    view
-    returns (uint256)
-  { }
+  function quoteSettleVLFExtraRewards(address, address, uint256) external view returns (uint256) {
+    return gas[msg.sig];
+  }
 
-  function deposit(address asset, address to, uint256 amount) external payable { }
+  function deposit(address, address, uint256) external payable { }
 
-  function depositWithSupplyVLF(address asset, address to, address hubVLFVault, uint256 amount) external payable { }
+  function depositWithSupplyVLF(address, address, address, uint256) external payable { }
 
-  function deallocateVLF(address hubVLFVault, uint256 amount) external payable { }
+  function deallocateVLF(address, uint256) external payable { }
 
-  function settleVLFYield(address hubVLFVault, uint256 amount) external payable { }
+  function settleVLFYield(address, uint256) external payable { }
 
-  function settleVLFLoss(address hubVLFVault, uint256 amount) external payable { }
+  function settleVLFLoss(address, uint256) external payable { }
 
-  function settleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount) external payable { }
+  function settleVLFExtraRewards(address, address, uint256) external payable { }
 }
