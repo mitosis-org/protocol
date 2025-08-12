@@ -258,7 +258,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     vm.prank(owner);
     queue.disableQueue(vault);
 
-    assertTrue(queue.isEnabled(vault), 'vault1 enabled');
+    assertFalse(queue.isEnabled(vault), 'vault1 disabled');
     assertFalse(queue.isEnabled(vault2), 'vault2 disabled');
   }
 
