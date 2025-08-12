@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
+import { IERC1271 } from '@oz/interfaces/IERC1271.sol';
 import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 
 import { IMitosisVault } from '../IMitosisVault.sol';
 import { IStrategyExecutor } from './IStrategyExecutor.sol';
 import { ITally } from './tally/ITally.sol';
 
-interface IVLFStrategyExecutor is IStrategyExecutor {
+interface IVLFStrategyExecutor is IStrategyExecutor, IERC1271 {
   error IVLFStrategyExecutor__TallyTotalBalanceNotZero(address implementation);
   error IVLFStrategyExecutor__TallyAlreadySet(address implementation);
   error IVLFStrategyExecutor__StrategistNotSet();
@@ -19,6 +20,7 @@ interface IVLFStrategyExecutor is IStrategyExecutor {
 
   function strategist() external view returns (address);
   function executor() external view returns (address);
+  function signer() external view returns (address);
   function tally() external view returns (ITally);
   function totalBalance() external view returns (uint256);
   function storedTotalBalance() external view returns (uint256);
@@ -37,6 +39,7 @@ interface IVLFStrategyExecutor is IStrategyExecutor {
   function setTally(address implementation) external;
   function setStrategist(address strategist_) external;
   function setExecutor(address executor_) external;
+  function setSigner(address signer_) external;
   function unsetStrategist() external;
   function unsetExecutor() external;
 }

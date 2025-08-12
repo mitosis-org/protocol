@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
-import { IERC1271 } from '@oz/interfaces/IERC1271.sol';
 import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
 import { Address } from '@oz/utils/Address.sol';
@@ -18,7 +17,6 @@ import { Versioned } from '../../lib/Versioned.sol';
 import { VLFStrategyExecutorStorageV1 } from './VLFStrategyExecutorStorageV1.sol';
 
 contract VLFStrategyExecutor is
-  IERC1271,
   IStrategyExecutor,
   IVLFStrategyExecutor,
   Ownable2StepUpgradeable,

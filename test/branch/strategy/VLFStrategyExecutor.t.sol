@@ -70,6 +70,16 @@ contract VLFStrategyExecutorTest is Toolkit {
     vm.stopPrank();
   }
 
+  function test_init() public view {
+    assertEq(_vlfStrategyExecutor.signer(), owner);
+    assertEq(address(_vlfStrategyExecutor.vault()), address(_mitosisVault));
+    assertEq(address(_vlfStrategyExecutor.asset()), address(_token));
+    assertEq(_vlfStrategyExecutor.hubVLFVault(), hubVLFVault);
+    assertEq(_vlfStrategyExecutor.strategist(), address(0));
+    assertEq(_vlfStrategyExecutor.executor(), address(_managerWithMerkleVerification));
+    assertEq(address(_vlfStrategyExecutor.tally()), address(_testVaultTally));
+  }
+
   function test_execute() public {
     (
       bytes32[][] memory manageProofs,
@@ -122,6 +132,53 @@ contract VLFStrategyExecutorTest is Toolkit {
     _managerWithMerkleVerification.manage(
       address(_vlfStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
+  }
+
+  function test_setSigner() public {
+    address signer = makeAddr('signer');
+
+    vm.prank(owner);
+    _vlfStrategyExecutor.setSigner(signer);
+
+    assertEq(_vlfStrategyExecutor.signer(), signer);
+  }
+
+  function test_setSigner_InvalidAddress() public {
+    vm.prank(owner);
+    vm.expectRevert(abi.encodeWithSelector(StdError.InvalidAddress.selector, 'signer'));
+    _vlfStrategyExecutor.setSigner(address(0));
+  }
+
+  function test_setSigner_Unauthorized() public {
+    vm.prank(makeAddr('user1'));
+    vm.expectRevert(abi.encodeWithSignature('OwnableUnauthorizedAccount(address)', makeAddr('user1')));
+    _vlfStrategyExecutor.setSigner(makeAddr('signer'));
+  }
+
+  function test_isValidSignature() public {
+    (, uint256 ownerKey) = makeAddrAndKey('owner');
+
+    bytes32 digest = keccak256('test');
+    bytes memory signature;
+    {
+      (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerKey, digest);
+      signature = abi.encodePacked(r, s, v);
+    }
+
+    assertEq(bytes4(0x1626ba7e), _vlfStrategyExecutor.isValidSignature(digest, signature));
+  }
+
+  function test_isValidSignature_InvalidSignature() public {
+    (, uint256 testerKey) = makeAddrAndKey('tester');
+
+    bytes32 digest = keccak256('test');
+    bytes memory signature;
+    {
+      (uint8 v, bytes32 r, bytes32 s) = vm.sign(testerKey, digest);
+      signature = abi.encodePacked(r, s, v);
+    }
+
+    assertEq(bytes4(0xffffffff), _vlfStrategyExecutor.isValidSignature(digest, signature));
   }
 
   function _makeManageParams(address from, uint256 amount)

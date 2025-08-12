@@ -34,6 +34,8 @@ contract MockVLFStrategyExecutor is IVLFStrategyExecutor {
 
   function executor() external view returns (address) { }
 
+  function signer() external view returns (address) { }
+
   function emergencyManager() external view returns (address) { }
 
   function tally() external view returns (ITally) { }
@@ -80,9 +82,13 @@ contract MockVLFStrategyExecutor is IVLFStrategyExecutor {
 
   function setExecutor(address executor_) external { }
 
+  function setSigner(address signer_) external { }
+
   function unsetStrategist() external { }
 
   function unsetExecutor() external { }
+
+  function isValidSignature(bytes32 hash_, bytes memory signature) external view returns (bytes4) { }
 
   function pause() external { }
 
