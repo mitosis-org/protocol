@@ -8,17 +8,17 @@ import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 
 import { ERC4626 } from '@solady/tokens/ERC4626.sol';
 
-import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
+import { IVLFVault } from '../../interfaces/hub/vlf/IVLFVault.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { Versioned } from '../../lib/Versioned.sol';
-import { MatrixVaultStorageV1 } from './MatrixVaultStorageV1.sol';
+import { VLFVaultStorageV1 } from './VLFVaultStorageV1.sol';
 
 /**
- * @title MatrixVault
- * @notice Base implementation of an MatrixVault
+ * @title VLFVault
+ * @notice Base implementation of an VLFVault
  */
-abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable, ReentrancyGuard, Versioned {
+abstract contract VLFVault is VLFVaultStorageV1, ERC4626, Pausable, ReentrancyGuard, Versioned {
   using Math for uint256;
 
   modifier onlyOwner() {
@@ -26,7 +26,7 @@ abstract contract MatrixVault is MatrixVaultStorageV1, ERC4626, Pausable, Reentr
     _;
   }
 
-  function __MatrixVault_init(address assetManager_, IERC20Metadata asset_, string memory name_, string memory symbol_)
+  function __VLFVault_init(address assetManager_, IERC20Metadata asset_, string memory name_, string memory symbol_)
     internal
   {
     __Pausable_init();

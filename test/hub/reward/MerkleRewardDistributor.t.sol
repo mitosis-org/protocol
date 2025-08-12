@@ -21,7 +21,7 @@ contract MerkleRewardDistributorTest is Toolkit {
   MockERC20Snapshots internal _token;
 
   address immutable owner = makeAddr('owner');
-  address immutable matrixVault = makeAddr('matrixVault');
+  address immutable vlfVault = makeAddr('vlfVault');
   address immutable rewarder = makeAddr('rewarder');
 
   function setUp() public {
@@ -59,11 +59,11 @@ contract MerkleRewardDistributorTest is Toolkit {
 
     vm.startPrank(rewarder);
     _token.approve(address(_treasury), 100 ether);
-    _treasury.storeRewards(matrixVault, address(_token), 100 ether);
+    _treasury.storeRewards(vlfVault, address(_token), 100 ether);
     vm.stopPrank();
 
     vm.prank(owner);
-    _distributor.fetchRewards(currentStage, 0, matrixVault, address(_token), 100 ether);
+    _distributor.fetchRewards(currentStage, 0, vlfVault, address(_token), 100 ether);
 
     assertEq(_token.balanceOf(address(_treasury)), 0);
     assertEq(_token.balanceOf(address(_distributor)), 100 ether);

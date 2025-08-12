@@ -13,16 +13,16 @@ import { ERC20 } from '@oz/token/ERC20/ERC20.sol';
 import { AssetManager } from '../../../src/hub/core/AssetManager.sol';
 import { AssetManagerStorageV1 } from '../../../src/hub/core/AssetManagerStorageV1.sol';
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
-import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
 import { ReclaimQueue } from '../../../src/hub/ReclaimQueue.sol';
 import { Treasury } from '../../../src/hub/reward/Treasury.sol';
+import { VLFVaultBasic } from '../../../src/hub/vlf/VLFVaultBasic.sol';
 import { IAssetManager, IAssetManagerStorageV1 } from '../../../src/interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../../src/interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
 import { IReclaimQueue } from '../../../src/interfaces/hub/IReclaimQueue.sol';
-import { IMatrixVault } from '../../../src/interfaces/hub/matrix/IMatrixVault.sol';
-import { IMatrixVaultFactory } from '../../../src/interfaces/hub/matrix/IMatrixVaultFactory.sol';
 import { ITreasury } from '../../../src/interfaces/hub/reward/ITreasury.sol';
+import { IVLFVault } from '../../../src/interfaces/hub/vlf/IVLFVault.sol';
+import { IVLFVaultFactory } from '../../../src/interfaces/hub/vlf/IVLFVaultFactory.sol';
 import { IBeaconBase } from '../../../src/interfaces/lib/proxy/IBeaconBase.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { MockContract } from '../../util/MockContract.sol';
@@ -48,19 +48,19 @@ contract AssetManagerErrors {
     return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__HubAssetFactoryNotSet.selector);
   }
 
-  function _errMatrixVaultFactoryNotSet() internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__MatrixVaultFactoryNotSet.selector);
+  function _errVLFVaultFactoryNotSet() internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__VLFVaultFactoryNotSet.selector);
   }
 
-  function _errMatrixNotInitialized(uint256 chainId, address matrixVault) internal pure returns (bytes memory) {
+  function _errVLFNotInitialized(uint256 chainId, address vlfVault) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
-      IAssetManagerStorageV1.IAssetManagerStorageV1__MatrixNotInitialized.selector, chainId, matrixVault
+      IAssetManagerStorageV1.IAssetManagerStorageV1__VLFNotInitialized.selector, chainId, vlfVault
     );
   }
 
-  function _errMatrixAlreadyInitialized(uint256 chainId, address matrixVault) internal pure returns (bytes memory) {
+  function _errVLFAlreadyInitialized(uint256 chainId, address vlfVault) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(
-      IAssetManagerStorageV1.IAssetManagerStorageV1__MatrixAlreadyInitialized.selector, chainId, matrixVault
+      IAssetManagerStorageV1.IAssetManagerStorageV1__VLFAlreadyInitialized.selector, chainId, vlfVault
     );
   }
 
@@ -83,17 +83,16 @@ contract AssetManagerErrors {
     return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__InvalidHubAsset.selector, hubAsset);
   }
 
-  function _errInvalidMatrixVault(address matrixVault) internal pure returns (bytes memory) {
-    return
-      abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__InvalidMatrixVault.selector, matrixVault);
+  function _errInvalidVLFVault(address vlfVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__InvalidVLFVault.selector, vlfVault);
   }
 
-  function _errMatrixNothingToReserve(address matrixVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IAssetManager.IAssetManager__NothingToReserve.selector, matrixVault);
+  function _errVLFNothingToVLFReserve(address vlfVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAssetManager.IAssetManager__NothingToVLFReserve.selector, vlfVault);
   }
 
-  function _errMatrixInsufficient(address matrixVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IAssetManager.IAssetManager__MatrixInsufficient.selector, matrixVault);
+  function _errVLFLiquidityInsufficient(address vlfVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAssetManager.IAssetManager__VLFLiquidityInsufficient.selector, vlfVault);
   }
 
   function _errBranchLiquidityThresholdNotSatisfied(
@@ -116,8 +115,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   MockContract reclaimQueue;
   MockContract entrypoint;
   MockContract treasury;
-  MockContract matrixVault;
-  MockContract matrixVaultFactory;
+  MockContract vlfVault;
+  MockContract vlfFactory;
   MockContract hubAsset;
   MockContract hubAssetFactory;
 
@@ -141,17 +140,17 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     entrypoint = new MockContract();
     entrypoint.setCall(IAssetManagerEntrypoint.withdraw.selector);
-    entrypoint.setCall(IAssetManagerEntrypoint.allocateMatrix.selector);
+    entrypoint.setCall(IAssetManagerEntrypoint.allocateVLF.selector);
     entrypoint.setCall(IAssetManagerEntrypoint.initializeAsset.selector);
-    entrypoint.setCall(IAssetManagerEntrypoint.initializeMatrix.selector);
+    entrypoint.setCall(IAssetManagerEntrypoint.initializeVLF.selector);
 
     treasury = new MockContract();
     treasury.setCall(ITreasury.storeRewards.selector);
 
-    matrixVault = new MockContract();
-    matrixVault.setCall(IERC4626.deposit.selector);
-    matrixVault.setCall(IMatrixVault.depositFromChainId.selector);
-    matrixVaultFactory = new MockContract();
+    vlfVault = new MockContract();
+    vlfVault.setCall(IERC4626.deposit.selector);
+    vlfVault.setCall(IVLFVault.depositFromChainId.selector);
+    vlfFactory = new MockContract();
 
     hubAsset = new MockContract();
     hubAsset.setCall(IHubAsset.mint.selector);
@@ -162,7 +161,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     hubAssetFactory = new MockContract();
 
-    matrixVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
 
     assetManager = AssetManager(
       payable(
@@ -204,95 +203,93 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
   }
 
-  function test_depositWithSupplyMatrix() public {
+  function test_depositWithSupplyVLF() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setMatrixVaultFactory();
-    _setMatrixVaultInstance(address(matrixVault), true);
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), true);
 
     vm.prank(owner);
-    assetManager.initializeMatrix(branchChainId1, address(matrixVault));
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
 
     // vault.asset != hubAsset
 
-    matrixVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(branchAsset1)));
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(branchAsset1)));
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
-    emit IAssetManager.DepositedWithSupplyMatrix(
-      branchChainId1, address(hubAsset), user1, address(matrixVault), 100 ether, 0
-    );
-    assetManager.depositWithSupplyMatrix(branchChainId1, branchAsset1, user1, address(matrixVault), 100 ether);
+    emit IAssetManager.DepositedWithSupplyVLF(branchChainId1, address(hubAsset), user1, address(vlfVault), 100 ether, 0);
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
 
     hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (user1, 100 ether)));
 
     // maxDepositFromChainId > amount
 
-    hubAsset.setRet(abi.encodeCall(IERC20.approve, (address(matrixVault), 100 ether)), false, abi.encode(true));
-    matrixVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
-    matrixVault.setRet(
-      abi.encodeCall(IMatrixVault.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(101 ether)
+    hubAsset.setRet(abi.encodeCall(IERC20.approve, (address(vlfVault), 100 ether)), false, abi.encode(true));
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(101 ether)
     );
-    matrixVault.setRet(
-      abi.encodeCall(IMatrixVault.depositFromChainId, (100 ether, user1, branchChainId1)), false, abi.encode(100 ether)
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.depositFromChainId, (100 ether, user1, branchChainId1)), false, abi.encode(100 ether)
     );
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
-    emit IAssetManager.DepositedWithSupplyMatrix(
-      branchChainId1, address(hubAsset), user1, address(matrixVault), 100 ether, 100 ether
+    emit IAssetManager.DepositedWithSupplyVLF(
+      branchChainId1, address(hubAsset), user1, address(vlfVault), 100 ether, 100 ether
     );
-    assetManager.depositWithSupplyMatrix(branchChainId1, branchAsset1, user1, address(matrixVault), 100 ether);
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
 
     hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (address(assetManager), 100 ether)));
-    hubAsset.assertLastCall(abi.encodeCall(IERC20.approve, (address(matrixVault), 100 ether)));
-    matrixVault.assertLastCall(abi.encodeCall(IMatrixVault.depositFromChainId, (100 ether, user1, branchChainId1)));
+    hubAsset.assertLastCall(abi.encodeCall(IERC20.approve, (address(vlfVault), 100 ether)));
+    vlfVault.assertLastCall(abi.encodeCall(IVLFVault.depositFromChainId, (100 ether, user1, branchChainId1)));
 
     // maxDepositFromChainId < amount
 
-    hubAsset.setRet(abi.encodeCall(IERC20.approve, (address(matrixVault), 99 ether)), false, abi.encode(true));
+    hubAsset.setRet(abi.encodeCall(IERC20.approve, (address(vlfVault), 99 ether)), false, abi.encode(true));
     hubAsset.setRet(abi.encodeCall(IERC20.transfer, (user1, 1 ether)), false, abi.encode(true));
-    matrixVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
-    matrixVault.setRet(
-      abi.encodeCall(IMatrixVault.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(99 ether)
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(99 ether)
     );
-    matrixVault.setRet(
-      abi.encodeCall(IMatrixVault.depositFromChainId, (99 ether, user1, branchChainId1)), false, abi.encode(99 ether)
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.depositFromChainId, (99 ether, user1, branchChainId1)), false, abi.encode(99 ether)
     );
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
-    emit IAssetManager.DepositedWithSupplyMatrix(
-      branchChainId1, address(hubAsset), user1, address(matrixVault), 100 ether, 99 ether
+    emit IAssetManager.DepositedWithSupplyVLF(
+      branchChainId1, address(hubAsset), user1, address(vlfVault), 100 ether, 99 ether
     );
-    assetManager.depositWithSupplyMatrix(branchChainId1, branchAsset1, user1, address(matrixVault), 100 ether);
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
 
     hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (address(assetManager), 100 ether)));
-    hubAsset.assertLastCall(abi.encodeCall(IERC20.approve, (address(matrixVault), 99 ether)));
+    hubAsset.assertLastCall(abi.encodeCall(IERC20.approve, (address(vlfVault), 99 ether)));
     hubAsset.assertLastCall(abi.encodeCall(IERC20.transfer, (address(user1), 1 ether)));
-    matrixVault.assertLastCall(abi.encodeCall(IMatrixVault.depositFromChainId, (99 ether, user1, branchChainId1)));
+    vlfVault.assertLastCall(abi.encodeCall(IVLFVault.depositFromChainId, (99 ether, user1, branchChainId1)));
   }
 
-  function test_depositWithSupplyMatrix_Unauthorized() public {
+  function test_depositWithSupplyVLF_Unauthorized() public {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
-    assetManager.depositWithSupplyMatrix(branchChainId1, branchAsset1, user1, address(matrixVault), 100 ether);
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
   }
 
   /// @dev No occurrence case until methods like unsetAssetPair are added.
-  function test_depositWithSupplyMatrix_BranchAssetPairNotExist() public {
+  function test_depositWithSupplyVLF_BranchAssetPairNotExist() public {
     vm.prank(address(entrypoint));
     vm.expectRevert(_errBranchAssetPairNotExist(branchChainId1, branchAsset1));
-    assetManager.depositWithSupplyMatrix(branchChainId1, branchAsset1, user1, address(matrixVault), 100 ether);
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
   }
 
-  function test_depositWithSupplyMatrix_MatrixNotInitialized() public {
+  function test_depositWithSupplyVLF_VLFVaultNotInitialized() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setMatrixVaultFactory();
-    _setMatrixVaultInstance(address(matrixVault), true);
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), true);
 
     vm.prank(address(entrypoint));
-    vm.expectRevert(_errMatrixNotInitialized(branchChainId1, address(matrixVault)));
-    assetManager.depositWithSupplyMatrix(branchChainId1, branchAsset1, user1, address(matrixVault), 100 ether);
+    vm.expectRevert(_errVLFNotInitialized(branchChainId1, address(vlfVault)));
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
   }
 
   function test_withdraw() public {
@@ -345,7 +342,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_withdraw_BranchAvailableLiquidityInsufficient() public {
-    test_allocateMatrix();
+    test_allocateVLF();
 
     vm.prank(user1);
     vm.expectRevert(_errBranchAvailableLiquidityInsufficient(branchChainId1, address(hubAsset), 200 ether, 201 ether));
@@ -366,232 +363,232 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     assetManager.withdraw(branchChainId1, address(hubAsset), user1, 21 ether);
   }
 
-  function test_allocateMatrix() public {
-    test_depositWithSupplyMatrix();
+  function test_allocateVLF() public {
+    test_depositWithSupplyVLF();
 
     vm.prank(owner);
-    assetManager.setStrategist(address(matrixVault), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
 
-    matrixVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(200 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(200 ether));
 
     vm.prank(strategist);
     vm.expectEmit();
-    emit IAssetManager.MatrixAllocated(strategist, branchChainId1, address(matrixVault), 100 ether);
-    assetManager.allocateMatrix(branchChainId1, address(matrixVault), 100 ether);
+    emit IAssetManager.VLFAllocated(strategist, branchChainId1, address(vlfVault), 100 ether);
+    assetManager.allocateVLF(branchChainId1, address(vlfVault), 100 ether);
   }
 
-  function test_allocateMatrix_Unauthorized() public {
+  function test_allocateVLF_Unauthorized() public {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
-    assetManager.allocateMatrix(branchChainId1, address(matrixVault), 100 ether);
+    assetManager.allocateVLF(branchChainId1, address(vlfVault), 100 ether);
   }
 
-  function test_allocateMatrix_MatrixNotInitialized() public {
+  function test_allocateVLF_VLFVaultNotInitialized() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setMatrixVaultFactory();
-    _setMatrixVaultInstance(address(matrixVault), true);
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), true);
 
     vm.prank(owner);
-    assetManager.setStrategist(address(matrixVault), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
 
     vm.prank(strategist);
-    vm.expectRevert(_errMatrixNotInitialized(branchChainId1, address(matrixVault)));
-    assetManager.allocateMatrix(branchChainId1, address(matrixVault), 100 ether);
+    vm.expectRevert(_errVLFNotInitialized(branchChainId1, address(vlfVault)));
+    assetManager.allocateVLF(branchChainId1, address(vlfVault), 100 ether);
   }
 
-  function test_allocateMatrix_MatrixInsufficient() public {
-    test_depositWithSupplyMatrix();
+  function test_allocateVLF_VLFInsufficient() public {
+    test_depositWithSupplyVLF();
 
     vm.prank(owner);
-    assetManager.setStrategist(address(matrixVault), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
 
     // mint 100 of hubAsset to user1
-    matrixVault.setRet(abi.encodeCall(IERC4626.maxDeposit, (user1)), false, abi.encode(100 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.maxDeposit, (user1)), false, abi.encode(100 ether));
     vm.prank(address(entrypoint));
-    assetManager.depositWithSupplyMatrix(branchChainId1, branchAsset1, user1, address(matrixVault), 100 ether);
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
 
-    matrixVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(100 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(100 ether));
 
     vm.prank(strategist);
-    vm.expectRevert(_errMatrixInsufficient(address(matrixVault)));
-    assetManager.allocateMatrix(branchChainId1, address(matrixVault), 101 ether);
+    vm.expectRevert(_errVLFLiquidityInsufficient(address(vlfVault)));
+    assetManager.allocateVLF(branchChainId1, address(vlfVault), 101 ether);
   }
 
-  function test_allocateMatrix_BranchAvailableLiquidityInsufficient() public {
-    test_depositWithSupplyMatrix();
+  function test_allocateVLF_BranchAvailableLiquidityInsufficient() public {
+    test_depositWithSupplyVLF();
 
     vm.startPrank(owner);
     assetManager.setAssetPair(address(hubAsset), branchChainId2, branchAsset2);
-    assetManager.initializeMatrix(branchChainId2, address(matrixVault));
-    assetManager.setStrategist(address(matrixVault), strategist);
+    assetManager.initializeVLF(branchChainId2, address(vlfVault));
+    assetManager.setStrategist(address(vlfVault), strategist);
     vm.stopPrank();
 
     // mint 100 of hubAsset to user1 for each branch chains
-    matrixVault.setRet(
-      abi.encodeCall(IMatrixVault.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(100 ether)
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.maxDepositFromChainId, (user1, branchChainId1)), false, abi.encode(100 ether)
     );
-    matrixVault.setRet(
-      abi.encodeCall(IMatrixVault.maxDepositFromChainId, (user1, branchChainId2)), false, abi.encode(100 ether)
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.maxDepositFromChainId, (user1, branchChainId2)), false, abi.encode(100 ether)
     );
-    matrixVault.setRet(
-      abi.encodeCall(IMatrixVault.depositFromChainId, (100 ether, user1, branchChainId1)), false, abi.encode(100 ether)
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.depositFromChainId, (100 ether, user1, branchChainId1)), false, abi.encode(100 ether)
     );
-    matrixVault.setRet(
-      abi.encodeCall(IMatrixVault.depositFromChainId, (100 ether, user1, branchChainId2)), false, abi.encode(100 ether)
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.depositFromChainId, (100 ether, user1, branchChainId2)), false, abi.encode(100 ether)
     );
     vm.startPrank(address(entrypoint));
-    assetManager.depositWithSupplyMatrix(branchChainId1, branchAsset1, user1, address(matrixVault), 100 ether);
-    assetManager.depositWithSupplyMatrix(branchChainId2, branchAsset2, user1, address(matrixVault), 100 ether);
+    assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, user1, address(vlfVault), 100 ether);
+    assetManager.depositWithSupplyVLF(branchChainId2, branchAsset2, user1, address(vlfVault), 100 ether);
     vm.stopPrank();
 
-    matrixVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(500 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(500 ether));
 
     assertEq(assetManager.branchAvailableLiquidity(address(hubAsset), branchChainId1), 400 ether);
     assertEq(assetManager.branchAvailableLiquidity(address(hubAsset), branchChainId2), 100 ether);
-    assertEq(assetManager.matrixIdle(address(matrixVault)), 500 ether);
-    assertEq(assetManager.matrixAlloc(address(matrixVault)), 0 ether);
+    assertEq(assetManager.vlfIdle(address(vlfVault)), 500 ether);
+    assertEq(assetManager.vlfAlloc(address(vlfVault)), 0 ether);
 
     vm.startPrank(strategist);
-    assetManager.allocateMatrix(branchChainId1, address(matrixVault), 30 ether);
-    assetManager.allocateMatrix(branchChainId2, address(matrixVault), 50 ether);
+    assetManager.allocateVLF(branchChainId1, address(vlfVault), 30 ether);
+    assetManager.allocateVLF(branchChainId2, address(vlfVault), 50 ether);
     vm.stopPrank();
 
     assertEq(assetManager.branchAvailableLiquidity(address(hubAsset), branchChainId1), 370 ether);
     assertEq(assetManager.branchAvailableLiquidity(address(hubAsset), branchChainId2), 50 ether);
-    assertEq(assetManager.matrixIdle(address(matrixVault)), 420 ether);
-    assertEq(assetManager.matrixAlloc(address(matrixVault)), 80 ether);
+    assertEq(assetManager.vlfIdle(address(vlfVault)), 420 ether);
+    assertEq(assetManager.vlfAlloc(address(vlfVault)), 80 ether);
 
     vm.prank(strategist);
     vm.expectRevert(_errBranchAvailableLiquidityInsufficient(branchChainId1, address(hubAsset), 370 ether, 371 ether));
-    assetManager.allocateMatrix(branchChainId1, address(matrixVault), 371 ether);
+    assetManager.allocateVLF(branchChainId1, address(vlfVault), 371 ether);
 
     vm.prank(strategist);
     vm.expectRevert(_errBranchAvailableLiquidityInsufficient(branchChainId2, address(hubAsset), 50 ether, 51 ether));
-    assetManager.allocateMatrix(branchChainId2, address(matrixVault), 51 ether);
+    assetManager.allocateVLF(branchChainId2, address(vlfVault), 51 ether);
   }
 
-  function test_deallocateMatrix() public {
-    test_allocateMatrix(); // load 200 hubAssets
-    assertEq(assetManager.matrixIdle(address(matrixVault)), 100 ether);
-    assertEq(assetManager.matrixAlloc(address(matrixVault)), 100 ether);
+  function test_deallocateVLF() public {
+    test_allocateVLF(); // load 200 hubAssets
+    assertEq(assetManager.vlfIdle(address(vlfVault)), 100 ether);
+    assertEq(assetManager.vlfAlloc(address(vlfVault)), 100 ether);
 
-    matrixVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
-    matrixVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(100 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(100 ether));
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
-    emit IAssetManager.MatrixDeallocated(branchChainId1, address(matrixVault), 100 ether);
-    assetManager.deallocateMatrix(branchChainId1, address(matrixVault), 100 ether);
+    emit IAssetManager.VLFDeallocated(branchChainId1, address(vlfVault), 100 ether);
+    assetManager.deallocateVLF(branchChainId1, address(vlfVault), 100 ether);
 
-    assertEq(assetManager.matrixIdle(address(matrixVault)), 100 ether);
-    assertEq(assetManager.matrixAlloc(address(matrixVault)), 0);
+    assertEq(assetManager.vlfIdle(address(vlfVault)), 100 ether);
+    assertEq(assetManager.vlfAlloc(address(vlfVault)), 0);
   }
 
-  function test_deallocateMatrix_Unauthorized() public {
+  function test_deallocateVLF_Unauthorized() public {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
-    assetManager.deallocateMatrix(branchChainId1, address(matrixVault), 100 ether);
+    assetManager.deallocateVLF(branchChainId1, address(vlfVault), 100 ether);
   }
 
-  function test_reserveMatrix() public {
-    _setMatrixVaultFactory();
-    _setMatrixVaultInstance(address(matrixVault), true);
+  function test_reserveVLF() public {
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), true);
 
-    matrixVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(200 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(200 ether));
     reclaimQueue.setRet(
-      abi.encodeCall(IReclaimQueue.previewSync, (address(matrixVault), 100)), false, abi.encode(0, 100 ether)
+      abi.encodeCall(IReclaimQueue.previewSync, (address(vlfVault), 100)), false, abi.encode(0, 100 ether)
     );
     reclaimQueue.setRet(
-      abi.encodeCall(IReclaimQueue.sync, (strategist, address(matrixVault), 100)), false, abi.encode(100, 100 ether)
+      abi.encodeCall(IReclaimQueue.sync, (strategist, address(vlfVault), 100)), false, abi.encode(100, 100 ether)
     );
 
     vm.prank(owner);
-    assetManager.setStrategist(address(matrixVault), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
 
     vm.prank(strategist);
     vm.expectEmit();
-    emit IAssetManager.MatrixReserved(strategist, address(matrixVault), 100, 100, 100 ether);
-    assetManager.reserveMatrix(address(matrixVault), 100);
+    emit IAssetManager.VLFReserved(strategist, address(vlfVault), 100, 100, 100 ether);
+    assetManager.reserveVLF(address(vlfVault), 100);
 
-    reclaimQueue.assertLastCall(abi.encodeCall(IReclaimQueue.sync, (strategist, address(matrixVault), 100)));
+    reclaimQueue.assertLastCall(abi.encodeCall(IReclaimQueue.sync, (strategist, address(vlfVault), 100)));
   }
 
-  function test_reserveMatrix_Unauthorized() public {
+  function test_reserveVLF_Unauthorized() public {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
-    assetManager.reserveMatrix(address(matrixVault), 10);
+    assetManager.reserveVLF(address(vlfVault), 10);
   }
 
-  function test_reserveMatrix_MatrixNothingToReserve() public {
-    _setMatrixVaultFactory();
-    _setMatrixVaultInstance(address(matrixVault), true);
+  function test_reserveVLF_VLFNothingToReserve() public {
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), true);
 
-    matrixVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(200 ether));
-    reclaimQueue.setRet(abi.encodeCall(IReclaimQueue.previewSync, (address(matrixVault), 100)), false, abi.encode(0, 0));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(200 ether));
+    reclaimQueue.setRet(abi.encodeCall(IReclaimQueue.previewSync, (address(vlfVault), 100)), false, abi.encode(0, 0));
 
     vm.prank(owner);
-    assetManager.setStrategist(address(matrixVault), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
 
     vm.prank(strategist);
-    vm.expectRevert(_errMatrixNothingToReserve(address(matrixVault)));
-    assetManager.reserveMatrix(address(matrixVault), 100);
+    vm.expectRevert(_errVLFNothingToVLFReserve(address(vlfVault)));
+    assetManager.reserveVLF(address(vlfVault), 100);
   }
 
-  function test_reserveMatrix_MatrixInsufficient() public {
-    test_initializeMatrix();
+  function test_reserveVLF_VLFVaultInsufficient() public {
+    test_initializeVLF();
 
     vm.prank(owner);
-    assetManager.setStrategist(address(matrixVault), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
 
-    matrixVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(100 ether));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(100 ether));
     reclaimQueue.setRet(
-      abi.encodeCall(IReclaimQueue.previewSync, (address(matrixVault), 100)), false, abi.encode(0, 200 ether)
+      abi.encodeCall(IReclaimQueue.previewSync, (address(vlfVault), 100)), false, abi.encode(0, 200 ether)
     );
 
     vm.prank(strategist);
-    vm.expectRevert(_errMatrixInsufficient(address(matrixVault)));
-    assetManager.reserveMatrix(address(matrixVault), 100);
+    vm.expectRevert(_errVLFLiquidityInsufficient(address(vlfVault)));
+    assetManager.reserveVLF(address(vlfVault), 100);
   }
 
-  function test_settleMatrixYield() public {
-    test_allocateMatrix();
+  function test_settleVLFYield() public {
+    test_allocateVLF();
 
-    matrixVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
-    emit IAssetManager.MatrixRewardSettled(branchChainId1, address(matrixVault), address(hubAsset), 100 ether);
-    assetManager.settleMatrixYield(branchChainId1, address(matrixVault), 100 ether);
+    emit IAssetManager.VLFRewardSettled(branchChainId1, address(vlfVault), address(hubAsset), 100 ether);
+    assetManager.settleVLFYield(branchChainId1, address(vlfVault), 100 ether);
 
-    hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (address(matrixVault), 100 ether)));
+    hubAsset.assertLastCall(abi.encodeCall(IHubAsset.mint, (address(vlfVault), 100 ether)));
   }
 
-  function test_settleMatrixYield_Unauthorized() public {
+  function test_settleVLFYield_Unauthorized() public {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
-    assetManager.settleMatrixYield(branchChainId1, address(matrixVault), 100 ether);
+    assetManager.settleVLFYield(branchChainId1, address(vlfVault), 100 ether);
   }
 
-  function test_settleMatrixLoss() public {
-    test_allocateMatrix();
+  function test_settleVLFLoss() public {
+    test_allocateVLF();
 
-    matrixVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(address(hubAsset)));
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
-    emit IAssetManager.MatrixLossSettled(branchChainId1, address(matrixVault), address(hubAsset), 100 ether);
-    assetManager.settleMatrixLoss(branchChainId1, address(matrixVault), 100 ether);
+    emit IAssetManager.VLFLossSettled(branchChainId1, address(vlfVault), address(hubAsset), 100 ether);
+    assetManager.settleVLFLoss(branchChainId1, address(vlfVault), 100 ether);
 
-    hubAsset.assertLastCall(abi.encodeCall(IHubAsset.burn, (address(matrixVault), 100 ether)));
+    hubAsset.assertLastCall(abi.encodeCall(IHubAsset.burn, (address(vlfVault), 100 ether)));
   }
 
-  function test_settleMatrixLoss_Unauthorized() public {
+  function test_settleVLFLoss_Unauthorized() public {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
-    assetManager.settleMatrixLoss(branchChainId1, address(matrixVault), 10 ether);
+    assetManager.settleVLFLoss(branchChainId1, address(vlfVault), 10 ether);
   }
 
-  function test_settleMatrixExtraRewards() public {
+  function test_settleVLFExtraRewards() public {
     MockContract rewardToken = new MockContract();
     rewardToken.setCall(IERC20.approve.selector);
     rewardToken.setCall(IHubAsset.mint.selector);
@@ -604,27 +601,27 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
-    emit IAssetManager.MatrixRewardSettled(branchChainId1, address(matrixVault), address(rewardToken), 100 ether);
-    assetManager.settleMatrixExtraRewards(branchChainId1, address(matrixVault), branchRewardTokenAddress, 100 ether);
+    emit IAssetManager.VLFRewardSettled(branchChainId1, address(vlfVault), address(rewardToken), 100 ether);
+    assetManager.settleVLFExtraRewards(branchChainId1, address(vlfVault), branchRewardTokenAddress, 100 ether);
 
     rewardToken.assertLastCall(abi.encodeCall(IHubAsset.mint, (address(assetManager), 100 ether)));
     rewardToken.assertLastCall(abi.encodeCall(IERC20.approve, (address(treasury), 100 ether)));
 
     treasury.assertLastCall(
-      abi.encodeCall(ITreasury.storeRewards, (address(matrixVault), address(rewardToken), 100 ether))
+      abi.encodeCall(ITreasury.storeRewards, (address(vlfVault), address(rewardToken), 100 ether))
     );
   }
 
-  function test_settleMatrixExtraRewards_Unauthorized() public {
+  function test_settleVLFExtraRewards_Unauthorized() public {
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
-    assetManager.settleMatrixExtraRewards(branchChainId1, address(matrixVault), branchRewardTokenAddress, 100 ether);
+    assetManager.settleVLFExtraRewards(branchChainId1, address(vlfVault), branchRewardTokenAddress, 100 ether);
   }
 
-  function test_settleMatrixExtraRewards_BranchAssetPairNotExist() public {
+  function test_settleVLFExtraRewards_BranchAssetPairNotExist() public {
     vm.prank(address(entrypoint));
     vm.expectRevert(_errBranchAssetPairNotExist(branchChainId1, branchRewardTokenAddress));
-    assetManager.settleMatrixExtraRewards(branchChainId1, address(matrixVault), branchRewardTokenAddress, 100 ether);
+    assetManager.settleVLFExtraRewards(branchChainId1, address(vlfVault), branchRewardTokenAddress, 100 ether);
   }
 
   function test_initializeAsset() public {
@@ -841,59 +838,59 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     assetManager.setBranchLiquidityThreshold(chainIds, hubAssets, thresholds);
   }
 
-  function test_initializeMatrix() public {
+  function test_initializeVLF() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setMatrixVaultFactory();
-    _setMatrixVaultInstance(address(matrixVault), true);
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), true);
 
     vm.prank(owner);
     vm.expectEmit();
-    emit IAssetManager.MatrixInitialized(address(hubAsset), branchChainId1, address(matrixVault), branchAsset1);
-    assetManager.initializeMatrix(branchChainId1, address(matrixVault));
+    emit IAssetManager.VLFInitialized(address(hubAsset), branchChainId1, address(vlfVault), branchAsset1);
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
 
-    assertTrue(assetManager.matrixInitialized(branchChainId1, address(matrixVault)));
+    assertTrue(assetManager.vlfInitialized(branchChainId1, address(vlfVault)));
   }
 
-  function test_initializeMatrix_Unauthorized() public {
+  function test_initializeVLF_Unauthorized() public {
     vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    assetManager.initializeMatrix(branchChainId1, address(matrixVault));
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
   }
 
-  function test_initializeMatrix_MatrixVaultFactoryNotSet() public {
+  function test_initializeVLF_VLFVaultFactoryNotSet() public {
     vm.prank(owner);
-    vm.expectRevert(_errMatrixVaultFactoryNotSet());
-    assetManager.initializeMatrix(branchChainId1, address(matrixVault));
+    vm.expectRevert(_errVLFVaultFactoryNotSet());
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
   }
 
-  function test_initializeMatrix_InvalidMatrixVault() public {
+  function test_initializeVLF_InvalidVLFVault() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setMatrixVaultFactory();
-    _setMatrixVaultInstance(address(matrixVault), false);
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), false);
 
     vm.prank(owner);
-    vm.expectRevert(_errInvalidMatrixVault(address(matrixVault)));
-    assetManager.initializeMatrix(branchChainId1, address(matrixVault));
+    vm.expectRevert(_errInvalidVLFVault(address(vlfVault)));
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
   }
 
-  function test_initializeMatrix_BranchAssetPairNotExist() public {
-    _setMatrixVaultInstance(address(matrixVault), true);
+  function test_initializeVLF_BranchAssetPairNotExist() public {
+    _setVLFVaultInstance(address(vlfVault), true);
 
     vm.prank(owner);
-    assetManager.setMatrixVaultFactory(address(matrixVaultFactory));
+    assetManager.setVLFVaultFactory(address(vlfFactory));
 
     vm.prank(owner);
     vm.expectRevert(_errBranchAssetPairNotExist(branchChainId1, address(0)));
-    assetManager.initializeMatrix(branchChainId1, address(matrixVault));
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
   }
 
-  function test_initializeMatrix_MatrixAlreadyInitialized() public {
-    test_initializeMatrix();
-    assertTrue(assetManager.matrixInitialized(branchChainId1, address(matrixVault)));
+  function test_initializeVLF_VLFAlreadyInitialized() public {
+    test_initializeVLF();
+    assertTrue(assetManager.vlfInitialized(branchChainId1, address(vlfVault)));
 
     vm.prank(owner);
-    vm.expectRevert(_errMatrixAlreadyInitialized(branchChainId1, address(matrixVault)));
-    assetManager.initializeMatrix(branchChainId1, address(matrixVault));
+    vm.expectRevert(_errVLFAlreadyInitialized(branchChainId1, address(vlfVault)));
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
   }
 
   function test_setAssetPair() public {
@@ -1024,50 +1021,50 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_setStrategist() public {
-    assertEq(assetManager.strategist(address(matrixVault)), address(0));
+    assertEq(assetManager.strategist(address(vlfVault)), address(0));
 
     vm.prank(owner);
-    assetManager.setMatrixVaultFactory(address(matrixVaultFactory));
+    assetManager.setVLFVaultFactory(address(vlfFactory));
 
-    _setMatrixVaultInstance(address(matrixVault), true);
+    _setVLFVaultInstance(address(vlfVault), true);
 
     vm.prank(owner);
     vm.expectEmit();
-    emit IAssetManagerStorageV1.StrategistSet(address(matrixVault), strategist);
-    assetManager.setStrategist(address(matrixVault), strategist);
+    emit IAssetManagerStorageV1.StrategistSet(address(vlfVault), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
 
-    assertEq(assetManager.strategist(address(matrixVault)), strategist);
+    assertEq(assetManager.strategist(address(vlfVault)), strategist);
 
     address newStrategist = makeAddr('newStrategist');
 
     vm.prank(owner);
     vm.expectEmit();
-    emit IAssetManagerStorageV1.StrategistSet(address(matrixVault), newStrategist);
-    assetManager.setStrategist(address(matrixVault), newStrategist);
+    emit IAssetManagerStorageV1.StrategistSet(address(vlfVault), newStrategist);
+    assetManager.setStrategist(address(vlfVault), newStrategist);
 
-    assertEq(assetManager.strategist(address(matrixVault)), newStrategist);
+    assertEq(assetManager.strategist(address(vlfVault)), newStrategist);
   }
 
   function test_setStrategist_Unauthorized() public {
     vm.expectRevert(_errAccessControlUnauthorized(user1, assetManager.DEFAULT_ADMIN_ROLE()));
     vm.prank(user1);
-    assetManager.setStrategist(address(matrixVault), strategist);
+    assetManager.setStrategist(address(vlfVault), strategist);
   }
 
-  function test_setStrategist_MatrixVaultFactoryNotSet() public {
+  function test_setStrategist_VLFVaultFactoryNotSet() public {
     vm.prank(owner);
-    vm.expectRevert(_errMatrixVaultFactoryNotSet());
-    assetManager.setStrategist(address(matrixVault), strategist);
+    vm.expectRevert(_errVLFVaultFactoryNotSet());
+    assetManager.setStrategist(address(vlfVault), strategist);
   }
 
-  function test_setStrategist_InvalidMatrixVault() public {
+  function test_setStrategist_InvalidVLF() public {
     _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setMatrixVaultFactory();
-    _setMatrixVaultInstance(address(matrixVault), false);
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), false);
 
     vm.prank(owner);
-    vm.expectRevert(_errInvalidMatrixVault(address(matrixVault)));
-    assetManager.setStrategist(address(matrixVault), strategist);
+    vm.expectRevert(_errInvalidVLFVault(address(vlfVault)));
+    assetManager.setStrategist(address(vlfVault), strategist);
   }
 
   function _setAssetPair(address hubAsset_, uint256 chainId_, address branchAsset_) internal {
@@ -1087,12 +1084,12 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     hubAssetFactory.setRet(abi.encodeCall(IBeaconBase.isInstance, (hubAsset_)), false, abi.encode(isInstance));
   }
 
-  function _setMatrixVaultFactory() internal {
+  function _setVLFVaultFactory() internal {
     vm.prank(owner);
-    assetManager.setMatrixVaultFactory(address(matrixVaultFactory));
+    assetManager.setVLFVaultFactory(address(vlfFactory));
   }
 
-  function _setMatrixVaultInstance(address matrixVault_, bool isInstance) internal {
-    matrixVaultFactory.setRet(abi.encodeCall(IBeaconBase.isInstance, (matrixVault_)), false, abi.encode(isInstance));
+  function _setVLFVaultInstance(address vlf_, bool isInstance) internal {
+    vlfFactory.setRet(abi.encodeCall(IBeaconBase.isInstance, (vlf_)), false, abi.encode(isInstance));
   }
 }

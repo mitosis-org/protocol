@@ -4,18 +4,18 @@ pragma solidity ^0.8.28;
 import { IERC20 } from '@oz/interfaces/IERC20.sol';
 
 import { IMitosisVault } from '../../src/interfaces/branch/IMitosisVault.sol';
-import { IMatrixStrategyExecutor } from '../../src/interfaces/branch/strategy/IMatrixStrategyExecutor.sol';
+import { IVLFStrategyExecutor } from '../../src/interfaces/branch/strategy/IVLFStrategyExecutor.sol';
 import { ITally } from '../../src/interfaces/branch/strategy/tally/ITally.sol';
 
-contract MockMatrixStrategyExecutor is IMatrixStrategyExecutor {
+contract MockVLFStrategyExecutor is IVLFStrategyExecutor {
   IMitosisVault _vault;
   IERC20 _asset;
-  address _hubMatrixVault;
+  address _hubVLFVault;
 
-  constructor(IMitosisVault vault_, IERC20 asset_, address hubMatrixVault_) {
+  constructor(IMitosisVault vault_, IERC20 asset_, address hubVLFVault_) {
     _vault = vault_;
     _asset = asset_;
-    _hubMatrixVault = hubMatrixVault_;
+    _hubVLFVault = hubVLFVault_;
   }
 
   function vault() external view returns (IMitosisVault) {
@@ -26,8 +26,8 @@ contract MockMatrixStrategyExecutor is IMatrixStrategyExecutor {
     return _asset;
   }
 
-  function hubMatrixVault() external view returns (address) {
-    return _hubMatrixVault;
+  function hubVLFVault() external view returns (address) {
+    return _hubVLFVault;
   }
 
   function strategist() external view returns (address) { }
@@ -58,7 +58,7 @@ contract MockMatrixStrategyExecutor is IMatrixStrategyExecutor {
 
   function returnLiquidity(uint256 amount) external {
     _asset.approve(address(_vault), amount);
-    _vault.returnMatrix(_hubMatrixVault, amount);
+    _vault.returnVLF(_hubVLFVault, amount);
   }
 
   function settle() external payable { }

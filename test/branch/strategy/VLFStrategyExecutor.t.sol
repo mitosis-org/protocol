@@ -8,12 +8,10 @@ import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 import { Strings } from '@oz/utils/Strings.sol';
 
 import { MitosisVault, AssetAction } from '../../../src/branch/MitosisVault.sol';
-import {
-  MatrixStrategyExecutor, IMatrixStrategyExecutor
-} from '../../../src/branch/strategy/MatrixStrategyExecutor.sol';
+import { VLFStrategyExecutor, IVLFStrategyExecutor } from '../../../src/branch/strategy/VLFStrategyExecutor.sol';
 import { IMitosisVault } from '../../../src/interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../../../src/interfaces/branch/IMitosisVaultEntrypoint.sol';
-import { IMitosisVaultMatrix, MatrixAction } from '../../../src/interfaces/branch/IMitosisVaultMatrix.sol';
+import { IMitosisVaultVLF, VLFAction } from '../../../src/interfaces/branch/IMitosisVaultVLF.sol';
 import { StdError } from '../../../src/lib/StdError.sol';
 import { MockERC20Snapshots } from '../../mock/MockERC20Snapshots.t.sol';
 import { MockManagerWithMerkleVerification } from '../../mock/MockManagerWithMerkleVerification.t.sol';
@@ -23,9 +21,9 @@ import { MockTestVaultDecoderAndSanitizer } from '../../mock/MockTestVaultDecode
 import { MockTestVaultTally } from '../../mock/MockTestVaultTally.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
-contract MatrixStrategyExecutorTest is Toolkit {
+contract VLFStrategyExecutorTest is Toolkit {
   MitosisVault internal _mitosisVault;
-  MatrixStrategyExecutor internal _matrixStrategyExecutor;
+  VLFStrategyExecutor internal _vlfStrategyExecutor;
   MockManagerWithMerkleVerification internal _managerWithMerkleVerification;
   MockMitosisVaultEntrypoint internal _mitosisVaultEntrypoint;
   MockERC20Snapshots internal _token;
@@ -35,7 +33,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
 
   address immutable owner = makeAddr('owner');
   address immutable mitosis = makeAddr('mitosis');
-  address immutable hubMatrixVault = makeAddr('hubMatrixVault');
+  address immutable hubVLFVault = makeAddr('hubVLFVault');
 
   function setUp() public {
     _mitosisVault = MitosisVault(
@@ -47,11 +45,11 @@ contract MatrixStrategyExecutorTest is Toolkit {
     _token = new MockERC20Snapshots();
     _token.initialize('Token', 'TKN');
 
-    _matrixStrategyExecutor = MatrixStrategyExecutor(
+    _vlfStrategyExecutor = VLFStrategyExecutor(
       payable(
         _proxy(
-          address(new MatrixStrategyExecutor()),
-          abi.encodeCall(MatrixStrategyExecutor.initialize, (_mitosisVault, _token, hubMatrixVault, owner))
+          address(new VLFStrategyExecutor()),
+          abi.encodeCall(VLFStrategyExecutor.initialize, (_mitosisVault, _token, hubVLFVault, owner))
         )
       )
     );
@@ -66,8 +64,8 @@ contract MatrixStrategyExecutorTest is Toolkit {
 
     _mitosisVault.setEntrypoint(address(_mitosisVaultEntrypoint));
 
-    _matrixStrategyExecutor.setTally(address(_testVaultTally));
-    _matrixStrategyExecutor.setExecutor(address(_managerWithMerkleVerification));
+    _vlfStrategyExecutor.setTally(address(_testVaultTally));
+    _vlfStrategyExecutor.setExecutor(address(_managerWithMerkleVerification));
 
     vm.stopPrank();
   }
@@ -91,7 +89,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
     assertEq(_testVaultTally.totalBalance(''), 0);
 
     _managerWithMerkleVerification.manage(
-      address(_matrixStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_vlfStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
 
     assertEq(_token.balanceOf(makeAddr('user1')), 0);
@@ -101,7 +99,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
 
   function test_execute_InvalidAddress_executor() public {
     vm.prank(owner);
-    _matrixStrategyExecutor.setExecutor(makeAddr('fakeExecutor'));
+    _vlfStrategyExecutor.setExecutor(makeAddr('fakeExecutor'));
 
     (
       bytes32[][] memory manageProofs,
@@ -122,7 +120,7 @@ contract MatrixStrategyExecutorTest is Toolkit {
 
     vm.expectRevert(StdError.Unauthorized.selector);
     _managerWithMerkleVerification.manage(
-      address(_matrixStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
+      address(_vlfStrategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
     );
   }
 

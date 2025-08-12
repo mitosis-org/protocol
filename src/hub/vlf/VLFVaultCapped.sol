@@ -8,18 +8,18 @@ import { EnumerableSet } from '@oz/utils/structs/EnumerableSet.sol';
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
-import { MatrixVault } from './MatrixVault.sol';
+import { VLFVault } from './VLFVault.sol';
 
 /**
- * @title MatrixVaultCapped
- * @notice MatrixVault with a cap system
+ * @title VLFVaultCapped
+ * @notice VLFVault with a cap system
  */
-contract MatrixVaultCapped is MatrixVault {
+contract VLFVaultCapped is VLFVault {
   using ERC7201Utils for string;
   using EnumerableSet for EnumerableSet.UintSet;
 
-  /// @custom:storage-location mitosis.storage.MatrixVaultCapped
-  struct MatrixVaultCappedStorage {
+  /// @custom:storage-location mitosis.storage.VLFVaultCapped
+  struct VLFVaultCappedStorage {
     uint256 cap;
     uint256 softCap;
     EnumerableSet.UintSet preferredChainIds;
@@ -37,10 +37,10 @@ contract MatrixVaultCapped is MatrixVault {
 
   // =========================== NOTE: STORAGE DEFINITIONS =========================== //
 
-  string private constant _NAMESPACE = 'mitosis.storage.MatrixVaultCapped';
+  string private constant _NAMESPACE = 'mitosis.storage.VLFVaultCapped';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
-  function _getMatrixVaultCappedStorage() private view returns (MatrixVaultCappedStorage storage $) {
+  function _getVLFVaultCappedStorage() private view returns (VLFVaultCappedStorage storage $) {
     bytes32 slot = _slot;
     // slither-disable-next-line assembly
     assembly {
@@ -59,33 +59,33 @@ contract MatrixVaultCapped is MatrixVault {
     virtual
     initializer
   {
-    __MatrixVault_init(assetManager_, asset_, name, symbol);
+    __VLFVault_init(assetManager_, asset_, name, symbol);
   }
 
   // ============================ NOTE: VIEW FUNCTIONS ============================ //
 
   function loadCap() external view returns (uint256) {
-    return _getMatrixVaultCappedStorage().cap;
+    return _getVLFVaultCappedStorage().cap;
   }
 
   function loadSoftCap() external view returns (uint256) {
-    return _getMatrixVaultCappedStorage().softCap;
+    return _getVLFVaultCappedStorage().softCap;
   }
 
   function isPreferredChain(uint256 chainId) external view returns (bool) {
-    return _getMatrixVaultCappedStorage().preferredChainIds.contains(chainId);
+    return _getVLFVaultCappedStorage().preferredChainIds.contains(chainId);
   }
 
   function preferredChainIds() external view returns (uint256[] memory) {
-    return _getMatrixVaultCappedStorage().preferredChainIds.values();
+    return _getVLFVaultCappedStorage().preferredChainIds.values();
   }
 
   function maxDeposit(address) public view virtual override returns (uint256 maxAssets) {
-    return _maxDepositForAllCaps(_getMatrixVaultCappedStorage());
+    return _maxDepositForAllCaps(_getVLFVaultCappedStorage());
   }
 
   function maxDepositFromChainId(address, /*receiver*/ uint256 chainId) public view virtual override returns (uint256) {
-    MatrixVaultCappedStorage storage $ = _getMatrixVaultCappedStorage();
+    VLFVaultCappedStorage storage $ = _getVLFVaultCappedStorage();
 
     if ($.preferredChainIds.contains(chainId)) {
       return _maxDepositForHardCap($);
@@ -101,54 +101,54 @@ contract MatrixVaultCapped is MatrixVault {
   // ============================ NOTE: MUTATIVE FUNCTIONS ============================ //
 
   function setCap(uint256 newCap) external onlyLiquidityManager {
-    _setCap(_getMatrixVaultCappedStorage(), newCap);
+    _setCap(_getVLFVaultCappedStorage(), newCap);
   }
 
   function setSoftCap(uint256 newSoftCap) external onlyLiquidityManager {
-    _setSoftCap(_getMatrixVaultCappedStorage(), newSoftCap);
+    _setSoftCap(_getVLFVaultCappedStorage(), newSoftCap);
   }
 
   function addPreferredChainId(uint256 chainId) external onlyLiquidityManager {
-    _addPreferredChainId(_getMatrixVaultCappedStorage(), chainId);
+    _addPreferredChainId(_getVLFVaultCappedStorage(), chainId);
   }
 
   function removePreferredChainId(uint256 chainId) external onlyLiquidityManager {
-    _removePreferredChainId(_getMatrixVaultCappedStorage(), chainId);
+    _removePreferredChainId(_getVLFVaultCappedStorage(), chainId);
   }
 
   // ============================ NOTE: INTERNAL FUNCTIONS ============================ //
 
-  function _maxDepositForAllCaps(MatrixVaultCappedStorage storage $) internal view returns (uint256) {
+  function _maxDepositForAllCaps(VLFVaultCappedStorage storage $) internal view returns (uint256) {
     uint256 currentAssets = totalAssets();
     uint256 capLimit = currentAssets >= $.cap ? 0 : $.cap - currentAssets;
     uint256 softCapLimit = currentAssets >= $.softCap ? 0 : $.softCap - currentAssets;
     return Math.min(capLimit, softCapLimit);
   }
 
-  function _maxDepositForHardCap(MatrixVaultCappedStorage storage $) internal view returns (uint256) {
+  function _maxDepositForHardCap(VLFVaultCappedStorage storage $) internal view returns (uint256) {
     uint256 currentAssets = totalAssets();
     return currentAssets >= $.cap ? 0 : $.cap - currentAssets;
   }
 
-  function _setCap(MatrixVaultCappedStorage storage $, uint256 newCap) internal {
+  function _setCap(VLFVaultCappedStorage storage $, uint256 newCap) internal {
     uint256 prevCap = $.cap;
     $.cap = newCap;
     emit CapSet(_msgSender(), prevCap, newCap);
   }
 
-  function _setSoftCap(MatrixVaultCappedStorage storage $, uint256 newSoftCap) internal {
+  function _setSoftCap(VLFVaultCappedStorage storage $, uint256 newSoftCap) internal {
     uint256 prevSoftCap = $.softCap;
     $.softCap = newSoftCap;
     emit SoftCapSet(prevSoftCap, newSoftCap);
   }
 
-  function _addPreferredChainId(MatrixVaultCappedStorage storage $, uint256 chainId) internal {
+  function _addPreferredChainId(VLFVaultCappedStorage storage $, uint256 chainId) internal {
     if ($.preferredChainIds.add(chainId)) {
       emit PreferredChainAdded(chainId);
     }
   }
 
-  function _removePreferredChainId(MatrixVaultCappedStorage storage $, uint256 chainId) internal {
+  function _removePreferredChainId(VLFVaultCappedStorage storage $, uint256 chainId) internal {
     if ($.preferredChainIds.remove(chainId)) {
       emit PreferredChainRemoved(chainId);
     }

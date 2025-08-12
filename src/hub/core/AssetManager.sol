@@ -9,9 +9,9 @@ import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
 import { IAssetManagerEntrypoint } from '../../interfaces/hub/core/IAssetManagerEntrypoint.sol';
 import { IHubAsset } from '../../interfaces/hub/core/IHubAsset.sol';
-import { IMatrixVault } from '../../interfaces/hub/matrix/IMatrixVault.sol';
-import { IMatrixVaultFactory } from '../../interfaces/hub/matrix/IMatrixVaultFactory.sol';
 import { ITreasury } from '../../interfaces/hub/reward/ITreasury.sol';
+import { IVLFVault } from '../../interfaces/hub/vlf/IVLFVault.sol';
+import { IVLFVaultFactory } from '../../interfaces/hub/vlf/IVLFVaultFactory.sol';
 import { Pausable } from '../../lib/Pausable.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { Versioned } from '../../lib/Versioned.sol';
@@ -69,13 +69,9 @@ contract AssetManager is
     return $.entrypoint.quoteInitializeAsset(chainId, branchAsset);
   }
 
-  function quoteInitializeMatrix(uint256 chainId, address matrixVault, address branchAsset)
-    external
-    view
-    returns (uint256)
-  {
+  function quoteInitializeVLF(uint256 chainId, address vlfVault, address branchAsset) external view returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
-    return $.entrypoint.quoteInitializeMatrix(chainId, matrixVault, branchAsset);
+    return $.entrypoint.quoteInitializeVLF(chainId, vlfVault, branchAsset);
   }
 
   function quoteWithdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
@@ -87,9 +83,9 @@ contract AssetManager is
     return $.entrypoint.quoteWithdraw(chainId, branchAsset, to, amount);
   }
 
-  function quoteAllocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external view returns (uint256) {
+  function quoteAllocateVLF(uint256 chainId, address vlfVault, uint256 amount) external view returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
-    return $.entrypoint.quoteAllocateMatrix(chainId, matrixVault, amount);
+    return $.entrypoint.quoteAllocateVLF(chainId, vlfVault, amount);
   }
 
   //=========== NOTE: ASSET FUNCTIONS ===========//
@@ -106,41 +102,38 @@ contract AssetManager is
     emit Deposited(chainId, hubAsset, to, amount);
   }
 
-  function depositWithSupplyMatrix(
-    uint256 chainId,
-    address branchAsset,
-    address to,
-    address matrixVault,
-    uint256 amount
-  ) external whenNotPaused {
+  function depositWithSupplyVLF(uint256 chainId, address branchAsset, address to, address vlfVault, uint256 amount)
+    external
+    whenNotPaused
+  {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
     _assertBranchAssetPairExist($, chainId, branchAsset);
-    _assertMatrixInitialized($, chainId, matrixVault);
+    _assertVLFInitialized($, chainId, vlfVault);
 
-    // NOTE: We don't need to check if the matrixVault is registered instance of MatrixVaultFactory
+    // NOTE: We don't need to check if the vlfVault is registered instance of VLFVaultFactory
 
     address hubAsset = _branchAssetState($, chainId, branchAsset).hubAsset;
     uint256 supplyAmount = 0;
 
-    if (hubAsset != IMatrixVault(matrixVault).asset()) {
-      // just transfer hubAsset if it's not the same as the MatrixVault's asset
+    if (hubAsset != IVLFVault(vlfVault).asset()) {
+      // just transfer hubAsset if it's not the same as the VLFVault's asset
       _mint($, chainId, hubAsset, to, amount);
     } else {
       _mint($, chainId, hubAsset, address(this), amount);
 
-      uint256 maxAssets = IMatrixVault(matrixVault).maxDepositFromChainId(to, chainId);
+      uint256 maxAssets = IVLFVault(vlfVault).maxDepositFromChainId(to, chainId);
       supplyAmount = amount < maxAssets ? amount : maxAssets;
 
-      IHubAsset(hubAsset).approve(matrixVault, supplyAmount);
-      IMatrixVault(matrixVault).depositFromChainId(supplyAmount, to, chainId);
+      IHubAsset(hubAsset).approve(vlfVault, supplyAmount);
+      IVLFVault(vlfVault).depositFromChainId(supplyAmount, to, chainId);
 
-      // transfer remaining hub assets to `to` because there could be remaining hub assets due to the cap of Matrix Vault.
+      // transfer remaining hub assets to `to` because there could be remaining hub assets due to the cap of VLFVault.
       if (supplyAmount < amount) IHubAsset(hubAsset).transfer(to, amount - supplyAmount);
     }
 
-    emit DepositedWithSupplyMatrix(chainId, hubAsset, to, matrixVault, amount, supplyAmount);
+    emit DepositedWithSupplyVLF(chainId, hubAsset, to, vlfVault, amount, supplyAmount);
   }
 
   function withdraw(uint256 chainId, address hubAsset, address to, uint256 amount) external payable whenNotPaused {
@@ -161,92 +154,91 @@ contract AssetManager is
     emit Withdrawn(chainId, hubAsset, to, amount);
   }
 
-  //=========== NOTE: MATRIX FUNCTIONS ===========//
+  //=========== NOTE: VLF FUNCTIONS ===========//
 
   /// @dev only strategist
-  function allocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external payable whenNotPaused {
+  function allocateVLF(uint256 chainId, address vlfVault, uint256 amount) external payable whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertOnlyStrategist($, matrixVault);
-    _assertMatrixInitialized($, chainId, matrixVault);
+    _assertOnlyStrategist($, vlfVault);
+    _assertVLFInitialized($, chainId, vlfVault);
 
-    uint256 idle = _matrixIdle($, matrixVault);
-    require(amount <= idle, IAssetManager__MatrixInsufficient(matrixVault));
+    uint256 idle = _vlfIdle($, vlfVault);
+    require(amount <= idle, IAssetManager__VLFLiquidityInsufficient(vlfVault));
 
-    $.entrypoint.allocateMatrix{ value: msg.value }(chainId, matrixVault, amount);
+    $.entrypoint.allocateVLF{ value: msg.value }(chainId, vlfVault, amount);
 
-    address hubAsset = IMatrixVault(matrixVault).asset();
+    address hubAsset = IVLFVault(vlfVault).asset();
     _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, amount);
     _hubAssetState($, hubAsset, chainId).branchAllocated += amount;
-    $.matrixStates[matrixVault].allocation += amount;
+    $.vlfStates[vlfVault].allocation += amount;
 
-    emit MatrixAllocated(_msgSender(), chainId, matrixVault, amount);
+    emit VLFAllocated(_msgSender(), chainId, vlfVault, amount);
   }
 
   /// @dev only entrypoint
-  function deallocateMatrix(uint256 chainId, address matrixVault, uint256 amount) external whenNotPaused {
+  function deallocateVLF(uint256 chainId, address vlfVault, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
 
-    address hubAsset = IMatrixVault(matrixVault).asset();
+    address hubAsset = IVLFVault(vlfVault).asset();
     _hubAssetState($, hubAsset, chainId).branchAllocated -= amount;
-    $.matrixStates[matrixVault].allocation -= amount;
+    $.vlfStates[vlfVault].allocation -= amount;
 
-    emit MatrixDeallocated(chainId, matrixVault, amount);
+    emit VLFDeallocated(chainId, vlfVault, amount);
   }
 
   /// @dev only strategist
-  function reserveMatrix(address matrixVault, uint256 claimCount) external whenNotPaused {
+  function reserveVLF(address vlfVault, uint256 claimCount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
-    _assertOnlyStrategist($, matrixVault);
+    _assertOnlyStrategist($, vlfVault);
 
-    uint256 idle = _matrixIdle($, matrixVault);
-    (, uint256 simulatedTotalReservedAssets) = $.reclaimQueue.previewSync(matrixVault, claimCount);
-    require(simulatedTotalReservedAssets > 0, IAssetManager__NothingToReserve(matrixVault));
-    require(simulatedTotalReservedAssets <= idle, IAssetManager__MatrixInsufficient(matrixVault));
+    uint256 idle = _vlfIdle($, vlfVault);
+    (, uint256 simulatedTotalReservedAssets) = $.reclaimQueue.previewSync(vlfVault, claimCount);
+    require(simulatedTotalReservedAssets > 0, IAssetManager__NothingToVLFReserve(vlfVault));
+    require(simulatedTotalReservedAssets <= idle, IAssetManager__VLFLiquidityInsufficient(vlfVault));
 
-    (uint256 totalReservedShares, uint256 totalReservedAssets) =
-      $.reclaimQueue.sync(_msgSender(), matrixVault, claimCount);
+    (uint256 totalReservedShares, uint256 totalReservedAssets) = $.reclaimQueue.sync(_msgSender(), vlfVault, claimCount);
 
-    emit MatrixReserved(_msgSender(), matrixVault, claimCount, totalReservedShares, totalReservedAssets);
+    emit VLFReserved(_msgSender(), vlfVault, claimCount, totalReservedShares, totalReservedAssets);
   }
 
   /// @dev only entrypoint
-  function settleMatrixYield(uint256 chainId, address matrixVault, uint256 amount) external whenNotPaused {
+  function settleVLFYield(uint256 chainId, address vlfVault, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
 
-    // Increase MatrixVault's shares value.
-    address asset = IMatrixVault(matrixVault).asset();
-    _mint($, chainId, asset, address(matrixVault), amount);
+    // Increase VLFVault's shares value.
+    address asset = IVLFVault(vlfVault).asset();
+    _mint($, chainId, asset, address(vlfVault), amount);
 
     _hubAssetState($, asset, chainId).branchAllocated += amount;
-    $.matrixStates[matrixVault].allocation += amount;
+    $.vlfStates[vlfVault].allocation += amount;
 
-    emit MatrixRewardSettled(chainId, matrixVault, asset, amount);
+    emit VLFRewardSettled(chainId, vlfVault, asset, amount);
   }
 
   /// @dev only entrypoint
-  function settleMatrixLoss(uint256 chainId, address matrixVault, uint256 amount) external whenNotPaused {
+  function settleVLFLoss(uint256 chainId, address vlfVault, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
 
-    // Decrease MatrixVault's shares value.
-    address asset = IMatrixVault(matrixVault).asset();
-    _burn($, chainId, asset, matrixVault, amount);
+    // Decrease VLFVault's shares value.
+    address asset = IVLFVault(vlfVault).asset();
+    _burn($, chainId, asset, vlfVault, amount);
 
     _hubAssetState($, asset, chainId).branchAllocated -= amount;
-    $.matrixStates[matrixVault].allocation -= amount;
+    $.vlfStates[vlfVault].allocation -= amount;
 
-    emit MatrixLossSettled(chainId, matrixVault, asset, amount);
+    emit VLFLossSettled(chainId, vlfVault, asset, amount);
   }
 
   /// @dev only entrypoint
-  function settleMatrixExtraRewards(uint256 chainId, address matrixVault, address branchReward, uint256 amount)
+  function settleVLFExtraRewards(uint256 chainId, address vlfVault, address branchReward, uint256 amount)
     external
     whenNotPaused
   {
@@ -258,10 +250,10 @@ contract AssetManager is
 
     address hubReward = _branchAssetState($, chainId, branchReward).hubAsset;
     _mint($, chainId, hubReward, address(this), amount);
-    emit MatrixRewardSettled(chainId, matrixVault, hubReward, amount);
+    emit VLFRewardSettled(chainId, vlfVault, hubReward, amount);
 
     IHubAsset(hubReward).approve(address($.treasury), amount);
-    $.treasury.storeRewards(matrixVault, hubReward, amount);
+    $.treasury.storeRewards(vlfVault, hubReward, amount);
   }
 
   function setBranchLiquidityThreshold(uint256 chainId, address hubAsset, uint256 threshold)
@@ -303,20 +295,20 @@ contract AssetManager is
     emit AssetInitialized(hubAsset, chainId, branchAsset);
   }
 
-  function initializeMatrix(uint256 chainId, address matrixVault) external payable onlyOwner whenNotPaused {
+  function initializeVLF(uint256 chainId, address vlfVault) external payable onlyOwner whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
-    _assertMatrixVaultFactorySet($);
-    _assertMatrixVaultInstance($, matrixVault);
+    _assertVLFVaultFactorySet($);
+    _assertVLFVaultInstance($, vlfVault);
 
-    address hubAsset = IMatrixVault(matrixVault).asset();
+    address hubAsset = IVLFVault(vlfVault).asset();
     address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    _assertMatrixNotInitialized($, chainId, matrixVault);
-    $.matrixInitialized[chainId][matrixVault] = true;
+    _assertVLFNotInitialized($, chainId, vlfVault);
+    $.vlfInitialized[chainId][vlfVault] = true;
 
-    $.entrypoint.initializeMatrix{ value: msg.value }(chainId, matrixVault, branchAsset);
-    emit MatrixInitialized(hubAsset, chainId, matrixVault, branchAsset);
+    $.entrypoint.initializeVLF{ value: msg.value }(chainId, vlfVault, branchAsset);
+    emit VLFInitialized(hubAsset, chainId, vlfVault, branchAsset);
   }
 
   function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external onlyOwner {
@@ -346,12 +338,12 @@ contract AssetManager is
     _setHubAssetFactory(_getStorageV1(), hubAssetFactory_);
   }
 
-  function setMatrixVaultFactory(address matrixVaultFactory_) external onlyOwner {
-    _setMatrixVaultFactory(_getStorageV1(), matrixVaultFactory_);
+  function setVLFVaultFactory(address vlfVaultFactory_) external onlyOwner {
+    _setVLFVaultFactory(_getStorageV1(), vlfVaultFactory_);
   }
 
-  function setStrategist(address matrixVault, address strategist) external onlyOwner {
-    _setStrategist(_getStorageV1(), matrixVault, strategist);
+  function setStrategist(address vlfVault, address strategist) external onlyOwner {
+    _setStrategist(_getStorageV1(), vlfVault, strategist);
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//

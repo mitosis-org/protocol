@@ -4,11 +4,11 @@ pragma solidity ^0.8.28;
 import { ContextUpgradeable } from '@ozu/utils/ContextUpgradeable.sol';
 
 import { IAssetManager } from '../../interfaces/hub/core/IAssetManager.sol';
-import { IMatrixVaultStorageV1 } from '../../interfaces/hub/matrix/IMatrixVault.sol';
+import { IVLFVaultStorageV1 } from '../../interfaces/hub/vlf/IVLFVault.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 import { StdError } from '../../lib/StdError.sol';
 
-contract MatrixVaultStorageV1 is IMatrixVaultStorageV1, ContextUpgradeable {
+contract VLFVaultStorageV1 is IVLFVaultStorageV1, ContextUpgradeable {
   using ERC7201Utils for string;
 
   struct StorageV1 {
@@ -19,7 +19,7 @@ contract MatrixVaultStorageV1 is IMatrixVaultStorageV1, ContextUpgradeable {
     IAssetManager assetManager;
   }
 
-  string private constant _NAMESPACE = 'mitosis.storage.MatrixVaultStorage.v1';
+  string private constant _NAMESPACE = 'mitosis.storage.VLFVaultStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {

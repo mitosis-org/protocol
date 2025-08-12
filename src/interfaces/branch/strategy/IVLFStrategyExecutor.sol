@@ -7,15 +7,15 @@ import { IMitosisVault } from '../IMitosisVault.sol';
 import { IStrategyExecutor } from './IStrategyExecutor.sol';
 import { ITally } from './tally/ITally.sol';
 
-interface IMatrixStrategyExecutor is IStrategyExecutor {
-  error IMatrixStrategyExecutor__TallyTotalBalanceNotZero(address implementation);
-  error IMatrixStrategyExecutor__TallyAlreadySet(address implementation);
-  error IMatrixStrategyExecutor__StrategistNotSet();
-  error IMatrixStrategyExecutor__ExecutorNotSet();
+interface IVLFStrategyExecutor is IStrategyExecutor {
+  error IVLFStrategyExecutor__TallyTotalBalanceNotZero(address implementation);
+  error IVLFStrategyExecutor__TallyAlreadySet(address implementation);
+  error IVLFStrategyExecutor__StrategistNotSet();
+  error IVLFStrategyExecutor__ExecutorNotSet();
 
   function vault() external view returns (IMitosisVault);
   function asset() external view returns (IERC20);
-  function hubMatrixVault() external view returns (address);
+  function hubVLFVault() external view returns (address);
 
   function strategist() external view returns (address);
   function executor() external view returns (address);

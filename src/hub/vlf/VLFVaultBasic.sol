@@ -3,13 +3,13 @@ pragma solidity ^0.8.28;
 
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 
-import { MatrixVault } from './MatrixVault.sol';
+import { VLFVault } from './VLFVault.sol';
 
 /**
- * @title MatrixVaultBasic
- * @notice Basic implementation of a MatrixVault that simply inherits the MatrixVault contract
+ * @title VLFVaultBasic
+ * @notice Basic implementation of a VLFVault that simply inherits the VLFVault contract
  */
-contract MatrixVaultBasic is MatrixVault {
+contract VLFVaultBasic is VLFVault {
   constructor() {
     _disableInitializers();
   }
@@ -18,6 +18,6 @@ contract MatrixVaultBasic is MatrixVault {
     external
     initializer
   {
-    __MatrixVault_init(assetManager_, asset_, name, symbol);
+    __VLFVault_init(assetManager_, asset_, name, symbol);
   }
 }

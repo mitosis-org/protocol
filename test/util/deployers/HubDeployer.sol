@@ -22,9 +22,6 @@ import { MITOGovernance } from '../../../src/hub/governance/MITOGovernance.sol';
 import { MITOGovernanceVP } from '../../../src/hub/governance/MITOGovernanceVP.sol';
 import { GovMITO } from '../../../src/hub/GovMITO.sol';
 import { GovMITOEmission } from '../../../src/hub/GovMITOEmission.sol';
-import { MatrixVaultBasic } from '../../../src/hub/matrix/MatrixVaultBasic.sol';
-import { MatrixVaultCapped } from '../../../src/hub/matrix/MatrixVaultCapped.sol';
-import { MatrixVaultFactory } from '../../../src/hub/matrix/MatrixVaultFactory.sol';
 import { ReclaimQueue } from '../../../src/hub/ReclaimQueue.sol';
 import { MerkleRewardDistributor } from '../../../src/hub/reward/MerkleRewardDistributor.sol';
 import { Treasury } from '../../../src/hub/reward/Treasury.sol';
@@ -35,6 +32,9 @@ import { ValidatorRewardDistributor } from '../../../src/hub/validator/Validator
 import { ValidatorStaking } from '../../../src/hub/validator/ValidatorStaking.sol';
 import { ValidatorStakingGovMITO } from '../../../src/hub/validator/ValidatorStakingGovMITO.sol';
 import { ValidatorStakingHub } from '../../../src/hub/validator/ValidatorStakingHub.sol';
+import { VLFVaultBasic } from '../../../src/hub/vlf/VLFVaultBasic.sol';
+import { VLFVaultCapped } from '../../../src/hub/vlf/VLFVaultCapped.sol';
+import { VLFVaultFactory } from '../../../src/hub/vlf/VLFVaultFactory.sol';
 import { WMITO } from '../../../src/hub/WMITO.sol';
 import { IConsensusValidatorEntrypoint } from
   '../../../src/interfaces/hub/consensus-layer/IConsensusValidatorEntrypoint.sol';
@@ -142,7 +142,7 @@ abstract contract HubDeployer is AbstractDeployer {
     );
 
     //====================================================================================//
-    // ----- Hub / Matrix -----
+    // ----- Hub / VLf -----
     //====================================================================================//
 
     impl.core.hubAsset = deploy(_urlHI('.core.hub-asset'), type(HubAsset).creationCode);
@@ -151,15 +151,15 @@ abstract contract HubDeployer is AbstractDeployer {
       proxy.core.hubAssetFactory
     ) = _dphHubAssetFactory(owner_, impl.core.hubAsset);
 
-    // TODO: we need to register the impl.matrix.vaultBasic and impl.matrix.vaultCapped on "link" phase
-    impl.matrix.vaultBasic = deploy(_urlHI('.matrix.vault-basic'), type(MatrixVaultBasic).creationCode);
-    impl.matrix.vaultCapped = deploy(_urlHI('.matrix.vault-capped'), type(MatrixVaultCapped).creationCode);
+    // TODO: we need to register the impl.vlf.vaultBasic and impl.vlf.vaultCapped on "link" phase
+    impl.vlf.vaultBasic = deploy(_urlHI('.vlf.vault-basic'), type(VLFVaultBasic).creationCode);
+    impl.vlf.vaultCapped = deploy(_urlHI('.vlf.vault-capped'), type(VLFVaultCapped).creationCode);
     (
-      impl.matrix.vaultFactory, //
-      proxy.matrix.vaultFactory
-    ) = _dphMatrixVaultFactory(owner_);
+      impl.vlf.vaultFactory, //
+      proxy.vlf.vaultFactory
+    ) = _dphVLFVaultFactory(owner_);
 
-    // Reclaim Queue for  Matrix
+    // Reclaim Queue for  VLf
     (
       impl.reclaimQueue, //
       proxy.reclaimQueue
@@ -420,14 +420,14 @@ abstract contract HubDeployer is AbstractDeployer {
     return (impl, HubAssetFactory(proxy));
   }
 
-  function _dphMatrixVaultFactory(address owner) private returns (address, MatrixVaultFactory) {
+  function _dphVLFVaultFactory(address owner) private returns (address, VLFVaultFactory) {
     (address impl, address payable proxy) = deployImplAndProxy(
       'hub',
-      '.matrix.vault-factory', //
-      type(MatrixVaultFactory).creationCode,
-      abi.encodeCall(MatrixVaultFactory.initialize, (owner))
+      '.vlf.vault-factory', //
+      type(VLFVaultFactory).creationCode,
+      abi.encodeCall(VLFVaultFactory.initialize, (owner))
     );
-    return (impl, MatrixVaultFactory(proxy));
+    return (impl, VLFVaultFactory(proxy));
   }
 
   function _dphReclaimQueue(address owner, address assetManager) private returns (address, ReclaimQueue) {

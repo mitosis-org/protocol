@@ -8,19 +8,19 @@ import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 
 import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
-import { IMatrixStrategyExecutor } from '../../interfaces/branch/strategy/IMatrixStrategyExecutor.sol';
 import { IStrategyExecutor } from '../../interfaces/branch/strategy/IStrategyExecutor.sol';
+import { IVLFStrategyExecutor } from '../../interfaces/branch/strategy/IVLFStrategyExecutor.sol';
 import { ITally } from '../../interfaces/branch/strategy/tally/ITally.sol';
 import { StdError } from '../../lib/StdError.sol';
 import { Versioned } from '../../lib/Versioned.sol';
-import { MatrixStrategyExecutorStorageV1 } from './MatrixStrategyExecutorStorageV1.sol';
+import { VLFStrategyExecutorStorageV1 } from './VLFStrategyExecutorStorageV1.sol';
 
-contract MatrixStrategyExecutor is
+contract VLFStrategyExecutor is
   IStrategyExecutor,
-  IMatrixStrategyExecutor,
+  IVLFStrategyExecutor,
   Ownable2StepUpgradeable,
   ReentrancyGuard,
-  MatrixStrategyExecutorStorageV1,
+  VLFStrategyExecutorStorageV1,
   Versioned
 {
   using SafeERC20 for IERC20;
@@ -40,7 +40,7 @@ contract MatrixStrategyExecutor is
     revert StdError.NotSupported();
   }
 
-  function initialize(IMitosisVault vault_, IERC20 asset_, address hubMatrixVault_, address owner_) public initializer {
+  function initialize(IMitosisVault vault_, IERC20 asset_, address hubVLFVault_, address owner_) public initializer {
     __Ownable2Step_init();
     __Ownable_init(owner_);
 
@@ -48,7 +48,7 @@ contract MatrixStrategyExecutor is
 
     $.vault = vault_;
     $.asset = asset_;
-    $.hubMatrixVault = hubMatrixVault_;
+    $.hubVLFVault = hubVLFVault_;
   }
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
@@ -61,8 +61,8 @@ contract MatrixStrategyExecutor is
     return _getStorageV1().asset;
   }
 
-  function hubMatrixVault() external view returns (address) {
-    return _getStorageV1().hubMatrixVault;
+  function hubVLFVault() external view returns (address) {
+    return _getStorageV1().hubVLFVault;
   }
 
   function strategist() external view returns (address) {
@@ -87,22 +87,22 @@ contract MatrixStrategyExecutor is
 
   function quoteDeallocateLiquidity(uint256 amount) external view returns (uint256) {
     StorageV1 memory $ = _getStorageV1();
-    return $.vault.quoteDeallocateMatrix($.hubMatrixVault, amount);
+    return $.vault.quoteDeallocateVLF($.hubVLFVault, amount);
   }
 
   function quoteSettleYield(uint256 amount) external view returns (uint256) {
     StorageV1 memory $ = _getStorageV1();
-    return $.vault.quoteSettleMatrixYield($.hubMatrixVault, amount);
+    return $.vault.quoteSettleVLFYield($.hubVLFVault, amount);
   }
 
   function quoteSettleLoss(uint256 amount) external view returns (uint256) {
     StorageV1 memory $ = _getStorageV1();
-    return $.vault.quoteSettleMatrixLoss($.hubMatrixVault, amount);
+    return $.vault.quoteSettleVLFLoss($.hubVLFVault, amount);
   }
 
   function quoteSettleExtraRewards(address reward, uint256 amount) external view returns (uint256) {
     StorageV1 memory $ = _getStorageV1();
-    return $.vault.quoteSettleMatrixExtraRewards($.hubMatrixVault, reward, amount);
+    return $.vault.quoteSettleVLFExtraRewards($.hubVLFVault, reward, amount);
   }
 
   //=========== NOTE: STRATEGIST FUNCTIONS ===========//
@@ -114,7 +114,7 @@ contract MatrixStrategyExecutor is
 
     _assertOnlyStrategist($);
 
-    $.vault.deallocateMatrix{ value: msg.value }($.hubMatrixVault, amount);
+    $.vault.deallocateVLF{ value: msg.value }($.hubVLFVault, amount);
   }
 
   function fetchLiquidity(uint256 amount) external {
@@ -124,7 +124,7 @@ contract MatrixStrategyExecutor is
 
     _assertOnlyStrategist($);
 
-    $.vault.fetchMatrix($.hubMatrixVault, amount);
+    $.vault.fetchVLF($.hubVLFVault, amount);
     $.storedTotalBalance += amount;
   }
 
@@ -136,7 +136,7 @@ contract MatrixStrategyExecutor is
     _assertOnlyStrategist($);
 
     $.asset.approve(address($.vault), amount);
-    $.vault.returnMatrix($.hubMatrixVault, amount);
+    $.vault.returnVLF($.hubVLFVault, amount);
     $.storedTotalBalance -= amount;
   }
 
@@ -151,9 +151,9 @@ contract MatrixStrategyExecutor is
     $.storedTotalBalance = totalBalance_;
 
     if (totalBalance_ >= storedTotalBalance_) {
-      $.vault.settleMatrixYield{ value: msg.value }($.hubMatrixVault, totalBalance_ - storedTotalBalance_);
+      $.vault.settleVLFYield{ value: msg.value }($.hubVLFVault, totalBalance_ - storedTotalBalance_);
     } else {
-      $.vault.settleMatrixLoss{ value: msg.value }($.hubMatrixVault, storedTotalBalance_ - totalBalance_);
+      $.vault.settleVLFLoss{ value: msg.value }($.hubVLFVault, storedTotalBalance_ - totalBalance_);
     }
   }
 
@@ -166,7 +166,7 @@ contract MatrixStrategyExecutor is
     require(reward != address($.asset), StdError.InvalidAddress('reward'));
 
     IERC20(reward).approve(address($.vault), amount);
-    $.vault.settleMatrixExtraRewards{ value: msg.value }($.hubMatrixVault, reward, amount);
+    $.vault.settleVLFExtraRewards{ value: msg.value }($.hubVLFVault, reward, amount);
   }
 
   //=========== NOTE: EXECUTOR FUNCTIONS ===========//
@@ -207,7 +207,7 @@ contract MatrixStrategyExecutor is
     StorageV1 storage $ = _getStorageV1();
     require(
       address($.tally) == address(0) || _tallyTotalBalance($) == 0,
-      IMatrixStrategyExecutor.IMatrixStrategyExecutor__TallyTotalBalanceNotZero(implementation)
+      IVLFStrategyExecutor.IVLFStrategyExecutor__TallyTotalBalanceNotZero(implementation)
     );
 
     $.tally = ITally(implementation);
@@ -240,13 +240,13 @@ contract MatrixStrategyExecutor is
 
   function _assertOnlyStrategist(StorageV1 memory $) internal view {
     address strategist_ = $.strategist;
-    require(strategist_ != address(0), IMatrixStrategyExecutor.IMatrixStrategyExecutor__StrategistNotSet());
+    require(strategist_ != address(0), IVLFStrategyExecutor.IVLFStrategyExecutor__StrategistNotSet());
     require(_msgSender() == strategist_, StdError.Unauthorized());
   }
 
   function _assertOnlyExecutor(StorageV1 memory $) internal view {
     address executor_ = $.executor;
-    require(executor_ != address(0), IMatrixStrategyExecutor.IMatrixStrategyExecutor__ExecutorNotSet());
+    require(executor_ != address(0), IVLFStrategyExecutor.IVLFStrategyExecutor__ExecutorNotSet());
     require(_msgSender() == executor_, StdError.Unauthorized());
   }
 

@@ -7,20 +7,20 @@ import { IMitosisVault } from '../../interfaces/branch/IMitosisVault.sol';
 import { ITally } from '../../interfaces/branch/strategy/tally/ITally.sol';
 import { ERC7201Utils } from '../../lib/ERC7201Utils.sol';
 
-abstract contract MatrixStrategyExecutorStorageV1 {
+abstract contract VLFStrategyExecutorStorageV1 {
   using ERC7201Utils for string;
 
   struct StorageV1 {
     IMitosisVault vault;
     IERC20 asset;
-    address hubMatrixVault;
+    address hubVLFVault;
     address strategist;
     address executor;
     uint256 storedTotalBalance;
     ITally tally;
   }
 
-  string private constant _NAMESPACE = 'mitosis.storage.MatrixStrategyExecutorStorage.v1';
+  string private constant _NAMESPACE = 'mitosis.storage.VLFStrategyExecutorStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
