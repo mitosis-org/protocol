@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
+import { IERC1271 } from '@oz/interfaces/IERC1271.sol';
 import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
 import { Address } from '@oz/utils/Address.sol';
+import { ECDSA } from '@oz/utils/cryptography/ECDSA.sol';
 import { ReentrancyGuard } from '@oz/utils/ReentrancyGuard.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 
@@ -16,6 +18,7 @@ import { Versioned } from '../../lib/Versioned.sol';
 import { VLFStrategyExecutorStorageV1 } from './VLFStrategyExecutorStorageV1.sol';
 
 contract VLFStrategyExecutor is
+  IERC1271,
   IStrategyExecutor,
   IVLFStrategyExecutor,
   Ownable2StepUpgradeable,
@@ -25,6 +28,9 @@ contract VLFStrategyExecutor is
 {
   using SafeERC20 for IERC20;
   using Address for address;
+
+  // bytes4(keccak256("isValidSignature(bytes32,bytes)")
+  bytes4 public constant MAGICVALUE = 0x1626ba7e;
 
   //=========== NOTE: INITIALIZATION FUNCTIONS ===========//
 
@@ -48,6 +54,7 @@ contract VLFStrategyExecutor is
 
     $.vault = vault_;
     $.asset = asset_;
+    $.signer = owner_;
     $.hubVLFVault = hubVLFVault_;
   }
 
@@ -71,6 +78,10 @@ contract VLFStrategyExecutor is
 
   function executor() external view returns (address) {
     return _getStorageV1().executor;
+  }
+
+  function signer() external view returns (address) {
+    return _getStorageV1().signer;
   }
 
   function tally() external view returns (ITally) {
@@ -226,6 +237,12 @@ contract VLFStrategyExecutor is
     emit ExecutorSet(executor_);
   }
 
+  function setSigner(address signer_) external onlyOwner {
+    require(signer_ != address(0), StdError.InvalidAddress('signer'));
+    _getStorageV1().signer = signer_;
+    emit SignerSet(signer_);
+  }
+
   function unsetStrategist() external onlyOwner {
     _getStorageV1().strategist = address(0);
     emit StrategistSet(address(0));
@@ -258,5 +275,12 @@ contract VLFStrategyExecutor is
 
   function _totalBalance(StorageV1 storage $) internal view returns (uint256) {
     return $.asset.balanceOf(address(this)) + _tallyTotalBalance($);
+  }
+
+  //=========== NOTE: STANDARD FUNCTIONS ===========//
+
+  function isValidSignature(bytes32 hash_, bytes memory signature) external view returns (bytes4) {
+    if (ECDSA.recover(hash_, signature) == _getStorageV1().signer) return MAGICVALUE;
+    return 0xffffffff;
   }
 }

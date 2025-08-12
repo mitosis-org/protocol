@@ -16,6 +16,7 @@ abstract contract VLFStrategyExecutorStorageV1 {
     address hubVLFVault;
     address strategist;
     address executor;
+    address signer;
     uint256 storedTotalBalance;
     ITally tally;
   }
