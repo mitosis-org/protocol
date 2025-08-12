@@ -129,7 +129,7 @@ contract AssetManager is
       IHubAsset(hubAsset).approve(vlfVault, supplyAmount);
       IVLFVault(vlfVault).depositFromChainId(supplyAmount, to, chainId);
 
-      // transfer remaining hub assets to `to` because there could be remaining hub assets due to the cap of VLF vault.
+      // transfer remaining hub assets to `to` because there could be remaining hub assets due to the cap of VLFVault.
       if (supplyAmount < amount) IHubAsset(hubAsset).transfer(to, amount - supplyAmount);
     }
 
@@ -164,7 +164,7 @@ contract AssetManager is
     _assertVLFInitialized($, chainId, vlfVault);
 
     uint256 idle = _vlfIdle($, vlfVault);
-    require(amount <= idle, IAssetManager__VLFInsufficient(vlfVault));
+    require(amount <= idle, IAssetManager__VLFLiquidityInsufficient(vlfVault));
 
     $.entrypoint.allocateVLF{ value: msg.value }(chainId, vlfVault, amount);
 
@@ -197,8 +197,8 @@ contract AssetManager is
 
     uint256 idle = _vlfIdle($, vlfVault);
     (, uint256 simulatedTotalReservedAssets) = $.reclaimQueue.previewSync(vlfVault, claimCount);
-    require(simulatedTotalReservedAssets > 0, IAssetManager__NothingToReserve(vlfVault));
-    require(simulatedTotalReservedAssets <= idle, IAssetManager__VLFInsufficient(vlfVault));
+    require(simulatedTotalReservedAssets > 0, IAssetManager__NothingToVLFReserve(vlfVault));
+    require(simulatedTotalReservedAssets <= idle, IAssetManager__VLFLiquidityInsufficient(vlfVault));
 
     (uint256 totalReservedShares, uint256 totalReservedAssets) = $.reclaimQueue.sync(_msgSender(), vlfVault, claimCount);
 

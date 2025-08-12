@@ -6,8 +6,8 @@ import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { VLFVault } from './VLFVault.sol';
 
 /**
- * @title VLFVault
- * @notice Basic implementation of a VLFVault that simply inherits the VLF Vault contract
+ * @title VLFVaultBasic
+ * @notice Basic implementation of a VLFVault that simply inherits the VLFVault contract
  */
 contract VLFVaultBasic is VLFVault {
   constructor() {

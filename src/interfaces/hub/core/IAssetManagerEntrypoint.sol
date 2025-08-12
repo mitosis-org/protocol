@@ -46,7 +46,7 @@ interface IAssetManagerEntrypoint {
   /**
    * @notice Quotes the gas fee for initializing a VLF on a specified branch chain
    * @param chainId The ID of the branch chain
-   * @param vlfVault The address of the VLF
+   * @param vlfVault The address of the VLFVault
    * @param branchAsset The address of the associated asset on the branch chain
    * @return The gas fee required for the operation
    */
@@ -68,7 +68,7 @@ interface IAssetManagerEntrypoint {
   /**
    * @notice Quotes the gas fee for allocating assets to a VLF on a specified branch chain
    * @param chainId The ID of the branch chain
-   * @param vlfVault The address of the VLF
+   * @param vlfVault The address of the VLFVault
    * @param amount The amount of assets to allocate
    * @return The gas fee required for the operation
    */
@@ -84,7 +84,7 @@ interface IAssetManagerEntrypoint {
   /**
    * @notice Initializes a VLF on a specified branch chain
    * @param chainId The ID of the branch chain
-   * @param vlfVault The address of the VLF
+   * @param vlfVault The address of the VLFVault
    * @param branchAsset The address of the associated asset on the branch chain
    */
   function initializeVLF(uint256 chainId, address vlfVault, address branchAsset) external payable;
@@ -101,7 +101,7 @@ interface IAssetManagerEntrypoint {
   /**
    * @notice Allocates assets to the StrategyExecutor for VLF on branch chain
    * @param chainId The ID of the branch chain
-   * @param vlfVault The address of the VLF
+   * @param vlfVault The address of the VLFVault
    * @param amount The amount of assets to allocate
    */
   function allocateVLF(uint256 chainId, address vlfVault, uint256 amount) external payable;

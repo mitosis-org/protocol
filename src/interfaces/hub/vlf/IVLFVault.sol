@@ -5,7 +5,7 @@ import { IERC4626 } from '@oz/interfaces/IERC4626.sol';
 
 /**
  * @title IVLFVaultStorageV1
- * @dev Interface for the storage of VLF version 1.
+ * @dev Interface for the storage of VLFVault version 1.
  */
 interface IVLFVaultStorageV1 {
   /**
@@ -22,7 +22,7 @@ interface IVLFVaultStorageV1 {
 
 /**
  * @title IVLFVault
- * @dev Interface for the VLF, combining ERC4626 functionality.
+ * @dev Interface for the VLFVault, combining ERC4626 functionality.
  */
 interface IVLFVault is IERC4626, IVLFVaultStorageV1 {
   /**

@@ -87,12 +87,12 @@ contract AssetManagerErrors {
     return abi.encodeWithSelector(IAssetManagerStorageV1.IAssetManagerStorageV1__InvalidVLFVault.selector, vlfVault);
   }
 
-  function _errVLFNothingToReserve(address vlfVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IAssetManager.IAssetManager__NothingToReserve.selector, vlfVault);
+  function _errVLFNothingToVLFReserve(address vlfVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAssetManager.IAssetManager__NothingToVLFReserve.selector, vlfVault);
   }
 
-  function _errVLFInsufficient(address vlfVault) internal pure returns (bytes memory) {
-    return abi.encodeWithSelector(IAssetManager.IAssetManager__VLFInsufficient.selector, vlfVault);
+  function _errVLFLiquidityInsufficient(address vlfVault) internal pure returns (bytes memory) {
+    return abi.encodeWithSelector(IAssetManager.IAssetManager__VLFLiquidityInsufficient.selector, vlfVault);
   }
 
   function _errBranchLiquidityThresholdNotSatisfied(
@@ -410,7 +410,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(100 ether));
 
     vm.prank(strategist);
-    vm.expectRevert(_errVLFInsufficient(address(vlfVault)));
+    vm.expectRevert(_errVLFLiquidityInsufficient(address(vlfVault)));
     assetManager.allocateVLF(branchChainId1, address(vlfVault), 101 ether);
   }
 
@@ -530,7 +530,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     assetManager.setStrategist(address(vlfVault), strategist);
 
     vm.prank(strategist);
-    vm.expectRevert(_errVLFNothingToReserve(address(vlfVault)));
+    vm.expectRevert(_errVLFNothingToVLFReserve(address(vlfVault)));
     assetManager.reserveVLF(address(vlfVault), 100);
   }
 
@@ -546,7 +546,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     );
 
     vm.prank(strategist);
-    vm.expectRevert(_errVLFInsufficient(address(vlfVault)));
+    vm.expectRevert(_errVLFLiquidityInsufficient(address(vlfVault)));
     assetManager.reserveVLF(address(vlfVault), 100);
   }
 

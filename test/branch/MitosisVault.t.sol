@@ -793,7 +793,7 @@ contract MitosisVaultTest is Toolkit {
 
     vm.startPrank(owner);
 
-    vm.expectRevert(_errInvalidAddress('vlfStrategyExecutor.vault'));
+    vm.expectRevert(_errInvalidAddress('VLFStrategyExecutor.vault'));
     _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(newVLFStrategyExecutor));
 
     vm.stopPrank();
@@ -808,7 +808,7 @@ contract MitosisVaultTest is Toolkit {
 
     vm.startPrank(owner);
 
-    vm.expectRevert(_errInvalidAddress('vlfStrategyExecutor.asset'));
+    vm.expectRevert(_errInvalidAddress('VLFStrategyExecutor.asset'));
     _mitosisVault.setVLFStrategyExecutor(hubVLFVault, address(newVLFStrategyExecutor));
 
     vm.stopPrank();

@@ -26,7 +26,7 @@ contract VLFVaultFactory is IVLFVaultFactory, Ownable2StepUpgradeable, UUPSUpgra
 
   struct Storage {
     mapping(address instance => bool) isInstance;
-    mapping(VLFVaultType vlfType => BeaconInfo) infos;
+    mapping(VLFVaultType vaultType => BeaconInfo) infos;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.VLFVaultFactory';
@@ -83,16 +83,16 @@ contract VLFVaultFactory is IVLFVaultFactory, Ownable2StepUpgradeable, UUPSUpgra
   }
 
   function initVLFVaultType(uint8 rawVaultType, address initialImpl) external onlyOwner {
-    VLFVaultType vlfType = _safeVLFVaultTypeCast(rawVaultType);
-    require(vlfType != VLFVaultType.Unset, IVLFVaultFactory__InvalidVLFVaultType());
+    VLFVaultType vaultType = _safeVLFVaultTypeCast(rawVaultType);
+    require(vaultType != VLFVaultType.Unset, IVLFVaultFactory__InvalidVLFVaultType());
 
     Storage storage $ = _getStorage();
-    require(!$.infos[vlfType].initialized, IVLFVaultFactory__AlreadyInitialized());
+    require(!$.infos[vaultType].initialized, IVLFVaultFactory__AlreadyInitialized());
 
-    $.infos[vlfType].initialized = true;
-    $.infos[vlfType].beacon = address(new UpgradeableBeacon(address(this), initialImpl));
+    $.infos[vaultType].initialized = true;
+    $.infos[vaultType].beacon = address(new UpgradeableBeacon(address(this), initialImpl));
 
-    emit VLFVaultTypeInitialized(vlfType, address($.infos[vlfType].beacon));
+    emit VLFVaultTypeInitialized(vaultType, address($.infos[vaultType].beacon));
   }
 
   function vlfVaultTypeInitialized(uint8 t) external view returns (bool) {
@@ -104,31 +104,31 @@ contract VLFVaultFactory is IVLFVaultFactory, Ownable2StepUpgradeable, UUPSUpgra
    */
   function callBeacon(uint8 t, bytes calldata data) external onlyOwner returns (bytes memory) {
     Storage storage $ = _getStorage();
-    VLFVaultType vlfType = _safeVLFVaultTypeCast(t);
-    require($.infos[vlfType].initialized, IVLFVaultFactory__NotInitialized());
+    VLFVaultType vaultType = _safeVLFVaultTypeCast(t);
+    require($.infos[vaultType].initialized, IVLFVaultFactory__NotInitialized());
 
-    (bool success, bytes memory result) = address($.infos[vlfType].beacon).call(data);
+    (bool success, bytes memory result) = address($.infos[vaultType].beacon).call(data);
     require(success, IVLFVaultFactory__CallBeaconFailed(result));
 
-    emit BeaconCalled(_msgSender(), vlfType, data, success, result);
+    emit BeaconCalled(_msgSender(), vaultType, data, success, result);
 
     return result;
   }
 
   function create(uint8 t, bytes calldata args) external onlyOwner returns (address) {
     Storage storage $ = _getStorage();
-    VLFVaultType vlfType = _safeVLFVaultTypeCast(t);
-    require($.infos[vlfType].initialized, IVLFVaultFactory__NotInitialized());
+    VLFVaultType vaultType = _safeVLFVaultTypeCast(t);
+    require($.infos[vaultType].initialized, IVLFVaultFactory__NotInitialized());
 
     address instance;
 
-    if (vlfType == VLFVaultType.Basic) instance = _create($, abi.decode(args, (BasicVLFVaultInitArgs)));
-    else if (vlfType == VLFVaultType.Capped) instance = _create($, abi.decode(args, (CappedVLFVaultInitArgs)));
+    if (vaultType == VLFVaultType.Basic) instance = _create($, abi.decode(args, (BasicVLFVaultInitArgs)));
+    else if (vaultType == VLFVaultType.Capped) instance = _create($, abi.decode(args, (CappedVLFVaultInitArgs)));
     else revert IVLFVaultFactory__InvalidVLFVaultType();
 
     $.isInstance[instance] = true;
 
-    emit VLFVaultCreated(vlfType, instance, args);
+    emit VLFVaultCreated(vaultType, instance, args);
     return instance;
   }
 
@@ -198,9 +198,9 @@ contract VLFVaultFactory is IVLFVaultFactory, Ownable2StepUpgradeable, UUPSUpgra
     return instance;
   }
 
-  function _safeVLFVaultTypeCast(uint8 vlfType) internal pure returns (VLFVaultType) {
-    require(vlfType <= MAX_VLF_VAULT_TYPE, StdError.EnumOutOfBounds(MAX_VLF_VAULT_TYPE, vlfType));
-    return VLFVaultType(vlfType);
+  function _safeVLFVaultTypeCast(uint8 vaultType) internal pure returns (VLFVaultType) {
+    require(vaultType <= MAX_VLF_VAULT_TYPE, StdError.EnumOutOfBounds(MAX_VLF_VAULT_TYPE, vaultType));
+    return VLFVaultType(vaultType);
   }
 
   function _authorizeUpgrade(address) internal override onlyOwner { }
