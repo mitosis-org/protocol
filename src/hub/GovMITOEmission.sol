@@ -258,6 +258,7 @@ contract GovMITOEmission is
       if (lastUpdated < nextDeduction) {
         uint48 rewardEndTime = Math.min(endTime, nextDeduction).toUint48();
         reward += rps * (rewardEndTime - lastUpdated);
+        lastUpdated = rewardEndTime;
       }
       rps = Math.mulDiv(rps, rateMultiplier, RATE_DENOMINATOR);
       lastDeducted = nextDeduction;
