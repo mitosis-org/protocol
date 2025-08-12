@@ -244,6 +244,10 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     _enableQueue(_getStorageV1(), vault);
   }
 
+  function disableQueue(address vault) external onlyOwner {
+    _disableQueue(_getStorageV1(), vault);
+  }
+
   function setResolver(address resolver_) external onlyOwner {
     _setResolver(_getStorageV1(), resolver_);
   }
@@ -504,6 +508,12 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     $.vaults[vault].decimalsOffset = IERC4626(vault).decimals() - underlyingDecimals;
 
     emit QueueEnabled(vault);
+  }
+
+  function _disableQueue(StorageV1 storage $, address vault) internal {
+    $.queues[vault].isEnabled = false;
+
+    emit QueueDisabled(vault);
   }
 
   function _setResolver(StorageV1 storage $, address resolver_) internal {
