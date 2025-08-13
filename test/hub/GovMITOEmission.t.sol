@@ -239,6 +239,52 @@ contract GovMITOEmissionTest is Toolkit {
     assertEq(emission.validatorReward(9), 1 gwei * 2 days, 'epoch 9-10');
   }
 
+  function test_stop_renewal() public {
+    uint48 now_ = 1000;
+    vm.warp(now_);
+
+    _init(
+      IGovMITOEmission.ValidatorRewardConfig({
+        rps: 1 gwei,
+        rateMultiplier: 10_000,
+        renewalPeriod: 500,
+        startsFrom: now_ + 1,
+        recipient: recipient
+      })
+    );
+
+    vm.startPrank(owner);
+    emission.grantRole(emission.VALIDATOR_REWARD_MANAGER_ROLE(), rewardManager);
+    vm.stopPrank();
+
+    vm.prank(rewardManager);
+    emission.configureValidatorRewardEmission(1 gwei, 10_000, 0, 2000);
+
+    uint256 rps;
+    uint160 rateMultiplier;
+    uint48 renewalPeriod;
+
+    (rps, rateMultiplier, renewalPeriod) = emission.validatorRewardEmissionsByTime(now_ + 1);
+    assertEq(rps, 1 gwei);
+    assertEq(rateMultiplier, 10_000);
+    assertEq(renewalPeriod, 500);
+
+    (rps, rateMultiplier, renewalPeriod) = emission.validatorRewardEmissionsByTime(now_ + 500);
+    assertEq(rps, 1 gwei);
+    assertEq(rateMultiplier, 10_000);
+    assertEq(renewalPeriod, 500);
+
+    (rps, rateMultiplier, renewalPeriod) = emission.validatorRewardEmissionsByTime(now_ + 1000);
+    assertEq(rps, 1 gwei);
+    assertEq(rateMultiplier, 10_000);
+    assertEq(renewalPeriod, 0);
+
+    (rps, rateMultiplier, renewalPeriod) = emission.validatorRewardEmissionsByTime(now_ + 1500);
+    assertEq(rps, 1 gwei);
+    assertEq(rateMultiplier, 10_000);
+    assertEq(renewalPeriod, 0);
+  }
+
   function test_configureValidatorRewardEmission() public {
     uint48 now_ = 1000;
     vm.warp(now_);

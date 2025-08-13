@@ -144,6 +144,7 @@ contract GovMITOEmission is
     uint256 rps = emission.rps;
     uint160 rateMultiplier = emission.rateMultiplier;
     uint48 renewalPeriod = emission.renewalPeriod;
+    if (renewalPeriod == 0) return (rps, rateMultiplier, renewalPeriod);
 
     uint48 lastDeducted = emission.timestamp;
     uint48 endTime = Time.timestamp();
