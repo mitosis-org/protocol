@@ -10,16 +10,16 @@ import { SafeCast } from '@oz/utils/math/SafeCast.sol';
 
 import { Test } from '@std/Test.sol';
 
-import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
-import { ReclaimQueue } from '../../../src/hub/ReclaimQueue.sol';
-import { VLFVaultBasic } from '../../../src/hub/vlf/VLFVaultBasic.sol';
-import { IAssetManager } from '../../../src/interfaces/hub/core/IAssetManager.sol';
-import { IReclaimQueue } from '../../../src/interfaces/hub/IReclaimQueue.sol';
-import { LibMockERC20 } from '../../mock/LibMockERC20.sol';
-import { LibMockERC4626 } from '../../mock/LibMockERC4626.sol';
-import { SimpleERC4626Vault } from '../../mock/SimpleERC4626Vault.sol';
-import { MockContract } from '../../util/MockContract.sol';
-import { Toolkit } from '../../util/Toolkit.sol';
+import { HubAsset } from '../../src/hub/core/HubAsset.sol';
+import { ReclaimQueue } from '../../src/hub/ReclaimQueue.sol';
+import { VLFVaultBasic } from '../../src/hub/vlf/VLFVaultBasic.sol';
+import { IAssetManager } from '../../src/interfaces/hub/core/IAssetManager.sol';
+import { IReclaimQueue } from '../../src/interfaces/hub/IReclaimQueue.sol';
+import { LibMockERC20 } from '../mock/LibMockERC20.sol';
+import { LibMockERC4626 } from '../mock/LibMockERC4626.sol';
+import { SimpleERC4626Vault } from '../mock/SimpleERC4626Vault.sol';
+import { MockContract } from '../util/MockContract.sol';
+import { Toolkit } from '../util/Toolkit.sol';
 
 contract ReclaimQueueTestHelper is Test {
   using SafeCast for uint256;
@@ -252,6 +252,14 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     _compareQueueInfo(queue.queueInfo(vault2), makeQueueInfo(false, 0, 0, 0, 0));
     _compareQueueIndexInfo(queue.queueIndex(vault, user), makeQueueIndexInfo(0, 0));
     _compareQueueIndexInfo(queue.queueIndex(vault2, user), makeQueueIndexInfo(0, 0));
+  }
+
+  function test_disableQueue() public {
+    vm.prank(owner);
+    queue.disableQueue(vault);
+
+    assertFalse(queue.isEnabled(vault), 'vault1 disabled');
+    assertFalse(queue.isEnabled(vault2), 'vault2 disabled');
   }
 
   function test_request(uint256 amount) public {
