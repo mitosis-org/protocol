@@ -29,12 +29,7 @@ library HubImplT {
     address crosschainRegistry;
   }
 
-  struct EOL {
-    address vault;
-    address vaultFactory;
-  }
-
-  struct Matrix {
+  struct VLF {
     address vaultBasic;
     address vaultCapped;
     address vaultFactory;
@@ -66,8 +61,7 @@ library HubImplT {
     //
     ConsensusLayer consensusLayer;
     Core core;
-    EOL eol;
-    Matrix matrix;
+    VLF vlf;
     Governance governance;
     Reward reward;
     Validator validator;
@@ -114,13 +108,7 @@ library HubImplT {
     o = k.serialize('crosschainRegistry', v.crosschainRegistry);
   }
 
-  function encode(EOL memory v) internal returns (string memory o) {
-    string memory k = vm.randomBytes(32).toHexString();
-    o = k.serialize('vault', v.vault);
-    o = k.serialize('vaultFactory', v.vaultFactory);
-  }
-
-  function encode(Matrix memory v) internal returns (string memory o) {
+  function encode(VLF memory v) internal returns (string memory o) {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('vaultBasic', v.vaultBasic);
     o = k.serialize('vaultCapped', v.vaultCapped);
@@ -156,8 +144,7 @@ library HubImplT {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('consensusLayer', encode(v.consensusLayer));
     o = k.serialize('core', encode(v.core));
-    o = k.serialize('eol', encode(v.eol));
-    o = k.serialize('matrix', encode(v.matrix));
+    o = k.serialize('vlf', encode(v.vlf));
     o = k.serialize('governance', encode(v.governance));
     o = k.serialize('reward', encode(v.reward));
     o = k.serialize('validator', encode(v.validator));
@@ -179,12 +166,7 @@ library HubImplT {
     o.crosschainRegistry = v.readAddress(cat(base, '.crosschainRegistry'));
   }
 
-  function decodeEOL(string memory v, string memory base) internal pure returns (EOL memory o) {
-    o.vault = v.readAddress(cat(base, '.vault'));
-    o.vaultFactory = v.readAddress(cat(base, '.vaultFactory'));
-  }
-
-  function decodeMatrix(string memory v, string memory base) internal pure returns (Matrix memory o) {
+  function decodeVLF(string memory v, string memory base) internal pure returns (VLF memory o) {
     o.vaultBasic = v.readAddress(cat(base, '.vaultBasic'));
     o.vaultCapped = v.readAddress(cat(base, '.vaultCapped'));
     o.vaultFactory = v.readAddress(cat(base, '.vaultFactory'));
@@ -215,8 +197,7 @@ library HubImplT {
   function decode(string memory v) internal pure returns (Chain memory o) {
     o.consensusLayer = decodeConsensusLayer(v, '.consensusLayer');
     o.core = decodeCore(v, '.core');
-    o.eol = decodeEOL(v, '.eol');
-    o.matrix = decodeMatrix(v, '.matrix');
+    o.vlf = decodeVLF(v, '.vlf');
     o.governance = decodeGovernance(v, '.governance');
     o.reward = decodeReward(v, '.reward');
     o.validator = decodeValidator(v, '.validator');

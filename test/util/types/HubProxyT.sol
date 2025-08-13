@@ -14,13 +14,11 @@ import { AssetManagerEntrypoint } from '../../../src/hub/core/AssetManagerEntryp
 import { HubAsset } from '../../../src/hub/core/HubAsset.sol';
 import { HubAssetFactory } from '../../../src/hub/core/HubAssetFactory.sol';
 import { CrossChainRegistry } from '../../../src/hub/cross-chain/CrossChainRegistry.sol';
-import { EOLVaultFactory } from '../../../src/hub/eol/EOLVaultFactory.sol';
 import { BranchGovernanceEntrypoint } from '../../../src/hub/governance/BranchGovernanceEntrypoint.sol';
 import { MITOGovernance } from '../../../src/hub/governance/MITOGovernance.sol';
 import { MITOGovernanceVP } from '../../../src/hub/governance/MITOGovernanceVP.sol';
 import { GovMITO } from '../../../src/hub/GovMITO.sol';
 import { GovMITOEmission } from '../../../src/hub/GovMITOEmission.sol';
-import { MatrixVaultFactory } from '../../../src/hub/matrix/MatrixVaultFactory.sol';
 import { ReclaimQueue } from '../../../src/hub/ReclaimQueue.sol';
 import { MerkleRewardDistributor } from '../../../src/hub/reward/MerkleRewardDistributor.sol';
 import { Treasury } from '../../../src/hub/reward/Treasury.sol';
@@ -31,11 +29,11 @@ import { ValidatorRewardDistributor } from '../../../src/hub/validator/Validator
 import { ValidatorStaking } from '../../../src/hub/validator/ValidatorStaking.sol';
 import { ValidatorStakingGovMITO } from '../../../src/hub/validator/ValidatorStakingGovMITO.sol';
 import { ValidatorStakingHub } from '../../../src/hub/validator/ValidatorStakingHub.sol';
+import { VLFVaultFactory } from '../../../src/hub/vlf/VLFVaultFactory.sol';
 import { WMITO } from '../../../src/hub/WMITO.sol';
 import { IHubAsset } from '../../../src/interfaces/hub/core/IHubAsset.sol';
-import { IEOLVault } from '../../../src/interfaces/hub/eol/IEOLVault.sol';
-import { IMatrixVault } from '../../../src/interfaces/hub/matrix/IMatrixVault.sol';
 import { IValidatorStaking } from '../../../src/interfaces/hub/validator/IValidatorStaking.sol';
+import { IVLFVault } from '../../../src/interfaces/hub/vlf/IVLFVault.sol';
 import { Timelock } from '../../../src/lib/Timelock.sol';
 import '../Functions.sol';
 
@@ -53,20 +51,12 @@ library HubProxyT {
     IHubAsset asset;
   }
 
-  struct EOLVaultInfo {
+  struct VLFVaultInfo {
     string name;
     string symbol;
     uint8 decimals;
     IHubAsset asset;
-    IEOLVault vault;
-  }
-
-  struct MatrixVaultInfo {
-    string name;
-    string symbol;
-    uint8 decimals;
-    IHubAsset asset;
-    IMatrixVault vault;
+    IVLFVault vault;
   }
 
   struct ValidatorStakingInfo {
@@ -91,14 +81,9 @@ library HubProxyT {
     CrossChainRegistry crosschainRegistry;
   }
 
-  struct EOL {
-    EOLVaultInfo[] vaults;
-    EOLVaultFactory vaultFactory;
-  }
-
-  struct Matrix {
-    MatrixVaultInfo[] vaults;
-    MatrixVaultFactory vaultFactory;
+  struct vlf {
+    VLFVaultInfo[] vaults;
+    VLFVaultFactory vaultFactory;
   }
 
   struct Governance {
@@ -126,8 +111,7 @@ library HubProxyT {
     //
     ConsensusLayer consensusLayer;
     Core core;
-    EOL eol;
-    Matrix matrix;
+    vlf vlf;
     Governance governance;
     Reward reward;
     Validator validator;
@@ -170,14 +154,7 @@ library HubProxyT {
     }
   }
 
-  function extract(EOLVaultInfo[] memory v) private pure returns (address[] memory o) {
-    o = new address[](v.length);
-    for (uint256 i = 0; i < v.length; i++) {
-      o[i] = address(v[i].vault);
-    }
-  }
-
-  function extract(MatrixVaultInfo[] memory v) private pure returns (address[] memory o) {
+  function extract(VLFVaultInfo[] memory v) private pure returns (address[] memory o) {
     o = new address[](v.length);
     for (uint256 i = 0; i < v.length; i++) {
       o[i] = address(v[i].vault);
@@ -206,13 +183,7 @@ library HubProxyT {
     o = k.serialize('crosschainRegistry', address(v.crosschainRegistry));
   }
 
-  function encode(EOL memory v) internal returns (string memory o) {
-    string memory k = vm.randomBytes(32).toHexString();
-    o = k.serialize('vaults', extract(v.vaults));
-    o = k.serialize('vaultFactory', address(v.vaultFactory));
-  }
-
-  function encode(Matrix memory v) internal returns (string memory o) {
+  function encode(vlf memory v) internal returns (string memory o) {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('vaults', extract(v.vaults));
     o = k.serialize('vaultFactory', address(v.vaultFactory));
@@ -246,8 +217,7 @@ library HubProxyT {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('consensusLayer', encode(v.consensusLayer));
     o = k.serialize('core', encode(v.core));
-    o = k.serialize('eol', encode(v.eol));
-    o = k.serialize('matrix', encode(v.matrix));
+    o = k.serialize('vlf', encode(v.vlf));
     o = k.serialize('governance', encode(v.governance));
     o = k.serialize('reward', encode(v.reward));
     o = k.serialize('validator', encode(v.validator));
@@ -288,14 +258,14 @@ library HubProxyT {
     o.crosschainRegistry = CrossChainRegistry(_r(v, cat(base, '.crosschainRegistry')));
   }
 
-  function decodeEOLVaults(string memory v, string memory path) internal view returns (EOLVaultInfo[] memory o) {
+  function decodeVLFVaults(string memory v, string memory path) internal view returns (VLFVaultInfo[] memory o) {
     address payable[] memory vaults = _ra(v, path);
-    o = new EOLVaultInfo[](vaults.length);
+    o = new VLFVaultInfo[](vaults.length);
 
     for (uint256 i = 0; i < vaults.length; i++) {
-      IEOLVault vault = IEOLVault(vaults[i]);
+      IVLFVault vault = IVLFVault(vaults[i]);
 
-      o[i] = EOLVaultInfo({
+      o[i] = VLFVaultInfo({
         name: vault.name(),
         symbol: vault.symbol(),
         decimals: vault.decimals(),
@@ -305,31 +275,9 @@ library HubProxyT {
     }
   }
 
-  function decodeEOL(string memory v, string memory base) internal view returns (EOL memory o) {
-    o.vaults = decodeEOLVaults(v, cat(base, '.vaults'));
-    o.vaultFactory = EOLVaultFactory(_r(v, cat(base, '.vaultFactory')));
-  }
-
-  function decodeMatrixVaults(string memory v, string memory path) internal view returns (MatrixVaultInfo[] memory o) {
-    address payable[] memory vaults = _ra(v, path);
-    o = new MatrixVaultInfo[](vaults.length);
-
-    for (uint256 i = 0; i < vaults.length; i++) {
-      IMatrixVault vault = IMatrixVault(vaults[i]);
-
-      o[i] = MatrixVaultInfo({
-        name: vault.name(),
-        symbol: vault.symbol(),
-        decimals: vault.decimals(),
-        asset: IHubAsset(vault.asset()),
-        vault: vault
-      });
-    }
-  }
-
-  function decodeMatrix(string memory v, string memory base) internal view returns (Matrix memory o) {
-    o.vaults = decodeMatrixVaults(v, cat(base, '.vaults'));
-    o.vaultFactory = MatrixVaultFactory(_r(v, cat(base, '.vaultFactory')));
+  function decodevlf(string memory v, string memory base) internal view returns (vlf memory o) {
+    o.vaults = decodeVLFVaults(v, cat(base, '.vaults'));
+    o.vaultFactory = VLFVaultFactory(_r(v, cat(base, '.vaultFactory')));
   }
 
   function decodeGovernance(string memory v, string memory base) internal pure returns (Governance memory o) {
@@ -377,8 +325,7 @@ library HubProxyT {
   function decode(string memory v) internal view returns (Chain memory o) {
     o.consensusLayer = decodeConsensusLayer(v, '.consensusLayer');
     o.core = decodeCore(v, '.core');
-    o.eol = decodeEOL(v, '.eol');
-    o.matrix = decodeMatrix(v, '.matrix');
+    o.vlf = decodevlf(v, '.vlf');
     o.governance = decodeGovernance(v, '.governance');
     o.reward = decodeReward(v, '.reward');
     o.validator = decodeValidator(v, '.validator');

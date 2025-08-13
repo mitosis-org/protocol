@@ -13,25 +13,19 @@ contract MockMitosisVaultEntrypoint is IMitosisVaultEntrypoint {
 
   function quoteDeposit(address asset, address to, uint256 amount) external view returns (uint256) { }
 
-  function quoteDepositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount)
+  function quoteDepositWithSupplyVLF(address asset, address to, address hubVLFVault, uint256 amount)
     external
     view
     returns (uint256)
   { }
 
-  function quoteDepositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount)
-    external
-    view
-    returns (uint256)
-  { }
+  function quoteDeallocateVLF(address hubVLFVault, uint256 amount) external view returns (uint256) { }
 
-  function quoteDeallocateMatrix(address hubMatrixVault, uint256 amount) external view returns (uint256) { }
+  function quoteSettleVLFYield(address hubVLFVault, uint256 amount) external view returns (uint256) { }
 
-  function quoteSettleMatrixYield(address hubMatrixVault, uint256 amount) external view returns (uint256) { }
+  function quoteSettleVLFLoss(address hubVLFVault, uint256 amount) external view returns (uint256) { }
 
-  function quoteSettleMatrixLoss(address hubMatrixVault, uint256 amount) external view returns (uint256) { }
-
-  function quoteSettleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount)
+  function quoteSettleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount)
     external
     view
     returns (uint256)
@@ -39,15 +33,13 @@ contract MockMitosisVaultEntrypoint is IMitosisVaultEntrypoint {
 
   function deposit(address asset, address to, uint256 amount) external payable { }
 
-  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount) external payable { }
+  function depositWithSupplyVLF(address asset, address to, address hubVLFVault, uint256 amount) external payable { }
 
-  function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount) external payable { }
+  function deallocateVLF(address hubVLFVault, uint256 amount) external payable { }
 
-  function deallocateMatrix(address hubMatrixVault, uint256 amount) external payable { }
+  function settleVLFYield(address hubVLFVault, uint256 amount) external payable { }
 
-  function settleMatrixYield(address hubMatrixVault, uint256 amount) external payable { }
+  function settleVLFLoss(address hubVLFVault, uint256 amount) external payable { }
 
-  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external payable { }
-
-  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external payable { }
+  function settleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount) external payable { }
 }

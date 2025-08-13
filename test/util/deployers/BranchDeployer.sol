@@ -11,11 +11,11 @@ import { BaseDecoderAndSanitizer } from
 import { TheoDepositVaultDecoderAndSanitizer } from
   '../../../src/branch/strategy/manager/DecodersAndSanitizers/TheoDepositVaultDecoderAndSanitizer.sol';
 import { ManagerWithMerkleVerification } from '../../../src/branch/strategy/manager/ManagerWithMerkleVerification.sol';
-import { MatrixStrategyExecutor } from '../../../src/branch/strategy/MatrixStrategyExecutor.sol';
-import { MatrixStrategyExecutorFactory } from '../../../src/branch/strategy/MatrixStrategyExecutorFactory.sol';
 import { TheoTally } from '../../../src/branch/strategy/tally/TheoTally.sol';
+import { VLFStrategyExecutor } from '../../../src/branch/strategy/VLFStrategyExecutor.sol';
+import { VLFStrategyExecutorFactory } from '../../../src/branch/strategy/VLFStrategyExecutorFactory.sol';
 import { IMitosisVault } from '../../../src/interfaces/branch/IMitosisVault.sol';
-import { IMatrixStrategyExecutor } from '../../../src/interfaces/branch/strategy/IMatrixStrategyExecutor.sol';
+import { IVLFStrategyExecutor } from '../../../src/interfaces/branch/strategy/IVLFStrategyExecutor.sol';
 import { Timelock } from '../../../src/lib/Timelock.sol';
 import '../Functions.sol';
 import { BranchConfigs } from '../types/BranchConfigs.sol';
@@ -62,28 +62,28 @@ abstract contract BranchDeployer is AbstractDeployer {
     ) = _dpbGovernanceEntrypoint(owner, mailbox, proxy.governance.timelock, hubDomain, hubGovernanceEntrypointAddress);
 
     impl.strategy.executor = deploy(
-      _urlBI('.matrix.strategy-executor'), //
-      type(MatrixStrategyExecutor).creationCode
+      _urlBI('.vlf.strategy-executor'), //
+      type(VLFStrategyExecutor).creationCode
     );
     (
       impl.strategy.executorFactory, //
       proxy.strategy.executorFactory
-    ) = _dpbMatrixStrategyExecutorFactory(owner, impl.strategy.executor);
+    ) = _dpbVLFStrategyExecutorFactory(owner, impl.strategy.executor);
 
     (
       impl.strategy.manager.withMerkleVerification, //
       proxy.strategy.manager.withMerkleVerification
-    ) = _dpbMatrixStrategyManager(owner);
+    ) = _dpbVLFStrategyManager(owner);
 
     proxy.strategy.manager.das.base = BaseDecoderAndSanitizer(
       deploy(
-        _urlBP('.matrix.strategy.manager.das.base'), //
+        _urlBP('.vlf.strategy.manager.das.base'), //
         type(BaseDecoderAndSanitizer).creationCode
       )
     );
     proxy.strategy.manager.das.theoDepositVault = TheoDepositVaultDecoderAndSanitizer(
       deploy(
-        _urlBP('.matrix.strategy.manager.das.theoDepositVault'), //
+        _urlBP('.vlf.strategy.manager.das.theoDepositVault'), //
         type(TheoDepositVaultDecoderAndSanitizer).creationCode
       )
     );
@@ -151,23 +151,23 @@ abstract contract BranchDeployer is AbstractDeployer {
     return (impl, MitosisVaultEntrypoint(proxy));
   }
 
-  function _dpbMatrixStrategyExecutorFactory(address owner_, address matrixStrategyExecutor)
+  function _dpbVLFStrategyExecutorFactory(address owner_, address vlfStrategyExecutor)
     private
-    returns (address, MatrixStrategyExecutorFactory)
+    returns (address, VLFStrategyExecutorFactory)
   {
     (address impl, address payable proxy) = deployImplAndProxy(
       branchChainName,
-      '.matrix-strategy-executor-factory',
-      type(MatrixStrategyExecutorFactory).creationCode,
-      abi.encodeCall(MatrixStrategyExecutorFactory.initialize, (owner_, matrixStrategyExecutor))
+      '.vlf-strategy-executor-factory',
+      type(VLFStrategyExecutorFactory).creationCode,
+      abi.encodeCall(VLFStrategyExecutorFactory.initialize, (owner_, vlfStrategyExecutor))
     );
-    return (impl, MatrixStrategyExecutorFactory(proxy));
+    return (impl, VLFStrategyExecutorFactory(proxy));
   }
 
-  function _dpbMatrixStrategyManager(address owner_) private returns (address, ManagerWithMerkleVerification) {
+  function _dpbVLFStrategyManager(address owner_) private returns (address, ManagerWithMerkleVerification) {
     (address impl, address payable proxy) = deployImplAndProxy(
       branchChainName,
-      '.matrix-strategy-manager',
+      '.vlf-strategy-manager',
       type(ManagerWithMerkleVerification).creationCode,
       abi.encodeCall(ManagerWithMerkleVerification.initialize, (owner_))
     );

@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
 import { Math } from '@oz/utils/math/Math.sol';
-import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
+import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { AssetAction, IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
@@ -13,20 +13,21 @@ import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
 import { Versioned } from '../lib/Versioned.sol';
-import { MitosisVaultEOL } from './MitosisVaultEOL.sol';
-import { MitosisVaultMatrix } from './MitosisVaultMatrix.sol';
+import { MitosisVaultVLF } from './MitosisVaultVLF.sol';
 
 contract MitosisVault is
   IMitosisVault,
   Pausable,
-  Ownable2StepUpgradeable,
+  AccessControlEnumerableUpgradeable,
   UUPSUpgradeable,
-  MitosisVaultMatrix,
-  MitosisVaultEOL,
+  MitosisVaultVLF,
   Versioned
 {
   using SafeERC20 for IERC20;
   using ERC7201Utils for string;
+
+  /// @dev Role for managing caps
+  bytes32 public constant LIQUIDITY_MANAGER_ROLE = keccak256('LIQUIDITY_MANAGER_ROLE');
 
   struct AssetInfo {
     bool initialized;
@@ -67,9 +68,11 @@ contract MitosisVault is
 
   function initialize(address owner_) public initializer {
     __Pausable_init();
-    __Ownable2Step_init();
-    __Ownable_init(owner_);
+    __AccessControl_init();
+    __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
+
+    _grantRole(DEFAULT_ADMIN_ROLE, owner_);
   }
 
   //=========== NOTE: VIEW FUNCTIONS ===========//
@@ -90,7 +93,7 @@ contract MitosisVault is
     return _isAssetInitialized(_getStorageV1(), asset);
   }
 
-  function entrypoint() public view override(IMitosisVault, MitosisVaultMatrix, MitosisVaultEOL) returns (address) {
+  function entrypoint() public view override(IMitosisVault, MitosisVaultVLF) returns (address) {
     return address(_getStorageV1().entrypoint);
   }
 
@@ -135,31 +138,31 @@ contract MitosisVault is
     emit Withdrawn(asset, to, amount);
   }
 
-  //=========== NOTE: OWNABLE FUNCTIONS ===========//
+  //=========== NOTE: MUTATIVE - ROLE BASED FUNCTIONS ===========//
 
-  function _authorizeUpgrade(address) internal override onlyOwner { }
+  function _authorizeUpgrade(address) internal override onlyRole(DEFAULT_ADMIN_ROLE) { }
 
-  function _authorizePause(address) internal view override onlyOwner { }
+  function _authorizePause(address) internal view override onlyRole(DEFAULT_ADMIN_ROLE) { }
 
-  function setEntrypoint(address entrypoint_) external onlyOwner {
+  function setEntrypoint(address entrypoint_) external onlyRole(DEFAULT_ADMIN_ROLE) {
     _getStorageV1().entrypoint = IMitosisVaultEntrypoint(entrypoint_);
     emit EntrypointSet(address(entrypoint_));
   }
 
-  function setCap(address asset, uint256 newCap) external onlyOwner {
+  function setCap(address asset, uint256 newCap) external onlyRole(LIQUIDITY_MANAGER_ROLE) {
     StorageV1 storage $ = _getStorageV1();
     _assertAssetInitialized(asset);
 
     _setCap($, asset, newCap);
   }
 
-  function haltAsset(address asset, AssetAction action) external onlyOwner {
+  function haltAsset(address asset, AssetAction action) external onlyRole(DEFAULT_ADMIN_ROLE) {
     StorageV1 storage $ = _getStorageV1();
     _assertAssetInitialized(asset);
     return _haltAsset($, asset, action);
   }
 
-  function resumeAsset(address asset, AssetAction action) external onlyOwner {
+  function resumeAsset(address asset, AssetAction action) external onlyRole(DEFAULT_ADMIN_ROLE) {
     StorageV1 storage $ = _getStorageV1();
     _assertAssetInitialized(asset);
     return _resumeAsset($, asset, action);
@@ -176,7 +179,7 @@ contract MitosisVault is
     require(available >= amount, IMitosisVault__ExceededCap(asset, amount, available));
   }
 
-  function _assertAssetInitialized(address asset) internal view override(MitosisVaultMatrix, MitosisVaultEOL) {
+  function _assertAssetInitialized(address asset) internal view override {
     require(_isAssetInitialized(_getStorageV1(), asset), IMitosisVault__AssetNotInitialized(asset));
   }
 
@@ -218,7 +221,7 @@ contract MitosisVault is
     emit AssetResumed(asset, action);
   }
 
-  function _deposit(address asset, address to, uint256 amount) internal override(MitosisVaultMatrix, MitosisVaultEOL) {
+  function _deposit(address asset, address to, uint256 amount) internal override {
     StorageV1 storage $ = _getStorageV1();
     require(to != address(0), StdError.ZeroAddress('to'));
     require(amount != 0, StdError.ZeroAmount());

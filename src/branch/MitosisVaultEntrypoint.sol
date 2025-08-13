@@ -71,60 +71,46 @@ contract MitosisVaultEntrypoint is
     return _quoteToMitosis(enc, MsgType.MsgDeposit);
   }
 
-  function quoteDepositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount)
+  function quoteDepositWithSupplyVLF(address asset, address to, address hubVLFVault, uint256 amount)
     external
     view
     returns (uint256)
   {
-    bytes memory enc = MsgDepositWithSupplyMatrix({
+    bytes memory enc = MsgDepositWithSupplyVLF({
       asset: asset.toBytes32(),
       to: to.toBytes32(),
-      matrixVault: hubMatrixVault.toBytes32(),
+      vlfVault: hubVLFVault.toBytes32(),
       amount: amount
     }).encode();
-    return _quoteToMitosis(enc, MsgType.MsgDepositWithSupplyMatrix);
+    return _quoteToMitosis(enc, MsgType.MsgDepositWithSupplyVLF);
   }
 
-  function quoteDepositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount)
+  function quoteDeallocateVLF(address hubVLFVault, uint256 amount) external view returns (uint256) {
+    bytes memory enc = MsgDeallocateVLF({ vlfVault: hubVLFVault.toBytes32(), amount: amount }).encode();
+    return _quoteToMitosis(enc, MsgType.MsgDeallocateVLF);
+  }
+
+  function quoteSettleVLFYield(address hubVLFVault, uint256 amount) external view returns (uint256) {
+    bytes memory enc = MsgSettleVLFYield({ vlfVault: hubVLFVault.toBytes32(), amount: amount }).encode();
+    return _quoteToMitosis(enc, MsgType.MsgSettleVLFYield);
+  }
+
+  function quoteSettleVLFLoss(address hubVLFVault, uint256 amount) external view returns (uint256) {
+    bytes memory enc = MsgSettleVLFLoss({ vlfVault: hubVLFVault.toBytes32(), amount: amount }).encode();
+    return _quoteToMitosis(enc, MsgType.MsgSettleVLFLoss);
+  }
+
+  function quoteSettleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount)
     external
     view
     returns (uint256)
   {
-    bytes memory enc = MsgDepositWithSupplyEOL({
-      asset: asset.toBytes32(),
-      to: to.toBytes32(),
-      eolVault: hubEOLVault.toBytes32(),
-      amount: amount
-    }).encode();
-    return _quoteToMitosis(enc, MsgType.MsgDepositWithSupplyEOL);
-  }
-
-  function quoteDeallocateMatrix(address hubMatrixVault, uint256 amount) external view returns (uint256) {
-    bytes memory enc = MsgDeallocateMatrix({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
-    return _quoteToMitosis(enc, MsgType.MsgDeallocateMatrix);
-  }
-
-  function quoteSettleMatrixYield(address hubMatrixVault, uint256 amount) external view returns (uint256) {
-    bytes memory enc = MsgSettleMatrixYield({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
-    return _quoteToMitosis(enc, MsgType.MsgSettleMatrixYield);
-  }
-
-  function quoteSettleMatrixLoss(address hubMatrixVault, uint256 amount) external view returns (uint256) {
-    bytes memory enc = MsgSettleMatrixLoss({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
-    return _quoteToMitosis(enc, MsgType.MsgSettleMatrixLoss);
-  }
-
-  function quoteSettleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount)
-    external
-    view
-    returns (uint256)
-  {
-    bytes memory enc = MsgSettleMatrixExtraRewards({
-      matrixVault: hubMatrixVault.toBytes32(),
+    bytes memory enc = MsgSettleVLFExtraRewards({
+      vlfVault: hubVLFVault.toBytes32(),
       reward: reward.toBytes32(),
       amount: amount
     }).encode();
-    return _quoteToMitosis(enc, MsgType.MsgSettleMatrixExtraRewards);
+    return _quoteToMitosis(enc, MsgType.MsgSettleVLFExtraRewards);
   }
 
   function _quoteToMitosis(bytes memory enc, MsgType msgType) internal view returns (uint256) {
@@ -140,56 +126,42 @@ contract MitosisVaultEntrypoint is
     _dispatchToMitosis(enc, MsgType.MsgDeposit);
   }
 
-  function depositWithSupplyMatrix(address asset, address to, address hubMatrixVault, uint256 amount)
+  function depositWithSupplyVLF(address asset, address to, address hubVLFVault, uint256 amount)
     external
     payable
     onlyVault
   {
-    bytes memory enc = MsgDepositWithSupplyMatrix({
+    bytes memory enc = MsgDepositWithSupplyVLF({
       asset: asset.toBytes32(),
       to: to.toBytes32(),
-      matrixVault: hubMatrixVault.toBytes32(),
+      vlfVault: hubVLFVault.toBytes32(),
       amount: amount
     }).encode();
-    _dispatchToMitosis(enc, MsgType.MsgDepositWithSupplyMatrix);
+    _dispatchToMitosis(enc, MsgType.MsgDepositWithSupplyVLF);
   }
 
-  function depositWithSupplyEOL(address asset, address to, address hubEOLVault, uint256 amount)
-    external
-    payable
-    onlyVault
-  {
-    bytes memory enc = MsgDepositWithSupplyEOL({
-      asset: asset.toBytes32(),
-      to: to.toBytes32(),
-      eolVault: hubEOLVault.toBytes32(),
-      amount: amount
-    }).encode();
-    _dispatchToMitosis(enc, MsgType.MsgDepositWithSupplyEOL);
+  function deallocateVLF(address hubVLFVault, uint256 amount) external payable onlyVault {
+    bytes memory enc = MsgDeallocateVLF({ vlfVault: hubVLFVault.toBytes32(), amount: amount }).encode();
+    _dispatchToMitosis(enc, MsgType.MsgDeallocateVLF);
   }
 
-  function deallocateMatrix(address hubMatrixVault, uint256 amount) external payable onlyVault {
-    bytes memory enc = MsgDeallocateMatrix({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
-    _dispatchToMitosis(enc, MsgType.MsgDeallocateMatrix);
+  function settleVLFYield(address hubVLFVault, uint256 amount) external payable onlyVault {
+    bytes memory enc = MsgSettleVLFYield({ vlfVault: hubVLFVault.toBytes32(), amount: amount }).encode();
+    _dispatchToMitosis(enc, MsgType.MsgSettleVLFYield);
   }
 
-  function settleMatrixYield(address hubMatrixVault, uint256 amount) external payable onlyVault {
-    bytes memory enc = MsgSettleMatrixYield({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
-    _dispatchToMitosis(enc, MsgType.MsgSettleMatrixYield);
+  function settleVLFLoss(address hubVLFVault, uint256 amount) external payable onlyVault {
+    bytes memory enc = MsgSettleVLFLoss({ vlfVault: hubVLFVault.toBytes32(), amount: amount }).encode();
+    _dispatchToMitosis(enc, MsgType.MsgSettleVLFLoss);
   }
 
-  function settleMatrixLoss(address hubMatrixVault, uint256 amount) external payable onlyVault {
-    bytes memory enc = MsgSettleMatrixLoss({ matrixVault: hubMatrixVault.toBytes32(), amount: amount }).encode();
-    _dispatchToMitosis(enc, MsgType.MsgSettleMatrixLoss);
-  }
-
-  function settleMatrixExtraRewards(address hubMatrixVault, address reward, uint256 amount) external payable onlyVault {
-    bytes memory enc = MsgSettleMatrixExtraRewards({
-      matrixVault: hubMatrixVault.toBytes32(),
+  function settleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount) external payable onlyVault {
+    bytes memory enc = MsgSettleVLFExtraRewards({
+      vlfVault: hubVLFVault.toBytes32(),
       reward: reward.toBytes32(),
       amount: amount
     }).encode();
-    _dispatchToMitosis(enc, MsgType.MsgSettleMatrixExtraRewards);
+    _dispatchToMitosis(enc, MsgType.MsgSettleVLFExtraRewards);
   }
 
   function _dispatchToMitosis(bytes memory enc, MsgType msgType) internal {
@@ -215,19 +187,14 @@ contract MitosisVaultEntrypoint is
       _vault.withdraw(decoded.asset.toAddress(), decoded.to.toAddress(), decoded.amount);
     }
 
-    if (msgType == MsgType.MsgInitializeMatrix) {
-      MsgInitializeMatrix memory decoded = msg_.decodeInitializeMatrix();
-      _vault.initializeMatrix(decoded.matrixVault.toAddress(), decoded.asset.toAddress());
+    if (msgType == MsgType.MsgInitializeVLF) {
+      MsgInitializeVLF memory decoded = msg_.decodeInitializeVLF();
+      _vault.initializeVLF(decoded.vlfVault.toAddress(), decoded.asset.toAddress());
     }
 
-    if (msgType == MsgType.MsgAllocateMatrix) {
-      MsgAllocateMatrix memory decoded = msg_.decodeAllocateMatrix();
-      _vault.allocateMatrix(decoded.matrixVault.toAddress(), decoded.amount);
-    }
-
-    if (msgType == MsgType.MsgInitializeEOL) {
-      MsgInitializeEOL memory decoded = msg_.decodeInitializeEOL();
-      _vault.initializeEOL(decoded.eolVault.toAddress(), decoded.asset.toAddress());
+    if (msgType == MsgType.MsgAllocateVLF) {
+      MsgAllocateVLF memory decoded = msg_.decodeAllocateVLF();
+      _vault.allocateVLF(decoded.vlfVault.toAddress(), decoded.amount);
     }
   }
 
