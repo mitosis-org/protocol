@@ -17,7 +17,7 @@ jobs:
       contracts: ${{ steps.filter.outputs.contracts }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ secrets.GH_REPO_READER }}
           submodules: recursive
@@ -47,7 +47,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ⭐️
 
