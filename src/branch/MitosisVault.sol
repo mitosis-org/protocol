@@ -166,7 +166,7 @@ contract MitosisVault is
 
     $.assets[mappedAsset].availableCap += amount;
 
-    if (asset == NATIVE_TOKEN) {
+    if (isNative) {
       INativeWrappedToken native = INativeWrappedToken(_nativeWrappedToken);
 
       uint256 balance = native.balanceOf(address(this));
