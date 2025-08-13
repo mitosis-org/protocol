@@ -5,7 +5,6 @@ import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
 import { Address } from '@oz/utils/Address.sol';
 import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
-import { ReentrancyGuardUpgradeable } from '@ozu/utils/ReentrancyGuardUpgradeable.sol';
 
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IMitosisVaultVLF, VLFAction } from '../interfaces/branch/IMitosisVaultVLF.sol';
@@ -15,12 +14,7 @@ import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { Pausable } from '../lib/Pausable.sol';
 import { StdError } from '../lib/StdError.sol';
 
-abstract contract MitosisVaultVLF is
-  IMitosisVaultVLF,
-  Pausable,
-  AccessControlEnumerableUpgradeable,
-  ReentrancyGuardUpgradeable
-{
+abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEnumerableUpgradeable {
   using ERC7201Utils for string;
   using SafeERC20 for IERC20;
 
@@ -143,7 +137,7 @@ abstract contract MitosisVaultVLF is
     emit VLFAllocated(hubVLFVault, amount);
   }
 
-  function deallocateVLF(address hubVLFVault, uint256 amount) external payable whenNotPaused nonReentrant {
+  function deallocateVLF(address hubVLFVault, uint256 amount) external payable whenNotPaused {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
     _assertVLFInitialized($, hubVLFVault);
@@ -185,7 +179,7 @@ abstract contract MitosisVaultVLF is
     emit VLFReturned(hubVLFVault, amount);
   }
 
-  function settleVLFYield(address hubVLFVault, uint256 amount) external payable whenNotPaused nonReentrant {
+  function settleVLFYield(address hubVLFVault, uint256 amount) external payable whenNotPaused {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
     _assertVLFInitialized($, hubVLFVault);
@@ -196,7 +190,7 @@ abstract contract MitosisVaultVLF is
     emit VLFYieldSettled(hubVLFVault, amount);
   }
 
-  function settleVLFLoss(address hubVLFVault, uint256 amount) external payable whenNotPaused nonReentrant {
+  function settleVLFLoss(address hubVLFVault, uint256 amount) external payable whenNotPaused {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
     _assertVLFInitialized($, hubVLFVault);
@@ -207,12 +201,7 @@ abstract contract MitosisVaultVLF is
     emit VLFLossSettled(hubVLFVault, amount);
   }
 
-  function settleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount)
-    external
-    payable
-    whenNotPaused
-    nonReentrant
-  {
+  function settleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount) external payable whenNotPaused {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
     _assertVLFInitialized($, hubVLFVault);

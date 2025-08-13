@@ -7,7 +7,6 @@ import { Address } from '@oz/utils/Address.sol';
 import { Math } from '@oz/utils/math/Math.sol';
 import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
-import { ReentrancyGuardUpgradeable } from '@ozu/utils/ReentrancyGuardUpgradeable.sol';
 
 import { AssetAction, IMitosisVault } from '../interfaces/branch/IMitosisVault.sol';
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
@@ -21,7 +20,6 @@ contract MitosisVault is
   IMitosisVault,
   Pausable,
   AccessControlEnumerableUpgradeable,
-  ReentrancyGuardUpgradeable,
   UUPSUpgradeable,
   MitosisVaultVLF,
   Versioned
@@ -74,7 +72,6 @@ contract MitosisVault is
     __AccessControl_init();
     __AccessControlEnumerable_init();
     __UUPSUpgradeable_init();
-    __ReentrancyGuard_init();
 
     _grantRole(DEFAULT_ADMIN_ROLE, owner_);
   }
@@ -128,7 +125,7 @@ contract MitosisVault is
     emit Deposited(asset, to, amount);
   }
 
-  function withdraw(address asset, address to, uint256 amount) external nonReentrant whenNotPaused {
+  function withdraw(address asset, address to, uint256 amount) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
