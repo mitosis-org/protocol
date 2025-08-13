@@ -94,8 +94,6 @@ abstract contract MitosisVaultVLF is
 
   //=========== NOTE: Asset ===========//
 
-  function nativeWrappedToken() public view virtual returns (address);
-
   function _entrypoint() internal view virtual returns (IMitosisVaultEntrypoint);
 
   function _deposit(address asset, address to, uint256 amount) internal virtual;
@@ -108,7 +106,6 @@ abstract contract MitosisVaultVLF is
     whenNotPaused
   {
     _deposit(asset, to, amount);
-    IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
 
     VLFStorageV1 storage $ = _getVLFStorageV1();
     _assertVLFInitialized($, hubVLFVault);

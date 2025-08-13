@@ -133,7 +133,6 @@ contract MitosisVault is
 
   function deposit(address asset, address to, uint256 amount) external payable whenNotPaused {
     _deposit(asset, to, amount);
-    IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
 
     _entrypoint().deposit{ value: msg.value }(asset, to, amount, _msgSender());
 
@@ -250,5 +249,6 @@ contract MitosisVault is
     _assertCapNotExceeded($, asset, amount);
 
     $.assets[asset].availableCap -= amount;
+    IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
   }
 }
