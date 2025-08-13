@@ -82,11 +82,11 @@ interface IReclaimQueue {
   function queueIndexItem(address vault, address recipient, uint32 index) external view returns (Request memory);
   function queueSyncLog(address vault, uint256 index) external view returns (SyncLog memory);
 
-  function previewClaim(address receiver, address vault) external view returns (uint256, uint256);
+  function previewClaim(address receiver, address vault) external view returns (ClaimResult memory);
   function previewSync(address vault, uint256 requestCount) external view returns (uint256, uint256);
 
   function request(uint256 shares, address receiver, address vault) external returns (uint256);
-  function claim(address receiver, address vault) external returns (uint256, uint256);
+  function claim(address receiver, address vault) external returns (ClaimResult memory);
   function sync(address executor, address vault, uint256 requestCount) external returns (uint256, uint256);
 
   function enableQueue(address vault) external;

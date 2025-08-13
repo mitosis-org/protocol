@@ -533,9 +533,9 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
 
     // check preview result
     {
-      (uint256 totalSharesClaimed, uint256 totalAssetsClaimed) = queue.previewClaim(user, vault);
-      assertEq(totalSharesClaimed, expectedClaimedShares, 'totalSharesClaimed');
-      assertEq(totalAssetsClaimed, expectedClaimedAssets, 'totalAssetsClaimed');
+      IReclaimQueue.ClaimResult memory claimResult = queue.previewClaim(user, vault);
+      assertEq(claimResult.totalSharesClaimed, expectedClaimedShares, 'totalSharesClaimed');
+      assertEq(claimResult.totalAssetsClaimed, expectedClaimedAssets, 'totalAssetsClaimed');
     }
 
     // check actual result
@@ -551,9 +551,9 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       vm.expectEmit();
       emit IReclaimQueue.ClaimSucceeded(user, vault, makeClaimResult(0, 3, 300 ether, 180 ether - 2));
 
-      (uint256 totalSharesClaimed, uint256 totalAssetsClaimed) = queue.claim(user, vault);
-      assertEq(totalSharesClaimed, expectedClaimedShares, 'totalSharesClaimed');
-      assertEq(totalAssetsClaimed, expectedClaimedAssets, 'totalAssetsClaimed');
+      IReclaimQueue.ClaimResult memory claimResult = queue.claim(user, vault);
+      assertEq(claimResult.totalSharesClaimed, expectedClaimedShares, 'totalSharesClaimed');
+      assertEq(claimResult.totalAssetsClaimed, expectedClaimedAssets, 'totalAssetsClaimed');
     }
 
     asset.assertERC20Transfer(user, expectedClaimedAssets);
