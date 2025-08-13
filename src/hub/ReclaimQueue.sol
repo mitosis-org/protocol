@@ -142,7 +142,26 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     return q$.logs[index];
   }
 
-  function previewClaim(address receiver, address vault) external view returns (uint256, uint256) {
+  function pendingRequests(address vault, address recipient, uint256 offset, uint256 limit)
+    external
+    view
+    returns (Request[] memory requests)
+  {
+    StorageV1 storage $ = _getStorageV1();
+    QueueState storage q$ = $.queues[vault];
+    LibQueue.UintOffsetQueue storage index = q$.indexes[recipient];
+
+    uint32 reqIdFrom = index.offset() + offset.toUint32();
+    uint32 reqIdTo = Math.min(reqIdFrom + limit.toUint32(), index.size()).toUint32();
+    if (reqIdFrom >= reqIdTo) return new Request[](0);
+
+    requests = new Request[](reqIdTo - reqIdFrom);
+    for (uint32 i = reqIdFrom; i < reqIdTo;) {
+      requests[i - reqIdFrom] = q$.items[index.itemAt(i)];
+    }
+  }
+
+  function previewClaim(address receiver, address vault) external view returns (ClaimResult memory) {
     StorageV1 storage $ = _getStorageV1();
     LibQueue.UintOffsetQueue storage index = $.queues[vault].indexes[receiver];
 
@@ -161,7 +180,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
       $.vaults[vault].decimalsOffset
     );
 
-    return (res.totalSharesClaimed, res.totalAssetsClaimed);
+    return res;
   }
 
   function previewSync(address vault, uint256 requestCount) external view returns (uint256, uint256) {
@@ -200,7 +219,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     return reqId;
   }
 
-  function claim(address receiver, address vault) external nonReentrant whenNotPaused returns (uint256, uint256) {
+  function claim(address receiver, address vault) external nonReentrant whenNotPaused returns (ClaimResult memory) {
     StorageV1 storage $ = _getStorageV1();
     {
       QueueState storage q$ = $.queues[vault];
@@ -222,7 +241,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     // send total claim amount to receiver
     IERC20Metadata(IERC4626(vault).asset()).safeTransfer(receiver, res.totalAssetsClaimed);
 
-    return (res.totalSharesClaimed, res.totalAssetsClaimed);
+    return res;
   }
 
   function sync(address executor, address vault, uint256 requestCount)
