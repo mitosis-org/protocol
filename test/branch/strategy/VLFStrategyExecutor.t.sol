@@ -3,8 +3,6 @@ pragma solidity ^0.8.27;
 
 import { console } from '@std/console.sol';
 
-import { WETH } from '@solady/tokens/WETH.sol';
-
 import { IERC20 } from '@oz/interfaces/IERC20.sol';
 import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 import { Strings } from '@oz/utils/Strings.sol';
@@ -24,8 +22,6 @@ import { MockTestVaultTally } from '../../mock/MockTestVaultTally.t.sol';
 import { Toolkit } from '../../util/Toolkit.sol';
 
 contract VLFStrategyExecutorTest is Toolkit {
-  WETH internal _weth;
-
   MitosisVault internal _mitosisVault;
   VLFStrategyExecutor internal _vlfStrategyExecutor;
   MockManagerWithMerkleVerification internal _managerWithMerkleVerification;
@@ -40,12 +36,8 @@ contract VLFStrategyExecutorTest is Toolkit {
   address immutable hubVLFVault = makeAddr('hubVLFVault');
 
   function setUp() public {
-    _weth = new WETH();
-
     _mitosisVault = MitosisVault(
-      payable(
-        new ERC1967Proxy(address(new MitosisVault(address(_weth))), abi.encodeCall(MitosisVault.initialize, (owner)))
-      )
+      payable(new ERC1967Proxy(address(new MitosisVault()), abi.encodeCall(MitosisVault.initialize, (owner))))
     );
 
     _mitosisVaultEntrypoint = new MockMitosisVaultEntrypoint();

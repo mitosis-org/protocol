@@ -3,8 +3,6 @@ pragma solidity ^0.8.28;
 
 import { console } from '@std/console.sol';
 
-import { WETH } from '@solady/tokens/WETH.sol';
-
 import { IERC20 } from '@oz/interfaces/IERC20.sol';
 import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 
@@ -25,8 +23,6 @@ contract NonReceiveable {
 }
 
 contract MitosisVaultTest is Toolkit {
-  WETH internal _weth;
-
   MitosisVault internal _mitosisVault;
   MockMitosisVaultEntrypoint internal _mitosisVaultEntrypoint;
   MockERC20Snapshots internal _token;
@@ -38,12 +34,10 @@ contract MitosisVaultTest is Toolkit {
   address immutable hubVLFVault = makeAddr('hubVLFVault');
 
   function setUp() public {
-    _weth = new WETH();
-
     _mitosisVault = MitosisVault(
       payable(
         new ERC1967Proxy(
-          address(new MitosisVault(address(_weth))), //
+          address(new MitosisVault()), //
           abi.encodeCall(MitosisVault.initialize, (owner))
         )
       )

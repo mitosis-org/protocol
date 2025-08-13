@@ -40,9 +40,7 @@ contract MitosisVaultDepositProxyTest is Toolkit {
     _weth = new WETH();
 
     _mitosisVault = MitosisVault(
-      payable(
-        new ERC1967Proxy(address(new MitosisVault(address(_weth))), abi.encodeCall(MitosisVault.initialize, (owner)))
-      )
+      payable(new ERC1967Proxy(address(new MitosisVault()), abi.encodeCall(MitosisVault.initialize, (owner))))
     );
 
     _depositProxy = new MitosisVaultDepositProxy(address(_weth));
@@ -310,9 +308,7 @@ contract MitosisVaultDepositProxyTest is Toolkit {
   function test_depositNative_AssetNotInitialized() public {
     // Deploy a new vault without WETH initialized
     MitosisVault newVault = MitosisVault(
-      payable(
-        new ERC1967Proxy(address(new MitosisVault(address(_weth))), abi.encodeCall(MitosisVault.initialize, (owner)))
-      )
+      payable(new ERC1967Proxy(address(new MitosisVault()), abi.encodeCall(MitosisVault.initialize, (owner))))
     );
 
     vm.prank(owner);
