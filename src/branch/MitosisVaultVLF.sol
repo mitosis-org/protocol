@@ -94,25 +94,55 @@ abstract contract MitosisVaultVLF is
 
   //=========== NOTE: Asset ===========//
 
+  function nativeWrappedToken() public view virtual returns (address);
+
   function _entrypoint() internal view virtual returns (IMitosisVaultEntrypoint);
 
-  function _deposit(address asset, address to, uint256 amount) internal virtual returns (uint256 gasPaid);
+  function _deposit(address asset, address to, uint256 amount) internal virtual;
 
   function _assertAssetInitialized(address asset) internal view virtual;
 
-  /// @dev _msgSender() must be able to receive native token, or provided msg.value must be the same as the gas needed
   function depositWithSupplyVLF(address asset, address to, address hubVLFVault, uint256 amount)
     external
     payable
     whenNotPaused
   {
-    uint256 gasPaid = _deposit(asset, to, amount);
+    _deposit(asset, to, amount);
+    IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
 
+    _depositWithSupplyVLF(asset, to, hubVLFVault, amount, msg.value, _msgSender());
+  }
+
+  function depositNativeWithSupplyVLF(address to, address hubVLFVault, uint256 amount)
+    external
+    payable
+    whenNotPaused
+    nonReentrant
+  {
+    require(msg.value >= amount, StdError.InvalidParameter('msg.value'));
+
+    address asset = nativeWrappedToken();
+    _deposit(asset, to, amount);
+    // not to execute asset.safeTransferFrom here because it's already received native token.
+    // instead of it, we're wrapping the received token
+    INativeWrappedToken(asset).deposit{ value: amount }();
+
+    _depositWithSupplyVLF(asset, to, hubVLFVault, amount, msg.value - amount, _msgSender());
+  }
+
+  function _depositWithSupplyVLF(
+    address asset,
+    address to,
+    address hubVLFVault,
+    uint256 amount,
+    uint256 gasPaid,
+    address refundTo
+  ) internal {
     VLFStorageV1 storage $ = _getVLFStorageV1();
     _assertVLFInitialized($, hubVLFVault);
     require(asset == $.vlfs[hubVLFVault].asset, IMitosisVaultVLF__InvalidVLF(hubVLFVault, asset));
 
-    _entrypoint().depositWithSupplyVLF{ value: gasPaid }(asset, to, hubVLFVault, amount, _msgSender());
+    _entrypoint().depositWithSupplyVLF{ value: gasPaid }(asset, to, hubVLFVault, amount, refundTo);
 
     emit VLFDepositedWithSupply(asset, to, hubVLFVault, amount);
   }
@@ -144,7 +174,6 @@ abstract contract MitosisVaultVLF is
     emit VLFAllocated(hubVLFVault, amount);
   }
 
-  /// @dev _msgSender() must be able to receive native token, or provided msg.value must be the same as the gas needed
   function deallocateVLF(address hubVLFVault, uint256 amount) external payable whenNotPaused nonReentrant {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
@@ -187,7 +216,6 @@ abstract contract MitosisVaultVLF is
     emit VLFReturned(hubVLFVault, amount);
   }
 
-  /// @dev _msgSender() must be able to receive native token, or provided msg.value must be the same as the gas needed
   function settleVLFYield(address hubVLFVault, uint256 amount) external payable whenNotPaused nonReentrant {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
@@ -199,7 +227,6 @@ abstract contract MitosisVaultVLF is
     emit VLFYieldSettled(hubVLFVault, amount);
   }
 
-  /// @dev _msgSender() must be able to receive native token, or provided msg.value must be the same as the gas needed
   function settleVLFLoss(address hubVLFVault, uint256 amount) external payable whenNotPaused nonReentrant {
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
@@ -211,7 +238,6 @@ abstract contract MitosisVaultVLF is
     emit VLFLossSettled(hubVLFVault, amount);
   }
 
-  /// @dev _msgSender() must be able to receive native token, or provided msg.value must be the same as the gas needed
   function settleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount)
     external
     payable

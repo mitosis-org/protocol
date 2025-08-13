@@ -49,7 +49,8 @@ contract MitosisVault is
   string private constant _NAMESPACE = 'mitosis.storage.MitosisVaultStorage.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
-  address private immutable _nativeWrappedToken;
+  address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+  address internal immutable _nativeWrappedToken;
 
   function _getStorageV1() internal view returns (StorageV1 storage $) {
     bytes32 slot = _slot;
@@ -103,7 +104,7 @@ contract MitosisVault is
     return _isAssetInitialized(_getStorageV1(), asset);
   }
 
-  function nativeWrappedToken() external view override returns (address) {
+  function nativeWrappedToken() public view override(IMitosisVault, MitosisVaultVLF) returns (address) {
     return _nativeWrappedToken;
   }
 
@@ -131,8 +132,24 @@ contract MitosisVault is
   }
 
   function deposit(address asset, address to, uint256 amount) external payable whenNotPaused {
-    uint256 gasPaid = _deposit(asset, to, amount);
-    _entrypoint().deposit{ value: gasPaid }(asset, to, amount, _msgSender());
+    _deposit(asset, to, amount);
+    IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
+
+    _entrypoint().deposit{ value: msg.value }(asset, to, amount, _msgSender());
+
+    emit Deposited(asset, to, amount);
+  }
+
+  function depositNative(address to, uint256 amount) external payable whenNotPaused nonReentrant {
+    require(msg.value >= amount, StdError.InvalidParameter('msg.value'));
+
+    address asset = _nativeWrappedToken;
+    _deposit(asset, to, amount);
+    // not to execute asset.safeTransferFrom here because it's already received native token.
+    // instead of it, we're wrapping the received token
+    INativeWrappedToken(asset).deposit{ value: amount }();
+
+    _entrypoint().deposit{ value: msg.value - amount }(asset, to, amount, _msgSender());
 
     emit Deposited(asset, to, amount);
   }
@@ -140,12 +157,16 @@ contract MitosisVault is
   function withdraw(address asset, address to, uint256 amount) external nonReentrant whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
+    bool isNative = asset == NATIVE_TOKEN;
+    address mappedAsset = isNative ? _nativeWrappedToken : asset;
+
     _assertOnlyEntrypoint($);
-    _assertAssetInitialized(asset);
+    // convert NATIVE_TOKEN to _nativeWrappedToken for _assertAssetInitialized
+    _assertAssetInitialized(mappedAsset);
 
-    $.assets[asset].availableCap += amount;
+    $.assets[mappedAsset].availableCap += amount;
 
-    if (asset == _nativeWrappedToken) {
+    if (asset == NATIVE_TOKEN) {
       INativeWrappedToken native = INativeWrappedToken(_nativeWrappedToken);
 
       uint256 balance = native.balanceOf(address(this));
@@ -168,7 +189,7 @@ contract MitosisVault is
       IERC20(asset).safeTransfer(to, amount);
     }
 
-    emit Withdrawn(asset, to, amount);
+    emit Withdrawn(mappedAsset, to, amount);
   }
 
   //=========== NOTE: MUTATIVE - ROLE BASED FUNCTIONS ===========//
@@ -258,7 +279,7 @@ contract MitosisVault is
     emit AssetResumed(asset, action);
   }
 
-  function _deposit(address asset, address to, uint256 amount) internal override nonReentrant returns (uint256 gasPaid) {
+  function _deposit(address asset, address to, uint256 amount) internal override {
     StorageV1 storage $ = _getStorageV1();
     require(to != address(0), StdError.ZeroAddress('to'));
     require(amount != 0, StdError.ZeroAmount());
@@ -268,15 +289,5 @@ contract MitosisVault is
     _assertCapNotExceeded($, asset, amount);
 
     $.assets[asset].availableCap -= amount;
-
-    gasPaid = msg.value;
-
-    if (asset == _nativeWrappedToken) {
-      require(msg.value >= amount, StdError.InvalidParameter('msg.value'));
-      INativeWrappedToken(asset).deposit{ value: amount }();
-      gasPaid -= amount;
-    } else {
-      IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
-    }
   }
 }

@@ -147,7 +147,7 @@ contract MitosisVaultTest is Toolkit {
 
     vm.deal(user1, amount + 100 ether);
     vm.prank(user1);
-    _mitosisVault.deposit{ value: amount + 10 ether }(address(_weth), user1, amount);
+    _mitosisVault.depositNative{ value: amount + 10 ether }(user1, amount);
 
     assertEq(user1.balance, 99 ether); // returned 9 ether
     assertEq(_weth.balanceOf(address(_mitosisVault)), amount);
@@ -247,7 +247,7 @@ contract MitosisVaultTest is Toolkit {
 
     vm.prank(user1);
     vm.expectRevert(abi.encodeWithSelector(StdError.InvalidParameter.selector, 'msg.value'));
-    _mitosisVault.deposit{ value: amount - 1 }(address(_weth), user1, amount);
+    _mitosisVault.depositNative{ value: amount - 1 }(user1, amount);
   }
 
   function test_depositWithSupplyVLF(uint256 amount) public {
@@ -305,7 +305,7 @@ contract MitosisVaultTest is Toolkit {
 
     vm.deal(user1, amount + 100 ether);
     vm.prank(user1);
-    _mitosisVault.depositWithSupplyVLF{ value: amount + 10 ether }(address(_weth), user1, hubVLFVault, amount);
+    _mitosisVault.depositNativeWithSupplyVLF{ value: amount + 10 ether }(user1, hubVLFVault, amount);
 
     assertEq(user1.balance, 99 ether); // returned 9 ether
     assertEq(_weth.balanceOf(address(_mitosisVault)), amount);
@@ -446,7 +446,7 @@ contract MitosisVaultTest is Toolkit {
 
     vm.prank(user1);
     vm.expectRevert(abi.encodeWithSelector(StdError.InvalidParameter.selector, 'msg.value'));
-    _mitosisVault.depositWithSupplyVLF{ value: amount - 1 }(address(_weth), user1, hubVLFVault, amount);
+    _mitosisVault.depositNativeWithSupplyVLF{ value: amount - 1 }(user1, hubVLFVault, amount);
   }
 
   function test_withdraw(uint256 amount) public {
@@ -466,8 +466,9 @@ contract MitosisVaultTest is Toolkit {
     test_deposit_native(amount); // (owner) - - - deposit 100 ETH - - -> (_mitosisVault)
     assertEq(_weth.balanceOf(address(_mitosisVault)), amount);
 
-    vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.withdraw(address(_weth), address(1), amount);
+    vm.startPrank(address(_mitosisVaultEntrypoint));
+    _mitosisVault.withdraw(_mitosisVault.NATIVE_TOKEN(), address(1), amount);
+    vm.stopPrank();
 
     assertEq(address(1).balance, amount);
     assertEq(address(_mitosisVault).balance, 0);
