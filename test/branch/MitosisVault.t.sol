@@ -127,34 +127,6 @@ contract MitosisVaultTest is Toolkit {
     assertEq(_mitosisVault.availableCap(address(_token)), type(uint64).max - amount);
   }
 
-  function test_deposit_native(uint256 amount) public {
-    vm.assume(0 < amount && amount <= type(uint64).max);
-
-    address user1 = makeAddr('user1');
-
-    vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.initializeAsset(address(_weth));
-
-    vm.prank(liquidityManager);
-    _mitosisVault.setCap(address(_weth), type(uint64).max);
-
-    vm.prank(owner);
-    _mitosisVault.resumeAsset(address(_weth), AssetAction.Deposit);
-
-    // set quote deposit gas to 1 ether
-    _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.deposit.selector, 1 ether);
-    _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.quoteDeposit.selector, 1 ether);
-
-    vm.deal(user1, amount + 100 ether);
-    vm.prank(user1);
-    _mitosisVault.depositNative{ value: amount + 10 ether }(user1, amount);
-
-    assertEq(user1.balance, 99 ether); // returned 9 ether
-    assertEq(_weth.balanceOf(address(_mitosisVault)), amount);
-    assertEq(_mitosisVault.maxCap(address(_weth)), type(uint64).max);
-    assertEq(_mitosisVault.availableCap(address(_weth)), type(uint64).max - amount);
-  }
-
   function test_deposit_AssetNotInitialized() public {
     address user1 = makeAddr('user1');
     _token.mint(user1, 100 ether);
@@ -226,30 +198,6 @@ contract MitosisVaultTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_deposit_InvalidMsgValue(uint256 amount) public {
-    vm.assume(0 < amount && amount <= type(uint64).max);
-
-    address user1 = makeAddr('user1');
-
-    vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.initializeAsset(address(_weth));
-
-    vm.prank(liquidityManager);
-    _mitosisVault.setCap(address(_weth), type(uint64).max);
-
-    vm.prank(owner);
-    _mitosisVault.resumeAsset(address(_weth), AssetAction.Deposit);
-
-    // set quote deposit gas to 1 ether
-    _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.quoteDeposit.selector, 1 ether);
-
-    vm.deal(user1, amount + 100 ether);
-
-    vm.prank(user1);
-    vm.expectRevert(abi.encodeWithSelector(StdError.InvalidParameter.selector, 'msg.value'));
-    _mitosisVault.depositNative{ value: amount - 1 }(user1, amount);
-  }
-
   function test_depositWithSupplyVLF(uint256 amount) public {
     vm.assume(0 < amount && amount <= type(uint64).max);
 
@@ -280,37 +228,6 @@ contract MitosisVaultTest is Toolkit {
     assertEq(_token.balanceOf(address(_mitosisVault)), amount);
     assertEq(_mitosisVault.maxCap(address(_token)), type(uint64).max);
     assertEq(_mitosisVault.availableCap(address(_token)), type(uint64).max - amount);
-  }
-
-  function test_depositWithSupplyVLF_native(uint256 amount) public {
-    vm.assume(0 < amount && amount <= type(uint64).max);
-
-    address user1 = makeAddr('user1');
-
-    vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.initializeAsset(address(_weth));
-
-    vm.prank(liquidityManager);
-    _mitosisVault.setCap(address(_weth), type(uint64).max);
-
-    vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.initializeVLF(hubVLFVault, address(_weth));
-
-    vm.prank(owner);
-    _mitosisVault.resumeAsset(address(_weth), AssetAction.Deposit);
-
-    // set quote deposit with supply vlf gas to 1 ether
-    _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.depositWithSupplyVLF.selector, 1 ether);
-    _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.quoteDepositWithSupplyVLF.selector, 1 ether);
-
-    vm.deal(user1, amount + 100 ether);
-    vm.prank(user1);
-    _mitosisVault.depositNativeWithSupplyVLF{ value: amount + 10 ether }(user1, hubVLFVault, amount);
-
-    assertEq(user1.balance, 99 ether); // returned 9 ether
-    assertEq(_weth.balanceOf(address(_mitosisVault)), amount);
-    assertEq(_mitosisVault.maxCap(address(_weth)), type(uint64).max);
-    assertEq(_mitosisVault.availableCap(address(_weth)), type(uint64).max - amount);
   }
 
   function test_depositWithSupplyVLF_AssetNotInitialized() public {
@@ -421,34 +338,6 @@ contract MitosisVaultTest is Toolkit {
     vm.stopPrank();
   }
 
-  function test_depositWithSupplyVLF_InvalidMsgValue(uint256 amount) public {
-    vm.assume(0 < amount && amount <= type(uint64).max);
-
-    address user1 = makeAddr('user1');
-
-    vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.initializeAsset(address(_weth));
-
-    vm.prank(liquidityManager);
-    _mitosisVault.setCap(address(_weth), type(uint64).max);
-
-    vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.initializeVLF(hubVLFVault, address(_weth));
-
-    vm.prank(owner);
-    _mitosisVault.resumeAsset(address(_weth), AssetAction.Deposit);
-
-    // set quote deposit with supply vlf gas to 1 ether
-    _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.depositWithSupplyVLF.selector, 1 ether);
-    _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.quoteDepositWithSupplyVLF.selector, 1 ether);
-
-    vm.deal(user1, amount + 100 ether);
-
-    vm.prank(user1);
-    vm.expectRevert(abi.encodeWithSelector(StdError.InvalidParameter.selector, 'msg.value'));
-    _mitosisVault.depositNativeWithSupplyVLF{ value: amount - 1 }(user1, hubVLFVault, amount);
-  }
-
   function test_withdraw(uint256 amount) public {
     test_deposit(amount); // (owner) - - - deposit 100 ETH - - -> (_mitosisVault)
     assertEq(_token.balanceOf(address(_mitosisVault)), amount);
@@ -460,37 +349,6 @@ contract MitosisVaultTest is Toolkit {
     assertEq(_token.balanceOf(address(_mitosisVault)), 0);
     assertEq(_mitosisVault.maxCap(address(_token)), type(uint64).max);
     assertEq(_mitosisVault.availableCap(address(_token)), type(uint64).max);
-  }
-
-  function test_withdraw_native(uint256 amount) public {
-    test_deposit_native(amount); // (owner) - - - deposit 100 ETH - - -> (_mitosisVault)
-    assertEq(_weth.balanceOf(address(_mitosisVault)), amount);
-
-    vm.startPrank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.withdraw(_mitosisVault.NATIVE_TOKEN(), address(1), amount);
-    vm.stopPrank();
-
-    assertEq(address(1).balance, amount);
-    assertEq(address(_mitosisVault).balance, 0);
-    assertEq(_weth.balanceOf(address(_mitosisVault)), 0);
-    assertEq(_mitosisVault.maxCap(address(_weth)), type(uint64).max);
-    assertEq(_mitosisVault.availableCap(address(_weth)), type(uint64).max);
-  }
-
-  function test_withdraw_native_fallbackTransfer(uint256 amount) public {
-    test_deposit_native(amount); // (owner) - - - deposit 100 ETH - - -> (_mitosisVault)
-    assertEq(_weth.balanceOf(address(_mitosisVault)), amount);
-
-    address receiver = address(new NonReceiveable());
-
-    vm.prank(address(_mitosisVaultEntrypoint));
-    _mitosisVault.withdraw(address(_weth), receiver, amount);
-
-    assertEq(receiver.balance, 0);
-    assertEq(_weth.balanceOf(receiver), amount);
-    assertEq(_weth.balanceOf(address(_mitosisVault)), 0);
-    assertEq(_mitosisVault.maxCap(address(_weth)), type(uint64).max);
-    assertEq(_mitosisVault.availableCap(address(_weth)), type(uint64).max);
   }
 
   function test_withdraw_Unauthorized(uint256 amount) public {

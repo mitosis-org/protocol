@@ -140,56 +140,17 @@ contract MitosisVault is
     emit Deposited(asset, to, amount);
   }
 
-  function depositNative(address to, uint256 amount) external payable whenNotPaused nonReentrant {
-    require(msg.value >= amount, StdError.InvalidParameter('msg.value'));
-
-    address asset = _nativeWrappedToken;
-    _deposit(asset, to, amount);
-    // not to execute asset.safeTransferFrom here because it's already received native token.
-    // instead of it, we're wrapping the received token
-    INativeWrappedToken(asset).deposit{ value: amount }();
-
-    _entrypoint().deposit{ value: msg.value - amount }(asset, to, amount, _msgSender());
-
-    emit Deposited(asset, to, amount);
-  }
-
   function withdraw(address asset, address to, uint256 amount) external nonReentrant whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
-    bool isNative = asset == NATIVE_TOKEN;
-    address mappedAsset = isNative ? _nativeWrappedToken : asset;
-
     _assertOnlyEntrypoint($);
-    // convert NATIVE_TOKEN to _nativeWrappedToken for _assertAssetInitialized
-    _assertAssetInitialized(mappedAsset);
+    _assertAssetInitialized(asset);
 
-    $.assets[mappedAsset].availableCap += amount;
+    $.assets[asset].availableCap += amount;
 
-    if (isNative) {
-      INativeWrappedToken native = INativeWrappedToken(_nativeWrappedToken);
+    IERC20(asset).safeTransfer(to, amount);
 
-      uint256 balance = native.balanceOf(address(this));
-      require(balance >= amount, IMitosisVault__InsufficientBalance(asset, amount));
-
-      native.withdraw(amount);
-
-      // try to send native token to the recipient
-      (bool success,) = payable(to).call{ value: amount }('');
-
-      // if the recipient is not able to receive native token, then send wrapped token instead.
-      if (!success) {
-        native.deposit{ value: amount }();
-        native.safeTransfer(to, amount);
-      }
-    } else {
-      uint256 balance = IERC20(asset).balanceOf(address(this));
-      require(balance >= amount, IMitosisVault__InsufficientBalance(asset, amount));
-
-      IERC20(asset).safeTransfer(to, amount);
-    }
-
-    emit Withdrawn(mappedAsset, to, amount);
+    emit Withdrawn(asset, to, amount);
   }
 
   //=========== NOTE: MUTATIVE - ROLE BASED FUNCTIONS ===========//

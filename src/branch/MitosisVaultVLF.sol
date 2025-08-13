@@ -110,39 +110,11 @@ abstract contract MitosisVaultVLF is
     _deposit(asset, to, amount);
     IERC20(asset).safeTransferFrom(_msgSender(), address(this), amount);
 
-    _depositWithSupplyVLF(asset, to, hubVLFVault, amount, msg.value, _msgSender());
-  }
-
-  function depositNativeWithSupplyVLF(address to, address hubVLFVault, uint256 amount)
-    external
-    payable
-    whenNotPaused
-    nonReentrant
-  {
-    require(msg.value >= amount, StdError.InvalidParameter('msg.value'));
-
-    address asset = nativeWrappedToken();
-    _deposit(asset, to, amount);
-    // not to execute asset.safeTransferFrom here because it's already received native token.
-    // instead of it, we're wrapping the received token
-    INativeWrappedToken(asset).deposit{ value: amount }();
-
-    _depositWithSupplyVLF(asset, to, hubVLFVault, amount, msg.value - amount, _msgSender());
-  }
-
-  function _depositWithSupplyVLF(
-    address asset,
-    address to,
-    address hubVLFVault,
-    uint256 amount,
-    uint256 gasPaid,
-    address refundTo
-  ) internal {
     VLFStorageV1 storage $ = _getVLFStorageV1();
     _assertVLFInitialized($, hubVLFVault);
     require(asset == $.vlfs[hubVLFVault].asset, IMitosisVaultVLF__InvalidVLF(hubVLFVault, asset));
 
-    _entrypoint().depositWithSupplyVLF{ value: gasPaid }(asset, to, hubVLFVault, amount, refundTo);
+    _entrypoint().depositWithSupplyVLF{ value: msg.value }(asset, to, hubVLFVault, amount, _msgSender());
 
     emit VLFDepositedWithSupply(asset, to, hubVLFVault, amount);
   }
