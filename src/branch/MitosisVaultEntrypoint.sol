@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
+import { StandardHookMetadata } from '@hpl/hooks/libs/StandardHookMetadata.sol';
 import { IMessageRecipient } from '@hpl/interfaces/IMessageRecipient.sol';
 
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
@@ -121,12 +122,12 @@ contract MitosisVaultEntrypoint is
 
   //=========== NOTE: VAULT FUNCTIONS ===========//
 
-  function deposit(address asset, address to, uint256 amount) external payable onlyVault {
+  function deposit(address asset, address to, uint256 amount, address refundTo) external payable onlyVault {
     bytes memory enc = MsgDeposit({ asset: asset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
-    _dispatchToMitosis(enc, MsgType.MsgDeposit);
+    _dispatchToMitosis(enc, MsgType.MsgDeposit, refundTo);
   }
 
-  function depositWithSupplyVLF(address asset, address to, address hubVLFVault, uint256 amount)
+  function depositWithSupplyVLF(address asset, address to, address hubVLFVault, uint256 amount, address refundTo)
     external
     payable
     onlyVault
@@ -137,37 +138,51 @@ contract MitosisVaultEntrypoint is
       vlfVault: hubVLFVault.toBytes32(),
       amount: amount
     }).encode();
-    _dispatchToMitosis(enc, MsgType.MsgDepositWithSupplyVLF);
+    _dispatchToMitosis(enc, MsgType.MsgDepositWithSupplyVLF, refundTo);
   }
 
-  function deallocateVLF(address hubVLFVault, uint256 amount) external payable onlyVault {
+  function deallocateVLF(address hubVLFVault, uint256 amount, address refundTo) external payable onlyVault {
     bytes memory enc = MsgDeallocateVLF({ vlfVault: hubVLFVault.toBytes32(), amount: amount }).encode();
-    _dispatchToMitosis(enc, MsgType.MsgDeallocateVLF);
+    _dispatchToMitosis(enc, MsgType.MsgDeallocateVLF, refundTo);
   }
 
-  function settleVLFYield(address hubVLFVault, uint256 amount) external payable onlyVault {
+  function settleVLFYield(address hubVLFVault, uint256 amount, address refundTo) external payable onlyVault {
     bytes memory enc = MsgSettleVLFYield({ vlfVault: hubVLFVault.toBytes32(), amount: amount }).encode();
-    _dispatchToMitosis(enc, MsgType.MsgSettleVLFYield);
+    _dispatchToMitosis(enc, MsgType.MsgSettleVLFYield, refundTo);
   }
 
-  function settleVLFLoss(address hubVLFVault, uint256 amount) external payable onlyVault {
+  function settleVLFLoss(address hubVLFVault, uint256 amount, address refundTo) external payable onlyVault {
     bytes memory enc = MsgSettleVLFLoss({ vlfVault: hubVLFVault.toBytes32(), amount: amount }).encode();
-    _dispatchToMitosis(enc, MsgType.MsgSettleVLFLoss);
+    _dispatchToMitosis(enc, MsgType.MsgSettleVLFLoss, refundTo);
   }
 
-  function settleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount) external payable onlyVault {
+  function settleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount, address refundTo)
+    external
+    payable
+    onlyVault
+  {
     bytes memory enc = MsgSettleVLFExtraRewards({
       vlfVault: hubVLFVault.toBytes32(),
       reward: reward.toBytes32(),
       amount: amount
     }).encode();
-    _dispatchToMitosis(enc, MsgType.MsgSettleVLFExtraRewards);
+    _dispatchToMitosis(enc, MsgType.MsgSettleVLFExtraRewards, refundTo);
   }
 
-  function _dispatchToMitosis(bytes memory enc, MsgType msgType) internal {
+  function _dispatchToMitosis(bytes memory enc, MsgType msgType, address refundTo) internal {
     uint96 action = uint96(msgType);
+
+    uint256 gasLimit = _getHplGasRouterStorage().destinationGas[_mitosisDomain][action];
+    require(gasLimit > 0, GasRouter__GasLimitNotSet(_mitosisDomain, action));
+
     uint256 fee = _GasRouter_quoteDispatch(_mitosisDomain, action, enc, address(hook()));
-    _GasRouter_dispatch(_mitosisDomain, action, fee, enc, address(hook()));
+    _Router_dispatch(
+      _mitosisDomain,
+      fee,
+      enc,
+      StandardHookMetadata.formatMetadata(uint256(0), gasLimit, refundTo, bytes('')),
+      address(hook())
+    );
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//

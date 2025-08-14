@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import { stdJson } from '@std/StdJson.sol';
 import { Vm, VmSafe } from '@std/Vm.sol';
 
+import { WETH } from '@solady/tokens/WETH.sol';
 import { LibString } from '@solady/utils/LibString.sol';
 
 import '../Functions.sol';
@@ -33,6 +34,7 @@ library BranchImplT {
   struct Chain {
     Governance governance;
     Strategy strategy;
+    WETH nativeWrappedToken;
     address mitosisVault;
     address mitosisVaultEntrypoint;
   }
@@ -81,6 +83,7 @@ library BranchImplT {
     string memory k = vm.randomBytes(32).toHexString();
     o = k.serialize('governance', encode(v.governance));
     o = k.serialize('strategy', encode(v.strategy));
+    o = k.serialize('nativeWrappedToken', address(v.nativeWrappedToken));
     o = k.serialize('mitosisVault', v.mitosisVault);
     o = k.serialize('mitosisVaultEntrypoint', v.mitosisVaultEntrypoint);
   }
@@ -105,6 +108,7 @@ library BranchImplT {
   function decode(string memory v) internal pure returns (Chain memory o) {
     o.governance = decodeGovernance(v, '.governance');
     o.strategy = decodeStrategy(v, '.strategy');
+    o.nativeWrappedToken = WETH(payable(v.readAddress('.nativeWrappedToken')));
     o.mitosisVault = v.readAddress('.mitosisVault');
     o.mitosisVaultEntrypoint = v.readAddress('.mitosisVaultEntrypoint');
   }
