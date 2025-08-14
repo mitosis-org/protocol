@@ -435,7 +435,7 @@ abstract contract HubDeployer is AbstractDeployer {
       'hub',
       '.reclaim-queue', //
       type(ReclaimQueue).creationCode,
-      abi.encodeCall(ReclaimQueue.initialize, (owner, assetManager))
+      abi.encodeCall(ReclaimQueue.initialize, (owner, assetManager, address(0)))
     );
     return (impl, ReclaimQueue(proxy));
   }

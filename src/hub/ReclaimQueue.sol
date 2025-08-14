@@ -11,7 +11,8 @@ import { Time } from '@oz/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
-import { IReclaimQueue } from '../interfaces/hub/IReclaimQueue.sol';
+import { IReclaimQueueCollector } from '../interfaces/hub/IReclaimQueueCollector.sol';
+import { IReclaimQueue } from '../interfaces/hub/matrix/IReclaimQueue.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { LibQueue } from '../lib/LibQueue.sol';
 import { Pausable } from '../lib/Pausable.sol';
@@ -48,6 +49,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
   struct StorageV1 {
     address resolver;
+    address collector;
     mapping(address vault => QueueState) queues;
     mapping(address vault => VaultState) vaults;
   }
@@ -73,7 +75,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     _disableInitializers();
   }
 
-  function initialize(address owner_, address resolver_) public virtual initializer {
+  function initialize(address owner_, address resolver_, address collector_) public virtual initializer {
     __Pausable_init();
     __Ownable2Step_init();
     __Ownable_init(owner_);
@@ -82,12 +84,17 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     StorageV1 storage $ = _getStorageV1();
 
     _setResolver($, resolver_);
+    _setCollector($, collector_);
   }
 
   // =========================== NOTE: QUERY FUNCTIONS =========================== //
 
   function resolver() external view returns (address) {
     return address(_getStorageV1().resolver);
+  }
+
+  function collector() external view returns (address) {
+    return address(_getStorageV1().collector);
   }
 
   function reclaimPeriod(address vault) external view returns (uint256) {
@@ -135,7 +142,26 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     return q$.logs[index];
   }
 
-  function previewClaim(address receiver, address vault) external view returns (uint256, uint256) {
+  function pendingRequests(address vault, address recipient, uint256 offset, uint256 limit)
+    external
+    view
+    returns (Request[] memory requests)
+  {
+    StorageV1 storage $ = _getStorageV1();
+    QueueState storage q$ = $.queues[vault];
+    LibQueue.UintOffsetQueue storage index = q$.indexes[recipient];
+
+    uint32 reqIdFrom = index.offset() + offset.toUint32();
+    uint32 reqIdTo = Math.min(reqIdFrom + limit.toUint32(), index.size()).toUint32();
+    if (reqIdFrom >= reqIdTo) return new Request[](0);
+
+    requests = new Request[](reqIdTo - reqIdFrom);
+    for (uint32 i = reqIdFrom; i < reqIdTo;) {
+      requests[i - reqIdFrom] = q$.items[index.itemAt(i)];
+    }
+  }
+
+  function previewClaim(address receiver, address vault) external view returns (ClaimResult memory) {
     StorageV1 storage $ = _getStorageV1();
     LibQueue.UintOffsetQueue storage index = $.queues[vault].indexes[receiver];
 
@@ -154,7 +180,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
       $.vaults[vault].decimalsOffset
     );
 
-    return (res.totalSharesClaimed, res.totalAssetsClaimed);
+    return res;
   }
 
   function previewSync(address vault, uint256 requestCount) external view returns (uint256, uint256) {
@@ -193,7 +219,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     return reqId;
   }
 
-  function claim(address receiver, address vault) external nonReentrant whenNotPaused returns (uint256, uint256) {
+  function claim(address receiver, address vault) external nonReentrant whenNotPaused returns (ClaimResult memory) {
     StorageV1 storage $ = _getStorageV1();
     {
       QueueState storage q$ = $.queues[vault];
@@ -215,7 +241,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     // send total claim amount to receiver
     IERC20Metadata(IERC4626(vault).asset()).safeTransfer(receiver, res.totalAssetsClaimed);
 
-    return (res.totalSharesClaimed, res.totalAssetsClaimed);
+    return res;
   }
 
   function sync(address executor, address vault, uint256 requestCount)
@@ -250,6 +276,10 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function setResolver(address resolver_) external onlyOwner {
     _setResolver(_getStorageV1(), resolver_);
+  }
+
+  function setCollector(address collector_) external onlyOwner {
+    _setCollector(_getStorageV1(), collector_);
   }
 
   function setReclaimPeriod(address vault, uint256 reclaimPeriod_) external onlyOwner {
@@ -454,7 +484,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
       res.totalSharesSynced += shares;
       res.totalAssetsOnRequest += req.assets;
-      res.totalAssetsOnReserve += IERC4626(vault).convertToAssets(shares);
+      res.totalAssetsOnReserve += IERC4626(vault).previewRedeem(shares);
 
       unchecked {
         ++i;
@@ -473,6 +503,21 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
     uint256 withdrawAmount = Math.min(res.totalAssetsOnRequest, res.totalAssetsOnReserve);
     IERC4626(vault).withdraw(withdrawAmount, address(this), address(this));
+
+    if (res.totalAssetsOnRequest < res.totalAssetsOnReserve) {
+      uint256 diff = res.totalAssetsOnReserve - res.totalAssetsOnRequest;
+      if ($.collector != address(0)) {
+        IERC4626(vault).withdraw(diff, address(this), address(this));
+
+        IERC20Metadata asset = IERC20Metadata(IERC4626(vault).asset());
+
+        asset.forceApprove($.collector, diff);
+        IReclaimQueueCollector($.collector).collect(vault, address(asset), diff);
+        asset.forceApprove($.collector, 0);
+      } else {
+        IERC4626(vault).withdraw(diff, vault, address(this));
+      }
+    }
 
     {
       SyncLog[] storage syncLogs = q$.logs;
@@ -519,6 +564,11 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
   function _setResolver(StorageV1 storage $, address resolver_) internal {
     $.resolver = resolver_;
     emit ResolverSet(resolver_);
+  }
+
+  function _setCollector(StorageV1 storage $, address collector_) internal {
+    $.collector = collector_;
+    emit CollectorSet(collector_);
   }
 
   function _setReclaimPeriod(StorageV1 storage $, address vault, uint256 reclaimPeriod_) internal {
