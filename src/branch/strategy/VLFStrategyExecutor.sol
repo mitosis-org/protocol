@@ -37,7 +37,7 @@ contract VLFStrategyExecutor is
   }
 
   receive() external payable {
-    revert StdError.NotSupported();
+    Address.sendValue(payable(_getStorageV1().strategist), msg.value);
   }
 
   function initialize(IMitosisVault vault_, IERC20 asset_, address hubVLFVault_, address owner_) public initializer {

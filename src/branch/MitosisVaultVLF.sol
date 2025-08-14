@@ -3,10 +3,12 @@ pragma solidity ^0.8.28;
 
 import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { Address } from '@oz/utils/Address.sol';
 import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
 
 import { IMitosisVaultEntrypoint } from '../interfaces/branch/IMitosisVaultEntrypoint.sol';
 import { IMitosisVaultVLF, VLFAction } from '../interfaces/branch/IMitosisVaultVLF.sol';
+import { INativeWrappedToken } from '../interfaces/branch/INativeWrappedToken.sol';
 import { IVLFStrategyExecutor } from '../interfaces/branch/strategy/IVLFStrategyExecutor.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { Pausable } from '../lib/Pausable.sol';
@@ -61,19 +63,19 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
     view
     returns (uint256)
   {
-    return IMitosisVaultEntrypoint(entrypoint()).quoteDepositWithSupplyVLF(asset, to, hubVLFVault, amount);
+    return _entrypoint().quoteDepositWithSupplyVLF(asset, to, hubVLFVault, amount);
   }
 
   function quoteDeallocateVLF(address hubVLFVault, uint256 amount) external view returns (uint256) {
-    return IMitosisVaultEntrypoint(entrypoint()).quoteDeallocateVLF(hubVLFVault, amount);
+    return _entrypoint().quoteDeallocateVLF(hubVLFVault, amount);
   }
 
   function quoteSettleVLFYield(address hubVLFVault, uint256 amount) external view returns (uint256) {
-    return IMitosisVaultEntrypoint(entrypoint()).quoteSettleVLFYield(hubVLFVault, amount);
+    return _entrypoint().quoteSettleVLFYield(hubVLFVault, amount);
   }
 
   function quoteSettleVLFLoss(address hubVLFVault, uint256 amount) external view returns (uint256) {
-    return IMitosisVaultEntrypoint(entrypoint()).quoteSettleVLFLoss(hubVLFVault, amount);
+    return _entrypoint().quoteSettleVLFLoss(hubVLFVault, amount);
   }
 
   function quoteSettleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount)
@@ -81,16 +83,16 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
     view
     returns (uint256)
   {
-    return IMitosisVaultEntrypoint(entrypoint()).quoteSettleVLFExtraRewards(hubVLFVault, reward, amount);
+    return _entrypoint().quoteSettleVLFExtraRewards(hubVLFVault, reward, amount);
   }
 
   //=========== NOTE: Asset ===========//
 
+  function _entrypoint() internal view virtual returns (IMitosisVaultEntrypoint);
+
   function _deposit(address asset, address to, uint256 amount) internal virtual;
 
   function _assertAssetInitialized(address asset) internal view virtual;
-
-  function entrypoint() public view virtual returns (address);
 
   function depositWithSupplyVLF(address asset, address to, address hubVLFVault, uint256 amount)
     external
@@ -103,7 +105,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
     _assertVLFInitialized($, hubVLFVault);
     require(asset == $.vlfs[hubVLFVault].asset, IMitosisVaultVLF__InvalidVLF(hubVLFVault, asset));
 
-    IMitosisVaultEntrypoint(entrypoint()).depositWithSupplyVLF{ value: msg.value }(asset, to, hubVLFVault, amount);
+    _entrypoint().depositWithSupplyVLF{ value: msg.value }(asset, to, hubVLFVault, amount, _msgSender());
 
     emit VLFDepositedWithSupply(asset, to, hubVLFVault, amount);
   }
@@ -111,7 +113,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
   //=========== NOTE: VLF Lifecycle ===========//
 
   function initializeVLF(address hubVLFVault, address asset) external whenNotPaused {
-    require(entrypoint() == _msgSender(), StdError.Unauthorized());
+    require(address(_entrypoint()) == _msgSender(), StdError.Unauthorized());
 
     VLFStorageV1 storage $ = _getVLFStorageV1();
 
@@ -124,8 +126,8 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
     emit VLFInitialized(hubVLFVault, asset);
   }
 
-  function allocateVLF(address hubVLFVault, uint256 amount) external payable whenNotPaused {
-    require(entrypoint() == _msgSender(), StdError.Unauthorized());
+  function allocateVLF(address hubVLFVault, uint256 amount) external whenNotPaused {
+    require(address(_entrypoint()) == _msgSender(), StdError.Unauthorized());
 
     VLFStorageV1 storage $ = _getVLFStorageV1();
     _assertVLFInitialized($, hubVLFVault);
@@ -142,7 +144,8 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
     _assertOnlyStrategyExecutor($, hubVLFVault);
 
     $.vlfs[hubVLFVault].availableLiquidity -= amount;
-    IMitosisVaultEntrypoint(entrypoint()).deallocateVLF{ value: msg.value }(hubVLFVault, amount);
+
+    _entrypoint().deallocateVLF{ value: msg.value }(hubVLFVault, amount, _msgSender());
 
     emit VLFDeallocated(hubVLFVault, amount);
   }
@@ -182,7 +185,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
     _assertVLFInitialized($, hubVLFVault);
     _assertOnlyStrategyExecutor($, hubVLFVault);
 
-    IMitosisVaultEntrypoint(entrypoint()).settleVLFYield{ value: msg.value }(hubVLFVault, amount);
+    _entrypoint().settleVLFYield{ value: msg.value }(hubVLFVault, amount, _msgSender());
 
     emit VLFYieldSettled(hubVLFVault, amount);
   }
@@ -193,7 +196,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
     _assertVLFInitialized($, hubVLFVault);
     _assertOnlyStrategyExecutor($, hubVLFVault);
 
-    IMitosisVaultEntrypoint(entrypoint()).settleVLFLoss{ value: msg.value }(hubVLFVault, amount);
+    _entrypoint().settleVLFLoss{ value: msg.value }(hubVLFVault, amount, _msgSender());
 
     emit VLFLossSettled(hubVLFVault, amount);
   }
@@ -207,7 +210,8 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
     require(reward != $.vlfs[hubVLFVault].asset, StdError.InvalidAddress('reward'));
 
     IERC20(reward).safeTransferFrom(_msgSender(), address(this), amount);
-    IMitosisVaultEntrypoint(entrypoint()).settleVLFExtraRewards{ value: msg.value }(hubVLFVault, reward, amount);
+
+    _entrypoint().settleVLFExtraRewards{ value: msg.value }(hubVLFVault, reward, amount, _msgSender());
 
     emit VLFExtraRewardsSettled(hubVLFVault, reward, amount);
   }
