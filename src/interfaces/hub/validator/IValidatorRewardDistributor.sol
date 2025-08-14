@@ -81,15 +81,20 @@ interface IValidatorRewardDistributor {
   /// @notice Returns the total claimable rewards for multiple validators and a staker.
   /// @param staker The staker address to check rewards for.
   /// @param valAddr The validator address to check rewards for.
+  /// @param offset The offset of the epochs to check rewards for.
+  /// @param limit The limit of the epochs to check rewards for.
   /// @return amount The total amount of rewards that can be claimed.
-  /// @return nextEpoch The next epoch to claim rewards from.
-  function claimableStakerRewards(address staker, address valAddr) external view returns (uint256, uint256);
+  function claimableStakerRewards(address staker, address valAddr, uint256 offset, uint256 limit)
+    external
+    view
+    returns (uint256);
 
   /// @notice Returns the total claimable operator rewards for a validator.
   /// @param valAddr The validator address to check rewards for.
+  /// @param offset The offset of the epochs to check rewards for.
+  /// @param limit The limit of the epochs to check rewards for.
   /// @return amount The total amount of rewards that can be claimed.
-  /// @return nextEpoch The next epoch to claim rewards from.
-  function claimableOperatorRewards(address valAddr) external view returns (uint256, uint256);
+  function claimableOperatorRewards(address valAddr, uint256 offset, uint256 limit) external view returns (uint256);
 
   /// @notice Sets the approval status for an operator to claim rewards on behalf of msg.sender.
   /// @param valAddr The address of the target validator.
