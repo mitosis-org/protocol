@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
+import { console } from '@std/console.sol';
+import { Test } from '@std/Test.sol';
+
 import { IERC20 } from '@oz/interfaces/IERC20.sol';
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { IERC20Metadata } from '@oz/interfaces/IERC20Metadata.sol';
 import { IERC4626 } from '@oz/interfaces/IERC4626.sol';
 import { ERC1967Proxy } from '@oz/proxy/ERC1967/ERC1967Proxy.sol';
 import { SafeCast } from '@oz/utils/math/SafeCast.sol';
-
-import { Test } from '@std/Test.sol';
 
 import { HubAsset } from '../../src/hub/core/HubAsset.sol';
 import { ReclaimQueue } from '../../src/hub/ReclaimQueue.sol';
@@ -533,9 +534,9 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
 
     // check preview result
     {
-      (uint256 totalSharesClaimed, uint256 totalAssetsClaimed) = queue.previewClaim(user, vault);
-      assertEq(totalSharesClaimed, expectedClaimedShares, 'totalSharesClaimed');
-      assertEq(totalAssetsClaimed, expectedClaimedAssets, 'totalAssetsClaimed');
+      IReclaimQueue.ClaimResult memory claimResult = queue.previewClaim(user, vault);
+      assertEq(claimResult.totalSharesClaimed, expectedClaimedShares, 'totalSharesClaimed');
+      assertEq(claimResult.totalAssetsClaimed, expectedClaimedAssets, 'totalAssetsClaimed');
     }
 
     // check actual result
@@ -551,9 +552,9 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       vm.expectEmit();
       emit IReclaimQueue.ClaimSucceeded(user, vault, makeClaimResult(0, 3, 300 ether, 180 ether - 2));
 
-      (uint256 totalSharesClaimed, uint256 totalAssetsClaimed) = queue.claim(user, vault);
-      assertEq(totalSharesClaimed, expectedClaimedShares, 'totalSharesClaimed');
-      assertEq(totalAssetsClaimed, expectedClaimedAssets, 'totalAssetsClaimed');
+      IReclaimQueue.ClaimResult memory claimResult = queue.claim(user, vault);
+      assertEq(claimResult.totalSharesClaimed, expectedClaimedShares, 'totalSharesClaimed');
+      assertEq(claimResult.totalAssetsClaimed, expectedClaimedAssets, 'totalAssetsClaimed');
     }
 
     asset.assertERC20Transfer(user, expectedClaimedAssets);
@@ -609,6 +610,32 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
 
     vm.expectRevert(_errOutOfBounds(2, 3));
     queue.queueSyncLog(vault, 3);
+  }
+
+  function test_pendingRequests_afterSync() public {
+    test_sync();
+
+    vm.warp(block.timestamp + 1 days);
+
+    IReclaimQueue.Request[] memory requests = queue.pendingRequests(vault, user, 0, 30);
+    IReclaimQueue.ClaimResult memory claimResult = queue.previewClaim(user, vault);
+
+    // which one is synced, but not claimed
+    assertEq(requests.length, 3, 'requests.length');
+    assertEq(claimResult.reqIdFrom, 0, 'reqIdFrom');
+    assertEq(claimResult.reqIdTo, 3, 'reqIdTo');
+  }
+
+  function test_pendingRequests_afterClaim() public {
+    test_claim();
+
+    IReclaimQueue.Request[] memory requests = queue.pendingRequests(vault, user, 0, 30);
+    IReclaimQueue.ClaimResult memory claimResult = queue.previewClaim(user, vault);
+
+    // which one is not synced
+    assertEq(requests.length, 3, 'requests.length');
+    assertEq(claimResult.reqIdFrom, 3, 'reqIdFrom');
+    assertEq(claimResult.reqIdTo, 3, 'reqIdTo');
   }
 
   function _request(uint256 shares, uint256 assets, uint256 expectedReqId)
