@@ -284,11 +284,15 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     uint48 reqTimeBoundary;
   }
 
-  function _fetchInitialCalcClaimState(QueueState storage q$) internal view returns (CalcClaimState memory) {
+  function _fetchInitialCalcClaimState(QueueState storage q$) internal view returns (CalcClaimState memory state) {
+    if (q$.logs.length == 0) {
+      return state;
+    }
+
     uint256 cachedLogPos = q$.logs.length - 1;
     SyncLog memory cached = _unsafeAccess(q$.logs, cachedLogPos);
 
-    return CalcClaimState({
+    state = CalcClaimState({
       cachedLogPos: cachedLogPos,
       cached: cached,
       queueOffset: q$.offset,
