@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
-import { IERC20Metadata } from '@oz/token/ERC20/extensions/IERC20Metadata.sol';
 import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
 import { Address } from '@oz/utils/Address.sol';
@@ -105,13 +104,11 @@ contract MitosisVault is
 
   //=========== NOTE: MUTATIVE - ASSET FUNCTIONS ===========//
 
-  function initializeAsset(address asset, uint8 branchAssetDecimals) external whenNotPaused {
+  function initializeAsset(address asset) external whenNotPaused {
     StorageV1 storage $ = _getStorageV1();
 
     _assertOnlyEntrypoint($);
     _assertAssetNotInitialized($, asset);
-
-    require(IERC20Metadata(asset).decimals() == branchAssetDecimals, StdError.InvalidParameter('branchAssetDecimals'));
 
     $.assets[asset].initialized = true;
     emit AssetInitialized(asset);
