@@ -392,22 +392,23 @@ contract AssetManager is
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
 
-  function _scaleToHubDecimals(uint256 amountFromBranch, uint8 branchAssetDecimals, uint8 hubAssetDecimals)
+  function _scaleToHubDecimals(uint256 amountBranchUnit, uint8 branchAssetDecimals, uint8 hubAssetDecimals)
     internal
     pure
     returns (uint256)
   {
     require(hubAssetDecimals >= branchAssetDecimals, StdError.NotSupported());
-    return amountFromBranch * (10 ** (hubAssetDecimals - branchAssetDecimals));
+    return amountBranchUnit * (10 ** (hubAssetDecimals - branchAssetDecimals));
   }
 
-  function _scaleToBranchDecimals(uint256 amountFromHub, uint8 branchAssetDecimals, uint8 hubAssetDecimals)
+  function _scaleToBranchDecimals(uint256 amountHubUnit, uint8 branchAssetDecimals, uint8 hubAssetDecimals)
     internal
     pure
     returns (uint256 amountBranchUnit, uint256 adjustedAmountHubUnit)
   {
     require(hubAssetDecimals >= branchAssetDecimals, StdError.NotSupported());
-    amountBranchUnit = amountFromHub / (10 ** (hubAssetDecimals - branchAssetDecimals));
+    amountBranchUnit = amountHubUnit / (10 ** (hubAssetDecimals - branchAssetDecimals));
+    // Convert back to hub decimals for precision loss detection.
     adjustedAmountHubUnit = amountBranchUnit * (10 ** (hubAssetDecimals - branchAssetDecimals));
   }
 
