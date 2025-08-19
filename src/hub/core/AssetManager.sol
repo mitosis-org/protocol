@@ -158,17 +158,18 @@ contract AssetManager is
     address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    (uint256 amountBranchUnit, uint256 adjustedAmountHubUnit) = _scaleToBranchDecimals(
+    uint256 amountBranchUnit;
+    (amountBranchUnit, amount) = _scaleToBranchDecimals(
       amount, _hubAssetState($, hubAsset, chainId).branchAssetDecimals, IHubAsset(hubAsset).decimals()
     );
 
-    _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, adjustedAmountHubUnit);
-    _assertBranchLiquidityThresholdSatisfied($, hubAsset, chainId, adjustedAmountHubUnit);
+    _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, amount);
+    _assertBranchLiquidityThresholdSatisfied($, hubAsset, chainId, amount);
 
-    _burn($, chainId, hubAsset, _msgSender(), adjustedAmountHubUnit);
+    _burn($, chainId, hubAsset, _msgSender(), amount);
     $.entrypoint.withdraw{ value: msg.value }(chainId, branchAsset, to, amountBranchUnit);
 
-    emit Withdrawn(chainId, hubAsset, to, adjustedAmountHubUnit);
+    emit Withdrawn(chainId, hubAsset, to, amount);
   }
 
   //=========== NOTE: VLF FUNCTIONS ===========//
@@ -182,19 +183,21 @@ contract AssetManager is
 
     address hubAsset = IVLFVault(vlfVault).asset();
     HubAssetState storage hubAssetState = _hubAssetState($, hubAsset, chainId);
-    (uint256 amountBranchUnit, uint256 adjustedAmountHubUnit) =
+
+    uint256 amountBranchUnit;
+    (amountBranchUnit, amount) =
       _scaleToBranchDecimals(amount, hubAssetState.branchAssetDecimals, IHubAsset(hubAsset).decimals());
 
     uint256 idle = _vlfIdle($, vlfVault);
-    require(adjustedAmountHubUnit <= idle, IAssetManager__VLFLiquidityInsufficient(vlfVault));
+    require(amount <= idle, IAssetManager__VLFLiquidityInsufficient(vlfVault));
 
     $.entrypoint.allocateVLF{ value: msg.value }(chainId, vlfVault, amountBranchUnit);
 
-    _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, adjustedAmountHubUnit);
-    hubAssetState.branchAllocated += adjustedAmountHubUnit;
-    $.vlfStates[vlfVault].allocation += adjustedAmountHubUnit;
+    _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, amount);
+    hubAssetState.branchAllocated += amount;
+    $.vlfStates[vlfVault].allocation += amount;
 
-    emit VLFAllocated(_msgSender(), chainId, vlfVault, adjustedAmountHubUnit);
+    emit VLFAllocated(_msgSender(), chainId, vlfVault, amount);
   }
 
   /// @dev only entrypoint
