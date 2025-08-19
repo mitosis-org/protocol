@@ -194,7 +194,7 @@ contract MitosisVaultEntrypoint is
 
     if (msgType == MsgType.MsgInitializeAsset) {
       MsgInitializeAsset memory decoded = msg_.decodeInitializeAsset();
-      _vault.initializeAsset(decoded.asset.toAddress());
+      _vault.initializeAsset(decoded.asset.toAddress(), decoded.branchAssetDecimals);
     }
 
     if (msgType == MsgType.MsgWithdraw) {

@@ -42,7 +42,7 @@ interface IMitosisVault is IMitosisVaultVLF {
   //=========== NOTE: Asset ===========//
 
   /// @dev Hyperlane message receiver
-  function initializeAsset(address asset) external;
+  function initializeAsset(address asset, uint8 branchAssetDecimals) external;
 
   /// @dev Hyperlane message sender
   function deposit(address asset, address to, uint256 amount) external payable;

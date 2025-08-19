@@ -21,6 +21,7 @@ enum MsgType {
 // hub -> branch
 struct MsgInitializeAsset {
   bytes32 asset;
+  uint8 branchAssetDecimals;
 }
 
 // branch -> hub
@@ -95,7 +96,7 @@ library Message {
   error Message__InvalidMsgType(MsgType actual, MsgType expected);
   error Message__InvalidMsgLength(uint256 actual, uint256 expected);
 
-  uint256 public constant LEN_MSG_INITIALIZE_ASSET = 33;
+  uint256 public constant LEN_MSG_INITIALIZE_ASSET = 34;
   uint256 public constant LEN_MSG_DEPOSIT = 97;
   uint256 public constant LEN_MSG_DEPOSIT_WITH_SUPPLY_VLF = 129;
   uint256 public constant LEN_MSG_WITHDRAW = 97;
@@ -116,13 +117,14 @@ library Message {
   }
 
   function encode(MsgInitializeAsset memory msg_) internal pure returns (bytes memory) {
-    return abi.encodePacked(uint8(MsgType.MsgInitializeAsset), msg_.asset);
+    return abi.encodePacked(uint8(MsgType.MsgInitializeAsset), msg_.asset, msg_.branchAssetDecimals);
   }
 
   function decodeInitializeAsset(bytes calldata msg_) internal pure returns (MsgInitializeAsset memory decoded) {
     assertMsg(msg_, MsgType.MsgInitializeAsset, LEN_MSG_INITIALIZE_ASSET);
 
-    decoded.asset = bytes32(msg_[1:]);
+    decoded.asset = bytes32(msg_[1:33]);
+    decoded.branchAssetDecimals = uint8(uint256(bytes32(msg_[33:])));
   }
 
   function encode(MsgDeposit memory msg_) internal pure returns (bytes memory) {

@@ -183,8 +183,11 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param hubAsset The address of the hub asset
    * @param chainId The ID of the chain where the asset is initialized
    * @param branchAsset The address of the initialized branch asset
+   * @param branchAssetDecimals The decimals of the initialized branch asset
    */
-  event AssetInitialized(address indexed hubAsset, uint256 indexed chainId, address branchAsset);
+  event AssetInitialized(
+    address indexed hubAsset, uint256 indexed chainId, address branchAsset, uint8 branchAssetDecimals
+  );
 
   /**
    * @notice Emitted when a VLF is initialized
@@ -287,8 +290,9 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param hubAsset The address of the hub asset
    * @param branchChainId The ID of the branch chain
    * @param branchAsset The address of the branch asset
+   * @param branchAssetDecimals The decimals of the branch asset
    */
-  event AssetPairSet(address hubAsset, uint256 branchChainId, address branchAsset);
+  event AssetPairSet(address hubAsset, uint256 branchChainId, address branchAsset, uint8 branchAssetDecimals);
 
   /**
    * @notice Error thrown when a VLF has no claimable amount
@@ -320,9 +324,13 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @notice Quotes the gas fee for initializing an asset on a specified branch chain
    * @param chainId The ID of the branch chain
    * @param branchAsset The address of the asset on the branch chain
+   * @param branchAssetDecimals The decimals of the asset on the branch chain
    * @return The gas fee required for the operation
    */
-  function quoteInitializeAsset(uint256 chainId, address branchAsset) external view returns (uint256);
+  function quoteInitializeAsset(uint256 chainId, address branchAsset, uint8 branchAssetDecimals)
+    external
+    view
+    returns (uint256);
 
   /**
    * @notice Quotes the gas fee for initializing a VLF on a specified branch chain
@@ -481,8 +489,10 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param hubAsset The address of the hub asset
    * @param branchChainId The ID of the branch chain
    * @param branchAsset The address of the branch asset
+   * @param branchAssetDecimals The decimals of the branch asset
    */
-  function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external;
+  function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset, uint8 branchAssetDecimals)
+    external;
 
   /**
    * @notice Set the entrypoint address
