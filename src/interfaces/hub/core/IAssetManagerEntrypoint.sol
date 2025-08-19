@@ -39,13 +39,9 @@ interface IAssetManagerEntrypoint {
    * @notice Quotes the gas fee for initializing an asset on a specified branch chain
    * @param chainId The ID of the branch chain
    * @param branchAsset The address of the asset on the branch chain
-   * @param branchAssetDecimals The decimals of the asset on the branch chain
    * @return The gas fee required for the operation
    */
-  function quoteInitializeAsset(uint256 chainId, address branchAsset, uint8 branchAssetDecimals)
-    external
-    view
-    returns (uint256);
+  function quoteInitializeAsset(uint256 chainId, address branchAsset) external view returns (uint256);
 
   /**
    * @notice Quotes the gas fee for initializing a VLF on a specified branch chain
@@ -82,9 +78,8 @@ interface IAssetManagerEntrypoint {
    * @notice Initializes an asset on a specified branch chain
    * @param chainId The ID of the branch chain
    * @param branchAsset The address of the asset on the branch chain
-   * @param branchAssetDecimals The decimals of the asset on the branch chain
    */
-  function initializeAsset(uint256 chainId, address branchAsset, uint8 branchAssetDecimals) external payable;
+  function initializeAsset(uint256 chainId, address branchAsset) external payable;
 
   /**
    * @notice Initializes a VLF on a specified branch chain
