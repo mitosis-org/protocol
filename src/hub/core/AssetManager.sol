@@ -169,7 +169,7 @@ contract AssetManager is
     _burn($, chainId, hubAsset, _msgSender(), amount);
     $.entrypoint.withdraw{ value: msg.value }(chainId, branchAsset, to, amountBranchUnit);
 
-    emit Withdrawn(chainId, hubAsset, to, amount);
+    emit Withdrawn(chainId, hubAsset, to, amount, amountBranchUnit);
   }
 
   //=========== NOTE: VLF FUNCTIONS ===========//
@@ -197,7 +197,7 @@ contract AssetManager is
     hubAssetState.branchAllocated += amount;
     $.vlfStates[vlfVault].allocation += amount;
 
-    emit VLFAllocated(_msgSender(), chainId, vlfVault, amount);
+    emit VLFAllocated(_msgSender(), chainId, vlfVault, amount, amountBranchUnit);
   }
 
   /// @dev only entrypoint

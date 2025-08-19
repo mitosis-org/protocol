@@ -231,8 +231,11 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param hubAsset The address of the withdrawn asset
    * @param to The address receiving the withdrawn assets on the branch chain
    * @param amount The hubAsset amount to be withdrawn
+   * @param amountBranchUnit The branch asset amount to be actual withdrawn
    */
-  event Withdrawn(uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount);
+  event Withdrawn(
+    uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount, uint256 amountBranchUnit
+  );
 
   /**
    * @notice Emitted when a reward is settled from the branch chain to the hub chain for a specific VLF
@@ -259,7 +262,13 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param vlfVault The address of the VLFVault to be reported the allocation
    * @param amount The amount allocated
    */
-  event VLFAllocated(address indexed strategist, uint256 indexed chainId, address indexed vlfVault, uint256 amount);
+  event VLFAllocated(
+    address indexed strategist,
+    uint256 indexed chainId,
+    address indexed vlfVault,
+    uint256 amount,
+    uint256 amountBranchUnit
+  );
 
   /**
    * @notice Emitted when assets are deallocated from the branch chain for a specific VLF
@@ -324,13 +333,9 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @notice Quotes the gas fee for initializing an asset on a specified branch chain
    * @param chainId The ID of the branch chain
    * @param branchAsset The address of the asset on the branch chain
-   * @param branchAssetDecimals The decimals of the asset on the branch chain
    * @return The gas fee required for the operation
    */
-  function quoteInitializeAsset(uint256 chainId, address branchAsset, uint8 branchAssetDecimals)
-    external
-    view
-    returns (uint256);
+  function quoteInitializeAsset(uint256 chainId, address branchAsset) external view returns (uint256);
 
   /**
    * @notice Quotes the gas fee for initializing a VLF on a specified branch chain
