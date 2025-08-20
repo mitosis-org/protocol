@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
-import { console } from '@std/console.sol';
 import { Vm } from '@std/Vm.sol';
 
 import { IERC20 } from '@oz/interfaces/IERC20.sol';
@@ -153,6 +152,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     vlfFactory = new MockContract();
 
     hubAsset = new MockContract();
+    // hubAsset.setCall(IHubAsset.decimals.selector);
+    hubAsset.setRet(abi.encodeCall(IERC20Metadata.decimals, ()), false, abi.encode(18));
     hubAsset.setCall(IHubAsset.mint.selector);
     hubAsset.setCall(IHubAsset.burn.selector);
     hubAsset.setCall(IERC20.approve.selector);
@@ -179,7 +180,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_deposit() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
 
     vm.prank(address(entrypoint));
     vm.expectEmit();
@@ -190,7 +191,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_deposit_Unauthorized() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
 
     vm.prank(user1);
     vm.expectRevert(_errUnauthorized());
@@ -204,7 +205,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_depositWithSupplyVLF() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
     _setVLFVaultFactory();
     _setVLFVaultInstance(address(vlfVault), true);
 
@@ -283,7 +284,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_depositWithSupplyVLF_VLFVaultNotInitialized() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
     _setVLFVaultFactory();
     _setVLFVaultInstance(address(vlfVault), true);
 
@@ -293,14 +294,14 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_withdraw() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
 
     vm.prank(address(entrypoint));
     assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
 
     vm.prank(user1);
     vm.expectEmit();
-    emit IAssetManager.Withdrawn(branchChainId1, address(hubAsset), user1, 100 ether);
+    emit IAssetManager.Withdrawn(branchChainId1, address(hubAsset), user1, 100 ether, 100 ether);
     assetManager.withdraw(branchChainId1, address(hubAsset), user1, 100 ether);
 
     hubAsset.assertLastCall(abi.encodeCall(IHubAsset.burn, (user1, 100 ether)));
@@ -320,7 +321,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_withdraw_ToZeroAddress() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
 
     vm.prank(address(entrypoint));
     assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
@@ -331,7 +332,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_withdraw_ZeroAmount() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
 
     vm.prank(address(entrypoint));
     assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
@@ -350,7 +351,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_withdraw_BranchLiquidityThresholdNotSatisfied() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
 
     vm.prank(address(entrypoint));
     assetManager.deposit(branchChainId1, branchAsset1, user1, 100 ether);
@@ -373,7 +374,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     vm.prank(strategist);
     vm.expectEmit();
-    emit IAssetManager.VLFAllocated(strategist, branchChainId1, address(vlfVault), 100 ether);
+    emit IAssetManager.VLFAllocated(strategist, branchChainId1, address(vlfVault), 100 ether, 100 ether);
     assetManager.allocateVLF(branchChainId1, address(vlfVault), 100 ether);
   }
 
@@ -384,7 +385,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_allocateVLF_VLFVaultNotInitialized() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
     _setVLFVaultFactory();
     _setVLFVaultInstance(address(vlfVault), true);
 
@@ -418,7 +419,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     test_depositWithSupplyVLF();
 
     vm.startPrank(owner);
-    assetManager.setAssetPair(address(hubAsset), branchChainId2, branchAsset2);
+    assetManager.setAssetPair(address(hubAsset), branchChainId2, branchAsset2, 18);
     assetManager.initializeVLF(branchChainId2, address(vlfVault));
     assetManager.setStrategist(address(vlfVault), strategist);
     vm.stopPrank();
@@ -592,9 +593,10 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     MockContract rewardToken = new MockContract();
     rewardToken.setCall(IERC20.approve.selector);
     rewardToken.setCall(IHubAsset.mint.selector);
+    rewardToken.setRet(abi.encodeCall(IERC20Metadata.decimals, ()), false, abi.encode(18));
     rewardToken.setRet(abi.encodeCall(IERC20.approve, (address(treasury), 100 ether)), false, abi.encode(true));
 
-    _setAssetPair(address(rewardToken), branchChainId1, branchRewardTokenAddress);
+    _setAssetPair(address(rewardToken), branchChainId1, branchRewardTokenAddress, 18);
 
     vm.prank(owner);
     assetManager.setTreasury(address(treasury));
@@ -625,11 +627,11 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_initializeAsset() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
 
     vm.prank(owner);
     vm.expectEmit();
-    emit IAssetManager.AssetInitialized(address(hubAsset), branchChainId1, branchAsset1);
+    emit IAssetManager.AssetInitialized(address(hubAsset), branchChainId1, branchAsset1, 18);
     assetManager.initializeAsset(branchChainId1, address(hubAsset));
 
     entrypoint.assertLastCall(abi.encodeCall(IAssetManagerEntrypoint.initializeAsset, (branchChainId1, branchAsset1)));
@@ -661,6 +663,279 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     assetManager.initializeAsset(branchChainId1, address(hubAsset));
   }
 
+  function test_diff_branch_asset_and_hub_asset() public {
+    HubAsset hub = HubAsset(
+      _proxy(
+        address(new HubAsset()), abi.encodeCall(HubAsset.initialize, (owner, address(assetManager), 'Token', 'TKN', 18))
+      )
+    );
+
+    // HubAsset decimals: 18
+    _setAssetPair(address(hub), branchChainId1, branchAsset1, 18);
+    _setAssetPair(address(hub), branchChainId2, branchAsset1, 8);
+
+    vm.startPrank(address(entrypoint));
+
+    {
+      // Hub: 18, Branch: 18
+      vm.expectEmit();
+      emit IAssetManager.Deposited(branchChainId1, address(hub), address(1), 5 * 10 ** 18);
+      assetManager.deposit(branchChainId1, branchAsset1, address(1), 5 * 10 ** 18);
+
+      vm.expectEmit();
+      emit IAssetManager.Deposited(branchChainId1, address(hub), address(1), 1_000_000_000 * 10 ** 18);
+      assetManager.deposit(branchChainId1, branchAsset1, address(1), 1_000_000_000 * 10 ** 18);
+
+      // Hub: 18, Branch: 8
+      vm.expectEmit();
+      emit IAssetManager.Deposited(branchChainId2, address(hub), address(1), 15 * 10 ** 18);
+      assetManager.deposit(branchChainId2, branchAsset1, address(1), 15 * 10 ** 8);
+
+      // Hub: 18, Branch: 8
+      vm.expectEmit();
+      emit IAssetManager.Deposited(branchChainId2, address(hub), address(1), 100_001_001 * 10 ** (18 - 8));
+      assetManager.deposit(branchChainId2, branchAsset1, address(1), 100_001_001);
+
+      // Hub: 18, Branch: 8
+      vm.expectEmit();
+      emit IAssetManager.Deposited(branchChainId2, address(hub), address(1), 1 * 10 ** (18 - 8));
+      assetManager.deposit(branchChainId2, branchAsset1, address(1), 1);
+
+      vm.expectEmit();
+      emit IAssetManager.Deposited(branchChainId2, address(hub), address(1), 1_000_000_000 * 10 ** 18);
+      assetManager.deposit(branchChainId2, branchAsset1, address(1), 1_000_000_000 * 10 ** 8);
+
+      vm.stopPrank();
+    }
+
+    {
+      vm.startPrank(address(1));
+
+      // Hub: 18, Branch: 18
+      vm.expectEmit();
+      emit IAssetManager.Withdrawn(branchChainId1, address(hub), address(1), 1 * 10 ** 18, 1 * 10 ** 18);
+      assetManager.withdraw(branchChainId1, address(hub), address(1), 1 * 10 ** 18);
+
+      // Hub: 18, Branch: 8
+      vm.expectEmit();
+      emit IAssetManager.Withdrawn(branchChainId2, address(hub), address(1), 1 * 10 ** 18, 1 * 10 ** 8);
+      assetManager.withdraw(branchChainId2, address(hub), address(1), 1 * 10 ** 18);
+
+      vm.expectEmit();
+      emit IAssetManager.Withdrawn(branchChainId2, address(hub), address(1), 1_000_000_010_000_000_000, 100_000_001);
+      assetManager.withdraw(branchChainId2, address(hub), address(1), 1_000_000_010_000_000_000);
+
+      vm.expectEmit();
+      emit IAssetManager.Withdrawn(branchChainId2, address(hub), address(1), 1_000_000_000_000_000_000, 100_000_000);
+      assetManager.withdraw(branchChainId2, address(hub), address(1), 1_000_000_001_000_000_000);
+
+      vm.stopPrank();
+    }
+
+    _setVLFVaultFactory();
+    _setVLFVaultInstance(address(vlfVault), true);
+
+    vlfVault.setRet(abi.encodeCall(IERC4626.asset, ()), false, abi.encode(hub));
+    vlfVault.setRet(abi.encodeCall(IERC4626.totalAssets, ()), false, abi.encode(10_000_000_000 ether));
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.maxDepositFromChainId, (address(1), branchChainId1)),
+      false,
+      abi.encode(type(uint256).max)
+    );
+    vlfVault.setRet(
+      abi.encodeCall(IVLFVault.maxDepositFromChainId, (address(1), branchChainId2)),
+      false,
+      abi.encode(type(uint256).max)
+    );
+
+    vm.startPrank(owner);
+    vm.expectEmit();
+    emit IAssetManager.VLFInitialized(address(hub), branchChainId1, address(vlfVault), branchAsset1);
+    assetManager.initializeVLF(branchChainId1, address(vlfVault));
+    assetManager.setStrategist(address(vlfVault), address(1));
+
+    assetManager.initializeVLF(branchChainId2, address(vlfVault));
+
+    vm.stopPrank();
+
+    {
+      vm.startPrank(address(1));
+      // Hub: 18, Branch: 18
+      vm.expectEmit();
+      emit IAssetManager.VLFAllocated(address(1), branchChainId1, address(vlfVault), 1 * 10 ** 18, 1 * 10 ** 18);
+      assetManager.allocateVLF(branchChainId1, address(vlfVault), 1 * 10 ** 18);
+
+      vm.expectEmit();
+      emit IAssetManager.VLFAllocated(address(1), branchChainId1, address(vlfVault), 1000 * 10 ** 18, 1000 * 10 ** 18);
+      assetManager.allocateVLF(branchChainId1, address(vlfVault), 1000 * 10 ** 18);
+
+      // Hub: 18, Branch: 8
+      vm.expectEmit();
+      emit IAssetManager.VLFAllocated(address(1), branchChainId2, address(vlfVault), 1 * 10 ** 18, 1 * 10 ** 8);
+      assetManager.allocateVLF(branchChainId2, address(vlfVault), 1 * 10 ** 18);
+
+      // 1_000_000_000 000 00000 00000 00000
+      vm.expectEmit();
+      emit IAssetManager.VLFAllocated(
+        address(1), branchChainId2, address(vlfVault), 1_000_000_000_000_000_000, 1 * 10 ** 8
+      );
+      assetManager.allocateVLF(branchChainId2, address(vlfVault), 1_000_000_001_000_000_000);
+
+      vm.expectEmit();
+      emit IAssetManager.VLFAllocated(
+        address(1), branchChainId2, address(vlfVault), 1_000_000_000 * 10 ** 18, 1_000_000_000 * 10 ** 8
+      );
+      assetManager.allocateVLF(branchChainId2, address(vlfVault), 1_000_000_000 * 10 ** 18);
+
+      vm.stopPrank();
+    }
+
+    vm.startPrank(address(entrypoint));
+    {
+      uint256 amount;
+
+      amount = 1 * 10 ** 18;
+      vlfVault.setRet(
+        abi.encodeCall(IVLFVault.depositFromChainId, (amount, address(1), branchChainId1)), false, abi.encode(amount)
+      );
+
+      // Hub: 18, Branch: 18
+      vm.expectEmit();
+      emit IAssetManager.DepositedWithSupplyVLF(
+        branchChainId1, address(hub), address(1), address(vlfVault), amount, amount
+      );
+      assetManager.depositWithSupplyVLF(branchChainId1, branchAsset1, address(1), address(vlfVault), amount);
+
+      // Hub: 18, Branch: 8
+      amount = 1 * 10 ** 8;
+      vlfVault.setRet(
+        abi.encodeCall(IVLFVault.depositFromChainId, (1 * 10 ** 18, address(1), branchChainId2)),
+        false,
+        abi.encode(1 * 10 ** 18)
+      );
+
+      vm.expectEmit();
+      emit IAssetManager.DepositedWithSupplyVLF(
+        branchChainId2, address(hub), address(1), address(vlfVault), 1 * 10 ** 18, 1 * 10 ** 18
+      );
+      assetManager.depositWithSupplyVLF(branchChainId2, branchAsset1, address(1), address(vlfVault), amount);
+
+      amount = 122_022_001;
+      vlfVault.setRet(
+        abi.encodeCall(IVLFVault.depositFromChainId, (122_022_001 * 10 ** (18 - 8), address(1), branchChainId2)),
+        false,
+        abi.encode(122_022_001 * 10 ** (18 - 8))
+      );
+
+      vm.expectEmit();
+      emit IAssetManager.DepositedWithSupplyVLF(
+        branchChainId2,
+        address(hub),
+        address(1),
+        address(vlfVault),
+        122_022_001 * 10 ** (18 - 8),
+        122_022_001 * 10 ** (18 - 8)
+      );
+      assetManager.depositWithSupplyVLF(branchChainId2, branchAsset1, address(1), address(vlfVault), amount);
+
+      amount = 11_022_001;
+      vlfVault.setRet(
+        abi.encodeCall(IVLFVault.depositFromChainId, (11_022_001 * 10 ** (18 - 8), address(1), branchChainId2)),
+        false,
+        abi.encode(11_022_001 * 10 ** (18 - 8))
+      );
+
+      vm.expectEmit();
+      emit IAssetManager.DepositedWithSupplyVLF(
+        branchChainId2,
+        address(hub),
+        address(1),
+        address(vlfVault),
+        11_022_001 * 10 ** (18 - 8),
+        11_022_001 * 10 ** (18 - 8)
+      );
+      assetManager.depositWithSupplyVLF(branchChainId2, branchAsset1, address(1), address(vlfVault), amount);
+    }
+
+    {
+      // Hub: 18, Branch: 18
+      vm.expectEmit();
+      emit IAssetManager.VLFDeallocated(branchChainId1, address(vlfVault), 1 * 10 ** 18);
+      assetManager.deallocateVLF(branchChainId1, address(vlfVault), 1 * 10 ** 18);
+
+      // Hub: 18, Branch: 8
+      vm.expectEmit();
+      emit IAssetManager.VLFDeallocated(branchChainId2, address(vlfVault), 1 * 10 ** 18);
+      assetManager.deallocateVLF(branchChainId2, address(vlfVault), 1 * 10 ** 8);
+
+      vm.expectEmit();
+      emit IAssetManager.VLFDeallocated(branchChainId2, address(vlfVault), (101_010_101 * 10 ** 8) * 10 ** (18 - 8));
+      assetManager.deallocateVLF(branchChainId2, address(vlfVault), 101_010_101 * 10 ** 8);
+
+      vm.expectEmit();
+      emit IAssetManager.VLFDeallocated(branchChainId2, address(vlfVault), 112233445123 * 10 ** (18 - 8));
+      assetManager.deallocateVLF(branchChainId2, address(vlfVault), 112233445123);
+    }
+
+    {
+      // Hub: 18, Branch: 18
+      vm.expectEmit();
+      emit IAssetManager.VLFRewardSettled(branchChainId1, address(vlfVault), address(hub), 100);
+      assetManager.settleVLFYield(branchChainId1, address(vlfVault), 100);
+
+      // Hub: 18, Branch: 8
+      vm.expectEmit();
+      emit IAssetManager.VLFRewardSettled(branchChainId2, address(vlfVault), address(hub), 100 * 10 ** (18 - 8));
+      assetManager.settleVLFYield(branchChainId2, address(vlfVault), 100);
+
+      vm.expectEmit();
+      emit IAssetManager.VLFRewardSettled(
+        branchChainId2, address(vlfVault), address(hub), 112233445123 * 10 ** (18 - 8)
+      );
+      assetManager.settleVLFYield(branchChainId2, address(vlfVault), 112233445123);
+    }
+
+    {
+      // Hub: 18, Branch: 18
+      vm.expectEmit();
+      emit IAssetManager.VLFLossSettled(branchChainId1, address(vlfVault), address(hub), 100);
+      assetManager.settleVLFLoss(branchChainId1, address(vlfVault), 100);
+
+      // Hub: 18, Branch: 8
+      vm.expectEmit();
+      emit IAssetManager.VLFLossSettled(branchChainId2, address(vlfVault), address(hub), 100 * 10 ** (18 - 8));
+      assetManager.settleVLFLoss(branchChainId2, address(vlfVault), 100);
+
+      vm.expectEmit();
+      emit IAssetManager.VLFLossSettled(branchChainId2, address(vlfVault), address(hub), 112233445123 * 10 ** (18 - 8));
+      assetManager.settleVLFLoss(branchChainId2, address(vlfVault), 112233445123);
+    }
+
+    {
+      // Hub: 18, Branch: 18
+      vm.expectEmit();
+      emit IAssetManager.VLFRewardSettled(branchChainId1, address(vlfVault), address(hub), 100);
+      assetManager.settleVLFExtraRewards(branchChainId1, address(vlfVault), address(branchAsset1), 100);
+
+      // Hub: 18, Branch: 8
+      vm.expectEmit();
+      emit IAssetManager.VLFRewardSettled(branchChainId2, address(vlfVault), address(hub), 100 * 10 ** (18 - 8));
+      assetManager.settleVLFExtraRewards(branchChainId2, address(vlfVault), address(branchAsset1), 100);
+
+      vm.expectEmit();
+      emit IAssetManager.VLFRewardSettled(
+        branchChainId2, address(vlfVault), address(hub), 112233445123 * 10 ** (18 - 8)
+      );
+      assetManager.settleVLFExtraRewards(branchChainId2, address(vlfVault), address(branchAsset1), 112233445123);
+    }
+    vm.stopPrank();
+
+    // Hub.decimals < Branch.decimals
+    vm.prank(owner);
+    vm.expectRevert(_errInvalidParameter('branchAssetDecimals'));
+    assetManager.setAssetPair(address(hub), branchChainId1, branchAsset2, 24);
+  }
+
   function test_isLiquidityManager() public {
     bytes32 liquidityManagerRole = assetManager.LIQUIDITY_MANAGER_ROLE();
 
@@ -677,8 +952,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_setBranchLiquidityThreshold() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setAssetPair(address(hubAsset), branchChainId2, branchAsset2);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
+    _setAssetPair(address(hubAsset), branchChainId2, branchAsset2, 18);
 
     vm.startPrank(liquidityManager);
 
@@ -728,8 +1003,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_setBranchLiquidityThreshold_batch() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
-    _setAssetPair(address(hubAsset), branchChainId2, branchAsset2);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
+    _setAssetPair(address(hubAsset), branchChainId2, branchAsset2, 18);
 
     vm.startPrank(liquidityManager);
 
@@ -839,7 +1114,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_initializeVLF() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
     _setVLFVaultFactory();
     _setVLFVaultInstance(address(vlfVault), true);
 
@@ -864,7 +1139,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_initializeVLF_InvalidVLFVault() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
     _setVLFVaultFactory();
     _setVLFVaultInstance(address(vlfVault), false);
 
@@ -894,14 +1169,14 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_setAssetPair() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
 
     assertEq(assetManager.branchAsset(address(hubAsset), branchChainId1), branchAsset1);
   }
 
   function test_setAssetPair_Unauthorized() public {
     vm.expectRevert(_errAccessControlUnauthorized(address(this), assetManager.DEFAULT_ADMIN_ROLE()));
-    assetManager.setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    assetManager.setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
   }
 
   function test_setAssetPair_InvalidParameter() public {
@@ -913,10 +1188,10 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     vm.startPrank(owner);
 
     vm.expectRevert(_errInvalidHubAsset(address(0)));
-    assetManager.setAssetPair(address(0), branchChainId1, branchAsset1);
+    assetManager.setAssetPair(address(0), branchChainId1, branchAsset1, 18);
 
     vm.expectRevert(_errInvalidHubAsset(user1));
-    assetManager.setAssetPair(user1, branchChainId1, branchAsset1);
+    assetManager.setAssetPair(user1, branchChainId1, branchAsset1, 18);
 
     vm.stopPrank();
   }
@@ -1058,7 +1333,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
   }
 
   function test_setStrategist_InvalidVLF() public {
-    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1);
+    _setAssetPair(address(hubAsset), branchChainId1, branchAsset1, 18);
     _setVLFVaultFactory();
     _setVLFVaultInstance(address(vlfVault), false);
 
@@ -1067,12 +1342,14 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     assetManager.setStrategist(address(vlfVault), strategist);
   }
 
-  function _setAssetPair(address hubAsset_, uint256 chainId_, address branchAsset_) internal {
+  function _setAssetPair(address hubAsset_, uint256 chainId_, address branchAsset_, uint8 branchAssetDecimals_)
+    internal
+  {
     _setHubAssetFactory();
     _setHubAssetInstance(address(hubAsset_), true);
 
     vm.prank(owner);
-    assetManager.setAssetPair(hubAsset_, chainId_, branchAsset_);
+    assetManager.setAssetPair(hubAsset_, chainId_, branchAsset_, branchAssetDecimals_);
   }
 
   function _setHubAssetFactory() internal {
