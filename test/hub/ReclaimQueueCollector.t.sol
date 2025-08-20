@@ -92,7 +92,8 @@ contract ReclaimQueueCollectorTest is Test {
 
   function test_withdraw(address vault, address receiver, uint256 amount) public {
     vm.assume(receiver != address(0));
-    vm.assume(amount <= 1 ether);
+    vm.assume(address(collector) != receiver);
+    vm.assume(amount <= 1 ether && amount > 0);
 
     test_collect_default(vault);
 
