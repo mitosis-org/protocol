@@ -21,6 +21,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     uint256 branchLiquidity;
     uint256 branchAllocated;
     uint256 branchLiquidityThreshold;
+    uint8 branchAssetDecimals;
   }
 
   struct BranchAssetState {
