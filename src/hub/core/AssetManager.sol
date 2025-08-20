@@ -64,11 +64,7 @@ contract AssetManager is
 
   //=========== NOTE: QUOTE FUNCTIONS ===========//
 
-  function quoteInitializeAsset(uint256 chainId, address branchAsset)
-    external
-    view
-    returns (uint256)
-  {
+  function quoteInitializeAsset(uint256 chainId, address branchAsset) external view returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
     return $.entrypoint.quoteInitializeAsset(chainId, branchAsset);
   }
@@ -361,6 +357,8 @@ contract AssetManager is
     _assertHubAssetFactorySet($);
     _assertHubAssetInstance($, hubAsset);
     _assertBranchAssetPairNotExist($, branchChainId, branchAsset);
+
+    require(IHubAsset(hubAsset).decimals() >= branchAssetDecimals, StdError.InvalidParameter('branchAssetDecimals'));
 
     HubAssetState storage hubAssetState = _hubAssetState($, hubAsset, branchChainId);
     hubAssetState.branchAsset = branchAsset;
