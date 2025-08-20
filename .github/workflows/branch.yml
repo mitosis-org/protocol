@@ -59,7 +59,7 @@ jobs:
 
           sed \
             -e "s/{{git_tag}}/$(git describe --abbrev=0 --tags origin/main)/g" \
-            -e "s/{{git_commit}}/$(git rev-parse HEAD)/g" \
+            -e "s/{{git_commit}}/$(git rev-parse origin/main)/g" \
             src/lib/Versioned.sol > src/lib/Versioned.sol.tmp
 
           mv src/lib/Versioned.sol.tmp src/lib/Versioned.sol
