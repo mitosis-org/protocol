@@ -77,13 +77,8 @@ contract AssetManagerEntrypoint is
     return _ccRegistry.mitosisVaultEntrypoint(chainId);
   }
 
-  function quoteInitializeAsset(uint256 chainId, address branchAsset)
-    external
-    view
-    returns (uint256)
-  {
-    bytes memory enc =
-      MsgInitializeAsset({ asset: branchAsset.toBytes32() }).encode();
+  function quoteInitializeAsset(uint256 chainId, address branchAsset) external view returns (uint256) {
+    bytes memory enc = MsgInitializeAsset({ asset: branchAsset.toBytes32() }).encode();
     return _quoteToBranch(chainId, MsgType.MsgInitializeAsset, enc);
   }
 
@@ -121,8 +116,7 @@ contract AssetManagerEntrypoint is
     onlyAssetManager
     onlyDispatchable(chainId)
   {
-    bytes memory enc =
-      MsgInitializeAsset({ asset: branchAsset.toBytes32() }).encode();
+    bytes memory enc = MsgInitializeAsset({ asset: branchAsset.toBytes32() }).encode();
     _dispatchToBranch(chainId, MsgType.MsgInitializeAsset, enc);
   }
 
