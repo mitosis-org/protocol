@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IERC20 } from '@oz/token/ERC20/IERC20.sol';
 import { SafeERC20 } from '@oz/token/ERC20/utils/SafeERC20.sol';
+import { Address } from '@oz/utils/Address.sol';
 import { Math } from '@oz/utils/math/Math.sol';
 import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/AccessControlEnumerableUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
@@ -93,7 +94,7 @@ contract MitosisVault is
     return _isAssetInitialized(_getStorageV1(), asset);
   }
 
-  function entrypoint() public view override(IMitosisVault, MitosisVaultVLF) returns (address) {
+  function entrypoint() external view override returns (address) {
     return address(_getStorageV1().entrypoint);
   }
 
@@ -117,11 +118,10 @@ contract MitosisVault is
   }
 
   function deposit(address asset, address to, uint256 amount) external payable whenNotPaused {
-    StorageV1 storage $ = _getStorageV1();
-
     _deposit(asset, to, amount);
 
-    $.entrypoint.deposit{ value: msg.value }(asset, to, amount);
+    _entrypoint().deposit{ value: msg.value }(asset, to, amount, _msgSender());
+
     emit Deposited(asset, to, amount);
   }
 
@@ -169,6 +169,10 @@ contract MitosisVault is
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
+
+  function _entrypoint() internal view override returns (IMitosisVaultEntrypoint) {
+    return IMitosisVaultEntrypoint(_getStorageV1().entrypoint);
+  }
 
   function _assertOnlyEntrypoint(StorageV1 storage $) internal view {
     require(_msgSender() == address($.entrypoint), StdError.Unauthorized());

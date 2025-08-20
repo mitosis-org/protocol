@@ -21,6 +21,7 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
     uint256 branchLiquidity;
     uint256 branchAllocated;
     uint256 branchLiquidityThreshold;
+    uint8 branchAssetDecimals;
   }
 
   struct BranchAssetState {
@@ -93,6 +94,10 @@ abstract contract AssetManagerStorageV1 is IAssetManagerStorageV1, ContextUpgrad
 
   function branchLiquidityThreshold(address hubAsset_, uint256 chainId) external view returns (uint256) {
     return _hubAssetState(_getStorageV1(), hubAsset_, chainId).branchLiquidityThreshold;
+  }
+
+  function branchAssetDecimals(address hubAsset_, uint256 chainId) external view returns (uint8) {
+    return _hubAssetState(_getStorageV1(), hubAsset_, chainId).branchAssetDecimals;
   }
 
   function branchAvailableLiquidity(address hubAsset_, uint256 chainId) external view returns (uint256) {

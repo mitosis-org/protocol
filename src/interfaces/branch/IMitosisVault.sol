@@ -26,6 +26,7 @@ interface IMitosisVault is IMitosisVaultVLF {
   //=========== NOTE: ERROR DEFINITIONS ===========//
 
   error IMitosisVault__ExceededCap(address asset, uint256 increasedSupply, uint256 availableCap);
+  error IMitosisVault__InsufficientBalance(address asset, uint256 amount);
 
   error IMitosisVault__AssetNotInitialized(address asset);
   error IMitosisVault__AssetAlreadyInitialized(address asset);

@@ -32,15 +32,19 @@ interface IMitosisVaultEntrypoint {
 
   //=========== NOTE: MUTATIVE FUNCTIONS ===========//
 
-  function deposit(address asset, address to, uint256 amount) external payable;
+  function deposit(address asset, address to, uint256 amount, address refundTo) external payable;
 
-  function depositWithSupplyVLF(address asset, address to, address hubVLFVault, uint256 amount) external payable;
+  function depositWithSupplyVLF(address asset, address to, address hubVLFVault, uint256 amount, address refundTo)
+    external
+    payable;
 
-  function deallocateVLF(address hubVLFVault, uint256 amount) external payable;
+  function deallocateVLF(address hubVLFVault, uint256 amount, address refundTo) external payable;
 
-  function settleVLFYield(address hubVLFVault, uint256 amount) external payable;
+  function settleVLFYield(address hubVLFVault, uint256 amount, address refundTo) external payable;
 
-  function settleVLFLoss(address hubVLFVault, uint256 amount) external payable;
+  function settleVLFLoss(address hubVLFVault, uint256 amount, address refundTo) external payable;
 
-  function settleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount) external payable;
+  function settleVLFExtraRewards(address hubVLFVault, address reward, uint256 amount, address refundTo)
+    external
+    payable;
 }

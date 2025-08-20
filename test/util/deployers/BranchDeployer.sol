@@ -3,6 +3,8 @@ pragma solidity ^0.8.28;
 
 import { console } from '@std/console.sol';
 
+import { WETH } from '@solady/tokens/WETH.sol';
+
 import { GovernanceEntrypoint } from '../../../src/branch/governance/GovernanceEntrypoint.sol';
 import { MitosisVault } from '../../../src/branch/MitosisVault.sol';
 import { MitosisVaultEntrypoint } from '../../../src/branch/MitosisVaultEntrypoint.sol';
@@ -45,7 +47,8 @@ abstract contract BranchDeployer is AbstractDeployer {
     bytes32 hubGovernanceEntrypointAddress,
     BranchConfigs.DeployConfig memory config
   ) internal withBranchChainName(chain) returns (BranchImplT.Chain memory impl, BranchProxyT.Chain memory proxy) {
-    (impl.mitosisVault, proxy.mitosisVault) = _dpbMitosisVault(owner);
+    impl.nativeWrappedToken = new WETH();
+    (impl.mitosisVault, proxy.mitosisVault) = _dpbMitosisVault(address(impl.nativeWrappedToken), owner);
     (
       impl.mitosisVaultEntrypoint, //
       proxy.mitosisVaultEntrypoint
@@ -122,11 +125,11 @@ abstract contract BranchDeployer is AbstractDeployer {
     return (impl, GovernanceEntrypoint(proxy));
   }
 
-  function _dpbMitosisVault(address owner_) internal returns (address, MitosisVault) {
+  function _dpbMitosisVault(address weth_, address owner_) internal returns (address, MitosisVault) {
     (address impl, address payable proxy) = deployImplAndProxy(
       branchChainName,
       '.mitosis-vault',
-      type(MitosisVault).creationCode,
+      abi.encodePacked(type(MitosisVault).creationCode, abi.encode(weth_)),
       abi.encodeCall(MitosisVault.initialize, (owner_))
     );
     return (impl, MitosisVault(proxy));

@@ -16,6 +16,12 @@ import { MockMitosisVaultEntrypoint } from '../mock/MockMitosisVaultEntrypoint.t
 import { MockVLFStrategyExecutor } from '../mock/MockVLFStrategyExecutor.t.sol';
 import { Toolkit } from '../util/Toolkit.sol';
 
+contract NonReceiveable {
+  receive() external payable {
+    revert('hehe');
+  }
+}
+
 contract MitosisVaultTest is Toolkit {
   MitosisVault internal _mitosisVault;
   MockMitosisVaultEntrypoint internal _mitosisVaultEntrypoint;
@@ -29,7 +35,12 @@ contract MitosisVaultTest is Toolkit {
 
   function setUp() public {
     _mitosisVault = MitosisVault(
-      payable(new ERC1967Proxy(address(new MitosisVault()), abi.encodeCall(MitosisVault.initialize, (owner))))
+      payable(
+        new ERC1967Proxy(
+          address(new MitosisVault()), //
+          abi.encodeCall(MitosisVault.initialize, (owner))
+        )
+      )
     );
 
     _mitosisVaultEntrypoint = new MockMitosisVaultEntrypoint();
@@ -91,13 +102,19 @@ contract MitosisVaultTest is Toolkit {
     vm.prank(owner);
     _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
 
+    // set quote deposit gas to 1 ether
+    _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.deposit.selector, 1 ether);
+    _mitosisVaultEntrypoint.setGas(_mitosisVaultEntrypoint.quoteDeposit.selector, 1 ether);
+
+    vm.deal(user1, 100 ether);
     vm.startPrank(user1);
 
     _token.approve(address(_mitosisVault), amount);
-    _mitosisVault.deposit(address(_token), user1, amount);
+    _mitosisVault.deposit{ value: 10 ether }(address(_token), user1, amount);
 
     vm.stopPrank();
 
+    assertEq(user1.balance, 99 ether); // returned 9 ether
     assertEq(_token.balanceOf(user1), 0);
     assertEq(_token.balanceOf(address(_mitosisVault)), amount);
     assertEq(_mitosisVault.maxCap(address(_token)), type(uint64).max);

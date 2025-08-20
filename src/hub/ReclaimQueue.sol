@@ -12,7 +12,7 @@ import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { IReclaimQueueCollector } from '../interfaces/hub/IReclaimQueueCollector.sol';
-import { IReclaimQueue } from '../interfaces/hub/matrix/IReclaimQueue.sol';
+import { IReclaimQueue } from '../interfaces/hub/IReclaimQueue.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { LibQueue } from '../lib/LibQueue.sol';
 import { Pausable } from '../lib/Pausable.sol';
@@ -156,31 +156,21 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     if (reqIdFrom >= reqIdTo) return new Request[](0);
 
     requests = new Request[](reqIdTo - reqIdFrom);
-    for (uint32 i = reqIdFrom; i < reqIdTo;) {
+    for (uint32 i = reqIdFrom; i < reqIdTo; i++) {
       requests[i - reqIdFrom] = q$.items[index.itemAt(i)];
     }
   }
 
   function previewClaim(address receiver, address vault) external view returns (ClaimResult memory) {
-    StorageV1 storage $ = _getStorageV1();
-    LibQueue.UintOffsetQueue storage index = $.queues[vault].indexes[receiver];
+    return _previewClaimPagination(_getStorageV1(), receiver, vault, 0, MAX_CLAIM_SIZE);
+  }
 
-    uint32 reqIdFrom = index.offset();
-    uint32 reqIdTo = Math.min(reqIdFrom + MAX_CLAIM_SIZE, index.size()).toUint32();
-
-    ClaimResult memory res = _calcClaim(
-      $.queues[vault],
-      ClaimResult({
-        reqIdFrom: reqIdFrom, //
-        reqIdTo: reqIdTo,
-        totalSharesClaimed: 0,
-        totalAssetsClaimed: 0
-      }),
-      receiver,
-      $.vaults[vault].decimalsOffset
-    );
-
-    return res;
+  function previewClaimPagination(address receiver, address vault, uint256 offset, uint256 limit)
+    external
+    view
+    returns (ClaimResult memory)
+  {
+    return _previewClaimPagination(_getStorageV1(), receiver, vault, offset, limit);
   }
 
   function previewSync(address vault, uint256 requestCount) external view returns (uint256, uint256) {
@@ -305,11 +295,15 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     uint48 reqTimeBoundary;
   }
 
-  function _fetchInitialCalcClaimState(QueueState storage q$) internal view returns (CalcClaimState memory) {
+  function _fetchInitialCalcClaimState(QueueState storage q$) internal view returns (CalcClaimState memory state) {
+    if (q$.logs.length == 0) {
+      return state;
+    }
+
     uint256 cachedLogPos = q$.logs.length - 1;
     SyncLog memory cached = _unsafeAccess(q$.logs, cachedLogPos);
 
-    return CalcClaimState({
+    state = CalcClaimState({
       cachedLogPos: cachedLogPos,
       cached: cached,
       queueOffset: q$.offset,
@@ -325,6 +319,30 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     SyncLog memory log = _unsafeAccess(syncLogs, pos);
 
     return (log, pos);
+  }
+
+  function _previewClaimPagination(StorageV1 storage $, address receiver, address vault, uint256 offset, uint256 limit)
+    internal
+    view
+    returns (ClaimResult memory res)
+  {
+    LibQueue.UintOffsetQueue storage index = $.queues[vault].indexes[receiver];
+
+    uint32 reqIdFrom = index.offset() + offset.toUint32();
+    uint32 reqIdTo = Math.min(reqIdFrom + limit.toUint32(), index.size()).toUint32();
+    if (reqIdFrom >= reqIdTo) return res;
+
+    res = _calcClaim(
+      $.queues[vault],
+      ClaimResult({
+        reqIdFrom: reqIdFrom, //
+        reqIdTo: reqIdTo,
+        totalSharesClaimed: 0,
+        totalAssetsClaimed: 0
+      }),
+      receiver,
+      $.vaults[vault].decimalsOffset
+    );
   }
 
   function _calcClaim(QueueState storage q$, ClaimResult memory res, address receiver, uint8 decimalsOffset)

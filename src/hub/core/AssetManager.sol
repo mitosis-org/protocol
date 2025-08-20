@@ -97,6 +97,10 @@ contract AssetManager is
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
     address hubAsset = _branchAssetState($, chainId, branchAsset).hubAsset;
+    amount = _scaleToHubDecimals(
+      amount, _hubAssetState($, hubAsset, chainId).branchAssetDecimals, IHubAsset(hubAsset).decimals()
+    );
+
     _mint($, chainId, hubAsset, to, amount);
 
     emit Deposited(chainId, hubAsset, to, amount);
@@ -115,6 +119,11 @@ contract AssetManager is
     // NOTE: We don't need to check if the vlfVault is registered instance of VLFVaultFactory
 
     address hubAsset = _branchAssetState($, chainId, branchAsset).hubAsset;
+
+    amount = _scaleToHubDecimals(
+      amount, _hubAssetState($, hubAsset, chainId).branchAssetDecimals, IHubAsset(hubAsset).decimals()
+    );
+
     uint256 supplyAmount = 0;
 
     if (hubAsset != IVLFVault(vlfVault).asset()) {
@@ -145,13 +154,18 @@ contract AssetManager is
     address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
+    uint256 amountBranchUnit;
+    (amountBranchUnit, amount) = _scaleToBranchDecimals(
+      amount, _hubAssetState($, hubAsset, chainId).branchAssetDecimals, IHubAsset(hubAsset).decimals()
+    );
+
     _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, amount);
     _assertBranchLiquidityThresholdSatisfied($, hubAsset, chainId, amount);
 
     _burn($, chainId, hubAsset, _msgSender(), amount);
-    $.entrypoint.withdraw{ value: msg.value }(chainId, branchAsset, to, amount);
+    $.entrypoint.withdraw{ value: msg.value }(chainId, branchAsset, to, amountBranchUnit);
 
-    emit Withdrawn(chainId, hubAsset, to, amount);
+    emit Withdrawn(chainId, hubAsset, to, amount, amountBranchUnit);
   }
 
   //=========== NOTE: VLF FUNCTIONS ===========//
@@ -163,17 +177,23 @@ contract AssetManager is
     _assertOnlyStrategist($, vlfVault);
     _assertVLFInitialized($, chainId, vlfVault);
 
+    address hubAsset = IVLFVault(vlfVault).asset();
+    HubAssetState storage hubAssetState = _hubAssetState($, hubAsset, chainId);
+
+    uint256 amountBranchUnit;
+    (amountBranchUnit, amount) =
+      _scaleToBranchDecimals(amount, hubAssetState.branchAssetDecimals, IHubAsset(hubAsset).decimals());
+
     uint256 idle = _vlfIdle($, vlfVault);
     require(amount <= idle, IAssetManager__VLFLiquidityInsufficient(vlfVault));
 
-    $.entrypoint.allocateVLF{ value: msg.value }(chainId, vlfVault, amount);
+    $.entrypoint.allocateVLF{ value: msg.value }(chainId, vlfVault, amountBranchUnit);
 
-    address hubAsset = IVLFVault(vlfVault).asset();
     _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, amount);
-    _hubAssetState($, hubAsset, chainId).branchAllocated += amount;
+    hubAssetState.branchAllocated += amount;
     $.vlfStates[vlfVault].allocation += amount;
 
-    emit VLFAllocated(_msgSender(), chainId, vlfVault, amount);
+    emit VLFAllocated(_msgSender(), chainId, vlfVault, amount, amountBranchUnit);
   }
 
   /// @dev only entrypoint
@@ -183,7 +203,11 @@ contract AssetManager is
     _assertOnlyEntrypoint($);
 
     address hubAsset = IVLFVault(vlfVault).asset();
-    _hubAssetState($, hubAsset, chainId).branchAllocated -= amount;
+    HubAssetState storage hubAssetState = _hubAssetState($, hubAsset, chainId);
+
+    amount = _scaleToHubDecimals(amount, hubAssetState.branchAssetDecimals, IHubAsset(hubAsset).decimals());
+
+    hubAssetState.branchAllocated -= amount;
     $.vlfStates[vlfVault].allocation -= amount;
 
     emit VLFDeallocated(chainId, vlfVault, amount);
@@ -212,13 +236,17 @@ contract AssetManager is
     _assertOnlyEntrypoint($);
 
     // Increase VLFVault's shares value.
-    address asset = IVLFVault(vlfVault).asset();
-    _mint($, chainId, asset, address(vlfVault), amount);
+    address hubAsset = IVLFVault(vlfVault).asset();
+    HubAssetState storage hubAssetState = _hubAssetState($, hubAsset, chainId);
 
-    _hubAssetState($, asset, chainId).branchAllocated += amount;
+    amount = _scaleToHubDecimals(amount, hubAssetState.branchAssetDecimals, IHubAsset(hubAsset).decimals());
+
+    _mint($, chainId, hubAsset, address(vlfVault), amount);
+
+    hubAssetState.branchAllocated += amount;
     $.vlfStates[vlfVault].allocation += amount;
 
-    emit VLFRewardSettled(chainId, vlfVault, asset, amount);
+    emit VLFRewardSettled(chainId, vlfVault, hubAsset, amount);
   }
 
   /// @dev only entrypoint
@@ -228,13 +256,17 @@ contract AssetManager is
     _assertOnlyEntrypoint($);
 
     // Decrease VLFVault's shares value.
-    address asset = IVLFVault(vlfVault).asset();
-    _burn($, chainId, asset, vlfVault, amount);
+    address hubAsset = IVLFVault(vlfVault).asset();
+    HubAssetState storage hubAssetState = _hubAssetState($, hubAsset, chainId);
 
-    _hubAssetState($, asset, chainId).branchAllocated -= amount;
+    amount = _scaleToHubDecimals(amount, hubAssetState.branchAssetDecimals, IHubAsset(hubAsset).decimals());
+
+    _burn($, chainId, hubAsset, vlfVault, amount);
+
+    hubAssetState.branchAllocated -= amount;
     $.vlfStates[vlfVault].allocation -= amount;
 
-    emit VLFLossSettled(chainId, vlfVault, asset, amount);
+    emit VLFLossSettled(chainId, vlfVault, hubAsset, amount);
   }
 
   /// @dev only entrypoint
@@ -248,12 +280,16 @@ contract AssetManager is
     _assertBranchAssetPairExist($, chainId, branchReward);
     _assertTreasurySet($);
 
-    address hubReward = _branchAssetState($, chainId, branchReward).hubAsset;
-    _mint($, chainId, hubReward, address(this), amount);
-    emit VLFRewardSettled(chainId, vlfVault, hubReward, amount);
+    address hubAsset = _branchAssetState($, chainId, branchReward).hubAsset;
+    HubAssetState storage hubAssetState = _hubAssetState($, hubAsset, chainId);
 
-    IHubAsset(hubReward).approve(address($.treasury), amount);
-    $.treasury.storeRewards(vlfVault, hubReward, amount);
+    amount = _scaleToHubDecimals(amount, hubAssetState.branchAssetDecimals, IHubAsset(hubAsset).decimals());
+
+    _mint($, chainId, hubAsset, address(this), amount);
+    emit VLFRewardSettled(chainId, vlfVault, hubAsset, amount);
+
+    IHubAsset(hubAsset).approve(address($.treasury), amount);
+    $.treasury.storeRewards(vlfVault, hubAsset, amount);
   }
 
   function setBranchLiquidityThreshold(uint256 chainId, address hubAsset, uint256 threshold)
@@ -288,11 +324,13 @@ contract AssetManager is
 
     StorageV1 storage $ = _getStorageV1();
 
-    address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
+    HubAssetState storage hubAssetState = _hubAssetState($, hubAsset, chainId);
+    address branchAsset = hubAssetState.branchAsset;
+    uint8 branchAssetDecimals = hubAssetState.branchAssetDecimals;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
     $.entrypoint.initializeAsset{ value: msg.value }(chainId, branchAsset);
-    emit AssetInitialized(hubAsset, chainId, branchAsset);
+    emit AssetInitialized(hubAsset, chainId, branchAsset, branchAssetDecimals);
   }
 
   function initializeVLF(uint256 chainId, address vlfVault) external payable onlyOwner whenNotPaused {
@@ -311,15 +349,22 @@ contract AssetManager is
     emit VLFInitialized(hubAsset, chainId, vlfVault, branchAsset);
   }
 
-  function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external onlyOwner {
+  function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset, uint8 branchAssetDecimals)
+    external
+    onlyOwner
+  {
     StorageV1 storage $ = _getStorageV1();
     _assertHubAssetFactorySet($);
     _assertHubAssetInstance($, hubAsset);
     _assertBranchAssetPairNotExist($, branchChainId, branchAsset);
 
-    _hubAssetState($, hubAsset, branchChainId).branchAsset = branchAsset;
+    require(IHubAsset(hubAsset).decimals() >= branchAssetDecimals, StdError.InvalidParameter('branchAssetDecimals'));
+
+    HubAssetState storage hubAssetState = _hubAssetState($, hubAsset, branchChainId);
+    hubAssetState.branchAsset = branchAsset;
+    hubAssetState.branchAssetDecimals = branchAssetDecimals;
     _branchAssetState($, branchChainId, branchAsset).hubAsset = hubAsset;
-    emit AssetPairSet(hubAsset, branchChainId, branchAsset);
+    emit AssetPairSet(hubAsset, branchChainId, branchAsset, branchAssetDecimals);
   }
 
   function setEntrypoint(address entrypoint_) external onlyOwner {
@@ -347,6 +392,26 @@ contract AssetManager is
   }
 
   //=========== NOTE: INTERNAL FUNCTIONS ===========//
+
+  function _scaleToHubDecimals(uint256 amountBranchUnit, uint8 branchAssetDecimals, uint8 hubAssetDecimals)
+    internal
+    pure
+    returns (uint256)
+  {
+    require(hubAssetDecimals >= branchAssetDecimals, StdError.NotSupported());
+    return amountBranchUnit * (10 ** (hubAssetDecimals - branchAssetDecimals));
+  }
+
+  function _scaleToBranchDecimals(uint256 amountHubUnit, uint8 branchAssetDecimals, uint8 hubAssetDecimals)
+    internal
+    pure
+    returns (uint256 amountBranchUnit, uint256 adjustedAmountHubUnit)
+  {
+    require(hubAssetDecimals >= branchAssetDecimals, StdError.NotSupported());
+    amountBranchUnit = amountHubUnit / (10 ** (hubAssetDecimals - branchAssetDecimals));
+    // Convert back to hub decimals for precision loss detection.
+    adjustedAmountHubUnit = amountBranchUnit * (10 ** (hubAssetDecimals - branchAssetDecimals));
+  }
 
   function _mint(StorageV1 storage $, uint256 chainId, address asset, address account, uint256 amount) internal {
     IHubAsset(asset).mint(account, amount);

@@ -131,6 +131,13 @@ interface IAssetManagerStorageV1 {
   function branchLiquidityThreshold(address hubAsset_, uint256 chainId) external view returns (uint256);
 
   /**
+   * @notice Retrieves the decimal places for a branch asset on a given chain
+   * @param hubAsset_ The address of the hub asset
+   * @param chainId The ID of the chain
+   */
+  function branchAssetDecimals(address hubAsset_, uint256 chainId) external view returns (uint8);
+
+  /**
    * @notice Get the available liquidity of branch asset for a given hub asset and chain ID
    * @dev The available amount of branch asset can be used for withdrawal or allocation.
    * @param hubAsset_ The address of the hub asset
@@ -183,8 +190,11 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param hubAsset The address of the hub asset
    * @param chainId The ID of the chain where the asset is initialized
    * @param branchAsset The address of the initialized branch asset
+   * @param branchAssetDecimals The decimals of the initialized branch asset
    */
-  event AssetInitialized(address indexed hubAsset, uint256 indexed chainId, address branchAsset);
+  event AssetInitialized(
+    address indexed hubAsset, uint256 indexed chainId, address branchAsset, uint8 branchAssetDecimals
+  );
 
   /**
    * @notice Emitted when a VLF is initialized
@@ -228,8 +238,11 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param hubAsset The address of the withdrawn asset
    * @param to The address receiving the withdrawn assets on the branch chain
    * @param amount The hubAsset amount to be withdrawn
+   * @param amountBranchUnit The branch asset amount to be actual withdrawn
    */
-  event Withdrawn(uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount);
+  event Withdrawn(
+    uint256 indexed chainId, address indexed hubAsset, address indexed to, uint256 amount, uint256 amountBranchUnit
+  );
 
   /**
    * @notice Emitted when a reward is settled from the branch chain to the hub chain for a specific VLF
@@ -255,8 +268,15 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param chainId The ID of the chain where the allocation occurs
    * @param vlfVault The address of the VLFVault to be reported the allocation
    * @param amount The amount allocated
+   * @param amountBranchUnit The branch asset amount to be actual allocation
    */
-  event VLFAllocated(address indexed strategist, uint256 indexed chainId, address indexed vlfVault, uint256 amount);
+  event VLFAllocated(
+    address indexed strategist,
+    uint256 indexed chainId,
+    address indexed vlfVault,
+    uint256 amount,
+    uint256 amountBranchUnit
+  );
 
   /**
    * @notice Emitted when assets are deallocated from the branch chain for a specific VLF
@@ -287,8 +307,9 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param hubAsset The address of the hub asset
    * @param branchChainId The ID of the branch chain
    * @param branchAsset The address of the branch asset
+   * @param branchAssetDecimals The decimals of the branch asset
    */
-  event AssetPairSet(address hubAsset, uint256 branchChainId, address branchAsset);
+  event AssetPairSet(address hubAsset, uint256 branchChainId, address branchAsset, uint8 branchAssetDecimals);
 
   /**
    * @notice Error thrown when a VLF has no claimable amount
@@ -481,8 +502,10 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param hubAsset The address of the hub asset
    * @param branchChainId The ID of the branch chain
    * @param branchAsset The address of the branch asset
+   * @param branchAssetDecimals The decimals of the branch asset
    */
-  function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset) external;
+  function setAssetPair(address hubAsset, uint256 branchChainId, address branchAsset, uint8 branchAssetDecimals)
+    external;
 
   /**
    * @notice Set the entrypoint address
