@@ -131,6 +131,13 @@ interface IAssetManagerStorageV1 {
   function branchLiquidityThreshold(address hubAsset_, uint256 chainId) external view returns (uint256);
 
   /**
+   * @notice Retrieves the decimal places for a branch asset on a given chain
+   * @param hubAsset_ The address of the hub asset
+   * @param chainId The ID of the chain
+   */
+  function branchAssetDecimals(address hubAsset_, uint256 chainId) external view returns (uint8);
+
+  /**
    * @notice Get the available liquidity of branch asset for a given hub asset and chain ID
    * @dev The available amount of branch asset can be used for withdrawal or allocation.
    * @param hubAsset_ The address of the hub asset
