@@ -1350,6 +1350,8 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
 
     vm.prank(owner);
     assetManager.setAssetPair(hubAsset_, chainId_, branchAsset_, branchAssetDecimals_);
+
+    require(assetManager.branchAssetDecimals(hubAsset_, chainId_) == branchAssetDecimals_, 'branchAssetDecimals');
   }
 
   function _setHubAssetFactory() internal {
