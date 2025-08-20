@@ -9,8 +9,14 @@ import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 import { IReclaimQueueCollector } from '../interfaces/hub/IReclaimQueueCollector.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { StdError } from '../lib/StdError.sol';
+import { Versioned } from '../lib/Versioned.sol';
 
-contract ReclaimQueueCollector is AccessControlEnumerableUpgradeable, UUPSUpgradeable, IReclaimQueueCollector {
+contract ReclaimQueueCollector is
+  AccessControlEnumerableUpgradeable,
+  UUPSUpgradeable,
+  IReclaimQueueCollector,
+  Versioned
+{
   using ERC7201Utils for string;
   using SafeERC20 for IERC20Metadata;
 
