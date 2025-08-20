@@ -6,6 +6,7 @@ enum MsgType {
   MsgInitializeAsset,
   MsgDeposit,
   MsgDepositWithSupplyVLF,
+  __Deprecated_MsgDepositWithSupplyEOL,
   MsgWithdraw,
   //=========== NOTE: VLF ===========//
   MsgInitializeVLF,
@@ -14,6 +15,7 @@ enum MsgType {
   MsgSettleVLFYield,
   MsgSettleVLFLoss,
   MsgSettleVLFExtraRewards,
+  __Deprecated_MsgInitializeEOL,
   //=========== NOTE: MITOGovernance ===========//
   MsgDispatchGovernanceExecution
 }
