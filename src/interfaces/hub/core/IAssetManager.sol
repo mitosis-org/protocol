@@ -261,6 +261,7 @@ interface IAssetManager is IAssetManagerStorageV1 {
    * @param chainId The ID of the chain where the allocation occurs
    * @param vlfVault The address of the VLFVault to be reported the allocation
    * @param amount The amount allocated
+   * @param amountBranchUnit The branch asset amount to be actual allocation
    */
   event VLFAllocated(
     address indexed strategist,
