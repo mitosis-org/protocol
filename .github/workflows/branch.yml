@@ -35,6 +35,7 @@ jobs:
               - 'foundry.toml'
               - 'soldeer.lock'
               - '.gitignore'
+              - '.github/**'
 
   refine-branch:
     needs: changes
