@@ -628,6 +628,39 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     queue.queueSyncLog(vault, 3);
   }
 
+  function test_previewSyncWithBudget() public {
+    // setup
+    {
+      vm.prank(user);
+      SimpleERC4626Vault(vault).approve(address(queue), 300 ether);
+      SimpleERC4626Vault(vault).mint(user, 300 ether);
+      asset.setRetERC20BalanceOf(vault, 300 ether);
+
+      _request(100 ether, 100 ether, 0);
+      _request(100 ether, 100 ether, 1);
+      _request(100 ether, 100 ether, 2);
+    }
+
+    uint256 totalSharesSynced;
+    uint256 totalAssetsSynced;
+    uint256 totalSyncedRequestsCount;
+
+    (totalSharesSynced, totalAssetsSynced, totalSyncedRequestsCount) = queue.previewSyncWithBudget(vault, 200 ether);
+    assertEq(totalSharesSynced, 200 ether, 'totalSharesSynced');
+    assertEq(totalAssetsSynced, 200 ether, 'totalAssetsSynced');
+    assertEq(totalSyncedRequestsCount, 2, 'totalSyncedRequestsCount');
+
+    (totalSharesSynced, totalAssetsSynced, totalSyncedRequestsCount) = queue.previewSyncWithBudget(vault, 230 ether);
+    assertEq(totalSharesSynced, 200 ether, 'totalSharesSynced');
+    assertEq(totalAssetsSynced, 200 ether, 'totalAssetsSynced');
+    assertEq(totalSyncedRequestsCount, 2, 'totalSyncedRequestsCount');
+
+    (totalSharesSynced, totalAssetsSynced, totalSyncedRequestsCount) = queue.previewSyncWithBudget(vault, 199 ether);
+    assertEq(totalSharesSynced, 100 ether, 'totalSharesSynced');
+    assertEq(totalAssetsSynced, 100 ether, 'totalAssetsSynced');
+    assertEq(totalSyncedRequestsCount, 1, 'totalSyncedRequestsCount');
+  }
+
   function test_pendingRequests_afterSync() public {
     test_sync();
 

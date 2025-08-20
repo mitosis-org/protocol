@@ -179,6 +179,36 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     return (res.totalSharesSynced, Math.min(res.totalAssetsOnRequest, res.totalAssetsOnReserve));
   }
 
+  function previewSyncWithBudget(address vault, uint256 budget)
+    external
+    view
+    returns (uint256 totalSharesSynced, uint256 totalAssetsSynced, uint256 totalSyncedRequestsCount)
+  {
+    StorageV1 storage $ = _getStorageV1();
+    QueueState storage q$ = $.queues[vault];
+
+    uint32 reqIdFrom = q$.offset;
+    uint32 reqIdTo = q$.items.length.toUint32();
+
+    for (uint32 i = reqIdFrom; i < reqIdTo;) {
+      Request memory req = q$.items[i];
+
+      uint256 shares = i == 0 ? req.sharesAcc : req.sharesAcc - q$.items[i - 1].sharesAcc;
+      uint256 assets = Math.min(req.assets, IERC4626(vault).previewRedeem(shares));
+
+      if (budget < assets) break;
+      budget -= assets;
+
+      totalSharesSynced += shares;
+      totalAssetsSynced += assets;
+      totalSyncedRequestsCount++;
+
+      unchecked {
+        ++i;
+      } // Use unchecked for gas savings
+    }
+  }
+
   // =========================== NOTE: QUEUE FUNCTIONS =========================== //
 
   function request(uint256 shares, address receiver, address vault) public whenNotPaused returns (uint256) {
