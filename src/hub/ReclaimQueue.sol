@@ -12,6 +12,7 @@ import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
 import { IReclaimQueue } from '../interfaces/hub/IReclaimQueue.sol';
+import { IReclaimQueueCollector } from '../interfaces/hub/IReclaimQueueCollector.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { LibQueue } from '../lib/LibQueue.sol';
 import { Pausable } from '../lib/Pausable.sol';
@@ -48,6 +49,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
   struct StorageV1 {
     address resolver;
+    address collector;
     mapping(address vault => QueueState) queues;
     mapping(address vault => VaultState) vaults;
   }
@@ -73,7 +75,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     _disableInitializers();
   }
 
-  function initialize(address owner_, address resolver_) public virtual initializer {
+  function initialize(address owner_, address resolver_, address collector_) public virtual initializer {
     __Pausable_init();
     __Ownable2Step_init();
     __Ownable_init(owner_);
@@ -82,12 +84,17 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     StorageV1 storage $ = _getStorageV1();
 
     _setResolver($, resolver_);
+    _setCollector($, collector_);
   }
 
   // =========================== NOTE: QUERY FUNCTIONS =========================== //
 
   function resolver() external view returns (address) {
     return address(_getStorageV1().resolver);
+  }
+
+  function collector() external view returns (address) {
+    return address(_getStorageV1().collector);
   }
 
   function reclaimPeriod(address vault) external view returns (uint256) {
@@ -170,6 +177,36 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     StorageV1 storage $ = _getStorageV1();
     SyncResult memory res = _calcSync($.queues[vault], vault, requestCount);
     return (res.totalSharesSynced, Math.min(res.totalAssetsOnRequest, res.totalAssetsOnReserve));
+  }
+
+  function previewSyncWithBudget(address vault, uint256 budget)
+    external
+    view
+    returns (uint256 totalSharesSynced, uint256 totalAssetsSynced, uint256 totalSyncedRequestsCount)
+  {
+    StorageV1 storage $ = _getStorageV1();
+    QueueState storage q$ = $.queues[vault];
+
+    uint32 reqIdFrom = q$.offset;
+    uint32 reqIdTo = q$.items.length.toUint32();
+
+    for (uint32 i = reqIdFrom; i < reqIdTo;) {
+      Request memory req = q$.items[i];
+
+      uint256 shares = i == 0 ? req.sharesAcc : req.sharesAcc - q$.items[i - 1].sharesAcc;
+      uint256 assets = Math.min(req.assets, IERC4626(vault).previewRedeem(shares));
+
+      if (budget < assets) break;
+      budget -= assets;
+
+      totalSharesSynced += shares;
+      totalAssetsSynced += assets;
+      totalSyncedRequestsCount++;
+
+      unchecked {
+        ++i;
+      } // Use unchecked for gas savings
+    }
   }
 
   // =========================== NOTE: QUEUE FUNCTIONS =========================== //
@@ -259,6 +296,10 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
   function setResolver(address resolver_) external onlyOwner {
     _setResolver(_getStorageV1(), resolver_);
+  }
+
+  function setCollector(address collector_) external onlyOwner {
+    _setCollector(_getStorageV1(), collector_);
   }
 
   function setReclaimPeriod(address vault, uint256 reclaimPeriod_) external onlyOwner {
@@ -491,7 +532,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
       res.totalSharesSynced += shares;
       res.totalAssetsOnRequest += req.assets;
-      res.totalAssetsOnReserve += IERC4626(vault).convertToAssets(shares);
+      res.totalAssetsOnReserve += IERC4626(vault).previewRedeem(shares);
 
       unchecked {
         ++i;
@@ -510,6 +551,15 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
     uint256 withdrawAmount = Math.min(res.totalAssetsOnRequest, res.totalAssetsOnReserve);
     IERC4626(vault).withdraw(withdrawAmount, address(this), address(this));
+
+    if (res.totalAssetsOnRequest < res.totalAssetsOnReserve) {
+      uint256 assetsCollected = res.totalAssetsOnReserve - res.totalAssetsOnRequest;
+      uint256 sharesCollected = IERC4626(vault).previewWithdraw(assetsCollected);
+
+      IERC20Metadata(vault).forceApprove($.collector, sharesCollected);
+      IReclaimQueueCollector($.collector).collect(vault, vault, sharesCollected);
+      IERC20Metadata(vault).forceApprove($.collector, 0);
+    }
 
     {
       SyncLog[] storage syncLogs = q$.logs;
@@ -556,6 +606,11 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
   function _setResolver(StorageV1 storage $, address resolver_) internal {
     $.resolver = resolver_;
     emit ResolverSet(resolver_);
+  }
+
+  function _setCollector(StorageV1 storage $, address collector_) internal {
+    $.collector = collector_;
+    emit CollectorSet(collector_);
   }
 
   function _setReclaimPeriod(StorageV1 storage $, address vault, uint256 reclaimPeriod_) internal {
