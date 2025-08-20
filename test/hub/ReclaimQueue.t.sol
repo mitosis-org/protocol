@@ -13,6 +13,7 @@ import { SafeCast } from '@oz/utils/math/SafeCast.sol';
 
 import { HubAsset } from '../../src/hub/core/HubAsset.sol';
 import { ReclaimQueue } from '../../src/hub/ReclaimQueue.sol';
+import { ReclaimQueueCollector } from '../../src/hub/ReclaimQueueCollector.sol';
 import { VLFVaultBasic } from '../../src/hub/vlf/VLFVaultBasic.sol';
 import { IAssetManager } from '../../src/interfaces/hub/core/IAssetManager.sol';
 import { IReclaimQueue } from '../../src/interfaces/hub/IReclaimQueue.sol';
@@ -205,6 +206,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
   address asset2;
   address vault2;
   ReclaimQueue queue;
+  ReclaimQueueCollector collector;
 
   function setUp() public {
     // set time to unix
@@ -231,8 +233,18 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     // deploy reclaim queue
     {
       address impl = address(new ReclaimQueue());
-      bytes memory initData = abi.encodeCall(ReclaimQueue.initialize, (owner, address(assetManager)));
+      bytes memory initData = abi.encodeCall(ReclaimQueue.initialize, (owner, address(assetManager), address(0)));
       queue = ReclaimQueue(payable(_proxy(impl, initData)));
+    }
+
+    // deploy reclaim queue collector
+    {
+      address impl = address(new ReclaimQueueCollector(address(queue)));
+      bytes memory initData = abi.encodeCall(ReclaimQueueCollector.initialize, (owner));
+      collector = ReclaimQueueCollector(payable(_proxy(impl, initData)));
+
+      vm.prank(owner);
+      queue.setCollector(address(collector));
     }
 
     // enable vault1 by default
@@ -460,7 +472,11 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       assertEq(totalAssetsSynced, expectedAssetsOnRequest, 'totalAssetsSynced');
     }
 
-    assertEq(SimpleERC4626Vault(vault).balanceOf(address(queue)), expectedSharesRemain, 'shares remain');
+    assertEq(
+      SimpleERC4626Vault(vault).balanceOf(address(collector)),
+      SimpleERC4626Vault(vault).previewWithdraw(expectedAssetsOnReserve - expectedAssetsOnRequest),
+      'shares remain'
+    );
     asset.assertERC20Transfer(address(queue), expectedAssetsOnRequest);
     _compareSyncLog(queue.queueSyncLog(vault, 0), makeSyncLog(_now(), 0, 3, 300 ether, totalSupply, totalAssets));
   }
@@ -610,6 +626,39 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
 
     vm.expectRevert(_errOutOfBounds(2, 3));
     queue.queueSyncLog(vault, 3);
+  }
+
+  function test_previewSyncWithBudget() public {
+    // setup
+    {
+      vm.prank(user);
+      SimpleERC4626Vault(vault).approve(address(queue), 300 ether);
+      SimpleERC4626Vault(vault).mint(user, 300 ether);
+      asset.setRetERC20BalanceOf(vault, 300 ether);
+
+      _request(100 ether, 100 ether, 0);
+      _request(100 ether, 100 ether, 1);
+      _request(100 ether, 100 ether, 2);
+    }
+
+    uint256 totalSharesSynced;
+    uint256 totalAssetsSynced;
+    uint256 totalSyncedRequestsCount;
+
+    (totalSharesSynced, totalAssetsSynced, totalSyncedRequestsCount) = queue.previewSyncWithBudget(vault, 200 ether);
+    assertEq(totalSharesSynced, 200 ether, 'totalSharesSynced');
+    assertEq(totalAssetsSynced, 200 ether, 'totalAssetsSynced');
+    assertEq(totalSyncedRequestsCount, 2, 'totalSyncedRequestsCount');
+
+    (totalSharesSynced, totalAssetsSynced, totalSyncedRequestsCount) = queue.previewSyncWithBudget(vault, 230 ether);
+    assertEq(totalSharesSynced, 200 ether, 'totalSharesSynced');
+    assertEq(totalAssetsSynced, 200 ether, 'totalAssetsSynced');
+    assertEq(totalSyncedRequestsCount, 2, 'totalSyncedRequestsCount');
+
+    (totalSharesSynced, totalAssetsSynced, totalSyncedRequestsCount) = queue.previewSyncWithBudget(vault, 199 ether);
+    assertEq(totalSharesSynced, 100 ether, 'totalSharesSynced');
+    assertEq(totalAssetsSynced, 100 ether, 'totalAssetsSynced');
+    assertEq(totalSyncedRequestsCount, 1, 'totalSyncedRequestsCount');
   }
 
   function test_pendingRequests_afterSync() public {
