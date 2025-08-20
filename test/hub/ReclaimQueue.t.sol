@@ -13,6 +13,7 @@ import { SafeCast } from '@oz/utils/math/SafeCast.sol';
 
 import { HubAsset } from '../../src/hub/core/HubAsset.sol';
 import { ReclaimQueue } from '../../src/hub/ReclaimQueue.sol';
+import { ReclaimQueueCollector } from '../../src/hub/ReclaimQueueCollector.sol';
 import { VLFVaultBasic } from '../../src/hub/vlf/VLFVaultBasic.sol';
 import { IAssetManager } from '../../src/interfaces/hub/core/IAssetManager.sol';
 import { IReclaimQueue } from '../../src/interfaces/hub/IReclaimQueue.sol';
@@ -205,6 +206,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
   address asset2;
   address vault2;
   ReclaimQueue queue;
+  ReclaimQueueCollector collector;
 
   function setUp() public {
     // set time to unix
@@ -233,6 +235,16 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       address impl = address(new ReclaimQueue());
       bytes memory initData = abi.encodeCall(ReclaimQueue.initialize, (owner, address(assetManager), address(0)));
       queue = ReclaimQueue(payable(_proxy(impl, initData)));
+    }
+
+    // deploy reclaim queue collector
+    {
+      address impl = address(new ReclaimQueueCollector(address(queue)));
+      bytes memory initData = abi.encodeCall(ReclaimQueueCollector.initialize, (owner));
+      collector = ReclaimQueueCollector(payable(_proxy(impl, initData)));
+
+      vm.prank(owner);
+      queue.setCollector(address(collector));
     }
 
     // enable vault1 by default
@@ -460,7 +472,11 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       assertEq(totalAssetsSynced, expectedAssetsOnRequest, 'totalAssetsSynced');
     }
 
-    assertEq(SimpleERC4626Vault(vault).balanceOf(address(queue)), expectedSharesRemain, 'shares remain');
+    assertEq(
+      SimpleERC4626Vault(vault).balanceOf(address(collector)),
+      SimpleERC4626Vault(vault).previewWithdraw(expectedAssetsOnReserve - expectedAssetsOnRequest),
+      'shares remain'
+    );
     asset.assertERC20Transfer(address(queue), expectedAssetsOnRequest);
     _compareSyncLog(queue.queueSyncLog(vault, 0), makeSyncLog(_now(), 0, 3, 300 ether, totalSupply, totalAssets));
   }

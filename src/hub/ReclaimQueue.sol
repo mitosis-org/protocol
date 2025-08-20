@@ -11,8 +11,8 @@ import { Time } from '@oz/utils/types/Time.sol';
 import { Ownable2StepUpgradeable } from '@ozu/access/Ownable2StepUpgradeable.sol';
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 
-import { IReclaimQueueCollector } from '../interfaces/hub/IReclaimQueueCollector.sol';
 import { IReclaimQueue } from '../interfaces/hub/IReclaimQueue.sol';
+import { IReclaimQueueCollector } from '../interfaces/hub/IReclaimQueueCollector.sol';
 import { ERC7201Utils } from '../lib/ERC7201Utils.sol';
 import { LibQueue } from '../lib/LibQueue.sol';
 import { Pausable } from '../lib/Pausable.sol';
@@ -523,18 +523,12 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     IERC4626(vault).withdraw(withdrawAmount, address(this), address(this));
 
     if (res.totalAssetsOnRequest < res.totalAssetsOnReserve) {
-      uint256 diff = res.totalAssetsOnReserve - res.totalAssetsOnRequest;
-      if ($.collector != address(0)) {
-        IERC4626(vault).withdraw(diff, address(this), address(this));
+      uint256 assetsCollected = res.totalAssetsOnReserve - res.totalAssetsOnRequest;
+      uint256 sharesCollected = IERC4626(vault).previewWithdraw(assetsCollected);
 
-        IERC20Metadata asset = IERC20Metadata(IERC4626(vault).asset());
-
-        asset.forceApprove($.collector, diff);
-        IReclaimQueueCollector($.collector).collect(vault, address(asset), diff);
-        asset.forceApprove($.collector, 0);
-      } else {
-        IERC4626(vault).withdraw(diff, vault, address(this));
-      }
+      IERC20Metadata(vault).forceApprove($.collector, sharesCollected);
+      IReclaimQueueCollector($.collector).collect(vault, vault, sharesCollected);
+      IERC20Metadata(vault).forceApprove($.collector, 0);
     }
 
     {
