@@ -64,13 +64,13 @@ contract AssetManager is
 
   //=========== NOTE: QUOTE FUNCTIONS ===========//
 
-  function quoteInitializeAsset(uint256 chainId, address branchAsset, uint8 branchAssetDecimals)
+  function quoteInitializeAsset(uint256 chainId, address branchAsset)
     external
     view
     returns (uint256)
   {
     StorageV1 storage $ = _getStorageV1();
-    return $.entrypoint.quoteInitializeAsset(chainId, branchAsset, branchAssetDecimals);
+    return $.entrypoint.quoteInitializeAsset(chainId, branchAsset);
   }
 
   function quoteInitializeVLF(uint256 chainId, address vlfVault, address branchAsset) external view returns (uint256) {
@@ -333,7 +333,7 @@ contract AssetManager is
     uint8 branchAssetDecimals = hubAssetState.branchAssetDecimals;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    $.entrypoint.initializeAsset{ value: msg.value }(chainId, branchAsset, branchAssetDecimals);
+    $.entrypoint.initializeAsset{ value: msg.value }(chainId, branchAsset);
     emit AssetInitialized(hubAsset, chainId, branchAsset, branchAssetDecimals);
   }
 
