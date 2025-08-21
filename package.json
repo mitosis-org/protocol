@@ -1,12 +1,13 @@
 {
   "name": "@mitosis/protocol",
-  "version": "0.0.1",
+  "version": "1.0.1",
   "description": "Mitosis is an Ecosystem-Owned Liquidity (EOL) blockchain that facilitates newly created modular blockchains to capture TVL and attract users through the Mitosis governance process.",
   "main": "index.js",
   "repository": "https://github.com/mitosis-org/protocol",
   "license": "Apache-2.0",
   "scripts": {
     "coverage": "./tools/coverage.sh",
+    "publish": "./tools/publish.sh",
     "build": "forge build",
     "lint": "forge fmt && yarn format-json && yarn sort-imports",
     "lint:check": "forge fmt --check && yarn format-json:check && yarn sort-imports:check",

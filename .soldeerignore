@@ -1,0 +1,11 @@
+.cursor
+.github
+.vscode
+assets
+audits
+script
+test
+tools
+.cursorignore
+.gitmodules
+CONTRIBUTING.md
