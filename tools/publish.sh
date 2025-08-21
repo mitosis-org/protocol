@@ -1,6 +1,6 @@
 #!/bin/bash
 
-gitTag=$(git describe --abbrev=0 --tags origin/main)
+gitTag=$(git describe --tags --abbrev=0 origin/main | sed 's/^v//')
 gitCommit=$(git rev-parse origin/main)
 
 mkdir -p temp 
