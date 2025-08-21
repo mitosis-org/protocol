@@ -7,7 +7,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "coverage": "./tools/coverage.sh",
-    "publish": "mkdir -p temp && cp -r src temp && cp foundry.toml temp/src && forge soldeer push mitosis~1.0.0 temp/src && rm -rf temp",
+    "publish": "./tools/publish.sh",
     "build": "forge build",
     "lint": "forge fmt && yarn format-json && yarn sort-imports",
     "lint:check": "forge fmt --check && yarn format-json:check && yarn sort-imports:check",
