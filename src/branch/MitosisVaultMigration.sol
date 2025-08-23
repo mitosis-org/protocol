@@ -17,6 +17,8 @@ contract MitosisVaultMigration is MitosisVault {
   event VLFAssetsMigrated(address asset, address hubVLFVault, uint256 depositAndSupplyAmount, uint256 donationAmount);
   event VLFFetchedManually(address hubVLFVault, uint256 amount);
 
+  bytes32 public constant MIGRATOR_ROLE = keccak256('MIGRATOR_ROLE');
+
   struct MigrationStorageV1 {
     mapping(address hubVLFVault => uint256 unresolvedDepositAmount) unresolvedDepositAmountsByVLF;
     mapping(address hubVLFVault => uint256 unresolvedFetchAmount) unresolvedFetchAmountsByVLF;
@@ -41,7 +43,7 @@ contract MitosisVaultMigration is MitosisVault {
     return _getMigrationStorageV1().unresolvedFetchAmountsByVLF[hubVLFVault];
   }
 
-  function initiateMigration(address hubVLFVault) external onlyRole(DEFAULT_ADMIN_ROLE) {
+  function initiateMigration(address hubVLFVault) external onlyRole(MIGRATOR_ROLE) {
     VLFStorageV1 storage $ = _getVLFStorageV1();
     _assertVLFInitialized($, hubVLFVault);
 
@@ -65,7 +67,7 @@ contract MitosisVaultMigration is MitosisVault {
     uint256 donationAmount,
     uint256 depositAndSupplyGasFee,
     uint256 donationGasFee
-  ) external payable onlyRole(DEFAULT_ADMIN_ROLE) {
+  ) external payable onlyRole(MIGRATOR_ROLE) {
     MigrationStorageV1 storage $$ = _getMigrationStorageV1();
     require(
       $$.unresolvedDepositAmountsByVLF[hubVLFVault] == depositAndSupplyAmount + donationAmount,
@@ -100,7 +102,7 @@ contract MitosisVaultMigration is MitosisVault {
     emit VLFAssetsMigrated(asset, hubVLFVault, depositAndSupplyAmount, donationAmount);
   }
 
-  function manualFetchVLF(address hubVLFVault) external onlyRole(DEFAULT_ADMIN_ROLE) {
+  function manualFetchVLF(address hubVLFVault) external onlyRole(MIGRATOR_ROLE) {
     MigrationStorageV1 storage $$ = _getMigrationStorageV1();
     uint256 amount = $$.unresolvedFetchAmountsByVLF[hubVLFVault];
     require(amount > 0, StdError.InvalidParameter('amount'));
