@@ -33,7 +33,7 @@ abstract contract MitosisVaultVLF is IMitosisVaultVLF, Pausable, AccessControlEn
   string private constant _NAMESPACE = 'mitosis.storage.MitosisVault.VLF.v1';
   bytes32 private immutable _slot = _NAMESPACE.storageSlot();
 
-  function _getVLFStorageV1() private view returns (VLFStorageV1 storage $) {
+  function _getVLFStorageV1() internal view returns (VLFStorageV1 storage $) {
     bytes32 slot = _slot;
     assembly {
       $.slot := slot
