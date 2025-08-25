@@ -131,7 +131,7 @@ contract MitosisVault is
     _assertOnlyEntrypoint($);
     _assertAssetInitialized(asset);
 
-    $.assets[asset].availableCap += amount;
+    $.assets[asset].availableCap += Math.min(amount, $.assets[asset].maxCap - $.assets[asset].availableCap);
 
     IERC20(asset).safeTransfer(to, amount);
 
