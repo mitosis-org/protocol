@@ -909,6 +909,61 @@ contract MitosisVaultTest is Toolkit {
     _mitosisVault.setCap(address(_token), 100 ether);
   }
 
+  function test_setCap_EdgeCase_AvailableCapExceedsMaxCap() public {
+    // Initialize asset
+    vm.prank(address(_mitosisVaultEntrypoint));
+    _mitosisVault.initializeAsset(address(_token));
+
+    // Set initial cap
+    vm.prank(liquidityManager);
+    _mitosisVault.setCap(address(_token), 1000 ether);
+
+    assertEq(_mitosisVault.maxCap(address(_token)), 1000 ether);
+    assertEq(_mitosisVault.availableCap(address(_token)), 1000 ether);
+
+    // Create an edge case by manipulating the withdraw function behavior
+    // First, let's deposit some tokens and then simulate excessive withdrawal
+    address user1 = makeAddr('user1');
+    _token.mint(user1, 500 ether);
+
+    // Resume deposits to allow testing
+    vm.prank(owner);
+    _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
+
+    // User deposits 500 ether
+    vm.startPrank(user1);
+    _token.approve(address(_mitosisVault), 500 ether);
+    _mitosisVault.deposit(address(_token), user1, 500 ether);
+    vm.stopPrank();
+
+    // Verify state after deposit
+    assertEq(_mitosisVault.maxCap(address(_token)), 1000 ether);
+    assertEq(_mitosisVault.availableCap(address(_token)), 500 ether); // 1000 - 500
+
+    // Now reduce the cap to below current availableCap to trigger the edge case
+    // This simulates a scenario where the cap is reduced but the availableCap calculation
+    // somehow becomes inconsistent
+    vm.prank(liquidityManager);
+    _mitosisVault.setCap(address(_token), 100 ether); // Set cap to 100 (less than current spent of 500)
+
+    // With our fix, this should work without underflow
+    // prevCap = 1000, availableCap = 500, so prevSpent = 1000 - 500 = 500
+    // newCap = 100, so Math.min(500, 100) = 100
+    // new availableCap = 100 - 100 = 0
+    assertEq(_mitosisVault.maxCap(address(_token)), 100 ether);
+    assertEq(_mitosisVault.availableCap(address(_token)), 0);
+
+    // Test another edge case: set cap back to a higher value
+    vm.prank(liquidityManager);
+    _mitosisVault.setCap(address(_token), 2000 ether);
+
+    // With our fix: prevCap = 100, availableCap = 0, so prevSpent = 100 - 0 = 100
+    // newCap = 2000, so Math.min(100, 2000) = 100
+    // new availableCap = 2000 - 100 = 1900
+    assertEq(_mitosisVault.maxCap(address(_token)), 2000 ether);
+    assertEq(_mitosisVault.availableCap(address(_token)), 1900 ether);
+  }
+
   function _errAssetAlreadyInitialized(address asset) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(IMitosisVault.IMitosisVault__AssetAlreadyInitialized.selector, asset);
   }
