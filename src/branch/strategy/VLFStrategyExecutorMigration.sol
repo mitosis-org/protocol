@@ -5,7 +5,7 @@ import { StdError } from '../../lib/StdError.sol';
 import { VLFStrategyExecutor } from './VLFStrategyExecutor.sol';
 
 contract VLFStrategyExecutorMigration is VLFStrategyExecutor {
-  function manualSettle() external returns (uint256) {
+  function manualSettle() external virtual returns (uint256) {
     StorageV1 storage $ = _getStorageV1();
     require(_msgSender() == address($.vault), StdError.Unauthorized());
 

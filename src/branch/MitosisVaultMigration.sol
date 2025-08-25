@@ -68,22 +68,30 @@ contract MitosisVaultMigration is MitosisVault {
     uint256 depositAndSupplyGasFee,
     uint256 donationGasFee
   ) external payable onlyRole(MIGRATOR_ROLE) {
-    MigrationStorageV1 storage $$ = _getMigrationStorageV1();
+    uint256 totalAmount = depositAndSupplyAmount + donationAmount;
+
+    MigrationStorageV1 storage $$$ = _getMigrationStorageV1();
     require(
-      $$.unresolvedDepositAmountsByVLF[hubVLFVault] == depositAndSupplyAmount + donationAmount,
+      $$$.unresolvedDepositAmountsByVLF[hubVLFVault] == totalAmount,
       StdError.InvalidParameter('depositAndSupplyAmount + donationAmount')
     );
-    $$.unresolvedDepositAmountsByVLF[hubVLFVault] = 0;
+    $$$.unresolvedDepositAmountsByVLF[hubVLFVault] = 0;
 
     require(depositAndSupplyTo != address(0), StdError.ZeroAddress('depositAndSupplyTo'));
     require(depositAndSupplyAmount != 0, StdError.ZeroAmount());
     require(donationAmount != 0, StdError.ZeroAmount());
     require(msg.value == depositAndSupplyGasFee + donationGasFee, StdError.InvalidParameter('msg.value'));
 
-    VLFStorageV1 storage $ = _getVLFStorageV1();
     _assertAssetInitialized(asset);
-    _assertVLFInitialized($, hubVLFVault);
-    require(asset == $.vlfs[hubVLFVault].asset, IMitosisVaultVLF__InvalidVLF(hubVLFVault, asset));
+
+    // Cap limit
+    StorageV1 storage $ = _getStorageV1();
+    _assertCapNotExceeded($, asset, totalAmount);
+    $.assets[asset].availableCap -= totalAmount;
+
+    VLFStorageV1 storage $$ = _getVLFStorageV1();
+    _assertVLFInitialized($$, hubVLFVault);
+    require(asset == $$.vlfs[hubVLFVault].asset, IMitosisVaultVLF__InvalidVLF(hubVLFVault, asset));
 
     // Step 1. Mint VLF Asset to a given address
     if (depositAndSupplyAmount > 0) {
