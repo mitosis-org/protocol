@@ -379,6 +379,89 @@ contract MitosisVaultTest is Toolkit {
     vm.stopPrank();
   }
 
+  function test_withdraw_AvailableCapOverflowProtection() public {
+    // Setup: Initialize asset and set a limited cap
+    vm.startPrank(address(_mitosisVaultEntrypoint));
+    _mitosisVault.initializeAsset(address(_token));
+    vm.stopPrank();
+
+    vm.startPrank(owner);
+    _mitosisVault.grantRole(_mitosisVault.LIQUIDITY_MANAGER_ROLE(), liquidityManager);
+    _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
+    vm.stopPrank();
+
+    // Set maxCap to 1000 and deposit 500 to make availableCap = 500
+    vm.startPrank(liquidityManager);
+    _mitosisVault.setCap(address(_token), 1000);
+    vm.stopPrank();
+
+    // Mint tokens and deposit 500
+    _token.mint(owner, 500);
+    vm.startPrank(owner);
+    _token.approve(address(_mitosisVault), 500);
+    _mitosisVault.deposit(address(_token), owner, 500);
+    vm.stopPrank();
+
+    // Check initial state: availableCap should be 500 (1000 - 500 deposit)
+    assertEq(_mitosisVault.availableCap(address(_token)), 500);
+    assertEq(_mitosisVault.maxCap(address(_token)), 1000);
+
+    // Mint tokens to vault for withdrawal
+    _token.mint(address(_mitosisVault), 700);
+
+    // Test case 1: Withdraw amount that would exceed maxCap
+    // availableCap (500) + withdrawal (700) = 1200 > maxCap (1000)
+    // Should only increase availableCap to maxCap (1000)
+    vm.startPrank(address(_mitosisVaultEntrypoint));
+    _mitosisVault.withdraw(address(_token), owner, 700);
+    vm.stopPrank();
+
+    // availableCap should be capped at maxCap (1000), not 500 + 700 = 1200
+    assertEq(_mitosisVault.availableCap(address(_token)), 1000);
+    assertEq(_mitosisVault.maxCap(address(_token)), 1000);
+  }
+
+  function test_withdraw_AvailableCapNormalIncrease() public {
+    // Setup: Initialize asset and set a cap
+    vm.startPrank(address(_mitosisVaultEntrypoint));
+    _mitosisVault.initializeAsset(address(_token));
+    vm.stopPrank();
+
+    vm.startPrank(owner);
+    _mitosisVault.grantRole(_mitosisVault.LIQUIDITY_MANAGER_ROLE(), liquidityManager);
+    _mitosisVault.resumeAsset(address(_token), AssetAction.Deposit);
+    vm.stopPrank();
+
+    // Set maxCap to 1000 and deposit 300 to make availableCap = 700
+    vm.startPrank(liquidityManager);
+    _mitosisVault.setCap(address(_token), 1000);
+    vm.stopPrank();
+
+    // Mint tokens and deposit 300
+    _token.mint(owner, 300);
+    vm.startPrank(owner);
+    _token.approve(address(_mitosisVault), 300);
+    _mitosisVault.deposit(address(_token), owner, 300);
+    vm.stopPrank();
+
+    // Check initial state: availableCap should be 700 (1000 - 300 deposit)
+    assertEq(_mitosisVault.availableCap(address(_token)), 700);
+
+    // Mint tokens to vault for withdrawal
+    _token.mint(address(_mitosisVault), 200);
+
+    // Test case 2: Withdraw amount that won't exceed maxCap
+    // availableCap (700) + withdrawal (200) = 900 < maxCap (1000)
+    // Should increase availableCap by full withdrawal amount
+    vm.startPrank(address(_mitosisVaultEntrypoint));
+    _mitosisVault.withdraw(address(_token), owner, 200);
+    vm.stopPrank();
+
+    // availableCap should be 700 + 200 = 900
+    assertEq(_mitosisVault.availableCap(address(_token)), 900);
+    assertEq(_mitosisVault.maxCap(address(_token)), 1000);
+  }
+
   function test_initializeVLF() public {
     assertFalse(_mitosisVault.isVLFInitialized(hubVLFVault));
 
