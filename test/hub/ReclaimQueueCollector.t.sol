@@ -67,6 +67,8 @@ contract ReclaimQueueCollectorTest is Test {
   }
 
   function test_collect_customRoute(address vault, address route) public {
+    vm.assume(route != queue); // Prevent route from being the same as reclaimQueue
+
     _fund(asset1, queue, 1 ether);
 
     vm.prank(queue);

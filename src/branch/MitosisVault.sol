@@ -207,7 +207,7 @@ contract MitosisVault is
     AssetInfo storage assetInfo = $.assets[asset];
 
     uint256 prevCap = assetInfo.maxCap;
-    uint256 prevSpent = prevCap - assetInfo.availableCap;
+    uint256 prevSpent = prevCap - Math.min(assetInfo.availableCap, prevCap);
 
     assetInfo.maxCap = newCap;
     assetInfo.availableCap = newCap - Math.min(prevSpent, newCap);
