@@ -1,6 +1,6 @@
 #!/bin/bash
 
-gitTag=$(git describe --tags --abbrev=0 origin/main | sed 's/^v//')
+gitTag=$(git describe --tags --abbrev=0 origin/main)
 gitCommit=$(git rev-parse origin/main)
 
 mkdir -p temp 
@@ -15,6 +15,6 @@ sed \
 mv temp/src/lib/Versioned.sol.tmp temp/src/lib/Versioned.sol
 
 # ignore errors and continue to rm -rf temp
-forge soldeer push mitosis~$gitTag temp/src || true
+forge soldeer push mitosis~$(echo $gitTag | sed 's/^v//') temp/src || true
 
 rm -rf temp
