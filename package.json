@@ -17,7 +17,7 @@
     "sort-imports:check": "mito-tools sort-imports -i './{script,src,test}/**/*.sol' -c"
   },
   "devDependencies": {
-    "@mitosis-org/tools": "git+https://github.com/mitosis-org/tools.git"
+    "@mitosis/tools": "github:mitosis-org/tools"
   },
   "dependencies": {
     "@hyperlane-xyz/core": "^8.0.0"

@@ -2,6 +2,7 @@
 src = "src"
 out = "out"
 script = "script"
+extra_output_files = ['abi']
 libs = ["lib", "dependencies", "node_modules"]
 solc = "0.8.28" # to have cancun support
 evm_version = 'cancun' # by default
