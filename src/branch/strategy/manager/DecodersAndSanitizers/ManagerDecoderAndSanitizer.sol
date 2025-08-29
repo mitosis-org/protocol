@@ -9,4 +9,8 @@ contract ManagerDecoderAndSanitizer is BaseDecoderAndSanitizer {
   function withdraw(uint256, address receiver) external pure returns (bytes memory addressesFound) {
     addressesFound = abi.encodePacked(receiver);
   }
+
+  function approve(address spender, uint256) external pure returns (bytes memory addressesFound) {
+    addressesFound = abi.encodePacked(spender);
+  }
 }
