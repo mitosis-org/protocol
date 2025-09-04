@@ -29,6 +29,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 20
+          package-manager-cache: false
 
       - name: Enable Corepack
         run: |
@@ -37,10 +38,10 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 20
-          cache: yarn
+          package-manager-cache: true
 
       - name: Yarn Install
-        run: yarn install
+        run: yarn install --immutable
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
