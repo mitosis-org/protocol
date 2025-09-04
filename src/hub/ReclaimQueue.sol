@@ -191,9 +191,10 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     uint32 reqIdTo = q$.items.length.toUint32();
 
     for (uint32 i = reqIdFrom; i < reqIdTo;) {
-      Request memory req = q$.items[i];
+      uint256 reqId = i;
+      Request memory req = q$.items[reqId];
 
-      uint256 shares = i == 0 ? req.sharesAcc : req.sharesAcc - q$.items[i - 1].sharesAcc;
+      uint256 shares = reqId == 0 ? req.sharesAcc : req.sharesAcc - q$.items[reqId - 1].sharesAcc;
       uint256 assets = Math.min(req.assets, IERC4626(vault).previewRedeem(shares));
 
       if (budget < assets) break;
@@ -397,7 +398,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
         (state.cached, state.cachedLogPos) = _fetchSyncLogByReqId(q$, reqId);
       }
 
-      uint256 shares = i == 0 ? req.sharesAcc : req.sharesAcc - q$.items[reqId - 1].sharesAcc;
+      uint256 shares = reqId == 0 ? req.sharesAcc : req.sharesAcc - q$.items[reqId - 1].sharesAcc;
       uint256 assets = Math.min(
         req.assets,
         _convertToAssets(
@@ -444,7 +445,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
         (state.cached, state.cachedLogPos) = _fetchSyncLogByReqId(q$, reqId);
       }
 
-      uint256 shares = i == 0 ? req.sharesAcc : req.sharesAcc - q$.items[reqId - 1].sharesAcc;
+      uint256 shares = reqId == 0 ? req.sharesAcc : req.sharesAcc - q$.items[reqId - 1].sharesAcc;
       uint256 assets = Math.min(
         req.assets,
         _convertToAssets(
@@ -526,9 +527,10 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     });
 
     for (uint32 i = res.reqIdFrom; i < res.reqIdTo;) {
-      Request memory req = q$.items[i];
+      uint256 reqId = i;
+      Request memory req = q$.items[reqId];
 
-      uint256 shares = i == 0 ? req.sharesAcc : req.sharesAcc - q$.items[i - 1].sharesAcc;
+      uint256 shares = reqId == 0 ? req.sharesAcc : req.sharesAcc - q$.items[reqId - 1].sharesAcc;
 
       res.totalSharesSynced += shares;
       res.totalAssetsOnRequest += req.assets;
