@@ -149,7 +149,6 @@ contract AssetManager is
     StorageV1 storage $ = _getStorageV1();
 
     require(to != address(0), StdError.ZeroAddress('to'));
-    require(amount != 0, StdError.ZeroAmount());
 
     address branchAsset = _hubAssetState($, hubAsset, chainId).branchAsset;
     _assertBranchAssetPairExist($, chainId, branchAsset);
@@ -158,6 +157,7 @@ contract AssetManager is
     (amountBranchUnit, amount) = _scaleToBranchDecimals(
       amount, _hubAssetState($, hubAsset, chainId).branchAssetDecimals, IHubAsset(hubAsset).decimals()
     );
+    require(amount != 0, StdError.ZeroAmount());
 
     _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, amount);
     _assertBranchLiquidityThresholdSatisfied($, hubAsset, chainId, amount);
