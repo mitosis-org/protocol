@@ -345,8 +345,8 @@ contract MerkleRewardDistributor is
   {
     // double-hashing to prevent second preimage attacks:
     // https://flawed.net.nz/2018/02/21/attacking-merkle-trees-with-a-second-preimage-attack/
-    bytes32 rewardsHash = keccak256(abi.encode(rewards));
-    bytes32 amountsHash = keccak256(abi.encode(amounts));
+    bytes32 rewardsHash = keccak256(abi.encodePacked(rewards));
+    bytes32 amountsHash = keccak256(abi.encodePacked(amounts));
     return keccak256(bytes.concat(keccak256(abi.encodePacked(receiver, stage, vault, rewardsHash, amountsHash))));
   }
 }
