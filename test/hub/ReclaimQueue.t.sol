@@ -474,7 +474,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
 
     assertEq(
       SimpleERC4626Vault(vault).balanceOf(address(collector)),
-      SimpleERC4626Vault(vault).previewWithdraw(expectedAssetsOnReserve - expectedAssetsOnRequest),
+      SimpleERC4626Vault(vault).convertToShares(expectedAssetsOnReserve - expectedAssetsOnRequest),
       'shares remain'
     );
     asset.assertERC20Transfer(address(queue), expectedAssetsOnRequest);
