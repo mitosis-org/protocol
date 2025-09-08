@@ -65,10 +65,11 @@ contract MockVLFStrategyExecutor is IVLFStrategyExecutor {
 
   function settleExtraRewards(address reward, uint256 amount) external payable { }
 
-  function execute(address target, bytes calldata data, uint256 value) external returns (bytes memory result) { }
+  function execute(address target, bytes calldata data, uint256 value) external payable returns (bytes memory result) { }
 
   function execute(address[] calldata targets, bytes[] calldata data, uint256[] calldata values)
     external
+    payable
     returns (bytes[] memory result)
   { }
 

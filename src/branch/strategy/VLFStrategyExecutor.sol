@@ -173,6 +173,7 @@ contract VLFStrategyExecutor is
 
   function execute(address target, bytes calldata data, uint256 value)
     external
+    payable
     nonReentrant
     returns (bytes memory result)
   {
@@ -184,6 +185,7 @@ contract VLFStrategyExecutor is
 
   function execute(address[] calldata targets, bytes[] calldata data, uint256[] calldata values)
     external
+    payable
     nonReentrant
     returns (bytes[] memory results)
   {
