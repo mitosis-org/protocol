@@ -455,7 +455,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     {
       (uint256 totalSharesSynced, uint256 totalAssetsSynced) = queue.previewSync(vault, 100);
       assertEq(totalSharesSynced, expectedSharesSynced, 'totalSharesSynced');
-      assertEq(totalAssetsSynced, expectedAssetsOnRequest, 'totalAssetsSynced');
+      assertEq(totalAssetsSynced, expectedAssetsOnReserve, 'totalAssetsSynced');
     }
 
     // check actual result
