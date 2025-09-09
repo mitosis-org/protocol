@@ -23,5 +23,5 @@ interface IManagerWithMerkleVerification {
     address[] calldata targets,
     bytes[] calldata targetData,
     uint256[] calldata values
-  ) external;
+  ) external payable;
 }
