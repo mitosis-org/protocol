@@ -18,6 +18,10 @@ contract VLFVaultCapped is VLFVault {
   using ERC7201Utils for string;
   using EnumerableSet for EnumerableSet.UintSet;
 
+  // Maximum allowed cap to prevent overflow in maxMint calculations
+  // Conservative limit that can be increased if needed in future upgrades.
+  uint256 private constant MAX_ALLOWED_CAP = type(uint256).max / 1e24;
+
   /// @custom:storage-location mitosis.storage.VLFVaultCapped
   struct VLFVaultCappedStorage {
     uint256 cap;
@@ -131,12 +135,14 @@ contract VLFVaultCapped is VLFVault {
   }
 
   function _setCap(VLFVaultCappedStorage storage $, uint256 newCap) internal {
+    require(newCap <= MAX_ALLOWED_CAP, StdError.InvalidParameter('newCap'));
     uint256 prevCap = $.cap;
     $.cap = newCap;
     emit CapSet(_msgSender(), prevCap, newCap);
   }
 
   function _setSoftCap(VLFVaultCappedStorage storage $, uint256 newSoftCap) internal {
+    require(newSoftCap <= MAX_ALLOWED_CAP, StdError.InvalidParameter('newSoftCap'));
     uint256 prevSoftCap = $.softCap;
     $.softCap = newSoftCap;
     emit SoftCapSet(prevSoftCap, newSoftCap);
