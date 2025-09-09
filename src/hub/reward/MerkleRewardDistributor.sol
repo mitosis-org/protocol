@@ -328,7 +328,9 @@ contract MerkleRewardDistributor is
     }
 
     for (uint256 i = 0; i < rewardsLen; i++) {
-      IERC20(rewards[i]).safeTransfer(receiver, amounts[i]);
+      if (amounts[i] > 0) {
+        IERC20(rewards[i]).safeTransfer(receiver, amounts[i]);
+      }
     }
 
     emit Claimed(receiver, stage, vault, rewards, amounts);
