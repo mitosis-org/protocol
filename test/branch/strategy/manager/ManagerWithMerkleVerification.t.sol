@@ -404,4 +404,38 @@ contract ManagerWithMerkleVerificationTest is Toolkit, MerkleTreeHelper {
       value
     );
   }
+
+  function test_manage_invalidMsgValue() public {
+    uint256[] memory values = new uint256[](2);
+    values[0] = 0.3 ether;
+    values[1] = 0.2 ether; // Total = 0.5 ether
+
+    bytes32[][] memory manageProofs = new bytes32[][](2);
+    address[] memory decodersAndSanitizers = new address[](2);
+    address[] memory targets = new address[](2);
+    bytes[] memory targetData = new bytes[](2);
+
+    vm.deal(strategist, 1 ether);
+
+    // Should revert: msg.value (0.3 ether) != sum of values (0.5 ether)
+    vm.expectRevert();
+    vm.prank(strategist);
+    _managerWithMerkleVerification.manage{ value: 0.3 ether }(
+      address(_strategyExecutor), manageProofs, decodersAndSanitizers, targets, targetData, values
+    );
+  }
+}
+
+contract MockPayableStrategyExecutor {
+  function execute(address, bytes calldata, uint256 value) external payable returns (bytes memory) {
+    return '';
+  }
+
+  function execute(address[] calldata, bytes[] calldata, uint256[] calldata values)
+    external
+    payable
+    returns (bytes[] memory)
+  {
+    return new bytes[](values.length);
+  }
 }

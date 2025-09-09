@@ -97,6 +97,23 @@ contract VLFStrategyExecutorTest is Toolkit {
     assertEq(_testVaultTally.totalBalance(''), 100 ether);
   }
 
+  function test_execute_withNativeTokens() public {
+    // Test that execute function can now be called with value (payable modifier)
+    MockPayableTarget payableTarget = new MockPayableTarget();
+
+    // Fund the strategy executor
+    vm.deal(address(_vlfStrategyExecutor), 1 ether);
+
+    uint256 initialBalance = address(payableTarget).balance;
+
+    // This should not revert due to payable modifier
+    vm.prank(address(_managerWithMerkleVerification));
+    _vlfStrategyExecutor.execute(address(payableTarget), abi.encodeCall(payableTarget.receiveETH, ()), 0.5 ether);
+
+    // Verify target received the ETH
+    assertEq(address(payableTarget).balance, initialBalance + 0.5 ether);
+  }
+
   function test_execute_InvalidAddress_executor() public {
     vm.prank(owner);
     _vlfStrategyExecutor.setExecutor(makeAddr('fakeExecutor'));
@@ -148,5 +165,11 @@ contract VLFStrategyExecutorTest is Toolkit {
 
     values = new uint256[](1);
     values[0] = 0;
+  }
+}
+
+contract MockPayableTarget {
+  function receiveETH() external payable returns (uint256) {
+    return msg.value;
   }
 }

@@ -17,9 +17,9 @@ contract MockManagerWithMerkleVerification is IManagerWithMerkleVerification {
     address[] calldata targets,
     bytes[] calldata targetData,
     uint256[] calldata values
-  ) external {
+  ) external payable {
     for (uint256 i = 0; i < targets.length; i++) {
-      IStrategyExecutor(strategyExecutor).execute(targets[i], targetData[i], values[i]);
+      IStrategyExecutor(strategyExecutor).execute{ value: values[i] }(targets[i], targetData[i], values[i]);
     }
   }
 }

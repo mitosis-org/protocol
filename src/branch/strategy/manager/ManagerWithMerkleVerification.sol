@@ -53,7 +53,7 @@ contract ManagerWithMerkleVerification is
     address[] calldata targets,
     bytes[] calldata targetData,
     uint256[] calldata values
-  ) external {
+  ) external payable {
     StorageV1 storage $ = _getStorageV1();
 
     uint256 targetsLength = targets.length;
@@ -68,11 +68,20 @@ contract ManagerWithMerkleVerification is
     bytes32 strategistManageRoot = $.manageRoot[strategyExecutor][_msgSender()];
     require(strategistManageRoot != 0, StdError.NotFound('manageProof'));
 
+    // Verify msg.value equals sum of all values
+    {
+      uint256 totalValue = 0;
+      for (uint256 i; i < targetsLength; ++i) {
+        totalValue += values[i];
+      }
+      require(msg.value == totalValue, StdError.InvalidParameter('msg.sender'));
+    }
+
     for (uint256 i; i < targetsLength; ++i) {
       _verifyCallData(
         strategistManageRoot, manageProofs[i], decodersAndSanitizers[i], targets[i], values[i], targetData[i]
       );
-      IStrategyExecutor(strategyExecutor).execute(targets[i], targetData[i], values[i]);
+      IStrategyExecutor(strategyExecutor).execute{ value: values[i] }(targets[i], targetData[i], values[i]);
     }
 
     emit StrategyExecutorExecuted(strategyExecutor, targetsLength);
