@@ -242,6 +242,7 @@ contract MerkleRewardDistributor is
     for (uint256 i = 0; i < rewards.length; i++) {
       address reward = rewards[i];
       uint256 amount = amounts[i];
+      require(amount > 0, StdError.ZeroAmount());
       require(_availableRewardAmount($, reward) >= amount, IMerkleRewardDistributor__InvalidAmount());
       $.reservedRewardAmounts[reward] += amount;
     }
@@ -328,9 +329,7 @@ contract MerkleRewardDistributor is
     }
 
     for (uint256 i = 0; i < rewardsLen; i++) {
-      if (amounts[i] > 0) {
-        IERC20(rewards[i]).safeTransfer(receiver, amounts[i]);
-      }
+      IERC20(rewards[i]).safeTransfer(receiver, amounts[i]);
     }
 
     emit Claimed(receiver, stage, vault, rewards, amounts);
