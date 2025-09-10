@@ -227,6 +227,26 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
     assertEq(capped.loadCap(), amount);
   }
 
+  function test_setCap_exceed_allowed_cap() public {
+    uint256 amount = type(uint256).max;
+    uint256 maxCap = capped.MAX_ALLOWED_CAP();
+
+    assertEq(capped.loadCap(), 0);
+
+    vm.prank(liquidityManager);
+    vm.expectRevert(_errInvalidParameter('newCap'));
+    capped.setCap(amount);
+
+    vm.prank(liquidityManager);
+    vm.expectRevert(_errInvalidParameter('newCap'));
+    capped.setCap(maxCap + 1);
+
+    vm.prank(liquidityManager);
+    capped.setCap(maxCap);
+
+    assertEq(capped.loadCap(), maxCap);
+  }
+
   function test_setCap_revertsIfUnauthorized(uint256 amount) public {
     vm.prank(owner);
     vm.expectRevert(StdError.Unauthorized.selector);
@@ -353,6 +373,26 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
     capped.setSoftCap(amount);
 
     assertEq(capped.loadSoftCap(), amount);
+  }
+
+  function test_setSoftCap_exceed_allowed_cap() public {
+    uint256 amount = type(uint256).max;
+    uint256 maxCap = capped.MAX_ALLOWED_CAP();
+
+    assertEq(capped.loadCap(), 0);
+
+    vm.prank(liquidityManager);
+    vm.expectRevert(_errInvalidParameter('newSoftCap'));
+    capped.setSoftCap(amount);
+
+    vm.prank(liquidityManager);
+    vm.expectRevert(_errInvalidParameter('newSoftCap'));
+    capped.setSoftCap(maxCap + 1);
+
+    vm.prank(liquidityManager);
+    capped.setSoftCap(maxCap);
+
+    assertEq(capped.loadSoftCap(), maxCap);
   }
 
   function test_setSoftCap_revertsIfUnauthorized(uint256 amount) public {
@@ -750,5 +790,24 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
 
     assertEq(capped.balanceOf(user), sharesAmount);
     assertEq(capped.totalAssets(), 400 ether);
+  }
+
+  function test_maxMint() public {
+    vm.startPrank(liquidityManager);
+    capped.setCap(capped.MAX_ALLOWED_CAP());
+    capped.setSoftCap(capped.MAX_ALLOWED_CAP());
+    vm.stopPrank();
+
+    uint256 amount = capped.maxDeposit(address(0));
+
+    vm.deal(address(1), amount);
+
+    vm.startPrank(address(1));
+    weth.deposit{ value: amount }();
+    weth.approve(address(capped), amount);
+    capped.deposit(amount, address(1));
+    vm.stopPrank();
+
+    capped.maxMint(address(0));
   }
 }
