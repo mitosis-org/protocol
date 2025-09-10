@@ -556,7 +556,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
     if (res.totalAssetsOnRequest < res.totalAssetsOnReserve) {
       uint256 assetsCollected = res.totalAssetsOnReserve - res.totalAssetsOnRequest;
-      uint256 sharesCollected = IERC4626(vault).previewWithdraw(assetsCollected);
+      uint256 sharesCollected = IERC4626(vault).convertToShares(assetsCollected);
 
       IERC20Metadata(vault).forceApprove($.collector, sharesCollected);
       IReclaimQueueCollector($.collector).collect(vault, vault, sharesCollected);
