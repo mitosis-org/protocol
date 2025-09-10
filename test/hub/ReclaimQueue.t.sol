@@ -340,6 +340,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       }
 
       asset.assertERC20Transfer(address(queue), expectedAssets);
+      assertEq(SimpleERC4626Vault(vault).balanceOf(address(collector)), 0, 'collector shares after sync #1');
       _compareSyncLog(queue.queueSyncLog(vault, 0), makeSyncLog(_now(), 0, 2, 200 ether, 300 ether, 300 ether));
     }
 
@@ -373,6 +374,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       }
 
       asset.assertERC20Transfer(address(queue), expectedAssets);
+      assertEq(SimpleERC4626Vault(vault).balanceOf(address(collector)), 0, 'collector shares after sync #2');
       _compareSyncLog(queue.queueSyncLog(vault, 1), makeSyncLog(_now(), 2, 3, 300 ether, 100 ether, 100 ether));
     }
 
@@ -424,6 +426,8 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     }
 
     asset.assertERC20Transfer(address(queue), expectedAssetsOnReserve);
+    // Loss case: no extra shares collected
+    assertEq(SimpleERC4626Vault(vault).balanceOf(address(collector)), 0, 'collector shares after loss sync');
     _compareSyncLog(queue.queueSyncLog(vault, 0), makeSyncLog(_now(), 0, 3, 300 ether, totalSupply, totalAssets));
   }
 
@@ -455,7 +459,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     {
       (uint256 totalSharesSynced, uint256 totalAssetsSynced) = queue.previewSync(vault, 100);
       assertEq(totalSharesSynced, expectedSharesSynced, 'totalSharesSynced');
-      assertEq(totalAssetsSynced, expectedAssetsOnRequest, 'totalAssetsSynced');
+      assertEq(totalAssetsSynced, expectedAssetsOnReserve, 'totalAssetsSynced');
     }
 
     // check actual result

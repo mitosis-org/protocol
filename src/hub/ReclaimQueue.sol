@@ -176,7 +176,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
   function previewSync(address vault, uint256 requestCount) external view returns (uint256, uint256) {
     StorageV1 storage $ = _getStorageV1();
     SyncResult memory res = _calcSync($.queues[vault], vault, requestCount);
-    return (res.totalSharesSynced, Math.min(res.totalAssetsOnRequest, res.totalAssetsOnReserve));
+    return (res.totalSharesSynced, res.totalAssetsOnReserve);
   }
 
   function previewSyncWithBudget(address vault, uint256 budget)
@@ -195,7 +195,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
       Request memory req = q$.items[reqId];
 
       uint256 shares = reqId == 0 ? req.sharesAcc : req.sharesAcc - q$.items[reqId - 1].sharesAcc;
-      uint256 assets = Math.min(req.assets, IERC4626(vault).previewRedeem(shares));
+      uint256 assets = IERC4626(vault).previewRedeem(shares);
 
       if (budget < assets) break;
       budget -= assets;
