@@ -198,8 +198,9 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
     super.setUp();
 
     // Initialize soft cap as disabled by default
+    uint256 maxCap = capped.MAX_ALLOWED_CAP();
     vm.prank(liquidityManager);
-    capped.setSoftCap(type(uint256).max);
+    capped.setSoftCap(maxCap);
   }
 
   // ============================ NOTE: BASIC & HARD CAP TESTS ============================ //
@@ -217,6 +218,7 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
   }
 
   function test_setCap(uint256 amount) public {
+    vm.assume(amount <= capped.MAX_ALLOWED_CAP());
     assertEq(capped.loadCap(), 0);
 
     vm.prank(liquidityManager);
@@ -232,6 +234,7 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
   }
 
   function test_deposit(uint256 cap, uint256 amount) public {
+    vm.assume(cap <= capped.MAX_ALLOWED_CAP());
     vm.assume(0 < amount && amount < type(uint64).max);
     vm.assume(amount <= cap);
 
@@ -249,6 +252,7 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
   }
 
   function test_deposit_revertsIfCapExceeded(uint256 cap, uint256 amount) public {
+    vm.assume(cap <= capped.MAX_ALLOWED_CAP());
     vm.assume(0 < amount && amount < type(uint64).max);
     vm.assume(cap < amount);
 
@@ -268,6 +272,7 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
   }
 
   function test_mint(uint256 cap, uint256 amount) public {
+    vm.assume(cap <= capped.MAX_ALLOWED_CAP());
     vm.assume(0 < amount && amount < type(uint64).max);
     vm.assume(amount <= cap && cap < type(uint64).max); // TODO:
 
@@ -285,6 +290,7 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
   }
 
   function test_mint_revertsIfCapExceeded(uint256 cap, uint256 amount) public {
+    vm.assume(cap <= capped.MAX_ALLOWED_CAP());
     vm.assume(0 < amount && amount < type(uint64).max);
     vm.assume(amount > cap);
 
@@ -342,6 +348,7 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
   // ============================ NOTE: SOFT CAP &PREFERRED CHAIN TESTS ============================ //
 
   function test_setSoftCap(uint256 amount) public {
+    vm.assume(amount <= capped.MAX_ALLOWED_CAP());
     vm.prank(liquidityManager);
     capped.setSoftCap(amount);
 
@@ -409,6 +416,7 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
   }
 
   function test_maxDeposit_withSoftCap(uint256 hardCap, uint256 softCap) public {
+    vm.assume(hardCap <= capped.MAX_ALLOWED_CAP());
     vm.assume(softCap < hardCap);
 
     vm.startPrank(liquidityManager);
@@ -421,9 +429,11 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
   }
 
   function test_maxDeposit_softCapDisabled(uint256 hardCap) public {
+    vm.assume(hardCap <= capped.MAX_ALLOWED_CAP());
+
     vm.startPrank(liquidityManager);
     capped.setCap(hardCap);
-    capped.setSoftCap(type(uint256).max); // Disable soft cap
+    capped.setSoftCap(capped.MAX_ALLOWED_CAP()); // Disable soft cap
     vm.stopPrank();
 
     // When softCap is max, should return hardCap limit
@@ -431,6 +441,7 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
   }
 
   function test_maxDepositFromChainId_preferredChain(uint256 hardCap, uint256 softCap, uint256 chainId) public {
+    vm.assume(hardCap <= capped.MAX_ALLOWED_CAP());
     vm.assume(softCap < hardCap);
     vm.assume(chainId != 9622);
 
@@ -447,6 +458,7 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
   }
 
   function test_maxDepositFromChainId_nonPreferredChain(uint256 hardCap, uint256 softCap, uint256 chainId) public {
+    vm.assume(hardCap <= capped.MAX_ALLOWED_CAP());
     vm.assume(softCap < hardCap);
 
     vm.startPrank(liquidityManager);
