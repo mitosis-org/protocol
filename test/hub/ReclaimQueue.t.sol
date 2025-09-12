@@ -550,7 +550,7 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     _compareQueueIndexInfo(queue.queueIndex(vault, user), makeQueueIndexInfo(0, 6));
 
     uint256 expectedClaimedShares = 300 ether;
-    uint256 expectedClaimedAssets = 180 ether - 2;
+    uint256 expectedClaimedAssets = 180 ether;
 
     // check preview result
     {
@@ -564,13 +564,13 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
       vm.prank(user);
 
       vm.expectEmit();
-      emit IReclaimQueue.Claimed(user, vault, 0, 100 ether, 50 ether - 1, 600 ether, 300 ether, 0);
+      emit IReclaimQueue.Claimed(user, vault, 0, 100 ether, 50 ether, 600 ether, 300 ether, 0);
       vm.expectEmit();
-      emit IReclaimQueue.Claimed(user, vault, 1, 100 ether, 30 ether - 1, 500 ether, 150 ether, 1);
+      emit IReclaimQueue.Claimed(user, vault, 1, 100 ether, 30 ether, 500 ether, 150 ether, 1);
       vm.expectEmit();
       emit IReclaimQueue.Claimed(user, vault, 2, 100 ether, 100 ether, 400 ether, 450 ether, 2);
       vm.expectEmit();
-      emit IReclaimQueue.ClaimSucceeded(user, vault, makeClaimResult(0, 3, 300 ether, 180 ether - 2));
+      emit IReclaimQueue.ClaimSucceeded(user, vault, makeClaimResult(0, 3, 300 ether, 180 ether));
 
       IReclaimQueue.ClaimResult memory claimResult = queue.claim(user, vault);
       assertEq(claimResult.totalSharesClaimed, expectedClaimedShares, 'totalSharesClaimed');
