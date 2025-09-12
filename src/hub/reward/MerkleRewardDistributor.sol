@@ -242,6 +242,7 @@ contract MerkleRewardDistributor is
     for (uint256 i = 0; i < rewards.length; i++) {
       address reward = rewards[i];
       uint256 amount = amounts[i];
+      require(amount > 0, StdError.ZeroAmount());
       require(_availableRewardAmount($, reward) >= amount, IMerkleRewardDistributor__InvalidAmount());
       $.reservedRewardAmounts[reward] += amount;
     }
