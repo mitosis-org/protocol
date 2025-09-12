@@ -18,9 +18,7 @@ contract VLFVaultCapped is VLFVault {
   using ERC7201Utils for string;
   using EnumerableSet for EnumerableSet.UintSet;
 
-  // Maximum allowed cap to prevent overflow in maxMint calculations
-  // Conservative limit that can be increased if needed in future upgrades.
-  uint256 public constant MAX_ALLOWED_CAP = type(uint256).max / 1e24;
+  uint256 public constant MAX_ALLOWED_CAP = type(uint256).max / 1e9;
 
   /// @custom:storage-location mitosis.storage.VLFVaultCapped
   struct VLFVaultCappedStorage {
