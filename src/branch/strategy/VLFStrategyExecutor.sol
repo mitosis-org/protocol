@@ -135,7 +135,7 @@ contract VLFStrategyExecutor is
 
     _assertOnlyStrategist($);
 
-    $.asset.approve(address($.vault), amount);
+    $.asset.forceApprove(address($.vault), amount);
     $.vault.returnVLF($.hubVLFVault, amount);
     $.storedTotalBalance -= amount;
   }
@@ -165,7 +165,7 @@ contract VLFStrategyExecutor is
     _assertOnlyStrategist($);
     require(reward != address($.asset), StdError.InvalidAddress('reward'));
 
-    IERC20(reward).approve(address($.vault), amount);
+    IERC20(reward).forceApprove(address($.vault), amount);
     $.vault.settleVLFExtraRewards{ value: msg.value }($.hubVLFVault, reward, amount);
   }
 
