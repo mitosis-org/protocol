@@ -137,7 +137,6 @@ contract VLFStrategyExecutor is
 
     $.asset.forceApprove(address($.vault), amount);
     $.vault.returnVLF($.hubVLFVault, amount);
-
     $.storedTotalBalance -= amount;
   }
 
