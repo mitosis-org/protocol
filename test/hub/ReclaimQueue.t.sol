@@ -297,6 +297,28 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     queue.request(100 ether, user, vault2);
   }
 
+  function test_request_zeroShares_reverts() public {
+    vm.prank(user);
+    vm.expectRevert(_errZeroAmount());
+    queue.request(0, user, vault);
+  }
+
+  function test_request_zeroAssets_reverts() public {
+    uint256 amount = 100 ether;
+
+    // user has shares, but vault has zero underlying so previewRedeem == 0
+    vm.startPrank(user);
+    SimpleERC4626Vault(vault).approve(address(queue), amount);
+    SimpleERC4626Vault(vault).mint(user, amount);
+    vm.stopPrank();
+
+    asset.setRetERC20BalanceOf(vault, 0);
+
+    vm.prank(user);
+    vm.expectRevert(_errZeroAmount());
+    queue.request(amount, user, vault);
+  }
+
   function test_sync() public {
     // setup
     {
@@ -600,6 +622,44 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     vm.prank(user);
     vm.expectRevert(_errNothingToClaim());
     queue.claim(user, vault);
+  }
+
+  function test_claim_advances_on_zero_assets() public {
+    // prepare two requests when assets per share > 0 so requests are accepted
+    {
+      vm.startPrank(user);
+      SimpleERC4626Vault(vault).approve(address(queue), 200 ether);
+      SimpleERC4626Vault(vault).mint(user, 200 ether);
+      vm.stopPrank();
+
+      asset.setRetERC20BalanceOf(vault, 200 ether);
+
+      _request(100 ether, 100 ether, 0);
+      _request(100 ether, 100 ether, 1);
+    }
+
+    // sync with zero reserve so claimable assets become 0
+    asset.setRetERC20BalanceOf(vault, 0);
+    vm.prank(assetManager);
+    queue.sync(owner, vault, 2);
+
+    // pass reclaim period
+    vm.warp(block.timestamp + 1 days);
+
+    _compareQueueIndexInfo(queue.queueIndex(vault, user), makeQueueIndexInfo(0, 2));
+
+    // claim should succeed, advance index, and transfer 0 assets
+    vm.prank(user);
+    IReclaimQueue.ClaimResult memory res = queue.claim(user, vault);
+
+    assertEq(res.reqIdFrom, 0, 'reqIdFrom');
+    assertEq(res.reqIdTo, 2, 'reqIdTo');
+    assertEq(res.totalAssetsClaimed, 0, 'totalAssetsClaimed');
+    assertEq(res.totalSharesClaimed, 200 ether, 'totalSharesClaimed');
+
+    asset.assertERC20Transfer(user, 0);
+
+    _compareQueueIndexInfo(queue.queueIndex(vault, user), makeQueueIndexInfo(2, 2));
   }
 
   function test_queueItem_validation() public {
