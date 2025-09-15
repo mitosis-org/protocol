@@ -175,14 +175,8 @@ contract MitosisVaultEntrypoint is
     uint256 gasLimit = _getHplGasRouterStorage().destinationGas[_mitosisDomain][action];
     require(gasLimit > 0, GasRouter__GasLimitNotSet(_mitosisDomain, action));
 
-    uint256 fee = _GasRouter_quoteDispatch(_mitosisDomain, action, enc, address(hook()));
-    _Router_dispatch(
-      _mitosisDomain,
-      fee,
-      enc,
-      StandardHookMetadata.formatMetadata(uint256(0), gasLimit, refundTo, bytes('')),
-      address(hook())
-    );
+    uint256 fee = _GasRouter_quoteDispatch(_mitosisDomain, action, refundTo, enc, address(hook()));
+    _GasRouter_dispatch(_mitosisDomain, action, refundTo, fee, enc, address(hook()));
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//

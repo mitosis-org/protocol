@@ -96,11 +96,23 @@ abstract contract GasRouter is Router {
   }
 
   function _GasRouter_hookMetadata(uint32 _destination, uint96 _action) internal view returns (bytes memory) {
+    return StandardHookMetadata.overrideGasLimit(_GasRouter_gasLimit(_destination, _action));
+  }
+
+  function _GasRouter_hookMetadata(uint32 _destination, uint96 _action, address _refundTo)
+    internal
+    view
+    returns (bytes memory)
+  {
+    return StandardHookMetadata.formatMetadata(uint256(0), _GasRouter_gasLimit(_destination, _action), _refundTo, bytes(''));
+  }
+
+  function _GasRouter_gasLimit(uint32 _destination, uint96 _action) internal view returns (uint128) {
     uint256 gasLimit = _getHplGasRouterStorage().destinationGas[_destination][_action];
     // IGP does not overrides gas limit even if it is set to zero.
     // So we need to check if the gas limit is properly set.
     require(gasLimit > 0, GasRouter__GasLimitNotSet(_destination, _action));
-    return StandardHookMetadata.overrideGasLimit(gasLimit);
+    return uint128(gasLimit);
   }
 
   function _setDestinationGas(uint32 domain, uint96 action, uint128 gas) internal {
@@ -118,11 +130,30 @@ abstract contract GasRouter is Router {
     return _Router_dispatch(_destination, _value, _messageBody, _GasRouter_hookMetadata(_destination, _action), _hook);
   }
 
+  function _GasRouter_dispatch(
+    uint32 _destination,
+    uint96 _action,
+    address _refundTo,
+    uint256 _value,
+    bytes memory _messageBody,
+    address _hook
+  ) internal returns (bytes32) {
+    return _Router_dispatch(_destination, _value, _messageBody, _GasRouter_hookMetadata(_destination, _action, _refundTo), _hook);
+  }
+
   function _GasRouter_quoteDispatch(uint32 _destination, uint96 _action, bytes memory _messageBody, address _hook)
     internal
     view
     returns (uint256)
   {
     return _Router_quoteDispatch(_destination, _messageBody, _GasRouter_hookMetadata(_destination, _action), _hook);
+  }
+
+  function _GasRouter_quoteDispatch(uint32 _destination, uint96 _action, address _refundTo, bytes memory _messageBody, address _hook)
+    internal
+    view
+    returns (uint256)
+  {
+    return _Router_quoteDispatch(_destination, _messageBody, _GasRouter_hookMetadata(_destination, _action, _refundTo), _hook);
   }
 }
