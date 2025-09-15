@@ -107,12 +107,12 @@ abstract contract GasRouter is Router {
     return StandardHookMetadata.formatMetadata(uint256(0), _GasRouter_gasLimit(_destination, _action), _refundTo, bytes(''));
   }
 
-  function _GasRouter_gasLimit(uint32 _destination, uint96 _action) internal view returns (uint128) {
+  function _GasRouter_gasLimit(uint32 _destination, uint96 _action) internal view returns (uint256) {
     uint256 gasLimit = _getHplGasRouterStorage().destinationGas[_destination][_action];
     // IGP does not overrides gas limit even if it is set to zero.
     // So we need to check if the gas limit is properly set.
     require(gasLimit > 0, GasRouter__GasLimitNotSet(_destination, _action));
-    return uint128(gasLimit);
+    return gasLimit;
   }
 
   function _setDestinationGas(uint32 domain, uint96 action, uint128 gas) internal {
