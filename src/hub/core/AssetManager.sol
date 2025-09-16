@@ -163,7 +163,7 @@ contract AssetManager is
     _assertBranchLiquidityThresholdSatisfied($, hubAsset, chainId, amount);
 
     _burn($, chainId, hubAsset, _msgSender(), amount);
-    $.entrypoint.withdraw{ value: msg.value }(chainId, branchAsset, to, amountBranchUnit);
+    $.entrypoint.withdraw{ value: msg.value }(chainId, branchAsset, to, amountBranchUnit, _msgSender());
 
     emit Withdrawn(chainId, hubAsset, to, amount, amountBranchUnit);
   }
@@ -187,7 +187,7 @@ contract AssetManager is
     uint256 idle = _vlfIdle($, vlfVault);
     require(amount <= idle, IAssetManager__VLFLiquidityInsufficient(vlfVault));
 
-    $.entrypoint.allocateVLF{ value: msg.value }(chainId, vlfVault, amountBranchUnit);
+    $.entrypoint.allocateVLF{ value: msg.value }(chainId, vlfVault, amountBranchUnit, _msgSender());
 
     _assertBranchAvailableLiquiditySufficient($, hubAsset, chainId, amount);
     hubAssetState.branchAllocated += amount;
@@ -329,7 +329,7 @@ contract AssetManager is
     uint8 branchAssetDecimals = hubAssetState.branchAssetDecimals;
     _assertBranchAssetPairExist($, chainId, branchAsset);
 
-    $.entrypoint.initializeAsset{ value: msg.value }(chainId, branchAsset);
+    $.entrypoint.initializeAsset{ value: msg.value }(chainId, branchAsset, _msgSender());
     emit AssetInitialized(hubAsset, chainId, branchAsset, branchAssetDecimals);
   }
 
@@ -345,7 +345,7 @@ contract AssetManager is
     _assertVLFNotInitialized($, chainId, vlfVault);
     $.vlfInitialized[chainId][vlfVault] = true;
 
-    $.entrypoint.initializeVLF{ value: msg.value }(chainId, vlfVault, branchAsset);
+    $.entrypoint.initializeVLF{ value: msg.value }(chainId, vlfVault, branchAsset, _msgSender());
     emit VLFInitialized(hubAsset, chainId, vlfVault, branchAsset);
   }
 

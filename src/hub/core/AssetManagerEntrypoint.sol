@@ -110,52 +110,51 @@ contract AssetManagerEntrypoint is
 
   //=========== NOTE: ASSETMANAGER FUNCTIONS ===========//
 
-  function initializeAsset(uint256 chainId, address branchAsset)
+  function initializeAsset(uint256 chainId, address branchAsset, address refundTo)
     external
     payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
     bytes memory enc = MsgInitializeAsset({ asset: branchAsset.toBytes32() }).encode();
-    _dispatchToBranch(chainId, MsgType.MsgInitializeAsset, enc);
+    _dispatchToBranch(chainId, MsgType.MsgInitializeAsset, enc, refundTo);
   }
 
-  function initializeVLF(uint256 chainId, address vlfVault, address branchAsset)
+  function initializeVLF(uint256 chainId, address vlfVault, address branchAsset, address refundTo)
     external
     payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
     bytes memory enc = MsgInitializeVLF({ vlfVault: vlfVault.toBytes32(), asset: branchAsset.toBytes32() }).encode();
-    _dispatchToBranch(chainId, MsgType.MsgInitializeVLF, enc);
+    _dispatchToBranch(chainId, MsgType.MsgInitializeVLF, enc, refundTo);
   }
 
-  function withdraw(uint256 chainId, address branchAsset, address to, uint256 amount)
+  function withdraw(uint256 chainId, address branchAsset, address to, uint256 amount, address refundTo)
     external
     payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
     bytes memory enc = MsgWithdraw({ asset: branchAsset.toBytes32(), to: to.toBytes32(), amount: amount }).encode();
-    _dispatchToBranch(chainId, MsgType.MsgWithdraw, enc);
+    _dispatchToBranch(chainId, MsgType.MsgWithdraw, enc, refundTo);
   }
 
-  function allocateVLF(uint256 chainId, address vlfVault, uint256 amount)
+  function allocateVLF(uint256 chainId, address vlfVault, uint256 amount, address refundTo)
     external
     payable
     onlyAssetManager
     onlyDispatchable(chainId)
   {
     bytes memory enc = MsgAllocateVLF({ vlfVault: vlfVault.toBytes32(), amount: amount }).encode();
-    _dispatchToBranch(chainId, MsgType.MsgAllocateVLF, enc);
+    _dispatchToBranch(chainId, MsgType.MsgAllocateVLF, enc, refundTo);
   }
 
-  function _dispatchToBranch(uint256 chainId, MsgType msgType, bytes memory enc) internal {
+  function _dispatchToBranch(uint256 chainId, MsgType msgType, bytes memory enc, address refundTo) internal {
     uint32 hplDomain = _ccRegistry.hyperlaneDomain(chainId);
-
     uint96 action = uint96(msgType);
-    uint256 fee = _GasRouter_quoteDispatch(hplDomain, action, enc, address(hook()));
-    _GasRouter_dispatch(hplDomain, action, fee, enc, address(hook()));
+    uint256 fee = _GasRouter_quoteDispatch(hplDomain, action, refundTo, enc, address(hook()));
+    _GasRouter_dispatch(hplDomain, action, refundTo, fee, enc, address(hook()));
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//
