@@ -308,7 +308,7 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     entrypoint.assertLastCall(
       abi.encodeCall(
         IAssetManagerEntrypoint.withdraw, //
-        (branchChainId1, branchAsset1, user1, 100 ether)
+        (branchChainId1, branchAsset1, user1, 100 ether, user1)
       )
     );
   }
@@ -634,7 +634,9 @@ contract AssetManagerTest is AssetManagerErrors, Toolkit {
     emit IAssetManager.AssetInitialized(address(hubAsset), branchChainId1, branchAsset1, 18);
     assetManager.initializeAsset(branchChainId1, address(hubAsset));
 
-    entrypoint.assertLastCall(abi.encodeCall(IAssetManagerEntrypoint.initializeAsset, (branchChainId1, branchAsset1)));
+    entrypoint.assertLastCall(
+      abi.encodeCall(IAssetManagerEntrypoint.initializeAsset, (branchChainId1, branchAsset1, owner))
+    );
 
     assertEq(assetManager.branchAsset(address(hubAsset), branchChainId1), branchAsset1);
   }
