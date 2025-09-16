@@ -316,7 +316,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     uint256 totalSupply,
     Math.Rounding rounding
   ) private pure returns (uint256) {
-    return shares.mulDiv(totalAssets, totalSupply + 10 ** decimalsOffset, rounding);
+    return shares.mulDiv(totalAssets + 1, totalSupply + 10 ** decimalsOffset, rounding);
   }
 
   struct CalcClaimState {
