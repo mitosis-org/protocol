@@ -72,6 +72,7 @@ interface IReclaimQueue {
   error IReclaimQueue__NothingToSync();
   error IReclaimQueue__Empty();
   error IReclaimQueue__OutOfBounds(uint256 max, uint256 actual);
+  error IReclaimQueue__TooManyPending();
 
   function resolver() external view returns (address);
   function collector() external view returns (address);

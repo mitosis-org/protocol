@@ -143,6 +143,11 @@ contract ReclaimQueueTestHelper is Test {
     return abi.encodeWithSelector(selector, max, actual);
   }
 
+  function _errTooManyPending() internal pure returns (bytes memory) {
+    bytes4 selector = IReclaimQueue.IReclaimQueue__TooManyPending.selector;
+    return abi.encodeWithSelector(selector);
+  }
+
   // ================================================= COMPARE ================================================= //
 
   function _compareRequest(IReclaimQueue.Request memory expected, IReclaimQueue.Request memory actual) internal pure {
@@ -295,6 +300,28 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     vm.prank(user);
     vm.expectRevert(_errQueueNotEnabled(vault2));
     queue.request(100 ether, user, vault2);
+  }
+
+  function test_request_pendingCap_reverts_at_MAX_CLAIM_SIZE() public {
+    uint256 amount = 1 ether;
+
+    vm.startPrank(user);
+    SimpleERC4626Vault(vault).approve(address(queue), type(uint256).max);
+    uint256 cap = queue.MAX_CLAIM_SIZE();
+    SimpleERC4626Vault(vault).mint(user, cap * amount);
+    vm.stopPrank();
+
+    asset.setRetERC20BalanceOf(vault, cap * amount);
+
+    // Fill up to cap
+    for (uint256 i = 0; i < cap; i++) {
+      _request(amount, amount, i);
+    }
+
+    // Next request should revert
+    vm.prank(user);
+    vm.expectRevert(_errTooManyPending());
+    queue.request(amount, user, vault);
   }
 
   function test_request_zeroShares_reverts() public {
@@ -469,7 +496,6 @@ contract ReclaimQueueTest is ReclaimQueueTestHelper, Toolkit {
     uint256 totalSupply = 300 ether;
     uint256 totalAssets = 450 ether; // 50% yield
 
-    uint256 expectedSharesRemain = 100 ether - 1;
     uint256 expectedSharesSynced = 300 ether;
     uint256 expectedAssetsOnRequest = 300 ether;
     uint256 expectedAssetsOnReserve = 450 ether - 3;
