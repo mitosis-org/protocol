@@ -109,7 +109,7 @@ contract VLFVaultBasicTest is VLFVaultBaseTest {
   }
 
   function test_deposit(uint256 amount) public {
-    vm.assume(0 < amount && amount < type(uint64).max);
+    vm.assume(0 < amount && amount < capped.MAX_ALLOWED_CAP());
 
     vm.deal(user, amount);
     vm.startPrank(user);
@@ -128,7 +128,7 @@ contract VLFVaultBasicTest is VLFVaultBaseTest {
   }
 
   function test_mint(uint256 amount) public {
-    vm.assume(0 < amount && amount < type(uint64).max);
+    vm.assume(0 < amount && amount < capped.MAX_ALLOWED_CAP());
 
     vm.deal(user, amount);
     vm.startPrank(user);
@@ -254,8 +254,9 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
   }
 
   function test_deposit(uint256 cap, uint256 amount) public {
-    vm.assume(cap <= capped.MAX_ALLOWED_CAP());
-    vm.assume(0 < amount && amount < type(uint64).max);
+    uint256 maxAllowedCap = capped.MAX_ALLOWED_CAP();
+    vm.assume(cap <= maxAllowedCap);
+    vm.assume(0 < amount && amount < maxAllowedCap);
     vm.assume(amount <= cap);
 
     vm.prank(liquidityManager);
@@ -272,8 +273,9 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
   }
 
   function test_deposit_revertsIfCapExceeded(uint256 cap, uint256 amount) public {
-    vm.assume(cap <= capped.MAX_ALLOWED_CAP());
-    vm.assume(0 < amount && amount < type(uint64).max);
+    uint256 maxAllowedCap = capped.MAX_ALLOWED_CAP();
+    vm.assume(cap <= maxAllowedCap);
+    vm.assume(0 < amount && amount < maxAllowedCap);
     vm.assume(cap < amount);
 
     vm.prank(liquidityManager);
@@ -293,8 +295,7 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
 
   function test_mint(uint256 cap, uint256 amount) public {
     vm.assume(cap <= capped.MAX_ALLOWED_CAP());
-    vm.assume(0 < amount && amount < type(uint64).max);
-    vm.assume(amount <= cap && cap < type(uint64).max); // TODO:
+    vm.assume(0 < amount && amount <= cap);
 
     vm.prank(liquidityManager);
     capped.setCap(cap);
@@ -310,8 +311,9 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
   }
 
   function test_mint_revertsIfCapExceeded(uint256 cap, uint256 amount) public {
-    vm.assume(cap <= capped.MAX_ALLOWED_CAP());
-    vm.assume(0 < amount && amount < type(uint64).max);
+    uint256 maxAllowedCap = capped.MAX_ALLOWED_CAP();
+    vm.assume(cap <= maxAllowedCap);
+    vm.assume(0 < amount && amount < maxAllowedCap);
     vm.assume(amount > cap);
 
     vm.prank(liquidityManager);
@@ -618,7 +620,7 @@ contract VLFVaultCappedTest is VLFVaultBaseTest {
   }
 
   function test_depositFromChainId_onlyAssetManager(uint256 amount, uint256 chainId) public {
-    vm.assume(0 < amount && amount < type(uint64).max);
+    vm.assume(0 < amount && amount < capped.MAX_ALLOWED_CAP());
 
     vm.deal(user, amount);
     vm.startPrank(user);
