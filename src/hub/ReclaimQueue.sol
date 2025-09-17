@@ -216,6 +216,11 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     QueueState storage q$ = _getStorageV1().queues[vault];
 
     require(q$.isEnabled, IReclaimQueue__QueueNotEnabled(vault));
+    {
+      LibQueue.UintOffsetQueue storage index = q$.indexes[receiver];
+      uint32 pending = index.size() - index.offset();
+      require(pending < MAX_CLAIM_SIZE, IReclaimQueue.IReclaimQueue__TooManyPending());
+    }
     require(shares != 0, StdError.ZeroAmount());
 
     IERC4626(vault).safeTransferFrom(_msgSender(), address(this), shares);
