@@ -216,10 +216,12 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     QueueState storage q$ = _getStorageV1().queues[vault];
 
     require(q$.isEnabled, IReclaimQueue__QueueNotEnabled(vault));
+    require(shares != 0, StdError.ZeroAmount());
 
     IERC4626(vault).safeTransferFrom(_msgSender(), address(this), shares);
 
     uint256 assets = IERC4626(vault).previewRedeem(shares);
+    require(assets != 0, StdError.ZeroAmount());
 
     uint48 now_ = Time.timestamp();
 
@@ -255,7 +257,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
 
     // run actual claim logic
     ClaimResult memory res = _claim($, receiver, vault);
-    require(res.totalAssetsClaimed > 0, IReclaimQueue__NothingToClaim());
+    require(res.reqIdFrom < res.reqIdTo, IReclaimQueue__NothingToClaim());
 
     emit ClaimSucceeded(receiver, vault, res);
 
@@ -316,7 +318,7 @@ contract ReclaimQueue is IReclaimQueue, Pausable, Ownable2StepUpgradeable, UUPSU
     uint256 totalSupply,
     Math.Rounding rounding
   ) private pure returns (uint256) {
-    return shares.mulDiv(totalAssets, totalSupply + 10 ** decimalsOffset, rounding);
+    return shares.mulDiv(totalAssets + 1, totalSupply + 10 ** decimalsOffset, rounding);
   }
 
   struct CalcClaimState {
