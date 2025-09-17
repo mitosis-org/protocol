@@ -170,8 +170,7 @@ contract MitosisVaultEntrypoint is
 
   function _dispatchToMitosis(bytes memory enc, MsgType msgType, address refundTo) internal {
     uint96 action = uint96(msgType);
-    uint256 fee = _GasRouter_quoteDispatch(_mitosisDomain, action, refundTo, enc, address(hook()));
-    _GasRouter_dispatch(_mitosisDomain, action, refundTo, fee, enc, address(hook()));
+    _GasRouter_dispatch(_mitosisDomain, action, refundTo, msg.value, enc, address(hook()));
   }
 
   //=========== NOTE: HANDLER FUNCTIONS ===========//

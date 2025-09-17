@@ -78,16 +78,18 @@ interface IAssetManagerEntrypoint {
    * @notice Initializes an asset on a specified branch chain
    * @param chainId The ID of the branch chain
    * @param branchAsset The address of the asset on the branch chain
+   * @param refundTo The address to refund any excess relaying gas fees
    */
-  function initializeAsset(uint256 chainId, address branchAsset) external payable;
+  function initializeAsset(uint256 chainId, address branchAsset, address refundTo) external payable;
 
   /**
    * @notice Initializes a VLF on a specified branch chain
    * @param chainId The ID of the branch chain
    * @param vlfVault The address of the VLFVault
    * @param branchAsset The address of the associated asset on the branch chain
+   * @param refundTo The address to refund any excess relaying gas fees
    */
-  function initializeVLF(uint256 chainId, address vlfVault, address branchAsset) external payable;
+  function initializeVLF(uint256 chainId, address vlfVault, address branchAsset, address refundTo) external payable;
 
   /**
    * @notice Initiates a withdrawal of assets from a branch chain
@@ -95,14 +97,18 @@ interface IAssetManagerEntrypoint {
    * @param branchAsset The address of the asset on the branch chain
    * @param to The address that will receive the withdrawn assets
    * @param amount The amount of assets to withdraw
+   * @param refundTo The address to refund any excess relaying gas fees
    */
-  function withdraw(uint256 chainId, address branchAsset, address to, uint256 amount) external payable;
+  function withdraw(uint256 chainId, address branchAsset, address to, uint256 amount, address refundTo)
+    external
+    payable;
 
   /**
    * @notice Allocates assets to the StrategyExecutor for VLF on branch chain
    * @param chainId The ID of the branch chain
    * @param vlfVault The address of the VLFVault
    * @param amount The amount of assets to allocate
+   * @param refundTo The address to refund any excess relaying gas fees
    */
-  function allocateVLF(uint256 chainId, address vlfVault, uint256 amount) external payable;
+  function allocateVLF(uint256 chainId, address vlfVault, uint256 amount, address refundTo) external payable;
 }
