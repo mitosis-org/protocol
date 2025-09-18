@@ -532,6 +532,56 @@ contract ValidatorManagerTest is Toolkit {
     assertEq(manager.validatorInfoAt(6, val.addr).commissionRate, newCommissionRate);
   }
 
+  function test_createValidator_minCommissionZero_keepsInitialCommission_andNoPending() public {
+    // Set global minimum commission to 0 to catch regressions where pending 0 overrides initial
+    IValidatorManager.GlobalValidatorConfigResponse memory cfg = manager.globalValidatorConfig();
+
+    vm.prank(owner);
+    manager.setGlobalValidatorConfig(
+      IValidatorManager.SetGlobalValidatorConfigRequest({
+        initialValidatorDeposit: cfg.initialValidatorDeposit,
+        collateralWithdrawalDelaySeconds: cfg.collateralWithdrawalDelaySeconds,
+        minimumCommissionRate: 0,
+        commissionRateUpdateDelayEpoch: cfg.commissionRateUpdateDelayEpoch
+      })
+    );
+
+    ValidatorKey memory val = test_createValidator('min0');
+
+    IValidatorManager.ValidatorInfoResponse memory info = manager.validatorInfo(val.addr);
+    assertEq(info.commissionRate, 100); // should keep initial commission when there is no pending
+    assertEq(info.pendingCommissionRate, 0);
+    assertEq(info.pendingCommissionRateUpdateEpoch, 0);
+  }
+
+  function test_updateRewardConfig_exposesPendingBeforeActivation_only() public {
+    ValidatorKey memory val = test_createValidator('val-pending');
+
+    uint256 previousCommissionRate = manager.validatorInfo(val.addr).commissionRate;
+    uint256 newCommissionRate = previousCommissionRate + 50; // +0.5%
+    uint256 delay = manager.globalValidatorConfig().commissionRateUpdateDelayEpoch;
+
+    uint256 currentEpoch = epochFeeder.epoch();
+
+    vm.prank(val.addr);
+    manager.updateRewardConfig(
+      val.addr, IValidatorManager.UpdateRewardConfigRequest({ commissionRate: newCommissionRate })
+    );
+
+    // Before activation: commission stays previous, pending fields are populated
+    IValidatorManager.ValidatorInfoResponse memory beforeInfo = manager.validatorInfo(val.addr);
+    assertEq(beforeInfo.commissionRate, previousCommissionRate);
+    assertEq(beforeInfo.pendingCommissionRate, newCommissionRate);
+    assertEq(beforeInfo.pendingCommissionRateUpdateEpoch, currentEpoch + delay);
+
+    // After activation: commission switches to new, pending fields cleared (or in the past)
+    vm.warp(block.timestamp + epochInterval * delay);
+    IValidatorManager.ValidatorInfoResponse memory afterInfo = manager.validatorInfo(val.addr);
+    assertEq(afterInfo.commissionRate, newCommissionRate);
+    assertEq(afterInfo.pendingCommissionRate, 0);
+    assertEq(afterInfo.pendingCommissionRateUpdateEpoch, 0);
+  }
+
   function _makePubKey(string memory name) internal returns (ValidatorKey memory) {
     (address addr, uint256 privKey) = makeAddrAndKey(name);
     Vm.Wallet memory wallet = vm.createWallet(privKey);
