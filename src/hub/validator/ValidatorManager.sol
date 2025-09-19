@@ -424,11 +424,14 @@ contract ValidatorManager is
     });
 
     // apply pending rate
-    if (info.rewardConfig.pendingCommissionRateUpdateEpoch <= epoch) {
-      response.commissionRate = info.rewardConfig.pendingCommissionRate;
-    } else {
-      response.pendingCommissionRate = info.rewardConfig.pendingCommissionRate;
-      response.pendingCommissionRateUpdateEpoch = info.rewardConfig.pendingCommissionRateUpdateEpoch;
+    uint256 pendingEpoch = info.rewardConfig.pendingCommissionRateUpdateEpoch;
+    if (pendingEpoch != 0) {
+      if (pendingEpoch <= epoch) {
+        response.commissionRate = info.rewardConfig.pendingCommissionRate;
+      } else {
+        response.pendingCommissionRate = info.rewardConfig.pendingCommissionRate;
+        response.pendingCommissionRateUpdateEpoch = pendingEpoch;
+      }
     }
 
     // hard limit
