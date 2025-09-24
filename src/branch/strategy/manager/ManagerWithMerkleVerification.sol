@@ -74,7 +74,7 @@ contract ManagerWithMerkleVerification is
       for (uint256 i; i < targetsLength; ++i) {
         totalValue += values[i];
       }
-      require(msg.value == totalValue, StdError.InvalidParameter('msg.sender'));
+      require(msg.value == totalValue, StdError.InvalidParameter('msg.value'));
     }
 
     for (uint256 i; i < targetsLength; ++i) {
