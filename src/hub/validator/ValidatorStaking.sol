@@ -36,6 +36,8 @@ contract ValidatorStakingStorageV1 {
     mapping(address valAddr => Checkpoints.Trace208) validatorTotal;
     mapping(address valAddr => mapping(address staker => Checkpoints.Trace208)) staked;
     mapping(address staker => mapping(address valAddr => uint256)) lastRedelegationTime;
+    mapping(address valAddr => mapping(address staker => uint256)) stakingAllowances;
+    address migrationAgent;
   }
 
   string private constant _NAMESPACE = 'mitosis.storage.ValidatorStaking.v1';
@@ -123,7 +125,7 @@ contract ValidatorStaking is
   }
 
   /// @inheritdoc IValidatorStaking
-  function staked(address valAddr, address staker, uint48 timestamp) external view virtual returns (uint256) {
+  function staked(address valAddr, address staker, uint48 timestamp) public view virtual returns (uint256) {
     return _getStorageV1().staked[valAddr][staker].upperLookupRecent(timestamp);
   }
 
@@ -211,6 +213,50 @@ contract ValidatorStaking is
   }
 
   /// @inheritdoc IValidatorStaking
+  function approveStakingOwnership(address valAddr, address spender, uint256 amount) external {
+    require(amount > 0, StdError.ZeroAmount());
+    require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator(valAddr));
+
+    _getStorageV1().stakingAllowances[valAddr][spender] = amount;
+
+    emit StakingOwnershipApproved(valAddr, _msgSender(), spender, amount);
+  }
+
+  /// @inheritdoc IValidatorStaking
+  // TODO: Permission?
+  function transferStakingOwnershipFrom(address valAddr, address from, address to, uint256 amount)
+    external
+    returns (uint256)
+  {
+    require(amount > 0, StdError.ZeroAmount());
+    require(_msgSender() == to, 'Caller must be recipient');
+    require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator(valAddr));
+
+    StorageV1 storage $ = _getStorageV1();
+    uint48 _now = Time.timestamp();
+
+    uint256 _staked = staked(valAddr, from, _now);
+    uint256 allowance = $.stakingAllowances[valAddr][to];
+
+    require(_staked >= amount, 'Insufficient staked amount');
+    require(allowance >= amount, 'Insufficient allowance');
+
+    $.stakingAllowances[valAddr][to] -= amount;
+
+    {
+      uint208 amount208 = amount.toUint208();
+      _storeUnstake($, _now, valAddr, from, amount208);
+      _storeStake($, _now, valAddr, to, amount208);
+    }
+
+    _hub.notifyUnstake(valAddr, from, amount);
+    _hub.notifyStake(valAddr, to, amount);
+
+    emit StakingOwnershipTransferred(valAddr, from, to, amount);
+    return amount;
+  }
+
+  /// @inheritdoc IValidatorStaking
   function setMinStakingAmount(uint256 minAmount) external onlyOwner {
     _setMinStakingAmount(_getStorageV1(), minAmount);
   }
@@ -228,6 +274,25 @@ contract ValidatorStaking is
   /// @inheritdoc IValidatorStaking
   function setRedelegationCooldown(uint48 redelegationCooldown_) external onlyOwner {
     _setRedelegationCooldown(_getStorageV1(), redelegationCooldown_);
+  }
+
+  /// @notice Sets the migration agent address. Only the migration agent can call claimUnstakeForMigration.
+  function setMigrationAgent(address agent) external onlyOwner {
+    address previousAgent = _getStorageV1().migrationAgent;
+    _getStorageV1().migrationAgent = agent;
+    emit MigrationAgentSet(previousAgent, agent);
+  }
+
+  /// @notice Returns the migration agent address.
+  function migrationAgent() external view returns (address) {
+    return _getStorageV1().migrationAgent;
+  }
+
+  /// @notice Claims unstaked tokens immediately, bypassing cooldown. Only callable by migration agent.
+  /// @dev Used for TMITO->MITO migration to avoid waiting for unstake period.
+  function claimUnstakeForMigration(address receiver) external nonReentrant returns (uint256) {
+    require(_msgSender() == _getStorageV1().migrationAgent, StdError.Unauthorized());
+    return _claimUnstakeForMigration(_getStorageV1(), receiver);
   }
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //
@@ -305,6 +370,29 @@ contract ValidatorStaking is
     emit UnstakeRequested(valAddr, payer, recipient, amount, reqId);
 
     return reqId;
+  }
+
+  function _claimUnstakeForMigration(StorageV1 storage $, address receiver) internal virtual returns (uint256) {
+    LibQueue.Trace208OffsetQueue storage queue = $.unstakeQueue[receiver];
+
+    uint48 now_ = Time.timestamp();
+    (uint32 reqIdFrom, uint32 reqIdTo) = queue.solveByKey(now_);
+    uint256 claimed;
+    {
+      uint256 fromValue = reqIdFrom == 0 ? 0 : queue.valueAt(reqIdFrom - 1);
+      uint256 toValue = queue.valueAt(reqIdTo - 1);
+      claimed = toValue - fromValue;
+    }
+
+    address baseAsset_ = $.baseAsset;
+    if (baseAsset_ == NATIVE_TOKEN) receiver.safeTransferETH(claimed);
+    else baseAsset_.safeTransfer(receiver, claimed);
+
+    _push($.totalUnstaking, now_, claimed.toUint208(), _opSub);
+
+    emit UnstakeClaimed(receiver, claimed, reqIdFrom, reqIdTo);
+
+    return claimed;
   }
 
   function _claimUnstake(StorageV1 storage $, address receiver) internal virtual returns (uint256) {
