@@ -289,7 +289,6 @@ contract ValidatorStaking is
   }
 
   /// @notice Claims unstaked tokens immediately, bypassing cooldown. Only callable by migration agent.
-  /// @dev Used for TMITO->MITO migration to avoid waiting for unstake period.
   function claimUnstakeForMigration(address receiver) external nonReentrant returns (uint256) {
     require(_msgSender() == _getStorageV1().migrationAgent, StdError.Unauthorized());
     return _claimUnstakeForMigration(_getStorageV1(), receiver);
