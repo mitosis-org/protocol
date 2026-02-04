@@ -157,6 +157,15 @@ interface IValidatorStaking {
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external returns (uint256);
 
   /**
+   * @notice Returns the amount of staking ownership that a spender is allowed to transfer from an owner.
+   * @param valAddr The address of the validator where tokens are staked.
+   * @param owner The address that owns the staked tokens.
+   * @param spender The address that can transfer staking ownership on behalf of the owner.
+   * @return The amount of staked tokens the spender is approved to transfer.
+   */
+  function stakingAllowance(address valAddr, address owner, address spender) external view returns (uint256);
+
+  /**
    * @notice Approves a spender to transfer staking ownership on behalf of the caller.
    * @dev Similar to ERC20 approve pattern, but for staked tokens with a specific validator.
    * @param valAddr The address of the validator where tokens are staked.

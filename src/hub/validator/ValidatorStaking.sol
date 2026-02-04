@@ -213,6 +213,11 @@ contract ValidatorStaking is
   }
 
   /// @inheritdoc IValidatorStaking
+  function stakingAllowance(address valAddr, address owner, address spender) external view returns (uint256) {
+    return _getStorageV1().stakingAllowances[valAddr][owner][spender];
+  }
+
+  /// @inheritdoc IValidatorStaking
   function approveStakingOwnership(address valAddr, address spender, uint256 amount) external {
     require(amount > 0, StdError.ZeroAmount());
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator(valAddr));
