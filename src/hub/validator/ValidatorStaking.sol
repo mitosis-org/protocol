@@ -36,7 +36,7 @@ contract ValidatorStakingStorageV1 {
     mapping(address valAddr => Checkpoints.Trace208) validatorTotal;
     mapping(address valAddr => mapping(address staker => Checkpoints.Trace208)) staked;
     mapping(address staker => mapping(address valAddr => uint256)) lastRedelegationTime;
-    mapping(address valAddr => mapping(address staker => uint256)) stakingAllowances;
+    mapping(address valAddr => mapping(address owner => mapping(address spender => uint256))) stakingAllowances;
     address migrationAgent;
   }
 
@@ -217,7 +217,7 @@ contract ValidatorStaking is
     require(amount > 0, StdError.ZeroAmount());
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator(valAddr));
 
-    _getStorageV1().stakingAllowances[valAddr][spender] = amount;
+    _getStorageV1().stakingAllowances[valAddr][_msgSender()][spender] = amount;
 
     emit StakingOwnershipApproved(valAddr, _msgSender(), spender, amount);
   }
@@ -236,12 +236,12 @@ contract ValidatorStaking is
     uint48 _now = Time.timestamp();
 
     uint256 _staked = staked(valAddr, from, _now);
-    uint256 allowance = $.stakingAllowances[valAddr][to];
+    uint256 allowance = $.stakingAllowances[valAddr][from][to];
 
     require(_staked >= amount, 'Insufficient staked amount');
     require(allowance >= amount, 'Insufficient allowance');
 
-    $.stakingAllowances[valAddr][to] -= amount;
+    $.stakingAllowances[valAddr][from][to] -= amount;
 
     {
       uint208 amount208 = amount.toUint208();
