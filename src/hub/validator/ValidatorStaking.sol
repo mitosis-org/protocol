@@ -228,7 +228,6 @@ contract ValidatorStaking is
   }
 
   /// @inheritdoc IValidatorStaking
-  // TODO: Permission?
   function transferStakingOwnershipFrom(address valAddr, address from, address to, uint256 amount)
     external
     returns (uint256)
@@ -377,33 +376,21 @@ contract ValidatorStaking is
   }
 
   function _claimUnstakeForMigration(StorageV1 storage $, address receiver) internal virtual returns (uint256) {
-    LibQueue.Trace208OffsetQueue storage queue = $.unstakeQueue[receiver];
-
-    uint48 now_ = Time.timestamp();
-    (uint32 reqIdFrom, uint32 reqIdTo) = queue.solveByKey(now_);
-    uint256 claimed;
-    {
-      uint256 fromValue = reqIdFrom == 0 ? 0 : queue.valueAt(reqIdFrom - 1);
-      uint256 toValue = queue.valueAt(reqIdTo - 1);
-      claimed = toValue - fromValue;
-    }
-
-    address baseAsset_ = $.baseAsset;
-    if (baseAsset_ == NATIVE_TOKEN) receiver.safeTransferETH(claimed);
-    else baseAsset_.safeTransfer(receiver, claimed);
-
-    _push($.totalUnstaking, now_, claimed.toUint208(), _opSub);
-
-    emit UnstakeClaimed(receiver, claimed, reqIdFrom, reqIdTo);
-
-    return claimed;
+    return _claimUnstakeForRequestsUntil($, receiver, Time.timestamp());
   }
 
   function _claimUnstake(StorageV1 storage $, address receiver) internal virtual returns (uint256) {
+    return _claimUnstakeForRequestsUntil($, receiver, Time.timestamp() - $.unstakeCooldown);
+  }
+
+  function _claimUnstakeForRequestsUntil(StorageV1 storage $, address receiver, uint48 eligibleUntil)
+    private
+    returns (uint256)
+  {
     LibQueue.Trace208OffsetQueue storage queue = $.unstakeQueue[receiver];
 
     uint48 now_ = Time.timestamp();
-    (uint32 reqIdFrom, uint32 reqIdTo) = queue.solveByKey(now_ - $.unstakeCooldown);
+    (uint32 reqIdFrom, uint32 reqIdTo) = queue.solveByKey(eligibleUntil);
     uint256 claimed;
     {
       uint256 fromValue = reqIdFrom == 0 ? 0 : queue.valueAt(reqIdFrom - 1);
@@ -415,7 +402,6 @@ contract ValidatorStaking is
     if (baseAsset_ == NATIVE_TOKEN) receiver.safeTransferETH(claimed);
     else baseAsset_.safeTransfer(receiver, claimed);
 
-    // apply to state
     _push($.totalUnstaking, now_, claimed.toUint208(), _opSub);
 
     emit UnstakeClaimed(receiver, claimed, reqIdFrom, reqIdTo);
