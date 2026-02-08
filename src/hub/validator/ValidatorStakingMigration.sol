@@ -7,7 +7,7 @@ import { ReentrancyGuardUpgradeable } from '@ozu/utils/ReentrancyGuardUpgradeabl
 
 import { IValidatorStaking } from '../../interfaces/hub/validator/IValidatorStaking.sol';
 import { IValidatorStakingMigration } from '../../interfaces/hub/validator/IValidatorStakingMigration.sol';
-import { ITMITO } from '../lst/external/ITMITO.sol';
+import { ITMITO } from '../../external/interfaces/ITMITO.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 /// @title ValidatorStakingMigration

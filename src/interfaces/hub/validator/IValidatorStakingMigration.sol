@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { IValidatorStaking } from './IValidatorStaking.sol';
-import { ITMITO } from '../../../hub/lst/external/ITMITO.sol';
+import { ITMITO } from '../../../external/interfaces/ITMITO.sol';
 
 /// @title IValidatorStakingMigration
 /// @notice Interface for the ValidatorStakingMigration contract.
