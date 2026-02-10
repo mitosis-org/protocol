@@ -63,6 +63,11 @@ contract ValidatorStakingGovMITO is ValidatorStaking, SudoVotes {
     return stakerTotal(account, now_) + totalUnstakingAmount;
   }
 
+  /// @dev GovMITO staking is non-transferable; ownership transfer would desync voting power.
+  function transferStakingOwnershipFrom(address, address, address, uint256) external pure override returns (uint256) {
+    revert ValidatorStakingGovMITO__NonTransferable();
+  }
+
   /// @dev Mints voting units to the recipient. No need to care about the validator
   function _stake(StorageV1 storage $, address valAddr, address payer, address recipient, uint256 amount)
     internal
