@@ -204,5 +204,5 @@ interface IValidatorStaking {
   /**
    * @notice Claims unstaked tokens immediately, bypassing cooldown. Only callable by migration agent.
    */
-  function claimUnstakeForMigration(address receiver) external returns (uint256);
+  function claimUnstakeForMigration() external returns (uint256);
 }

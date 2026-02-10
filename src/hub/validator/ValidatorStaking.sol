@@ -230,10 +230,11 @@ contract ValidatorStaking is
   /// @inheritdoc IValidatorStaking
   function transferStakingOwnershipFrom(address valAddr, address from, address to, uint256 amount)
     external
+    nonReentrant
     returns (uint256)
   {
     require(amount > 0, StdError.ZeroAmount());
-    require(_msgSender() == to, 'Caller must be recipient');
+    require(_msgSender() == to, StdError.InvalidParameter('to'));
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator(valAddr));
 
     StorageV1 storage $ = _getStorageV1();
@@ -293,9 +294,9 @@ contract ValidatorStaking is
   }
 
   /// @notice Claims unstaked tokens immediately, bypassing cooldown. Only callable by migration agent.
-  function claimUnstakeForMigration(address receiver) external nonReentrant returns (uint256) {
+  function claimUnstakeForMigration() external nonReentrant returns (uint256) {
     require(_msgSender() == _getStorageV1().migrationAgent, StdError.Unauthorized());
-    return _claimUnstakeForMigration(_getStorageV1(), receiver);
+    return _claimUnstakeForMigration(_getStorageV1(), _msgSender());
   }
 
   // ===================================== INTERNAL FUNCTIONS ===================================== //

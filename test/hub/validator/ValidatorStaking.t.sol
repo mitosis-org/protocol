@@ -514,91 +514,119 @@ contract ValidatorStakingTest is Toolkit {
     _fund();
     _regVal(val1, true);
     _stake(erc20Vault, val1, user1, user1, 10 ether);
-    _requestUnstake(erc20Vault, val1, user1, user1, 10 ether);
-
     address migrationAgentAddr = makeAddr('migrationAgent');
     vm.prank(owner);
     erc20Vault.setMigrationAgent(migrationAgentAddr);
+    _requestUnstake(erc20Vault, val1, user1, migrationAgentAddr, 10 ether);
 
     vm.prank(user1);
     vm.expectRevert(StdError.Unauthorized.selector);
-    erc20Vault.claimUnstakeForMigration(user1);
+    erc20Vault.claimUnstakeForMigration();
 
     vm.prank(user2);
     vm.expectRevert(StdError.Unauthorized.selector);
-    erc20Vault.claimUnstakeForMigration(user1);
+    erc20Vault.claimUnstakeForMigration();
   }
 
   function test_claimUnstakeForMigration_success_erc20() public {
     _fund();
     _regVal(val1, true);
     _stake(erc20Vault, val1, user1, user1, 10 ether);
-    _requestUnstake(erc20Vault, val1, user1, user1, 10 ether);
-
     address migrationAgentAddr = makeAddr('migrationAgent');
     vm.prank(owner);
     erc20Vault.setMigrationAgent(migrationAgentAddr);
+    _requestUnstake(erc20Vault, val1, user1, migrationAgentAddr, 10 ether);
 
-    uint256 balanceBefore = weth.balanceOf(user1);
+    uint256 balanceBefore = weth.balanceOf(migrationAgentAddr);
     uint48 now_ = _now48();
 
     vm.prank(migrationAgentAddr);
     vm.expectEmit();
-    emit IValidatorStaking.UnstakeClaimed(user1, 10 ether, 0, 1);
-    uint256 claimed = erc20Vault.claimUnstakeForMigration(user1);
+    emit IValidatorStaking.UnstakeClaimed(migrationAgentAddr, 10 ether, 0, 1);
+    uint256 claimed = erc20Vault.claimUnstakeForMigration();
 
     assertEq(claimed, 10 ether);
-    assertEq(weth.balanceOf(user1), balanceBefore + 10 ether);
+    assertEq(weth.balanceOf(migrationAgentAddr), balanceBefore + 10 ether);
     assertEq(erc20Vault.totalUnstaking(now_), 0);
-    _assertUnstaking(erc20Vault, user1, now_, 0, 0);
+    _assertUnstaking(erc20Vault, migrationAgentAddr, now_, 0, 0);
   }
 
   function test_claimUnstakeForMigration_success_native() public {
     _fund();
     _regVal(val1, true);
     _stake(nativeVault, val1, user1, user1, 10 ether);
-    _requestUnstake(nativeVault, val1, user1, user1, 10 ether);
-
     address migrationAgentAddr = makeAddr('migrationAgent');
     vm.prank(owner);
     nativeVault.setMigrationAgent(migrationAgentAddr);
+    _requestUnstake(nativeVault, val1, user1, migrationAgentAddr, 10 ether);
 
-    uint256 balanceBefore = user1.balance;
+    uint256 balanceBefore = migrationAgentAddr.balance;
     uint48 now_ = _now48();
 
     vm.prank(migrationAgentAddr);
     vm.expectEmit();
-    emit IValidatorStaking.UnstakeClaimed(user1, 10 ether, 0, 1);
-    uint256 claimed = nativeVault.claimUnstakeForMigration(user1);
+    emit IValidatorStaking.UnstakeClaimed(migrationAgentAddr, 10 ether, 0, 1);
+    uint256 claimed = nativeVault.claimUnstakeForMigration();
 
     assertEq(claimed, 10 ether);
-    assertEq(user1.balance, balanceBefore + 10 ether);
+    assertEq(migrationAgentAddr.balance, balanceBefore + 10 ether);
     assertEq(nativeVault.totalUnstaking(now_), 0);
-    _assertUnstaking(nativeVault, user1, now_, 0, 0);
+    _assertUnstaking(nativeVault, migrationAgentAddr, now_, 0, 0);
   }
 
   function test_claimUnstakeForMigration_bypassesCooldown() public {
     _fund();
     _regVal(val1, true);
     _stake(erc20Vault, val1, user1, user1, 10 ether);
-    _requestUnstake(erc20Vault, val1, user1, user1, 10 ether);
-
     address migrationAgentAddr = makeAddr('migrationAgent');
     vm.prank(owner);
     erc20Vault.setMigrationAgent(migrationAgentAddr);
+    _requestUnstake(erc20Vault, val1, user1, migrationAgentAddr, 10 ether);
 
     vm.warp(block.timestamp + 1);
-    _assertUnstaking(erc20Vault, user1, _now48(), 10 ether, 0);
+    _assertUnstaking(erc20Vault, migrationAgentAddr, _now48(), 10 ether, 0);
 
     vm.prank(user1);
     vm.expectRevert(LibQueue.LibQueue__NothingToClaim.selector);
     erc20Vault.claimUnstake(user1);
 
-    uint256 userBalanceBefore = weth.balanceOf(user1);
+    uint256 agentBalanceBefore = weth.balanceOf(migrationAgentAddr);
     vm.prank(migrationAgentAddr);
-    uint256 migrationClaimed = erc20Vault.claimUnstakeForMigration(user1);
+    uint256 migrationClaimed = erc20Vault.claimUnstakeForMigration();
     assertEq(migrationClaimed, 10 ether);
-    assertEq(weth.balanceOf(user1), userBalanceBefore + 10 ether);
+    assertEq(weth.balanceOf(migrationAgentAddr), agentBalanceBefore + 10 ether);
+  }
+
+  function test_claimUnstakeForMigration_case() public {
+    _fund();
+    _regVal(val1, true);
+    _stake(erc20Vault, val1, user1, user1, 10 ether);
+    address migrationAgentAddr = makeAddr('migrationAgent');
+    vm.prank(owner);
+    erc20Vault.setMigrationAgent(migrationAgentAddr);
+
+    vm.prank(user1);
+    erc20Vault.approveStakingOwnership(val1, migrationAgentAddr, 10 ether);
+    // Before actual transfer
+    assertEq(erc20Vault.staked(val1, user1, uint48(block.timestamp)), 10 ether);
+    assertEq(erc20Vault.staked(val1, migrationAgentAddr, uint48(block.timestamp)), 0);
+
+    vm.prank(migrationAgentAddr);
+    erc20Vault.transferStakingOwnershipFrom(val1, user1, migrationAgentAddr, 10 ether);
+    // After actual transfer
+    assertEq(erc20Vault.staked(val1, user1, uint48(block.timestamp)), 0);
+    assertEq(erc20Vault.staked(val1, migrationAgentAddr, uint48(block.timestamp)), 10 ether);
+
+    _requestUnstake(erc20Vault, val1, migrationAgentAddr, migrationAgentAddr, 10 ether);
+
+    vm.warp(block.timestamp + 1);
+    _assertUnstaking(erc20Vault, migrationAgentAddr, _now48(), 10 ether, 0);
+
+    uint256 agentBalanceBefore = weth.balanceOf(migrationAgentAddr);
+    vm.prank(migrationAgentAddr);
+    uint256 migrationClaimed = erc20Vault.claimUnstakeForMigration();
+    assertEq(migrationClaimed, 10 ether);
+    assertEq(weth.balanceOf(migrationAgentAddr), agentBalanceBefore + 10 ether);
   }
 
   function _test_redelegate(ValidatorStaking vault) private {
@@ -718,7 +746,7 @@ contract ValidatorStakingTest is Toolkit {
     emit IValidatorStaking.UnstakeRequested(val, sender, recipient, amount, globalReqId[address(vault)][recipient]++);
     vault.requestUnstake(val, recipient, amount);
 
-    hub.assertLastCall(abi.encodeCall(IValidatorStakingHub.notifyUnstake, (val, recipient, amount)));
+    hub.assertLastCall(abi.encodeCall(IValidatorStakingHub.notifyUnstake, (val, sender, amount)));
   }
 
   function _claimUnstake(ValidatorStaking vault, address recipient, uint256 reqIdFrom, uint256 reqIdTo) internal {

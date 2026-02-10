@@ -61,7 +61,7 @@ contract ValidatorStakingMigration is
     tmitoValidatorStaking.requestUnstake(valAddr, address(this), amount);
 
     // 3. Claim immediately, bypassing cooldown (requires migrationAgent role)
-    uint256 tmitoAmount = tmitoValidatorStaking.claimUnstakeForMigration(address(this));
+    uint256 tmitoAmount = tmitoValidatorStaking.claimUnstakeForMigration();
 
     // 4. Redeem TMITO to MITO
     uint256 balanceBefore = address(this).balance;
