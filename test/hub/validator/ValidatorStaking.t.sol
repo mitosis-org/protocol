@@ -629,6 +629,31 @@ contract ValidatorStakingTest is Toolkit {
     assertEq(weth.balanceOf(migrationAgentAddr), agentBalanceBefore + 10 ether);
   }
 
+  function test_transferStakingOwnershipFrom_minStakingAmount() public {
+    _fund();
+    _regVal(val1, true);
+    _stake(erc20Vault, val1, user1, user1, 10 ether);
+
+    vm.prank(user1);
+    erc20Vault.approveStakingOwnership(val1, user2, 10 ether);
+
+    // amount below minStakingAmount (1 ether) reverts
+    vm.prank(user2);
+    vm.expectRevert(_errInsufficientMinimumAmount(1 ether));
+    erc20Vault.transferStakingOwnershipFrom(val1, user1, user2, 1 ether - 1);
+
+    vm.prank(user2);
+    vm.expectRevert(_errInsufficientMinimumAmount(1 ether));
+    erc20Vault.transferStakingOwnershipFrom(val1, user1, user2, 0);
+
+    // amount >= minStakingAmount succeeds
+    vm.prank(user2);
+    erc20Vault.transferStakingOwnershipFrom(val1, user1, user2, 1 ether);
+
+    assertEq(erc20Vault.staked(val1, user1, uint48(block.timestamp)), 9 ether);
+    assertEq(erc20Vault.staked(val1, user2, uint48(block.timestamp)), 1 ether);
+  }
+
   function _test_redelegate(ValidatorStaking vault) private {
     _fund();
 

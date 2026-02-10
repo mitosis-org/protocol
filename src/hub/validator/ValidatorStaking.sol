@@ -242,6 +242,8 @@ contract ValidatorStaking is
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator(valAddr));
 
     StorageV1 storage $ = _getStorageV1();
+    require(amount >= $.minStakingAmount, IValidatorStaking__InsufficientMinimumAmount($.minStakingAmount));
+
     uint48 _now = Time.timestamp();
 
     uint256 _staked = staked(valAddr, from, _now);
