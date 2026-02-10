@@ -190,6 +190,16 @@ contract ValidatorStaking is
     return _getStorageV1().lastRedelegationTime[staker][valAddr];
   }
 
+  /// @inheritdoc IValidatorStaking
+  function stakingAllowance(address valAddr, address owner, address spender) external view returns (uint256) {
+    return _getStorageV1().stakingAllowances[valAddr][owner][spender];
+  }
+
+  /// @notice Returns the migration agent address.
+  function migrationAgent() external view returns (address) {
+    return _getStorageV1().migrationAgent;
+  }
+
   // ===================================== MUTATIVE FUNCTIONS ===================================== //
 
   /// @inheritdoc IValidatorStaking
@@ -210,11 +220,6 @@ contract ValidatorStaking is
   /// @inheritdoc IValidatorStaking
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external returns (uint256) {
     return _redelegate(_getStorageV1(), _msgSender(), fromValAddr, toValAddr, amount);
-  }
-
-  /// @inheritdoc IValidatorStaking
-  function stakingAllowance(address valAddr, address owner, address spender) external view returns (uint256) {
-    return _getStorageV1().stakingAllowances[valAddr][owner][spender];
   }
 
   /// @inheritdoc IValidatorStaking
@@ -242,8 +247,8 @@ contract ValidatorStaking is
     uint256 _staked = staked(valAddr, from, _now);
     uint256 allowance = $.stakingAllowances[valAddr][from][to];
 
-    require(_staked >= amount, 'Insufficient staked amount');
-    require(allowance >= amount, 'Insufficient allowance');
+    require(_staked >= amount, IValidatorStaking__InsufficientStakedAmount(amount, _staked));
+    require(allowance >= amount, IValidatorStaking__InsufficientAllowance(amount, allowance));
 
     $.stakingAllowances[valAddr][from][to] -= amount;
 
@@ -285,11 +290,6 @@ contract ValidatorStaking is
     address previousAgent = _getStorageV1().migrationAgent;
     _getStorageV1().migrationAgent = agent;
     emit MigrationAgentSet(previousAgent, agent);
-  }
-
-  /// @notice Returns the migration agent address.
-  function migrationAgent() external view returns (address) {
-    return _getStorageV1().migrationAgent;
   }
 
   /// @notice Claims unstaked tokens immediately, bypassing cooldown. Only callable by migration agent.

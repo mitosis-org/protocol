@@ -30,6 +30,7 @@ interface IValidatorStaking {
   error IValidatorStaking__CooldownNotPassed(uint48 lastTime, uint48 currentTime, uint48 requiredCooldown);
   error IValidatorStaking__InsufficientMinimumAmount(uint256 minAmount);
   error IValidatorStaking__InsufficientStakedAmount(uint256 requested, uint256 available);
+  error IValidatorStaking__InsufficientAllowance(uint256 requested, uint256 allowance);
 
   // ========== VIEWS ========== //
 
