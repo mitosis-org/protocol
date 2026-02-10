@@ -234,15 +234,16 @@ contract ValidatorStaking is
   /// @inheritdoc IValidatorStaking
   function transferStakingOwnershipFrom(address valAddr, address from, address to, uint256 amount)
     external
+    virtual
     nonReentrant
     returns (uint256)
   {
-    require(amount > 0, StdError.ZeroAmount());
     require(_msgSender() == to, StdError.InvalidParameter('to'));
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator(valAddr));
 
     StorageV1 storage $ = _getStorageV1();
     require(amount >= $.minStakingAmount, IValidatorStaking__InsufficientMinimumAmount($.minStakingAmount));
+    require(amount > 0, StdError.ZeroAmount());
 
     uint48 _now = Time.timestamp();
 

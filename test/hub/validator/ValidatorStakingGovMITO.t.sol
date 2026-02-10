@@ -185,6 +185,22 @@ contract ValidatorStakingGovMITOTest is Toolkit {
     vault.requestUnstake(val, user2, 100);
   }
 
+  function test_transferStakingOwnershipFrom_reverts() public {
+    test_setDelegationManager();
+    manager.setRet(abi.encodeCall(IValidatorManager.isValidator, (val)), false, abi.encode(true));
+
+    _mintAndApprove(user1, 200);
+    vm.prank(user1);
+    vault.stake(val, user1, 200);
+
+    vm.prank(user1);
+    vault.approveStakingOwnership(val, user2, 100);
+
+    vm.prank(user2);
+    vm.expectRevert(ValidatorStakingGovMITO.ValidatorStakingGovMITO__NonTransferable.selector);
+    vault.transferStakingOwnershipFrom(val, user1, user2, 100);
+  }
+
   function test_claimUnstake() public {
     test_requestUnstake(); // now = unstake request time + 1
 
