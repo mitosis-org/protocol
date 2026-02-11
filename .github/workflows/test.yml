@@ -29,11 +29,14 @@ jobs:
             echo "::warning::GH_REPO_READER is not set or empty (checkout will use GITHUB_TOKEN)"
             exit 0
           fi
-          resp=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $TOKEN" "https://api.github.com/repos/mitosis-org/protocol")
+          resp=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TOKEN" "https://api.github.com/repos/mitosis-org/protocol")
+          if [ "$resp" != "200" ]; then
+            resp=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $TOKEN" "https://api.github.com/repos/mitosis-org/protocol")
+          fi
           if [ "$resp" = "200" ]; then
             echo "GH_REPO_READER is valid (repo read OK)"
           else
-            echo "::error::GH_REPO_READER validation failed (HTTP $resp). Check token scope and repo access."
+            echo "::error::GH_REPO_READER validation failed (HTTP $resp). 401 = token expired, wrong scope, or fine-grained PAT: add mitosis-org/protocol + Contents read."
             exit 1
           fi
 
