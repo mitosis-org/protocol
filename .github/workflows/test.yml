@@ -21,31 +21,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Validate GH_REPO_READER token
-        env:
-          TOKEN: ${{ secrets.GH_REPO_READER }}
-        run: |
-          if [ -z "$TOKEN" ]; then
-            echo "::warning::GH_REPO_READER is not set or empty (checkout will use GITHUB_TOKEN)"
-            exit 0
-          fi
-          api_url="https://api.github.com/repos/mitosis-org/protocol"
-          resp=$(curl -s -o /tmp/gh_body -w "%{http_code}" -H "Authorization: Bearer $TOKEN" "$api_url")
-          if [ "$resp" != "200" ]; then
-            resp=$(curl -s -o /tmp/gh_body -w "%{http_code}" -H "Authorization: token $TOKEN" "$api_url")
-          fi
-          if [ "$resp" = "200" ]; then
-            echo "GH_REPO_READER is valid (repo read OK)"
-          else
-            echo "::error::GH_REPO_READER validation failed (HTTP $resp)."
-            echo "GitHub API response body:"
-            cat /tmp/gh_body
-            exit 1
-          fi
-
       - uses: actions/checkout@v5
         with:
-          token: ${{ secrets.GH_REPO_READER }}
           submodules: recursive
 
       - uses: actions/setup-node@v5
