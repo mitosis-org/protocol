@@ -21,10 +21,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_REPO_READER }}
-          ref: ${{ github.sha }}
           submodules: recursive
 
       - uses: actions/setup-node@v5
