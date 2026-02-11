@@ -9,6 +9,7 @@ import { ITMITO } from '../../external/interfaces/ITMITO.sol';
 import { IValidatorStaking } from '../../interfaces/hub/validator/IValidatorStaking.sol';
 import { IValidatorStakingMigration } from '../../interfaces/hub/validator/IValidatorStakingMigration.sol';
 import { StdError } from '../../lib/StdError.sol';
+import { Versioned } from '../../lib/Versioned.sol';
 
 /// @title ValidatorStakingMigration
 /// @notice Enables migration of staking between ValidatorStaking_MITO and ValidatorStaking_TMITO.
@@ -18,7 +19,8 @@ contract ValidatorStakingMigration is
   IValidatorStakingMigration,
   ReentrancyGuardUpgradeable,
   AccessControlEnumerableUpgradeable,
-  UUPSUpgradeable
+  UUPSUpgradeable,
+  Versioned
 {
   IValidatorStaking public immutable tmitoValidatorStaking;
   IValidatorStaking public immutable mitoValidatorStaking;
