@@ -316,7 +316,7 @@ contract ValidatorRewardDistributor is
       uint256 claimable = _calculateStakerRewardForEpoch(valAddr, staker, epoch);
 
       if (claimable > 0) {
-        totalClaimed += _govMITOEmission.requestValidatorReward(epoch.toUint96(), staker, claimable);
+        totalClaimed += _govMITOEmission.requestValidatorReward(epoch.toUint96(), recipient, claimable);
       }
 
       lastClaimedEpoch = epoch;
