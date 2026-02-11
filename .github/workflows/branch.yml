@@ -19,7 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          token: ${{ secrets.GH_REPO_READER }}
           submodules: recursive
 
       - name: Resolve dubious ownership
