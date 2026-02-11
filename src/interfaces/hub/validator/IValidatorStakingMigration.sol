@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
-import { IValidatorStaking } from './IValidatorStaking.sol';
 import { ITMITO } from '../../../external/interfaces/ITMITO.sol';
+import { IValidatorStaking } from './IValidatorStaking.sol';
 
 /// @title IValidatorStakingMigration
 /// @notice Interface for the ValidatorStakingMigration contract.

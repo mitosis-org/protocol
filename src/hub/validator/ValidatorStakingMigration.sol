@@ -5,9 +5,9 @@ import { AccessControlEnumerableUpgradeable } from '@ozu/access/extensions/Acces
 import { UUPSUpgradeable } from '@ozu/proxy/utils/UUPSUpgradeable.sol';
 import { ReentrancyGuardUpgradeable } from '@ozu/utils/ReentrancyGuardUpgradeable.sol';
 
+import { ITMITO } from '../../external/interfaces/ITMITO.sol';
 import { IValidatorStaking } from '../../interfaces/hub/validator/IValidatorStaking.sol';
 import { IValidatorStakingMigration } from '../../interfaces/hub/validator/IValidatorStakingMigration.sol';
-import { ITMITO } from '../../external/interfaces/ITMITO.sol';
 import { StdError } from '../../lib/StdError.sol';
 
 /// @title ValidatorStakingMigration
