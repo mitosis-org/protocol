@@ -15,17 +15,22 @@ interface IValidatorStaking {
   event UnstakeClaimed(address indexed who, uint256 amount, uint256 reqIdFrom, uint256 reqIdTo);
   event Redelegated(address indexed from, address indexed to, address indexed who, uint256 amount);
 
+  event StakingOwnershipApproved(address indexed val, address indexed from, address indexed spender, uint256 amount);
+  event StakingOwnershipTransferred(address indexed val, address indexed from, address indexed to, uint256 amount);
+
   event MinimumStakingAmountSet(uint256 previousAmount, uint256 newAmount);
   event MinimumUnstakingAmountSet(uint256 previousAmount, uint256 newAmount);
 
   event UnstakeCooldownUpdated(uint48 unstakeCooldown);
   event RedelegationCooldownUpdated(uint48 redelegationCooldown);
+  event MigrationAgentSet(address indexed previousAgent, address indexed newAgent);
 
   error IValidatorStaking__NotValidator(address valAddr);
   error IValidatorStaking__RedelegateToSameValidator(address valAddr);
   error IValidatorStaking__CooldownNotPassed(uint48 lastTime, uint48 currentTime, uint48 requiredCooldown);
   error IValidatorStaking__InsufficientMinimumAmount(uint256 minAmount);
   error IValidatorStaking__InsufficientStakedAmount(uint256 requested, uint256 available);
+  error IValidatorStaking__InsufficientAllowance(uint256 requested, uint256 allowance);
 
   // ========== VIEWS ========== //
 
@@ -152,6 +157,38 @@ interface IValidatorStaking {
    */
   function redelegate(address fromValAddr, address toValAddr, uint256 amount) external returns (uint256);
 
+  /**
+   * @notice Returns the amount of staking ownership that a spender is allowed to transfer from an owner.
+   * @param valAddr The address of the validator where tokens are staked.
+   * @param owner The address that owns the staked tokens.
+   * @param spender The address that can transfer staking ownership on behalf of the owner.
+   * @return The amount of staked tokens the spender is approved to transfer.
+   */
+  function stakingAllowance(address valAddr, address owner, address spender) external view returns (uint256);
+
+  /**
+   * @notice Approves a spender to transfer staking ownership on behalf of the caller.
+   * @dev Similar to ERC20 approve pattern, but for staked tokens with a specific validator.
+   * @param valAddr The address of the validator where tokens are staked.
+   * @param spender The address being approved to transfer staking ownership.
+   * @param amount The amount of staked tokens the spender is approved to transfer.
+   */
+  function approveStakingOwnership(address valAddr, address spender, uint256 amount) external;
+
+  /**
+   * @notice Transfers staking ownership from one address to another using allowance.
+   * @dev Caller must have sufficient allowance from the 'from' address for the specified validator.
+   *      Similar to ERC20 transferFrom pattern, but for staked tokens.
+   * @param valAddr The address of the validator where tokens are staked.
+   * @param from The address to transfer staking ownership from (must have approved the caller).
+   * @param to The address to transfer staking ownership to.
+   * @param amount The amount of staked tokens to transfer ownership of.
+   * @return The actual amount of staking ownership transferred.
+   */
+  function transferStakingOwnershipFrom(address valAddr, address from, address to, uint256 amount)
+    external
+    returns (uint256);
+
   // ========== ADMIN ACTIONS ========== //
 
   function setMinStakingAmount(uint256 minAmount) external;
@@ -159,4 +196,14 @@ interface IValidatorStaking {
 
   function setUnstakeCooldown(uint48 unstakeCooldown_) external;
   function setRedelegationCooldown(uint48 redelegationCooldown_) external;
+
+  // ========== MIGRATION ========== //
+
+  function setMigrationAgent(address agent) external;
+  function migrationAgent() external view returns (address);
+
+  /**
+   * @notice Claims unstaked tokens immediately, bypassing cooldown. Only callable by migration agent.
+   */
+  function claimUnstakeForMigration() external returns (uint256);
 }
