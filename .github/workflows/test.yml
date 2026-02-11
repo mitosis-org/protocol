@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          token: ${{ secrets.GH_REPO_READER || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_REPO_READER }}
           submodules: recursive
 
       - uses: actions/setup-node@v5
