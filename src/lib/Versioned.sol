@@ -7,5 +7,5 @@ import { IVersioned } from '../interfaces/lib/IVersioned.sol';
 contract Versioned is IVersioned {
   string public constant GIT_TAG = 'v1.2.1';
 
-  string public constant GIT_COMMIT = '6a5cfee93aa3769fac9b436afa4f8e180cb47576';
+  string public constant GIT_COMMIT = '25032a1d2d670ce57078573eb8fd749afaca2f88';
 }

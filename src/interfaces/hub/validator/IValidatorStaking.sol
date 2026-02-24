@@ -176,6 +176,18 @@ interface IValidatorStaking {
   function approveStakingOwnership(address valAddr, address spender, uint256 amount) external;
 
   /**
+   * @notice Batch version of approveStakingOwnership. Convenience for approving multiple (validator, spender) pairs in one tx.
+   * @param valAddrs Validator addresses.
+   * @param spenders Spender addresses.
+   * @param amounts Amounts to approve. Must have same length as valAddrs and spenders.
+   */
+  function approveStakingOwnershipBatch(
+    address[] calldata valAddrs,
+    address[] calldata spenders,
+    uint256[] calldata amounts
+  ) external;
+
+  /**
    * @notice Transfers staking ownership from one address to another using allowance.
    * @dev Caller must have sufficient allowance from the 'from' address for the specified validator.
    *      Similar to ERC20 transferFrom pattern, but for staked tokens.
