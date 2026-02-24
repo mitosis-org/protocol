@@ -654,6 +654,187 @@ contract ValidatorStakingTest is Toolkit {
     assertEq(erc20Vault.staked(val1, user2, uint48(block.timestamp)), 1 ether);
   }
 
+  function test_approveStakingOwnershipBatch() public {
+    _fund();
+    _regVal(val1, true);
+    _regVal(val2, true);
+    _stake(erc20Vault, val1, user1, user1, 5 ether);
+    _stake(erc20Vault, val2, user1, user1, 5 ether);
+
+    address[] memory valAddrs = new address[](2);
+    address[] memory spenders = new address[](2);
+    uint256[] memory amounts = new uint256[](2);
+    valAddrs[0] = val1;
+    valAddrs[1] = val2;
+    spenders[0] = user2;
+    spenders[1] = user2;
+    amounts[0] = 3 ether;
+    amounts[1] = 2 ether;
+
+    vm.prank(user1);
+    erc20Vault.approveStakingOwnershipBatch(valAddrs, spenders, amounts);
+
+    vm.prank(user2);
+    erc20Vault.transferStakingOwnershipFrom(val1, user1, user2, 3 ether);
+    vm.prank(user2);
+    erc20Vault.transferStakingOwnershipFrom(val2, user1, user2, 2 ether);
+
+    assertEq(erc20Vault.staked(val1, user1, uint48(block.timestamp)), 2 ether);
+    assertEq(erc20Vault.staked(val1, user2, uint48(block.timestamp)), 3 ether);
+    assertEq(erc20Vault.staked(val2, user1, uint48(block.timestamp)), 3 ether);
+    assertEq(erc20Vault.staked(val2, user2, uint48(block.timestamp)), 2 ether);
+  }
+
+  function test_approveStakingOwnership_revertNotValidator() public {
+    _fund();
+    _regVal(val1, true);
+    _regVal(val2, false);
+    _stake(erc20Vault, val1, user1, user1, 5 ether);
+
+    vm.prank(user1);
+    vm.expectRevert(_errNotValidator(val2));
+    erc20Vault.approveStakingOwnership(val2, user2, 1 ether);
+  }
+
+  function test_approveStakingOwnership_overwrite() public {
+    _fund();
+    _regVal(val1, true);
+    _stake(erc20Vault, val1, user1, user1, 10 ether);
+
+    vm.prank(user1);
+    erc20Vault.approveStakingOwnership(val1, user2, 10 ether);
+    vm.prank(user1);
+    erc20Vault.approveStakingOwnership(val1, user2, 3 ether);
+
+    vm.prank(user2);
+    erc20Vault.transferStakingOwnershipFrom(val1, user1, user2, 3 ether);
+    vm.prank(user2);
+    vm.expectRevert(_errInsufficientAllowance(4 ether, 0));
+    erc20Vault.transferStakingOwnershipFrom(val1, user1, user2, 4 ether);
+
+    assertEq(erc20Vault.staked(val1, user1, uint48(block.timestamp)), 7 ether);
+    assertEq(erc20Vault.staked(val1, user2, uint48(block.timestamp)), 3 ether);
+  }
+
+  function test_approveStakingOwnershipBatch_lengthMismatch() public {
+    _fund();
+    _regVal(val1, true);
+    address[] memory valAddrs = new address[](1);
+    address[] memory spenders = new address[](2);
+    uint256[] memory amounts = new uint256[](1);
+    valAddrs[0] = val1;
+    spenders[0] = user2;
+    spenders[1] = user2;
+    amounts[0] = 1 ether;
+
+    vm.prank(user1);
+    vm.expectRevert(_errInvalidParameter('length'));
+    erc20Vault.approveStakingOwnershipBatch(valAddrs, spenders, amounts);
+
+    address[] memory spenders2 = new address[](1);
+    uint256[] memory amounts2 = new uint256[](2);
+    spenders2[0] = user2;
+    amounts2[0] = 1 ether;
+    amounts2[1] = 1 ether;
+
+    vm.prank(user1);
+    vm.expectRevert(_errInvalidParameter('length'));
+    erc20Vault.approveStakingOwnershipBatch(valAddrs, spenders2, amounts2);
+  }
+
+  function test_approveStakingOwnershipBatch_revertNotValidator() public {
+    _fund();
+    _regVal(val1, true);
+    _regVal(val2, true);
+    _regVal(val3, false);
+    _stake(erc20Vault, val1, user1, user1, 5 ether);
+    _stake(erc20Vault, val2, user1, user1, 5 ether);
+
+    address[] memory valAddrs = new address[](3);
+    address[] memory spenders = new address[](3);
+    uint256[] memory amounts = new uint256[](3);
+    valAddrs[0] = val1;
+    valAddrs[1] = val3;
+    valAddrs[2] = val2;
+    spenders[0] = user2;
+    spenders[1] = user2;
+    spenders[2] = user2;
+    amounts[0] = 1 ether;
+    amounts[1] = 1 ether;
+    amounts[2] = 1 ether;
+
+    vm.prank(user1);
+    vm.expectRevert(_errNotValidator(val3));
+    erc20Vault.approveStakingOwnershipBatch(valAddrs, spenders, amounts);
+  }
+
+  function test_approveStakingOwnershipBatch_empty() public {
+    _fund();
+    _regVal(val1, true);
+
+    address[] memory valAddrs = new address[](0);
+    address[] memory spenders = new address[](0);
+    uint256[] memory amounts = new uint256[](0);
+
+    vm.prank(user1);
+    erc20Vault.approveStakingOwnershipBatch(valAddrs, spenders, amounts);
+  }
+
+  function test_approveStakingOwnershipBatch_sameAsSingle() public {
+    _fund();
+    _regVal(val1, true);
+    _stake(erc20Vault, val1, user1, user1, 10 ether);
+
+    address[] memory valAddrs = new address[](1);
+    address[] memory spenders = new address[](1);
+    uint256[] memory amounts = new uint256[](1);
+    valAddrs[0] = val1;
+    spenders[0] = user2;
+    amounts[0] = 4 ether;
+
+    vm.prank(user1);
+    erc20Vault.approveStakingOwnershipBatch(valAddrs, spenders, amounts);
+
+    vm.prank(user2);
+    erc20Vault.transferStakingOwnershipFrom(val1, user1, user2, 4 ether);
+
+    assertEq(erc20Vault.staked(val1, user1, uint48(block.timestamp)), 6 ether);
+    assertEq(erc20Vault.staked(val1, user2, uint48(block.timestamp)), 4 ether);
+  }
+
+  function test_approveStakingOwnershipBatch_multipleSpenders() public {
+    _fund();
+    _regVal(val1, true);
+    _regVal(val2, true);
+    address spenderA = makeAddr('spenderA');
+    address spenderB = makeAddr('spenderB');
+    _stake(erc20Vault, val1, user1, user1, 5 ether);
+    _stake(erc20Vault, val2, user1, user1, 5 ether);
+
+    address[] memory valAddrs = new address[](2);
+    address[] memory spenders = new address[](2);
+    uint256[] memory amounts = new uint256[](2);
+    valAddrs[0] = val1;
+    valAddrs[1] = val2;
+    spenders[0] = spenderA;
+    spenders[1] = spenderB;
+    amounts[0] = 3 ether;
+    amounts[1] = 2 ether;
+
+    vm.prank(user1);
+    erc20Vault.approveStakingOwnershipBatch(valAddrs, spenders, amounts);
+
+    vm.prank(spenderA);
+    erc20Vault.transferStakingOwnershipFrom(val1, user1, spenderA, 3 ether);
+    vm.prank(spenderB);
+    erc20Vault.transferStakingOwnershipFrom(val2, user1, spenderB, 2 ether);
+
+    assertEq(erc20Vault.staked(val1, user1, uint48(block.timestamp)), 2 ether);
+    assertEq(erc20Vault.staked(val1, spenderA, uint48(block.timestamp)), 3 ether);
+    assertEq(erc20Vault.staked(val2, user1, uint48(block.timestamp)), 3 ether);
+    assertEq(erc20Vault.staked(val2, spenderB, uint48(block.timestamp)), 2 ether);
+  }
+
   function _test_redelegate(ValidatorStaking vault) private {
     _fund();
 
@@ -838,5 +1019,10 @@ contract ValidatorStakingTest is Toolkit {
 
   function _errInsufficientMinimumAmount(uint256 amount) internal pure returns (bytes memory) {
     return abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__InsufficientMinimumAmount.selector, amount);
+  }
+
+  function _errInsufficientAllowance(uint256 requested, uint256 allowance) internal pure returns (bytes memory) {
+    return
+      abi.encodeWithSelector(IValidatorStaking.IValidatorStaking__InsufficientAllowance.selector, requested, allowance);
   }
 }

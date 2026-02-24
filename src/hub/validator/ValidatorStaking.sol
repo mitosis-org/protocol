@@ -223,12 +223,29 @@ contract ValidatorStaking is
   }
 
   /// @inheritdoc IValidatorStaking
-  function approveStakingOwnership(address valAddr, address spender, uint256 amount) external {
+  function approveStakingOwnership(address valAddr, address spender, uint256 amount) public {
     require(_manager.isValidator(valAddr), IValidatorStaking__NotValidator(valAddr));
 
     _getStorageV1().stakingAllowances[valAddr][_msgSender()][spender] = amount;
 
     emit StakingOwnershipApproved(valAddr, _msgSender(), spender, amount);
+  }
+
+  /// @notice Batch version of approveStakingOwnership for convenience.
+  function approveStakingOwnershipBatch(
+    address[] calldata valAddrs,
+    address[] calldata spenders,
+    uint256[] calldata amounts
+  ) external {
+    uint256 n = valAddrs.length;
+    require(n == spenders.length && n == amounts.length, StdError.InvalidParameter('length'));
+
+    for (uint256 i; i < n;) {
+      approveStakingOwnership(valAddrs[i], spenders[i], amounts[i]);
+      unchecked {
+        ++i;
+      }
+    }
   }
 
   /// @inheritdoc IValidatorStaking
